@@ -247,6 +247,7 @@ namespace ColorVision.Copilot
         ToolResult,
         ReasoningDelta,
         AnswerDelta,
+        AnswerReset,
         Error,
         Completed,
         CheckpointReady,
@@ -338,6 +339,14 @@ namespace ColorVision.Copilot
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.Completed,
+            };
+        }
+
+        public static CopilotAgentEvent AnswerReset()
+        {
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.AnswerReset,
             };
         }
 

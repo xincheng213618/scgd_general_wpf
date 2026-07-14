@@ -27,6 +27,19 @@ namespace ColorVision.Copilot
             "latest news", "current price", "public information",
         };
 
+        private static readonly string[] ExplicitPublicWebSearchMarkers =
+        {
+            "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "搜索一下", "查询一下公开信息",
+            "search the web", "web search", "search online", "look online", "search the public web",
+        };
+
+        private static readonly string[] PublicWebOptOutMarkers =
+        {
+            "不要联网", "不用联网", "无需联网", "不访问网页", "不要访问网页", "不要搜索", "不用搜索", "无需搜索",
+            "do not browse", "don't browse", "without browsing", "do not search the web", "don't search the web",
+            "no web search", "offline only",
+        };
+
         private static readonly string[] ExternalLocalSearchMarkers =
         {
             "search_files", "searchfiles", "find_files", "findfiles", "grep_text", "greptext",
@@ -73,7 +86,7 @@ namespace ColorVision.Copilot
 
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
+            if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
                 return false;
 
             return request.Mode == CopilotAgentMode.Web
@@ -83,11 +96,47 @@ namespace ColorVision.Copilot
 
         public static bool NeedsUrlFetch(CopilotAgentRequest? request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
+            if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
                 return false;
 
             return request.Mode == CopilotAgentMode.Web
                 || CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
+        }
+
+        internal static bool ExplicitlyRequiresPublicWebSearch(CopilotAgentRequest? request)
+        {
+            if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
+                return false;
+
+            return request.Mode == CopilotAgentMode.Web
+                || ContainsAny(request.UserText, ExplicitPublicWebSearchMarkers);
+        }
+
+        internal static bool ExplicitlyDisallowsPublicWebAccess(CopilotAgentRequest? request)
+        {
+            return request != null && ContainsAny(request.UserText, PublicWebOptOutMarkers);
+        }
+
+        internal static bool IsUrlFetchTool(ICopilotTool? tool)
+        {
+            if (tool == null)
+                return false;
+
+            if (string.Equals(tool.Name, "FetchUrl", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return ContainsAny($"{tool.Name} {tool.Description}", ExternalUrlFetchMarkers);
+        }
+
+        internal static bool IsPublicWebSearchTool(ICopilotTool? tool)
+        {
+            if (tool == null)
+                return false;
+
+            if (string.Equals(tool.Name, "WebSearch", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return ContainsAny($"{tool.Name} {tool.Description}", ExternalWebSearchMarkers);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
@@ -162,7 +211,7 @@ namespace ColorVision.Copilot
             if (tool == null)
                 return false;
 
-            return IsFollowUpWebToolIdentity(tool.Name, tool.Description);
+            return IsUrlFetchTool(tool) || IsPublicWebSearchTool(tool);
         }
 
         private static bool IsFollowUpWebToolIdentity(string? name, string? description)

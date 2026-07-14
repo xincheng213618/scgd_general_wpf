@@ -1496,6 +1496,10 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.AnswerDelta:
                     ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(string.Empty, agentEvent.Text));
                     break;
+                case CopilotAgentEventType.AnswerReset:
+                    assistantMessage.Content = string.Empty;
+                    PersistState();
+                    break;
                 case CopilotAgentEventType.Error:
                     AppendAssistantExecutionTrace(assistantMessage, CopilotAgentTraceEntry.Sanitize(agentEvent.Text));
                     assistantMessage.IsExecutionInProgress = false;

@@ -171,7 +171,11 @@ namespace ColorVision.Copilot
             var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
-                if (agentEvent.Type == CopilotAgentEventType.AnswerDelta
+                if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
+                {
+                    answerText.Clear();
+                }
+                else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta
                     && !string.IsNullOrEmpty(agentEvent.Text)
                     && answerText.Length < CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
                 {
@@ -223,6 +227,12 @@ namespace ColorVision.Copilot
                 ? requestedCheckpoint?.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()
                 : Array.Empty<CopilotAgentEvidenceArtifact>();
             var bridge = new HarnessToolBridge(request, availableTools, runBudget.MaxToolCalls, _toolExecutor, emit);
+            var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
+            if (executionContract.IsRequired)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent execution contract enabled · {executionContract.Description} · accepted tools: {string.Join(", ", executionContract.AcceptedToolNames)}."));
+            }
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
@@ -288,6 +298,14 @@ namespace ColorVision.Copilot
                 },
                 LoopEvaluators =
                 [
+                    new CopilotAgentExecutionContractLoopEvaluator(
+                        executionContract,
+                        () => bridge.StepRecords,
+                        _ =>
+                        {
+                            emit(CopilotAgentEvent.AnswerReset());
+                            emit(CopilotAgentEvent.RuntimeDiagnostic("Agent withheld an unsupported draft and continued to collect the explicitly required evidence."));
+                        }),
                     new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
                     {
                         Modes = ["execute"],
@@ -599,6 +617,7 @@ namespace ColorVision.Copilot
                 + "."));
             var finalizationToken = controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted ? cancellationToken : CancellationToken.None;
             var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, finalizationToken);
+            var executionContractEvaluation = executionContract.Evaluate(bridge.StepRecords);
             var stopReason = controlIntent switch
             {
                 CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
@@ -607,7 +626,24 @@ namespace ColorVision.Copilot
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
             };
+            if (controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && !providerInterrupted
+                && executionContractEvaluation.IsRequired
+                && !executionContractEvaluation.IsSatisfied)
+            {
+                stopReason = CopilotAgentStopReason.Blocked;
+            }
             var blockers = CopilotAgentBlockerDetector.Detect(taskLedger, bridge.StepRecords, stopReason);
+            var executionContractBlocker = executionContract.CreateBlocker(executionContractEvaluation);
+            if (executionContractBlocker != null
+                && controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && !providerInterrupted
+                && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
+            {
+                blockers = blockers.Append(executionContractBlocker).ToArray();
+            }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
             if (stopReason == CopilotAgentStopReason.BudgetExhausted

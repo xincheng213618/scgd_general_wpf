@@ -1172,6 +1172,187 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RequiresUrlEvidenceBeforeCompletionAndReplacesUnsupportedDraft()
+    {
+        var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_fetch_url",
+            new Dictionary<string, object?> { ["query"] = "https://example.test/" });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ summarize this page",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Empty(result.Blockers);
+        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
+            message.Text.Contains("Execution contract", StringComparison.Ordinal));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+
+        var visibleAnswer = new StringBuilder();
+        foreach (var agentEvent in events)
+        {
+            if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
+                visibleAnswer.Clear();
+            else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta)
+                visibleAnswer.Append(agentEvent.Text);
+        }
+        Assert.DoesNotContain("unsupported draft", visibleAnswer.ToString(), StringComparison.Ordinal);
+        Assert.Contains("verified evidence answer", visibleAnswer.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotForceWebToolForOrdinaryConceptualQuestion()
+    {
+        var tool = new TestAgentTool("WebSearch", inputSchema: CopilotToolInputSchema.Query("Public web query.", required: true));
+        using var fakeChatClient = new CapturingFinalChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "光通量是什么，为什么不需要电压电流？",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Empty(result.StepRecords);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_HonorsExplicitWebOptOutEvenWhenRequestContainsUrl()
+    {
+        var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
+        using var fakeChatClient = new CapturingFinalChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "不要联网，只根据这段文字解释 https://example.test/ 这个 URL 的结构",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Empty(result.StepRecords);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RequiresSearchEvidenceForExplicitWebSearchRequest()
+    {
+        var tool = new TestAgentTool("WebSearch", inputSchema: CopilotToolInputSchema.Query("Public web query.", required: true));
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_web_search",
+            new Dictionary<string, object?> { ["query"] = "ColorVision latest release" });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "请联网搜索 ColorVision 的最新版本",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Empty(result.Blockers);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_MarksExplicitUrlRequestBlockedWhenEvidenceToolFails()
+    {
+        var tool = new TestAgentTool(
+            "FetchUrl",
+            success: false,
+            inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_fetch_url");
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ inspect this page",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotAgentStopReason.Blocked, result.StopReason);
+        var blocker = Assert.Single(result.Blockers, item => item.Code == "required_url_evidence_missing");
+        Assert.Equal(CopilotAgentBlockerKind.ToolFailure, blocker.Kind);
+        Assert.Equal("FetchUrl", blocker.ToolName);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_UsesUntriedSearchFallbackAfterUrlEvidenceFails()
+    {
+        var fetchTool = new TestAgentTool(
+            "FetchUrl",
+            success: false,
+            inputSchema: CopilotToolInputSchema.Query("Complete URL.", required: true));
+        var searchTool = new TestAgentTool(
+            "WebSearch",
+            inputSchema: CopilotToolInputSchema.Query("Public web query.", required: true));
+        using var fakeChatClient = new ScriptedHarnessChatClient(
+            options => new FunctionCallContent(
+                "contract-fetch-call",
+                GetFunction(options, "colorvision_fetch_url").Name,
+                new Dictionary<string, object?> { ["query"] = "https://example.test/" }),
+            _ => null,
+            options => new FunctionCallContent(
+                "contract-search-call",
+                GetFunction(options, "colorvision_web_search").Name,
+                new Dictionary<string, object?> { ["query"] = "site:example.test useful information" }));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([fetchTool, searchTool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "https://example.test/ find useful information",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        Assert.Equal(1, fetchTool.ExecutionCount);
+        Assert.Equal(1, searchTool.ExecutionCount);
+        Assert.Equal(4, fakeChatClient.StreamCallCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_AppendsWebSourceLedgerWhenModelOmitsReturnedUrls()
     {
         var tool = new WebEvidenceAgentTool();
@@ -4063,6 +4244,62 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             }
 
             yield return new ChatResponseUpdate(ChatRole.Assistant, "harness answer");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class InitiallyAnswersThenCallsFunctionChatClient(
+        string functionName,
+        IDictionary<string, object?> arguments) : IChatClient
+    {
+        private int _streamCallCount;
+
+        public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public List<Microsoft.Extensions.AI.ChatMessage[]> StreamMessages { get; } = new();
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(new ChatResponse(
+                new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "verified evidence answer")));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options = null,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Assert.NotNull(options);
+            StreamMessages.Add(messages.ToArray());
+            await Task.Yield();
+            var callNumber = Interlocked.Increment(ref _streamCallCount);
+            if (callNumber == 1)
+            {
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "unsupported draft");
+                yield break;
+            }
+
+            if (callNumber == 2)
+            {
+                var function = GetFunction(options!, functionName);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("contract-evidence-call", function.Name, arguments),
+                ]);
+                yield break;
+            }
+
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "verified evidence answer");
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

@@ -52,6 +52,21 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.Equal(expectFetch, new CopilotFetchUrlTool().CanHandle(request));
     }
 
+    [Theory]
+    [InlineData("不要联网，只解释 https://example.com 的 URL 结构")]
+    [InlineData("do not browse; explain the text https://example.com")]
+    public void AutoMode_ExplicitWebOptOutSuppressesSearchAndFetch(string prompt)
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = prompt,
+            Mode = CopilotAgentMode.Auto,
+        };
+
+        Assert.False(new CopilotWebSearchTool().CanHandle(request));
+        Assert.False(new CopilotFetchUrlTool().CanHandle(request));
+    }
+
     [Fact]
     public void AutoMode_ShortFollowUpAfterWebRunRetainsReadOnlyWebTools()
     {
