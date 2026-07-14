@@ -465,22 +465,22 @@
   <data name="HotKey_LoadHotkey" xml:space="preserve"><value>Load Hotkey</value></data>
   <data name="Log_ReverseOrder" xml:space="preserve"><value>Reverse</value></data>
   <data name="Log_OpenFolder" xml:space="preserve"><value>Open Folder</value></data>
-  <data name="TimedOp_ViewStats" xml:space="preserve"><value>View Timing Stats</value></data>
-  <data name="TimedOp_NoHistory" xml:space="preserve"><value>No timing history.</value></data>
-  <data name="TimedOp_Warmup" xml:space="preserve"><value>Warmup:</value></data>
-  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>No stable samples recorded yet.</value></data>
-  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>First-run samples after startup are treated as warmup and excluded from averaging.</value></data>
-  <data name="TimedOp_Last" xml:space="preserve"><value>Last:</value></data>
-  <data name="TimedOp_Average" xml:space="preserve"><value>Average:</value></data>
-  <data name="TimedOp_Fastest" xml:space="preserve"><value>Fastest:</value></data>
-  <data name="TimedOp_Slowest" xml:space="preserve"><value>Slowest:</value></data>
-  <data name="TimedOp_StableSamples" xml:space="preserve"><value>Stable samples:</value></data>
-  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>Right-click the button to open stats window.</value></data>
-  <data name="TimedOp_FewSamples" xml:space="preserve"><value>Stable samples still few; continuing will improve accuracy.</value></data>
-  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>Timing stats recorded.</value></data>
-  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>Close to historical average.</value></data>
-  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>{0} faster than historical average.</value></data>
-  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} slower than historical average.</value></data>
+  <data name="TimedOp_ViewStats" xml:space="preserve"><value>Afficher les statistiques de durée</value></data>
+  <data name="TimedOp_NoHistory" xml:space="preserve"><value>Aucun historique de durée.</value></data>
+  <data name="TimedOp_Warmup" xml:space="preserve"><value>Préchauffage :</value></data>
+  <data name="TimedOp_NoStableSamples" xml:space="preserve"><value>Aucun échantillon stable enregistré.</value></data>
+  <data name="TimedOp_WarmupNote" xml:space="preserve"><value>La première exécution après le démarrage sert de préchauffage et n'est pas incluse dans la moyenne.</value></data>
+  <data name="TimedOp_Last" xml:space="preserve"><value>Dernière :</value></data>
+  <data name="TimedOp_Average" xml:space="preserve"><value>Moyenne :</value></data>
+  <data name="TimedOp_Fastest" xml:space="preserve"><value>Plus rapide :</value></data>
+  <data name="TimedOp_Slowest" xml:space="preserve"><value>Plus lente :</value></data>
+  <data name="TimedOp_StableSamples" xml:space="preserve"><value>Échantillons stables :</value></data>
+  <data name="TimedOp_RightClickHint" xml:space="preserve"><value>Cliquez avec le bouton droit pour ouvrir la fenêtre des statistiques.</value></data>
+  <data name="TimedOp_FewSamples" xml:space="preserve"><value>Il y a encore peu d'échantillons stables ; poursuivez les exécutions pour améliorer la précision.</value></data>
+  <data name="TimedOp_StatsRecorded" xml:space="preserve"><value>Statistiques de durée enregistrées.</value></data>
+  <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>Cette durée est proche de la moyenne historique.</value></data>
+  <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>{0} plus rapide que la moyenne historique.</value></data>
+  <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} plus lente que la moyenne historique.</value></data>
   <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
   <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
   <data name="SearchEngine" xml:space="preserve">

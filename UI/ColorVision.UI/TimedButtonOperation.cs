@@ -110,6 +110,8 @@ namespace ColorVision.UI
         private readonly DispatcherTimer _timer;
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly TimedButtonProgressHost _progressHost;
+        private readonly object? _originalToolTip;
+        private string? _assignedToolTip;
         private string _runningText = string.Empty;
         private double _expectedDurationMs;
         private bool _isRunning;
@@ -128,6 +130,7 @@ namespace ColorVision.UI
 
             _button = button;
             _options = options;
+            _originalToolTip = button.ToolTip;
             _progressHost = new TimedButtonProgressHost(button, options.ProgressForeground);
             _timer = new DispatcherTimer(DispatcherPriority.Background, button.Dispatcher)
             {
@@ -166,7 +169,8 @@ namespace ColorVision.UI
 
             if (_options.ToolTipFactory != null)
             {
-                _button.ToolTip = _options.ToolTipFactory(stats);
+                _assignedToolTip = _options.ToolTipFactory(stats);
+                _button.ToolTip = _assignedToolTip;
             }
         }
 
@@ -360,6 +364,10 @@ namespace ColorVision.UI
             _timer.Tick -= Timer_Tick;
             _timer.Stop();
             _progressHost.Dispose();
+            if (ReferenceEquals(_button.ToolTip, _assignedToolTip))
+            {
+                _button.ToolTip = _originalToolTip;
+            }
             GC.SuppressFinalize(this);
         }
     }
@@ -754,38 +762,12 @@ namespace ColorVision.UI
                 return $"{label}\n{Resources.TimedOp_NoHistory}";
             }
 
-            List<string> lines = new List<string> { label };
-
-            if (stats.WarmupCount > 0)
-            {
-                lines.Add($"{Resources.TimedOp_Warmup} {FormatDuration(stats.WarmupElapsedMs)}");
-            }
-
             if (stats.SuccessCount == 0)
             {
-                lines.Add(Resources.TimedOp_NoStableSamples);
-                lines.Add(Resources.TimedOp_WarmupNote);
-                return string.Join("\n", lines);
+                return $"{label}\n{Resources.TimedOp_Warmup} {FormatDuration(stats.WarmupElapsedMs)}";
             }
 
-            lines.Add($"{Resources.TimedOp_Last} {FormatDuration(stats.LastElapsedMs)}");
-            lines.Add($"{Resources.TimedOp_Average} {FormatDuration(stats.AverageElapsedMs)}");
-            lines.Add($"{Resources.TimedOp_Fastest} {FormatDuration(stats.BestElapsedMs)}");
-            lines.Add($"{Resources.TimedOp_Slowest} {FormatDuration(stats.WorstElapsedMs)}");
-            lines.Add($"{Resources.TimedOp_StableSamples} {stats.SuccessCount}");
-
-            if (stats.WarmupCount > 0)
-            {
-                lines.Add(Resources.TimedOp_WarmupNote);
-            }
-
-            if (TimedButtonOperationStatsWindowLauncherProvider.GetLauncher()?.CanOpen == true)
-            {
-                lines.Add(Resources.TimedOp_RightClickHint);
-            }
-
-            lines.Add(BuildTrendText(stats));
-            return string.Join("\n", lines);
+            return $"{label}\n{Resources.TimedOp_Last} {FormatDuration(stats.LastElapsedMs)} · {Resources.TimedOp_Average} {FormatDuration(stats.AverageElapsedMs)}";
         }
 
         public static string FormatDuration(double elapsedMilliseconds)
@@ -798,28 +780,6 @@ namespace ColorVision.UI
             return $"{elapsedMilliseconds / 1000:F1} s";
         }
 
-        private static string BuildTrendText(TimedButtonOperationStats stats)
-        {
-            if (stats.SuccessCount <= 1)
-            {
-                return Resources.TimedOp_FewSamples;
-            }
-
-            if (stats.AverageElapsedMs <= 0)
-            {
-                return Resources.TimedOp_StatsRecorded;
-            }
-
-            double deltaRatio = (stats.LastElapsedMs - stats.AverageElapsedMs) / stats.AverageElapsedMs;
-            if (Math.Abs(deltaRatio) < 0.05)
-            {
-                return Resources.TimedOp_CloseToAverage;
-            }
-
-            return deltaRatio < 0
-                ? string.Format(Resources.TimedOp_FasterThanAverage, $"{Math.Abs(deltaRatio):P0}")
-                : string.Format(Resources.TimedOp_SlowerThanAverage, $"{Math.Abs(deltaRatio):P0}");
-        }
     }
 
     public interface ITimedButtonOperationStatsRepository
@@ -1311,8 +1271,48 @@ namespace ColorVision.UI
         public void Dispose()
         {
             Remove();
+            RestoreButtonParent();
             _overlay.SizeChanged -= Overlay_SizeChanged;
             GC.SuppressFinalize(this);
+        }
+
+        private void RestoreButtonParent()
+        {
+            if (!_isHosted || !ReferenceEquals(_button.Parent, _host))
+            {
+                return;
+            }
+
+            switch (_host.Parent)
+            {
+                case Panel panel:
+                    int childIndex = panel.Children.IndexOf(_host);
+                    if (childIndex >= 0)
+                    {
+                        CopyLayoutProperties(_host, _button);
+                        _host.Children.Remove(_button);
+                        panel.Children.RemoveAt(childIndex);
+                        panel.Children.Insert(childIndex, _button);
+                        _isHosted = false;
+                    }
+                    break;
+
+                case Decorator decorator when ReferenceEquals(decorator.Child, _host):
+                    CopyLayoutProperties(_host, _button);
+                    _host.Children.Remove(_button);
+                    decorator.Child = null;
+                    decorator.Child = _button;
+                    _isHosted = false;
+                    break;
+
+                case ContentControl contentControl when ReferenceEquals(contentControl.Content, _host):
+                    CopyLayoutProperties(_host, _button);
+                    _host.Children.Remove(_button);
+                    contentControl.Content = null;
+                    contentControl.Content = _button;
+                    _isHosted = false;
+                    break;
+            }
         }
     }
 }
