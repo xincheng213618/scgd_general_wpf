@@ -222,6 +222,87 @@ public sealed class CopilotUiTextTests
         Assert.Contains("Invalid command", group.Entries[1].DiagnosticDetails, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ResponseTimeline_PreservesMarkdownToolMarkdownOrderAndGroupsAdjacentCalls()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.BeginResponseTimeline();
+        message.AppendResponseTimelineText("我先检查当前端口。\n\n");
+        message.UpsertAgentTrace(CreateCompletedTrace("shell-1", "RunShellCommand", 30));
+        message.RecordResponseTimelineTool("shell-1");
+        message.UpsertAgentTrace(CreateCompletedTrace("port-1", "InspectTcpPort", 40));
+        message.RecordResponseTimelineTool("port-1");
+        message.AppendResponseTimelineText("检查完成，6666 端口当前未被占用。");
+
+        var items = message.VisibleResponseTimelineItems;
+
+        Assert.Equal(3, items.Count);
+        Assert.True(items[0].IsMarkdown);
+        Assert.Equal("我先检查当前端口。\n\n", items[0].Markdown);
+        Assert.True(items[1].IsToolGroup);
+        Assert.Equal("运行了多个命令", items[1].ToolGroup!.ActivityLabel);
+        Assert.Equal(2, items[1].ToolGroup!.Entries.Count);
+        Assert.True(items[2].IsMarkdown);
+        Assert.Equal("检查完成，6666 端口当前未被占用。", items[2].Markdown);
+        Assert.Equal("我先检查当前端口。\n\n检查完成，6666 端口当前未被占用。", message.Content);
+        Assert.True(message.HasResponseTimeline);
+        Assert.False(message.HasLegacyResponseLayout);
+    }
+
+    [Fact]
+    public void ResponseTimeline_ResetRemovesUnsupportedDraftButPreservesToolOrder()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.BeginResponseTimeline();
+        message.AppendResponseTimelineText("这是一段不应继续显示的草稿。");
+        message.UpsertAgentTrace(CreateCompletedTrace("db-1", "QueryDatabaseSql", 25));
+        message.RecordResponseTimelineTool("db-1");
+
+        message.ResetResponseTimelineText();
+        message.AppendResponseTimelineText("这是重新验证后的回答。");
+
+        var items = message.VisibleResponseTimelineItems;
+
+        Assert.Equal(2, items.Count);
+        Assert.True(items[0].IsToolGroup);
+        Assert.Equal("查询了数据库", items[0].ToolGroup!.ActivityLabel);
+        Assert.True(items[1].IsMarkdown);
+        Assert.Equal("这是重新验证后的回答。", items[1].Markdown);
+        Assert.DoesNotContain("草稿", message.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResponseTimeline_StreamingTextUpdatesStableViewItem()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.BeginResponseTimeline();
+        message.AppendResponseTimelineText("第一段");
+        var timelineItem = Assert.Single(message.VisibleResponseTimelineItems);
+
+        message.AppendResponseTimelineText("继续输出");
+
+        Assert.Same(timelineItem, Assert.Single(message.VisibleResponseTimelineItems));
+        Assert.Equal("第一段继续输出", timelineItem.Markdown);
+    }
+
+    [Fact]
+    public void ResponseTimeline_InvalidPersistedOffsetsFallBackToLegacyLayout()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "answer")
+        {
+            UsesResponseTimeline = true,
+        };
+        message.ResponseTimelineEvents.Add(CopilotResponseTimelineEvent.Markdown(0, 99));
+
+        Assert.True(message.EnsureValid());
+
+        Assert.False(message.UsesResponseTimeline);
+        Assert.Empty(message.ResponseTimelineEvents);
+        Assert.False(message.HasResponseTimeline);
+        Assert.True(message.HasLegacyResponseLayout);
+        Assert.Equal("answer", message.Content);
+    }
+
     private static CopilotAgentTraceEntry CreateCompletedTrace(string callId, string toolName, long durationMs)
     {
         return new CopilotAgentTraceEntry

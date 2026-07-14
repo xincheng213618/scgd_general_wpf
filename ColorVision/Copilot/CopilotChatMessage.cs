@@ -156,9 +156,13 @@ namespace ColorVision.Copilot
         public string Content
         {
             get => _content;
-            set => SetProperty(ref _content, value ?? string.Empty);
+            set
+            {
+                SetProperty(ref _content, value ?? string.Empty);
+                OnResponseTimelineChanged();
+            }
         }
-        private string _content;
+        private string _content = string.Empty;
 
         public string RequestContent
         {
@@ -188,6 +192,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasExecutionFailures));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+                    OnPropertyChanged(nameof(HasLegacyThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(LegacyThinkingContent));
@@ -201,6 +206,21 @@ namespace ColorVision.Copilot
         private string _executionContent = string.Empty;
 
         public ObservableCollection<CopilotAgentTraceEntry> AgentTraceEntries { get; set; } = new();
+
+        public ObservableCollection<CopilotResponseTimelineEvent> ResponseTimelineEvents { get; set; } = new();
+
+        private readonly ObservableCollection<CopilotResponseTimelineItem> _visibleResponseTimelineItems = new();
+
+        public bool UsesResponseTimeline
+        {
+            get => _usesResponseTimeline;
+            set
+            {
+                SetProperty(ref _usesResponseTimeline, value);
+                OnResponseTimelineChanged();
+            }
+        }
+        private bool _usesResponseTimeline;
 
         public CopilotAgentTaskLedgerSnapshot AgentTaskLedger
         {
@@ -359,6 +379,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(IsThinkingInProgress));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+                    OnPropertyChanged(nameof(HasLegacyThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                     OnPropertyChanged(nameof(ExecutionHeader));
@@ -406,6 +427,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasReasoning));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+                    OnPropertyChanged(nameof(HasLegacyThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(LegacyThinkingContent));
@@ -443,6 +465,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(IsThinkingInProgress));
                     OnPropertyChanged(nameof(HasThinkingTrace));
                     OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+                    OnPropertyChanged(nameof(HasLegacyThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                     OnPropertyChanged(nameof(ReasoningHeader));
@@ -494,6 +517,9 @@ namespace ColorVision.Copilot
         public bool HasStandaloneThinkingTrace => HasThinkingTrace && !HasAgentTraceEntries;
 
         [JsonIgnore]
+        public bool HasLegacyThinkingTrace => HasThinkingTrace && HasLegacyResponseLayout;
+
+        [JsonIgnore]
         public bool HasThinkingContent => !string.IsNullOrWhiteSpace(ThinkingContent);
 
         [JsonIgnore]
@@ -506,6 +532,15 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public IReadOnlyList<CopilotAgentTraceGroup> VisibleAgentTraceGroups => CopilotAgentTraceGroup.Create(VisibleAgentTraceEntries);
+
+        [JsonIgnore]
+        public IReadOnlyList<CopilotResponseTimelineItem> VisibleResponseTimelineItems => _visibleResponseTimelineItems;
+
+        [JsonIgnore]
+        public bool HasResponseTimeline => _visibleResponseTimelineItems.Count > 0;
+
+        [JsonIgnore]
+        public bool HasLegacyResponseLayout => !HasResponseTimeline;
 
         [JsonIgnore]
         public string LegacyThinkingContent => HasAgentTraceEntries ? string.Empty : BuildThinkingContent(ExecutionContent, ReasoningContent);
@@ -548,6 +583,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
             OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+            OnPropertyChanged(nameof(HasLegacyThinkingTrace));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -567,6 +603,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
             OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+            OnPropertyChanged(nameof(HasLegacyThinkingTrace));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -645,6 +682,36 @@ namespace ColorVision.Copilot
             foreach (var entry in AgentTraceEntries)
                 changed |= entry.EnsureValid(recoveredAtUtc);
 
+            if (ResponseTimelineEvents == null)
+            {
+                ResponseTimelineEvents = new ObservableCollection<CopilotResponseTimelineEvent>();
+                changed = true;
+            }
+
+            var isTimelineStructurallyValid = true;
+            foreach (var timelineEvent in ResponseTimelineEvents)
+            {
+                if (timelineEvent == null || !timelineEvent.Normalize(out var timelineEventChanged))
+                {
+                    isTimelineStructurallyValid = false;
+                    continue;
+                }
+
+                changed |= timelineEventChanged;
+            }
+
+            if (UsesResponseTimeline && (!isTimelineStructurallyValid || !IsResponseTimelineComplete()))
+            {
+                ResponseTimelineEvents.Clear();
+                UsesResponseTimeline = false;
+                changed = true;
+            }
+            else if (!UsesResponseTimeline && ResponseTimelineEvents.Count > 0)
+            {
+                ResponseTimelineEvents.Clear();
+                changed = true;
+            }
+
             if (AgentTraceEntries.Count > 0)
             {
                 var previousExecutionContent = ExecutionContent;
@@ -687,6 +754,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            OnResponseTimelineChanged();
             return changed;
         }
 
@@ -705,6 +773,74 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(AgentTaskProgressLabel));
             OnPropertyChanged(nameof(AgentStopReasonLabel));
             OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
+        }
+
+        public void BeginResponseTimeline()
+        {
+            if (UsesResponseTimeline)
+                return;
+
+            ResponseTimelineEvents ??= new ObservableCollection<CopilotResponseTimelineEvent>();
+            ResponseTimelineEvents.Clear();
+            UsesResponseTimeline = true;
+        }
+
+        public void RecordResponseTimelineTool(string callId)
+        {
+            BeginResponseTimeline();
+            var normalizedCallId = CopilotResponseTimelineEvent.NormalizeCallId(callId);
+            if (string.IsNullOrWhiteSpace(normalizedCallId)
+                || ResponseTimelineEvents.Any(item => item != null
+                    && item.Kind == CopilotResponseTimelineEventKind.ToolCall
+                    && string.Equals(item.CallId, normalizedCallId, StringComparison.Ordinal)))
+            {
+                return;
+            }
+
+            ResponseTimelineEvents.Add(CopilotResponseTimelineEvent.ToolCall(normalizedCallId));
+            OnResponseTimelineChanged();
+        }
+
+        public void AppendResponseTimelineText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            BeginResponseTimeline();
+            var contentStart = _content.Length;
+            var lastEvent = ResponseTimelineEvents.LastOrDefault();
+            if (lastEvent?.Kind == CopilotResponseTimelineEventKind.Markdown
+                && lastEvent.ContentStart + lastEvent.ContentLength == contentStart)
+            {
+                lastEvent.ContentLength += text.Length;
+            }
+            else
+            {
+                ResponseTimelineEvents.Add(CopilotResponseTimelineEvent.Markdown(contentStart, text.Length));
+            }
+
+            _content += text;
+            OnPropertyChanged(nameof(Content));
+            OnResponseTimelineChanged();
+        }
+
+        public void ResetResponseTimelineText()
+        {
+            if (!UsesResponseTimeline)
+            {
+                Content = string.Empty;
+                return;
+            }
+
+            for (var index = ResponseTimelineEvents.Count - 1; index >= 0; index--)
+            {
+                if (ResponseTimelineEvents[index]?.Kind == CopilotResponseTimelineEventKind.Markdown)
+                    ResponseTimelineEvents.RemoveAt(index);
+            }
+
+            _content = string.Empty;
+            OnPropertyChanged(nameof(Content));
+            OnResponseTimelineChanged();
         }
 
         public void UpsertAgentTrace(CopilotAgentTraceEntry traceEntry)
@@ -742,6 +878,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(VisibleAgentTraceEntries));
             OnPropertyChanged(nameof(VisibleAgentTraceGroups));
             OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
+            OnPropertyChanged(nameof(HasLegacyThinkingTrace));
+            OnResponseTimelineChanged();
             OnPropertyChanged(nameof(ThinkingContent));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(LegacyThinkingContent));
@@ -749,6 +887,111 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasExecutionFailures));
             OnPropertyChanged(nameof(ExecutionSummary));
             OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+        }
+
+        private void OnResponseTimelineChanged()
+        {
+            var refreshedItems = BuildResponseTimelineItems();
+            var canUpdateInPlace = refreshedItems.Count == _visibleResponseTimelineItems.Count
+                && refreshedItems.Select(item => item.IsMarkdown)
+                    .SequenceEqual(_visibleResponseTimelineItems.Select(item => item.IsMarkdown));
+            if (canUpdateInPlace)
+            {
+                for (var index = 0; index < refreshedItems.Count; index++)
+                    _visibleResponseTimelineItems[index].UpdateFrom(refreshedItems[index]);
+            }
+            else
+            {
+                _visibleResponseTimelineItems.Clear();
+                foreach (var item in refreshedItems)
+                    _visibleResponseTimelineItems.Add(item);
+            }
+
+            OnPropertyChanged(nameof(VisibleResponseTimelineItems));
+            OnPropertyChanged(nameof(HasResponseTimeline));
+            OnPropertyChanged(nameof(HasLegacyResponseLayout));
+            OnPropertyChanged(nameof(HasLegacyThinkingTrace));
+        }
+
+        private IReadOnlyList<CopilotResponseTimelineItem> BuildResponseTimelineItems()
+        {
+            if (!IsResponseTimelineComplete())
+                return Array.Empty<CopilotResponseTimelineItem>();
+
+            var tracesByCallId = new Dictionary<string, CopilotAgentTraceEntry>(StringComparer.Ordinal);
+            foreach (var trace in AgentTraceEntries.Where(trace => trace != null && !string.IsNullOrWhiteSpace(trace.CallId)))
+                tracesByCallId[trace.CallId] = trace;
+
+            var items = new List<CopilotResponseTimelineItem>();
+            for (var index = 0; index < ResponseTimelineEvents.Count;)
+            {
+                var timelineEvent = ResponseTimelineEvents[index];
+                if (timelineEvent.Kind == CopilotResponseTimelineEventKind.Markdown)
+                {
+                    var markdown = Content.Substring(timelineEvent.ContentStart, timelineEvent.ContentLength);
+                    if (!string.IsNullOrWhiteSpace(markdown))
+                    {
+                        if (items.Count > 0 && items[^1].IsMarkdown)
+                            items[^1] = CopilotResponseTimelineItem.FromMarkdown(items[^1].Markdown + markdown);
+                        else
+                            items.Add(CopilotResponseTimelineItem.FromMarkdown(markdown));
+                    }
+                    index++;
+                    continue;
+                }
+
+                var adjacentTraces = new List<CopilotAgentTraceEntry>();
+                while (index < ResponseTimelineEvents.Count
+                    && ResponseTimelineEvents[index].Kind == CopilotResponseTimelineEventKind.ToolCall)
+                {
+                    var toolEvent = ResponseTimelineEvents[index];
+                    if (tracesByCallId.TryGetValue(toolEvent.CallId, out var trace) && trace.IsVisibleInActivity)
+                        adjacentTraces.Add(trace);
+                    index++;
+                }
+
+                foreach (var group in CopilotAgentTraceGroup.Create(adjacentTraces))
+                    items.Add(CopilotResponseTimelineItem.FromToolGroup(group));
+            }
+
+            return items;
+        }
+
+        private bool IsResponseTimelineComplete()
+        {
+            if (!UsesResponseTimeline || ResponseTimelineEvents == null || AgentTraceEntries == null)
+                return false;
+
+            var expectedContentStart = 0;
+            var observedCallIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var timelineEvent in ResponseTimelineEvents)
+            {
+                if (timelineEvent == null || !Enum.IsDefined(timelineEvent.Kind))
+                    return false;
+
+                if (timelineEvent.Kind == CopilotResponseTimelineEventKind.Markdown)
+                {
+                    if (timelineEvent.ContentStart != expectedContentStart
+                        || timelineEvent.ContentLength <= 0
+                        || timelineEvent.ContentLength > Content.Length - expectedContentStart)
+                    {
+                        return false;
+                    }
+
+                    expectedContentStart += timelineEvent.ContentLength;
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(timelineEvent.CallId)
+                    || !observedCallIds.Add(timelineEvent.CallId)
+                    || !AgentTraceEntries.Any(trace => trace != null
+                        && string.Equals(trace.CallId, timelineEvent.CallId, StringComparison.Ordinal)))
+                {
+                    return false;
+                }
+            }
+
+            return expectedContentStart == Content.Length;
         }
 
         private static string BuildAgentTraceBlock(CopilotAgentTraceEntry entry)

@@ -184,6 +184,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Items = [new CopilotAgentTaskItem { Id = 1, Title = "Continue safely", IsComplete = false }],
             },
         };
+        assistantMessage.BeginResponseTimeline();
         var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
         conversation.Messages.Add(assistantMessage);
         conversation.AgentSessionCheckpoint = checkpoint;
@@ -198,6 +199,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.True(state.EnsureInitialized(config));
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistantMessage.AgentStopReason);
         Assert.Contains("最近的安全进度", assistantMessage.Content, StringComparison.Ordinal);
+        Assert.True(assistantMessage.HasResponseTimeline);
+        Assert.Contains("最近的安全进度", Assert.Single(assistantMessage.VisibleResponseTimelineItems).Markdown, StringComparison.Ordinal);
         var stopped = Assert.Single(conversation.AgentSessionCheckpoint!.TaskEventJournal.Events,
             item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.Equal(journal.RunId, stopped.RunId);
@@ -542,6 +545,45 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                     new string('x', CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength + 1)),
             ]);
         Assert.Null(oversizedMemory);
+    }
+
+    [Fact]
+    public void ResponseTimeline_PersistsInterleavedMarkdownAndToolEvents()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState();
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.BeginResponseTimeline();
+        message.AppendResponseTimelineText("先检查数据库。\n\n");
+        message.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "db-call",
+            Round = 1,
+            RuntimeName = "microsoft-agent-framework",
+            ToolName = "QueryDatabaseSql",
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddMilliseconds(-25),
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+            DurationMs = 25,
+            ResultSummary = "Query returned 94 rows.",
+        });
+        message.RecordResponseTimelineTool("db-call");
+        message.AppendResponseTimelineText("数据库查询完成。");
+        conversation.Messages.Add(message);
+        state.Conversations.Add(conversation);
+
+        store.Save(state);
+        var loadedMessage = Assert.Single(Assert.Single(store.Load().Conversations).Messages);
+
+        loadedMessage.EnsureValid();
+        var items = loadedMessage.VisibleResponseTimelineItems;
+        Assert.Equal(3, items.Count);
+        Assert.Equal("先检查数据库。\n\n", items[0].Markdown);
+        Assert.Equal("查询了数据库", items[1].ToolGroup!.ActivityLabel);
+        Assert.Equal("数据库查询完成。", items[2].Markdown);
+        Assert.True(loadedMessage.UsesResponseTimeline);
+        Assert.Equal(CopilotResponseTimelineEvent.CurrentSchemaVersion, loadedMessage.ResponseTimelineEvents[0].SchemaVersion);
     }
 
     [Fact]

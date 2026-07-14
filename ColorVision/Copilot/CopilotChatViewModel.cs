@@ -668,8 +668,7 @@ namespace ColorVision.Copilot
             assistantMessage.IsReasoningInProgress = false;
             assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
             assistantMessage.MarkThinkingCompleted();
-            if (string.IsNullOrWhiteSpace(assistantMessage.Content))
-                assistantMessage.Content = "排队的 Agent 任务已取消，未调用模型或工具。";
+            SetAssistantFallbackContent(assistantMessage, "排队的 Agent 任务已取消，未调用模型或工具。");
 
             UpdateConversationMetadata(conversation, touch: true);
             PersistState();
@@ -713,9 +712,9 @@ namespace ColorVision.Copilot
 
                 if (string.IsNullOrWhiteSpace(assistantMessage.Content))
                 {
-                    assistantMessage.Content = controlIntent == CopilotAgentControlIntent.Pause
+                    SetAssistantFallbackContent(assistantMessage, controlIntent == CopilotAgentControlIntent.Pause
                         ? "Agent 任务已暂停；可从最近一次可用 checkpoint 继续。"
-                        : "The current reply was cancelled.";
+                        : "The current reply was cancelled.");
                 }
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
@@ -728,9 +727,7 @@ namespace ColorVision.Copilot
                 assistantMessage.IsExecutionInProgress = false;
                 assistantMessage.IsReasoningInProgress = false;
                 assistantMessage.MarkThinkingCompleted();
-                assistantMessage.Content = string.IsNullOrWhiteSpace(assistantMessage.Content)
-                    ? $"Request failed: {ex.Message}"
-                    : assistantMessage.Content;
+                SetAssistantFallbackContent(assistantMessage, $"Request failed: {ex.Message}");
 
                 UpdateConversationUsage(conversation, CopilotTokenUsage.Empty);
 
@@ -898,12 +895,12 @@ namespace ColorVision.Copilot
             conversation.AgentSessionCheckpoint = result.SessionCheckpoint;
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
-                assistantMessage.Content = result.StopReason switch
+                SetAssistantFallbackContent(assistantMessage, result.StopReason switch
                 {
                     CopilotAgentStopReason.Paused => "Agent 任务已暂停；当前任务状态已经保存，可以稍后继续。",
                     CopilotAgentStopReason.Cancelled => "Agent 任务已取消；本轮新 checkpoint 已丢弃。",
                     _ => assistantMessage.Content,
-                };
+                });
             }
             PersistState();
             return result.Usage;
@@ -1483,6 +1480,7 @@ namespace ColorVision.Copilot
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.Status:
+                    assistantMessage.BeginResponseTimeline();
                     assistantMessage.MarkThinkingStarted();
                     assistantMessage.IsExecutionInProgress = true;
                     assistantMessage.IsExecutionExpanded = true;
@@ -1497,7 +1495,10 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.ToolStarted:
                     assistantMessage.MarkThinkingStarted();
                     if (agentEvent.ToolExecution != null)
+                    {
                         assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromStarted(agentEvent.ToolExecution));
+                        assistantMessage.RecordResponseTimelineTool(agentEvent.ToolExecution.CallId);
+                    }
                     else
                         AppendAssistantExecutionTrace(assistantMessage, BuildToolStartedTraceText(agentEvent.ToolExecution));
                     assistantMessage.IsExecutionInProgress = true;
@@ -1507,7 +1508,10 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.ToolResult:
                     assistantMessage.MarkThinkingStarted();
                     if (agentEvent.ToolExecution != null)
+                    {
                         assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromResult(agentEvent.ToolExecution, agentEvent.ToolResult));
+                        assistantMessage.RecordResponseTimelineTool(agentEvent.ToolExecution.CallId);
+                    }
                     else
                         AppendAssistantExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent));
                     assistantMessage.IsExecutionInProgress = true;
@@ -1518,10 +1522,10 @@ namespace ColorVision.Copilot
                     ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(agentEvent.Text, string.Empty));
                     break;
                 case CopilotAgentEventType.AnswerDelta:
-                    ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(string.Empty, agentEvent.Text));
+                    ApplyAssistantDelta(assistantMessage, new CopilotStreamDelta(string.Empty, agentEvent.Text), recordResponseTimeline: true);
                     break;
                 case CopilotAgentEventType.AnswerReset:
-                    assistantMessage.Content = string.Empty;
+                    assistantMessage.ResetResponseTimelineText();
                     PersistState();
                     break;
                 case CopilotAgentEventType.Error:
@@ -1626,6 +1630,17 @@ namespace ColorVision.Copilot
                 : $"{durationMs / 1000d:0.#} s";
         }
 
+        private static void SetAssistantFallbackContent(CopilotChatMessage assistantMessage, string text)
+        {
+            if (!string.IsNullOrWhiteSpace(assistantMessage.Content) || string.IsNullOrWhiteSpace(text))
+                return;
+
+            if (assistantMessage.UsesResponseTimeline)
+                assistantMessage.AppendResponseTimelineText(text);
+            else
+                assistantMessage.Content = text;
+        }
+
         private static void FinalizeAssistantMessage(CopilotChatMessage assistantMessage)
         {
             assistantMessage.IsExecutionInProgress = false;
@@ -1635,12 +1650,12 @@ namespace ColorVision.Copilot
             if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
                 return;
 
-            assistantMessage.Content = assistantMessage.HasReasoning || assistantMessage.HasExecutionTrace
+            SetAssistantFallbackContent(assistantMessage, assistantMessage.HasReasoning || assistantMessage.HasExecutionTrace
                 ? "No final answer was received; only execution trace or reasoning content is available."
-                : "The API returned successfully, but no displayable text was found.";
+                : "The API returned successfully, but no displayable text was found.");
         }
 
-        private void ApplyAssistantDelta(CopilotChatMessage assistantMessage, CopilotStreamDelta delta)
+        private void ApplyAssistantDelta(CopilotChatMessage assistantMessage, CopilotStreamDelta delta, bool recordResponseTimeline = false)
         {
             if (delta.HasReasoning)
             {
@@ -1653,7 +1668,10 @@ namespace ColorVision.Copilot
             if (delta.HasContent)
             {
                 var isFirstContentChunk = string.IsNullOrWhiteSpace(assistantMessage.Content);
-                assistantMessage.Content += delta.Content;
+                if (recordResponseTimeline)
+                    assistantMessage.AppendResponseTimelineText(delta.Content);
+                else
+                    assistantMessage.Content += delta.Content;
                 assistantMessage.IsReasoningInProgress = false;
                 if (isFirstContentChunk && assistantMessage.HasReasoning)
                 {

@@ -581,6 +581,117 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <DataTemplate x:Key="AgentTraceEntryTemplate">
+            <Expander Margin="0,1,0,4" Style="{StaticResource TraceExpanderStyle}">
+                <Expander.Header>
+                    <Grid ToolTip="{Binding ActivityDescription}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="EntryActivityGlyph"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.48"
+                                   Text="{Binding ActivityGlyph}" />
+                        <TextBlock x:Name="EntryActivityLabel"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.6"
+                                   Text="{Binding ActivityLabel}" />
+                        <TextBlock Grid.Column="2"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.38"
+                                   Text="{Binding ActivityDurationLabel}" />
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Margin="18,0,0,2">
+                    <TextBlock Margin="0,0,0,5"
+                               FontSize="11"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               Opacity="0.58"
+                               Text="{Binding ActivityDescription}"
+                               TextWrapping="Wrap" />
+                    <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                             FontSize="10"
+                             Opacity="0.42"
+                             Text="{Binding DiagnosticDetails, Mode=OneWay}" />
+                </StackPanel>
+            </Expander>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFailure}" Value="True">
+                    <Setter TargetName="EntryActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
+                    <Setter TargetName="EntryActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
+                    <Setter TargetName="EntryActivityLabel" Property="Opacity" Value="0.82" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="AgentTraceGroupTemplate">
+            <Expander Margin="0,1,0,4" Style="{StaticResource TraceExpanderStyle}">
+                <Expander.Header>
+                    <Grid ToolTip="{Binding ActivityDescription}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="GroupActivityGlyph"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.48"
+                                   Text="{Binding ActivityGlyph}" />
+                        <TextBlock x:Name="GroupActivityLabel"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.66"
+                                   Text="{Binding ActivityLabel}" />
+                        <TextBlock Grid.Column="2"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.38"
+                                   Text="{Binding ActivityDurationLabel}" />
+                    </Grid>
+                </Expander.Header>
+                <StackPanel Margin="18,0,0,2">
+                    <StackPanel Visibility="{Binding IsSingle, Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock Margin="0,0,0,5"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.58"
+                                   Text="{Binding FirstEntry.ActivityDescription}"
+                                   TextWrapping="Wrap" />
+                        <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
+                                 FontSize="10"
+                                 Opacity="0.42"
+                                 Text="{Binding FirstEntry.DiagnosticDetails, Mode=OneWay}" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Entries}"
+                                  ItemTemplate="{StaticResource AgentTraceEntryTemplate}"
+                                  Visibility="{Binding IsMultiple, Converter={StaticResource bool2VisibilityConverter}}" />
+                </StackPanel>
+            </Expander>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFailure}" Value="True">
+                    <Setter TargetName="GroupActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
+                    <Setter TargetName="GroupActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
+                    <Setter TargetName="GroupActivityLabel" Property="Opacity" Value="0.82" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -906,10 +1017,28 @@
                                     <StackPanel x:Name="AssistantPanel"
                                                 Margin="0"
                                                 Visibility="Collapsed">
-                                        <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}" />
+                                        <ItemsControl ItemsSource="{Binding VisibleResponseTimelineItems}"
+                                                      Visibility="{Binding HasResponseTimeline, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid>
+                                                        <local:CopilotMarkdownView Markdown="{Binding Markdown, Mode=OneWay}"
+                                                                                   Visibility="{Binding IsMarkdown, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                        <ContentControl Margin="0,4,0,0"
+                                                                        Content="{Binding ToolGroup}"
+                                                                        ContentTemplate="{StaticResource AgentTraceGroupTemplate}"
+                                                                        Focusable="False"
+                                                                        Visibility="{Binding IsToolGroup, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}"
+                                                                   Visibility="{Binding HasLegacyResponseLayout, Converter={StaticResource bool2VisibilityConverter}}" />
 
                                         <StackPanel Margin="0,8,0,0"
-                                                    Visibility="{Binding HasThinkingTrace, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    Visibility="{Binding HasLegacyThinkingTrace, Converter={StaticResource bool2VisibilityConverter}}">
                                             <Expander Style="{StaticResource TraceExpanderStyle}"
                                                       IsExpanded="{Binding IsThinkingExpanded, Mode=TwoWay}"
                                                       Visibility="{Binding HasStandaloneThinkingTrace, Converter={StaticResource bool2VisibilityConverter}}">
@@ -932,122 +1061,8 @@
                                             </Expander>
 
                                             <ItemsControl ItemsSource="{Binding VisibleAgentTraceGroups}"
-                                                          Visibility="{Binding HasAgentTraceEntries, Converter={StaticResource bool2VisibilityConverter}}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Expander Margin="0,1,0,4" Style="{StaticResource TraceExpanderStyle}">
-                                                            <Expander.Header>
-                                                                <Grid ToolTip="{Binding ActivityDescription}">
-                                                                    <Grid.ColumnDefinitions>
-                                                                        <ColumnDefinition Width="18" />
-                                                                        <ColumnDefinition Width="Auto" />
-                                                                        <ColumnDefinition Width="Auto" />
-                                                                    </Grid.ColumnDefinitions>
-                                                                    <TextBlock x:Name="GroupActivityGlyph"
-                                                                               VerticalAlignment="Center"
-                                                                               FontSize="11"
-                                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                                               Opacity="0.48"
-                                                                               Text="{Binding ActivityGlyph}" />
-                                                                    <TextBlock x:Name="GroupActivityLabel"
-                                                                               Grid.Column="1"
-                                                                               VerticalAlignment="Center"
-                                                                               FontSize="12"
-                                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                                               Opacity="0.66"
-                                                                               Text="{Binding ActivityLabel}" />
-                                                                    <TextBlock Grid.Column="2"
-                                                                               Margin="8,0,0,0"
-                                                                               VerticalAlignment="Center"
-                                                                               FontSize="10"
-                                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                                               Opacity="0.38"
-                                                                               Text="{Binding ActivityDurationLabel}" />
-                                                                </Grid>
-                                                            </Expander.Header>
-                                                            <StackPanel Margin="18,0,0,2">
-                                                                <StackPanel Visibility="{Binding IsSingle, Converter={StaticResource bool2VisibilityConverter}}">
-                                                                    <TextBlock Margin="0,0,0,5"
-                                                                               FontSize="11"
-                                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                                               Opacity="0.58"
-                                                                               Text="{Binding FirstEntry.ActivityDescription}"
-                                                                               TextWrapping="Wrap" />
-                                                                    <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                                             FontSize="10"
-                                                                             Opacity="0.42"
-                                                                             Text="{Binding FirstEntry.DiagnosticDetails, Mode=OneWay}" />
-                                                                </StackPanel>
-
-                                                                <ItemsControl ItemsSource="{Binding Entries}"
-                                                                              Visibility="{Binding IsMultiple, Converter={StaticResource bool2VisibilityConverter}}">
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <Expander Margin="0,1,0,4" Style="{StaticResource TraceExpanderStyle}">
-                                                                                <Expander.Header>
-                                                                                    <Grid ToolTip="{Binding ActivityDescription}">
-                                                                                        <Grid.ColumnDefinitions>
-                                                                                            <ColumnDefinition Width="18" />
-                                                                                            <ColumnDefinition Width="Auto" />
-                                                                                            <ColumnDefinition Width="Auto" />
-                                                                                        </Grid.ColumnDefinitions>
-                                                                                        <TextBlock x:Name="EntryActivityGlyph"
-                                                                                                   VerticalAlignment="Center"
-                                                                                                   FontSize="11"
-                                                                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                                                                   Opacity="0.48"
-                                                                                                   Text="{Binding ActivityGlyph}" />
-                                                                                        <TextBlock x:Name="EntryActivityLabel"
-                                                                                                   Grid.Column="1"
-                                                                                                   VerticalAlignment="Center"
-                                                                                                   FontSize="11"
-                                                                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                                                                   Opacity="0.6"
-                                                                                                   Text="{Binding ActivityLabel}" />
-                                                                                        <TextBlock Grid.Column="2"
-                                                                                                   Margin="8,0,0,0"
-                                                                                                   VerticalAlignment="Center"
-                                                                                                   FontSize="10"
-                                                                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                                                                   Opacity="0.38"
-                                                                                                   Text="{Binding ActivityDurationLabel}" />
-                                                                                    </Grid>
-                                                                                </Expander.Header>
-                                                                                <StackPanel Margin="18,0,0,2">
-                                                                                    <TextBlock Margin="0,0,0,5"
-                                                                                               FontSize="11"
-                                                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                                                               Opacity="0.58"
-                                                                                               Text="{Binding ActivityDescription}"
-                                                                                               TextWrapping="Wrap" />
-                                                                                    <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
-                                                                                             FontSize="10"
-                                                                                             Opacity="0.42"
-                                                                                             Text="{Binding DiagnosticDetails, Mode=OneWay}" />
-                                                                                </StackPanel>
-                                                                            </Expander>
-                                                                            <DataTemplate.Triggers>
-                                                                                <DataTrigger Binding="{Binding IsFailure}" Value="True">
-                                                                                    <Setter TargetName="EntryActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
-                                                                                    <Setter TargetName="EntryActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
-                                                                                    <Setter TargetName="EntryActivityLabel" Property="Opacity" Value="0.82" />
-                                                                                </DataTrigger>
-                                                                            </DataTemplate.Triggers>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
-                                                            </StackPanel>
-                                                        </Expander>
-                                                        <DataTemplate.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFailure}" Value="True">
-                                                                <Setter TargetName="GroupActivityGlyph" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
-                                                                <Setter TargetName="GroupActivityLabel" Property="Foreground" Value="{StaticResource CopilotControlDangerBrush}" />
-                                                                <Setter TargetName="GroupActivityLabel" Property="Opacity" Value="0.82" />
-                                                            </DataTrigger>
-                                                        </DataTemplate.Triggers>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
+                                                          ItemTemplate="{StaticResource AgentTraceGroupTemplate}"
+                                                          Visibility="{Binding HasAgentTraceEntries, Converter={StaticResource bool2VisibilityConverter}}" />
                                         </StackPanel>
 
                                         <Border Margin="0,0,0,10"
