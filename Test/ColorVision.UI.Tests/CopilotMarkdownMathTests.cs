@@ -15,6 +15,9 @@ public sealed class CopilotMarkdownMathTests
     {
         "光通量 $\\Phi_v=683\\int P_e(\\lambda)V(\\lambda)d\\lambda$",
         "EQE $$\\mathrm{EQE}=\\frac{N_{photons}}{N_{electrons}}$$",
+        "光通量与 EQE：\n\n$$\\Phi_v=683\\int_0^\\infty P_{e,\\lambda}(\\lambda)V(\\lambda)\\,d\\lambda$$\n\n"
+            + "$$\\mathrm{EQE}=\\frac{P_{opt}/(hc/\\lambda)}{I/q}$$\n\n"
+            + "兴奋纯度 $p_e=\\frac{\\sqrt{(x-x_n)^2+(y-y_n)^2}}{\\sqrt{(x_d-x_n)^2+(y_d-y_n)^2}}$",
         "最终内容包含无法解析的公式 $\\frac{$，但仍应显示。",
     };
 
@@ -120,6 +123,8 @@ public sealed class CopilotMarkdownMathTests
 
                 Assert.Equal(@"r=\sqrt{x^2+y^2}", inlineFormula.Formula);
                 Assert.Equal("x_{corrected}=x(1+k_1r^2)", displayFormula.Formula);
+                Assert.Null(inlineFormula.ErrorTemplate);
+                Assert.Null(displayFormula.ErrorTemplate);
                 var fallbackText = string.Concat(viewer.Document.Blocks
                     .OfType<Paragraph>()
                     .SelectMany(paragraph => paragraph.Inlines.OfType<Run>())

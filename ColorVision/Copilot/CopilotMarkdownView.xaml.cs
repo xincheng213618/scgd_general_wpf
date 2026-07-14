@@ -84,17 +84,17 @@ namespace ColorVision.Copilot
 
         private void RenderMarkdown(string markdown)
         {
-            FlowDocument document;
             try
             {
-                document = BuildMarkdownDocument(markdown);
+                DocumentViewer.Document = BuildMarkdownDocument(markdown);
             }
             catch (Exception)
             {
-                document = CreatePlainTextDocument(markdown);
+                // Formula controls can fail while WPF attaches the new document,
+                // after the LaTeX parser has already accepted the expression.
+                // Keep the chat usable by replacing the whole document with text.
+                DocumentViewer.Document = CreatePlainTextDocument(markdown);
             }
-
-            DocumentViewer.Document = document;
         }
 
         private FlowDocument BuildMarkdownDocument(string markdown)
