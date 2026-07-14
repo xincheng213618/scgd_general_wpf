@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotReadLocalFileTool : ICopilotTool
+    public sealed class CopilotReadLocalFileTool : ICopilotAgentDrivenTool
     {
         public string Name => "ReadLocalFile";
 
@@ -12,11 +14,14 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
 
-        public bool CanHandle(CopilotAgentRequest request)
+        public bool IsAvailable(CopilotAgentRequest request)
         {
-            return request?.ReadableLocalFilePaths?.Count > 0
-                && request.Mode != CopilotAgentMode.Chat;
+            return request != null
+                && request.Mode != CopilotAgentMode.Chat
+                && (request.ReadableLocalFilePaths.Count > 0 || request.SearchRootPaths.Count > 0);
         }
+
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
         public async Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
@@ -25,8 +30,15 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
+            var allowedFiles = new List<string>(request.ReadableLocalFilePaths);
+            if (!string.IsNullOrWhiteSpace(toolInput?.Path)
+                && CopilotWorkspaceSearchSupport.IsPathWithinRoots(toolInput.Path, request.SearchRootPaths))
+            {
+                allowedFiles.Add(toolInput.Path);
+            }
+
             var result = await CopilotReadLocalFileCapability.ReadAsync(
-                request.ReadableLocalFilePaths,
+                allowedFiles.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
                 toolInput?.Path,
                 request.PreferBatchReadLocalFiles,
                 toolInput?.StartLine,

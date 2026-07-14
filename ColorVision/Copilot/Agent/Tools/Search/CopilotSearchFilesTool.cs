@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotSearchFilesTool : ICopilotTool
+    public sealed class CopilotSearchFilesTool : ICopilotAgentDrivenTool
     {
         public string Name => "SearchFiles";
 
@@ -12,11 +12,12 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("File name or path fragment to locate.", required: true);
 
-        public bool CanHandle(CopilotAgentRequest request)
+        public bool IsAvailable(CopilotAgentRequest request)
         {
-            return request?.SearchRootPaths?.Count > 0
-                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
+            return request?.SearchRootPaths?.Count > 0 && request.Mode != CopilotAgentMode.Chat;
         }
+
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,

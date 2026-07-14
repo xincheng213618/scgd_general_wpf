@@ -70,6 +70,20 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal void RecordDelegatedRunUsage(CopilotDelegatedRunUsage delegatedRun)
+        {
+            ArgumentNullException.ThrowIfNull(delegatedRun);
+            lock (_syncRoot)
+            {
+                _usage = _usage.Add(delegatedRun.Usage);
+                _providerCalls += Math.Max(0, delegatedRun.ProviderCalls);
+                _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
+                _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
+                if (_consumedTokens >= _budget.RequestTokenBudget)
+                    _budgetExhausted = true;
+            }
+        }
+
         public override async Task<ChatResponse> GetResponseAsync(
             IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options = null,

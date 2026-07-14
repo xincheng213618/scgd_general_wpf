@@ -104,6 +104,35 @@ namespace ColorVision.Copilot
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
         }
 
+        public static bool IsPathWithinRoots(string? path, IEnumerable<string>? roots)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                return false;
+            }
+
+            foreach (var root in NormalizeSearchRoots(roots))
+            {
+                if (!string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase)
+                    && !IsSubPathOf(fullPath, root))
+                {
+                    continue;
+                }
+
+                return !CrossesReparsePoint(root, fullPath);
+            }
+
+            return false;
+        }
+
         public static string GetDisplayPath(string rootPath, string fullPath)
         {
             try
@@ -161,6 +190,8 @@ namespace ColorVision.Copilot
 
                 foreach (var file in files)
                 {
+                    if (IsReparsePoint(file))
+                        continue;
                     if (textFilesOnly && !IsTextLikeFile(file))
                         continue;
 
@@ -191,7 +222,47 @@ namespace ColorVision.Copilot
         private static bool ShouldIgnoreDirectory(string directoryPath)
         {
             var name = Path.GetFileName(directoryPath);
-            return IgnoredDirectoryNames.Contains(name);
+            if (IgnoredDirectoryNames.Contains(name))
+                return true;
+
+            return IsReparsePoint(directoryPath);
+        }
+
+        private static bool CrossesReparsePoint(string rootPath, string fullPath)
+        {
+            if (File.Exists(fullPath) && IsReparsePoint(fullPath))
+                return true;
+
+            var current = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath);
+            while (!string.IsNullOrWhiteSpace(current)
+                && !string.Equals(current, rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                        return true;
+                }
+                catch
+                {
+                    return true;
+                }
+
+                current = Path.GetDirectoryName(current);
+            }
+
+            return false;
+        }
+
+        private static bool IsReparsePoint(string path)
+        {
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         private static bool IsSubPathOf(string path, string parentPath)

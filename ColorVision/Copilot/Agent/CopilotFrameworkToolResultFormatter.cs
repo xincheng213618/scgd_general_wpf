@@ -125,6 +125,19 @@ namespace ColorVision.Copilot
             }
             if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
                 payload["error"] = SanitizeInline(result.ErrorMessage, MaxErrorCharacters);
+            if (result.DelegatedRunUsage != null)
+            {
+                var delegated = result.DelegatedRunUsage;
+                payload["delegated_run"] = new Dictionary<string, object?>
+                {
+                    ["provider_calls"] = Math.Max(0, delegated.ProviderCalls),
+                    ["consumed_tokens"] = Math.Max(0, delegated.ConsumedTokens),
+                    ["input_tokens"] = Math.Max(0, delegated.Usage.InputTokens),
+                    ["output_tokens"] = Math.Max(0, delegated.Usage.OutputTokens),
+                    ["total_tokens"] = Math.Max(0, delegated.Usage.EffectiveTotalTokens),
+                    ["includes_estimates"] = delegated.UsedEstimatedUsage,
+                };
+            }
 
             return JsonSerializer.Serialize(payload, JsonOptions);
         }

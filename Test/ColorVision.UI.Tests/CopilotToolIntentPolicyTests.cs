@@ -8,7 +8,7 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotToolIntentPolicyTests
 {
     [Fact]
-    public void AutoMode_OrdinaryConceptQuestionDoesNotExposeSearchTools()
+    public void AutoMode_WorkspaceReadToolsRemainAvailableWithoutForcingConceptSearch()
     {
         var request = new CopilotAgentRequest
         {
@@ -17,8 +17,11 @@ public sealed class CopilotToolIntentPolicyTests
             SearchRootPaths = new[] { @"C:\workspace" },
         };
 
-        Assert.False(new CopilotSearchFilesTool().CanHandle(request));
-        Assert.False(new CopilotGrepTextTool().CanHandle(request));
+        Assert.True(new CopilotSearchFilesTool().CanHandle(request));
+        Assert.True(new CopilotGrepTextTool().CanHandle(request));
+        Assert.True(new CopilotReadLocalFileTool().CanHandle(request));
+        Assert.True(new CopilotListDirectoryTool().CanHandle(request));
+        Assert.True(new CopilotDelegateExploreTool().CanHandle(request));
         Assert.False(new CopilotSearchDocsTool().CanHandle(request));
         Assert.False(new CopilotWebSearchTool().CanHandle(request));
         Assert.False(new CopilotFetchUrlTool().CanHandle(request));

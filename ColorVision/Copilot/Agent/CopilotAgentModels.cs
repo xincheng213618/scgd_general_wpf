@@ -85,6 +85,19 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
+
+        internal string RuntimeRoleInstructions { get; init; } = string.Empty;
+    }
+
+    public sealed class CopilotDelegatedRunUsage
+    {
+        public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
+
+        public long ConsumedTokens { get; init; }
+
+        public int ProviderCalls { get; init; }
+
+        public bool UsedEstimatedUsage { get; init; }
     }
 
     public sealed class CopilotToolResult
@@ -104,6 +117,8 @@ namespace ColorVision.Copilot
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
     }
 
     public sealed class CopilotToolApprovalInfo
@@ -146,6 +161,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
+
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
             return new CopilotToolObservation
@@ -157,6 +174,7 @@ namespace ColorVision.Copilot
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
                 Approval = result?.Approval,
                 SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
+                DelegatedRunUsage = result?.DelegatedRunUsage,
             };
         }
     }

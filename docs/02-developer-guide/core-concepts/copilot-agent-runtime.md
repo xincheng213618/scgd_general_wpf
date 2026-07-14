@@ -39,7 +39,9 @@ CopilotToolRegistry
 
 `WebSearch` 在返回标题、摘要和 URL 的同时，从显式 URL 或 `site:` 查询提取目标主机，优先选择匹配结果，并通过同一 `FetchUrl` 实现深读；没有目标主机时只深读排名第一的安全结果。深读连同已确认的同源 JSON、RSS 和 Atom 最多读取三个资源，失败不会抹掉搜索线索，模型也不应重复读取已经成功深读的结果。工具结果压缩会分别保留搜索线索和深读正文。最终回答若使用成功的内置或外部网页工具却没有引用其返回的任何 URL，运行时会追加最多三个经过 http/https 校验的真实来源；已有有效引用、失败工具、普通问答、暂停和超时运行都不会触发补写。用户明确要求不访问网络时不触发该策略。
 
-`Auto` 模式不会因为当前解决方案存在搜索根目录就自动暴露搜索工具。只有用户明确指向当前项目/代码、公开网页/最新信息或给出 URL 时，才分别开放本地搜索、`WebSearch` 或 `FetchUrl`。与之不同，数据库、日志、流程统计、端口检查和通用 Shell 属于稳定的内置 Agent 能力：除纯 `Chat` 模式外，它们按运行时是否具备该能力注册到同一工具目录，不再用用户文本关键词裁剪。模型依据名称、描述和 JSON Schema 自主选择零个或多个结构化调用；普通概念问答可以不调用任何工具。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具仍服从对应意图门槛，其他设备、状态与业务工具继续按自身运行时可用性判断。
+`Auto` 模式只要拥有当前解决方案的搜索根，就稳定提供 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory`。它们不再按当前句子的关键词裁剪；模型依据名称、描述和 JSON Schema 自主决定是否调用，因此普通概念问答仍可不执行搜索。搜索发现的根目录内文件可以在同一 Agent 运行中继续读取，不要求文件路径必须在发送问题前已经显式出现；读取和列目录仍做规范化根边界检查，并拒绝经重解析目录越界。公开网页/最新信息与直接 URL 仍分别控制 `WebSearch` 和 `FetchUrl` 的动态暴露。数据库、日志、流程统计、系统诊断和通用 Shell 同样属于稳定内置能力。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具仍服从对应意图门槛，其他设备、状态与业务工具继续按自身运行时可用性判断。
+
+主 Agent 还可自主调用 `DelegateExplore`，把范围较广或预计产生大量中间证据的多文件调查交给一个全新的只读 Harness Session。子 Agent 不继承父会话历史、附件、checkpoint、todo、可写根、外部 MCP 或审批状态，只接收自包含调查任务、当前搜索根、活动文档和作用域内项目指令；其工具面固定为上述四个工作区读取能力，不能调用 Shell、数据库、网页、写工具或再次委派。每次子运行最多 8 次工具调用、2 个 Agent pass、90 秒和 16,384 个请求 Token，返回内容限制为 12,000 字符。子运行的供应商调用数、Token 与估算用量会归集进父运行预算，父 Agent 收到结果后仍需综合证据并完成最终回答。
 
 稳定的内置 Agent 能力不依赖上一轮关键词，因此“现在呢”“再检查一遍”等短追问仍能看到相同 Schema，并由模型结合会话历史重新发起结构化调用。动态或意图作用域工具仍可续租最近一轮真正成功执行过、只读、幂等且无需审批的能力；写工具和通用 Shell 不通过续租获得额外授权。checkpoint 恢复后也会用当前能力目录重新规划，不把旧调用参数当成授权。
 
@@ -301,12 +303,13 @@ netstat -ano | findstr :6666
 
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。当前已采用相同的核心分工：稳定工具目录和 JSON Schema 交给模型选择，宿主执行确定性的参数校验、权限、审批、隔离、审计与结果回传；关键词策略仅保留在确实需要缩减外部/动态能力的边界，不再承担核心诊断工具路由。后续按优先级扩展：
 
-1. 继续按 `InspectTcpPort`、`InspectWindowsProcesses`、`InspectWindowsServices` 的模式增加固定参数、固定实现的常用只读诊断工具；通用 Shell 在没有系统沙箱时仍保持每次原生审批。当前 Shell runner 已完成 Job Object 进程树归组；后续再增加受限 Windows 身份、文件系统与网络边界，形成真正的系统沙箱。
-2. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
+1. 在只读 `Explore` 委派基础上增加可取消的并行子任务调度、父子 trace 关联与更细的上下文配额；任何写操作仍只由父 Agent 通过现有预览和原生审批路径执行。
+2. 通用 Shell 在没有系统沙箱时继续保持每次原生审批。当前 runner 已完成 Job Object 进程树归组；后续再增加受限 Windows 身份、文件系统与网络边界，形成真正的系统沙箱。
+3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
 
-相关测试集中在 `CopilotCoreRuntimeTests` 与 `CopilotToolExecutorTests`。局部验证命令：
+相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotExploreSubagentTests` 与 `CopilotToolExecutorTests`。局部验证命令：
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj --filter "FullyQualifiedName~Copilot" --no-restore -p:BuildProjectReferences=false
