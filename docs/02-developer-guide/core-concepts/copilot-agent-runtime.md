@@ -254,7 +254,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 业务数据库同时提供语义快捷能力和通用 SQL 能力。`QueryFlowExecutionStats` 只读聚合 `t_scgd_measure_batch`：接受 `today`、`yesterday` 或 `last7days`，按本机时区生成左闭右开的日历范围，返回执行尝试总数、各 `FlowStatus` 数量、完成率和平均耗时。它适合“今天执行了多少次流程”这类常见问题，不要求模型了解表结构。
 
-`QueryDatabaseSql` 接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。服务设置表是版本托管的只读边界，即使进入审批也会在执行前拒绝变更；更新时由版本自带 SQL 重置原生设置。服务配置表由 Service Manager 在数据库重置前导出并回写，结果表不参与保留且可通过受审批的清理流程删除。
+`QueryDatabaseSql` 是 Auto/Agent 模式的核心只读工具，不再依赖用户恰好说出“查询数据库”等固定关键词才向模型暴露；普通知识问答仍由模型依据工具说明直接回答，涉及当前数据库事实时才调用它。该工具接受一条只读 MySQL 语句，支持 `SELECT`、`SHOW`、`DESCRIBE`、`EXPLAIN`、`TABLE` 和最终落到只读语句的 CTE。默认最多返回 100 行，可在 1–500 行内调整；列数、单元格和总输出长度都有上限，密码、token、API key 等敏感列会统一显示为 `<redacted>`。`ExecuteDatabaseSql` 接受一条数据或结构变更，支持 `INSERT`、`UPDATE`、`DELETE`、`REPLACE`、`CREATE`、`ALTER`、`DROP`、`TRUNCATE` 和 `RENAME`，每次都必须经过 Agent Framework 原生审批；无 `WHERE` 的 `UPDATE` / `DELETE`、`TRUNCATE` 和 `DROP` 会在审批说明中给出加强警告。普通 DML 在事务内提交，DDL 遵循 MySQL 的隐式提交语义。服务设置表是版本托管的只读边界，即使进入审批也会在执行前拒绝变更；更新时由版本自带 SQL 重置原生设置。服务配置表由 Service Manager 在数据库重置前导出并回写，结果表不参与保留且可通过受审批的清理流程删除。
 
 两个通用工具都只连接 ColorVision 当前配置的 MySQL，不接受连接字符串。解析层只允许单语句并拒绝 executable comment；账号与授权管理、创建/删除数据库、全局或会话设置、事务控制、锁、动态 SQL、存储过程调用、服务器关闭/终止、插件管理、文件导入导出以及延时函数不开放。审计只保存参数名和 SQL 指纹，错误结果不回显数据库异常或连接信息。显式 SQL 请求由执行契约要求真实成功 observation，模型不能在没有查询结果或写入结果时编造数据库状态。
 

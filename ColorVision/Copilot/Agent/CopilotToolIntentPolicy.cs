@@ -74,6 +74,18 @@ namespace ColorVision.Copilot
             "query sql", "run query", "query database", "database query", "show tables", "describe table",
         };
 
+        private static readonly string[] DatabaseInstanceMarkers =
+        {
+            "数据库里", "数据库中", "数据库现在", "当前数据库", "这个数据库", "业务数据库", "库里", "库中", "数据表里", "数据表中",
+            "in the database", "current database", "database rows", "table rows",
+        };
+
+        private static readonly string[] DatabaseObservationMarkers =
+        {
+            "多少", "数量", "数据量", "记录数", "行数", "占用", "大小", "有哪些", "有啥", "统计",
+            "how many", "count", "record count", "row count", "size", "statistics",
+        };
+
         private static readonly string[] DatabaseSqlMutationMarkers =
         {
             "执行sql", "执行 sql", "运行sql", "运行 sql", "清理sql", "清理 sql", "清理数据库", "删除数据库记录", "删除表数据", "清空表",
@@ -227,6 +239,7 @@ namespace ColorVision.Copilot
             if (TryAnalyzeEmbeddedSql(text, out var analysis))
                 return analysis!.Kind == CopilotDatabaseSqlStatementKind.Query;
             return ContainsAny(request.UserText, DatabaseSqlQueryMarkers)
+                || ContainsAny(request.UserText, DatabaseInstanceMarkers) && ContainsAny(request.UserText, DatabaseObservationMarkers)
                 || StartsWithAny(text, "select ", "show ", "describe ", "desc ", "explain ", "with ", "table ");
         }
 

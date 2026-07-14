@@ -3902,7 +3902,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         var result = await runtime.RunAsync(new CopilotAgentRequest
         {
-            UserText = "查询数据库，执行 SELECT COUNT(*) FROM t_scgd_measure_batch",
+            UserText = "数据库里现在数据有多少",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
         }, _ => { }, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
