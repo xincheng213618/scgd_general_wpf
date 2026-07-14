@@ -41,8 +41,18 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             return _tools
-                .Where(tool => tool.CanHandle(request) || CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool))
+                .Where(tool => IsAvailableForAgent(tool, request)
+                    || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool))
                 .ToArray();
+        }
+
+        internal static bool IsAvailableForAgent(ICopilotTool tool, CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
+            return tool is ICopilotAgentDrivenTool agentDrivenTool
+                ? agentDrivenTool.IsAvailable(request)
+                : tool.CanHandle(request);
         }
 
         public static CopilotToolRegistry CreateDefault()

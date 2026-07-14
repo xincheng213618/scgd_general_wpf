@@ -19,11 +19,6 @@ namespace ColorVision.Copilot
         WorkspaceCreateAndValidation,
         WorkspaceValidation,
         WorkspaceRollback,
-        FlowExecutionStatistics,
-        DatabaseSqlQuery,
-        DatabaseSqlMutation,
-        TcpPortInspection,
-        ShellCommand,
     }
 
     internal sealed class CopilotAgentExecutionContract
@@ -64,11 +59,6 @@ namespace ColorVision.Copilot
             CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "approved workspace file creation followed by validation",
             CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
             CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
-            CopilotAgentExecutionRequirement.FlowExecutionStatistics => "read-only flow execution statistics",
-            CopilotAgentExecutionRequirement.DatabaseSqlQuery => "read-only database SQL result",
-            CopilotAgentExecutionRequirement.DatabaseSqlMutation => "approved database SQL change",
-            CopilotAgentExecutionRequirement.TcpPortInspection => "read-only TCP port inspection",
-            CopilotAgentExecutionRequirement.ShellCommand => "approved shell command result",
             _ => "no mandatory tool evidence",
         };
 
@@ -84,11 +74,7 @@ namespace ColorVision.Copilot
                 if (!CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceCreate(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request)
-                    && !CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request)
-                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request)
-                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request)
-                    && !CopilotToolIntentPolicy.NeedsTcpPortInspection(request)
-                    && !CopilotToolIntentPolicy.NeedsShellCommand(request))
+                    && !CopilotToolIntentPolicy.NeedsWorkspaceValidation(request))
                 {
                     return None();
                 }
@@ -133,56 +119,6 @@ namespace ColorVision.Copilot
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
                     [workspaceValidationTools]);
-            }
-
-            if (CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request))
-            {
-                var flowStatisticsTools = availableTools
-                    .Where(CopilotToolIntentPolicy.IsFlowExecutionStatisticsTool)
-                    .Select(tool => tool.Name);
-                return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.FlowExecutionStatistics,
-                    [flowStatisticsTools]);
-            }
-
-            if (CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request))
-            {
-                var mutationTools = availableTools
-                    .Where(CopilotToolIntentPolicy.IsDatabaseSqlMutationTool)
-                    .Select(tool => tool.Name);
-                return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.DatabaseSqlMutation,
-                    [mutationTools]);
-            }
-
-            if (CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request))
-            {
-                var queryTools = availableTools
-                    .Where(CopilotToolIntentPolicy.IsDatabaseSqlQueryTool)
-                    .Select(tool => tool.Name);
-                return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.DatabaseSqlQuery,
-                    [queryTools]);
-            }
-
-            if (CopilotToolIntentPolicy.NeedsTcpPortInspection(request))
-            {
-                var portInspectionTools = availableTools
-                    .Where(CopilotToolIntentPolicy.IsTcpPortInspectionTool)
-                    .Select(tool => tool.Name);
-                return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.TcpPortInspection,
-                    [portInspectionTools]);
-            }
-
-            if (CopilotToolIntentPolicy.NeedsShellCommand(request))
-            {
-                var shellTools = availableTools
-                    .Where(CopilotToolIntentPolicy.IsShellCommandTool)
-                    .Select(tool => tool.Name);
-                return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.ShellCommand,
-                    [shellTools]);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -316,16 +252,6 @@ namespace ColorVision.Copilot
                         : requiresChangeSet
                         ? "Execution contract: the user explicitly requested a multi-file rollback, but the complete change set has not been restored. Call RollbackWorkspaceChangeSet with the exact prior changeSetId; rolling back one child preview cannot satisfy this request."
                         : $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
-                CopilotAgentExecutionRequirement.FlowExecutionStatistics =>
-                    $"Execution contract: the user requested actual flow execution statistics, but no successful business data observation was collected. Call {preferred} with today, yesterday, or last7days and answer from its aggregate result. Never invent a count, SQL query, or database state.",
-                CopilotAgentExecutionRequirement.DatabaseSqlQuery =>
-                    $"Execution contract: the user requested an actual database query, but no successful database observation was collected. Call {preferred} with exactly one read-only SQL statement and answer from its bounded, redacted result. Never invent rows or claim the query ran without this observation.",
-                CopilotAgentExecutionRequirement.DatabaseSqlMutation =>
-                    $"Execution contract: the user requested a database change, but no approved change completed. Call {preferred} with exactly one SQL data or schema change, wait for native user approval, and report the affected-row result. Never claim the change ran before a successful approved observation.",
-                CopilotAgentExecutionRequirement.TcpPortInspection =>
-                    $"Execution contract: the user requested the current state of one TCP port, but no successful structured inspection was collected. Call {preferred} with the exact port number now and answer from its occupied flag and bounded binding records. Do not substitute a command suggestion or an unapproved arbitrary shell call.",
-                CopilotAgentExecutionRequirement.ShellCommand =>
-                    $"Execution contract: the user requested an actual machine inspection or command execution, but no approved command result was collected. Call {preferred} now with a bounded non-interactive PowerShell or CMD command, wait for native user approval, and answer from its exit code, stdout, and stderr. Never replace execution with command suggestions or invented machine state.",
                 _ => string.Empty,
             };
         }
@@ -342,11 +268,6 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "required_workspace_create_validation_missing",
                 CopilotAgentExecutionRequirement.WorkspaceValidation => "required_workspace_validation_missing",
                 CopilotAgentExecutionRequirement.WorkspaceRollback => "required_workspace_rollback_missing",
-                CopilotAgentExecutionRequirement.FlowExecutionStatistics => "required_flow_execution_statistics_missing",
-                CopilotAgentExecutionRequirement.DatabaseSqlQuery => "required_database_sql_query_missing",
-                CopilotAgentExecutionRequirement.DatabaseSqlMutation => "required_database_sql_mutation_missing",
-                CopilotAgentExecutionRequirement.TcpPortInspection => "required_tcp_port_inspection_missing",
-                CopilotAgentExecutionRequirement.ShellCommand => "required_shell_command_missing",
                 _ => "required_tool_evidence_missing",
             };
         }

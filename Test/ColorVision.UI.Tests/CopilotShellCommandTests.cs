@@ -102,6 +102,22 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
+    public void ToolPublishesStrictStructuredCommandSchema()
+    {
+        var schema = new CopilotShellCommandTool().InputSchema.JsonSchema;
+
+        Assert.Equal("object", schema.GetProperty("type").GetString());
+        Assert.True(schema.GetProperty("properties").TryGetProperty("command", out var command));
+        Assert.Equal("string", command.GetProperty("type").GetString());
+        Assert.Contains(schema.GetProperty("required").EnumerateArray(), item => item.GetString() == "command");
+        Assert.False(schema.GetProperty("additionalProperties").GetBoolean());
+        Assert.True(new CopilotShellCommandTool().InputSchema.TryBind(
+            new Dictionary<string, object?> { ["command"] = "Get-ComputerInfo", ["shell"] = "powershell" },
+            out _,
+            out _));
+    }
+
+    [Fact]
     public async Task RealRunnerExecutesPowerShellAndCmdWithoutPython()
     {
         var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
@@ -128,16 +144,12 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
-    public void RegistryExposesShellOnlyForExplicitMachineOrCommandIntent()
+    public void RegistryKeepsShellAvailableForAgentSelectionOutsideChatMode()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
-        Assert.DoesNotContain(registry.FindTools(Request("我想要知道6666端口有没有被占用")), tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(registry.FindTools(Request("解释一下畸变校正")), tool => tool.Name == "RunShellCommand");
-        Assert.Contains(registry.FindTools(Request("检查当前系统的版本")), tool => tool.Name == "RunShellCommand");
-        Assert.Contains(registry.FindTools(Request("查看本机 Windows 版本", hasHistory: true)), tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(registry.FindTools(Request("我想要知道6666端口有没有被占用", hasHistory: true)), tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(registry.FindTools(Request("继续解释", hasHistory: true)), tool => tool.Name == "RunShellCommand");
+        foreach (var prompt in new[] { "我想要知道6666端口有没有被占用", "解释一下畸变校正", "检查当前系统的版本", "继续解释" })
+            Assert.Contains(registry.FindTools(Request(prompt, hasHistory: true)), tool => tool.Name == "RunShellCommand");
         Assert.DoesNotContain(registry.FindTools(Request("检查端口", mode: CopilotAgentMode.Chat)), tool => tool.Name == "RunShellCommand");
     }
 

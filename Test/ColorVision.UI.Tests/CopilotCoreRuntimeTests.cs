@@ -3888,7 +3888,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_RequiresRealFlowStatisticsObservation()
+    public async Task AgentFrameworkRuntime_ExecutesModelSelectedFlowStatisticsCall()
     {
         var source = new CapturingFlowExecutionStatisticsSource(
         [
@@ -3925,7 +3925,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_RequiresRealDatabaseSqlQueryObservation()
+    public async Task AgentFrameworkRuntime_ExecutesModelSelectedDatabaseQueryCall()
     {
         var executor = new CapturingDatabaseSqlExecutor
         {
@@ -4068,7 +4068,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             TimeSpan.FromMilliseconds(20)));
         var service = new CopilotTcpPortInspectionService(new CopilotShellCommandService(runner, _ => executablePath));
         var tool = new CopilotInspectTcpPortTool(service);
-        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+        using var fakeChatClient = new FunctionCallingChatClient(
             "colorvision_inspect_tcp_port",
             new Dictionary<string, object?> { ["port"] = 6666 });
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
@@ -4086,16 +4086,38 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         }, events.Add, CancellationToken.None);
 
         Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
-        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
         Assert.Equal(1, runner.CallCount);
-        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
-            message.Text.Contains("successful structured inspection", StringComparison.Ordinal));
         var step = Assert.Single(result.StepRecords);
         Assert.Equal("InspectTcpPort", step.Execution.ToolName);
         Assert.Equal(CopilotToolApprovalMode.Never, step.Execution.ApprovalMode);
         Assert.True(step.Observation.Success);
         Assert.Contains("occupied: true", step.Observation.Content, StringComparison.Ordinal);
-        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_DoesNotForceStableDiagnosticToolAfterModelAnswers()
+    {
+        var tool = new CopilotInspectTcpPortTool();
+        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+            "colorvision_inspect_tcp_port",
+            new Dictionary<string, object?> { ["port"] = 6666 });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "解释一下 TCP 端口是什么",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Equal(1, fakeChatClient.StreamCallCount);
+        Assert.Empty(result.StepRecords);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 
@@ -4113,7 +4135,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             TimeSpan.FromMilliseconds(20)));
         var tool = new CopilotInspectTcpPortTool(
             new CopilotTcpPortInspectionService(new CopilotShellCommandService(runner, _ => executablePath)));
-        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
+        using var fakeChatClient = new FunctionCallingChatClient(
             "colorvision_inspect_tcp_port",
             new Dictionary<string, object?> { ["port"] = 6666 });
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
@@ -4138,13 +4160,12 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var step = Assert.Single(result.StepRecords);
         Assert.Equal("InspectTcpPort", step.Execution.ToolName);
         Assert.True(step.Observation.Success);
-        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
-            message.Text.Contains("current state of one TCP port", StringComparison.Ordinal));
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_RequiresApprovedShellObservationForExplicitCommand()
+    public async Task AgentFrameworkRuntime_ExecutesModelSelectedShellCallAfterApproval()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
         Directory.CreateDirectory(_tempRoot);
@@ -4153,7 +4174,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
             0, false, "LocalAddress LocalPort OwningProcess\r\n0.0.0.0 80 4321", string.Empty, TimeSpan.FromMilliseconds(20)));
         var tool = new CopilotShellCommandTool(new CopilotShellCommandService(runner, _ => executablePath));
-        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_run_shell_command", new Dictionary<string, object?>
         {
             ["command"] = "Get-NetTCPConnection -State Listen | Select-Object LocalAddress,LocalPort,OwningProcess",
             ["shell"] = "powershell",
@@ -4177,12 +4198,10 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("RunShellCommand", action.ToolName);
         Assert.Equal(0, runner.CallCount);
         Assert.Contains("Get-NetTCPConnection", action.Description, StringComparison.Ordinal);
-        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
-            message.Text.Contains("actual machine inspection", StringComparison.Ordinal));
         Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.Equal(3, fakeChatClient.StreamCallCount);
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
         Assert.Equal(1, runner.CallCount);
         Assert.NotNull(runner.LastCommand);
         Assert.Equal(CopilotShellKind.PowerShell, runner.LastCommand!.Shell);
@@ -4192,7 +4211,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
         Assert.True(step.Observation.Success);
         Assert.Contains("LocalPort", step.Observation.Content, StringComparison.Ordinal);
-        Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerReset);
+        Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.AnswerReset);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 

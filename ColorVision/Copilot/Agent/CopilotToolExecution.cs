@@ -113,8 +113,8 @@ namespace ColorVision.Copilot
 
             try
             {
-                if (!invocation.Tool.CanHandle(invocation.AgentRequest))
-                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny("The current request no longer authorizes this write-capable tool."));
+                if (!CopilotToolRegistry.IsAvailableForAgent(invocation.Tool, invocation.AgentRequest))
+                    return Task.FromResult(CopilotToolExecutionHookDecision.Deny("The tool is not available in the current Agent runtime."));
             }
             catch (Exception ex)
             {

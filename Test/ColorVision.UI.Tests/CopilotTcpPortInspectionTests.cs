@@ -105,41 +105,46 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
     }
 
     [Fact]
-    public void RegistrySeparatesActualInspectionFromCommandExplanationAndMultiplePorts()
+    public void RegistryKeepsStructuredPortAndGeneralShellToolsAvailableForAgentSelection()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
-        Assert.Contains(registry.FindTools(Request("我想要知道6666端口有没有被占用", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.Contains(registry.FindTools(Request("检查端口 6666 是否占用", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.Contains(registry.FindTools(Request("check whether port 6666 is in use", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.DoesNotContain(registry.FindTools(Request("如何检查6666端口", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.DoesNotContain(registry.FindTools(Request("检查6666端口和7777端口", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.DoesNotContain(registry.FindTools(Request("检查端口6666和7777", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.DoesNotContain(registry.FindTools(Request("用 CMD 检查 6666 端口", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
-        Assert.Contains(registry.FindTools(Request("用 CMD 检查 6666 端口", hasHistory: true)), tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(registry.FindTools(Request("解释一下TCP端口", hasHistory: true)), tool => tool.Name == "InspectTcpPort");
+        foreach (var prompt in new[]
+        {
+            "我想要知道6666端口有没有被占用",
+            "检查6666端口和7777端口",
+            "用 CMD 检查 6666 端口",
+            "解释一下TCP端口",
+        })
+        {
+            var tools = registry.FindTools(Request(prompt, hasHistory: true));
+            Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
+            Assert.Contains(tools, tool => tool.Name == "RunShellCommand");
+        }
     }
 
     [Fact]
-    public void RegistryRetainsSpecializedInspectionForFollowUpWithoutRetainingGeneralShell()
+    public void RegistryPublishesDistinctPortAndShellSafetyContracts()
     {
         var registry = CopilotToolRegistry.CreateDefault();
         var request = Request("我想要知道6666端口有没有被占用", hasHistory: true);
         var tools = registry.FindTools(request);
         var inspection = Assert.Single(tools, tool => tool.Name == "InspectTcpPort");
+        var shell = Assert.Single(tools, tool => tool.Name == "RunShellCommand");
 
         Assert.Equal(CopilotToolAccess.ReadOnly, inspection.Capability.Access);
         Assert.Equal(CopilotToolApprovalMode.Never, inspection.Capability.ApprovalMode);
-        Assert.DoesNotContain(tools, tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(registry.FindTools(Request("我想要知道6666端口有没有被占用")), tool => tool.Name == "RunShellCommand");
+        Assert.Equal(CopilotToolAccess.Write, shell.Capability.Access);
+        Assert.Equal(CopilotToolApprovalMode.Always, shell.Capability.ApprovalMode);
         Assert.DoesNotContain(registry.FindTools(Request("检查6666端口", mode: CopilotAgentMode.Chat)), tool => tool.Name == "InspectTcpPort");
+        Assert.DoesNotContain(registry.FindTools(Request("检查6666端口", mode: CopilotAgentMode.Chat)), tool => tool.Name == "RunShellCommand");
     }
 
     [Theory]
     [InlineData("现在呢")]
     [InlineData("再检查一遍")]
     [InlineData("check again")]
-    public void RegistryInheritsSinglePortIntentForDiagnosticRefreshFollowUp(string followUp)
+    public void RegistryKeepsCoreDiagnosticSurfaceStableForFollowUp(string followUp)
     {
         var request = new CopilotAgentRequest
         {
@@ -156,7 +161,9 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
         var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
 
         Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
-        Assert.DoesNotContain(tools, tool => tool.Name is "RunShellCommand" or "QueryDatabaseSql" or "GetRecentLog");
+        Assert.Contains(tools, tool => tool.Name == "RunShellCommand");
+        Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.Contains(tools, tool => tool.Name == "GetRecentLog");
     }
 
     public void Dispose()

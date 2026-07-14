@@ -189,7 +189,7 @@ public sealed class CopilotToolExecutorTests : IDisposable
 
         Assert.Equal(0, tool.ExecutionCount);
         Assert.Equal(CopilotToolExecutionState.Denied, outcome.Execution.State);
-        Assert.Contains("no longer authorizes", outcome.Result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not available", outcome.Result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

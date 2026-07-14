@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotInspectTcpPortTool : ICopilotTool
+    public sealed class CopilotInspectTcpPortTool : ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -48,7 +48,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => Schema;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsTcpPortInspection(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,

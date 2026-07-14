@@ -173,21 +173,21 @@ public sealed class CopilotDatabaseSqlTests
     }
 
     [Fact]
-    public void ToolIntentSeparatesQueriesChangesAndConceptualQuestions()
+    public void AgentReceivesStableDatabaseSchemasAndExecutionKeepsThemSeparated()
     {
         var registry = new CopilotToolRegistry([
             new CopilotQueryDatabaseSqlTool(new CopilotDatabaseSqlService(new FakeExecutor())),
             new CopilotExecuteDatabaseSqlTool(new CopilotDatabaseSqlService(new FakeExecutor())),
         ]);
 
-        Assert.Contains(registry.FindTools(Request("查询数据库，执行 SELECT COUNT(*) FROM jobs")), tool => tool.Name == "QueryDatabaseSql");
-        Assert.Contains(registry.FindTools(Request("数据库里现在数据有多少")), tool => tool.Name == "QueryDatabaseSql");
-        Assert.DoesNotContain(registry.FindTools(Request("解释一下畸变校正")), tool => tool.Name == "QueryDatabaseSql");
-        Assert.DoesNotContain(registry.FindTools(Request("执行 SQL：SELECT COUNT(*) FROM jobs")), tool => tool.Name == "ExecuteDatabaseSql");
-        Assert.Contains(registry.FindTools(Request("清理数据库，DELETE FROM jobs WHERE id < 10")), tool => tool.Name == "ExecuteDatabaseSql");
-        Assert.Contains(registry.FindTools(Request("WITH old AS (SELECT id FROM jobs) DELETE FROM jobs WHERE id IN (SELECT id FROM old)")), tool => tool.Name == "ExecuteDatabaseSql");
-        Assert.DoesNotContain(registry.FindTools(Request("SQL 是什么，如何写 SQL")), tool => tool.Name == "QueryDatabaseSql");
-        Assert.DoesNotContain(registry.FindTools(Request("SQL 是什么，如何写 SQL")), tool => tool.Name == "ExecuteDatabaseSql");
+        foreach (var prompt in new[] { "数据库里现在数据有多少", "清理数据库", "解释一下畸变校正", "SQL 是什么" })
+        {
+            var tools = registry.FindTools(Request(prompt));
+            Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
+            Assert.Contains(tools, tool => tool.Name == "ExecuteDatabaseSql");
+        }
+
+        Assert.DoesNotContain(registry.FindTools(new CopilotAgentRequest { UserText = "查询数据库", Mode = CopilotAgentMode.Chat }), tool => tool.Name is "QueryDatabaseSql" or "ExecuteDatabaseSql");
     }
 
     private static CopilotAgentToolInput Input(string sql, params (string Name, object Value)[] additional)

@@ -1168,6 +1168,7 @@ namespace ColorVision.Copilot
         {
             var builder = new StringBuilder();
             builder.AppendLine("You are the ColorVision Agent runtime. Complete the user's request by reasoning, calling the request-scoped tools when useful, observing their results, and continuing until you can give a supported final answer.");
+            builder.AppendLine("The runtime-available tool list is a capability catalog, not a routing decision or an instruction to call every tool. Select tools from their names, descriptions, and JSON schemas, and issue structured function calls; never infer tool availability from keywords in the user's wording.");
             builder.AppendLine("Tools are optional. Answer ordinary conceptual or conversational questions directly from stable general knowledge; do not search merely because a search function is available.");
             builder.AppendLine("Call a tool only when the user explicitly asks to inspect, search, fetch, diagnose, or change something, or when current, local, attached, or externally verifiable evidence is necessary for a reliable answer.");
             builder.AppendLine("Never claim a tool succeeded unless its returned result says success. If a tool fails, try another source only when the requested outcome still requires that evidence; otherwise answer from reliable context without exposing speculative search failures as user-facing content.");
@@ -1204,22 +1205,22 @@ namespace ColorVision.Copilot
             if (tools.Any(tool => string.Equals(tool.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RunWorkspaceValidation is the dedicated build/test surface. Prefer it over the general shell for workspace validation because it accepts only approved dotnet build/test tasks for workspace solution or project files, always runs after the relevant write has completed, never restores packages, and treats a nonzero exit as a completed validation outcome to analyze rather than a reason to repeat the same call.");
             if (tools.Any(tool => string.Equals(tool.Name, "QueryFlowExecutionStats", StringComparison.OrdinalIgnoreCase)))
-                builder.AppendLine("QueryFlowExecutionStats is the preferred semantic shortcut for flow counts and rates. Use its fixed local-calendar periods and structured aggregate result; never infer a count without its observation.");
+                builder.AppendLine("QueryFlowExecutionStats is the preferred semantic shortcut only for actual ColorVision flow counts and rates. Use its fixed local-calendar periods and structured aggregate result; never use it for operating-system or machine inspection, and never infer a count without its observation.");
             if (tools.Any(tool => string.Equals(tool.Name, "QueryDatabaseSql", StringComparison.OrdinalIgnoreCase)))
-                builder.AppendLine("QueryDatabaseSql runs one bounded read-only statement on the configured ColorVision MySQL database. Use it for explicit database queries, inspect the returned columns and rows, and never invent database state. It does not accept writes or multiple statements.");
+                builder.AppendLine("QueryDatabaseSql runs one bounded read-only statement on the configured ColorVision MySQL database. Use it only for actual ColorVision database facts or an explicitly requested SQL query; never use it for Windows version, ports, processes, services, or application logs. Inspect the returned columns and rows, and never invent database state. It does not accept writes or multiple statements.");
             if (tools.Any(tool => string.Equals(tool.Name, "ExecuteDatabaseSql", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("ExecuteDatabaseSql performs one data or schema change only after native user approval. Version-managed service setting tables are always read-only and cannot be changed by this tool. DELETE, TRUNCATE, DROP, and unbounded UPDATE/DELETE are permitted only through the approval path for other tables. Never split a requested change across repeated calls to bypass approval, and never claim it ran before a successful observation.");
             if (tools.Any(tool => string.Equals(tool.Name, "InspectTcpPort", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("InspectTcpPort is the preferred tool for a request about one specific TCP port on this Windows machine. Pass only the port number. It is a fixed read-only diagnostic that returns occupied state, bounded endpoints, connection state, owning PID, and process name without accepting arbitrary command text or requiring approval. Never use RunShellCommand instead when this specialized tool can answer the request.");
             if (tools.Any(tool => string.Equals(tool.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase)))
-                builder.AppendLine("RunShellCommand is the general non-interactive Windows command surface for PowerShell and CMD. Use PowerShell by default for Windows inspection and automation; use CMD for explicit CMD or batch syntax. It always requires native approval, returns real exit code/stdout/stderr, and must be called for explicit requests to inspect this machine or run a command. Never claim execution from a command suggestion alone.");
+                builder.AppendLine("RunShellCommand is the general non-interactive Windows command surface for PowerShell and CMD. Use PowerShell by default for Windows operating-system, process, port, service, and developer inspection; use CMD for explicit CMD or batch syntax. Put the complete command in the structured command argument instead of merely printing a command in prose. It always requires native approval and returns the real exit code, stdout, and stderr. Never claim execution from a command suggestion alone.");
             builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
             builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
 
             if (tools.Count > 0)
             {
-                builder.AppendLine("Available request-scoped functions:");
+                builder.AppendLine("Available runtime functions (the model chooses zero or more as needed):");
                 foreach (var tool in tools)
                 {
                     var capability = tool.Capability;
@@ -1341,8 +1342,10 @@ namespace ColorVision.Copilot
             {
                 if (tool == null || string.IsNullOrWhiteSpace(tool.Name))
                     continue;
-                var directlyAvailable = tool.CanHandle(request);
-                var retainedForFollowUp = !directlyAvailable && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool);
+                var directlyAvailable = CopilotToolRegistry.IsAvailableForAgent(tool, request);
+                var retainedForFollowUp = tool is not ICopilotAgentDrivenTool
+                    && !directlyAvailable
+                    && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool);
                 if (!directlyAvailable && !retainedForFollowUp)
                     continue;
                 if (!names.Add(tool.Name))

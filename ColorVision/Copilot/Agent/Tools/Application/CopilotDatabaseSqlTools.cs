@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotQueryDatabaseSqlTool : ICopilotTool
+    public sealed class CopilotQueryDatabaseSqlTool : ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -44,7 +44,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => Schema;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
@@ -53,7 +55,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotExecuteDatabaseSqlTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotExecuteDatabaseSqlTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -90,7 +92,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => Schema;
 
-        public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {

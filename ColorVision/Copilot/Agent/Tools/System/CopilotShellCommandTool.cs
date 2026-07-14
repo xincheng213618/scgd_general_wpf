@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotShellCommandTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotShellCommandTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -45,9 +45,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema => Schema;
 
-        public bool CanHandle(CopilotAgentRequest request) => request.Mode != CopilotAgentMode.Chat
-            && !CopilotToolIntentPolicy.NeedsTcpPortInspection(request)
-            && CopilotToolIntentPolicy.NeedsShellCommand(request);
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
+
+        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
 
         public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => "system:shell";
 

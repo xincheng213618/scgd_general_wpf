@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
 using System;
+using System.Linq;
 
 namespace ColorVision.UI.Tests;
 
@@ -38,37 +39,41 @@ public sealed class CopilotToolIntentPolicyTests
     }
 
     [Fact]
-    public void AutoMode_SystemInspectionDoesNotExposeDatabaseOrLogs()
+    public void AutoMode_StableCoreToolsDoNotChangeWithPromptWording()
     {
-        var request = new CopilotAgentRequest
+        var registry = CopilotToolRegistry.CreateDefault();
+        var prompts = new[]
         {
-            UserText = "检查当前系统的版本",
-            Mode = CopilotAgentMode.Auto,
-            History = [new CopilotRequestMessage("assistant", "previous answer")],
+            "检查当前系统的版本",
+            "数据库里现在有多少数据",
+            "查看最近的应用错误日志",
+            "解释一下畸变校正",
         };
-
-        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
-
-        Assert.Contains(tools, tool => tool.Name == "RunShellCommand");
-        Assert.DoesNotContain(tools, tool => tool.Name == "QueryDatabaseSql");
-        Assert.DoesNotContain(tools, tool => tool.Name == "GetRecentLog");
-    }
-
-    [Theory]
-    [InlineData("数据库里现在有多少数据", "QueryDatabaseSql")]
-    [InlineData("查看最近的应用错误日志", "GetRecentLog")]
-    public void AutoMode_ExplicitBusinessInspectionExposesOnlyMatchingReadTool(string prompt, string expectedTool)
-    {
-        var request = new CopilotAgentRequest
+        var expectedNames = new[]
         {
-            UserText = prompt,
-            Mode = CopilotAgentMode.Auto,
+            "GetRecentLog",
+            "QueryFlowExecutionStats",
+            "QueryDatabaseSql",
+            "ExecuteDatabaseSql",
+            "InspectTcpPort",
+            "RunShellCommand",
         };
+        string[]? firstCoreNames = null;
 
-        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
+        foreach (var prompt in prompts)
+        {
+            var tools = registry.FindTools(new CopilotAgentRequest
+            {
+                UserText = prompt,
+                Mode = CopilotAgentMode.Auto,
+                History = [new CopilotRequestMessage("assistant", "previous answer")],
+            });
 
-        Assert.Contains(tools, tool => tool.Name == expectedTool);
-        Assert.DoesNotContain(tools, tool => tool.Name == (expectedTool == "QueryDatabaseSql" ? "GetRecentLog" : "QueryDatabaseSql"));
+            Assert.All(expectedNames, name => Assert.Contains(tools, tool => tool.Name == name));
+            var coreNames = tools.OfType<ICopilotAgentDrivenTool>().Select(tool => tool.Name).ToArray();
+            firstCoreNames ??= coreNames;
+            Assert.Equal(firstCoreNames, coreNames);
+        }
     }
 
     [Theory]
@@ -116,11 +121,12 @@ public sealed class CopilotToolIntentPolicyTests
 
         Assert.Contains(tools, tool => tool.Name == "FetchUrl");
         Assert.Contains(tools, tool => tool.Name == "WebSearch");
-        Assert.DoesNotContain(tools, tool => tool.Capability.Access == CopilotToolAccess.Write);
+        Assert.Contains(tools, tool => tool.Name == "RunShellCommand" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
+        Assert.Contains(tools, tool => tool.Name == "ExecuteDatabaseSql" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
     }
 
     [Fact]
-    public void AutoMode_ShortFollowUpRetainsOnlyPreviouslyUsedSafeReadTool()
+    public void AutoMode_ShortFollowUpKeepsStableCoreAgentTools()
     {
         var request = new CopilotAgentRequest
         {
@@ -133,8 +139,9 @@ public sealed class CopilotToolIntentPolicyTests
         var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
 
         Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
-        Assert.DoesNotContain(tools, tool => tool.Name is "GetRecentLog" or "InspectTcpPort" or "RunShellCommand");
-        Assert.DoesNotContain(tools, tool => tool.Capability.Access == CopilotToolAccess.Write);
+        Assert.Contains(tools, tool => tool.Name == "GetRecentLog");
+        Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
+        Assert.Contains(tools, tool => tool.Name == "RunShellCommand" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
     }
 
     [Theory]
