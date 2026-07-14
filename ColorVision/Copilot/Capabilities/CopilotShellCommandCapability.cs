@@ -18,7 +18,10 @@ namespace ColorVision.Copilot
         string ExecutablePath,
         IReadOnlyList<string> Arguments,
         string WorkingDirectory,
-        TimeSpan Timeout);
+        TimeSpan Timeout)
+    {
+        public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
+    }
 
     public sealed record CopilotShellProcessResult(
         int ExitCode,
@@ -334,6 +337,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
     {
         private const int MaxStreamCharacters = 65_536;
+        private static readonly TimeSpan ProcessTreeExitTimeout = TimeSpan.FromSeconds(5);
 
         public async Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)
         {
@@ -354,6 +358,18 @@ namespace ColorVision.Copilot
             foreach (var argument in command.Arguments)
                 startInfo.ArgumentList.Add(argument);
             startInfo.Environment["NO_COLOR"] = "1";
+            if (command.EnvironmentOverrides != null)
+            {
+                foreach (var pair in command.EnvironmentOverrides)
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Key))
+                        continue;
+                    if (pair.Value == null)
+                        startInfo.Environment.Remove(pair.Key);
+                    else
+                        startInfo.Environment[pair.Key] = pair.Value;
+                }
+            }
 
             using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
             var stopwatch = Stopwatch.StartNew();
@@ -374,21 +390,17 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 timedOut = true;
-                processJob?.TryTerminate();
-                TryKillProcessTree(process);
-                await process.WaitForExitAsync(CancellationToken.None);
+                await TerminateProcessTreeAsync(process, processJob);
             }
             catch (OperationCanceledException)
             {
-                processJob?.TryTerminate();
-                TryKillProcessTree(process);
-                await process.WaitForExitAsync(CancellationToken.None);
+                await TerminateProcessTreeAsync(process, processJob);
                 throw;
             }
 
             // A successful root-shell exit must not leave approved background descendants alive.
             // Terminating the job before draining output also closes inherited pipe handles.
-            processJob?.TryTerminate();
+            await TerminateProcessTreeAsync(process, processJob);
 
             var standardOutput = await stdoutTask;
             var standardError = await stderrTask;
@@ -402,6 +414,16 @@ namespace ColorVision.Copilot
             {
                 ProcessTreeContained = processJob != null,
             };
+        }
+
+        private static async Task TerminateProcessTreeAsync(Process process, CopilotWindowsProcessJob? processJob)
+        {
+            processJob?.TryTerminate();
+            TryKillProcessTree(process);
+            if (!process.HasExited)
+                await process.WaitForExitAsync(CancellationToken.None);
+            if (processJob != null)
+                await processJob.TryWaitForExitAsync(ProcessTreeExitTimeout);
         }
 
         private static Encoding GetStreamEncoding(CopilotShellKind shell)

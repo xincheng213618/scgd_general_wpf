@@ -180,6 +180,19 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void AgentActivity_ShowsGitWorkingTreeInspectionCompactly()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.UpsertAgentTrace(CreateCompletedTrace("git-1", "InspectGitWorkingTree", 42));
+
+        var trace = Assert.Single(message.VisibleAgentTraceEntries);
+
+        Assert.Equal("检查了工作树", trace.ActivityLabel);
+        Assert.Equal("Git 工作树检查完成。", trace.ActivityDescription);
+        Assert.Equal("42ms", trace.ActivityDurationLabel);
+    }
+
+    [Fact]
     public void AgentActivity_GroupsConsecutiveDatabaseQueries()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

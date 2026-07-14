@@ -85,6 +85,7 @@ namespace ColorVision.Copilot
                 new CopilotExecuteDatabaseSqlTool(),
                 new CopilotInspectWindowsSystemTool(),
                 new CopilotInspectTcpPortTool(),
+                new CopilotInspectGitWorkingTreeTool(),
                 new CopilotShellCommandTool(),
                 new CopilotPreviewWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotApplyWorkspacePatchEnvelopeTool(workspacePatchStore),

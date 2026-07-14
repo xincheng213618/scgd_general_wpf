@@ -3,6 +3,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -85,6 +86,50 @@ namespace ColorVision.Copilot
             }
         }
 
+        public async Task<bool> TryWaitForExitAsync(TimeSpan timeout)
+        {
+            var handle = _handle;
+            if (handle == null || handle.IsClosed || handle.IsInvalid)
+                return false;
+
+            var boundedTimeout = timeout < TimeSpan.Zero ? TimeSpan.Zero : timeout;
+            var stopwatch = Stopwatch.StartNew();
+            while (true)
+            {
+                if (!TryGetActiveProcessCount(handle, out var activeProcesses))
+                    return false;
+                if (activeProcesses == 0)
+                    return true;
+                if (stopwatch.Elapsed >= boundedTimeout)
+                    return false;
+                await Task.Delay(10).ConfigureAwait(false);
+            }
+        }
+
+        private static bool TryGetActiveProcessCount(SafeFileHandle handle, out uint activeProcesses)
+        {
+            activeProcesses = 0;
+            try
+            {
+                if (!QueryInformationJobObject(
+                    handle,
+                    JobObjectInformationClass.BasicAccountingInformation,
+                    out var information,
+                    (uint)Marshal.SizeOf<JobObjectBasicAccountingInformation>(),
+                    out _))
+                {
+                    return false;
+                }
+
+                activeProcesses = information.ActiveProcesses;
+                return true;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+        }
+
         public void Dispose()
         {
             _handle?.Dispose();
@@ -93,7 +138,21 @@ namespace ColorVision.Copilot
 
         private enum JobObjectInformationClass
         {
+            BasicAccountingInformation = 1,
             ExtendedLimitInformation = 9,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JobObjectBasicAccountingInformation
+        {
+            public long TotalUserTime;
+            public long TotalKernelTime;
+            public long ThisPeriodTotalUserTime;
+            public long ThisPeriodTotalKernelTime;
+            public uint TotalPageFaultCount;
+            public uint TotalProcesses;
+            public uint ActiveProcesses;
+            public uint TotalTerminatedProcesses;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -142,6 +201,15 @@ namespace ColorVision.Copilot
             JobObjectInformationClass informationClass,
             ref JobObjectExtendedLimitInformation information,
             uint informationLength);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool QueryInformationJobObject(
+            SafeFileHandle job,
+            JobObjectInformationClass informationClass,
+            out JobObjectBasicAccountingInformation information,
+            uint informationLength,
+            out uint returnLength);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

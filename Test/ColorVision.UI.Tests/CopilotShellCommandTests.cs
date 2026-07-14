@@ -151,6 +151,41 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task RealRunnerAppliesExplicitEnvironmentOverrides()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var inheritedName = "COLORVISION_COPILOT_INHERITED_" + Guid.NewGuid().ToString("N");
+        var explicitName = "COLORVISION_COPILOT_EXPLICIT_" + Guid.NewGuid().ToString("N");
+        Environment.SetEnvironmentVariable(inheritedName, "parent-value");
+        try
+        {
+            var commandText = $"Write-Output ('removed=' + [string]::IsNullOrEmpty($env:{inheritedName})); Write-Output ('set=' + $env:{explicitName})";
+            var result = await new CopilotShellProcessRunner().RunAsync(new CopilotShellProcessCommand(
+                CopilotShellKind.PowerShell,
+                Path.Combine(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+                ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", commandText],
+                _root,
+                TimeSpan.FromSeconds(10))
+            {
+                EnvironmentOverrides = new Dictionary<string, string?>
+                {
+                    [inheritedName] = null,
+                    [explicitName] = "isolated-value",
+                },
+            }, CancellationToken.None);
+
+            Assert.False(result.TimedOut);
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("removed=True", result.StandardOutput, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("set=isolated-value", result.StandardOutput, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(inheritedName, null);
+        }
+    }
+
+    [Fact]
     public async Task RealRunnerTerminatesBackgroundChildWhenRootShellCompletes()
     {
         var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
@@ -240,6 +275,19 @@ public sealed class CopilotShellCommandTests : IDisposable
 
     public void Dispose()
     {
+        for (var attempt = 0; attempt < 100 && Directory.Exists(_root); attempt++)
+        {
+            try
+            {
+                Directory.Delete(_root, recursive: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < 99 && ex is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(50);
+            }
+        }
+
         if (Directory.Exists(_root))
             Directory.Delete(_root, recursive: true);
     }

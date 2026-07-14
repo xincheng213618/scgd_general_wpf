@@ -4205,6 +4205,58 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_ApprovesStructuredGitInspectionBeforeExecution()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        Directory.CreateDirectory(_tempRoot);
+        Directory.CreateDirectory(Path.Combine(_tempRoot, ".git"));
+        var executablePath = Path.Combine(_tempRoot, "git.exe");
+        File.WriteAllBytes(executablePath, []);
+        var hash = new string('a', 40);
+        var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
+            0,
+            false,
+            $"# branch.oid {hash}\n# branch.head develop\n? new-file.txt\n",
+            string.Empty,
+            TimeSpan.FromMilliseconds(20)));
+        var tool = new CopilotInspectGitWorkingTreeTool(
+            new CopilotGitWorkingTreeInspectionService(runner, () => executablePath));
+        using var fakeChatClient = new FunctionCallingChatClient(
+            "colorvision_inspect_git_working_tree",
+            new Dictionary<string, object?>());
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "检查当前 Git 工作树是否干净",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_tempRoot],
+        }, _ => { }, CancellationToken.None);
+        var action = await WaitForPendingActionAsync();
+
+        Assert.Equal("InspectGitWorkingTree", action.ToolName);
+        Assert.Equal(0, runner.CallCount);
+        Assert.Contains("external filters", action.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, runner.CallCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectGitWorkingTree", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Always, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("\"branch\":\"develop\"", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Contains("\"untracked_count\":1", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DoesNotForceStableDiagnosticToolAfterModelAnswers()
     {
         var tool = new CopilotInspectTcpPortTool();
