@@ -187,6 +187,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasExecutionTrace));
                     OnPropertyChanged(nameof(HasExecutionFailures));
                     OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(LegacyThinkingContent));
@@ -357,6 +358,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(IsThinkingInProgress));
                     OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                     OnPropertyChanged(nameof(ExecutionHeader));
@@ -403,6 +405,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(HasReasoning));
                     OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingContent));
                     OnPropertyChanged(nameof(HasThinkingContent));
                     OnPropertyChanged(nameof(LegacyThinkingContent));
@@ -439,6 +442,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(IsThinkingInProgress));
                     OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
                     OnPropertyChanged(nameof(ThinkingHeader));
                     OnPropertyChanged(nameof(ThinkingSummaryToolTip));
                     OnPropertyChanged(nameof(ReasoningHeader));
@@ -487,6 +491,9 @@ namespace ColorVision.Copilot
         public bool HasThinkingTrace => HasExecutionTrace || HasReasoning || IsThinkingInProgress || ThinkingStartedAt != default;
 
         [JsonIgnore]
+        public bool HasStandaloneThinkingTrace => HasThinkingTrace && !HasAgentTraceEntries;
+
+        [JsonIgnore]
         public bool HasThinkingContent => !string.IsNullOrWhiteSpace(ThinkingContent);
 
         [JsonIgnore]
@@ -496,6 +503,9 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotAgentTraceEntry> VisibleAgentTraceEntries => AgentTraceEntries
             .Where(entry => entry != null && entry.IsVisibleInActivity)
             .ToArray();
+
+        [JsonIgnore]
+        public IReadOnlyList<CopilotAgentTraceGroup> VisibleAgentTraceGroups => CopilotAgentTraceGroup.Create(VisibleAgentTraceEntries);
 
         [JsonIgnore]
         public string LegacyThinkingContent => HasAgentTraceEntries ? string.Empty : BuildThinkingContent(ExecutionContent, ReasoningContent);
@@ -520,7 +530,7 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string ThinkingContent => HasAgentTraceEntries
-            ? string.Join(Environment.NewLine, VisibleAgentTraceEntries.Select(entry => entry.ActivityLabel))
+            ? string.Join(Environment.NewLine, VisibleAgentTraceGroups.Select(group => group.ActivityLabel))
             : LegacyThinkingContent;
 
         [JsonIgnore]
@@ -537,6 +547,7 @@ namespace ColorVision.Copilot
             IsThinkingExpanded = true;
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -555,6 +566,7 @@ namespace ColorVision.Copilot
             IsThinkingExpanded = false;
             OnPropertyChanged(nameof(IsThinkingInProgress));
             OnPropertyChanged(nameof(HasThinkingTrace));
+            OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(ThinkingHeader));
             OnPropertyChanged(nameof(ThinkingSummaryToolTip));
@@ -728,6 +740,8 @@ namespace ColorVision.Copilot
             ExecutionContent = string.Join(Environment.NewLine + Environment.NewLine, blocks);
             OnPropertyChanged(nameof(HasAgentTraceEntries));
             OnPropertyChanged(nameof(VisibleAgentTraceEntries));
+            OnPropertyChanged(nameof(VisibleAgentTraceGroups));
+            OnPropertyChanged(nameof(HasStandaloneThinkingTrace));
             OnPropertyChanged(nameof(ThinkingContent));
             OnPropertyChanged(nameof(HasThinkingContent));
             OnPropertyChanged(nameof(LegacyThinkingContent));

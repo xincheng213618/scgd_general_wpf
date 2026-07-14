@@ -158,4 +158,80 @@ public sealed class CopilotUiTextTests
         Assert.Equal("搜索了文件", message.ThinkingContent);
         Assert.Equal("594ms", trace.ActivityDurationLabel);
     }
+
+    [Fact]
+    public void AgentActivity_GroupsConsecutiveDatabaseQueries()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        for (var index = 0; index < 4; index++)
+        {
+            message.UpsertAgentTrace(CreateCompletedTrace($"db-{index}", "QueryDatabaseSql", 20 + index));
+        }
+
+        var group = Assert.Single(message.VisibleAgentTraceGroups);
+
+        Assert.True(group.IsMultiple);
+        Assert.Equal(4, group.Entries.Count);
+        Assert.Equal("执行了多次数据库查询", group.ActivityLabel);
+        Assert.Equal("✓", group.ActivityGlyph);
+        Assert.Equal(string.Empty, group.ActivityDurationLabel);
+        Assert.Equal(group.ActivityLabel, message.ThinkingContent);
+        Assert.False(message.HasStandaloneThinkingTrace);
+    }
+
+    [Fact]
+    public void AgentActivity_GroupsOnlyAdjacentToolsAndPreservesOrder()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.UpsertAgentTrace(CreateCompletedTrace("db-1", "QueryDatabaseSql", 20));
+        message.UpsertAgentTrace(CreateCompletedTrace("shell-1", "RunShellCommand", 30));
+        message.UpsertAgentTrace(CreateCompletedTrace("port-1", "InspectTcpPort", 40));
+        message.UpsertAgentTrace(CreateCompletedTrace("db-2", "QueryDatabaseSql", 50));
+
+        var groups = message.VisibleAgentTraceGroups;
+
+        Assert.Equal(3, groups.Count);
+        Assert.Equal("查询了数据库", groups[0].ActivityLabel);
+        Assert.Equal("运行了多个命令", groups[1].ActivityLabel);
+        Assert.Equal(2, groups[1].Entries.Count);
+        Assert.Equal("查询了数据库", groups[2].ActivityLabel);
+    }
+
+    [Fact]
+    public void AgentActivity_GroupReportsPartialFailureWithoutLosingEntryDetails()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.UpsertAgentTrace(CreateCompletedTrace("shell-1", "RunShellCommand", 30));
+        message.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "shell-2",
+            Round = 2,
+            ToolName = "RunShellCommand",
+            State = CopilotToolExecutionState.Failed,
+            FailureKind = CopilotToolFailureKind.Validation,
+            DurationMs = 15,
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+            ErrorMessage = "Invalid command.",
+        });
+
+        var group = Assert.Single(message.VisibleAgentTraceGroups);
+
+        Assert.True(group.IsFailure);
+        Assert.Equal("运行了多个命令 · 部分失败", group.ActivityLabel);
+        Assert.Equal("!", group.ActivityGlyph);
+        Assert.Contains("Invalid command", group.Entries[1].DiagnosticDetails, StringComparison.Ordinal);
+    }
+
+    private static CopilotAgentTraceEntry CreateCompletedTrace(string callId, string toolName, long durationMs)
+    {
+        return new CopilotAgentTraceEntry
+        {
+            CallId = callId,
+            Round = 1,
+            ToolName = toolName,
+            State = CopilotToolExecutionState.Completed,
+            DurationMs = durationMs,
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+        };
+    }
 }
