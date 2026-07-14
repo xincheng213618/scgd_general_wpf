@@ -3787,6 +3787,65 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesNativeApprovalForWorkspaceValidation()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var root = Path.Combine(Path.GetTempPath(), "ColorVision-Agent-Validation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var target = Path.Combine(root, "Project.csproj");
+            var dotnetPath = Path.Combine(root, "trusted-dotnet.exe");
+            await File.WriteAllTextAsync(target, "<Project />");
+            await File.WriteAllBytesAsync(dotnetPath, []);
+            var runner = new CapturingWorkspaceValidationRunner(new CopilotWorkspaceValidationProcessResult(
+                0, false, "Build succeeded.", string.Empty, TimeSpan.FromMilliseconds(50)));
+            var tool = new CopilotWorkspaceValidationTool(new CopilotWorkspaceValidationService(runner, () => dotnetPath));
+            using var fakeChatClient = new FunctionCallingChatClient("colorvision_run_workspace_validation", new Dictionary<string, object?>
+            {
+                ["task"] = "build",
+                ["path"] = target,
+                ["configuration"] = "Debug",
+                ["timeoutSeconds"] = 30,
+            });
+            var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+                new CopilotToolRegistry([tool]),
+                new CopilotAgentContextBuilder(),
+                _ => fakeChatClient);
+            var request = new CopilotAgentRequest
+            {
+                UserText = "请构建项目",
+                Profile = CreateProfile(),
+                Mode = CopilotAgentMode.Auto,
+                WritableLocalRootPaths = [root],
+            };
+
+            var runTask = runtime.RunAsync(request, _ => { }, CancellationToken.None);
+            var action = await WaitForPendingActionAsync();
+
+            Assert.Equal("RunWorkspaceValidation", action.ToolName);
+            Assert.Contains(target, action.Description, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(0, runner.CallCount);
+            Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+            var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(1, runner.CallCount);
+            Assert.NotNull(runner.LastCommand);
+            var step = Assert.Single(result.StepRecords);
+            Assert.Equal("RunWorkspaceValidation", step.Execution.ToolName);
+            Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+            Assert.Equal(action.ActionId, step.Execution.ApprovalActionId);
+            Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        }
+        finally
+        {
+            CopilotMcpConfirmationStore.Instance.ClearForTests();
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
     {
         var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());
@@ -4277,6 +4336,25 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             RunCount++;
             onEvent(CopilotAgentEvent.Status(runtimeName));
             return Task.FromResult(new CopilotAgentRunResult());
+        }
+    }
+
+    private sealed class CapturingWorkspaceValidationRunner(CopilotWorkspaceValidationProcessResult result) : ICopilotWorkspaceValidationRunner
+    {
+        private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
+
+        public CopilotWorkspaceValidationCommand? LastCommand { get; private set; }
+
+        public Task<CopilotWorkspaceValidationProcessResult> RunAsync(
+            CopilotWorkspaceValidationCommand command,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            LastCommand = command;
+            Interlocked.Increment(ref _callCount);
+            return Task.FromResult(result);
         }
     }
 
