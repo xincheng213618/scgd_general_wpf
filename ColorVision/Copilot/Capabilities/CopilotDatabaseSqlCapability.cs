@@ -214,6 +214,17 @@ namespace ColorVision.Copilot
             return Convert.ToHexString(hash)[..16].ToLowerInvariant();
         }
 
+        public static bool TryFindReferencedTable(string sql, IEnumerable<string> tableNames, out string tableName)
+        {
+            tableName = string.Empty;
+            if (!TryTokenize(sql, out var tokens, out _))
+                return false;
+
+            var names = tableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            tableName = tokens.Select(token => token.Text).FirstOrDefault(names.Contains) ?? string.Empty;
+            return tableName.Length > 0;
+        }
+
         private static bool TryTokenize(string sql, out List<SqlToken> tokens, out string error)
         {
             tokens = new List<SqlToken>();
@@ -503,6 +514,8 @@ namespace ColorVision.Copilot
                 return Failure(toolName, CopilotToolFailureKind.Validation, "QueryDatabaseSql accepts only read-only SQL.", "Use ExecuteDatabaseSql for data changes and schema changes.");
             if (!requireQuery && analysis!.Kind == CopilotDatabaseSqlStatementKind.Query)
                 return Failure(toolName, CopilotToolFailureKind.Validation, "ExecuteDatabaseSql accepts only SQL that changes data or schema.", "Use QueryDatabaseSql for read-only SQL.");
+            if (!requireQuery && CopilotDatabaseSqlPolicy.TryFindReferencedTable(sql, MySqlLocalServicesManager.ServiceSettingTableNames, out var protectedTable))
+                return Failure(toolName, CopilotToolFailureKind.Authorization, "ColorVision service setting tables are read-only to Copilot.", $"Table '{protectedTable}' is version-managed and can only be reset from the native release SQL.");
             return new CopilotToolResult { ToolName = toolName, Success = true };
         }
 

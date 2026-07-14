@@ -128,6 +128,36 @@ public sealed class CopilotDatabaseSqlTests
         Assert.Contains("affected_rows: 12", approved.Content, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("UPDATE t_scgd_mod_param_master SET is_enable = 0 WHERE id = 1")]
+    [InlineData("DELETE FROM `t_scgd_buz_product_detail` WHERE id = 1")]
+    [InlineData("TRUNCATE TABLE t_scgd_algorithm_poi_template_detail")]
+    [InlineData("DROP TABLE color_vision.t_scgd_mod_param_detail")]
+    public async Task MutationToolRejectsVersionManagedServiceSettingTables(string sql)
+    {
+        var executor = new FakeExecutor();
+        var service = new CopilotDatabaseSqlService(executor);
+
+        var result = await service.ExecuteApprovedAsync(Input(sql), CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+        Assert.Contains("version-managed", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, executor.ExecuteCount);
+    }
+
+    [Fact]
+    public async Task QueryToolCanReadVersionManagedServiceSettingTables()
+    {
+        var executor = new FakeExecutor();
+        var service = new CopilotDatabaseSqlService(executor);
+
+        var result = await service.QueryAsync(Input("SELECT id, name FROM t_scgd_mod_param_master LIMIT 10"), CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, executor.QueryCount);
+    }
+
     [Fact]
     public void ApprovalPresentationIncludesFingerprintWarningAndRedactedSql()
     {

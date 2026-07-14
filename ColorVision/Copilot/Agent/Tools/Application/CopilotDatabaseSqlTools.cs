@@ -81,7 +81,7 @@ namespace ColorVision.Copilot
 
         public string Name => "ExecuteDatabaseSql";
 
-        public string Description => "Execute one approved MySQL data-change or schema-change statement against the configured ColorVision database. Supports INSERT, UPDATE, DELETE, REPLACE, CREATE, ALTER, DROP, TRUNCATE, and RENAME; every invocation requires native approval.";
+        public string Description => "Execute one approved MySQL data-change or schema-change statement against the configured ColorVision database. Supports INSERT, UPDATE, DELETE, REPLACE, CREATE, ALTER, DROP, TRUNCATE, and RENAME; every invocation requires native approval, and version-managed service setting tables are always read-only.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,

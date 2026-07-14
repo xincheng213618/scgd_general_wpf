@@ -160,18 +160,24 @@ namespace ColorVision.Database
         public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
         public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
         public ObservableCollection<MySqlCleanupTableInfo> CleanupTables { get; } = new ObservableCollection<MySqlCleanupTableInfo>();
-        public static IReadOnlyList<string> MigrationBackupTableNames { get; } =
+        public static IReadOnlyList<string> ServiceSettingTableNames { get; } =
         [
             "t_scgd_algorithm_poi_template_detail",
             "t_scgd_algorithm_poi_template_master",
             "t_scgd_buz_product_detail",
             "t_scgd_buz_product_master",
-            "t_scgd_camera_license",
             "t_scgd_mod_param_detail",
-            "t_scgd_mod_param_master",
+            "t_scgd_mod_param_master"
+        ];
+
+        public static IReadOnlyList<string> ServiceConfigurationTableNames { get; } =
+        [
+            "t_scgd_camera_license",
             "t_scgd_sys_resource",
             "t_scgd_sys_resource_group"
         ];
+
+        public static IReadOnlyList<string> MigrationBackupTableNames { get; } = ServiceConfigurationTableNames;
 
         private const string DictionaryMasterTableName = "t_scgd_sys_dictionary_mod_master";
         private const string DictionaryItemTableName = "t_scgd_sys_dictionary_mod_item";
