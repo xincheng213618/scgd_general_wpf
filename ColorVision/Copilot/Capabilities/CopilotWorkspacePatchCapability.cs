@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotWorkspacePatchStore
+    public sealed partial class CopilotWorkspacePatchStore
     {
         private const int MaxEntries = 32;
         private const int MaxFileBytes = 1_000_000;
@@ -196,7 +196,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
         {
-            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Replace, cancellationToken);
+            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Replace, changeSetId: null, cancellationToken);
         }
 
         public async Task<CopilotToolResult> ApplyCreateAsync(
@@ -204,7 +204,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
         {
-            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Create, cancellationToken);
+            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Create, changeSetId: null, cancellationToken);
         }
 
         public async Task<CopilotToolResult> RollbackAsync(
@@ -212,7 +212,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
         {
-            return await MutateAsync(request, input, rollback: true, expectedOperation: null, cancellationToken);
+            return await MutateAsync(request, input, rollback: true, expectedOperation: null, changeSetId: null, cancellationToken);
         }
 
         public string GetConcurrencyKey(CopilotAgentToolInput input, string fallbackToolName)
@@ -271,6 +271,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput input,
             bool rollback,
             WorkspacePatchOperation? expectedOperation,
+            string? changeSetId,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -300,6 +301,16 @@ namespace ColorVision.Copilot
                     return Failure(toolName, CopilotToolFailureKind.Conflict,
                         "The preview belongs to a different workspace operation.",
                         $"Expected {expectedOperation.Value}, but the preview describes {record.Operation}.");
+                }
+                if (!string.Equals(record.ChangeSetId, changeSetId ?? string.Empty, StringComparison.Ordinal))
+                {
+                    return Failure(toolName, CopilotToolFailureKind.Conflict,
+                        string.IsNullOrWhiteSpace(record.ChangeSetId)
+                            ? "The workspace preview is not part of the requested change set."
+                            : "The workspace preview is reserved by a multi-file change set.",
+                        string.IsNullOrWhiteSpace(record.ChangeSetId)
+                            ? "Use the original single-file apply or rollback tool for this preview."
+                            : $"Use the matching workspace change-set tool with {record.ChangeSetId}.");
                 }
                 var expectedState = rollback ? WorkspacePatchState.Applied : WorkspacePatchState.Previewed;
                 if (record.State != expectedState)
@@ -551,6 +562,7 @@ namespace ColorVision.Copilot
 
         private void RemoveExpiredEntries(DateTimeOffset now)
         {
+            RemoveExpiredChangeSets(now);
             foreach (var key in _records.Where(pair => pair.Value.ExpiresAtUtc <= now).Select(pair => pair.Key).ToArray())
                 _records.Remove(key);
         }
@@ -562,8 +574,12 @@ namespace ColorVision.Copilot
                 RemoveExpiredEntries(now);
                 if (_records.Count >= MaxEntries)
                 {
-                    var oldest = _records.Values.OrderBy(item => item.CreatedAtUtc).First();
-                    _records.Remove(oldest.PreviewId);
+                    var oldest = _records.Values
+                        .Where(item => string.IsNullOrWhiteSpace(item.ChangeSetId))
+                        .OrderBy(item => item.CreatedAtUtc)
+                        .FirstOrDefault();
+                    if (oldest != null)
+                        _records.Remove(oldest.PreviewId);
                 }
                 _records[record.PreviewId] = record;
             }
@@ -942,6 +958,7 @@ namespace ColorVision.Copilot
             public DateTimeOffset CreatedAtUtc { get; init; }
             public DateTimeOffset ExpiresAtUtc { get; init; }
             public string[] CreatedDirectories { get; set; } = Array.Empty<string>();
+            public string ChangeSetId { get; set; } = string.Empty;
             public WorkspacePatchState State { get; set; }
         }
 

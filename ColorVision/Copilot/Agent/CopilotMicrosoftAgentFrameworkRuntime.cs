@@ -1189,8 +1189,12 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine("For a new workspace text file, call PreviewCreateWorkspaceFile with its complete path and content, then call ApplyCreateWorkspaceFile with the returned previewId. Never use an existing-file patch as file creation, and never claim creation before native approval succeeds.");
             }
+            if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("For a task that changes two or more files, prepare every exact single-file patch or creation preview first, then call PreviewWorkspaceChangeSet with all previewIds and apply the returned changeSetId once through ApplyWorkspaceChangeSet. This binds the complete file list to one approval, revalidates every path and SHA-256 before the first write, and compensates earlier writes if a later operation fails. Do not apply child previews individually after they enter a change set.");
             if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RollbackWorkspacePatch may restore an applied preview only when the current user explicitly asks to undo it; it requires a fresh native approval and an unchanged applied-file hash.");
+            if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("RollbackWorkspaceChangeSet restores an entire applied multi-file change set from its exact changeSetId after one fresh approval and whole-set hash validation. Prefer it over rolling back child previews one by one.");
             if (tools.Any(tool => string.Equals(tool.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RunWorkspaceValidation is the dedicated build/test surface. Prefer it over the general shell for workspace validation because it accepts only approved dotnet build/test tasks for workspace solution or project files, always runs after the relevant write has completed, never restores packages, and treats a nonzero exit as a completed validation outcome to analyze rather than a reason to repeat the same call.");
             if (tools.Any(tool => string.Equals(tool.Name, "QueryFlowExecutionStats", StringComparison.OrdinalIgnoreCase)))
