@@ -346,7 +346,11 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var showCompactHistory = _isCompactSidebar && viewModel.IsConversationEmpty && viewModel.CanShowCompactHistory;
+            var showCompactHistory = CopilotResponsiveLayout.ShouldShowCompactHistory(
+                _isCompactSidebar,
+                _isConversationSidebarExpanded,
+                viewModel.IsConversationEmpty,
+                viewModel.CanShowCompactHistory);
             CompactHistoryPanel.Visibility = showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
             EmptyStateTextBlock.Visibility = viewModel.IsConversationEmpty && !showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
         }

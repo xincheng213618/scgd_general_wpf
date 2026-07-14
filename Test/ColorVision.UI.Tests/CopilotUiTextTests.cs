@@ -6,6 +6,26 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotUiTextTests
 {
+    [Theory]
+    [InlineData(true, false, true, true, true)]
+    [InlineData(true, true, true, true, false)]
+    [InlineData(false, false, true, true, false)]
+    [InlineData(true, false, false, true, false)]
+    [InlineData(true, false, true, false, false)]
+    public void CompactHistory_IsMutuallyExclusiveWithExpandedConversationSidebar(
+        bool isCompactSidebar,
+        bool isConversationSidebarExpanded,
+        bool isConversationEmpty,
+        bool canShowCompactHistory,
+        bool expected)
+    {
+        Assert.Equal(expected, CopilotResponsiveLayout.ShouldShowCompactHistory(
+            isCompactSidebar,
+            isConversationSidebarExpanded,
+            isConversationEmpty,
+            canShowCompactHistory));
+    }
+
     [Fact]
     public void ChatMessage_UsesEnglishUiLabels()
     {
