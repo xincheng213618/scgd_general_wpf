@@ -3,6 +3,7 @@
 using Anthropic;
 using Anthropic.Core;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
@@ -225,6 +226,9 @@ namespace ColorVision.Copilot
             var frameworkTools = bridge.CreateFunctions();
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
+            var compactionStrategy = new ContextWindowCompactionStrategy(
+                tokenBudget.ContextWindowTokens,
+                request.Profile.MaxTokens);
             var autonomousTaskPasses = runBudget.MaxAgentPasses;
             using var agentSkills = CopilotAgentSkills.Create(request);
             emit(CopilotAgentEvent.RuntimeDiagnostic(
@@ -246,6 +250,18 @@ namespace ColorVision.Copilot
                 chatClient,
                 retry => emit(CopilotAgentEvent.RuntimeDiagnostic(FormatProviderRetryDiagnostic(retry))));
             using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(retryChatClient, bridge.RecordUnknownToolCall);
+            LiveCheckpointPublisher? liveCheckpointPublisher = null;
+            async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
+            {
+                if (liveCheckpointPublisher != null)
+                    await liveCheckpointPublisher.TryPublishAsync(checkpointAgent, checkpointSession, checkpointToken);
+            }
+            var checkpointingHistoryProvider = new CopilotCheckpointingChatHistoryProvider(
+                new InMemoryChatHistoryProviderOptions
+                {
+                    ChatReducer = compactionStrategy.AsChatReducer(),
+                },
+                OnHistoryStoredAsync);
             var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
@@ -257,6 +273,8 @@ namespace ColorVision.Copilot
                         : string.Empty),
                 MaxContextWindowTokens = tokenBudget.ContextWindowTokens,
                 MaxOutputTokens = request.Profile.MaxTokens,
+                CompactionStrategy = compactionStrategy,
+                ChatHistoryProvider = checkpointingHistoryProvider,
                 MaximumIterationsPerRequest = runBudget.MaxToolCalls + HarnessFunctionIterationOverhead,
                 DisableCompaction = false,
                 DisableFileMemory = true,
@@ -342,10 +360,24 @@ namespace ColorVision.Copilot
                 session = await agent.CreateSessionAsync(cancellationToken);
             }
             using var steeringRegistration = RegisterSteeringContext(messageInjector, session, taskEventJournalBuilder);
+            liveCheckpointPublisher = new LiveCheckpointPublisher(
+                request,
+                requestedCheckpoint,
+                capabilitySnapshot,
+                availableToolNames,
+                previousEvidenceArtifacts,
+                bridge,
+                todoProvider,
+                modeProvider,
+                taskEventJournalBuilder,
+                emit,
+                sessionResumed,
+                () => answerText.ToString());
 
             var recoveredTaskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
             taskEventJournalBuilder.RecordTaskLedger(recoveredTaskLedger, sessionResumed ? "recovered" : "initial");
-            emit(CopilotAgentEvent.CheckpointReady());
+            if (await liveCheckpointPublisher.TryPublishAsync(agent, session, cancellationToken, recoveredTaskLedger))
+                emit(CopilotAgentEvent.CheckpointReady());
             if (sessionResumed)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
@@ -1247,6 +1279,112 @@ namespace ColorVision.Copilot
                 merged.Add(tool);
             }
             return merged.ToArray();
+        }
+
+        private sealed class LiveCheckpointPublisher
+        {
+            private readonly CopilotAgentRequest _request;
+            private readonly CopilotAgentSessionCheckpoint? _requestedCheckpoint;
+            private readonly CopilotCapabilityCatalogSnapshot _capabilitySnapshot;
+            private readonly IReadOnlyList<string> _availableToolNames;
+            private readonly IReadOnlyList<CopilotAgentEvidenceArtifact> _previousEvidenceArtifacts;
+            private readonly HarnessToolBridge _bridge;
+            private readonly TodoProvider _todoProvider;
+            private readonly AgentModeProvider _modeProvider;
+            private readonly CopilotAgentTaskEventJournalBuilder _taskEventJournalBuilder;
+            private readonly Action<CopilotAgentEvent> _emit;
+            private readonly bool _sessionResumed;
+            private readonly Func<string> _answerText;
+            private int _publishing;
+
+            public LiveCheckpointPublisher(
+                CopilotAgentRequest request,
+                CopilotAgentSessionCheckpoint? requestedCheckpoint,
+                CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+                IReadOnlyList<string> availableToolNames,
+                IReadOnlyList<CopilotAgentEvidenceArtifact> previousEvidenceArtifacts,
+                HarnessToolBridge bridge,
+                TodoProvider todoProvider,
+                AgentModeProvider modeProvider,
+                CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
+                Action<CopilotAgentEvent> emit,
+                bool sessionResumed,
+                Func<string> answerText)
+            {
+                _request = request;
+                _requestedCheckpoint = requestedCheckpoint;
+                _capabilitySnapshot = capabilitySnapshot;
+                _availableToolNames = availableToolNames;
+                _previousEvidenceArtifacts = previousEvidenceArtifacts;
+                _bridge = bridge;
+                _todoProvider = todoProvider;
+                _modeProvider = modeProvider;
+                _taskEventJournalBuilder = taskEventJournalBuilder;
+                _emit = emit;
+                _sessionResumed = sessionResumed;
+                _answerText = answerText;
+            }
+
+            public async ValueTask<bool> TryPublishAsync(
+                AIAgent agent,
+                AgentSession session,
+                CancellationToken cancellationToken,
+                CopilotAgentTaskLedgerSnapshot? knownTaskLedger = null)
+            {
+                ArgumentNullException.ThrowIfNull(agent);
+                ArgumentNullException.ThrowIfNull(session);
+                if (Interlocked.CompareExchange(ref _publishing, 1, 0) != 0)
+                    return false;
+                try
+                {
+                    var taskLedger = knownTaskLedger
+                        ?? await CaptureTaskLedgerAsync(_todoProvider, _modeProvider, session, _sessionResumed, cancellationToken);
+                    if (knownTaskLedger == null)
+                        _taskEventJournalBuilder.RecordTaskLedger(taskLedger, "checkpoint");
+
+                    var evidenceArtifacts = CopilotAgentEvidenceArtifacts.Merge(
+                        _previousEvidenceArtifacts,
+                        _bridge.StepRecords,
+                        _capabilitySnapshot,
+                        DateTimeOffset.UtcNow);
+                    var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
+                    var conversationMemory = CopilotAgentConversationMemory.Merge(
+                        _requestedCheckpoint?.ConversationMemory,
+                        _request.History,
+                        _request.UserText,
+                        _answerText());
+                    var checkpoint = CopilotAgentSessionCheckpoint.Create(
+                        _request.Profile,
+                        serializedSession.GetRawText(),
+                        _capabilitySnapshot,
+                        evidenceArtifacts,
+                        _taskEventJournalBuilder.Snapshot(),
+                        _availableToolNames,
+                        conversationMemory);
+                    if (checkpoint == null)
+                    {
+                        _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
+                        return false;
+                    }
+
+                    _emit(CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
+                    return true;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"Incremental Agent checkpoint could not be saved ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+                    return false;
+                }
+                finally
+                {
+                    Volatile.Write(ref _publishing, 0);
+                }
+            }
         }
 
         private sealed class HarnessToolBridge

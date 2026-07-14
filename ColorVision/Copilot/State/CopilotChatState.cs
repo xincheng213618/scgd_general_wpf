@@ -38,6 +38,9 @@ namespace ColorVision.Copilot
 
             foreach (var conversation in Conversations)
             {
+                var interruptedAssistantMessage = conversation.Messages?
+                    .LastOrDefault(message => message?.IsUser == false && message.IsThinkingInProgress);
+                changed |= CopilotInterruptedAgentRunRecovery.Normalize(conversation, interruptedAssistantMessage);
                 changed |= conversation.EnsureValid();
 
                 if (string.IsNullOrWhiteSpace(conversation.ProfileId) || config.Profiles.All(profile => profile.Id != conversation.ProfileId))

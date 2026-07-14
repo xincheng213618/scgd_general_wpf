@@ -130,6 +130,56 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void InterruptedAgentRun_IsClosedAtLastSafeCheckpointAndOfferedForRecovery()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            taskEventJournal: journal.Snapshot());
+        Assert.NotNull(checkpoint);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+            AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items = [new CopilotAgentTaskItem { Id = 1, Title = "Continue safely", IsComplete = false }],
+            },
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(assistantMessage);
+        conversation.AgentSessionCheckpoint = checkpoint;
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+
+        Assert.True(state.EnsureInitialized(config));
+        Assert.Equal(CopilotAgentStopReason.Interrupted, assistantMessage.AgentStopReason);
+        Assert.Contains("最近的安全进度", assistantMessage.Content, StringComparison.Ordinal);
+        var stopped = Assert.Single(conversation.AgentSessionCheckpoint!.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.Equal(journal.RunId, stopped.RunId);
+        Assert.Equal(CopilotAgentStopReason.Interrupted.ToString(), stopped.State);
+        Assert.False(state.EnsureInitialized(config));
+
+        var recovery = CopilotAgentRecoveryPolicy.Evaluate(
+            assistantMessage,
+            conversation.AgentSessionCheckpoint,
+            profile,
+            CopilotCapabilityCatalog.Shared.GetSnapshot());
+        Assert.True(recovery.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume, recovery.Request!.Mode);
+    }
+
+    [Fact]
     public void TaskEventJournal_IsBoundedRedactedCorrelatedAndCursorQueryable()
     {
         var builder = new CopilotAgentTaskEventJournalBuilder();
@@ -779,6 +829,35 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("Agent Skills enabled", StringComparison.Ordinal));
         Assert.DoesNotContain(events, item => item.Text.Contains("waiting for explicit approval", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_PublishesSafeCheckpointAfterEachProviderCall()
+    {
+        using var fakeChatClient = new ScriptedHarnessChatClient(
+            options => CreateTodoAddCall(options, "Inspect durable state", "Keep this task recoverable."),
+            options => CreateTodoCompleteCall(options, 1, "Durable state inspected."));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Complete a durable task.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, events.Add, CancellationToken.None);
+
+        var checkpointEvents = events.Where(item => item.Type == CopilotAgentEventType.CheckpointUpdated).ToArray();
+        Assert.True(checkpointEvents.Length >= fakeChatClient.StreamCallCount + 1);
+        Assert.All(checkpointEvents, item => Assert.True(item.SessionCheckpoint?.IsStructurallyValid()));
+        Assert.All(checkpointEvents, item => Assert.NotNull(item.TaskLedger));
+        Assert.True(events.FindIndex(item => item.Type == CopilotAgentEventType.CheckpointUpdated)
+            < events.FindIndex(item => item.Type == CopilotAgentEventType.CheckpointReady));
+        Assert.Equal(0, checkpointEvents[^1].TaskLedger!.RemainingCount);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 
     [Fact]

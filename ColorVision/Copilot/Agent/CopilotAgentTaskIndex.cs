@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         TaskPassLimit,
         IncompleteOutput,
         ProviderFailure,
+        Interrupted,
     }
 
     public sealed class CopilotAgentTaskSummary
@@ -54,6 +55,7 @@ namespace ColorVision.Copilot
             CopilotAgentTaskAttentionKind.TaskPassLimit => "达到轮次上限",
             CopilotAgentTaskAttentionKind.IncompleteOutput => "等待最终回答",
             CopilotAgentTaskAttentionKind.ProviderFailure => "模型连接中断",
+            CopilotAgentTaskAttentionKind.Interrupted => "应用中断，可继续",
             _ => string.Empty,
         };
 
@@ -117,6 +119,7 @@ namespace ColorVision.Copilot
                 CopilotAgentStopReason.TaskPassLimit => CopilotAgentTaskAttentionKind.TaskPassLimit,
                 CopilotAgentStopReason.IncompleteOutput => CopilotAgentTaskAttentionKind.IncompleteOutput,
                 CopilotAgentStopReason.ProviderFailure => CopilotAgentTaskAttentionKind.ProviderFailure,
+                CopilotAgentStopReason.Interrupted => CopilotAgentTaskAttentionKind.Interrupted,
                 _ => (CopilotAgentTaskAttentionKind?)null,
             };
 

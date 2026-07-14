@@ -250,6 +250,7 @@ namespace ColorVision.Copilot
         Error,
         Completed,
         CheckpointReady,
+        CheckpointUpdated,
     }
 
     public sealed class CopilotAgentEvent
@@ -261,6 +262,10 @@ namespace ColorVision.Copilot
         public CopilotToolResult? ToolResult { get; init; }
 
         public CopilotToolExecutionInfo? ToolExecution { get; init; }
+
+        public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
 
         public static CopilotAgentEvent Status(string text)
         {
@@ -343,6 +348,20 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.CheckpointReady,
             };
         }
+
+        public static CopilotAgentEvent CheckpointUpdated(
+            CopilotAgentSessionCheckpoint sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot taskLedger)
+        {
+            ArgumentNullException.ThrowIfNull(sessionCheckpoint);
+            ArgumentNullException.ThrowIfNull(taskLedger);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.CheckpointUpdated,
+                SessionCheckpoint = sessionCheckpoint,
+                TaskLedger = taskLedger,
+            };
+        }
     }
 
     public sealed class CopilotAgentPreparedPrompt
@@ -392,6 +411,7 @@ namespace ColorVision.Copilot
         Cancelled,
         IncompleteOutput,
         ProviderFailure,
+        Interrupted,
     }
 
     public sealed class CopilotAgentTaskLedgerSnapshot

@@ -263,12 +263,12 @@ namespace ColorVision.Copilot
         private readonly List<CopilotAgentTaskEvent> _events = new();
         private long _nextSequence;
 
-        public CopilotAgentTaskEventJournalBuilder(CopilotAgentTaskEventJournalSnapshot? previous = null)
+        public CopilotAgentTaskEventJournalBuilder(CopilotAgentTaskEventJournalSnapshot? previous = null, string? runId = null)
         {
             if (previous?.IsStructurallyValid() == true)
                 _events.AddRange(previous.Events.TakeLast(CopilotAgentTaskEventJournal.MaxEvents));
             _nextSequence = _events.Count == 0 ? 1 : _events.Max(item => item.Sequence) + 1;
-            RunId = CopilotAgentTaskEventIds.CreateRunId();
+            RunId = CopilotAgentTaskEventIds.IsKey(runId, "run", 32) ? runId! : CopilotAgentTaskEventIds.CreateRunId();
         }
 
         public string RunId { get; }

@@ -29,14 +29,16 @@ namespace ColorVision.Copilot
             if (Mode == CopilotAgentRecoveryMode.Finalize)
                 return PreviousStopReason is (CopilotAgentStopReason.IncompleteOutput
                     or CopilotAgentStopReason.BudgetExhausted
-                    or CopilotAgentStopReason.ProviderFailure)
+                    or CopilotAgentStopReason.ProviderFailure
+                    or CopilotAgentStopReason.Interrupted)
                     && string.IsNullOrWhiteSpace(ToolName)
                     && string.IsNullOrWhiteSpace(SourceCallKey);
 
             if (PreviousStopReason is not (CopilotAgentStopReason.BudgetExhausted
                 or CopilotAgentStopReason.TaskPassLimit
                 or CopilotAgentStopReason.Paused
-                or CopilotAgentStopReason.ProviderFailure))
+                or CopilotAgentStopReason.ProviderFailure
+                or CopilotAgentStopReason.Interrupted))
                 return false;
 
             return Mode != CopilotAgentRecoveryMode.RetryRead
@@ -80,7 +82,8 @@ namespace ColorVision.Copilot
                 && message.AgentStopReason is (CopilotAgentStopReason.BudgetExhausted
                     or CopilotAgentStopReason.TaskPassLimit
                     or CopilotAgentStopReason.Paused
-                    or CopilotAgentStopReason.ProviderFailure);
+                    or CopilotAgentStopReason.ProviderFailure
+                    or CopilotAgentStopReason.Interrupted);
             if (!isFinalAnswerRecovery && !isTaskRecovery)
                 return CopilotAgentRecoveryDecision.Unavailable;
 

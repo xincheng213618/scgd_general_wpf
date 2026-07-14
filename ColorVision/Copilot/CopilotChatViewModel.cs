@@ -835,8 +835,6 @@ namespace ColorVision.Copilot
 
             contextItems = MergeCurrentLiveContextSummary(contextItems);
             var sessionCheckpoint = conversation.AgentSessionCheckpoint;
-            conversation.AgentSessionCheckpoint = null;
-            PersistState();
 
             var agentRequest = new CopilotAgentRequest
             {
@@ -866,12 +864,12 @@ namespace ColorVision.Copilot
             {
                 result = await _agentRuntime.RunAsync(
                     agentRequest,
-                    agentEvent => ApplyAgentEvent(hostedRun, assistantMessage, agentEvent),
+                    agentEvent => ApplyAgentEvent(hostedRun, conversation, assistantMessage, agentEvent),
                     cancellationToken);
             }
             catch (OperationCanceledException) when (hostedRun.RunControl?.Intent == CopilotAgentControlIntent.Pause && sessionCheckpoint != null)
             {
-                conversation.AgentSessionCheckpoint = sessionCheckpoint;
+                conversation.AgentSessionCheckpoint ??= sessionCheckpoint;
                 throw;
             }
             catch (OperationCanceledException)
@@ -880,7 +878,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception)
             {
-                if (sessionCheckpoint != null)
+                if (sessionCheckpoint != null && conversation.AgentSessionCheckpoint == null)
                 {
                     conversation.AgentSessionCheckpoint = sessionCheckpoint;
                     PersistState();
@@ -932,6 +930,17 @@ namespace ColorVision.Copilot
             }
 
             IsBusy = _taskHost.IsActive;
+            if (e.Kind == CopilotAgentTaskHostChangeKind.ControlRequested
+                && e.Run.HasStarted
+                && e.Run.State == CopilotHostedRunState.CancelRequested)
+            {
+                var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, e.Run.ConversationId, StringComparison.Ordinal));
+                if (conversation?.AgentSessionCheckpoint != null)
+                {
+                    conversation.AgentSessionCheckpoint = null;
+                    PersistState();
+                }
+            }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
                 RefreshAgentTasks();
             NotifyHostedRunStateChanged();
@@ -1441,7 +1450,11 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ApplyAgentEvent(CopilotHostedAgentRun hostedRun, CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
+        private void ApplyAgentEvent(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            CopilotAgentEvent agentEvent)
         {
             switch (agentEvent.Type)
             {
@@ -1498,6 +1511,20 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotAgentEventType.CheckpointReady:
                     _taskHost.MarkCheckpointReady(hostedRun.Id);
+                    break;
+                case CopilotAgentEventType.CheckpointUpdated:
+                    if (hostedRun.State == CopilotHostedRunState.CancelRequested
+                        || agentEvent.SessionCheckpoint?.IsStructurallyValid() != true
+                        || agentEvent.TaskLedger == null)
+                    {
+                        break;
+                    }
+
+                    conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
+                    assistantMessage.AgentTaskLedger = agentEvent.TaskLedger;
+                    PersistState();
+                    if (ReferenceEquals(conversation, SelectedConversation))
+                        RefreshAgentTasks();
                     break;
             }
         }

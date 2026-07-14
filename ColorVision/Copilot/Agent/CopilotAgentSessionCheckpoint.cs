@@ -254,6 +254,25 @@ namespace ColorVision.Copilot
             return checkpoint.IsStructurallyValid() ? checkpoint : null;
         }
 
+        internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
+        {
+            ArgumentNullException.ThrowIfNull(taskEventJournal);
+            var checkpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = ProfileKey,
+                SerializedSessionJson = SerializedSessionJson,
+                CapabilityCatalogRevision = CapabilityCatalogRevision,
+                Capabilities = Capabilities,
+                ToolSurfaceVersion = ToolSurfaceVersion,
+                AvailableToolNames = AvailableToolNames,
+                EvidenceArtifacts = EvidenceArtifacts,
+                ConversationMemory = ConversationMemory,
+                TaskEventJournal = taskEventJournal,
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            return checkpoint.IsStructurallyValid() ? checkpoint : null;
+        }
+
         private CopilotAgentCheckpointCompatibility CreateCompatibility(
             CopilotAgentCheckpointCompatibilityKind kind,
             CopilotCapabilityCatalogSnapshot currentSnapshot,
