@@ -141,6 +141,25 @@ class BuildScriptTests(unittest.TestCase):
             messages,
         )
 
+    def test_release_runtime_payload_rejects_unlisted_runtime_dll(self):
+        runtime_dir = self.root / "runtime"
+        runtime_dir.mkdir()
+        for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES:
+            (runtime_dir / file_name).write_bytes(b"runtime")
+        (runtime_dir / "NewDependency.dll").write_bytes(b"runtime")
+        aip_path = self.root / "ColorVision.aip"
+        source_rows = "".join(
+            f'<ROW File="{file_name}" SourcePath="runtime\\{file_name}" />'
+            for file_name in release_runtime.REQUIRED_MAIN_RUNTIME_FILES
+        )
+        aip_path.write_text(f"<DOCUMENT>{source_rows}</DOCUMENT>", encoding="utf-8")
+        messages = []
+
+        self.assertFalse(
+            release_runtime.validate_release_runtime_payload(runtime_dir, aip_path, report=messages.append)
+        )
+        self.assertIn("Advanced Installer does not include runtime DLLs: NewDependency.dll", messages)
+
     def test_upload_file_uses_basic_auth_and_streams_payload(self):
         package_file = self.root / "ColorVision-1.2.3.4.exe"
         package_file.write_bytes(b"payload")
