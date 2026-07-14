@@ -3846,6 +3846,118 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_RequiresRealFlowStatisticsObservation()
+    {
+        var source = new CapturingFlowExecutionStatisticsSource(
+        [
+            new((int)ColorVision.Engine.Templates.Flow.FlowStatus.Completed, 9, 1200),
+            new((int)ColorVision.Engine.Templates.Flow.FlowStatus.Failed, 1, 800),
+        ]);
+        var tool = new CopilotQueryFlowExecutionStatsTool(new CopilotFlowExecutionStatisticsService(
+            source,
+            () => new DateTime(2026, 7, 14, 12, 0, 0, DateTimeKind.Local)));
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_query_flow_execution_stats", new Dictionary<string, object?>
+        {
+            ["period"] = "today",
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "查询今天执行了多少次流程",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, source.QueryCount);
+        Assert.Equal(new DateTime(2026, 7, 14), source.StartInclusive);
+        Assert.Equal(new DateTime(2026, 7, 15), source.EndExclusive);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("QueryFlowExecutionStats", step.Execution.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.True(step.Observation.Success);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_RequiresRealDatabaseSqlQueryObservation()
+    {
+        var executor = new CapturingDatabaseSqlExecutor
+        {
+            QueryResult = new CopilotDatabaseQueryResult(["count"], [["42"]], false),
+        };
+        var tool = new CopilotQueryDatabaseSqlTool(new CopilotDatabaseSqlService(executor));
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_query_database_sql", new Dictionary<string, object?>
+        {
+            ["sql"] = "SELECT COUNT(*) AS count FROM t_scgd_measure_batch",
+            ["maxRows"] = 10,
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "查询数据库，执行 SELECT COUNT(*) FROM t_scgd_measure_batch",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, executor.QueryCount);
+        Assert.Equal("SELECT COUNT(*) AS count FROM t_scgd_measure_batch", executor.QuerySql);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("QueryDatabaseSql", step.Execution.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.True(step.Observation.Success);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_ApprovesDatabaseSqlMutationAndExecutesOnce()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var executor = new CapturingDatabaseSqlExecutor
+        {
+            MutationResult = new CopilotDatabaseMutationResult(5, true),
+        };
+        var tool = new CopilotExecuteDatabaseSqlTool(new CopilotDatabaseSqlService(executor));
+        using var fakeChatClient = new FunctionCallingChatClient("colorvision_execute_database_sql", new Dictionary<string, object?>
+        {
+            ["sql"] = "DELETE FROM runtime_logs WHERE create_date < '2026-01-01'",
+        });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "清理数据库，删除旧运行日志",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+        var action = await WaitForPendingActionAsync();
+
+        Assert.Equal("ExecuteDatabaseSql", action.ToolName);
+        Assert.Equal(0, executor.ExecuteCount);
+        Assert.Contains("DELETE", action.Description, StringComparison.Ordinal);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, executor.ExecuteCount);
+        Assert.Equal("DELETE FROM runtime_logs WHERE create_date < '2026-01-01'", executor.ExecutedSql);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("ExecuteDatabaseSql", step.Execution.ToolName);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Equal(action.ActionId, step.Execution.ApprovalActionId);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
     {
         var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());
@@ -4355,6 +4467,68 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             LastCommand = command;
             Interlocked.Increment(ref _callCount);
             return Task.FromResult(result);
+        }
+    }
+
+    private sealed class CapturingFlowExecutionStatisticsSource(
+        IReadOnlyList<CopilotFlowExecutionStatusCount> rows) : ICopilotFlowExecutionStatisticsSource
+    {
+        private int _queryCount;
+
+        public bool IsAvailable => true;
+
+        public int QueryCount => Volatile.Read(ref _queryCount);
+
+        public DateTime StartInclusive { get; private set; }
+
+        public DateTime EndExclusive { get; private set; }
+
+        public Task<IReadOnlyList<CopilotFlowExecutionStatusCount>> QueryAsync(
+            DateTime startInclusive,
+            DateTime endExclusive,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            StartInclusive = startInclusive;
+            EndExclusive = endExclusive;
+            Interlocked.Increment(ref _queryCount);
+            return Task.FromResult(rows);
+        }
+    }
+
+    private sealed class CapturingDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
+    {
+        private int _queryCount;
+        private int _executeCount;
+
+        public bool IsAvailable => true;
+
+        public CopilotDatabaseQueryResult QueryResult { get; init; } = new([], [], false);
+
+        public CopilotDatabaseMutationResult MutationResult { get; init; } = new(0, true);
+
+        public int QueryCount => Volatile.Read(ref _queryCount);
+
+        public int ExecuteCount => Volatile.Read(ref _executeCount);
+
+        public string QuerySql { get; private set; } = string.Empty;
+
+        public string ExecutedSql { get; private set; } = string.Empty;
+
+        public Task<CopilotDatabaseQueryResult> QueryAsync(string sql, int maxRows, int timeoutSeconds, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            QuerySql = sql;
+            Interlocked.Increment(ref _queryCount);
+            return Task.FromResult(QueryResult);
+        }
+
+        public Task<CopilotDatabaseMutationResult> ExecuteAsync(string sql, CopilotDatabaseSqlAnalysis analysis, int timeoutSeconds, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ExecutedSql = sql;
+            Interlocked.Increment(ref _executeCount);
+            return Task.FromResult(MutationResult);
         }
     }
 

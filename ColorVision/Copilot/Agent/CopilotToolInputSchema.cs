@@ -252,6 +252,23 @@ namespace ColorVision.Copilot
                     return false;
                 }
             }
+            if (TryGetStringValue(value, out var stringValue))
+            {
+                if (schema.TryGetProperty("minLength", out var minimumLengthElement)
+                    && minimumLengthElement.TryGetInt32(out var minimumLength)
+                    && stringValue.Length < minimumLength)
+                {
+                    error = $"Argument '{name}' must contain at least {minimumLength} characters.";
+                    return false;
+                }
+                if (schema.TryGetProperty("maxLength", out var maximumLengthElement)
+                    && maximumLengthElement.TryGetInt32(out var maximumLength)
+                    && stringValue.Length > maximumLength)
+                {
+                    error = $"Argument '{name}' must contain at most {maximumLength} characters.";
+                    return false;
+                }
+            }
             if (TryGetNumberValue(value, out var numberValue))
             {
                 if (schema.TryGetProperty("minimum", out var minimumElement)

@@ -55,6 +55,37 @@ namespace ColorVision.Copilot
             "how to build", "how do i build", "how to test", "how do i test", "explain the build", "explain the test",
         };
 
+        private static readonly string[] FlowExecutionStatisticsMarkers =
+        {
+            "今天执行了多少次流程", "今天跑了多少次流程", "流程执行次数", "流程运行次数", "流程统计", "查询流程记录", "查看流程记录",
+            "成功了多少次", "失败了多少次", "流程成功率", "流程完成率", "昨天执行了多少次流程", "最近七天流程",
+            "flow execution count", "flow run count", "flow statistics", "flow success rate", "flows ran today", "flows run today",
+        };
+
+        private static readonly string[] FlowExecutionStatisticsExplanationMarkers =
+        {
+            "怎么统计流程", "如何统计流程", "流程统计原理", "怎么查询流程", "如何查询流程",
+            "how to count flow", "how are flow statistics", "explain flow statistics",
+        };
+
+        private static readonly string[] DatabaseSqlQueryMarkers =
+        {
+            "查询sql", "查询 sql", "执行查询", "查询数据库", "查数据库", "运行查询", "数据库查询", "查看表结构", "查看数据库表",
+            "query sql", "run query", "query database", "database query", "show tables", "describe table",
+        };
+
+        private static readonly string[] DatabaseSqlMutationMarkers =
+        {
+            "执行sql", "执行 sql", "运行sql", "运行 sql", "清理sql", "清理 sql", "清理数据库", "删除数据库记录", "删除表数据", "清空表",
+            "更新数据库", "修改数据库", "创建表", "删除表", "execute sql", "run sql", "clean database", "delete database records", "truncate table", "drop table",
+        };
+
+        private static readonly string[] DatabaseSqlExplanationMarkers =
+        {
+            "sql是什么", "sql 是什么", "如何写sql", "如何写 sql", "怎么写sql", "怎么写 sql", "解释sql", "解释 sql", "sql原理", "sql 原理",
+            "what is sql", "how to write sql", "explain sql",
+        };
+
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
@@ -171,6 +202,50 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, WorkspaceValidationMarkers);
         }
 
+        public static bool NeedsFlowExecutionStatistics(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, FlowExecutionStatisticsExplanationMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, FlowExecutionStatisticsMarkers);
+        }
+
+        public static bool NeedsDatabaseSqlQuery(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, DatabaseSqlExplanationMarkers))
+            {
+                return false;
+            }
+
+            var text = request.UserText.TrimStart();
+            if (TryAnalyzeEmbeddedSql(text, out var analysis))
+                return analysis!.Kind == CopilotDatabaseSqlStatementKind.Query;
+            return ContainsAny(request.UserText, DatabaseSqlQueryMarkers)
+                || StartsWithAny(text, "select ", "show ", "describe ", "desc ", "explain ", "with ", "table ");
+        }
+
+        public static bool NeedsDatabaseSqlMutation(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || ContainsAny(request.UserText, DatabaseSqlExplanationMarkers))
+            {
+                return false;
+            }
+
+            var text = request.UserText.TrimStart();
+            if (TryAnalyzeEmbeddedSql(text, out var analysis))
+                return analysis!.Kind != CopilotDatabaseSqlStatementKind.Query;
+            return ContainsAny(request.UserText, DatabaseSqlMutationMarkers)
+                || StartsWithAny(text, "insert ", "update ", "delete ", "replace ", "truncate ", "create ", "alter ", "drop ", "rename ");
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -244,6 +319,21 @@ namespace ColorVision.Copilot
         internal static bool IsWorkspaceValidationTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsFlowExecutionStatisticsTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "QueryFlowExecutionStats", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsDatabaseSqlQueryTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "QueryDatabaseSql", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsDatabaseSqlMutationTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "ExecuteDatabaseSql", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
@@ -335,6 +425,42 @@ namespace ColorVision.Copilot
         {
             var value = text ?? string.Empty;
             return markers.Any(marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool StartsWithAny(string text, params string[] prefixes)
+        {
+            return prefixes.Any(prefix => text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool TryAnalyzeEmbeddedSql(string text, out CopilotDatabaseSqlAnalysis? analysis)
+        {
+            analysis = null;
+            var keywords = new[]
+            {
+                "WITH", "SELECT", "SHOW", "DESCRIBE", "DESC", "EXPLAIN", "TABLE", "INSERT", "UPDATE",
+                "DELETE", "REPLACE", "TRUNCATE", "CREATE", "ALTER", "DROP", "RENAME",
+            };
+            var start = -1;
+            foreach (var keyword in keywords)
+            {
+                var searchStart = 0;
+                while (searchStart < text.Length)
+                {
+                    var index = text.IndexOf(keyword, searchStart, StringComparison.OrdinalIgnoreCase);
+                    if (index < 0)
+                        break;
+                    var beforeIsIdentifier = index > 0 && (char.IsLetterOrDigit(text[index - 1]) || text[index - 1] is '_' or '$');
+                    var end = index + keyword.Length;
+                    var afterIsIdentifier = end < text.Length && (char.IsLetterOrDigit(text[end]) || text[end] is '_' or '$');
+                    if (!beforeIsIdentifier && !afterIsIdentifier)
+                    {
+                        start = start < 0 ? index : Math.Min(start, index);
+                        break;
+                    }
+                    searchStart = index + keyword.Length;
+                }
+            }
+            return start >= 0 && CopilotDatabaseSqlPolicy.TryAnalyze(text[start..], out analysis, out _);
         }
     }
 }

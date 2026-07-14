@@ -19,6 +19,9 @@ namespace ColorVision.Copilot
         WorkspaceCreateAndValidation,
         WorkspaceValidation,
         WorkspaceRollback,
+        FlowExecutionStatistics,
+        DatabaseSqlQuery,
+        DatabaseSqlMutation,
     }
 
     internal sealed class CopilotAgentExecutionContract
@@ -59,6 +62,9 @@ namespace ColorVision.Copilot
             CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "approved workspace file creation followed by validation",
             CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
             CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
+            CopilotAgentExecutionRequirement.FlowExecutionStatistics => "read-only flow execution statistics",
+            CopilotAgentExecutionRequirement.DatabaseSqlQuery => "read-only database SQL result",
+            CopilotAgentExecutionRequirement.DatabaseSqlMutation => "approved database SQL change",
             _ => "no mandatory tool evidence",
         };
 
@@ -73,7 +79,10 @@ namespace ColorVision.Copilot
             {
                 if (!CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceCreate(request)
-                    && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
+                    && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request)
+                    && !CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request)
+                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request)
+                    && !CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request))
                 {
                     return None();
                 }
@@ -115,6 +124,36 @@ namespace ColorVision.Copilot
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
                     [workspaceValidationTools]);
+            }
+
+            if (CopilotToolIntentPolicy.NeedsFlowExecutionStatistics(request))
+            {
+                var flowStatisticsTools = availableTools
+                    .Where(CopilotToolIntentPolicy.IsFlowExecutionStatisticsTool)
+                    .Select(tool => tool.Name);
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.FlowExecutionStatistics,
+                    [flowStatisticsTools]);
+            }
+
+            if (CopilotToolIntentPolicy.NeedsDatabaseSqlMutation(request))
+            {
+                var mutationTools = availableTools
+                    .Where(CopilotToolIntentPolicy.IsDatabaseSqlMutationTool)
+                    .Select(tool => tool.Name);
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.DatabaseSqlMutation,
+                    [mutationTools]);
+            }
+
+            if (CopilotToolIntentPolicy.NeedsDatabaseSqlQuery(request))
+            {
+                var queryTools = availableTools
+                    .Where(CopilotToolIntentPolicy.IsDatabaseSqlQueryTool)
+                    .Select(tool => tool.Name);
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.DatabaseSqlQuery,
+                    [queryTools]);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -213,7 +252,13 @@ namespace ColorVision.Copilot
                                         ? "required_workspace_create_validation_missing"
                                         : Requirement == CopilotAgentExecutionRequirement.WorkspaceValidation
                                             ? "required_workspace_validation_missing"
-                                            : "required_workspace_rollback_missing",
+                                            : Requirement == CopilotAgentExecutionRequirement.WorkspaceRollback
+                                                ? "required_workspace_rollback_missing"
+                                                : Requirement == CopilotAgentExecutionRequirement.FlowExecutionStatistics
+                                                    ? "required_flow_execution_statistics_missing"
+                                                    : Requirement == CopilotAgentExecutionRequirement.DatabaseSqlQuery
+                                                        ? "required_database_sql_query_missing"
+                                                        : "required_database_sql_mutation_missing",
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -245,6 +290,12 @@ namespace ColorVision.Copilot
                     $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
                     $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
+                CopilotAgentExecutionRequirement.FlowExecutionStatistics =>
+                    $"Execution contract: the user requested actual flow execution statistics, but no successful business data observation was collected. Call {preferred} with today, yesterday, or last7days and answer from its aggregate result. Never invent a count, SQL query, or database state.",
+                CopilotAgentExecutionRequirement.DatabaseSqlQuery =>
+                    $"Execution contract: the user requested an actual database query, but no successful database observation was collected. Call {preferred} with exactly one read-only SQL statement and answer from its bounded, redacted result. Never invent rows or claim the query ran without this observation.",
+                CopilotAgentExecutionRequirement.DatabaseSqlMutation =>
+                    $"Execution contract: the user requested a database change, but no approved change completed. Call {preferred} with exactly one SQL data or schema change, wait for native user approval, and report the affected-row result. Never claim the change ran before a successful approved observation.",
                 _ => string.Empty,
             };
         }
