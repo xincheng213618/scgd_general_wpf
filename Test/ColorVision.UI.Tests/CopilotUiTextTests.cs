@@ -250,6 +250,28 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void ResponseTimeline_KeepsThinkingHeaderAndCollapsesToolActivityAfterCompletion()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.MarkThinkingStarted();
+        message.BeginResponseTimeline();
+        message.UpsertAgentTrace(CreateCompletedTrace("system-1", "InspectWindowsSystem", 25));
+        message.RecordResponseTimelineTool("system-1");
+
+        Assert.True(message.HasResponseTimeline);
+        Assert.False(message.HasLegacyResponseLayout);
+        Assert.True(message.HasThinkingTrace);
+        Assert.True(message.IsThinkingExpanded);
+        Assert.Equal("正在思考", message.ThinkingHeader);
+        Assert.Equal("检查了系统", Assert.Single(message.VisibleResponseTimelineItems).ToolGroup!.ActivityLabel);
+
+        message.MarkThinkingCompleted();
+
+        Assert.False(message.IsThinkingExpanded);
+        Assert.StartsWith("已处理", message.ThinkingHeader, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ResponseTimeline_ResetRemovesUnsupportedDraftButPreservesToolOrder()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

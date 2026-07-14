@@ -287,7 +287,7 @@
             <Setter Property="CornerRadius" Value="4" />
         </Style>
         <Style x:Key="ComposerShellBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotSurfaceBorderStyle}">
-            <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
@@ -1017,6 +1017,35 @@
                                     <StackPanel x:Name="AssistantPanel"
                                                 Margin="0"
                                                 Visibility="Collapsed">
+                                        <Expander Margin="0,8,0,2"
+                                                  IsExpanded="{Binding IsThinkingExpanded, Mode=TwoWay}">
+                                            <Expander.Style>
+                                                <Style TargetType="Expander" BasedOn="{StaticResource TraceExpanderStyle}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding HasThinkingTrace}" Value="True" />
+                                                                <Condition Binding="{Binding HasLegacyResponseLayout}" Value="False" />
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Expander.Style>
+                                            <Expander.Header>
+                                                <Border Padding="0" Style="{StaticResource ExecutionSummaryPillBorderStyle}">
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                                               Opacity="0.72"
+                                                               Text="{Binding ThinkingHeader}"
+                                                               ToolTip="{Binding ThinkingSummaryToolTip}" />
+                                                </Border>
+                                            </Expander.Header>
+                                        </Expander>
+
                                         <ItemsControl ItemsSource="{Binding VisibleResponseTimelineItems}"
                                                       Visibility="{Binding HasResponseTimeline, Converter={StaticResource bool2VisibilityConverter}}">
                                             <ItemsControl.ItemTemplate>
@@ -1027,8 +1056,22 @@
                                                         <ContentControl Margin="0,4,0,0"
                                                                         Content="{Binding ToolGroup}"
                                                                         ContentTemplate="{StaticResource AgentTraceGroupTemplate}"
-                                                                        Focusable="False"
-                                                                        Visibility="{Binding IsToolGroup, Converter={StaticResource bool2VisibilityConverter}}" />
+                                                                        Focusable="False">
+                                                            <ContentControl.Style>
+                                                                <Style TargetType="ContentControl">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsToolGroup}" Value="True" />
+                                                                                <Condition Binding="{Binding DataContext.IsThinkingExpanded, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True" />
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Visibility" Value="Visible" />
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ContentControl.Style>
+                                                        </ContentControl>
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
