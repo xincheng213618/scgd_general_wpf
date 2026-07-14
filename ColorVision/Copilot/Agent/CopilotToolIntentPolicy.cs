@@ -37,6 +37,12 @@ namespace ColorVision.Copilot
             "undo the change", "undo that change", "rollback the change", "roll back the change", "revert the file",
         };
 
+        private static readonly string[] WorkspaceCreateMarkers =
+        {
+            "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类",
+            "create a file", "create the file", "add a file", "add the file", "create a class", "add a class", "new source file",
+        };
+
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
@@ -127,6 +133,19 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, WorkspaceRollbackMarkers);
         }
 
+        public static bool NeedsWorkspaceCreate(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || request.WritableLocalRootPaths.Count == 0
+                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, WorkspaceCreateMarkers);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -190,6 +209,11 @@ namespace ColorVision.Copilot
         internal static bool IsWorkspaceRollbackTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsWorkspaceCreateApplyTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "ApplyCreateWorkspaceFile", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)

@@ -113,6 +113,7 @@ public sealed class CopilotWorkspacePatchAgentTests : IDisposable
         var ordinary = CreateEditRequest("解释一下这个类", _root);
         var edit = CreateEditRequest("请修改这个类", _root);
         var editOptOut = CreateEditRequest("只解释，不要修改这个类", _root);
+        var create = CreateEditRequest("请创建文件 NewClass.cs", _root);
         var rollback = CreateEditRequest("回滚刚才的工作区补丁", _root);
 
         Assert.DoesNotContain(registry.FindTools(ordinary), IsWorkspacePatchTool);
@@ -120,6 +121,9 @@ public sealed class CopilotWorkspacePatchAgentTests : IDisposable
         Assert.Contains(registry.FindTools(edit), tool => tool.Name == "ApplyWorkspacePatch");
         Assert.DoesNotContain(registry.FindTools(edit), tool => tool.Name == "RollbackWorkspacePatch");
         Assert.DoesNotContain(registry.FindTools(editOptOut), IsWorkspacePatchTool);
+        Assert.Contains(registry.FindTools(create), tool => tool.Name == "PreviewCreateWorkspaceFile");
+        Assert.Contains(registry.FindTools(create), tool => tool.Name == "ApplyCreateWorkspaceFile");
+        Assert.DoesNotContain(registry.FindTools(create), tool => tool.Name == "ApplyWorkspacePatch");
         Assert.Contains(registry.FindTools(rollback), tool => tool.Name == "RollbackWorkspacePatch");
     }
 
@@ -140,6 +144,98 @@ public sealed class CopilotWorkspacePatchAgentTests : IDisposable
         Assert.True(result.Success);
         Assert.Contains("replacement_count: 1", result.Content, StringComparison.Ordinal);
         Assert.Equal("before\n", await File.ReadAllTextAsync(exactPath));
+    }
+
+    [Fact]
+    public async Task ApprovedCreateAndRollbackHandleNewDirectoriesWithoutOverwriting()
+    {
+        var path = Path.Combine(_root, "Generated", "Models", "Created.cs");
+        var store = new CopilotWorkspacePatchStore();
+        var request = CreateEditRequest("请新建文件 Created.cs", _root);
+        var preview = await PreviewCreateAsync(store, request, path, "namespace Generated;\npublic sealed class Created;\n");
+        var previewId = ExtractField(preview.Content, "preview_id");
+        var input = PreviewInput(previewId);
+        var applyTool = new CopilotApplyCreateWorkspaceFileTool(store);
+
+        Assert.True(preview.Success);
+        Assert.Contains("operation: Create", preview.Content, StringComparison.Ordinal);
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(Path.GetDirectoryName(path)));
+
+        var unapproved = await applyTool.ExecuteAsync(request, input, CancellationToken.None);
+        Assert.False(unapproved.Success);
+        Assert.Equal(CopilotToolFailureKind.Authorization, unapproved.FailureKind);
+        Assert.False(File.Exists(path));
+
+        var approval = applyTool.CreateApprovalPresentation(input);
+        Assert.Contains(path, approval.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("does not exist", approval.Description, StringComparison.Ordinal);
+
+        var applied = await applyTool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+        Assert.True(applied.Success);
+        Assert.Equal("namespace Generated;\npublic sealed class Created;\n", await File.ReadAllTextAsync(path));
+        Assert.False((await File.ReadAllBytesAsync(path)).AsSpan().StartsWith(Encoding.UTF8.Preamble));
+
+        var rollback = await new CopilotRollbackWorkspacePatchTool(store).ExecuteApprovedAsync(
+            CreateEditRequest("回滚刚才创建的文件", _root),
+            input,
+            CancellationToken.None);
+
+        Assert.True(rollback.Success);
+        Assert.False(File.Exists(path));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Generated")));
+    }
+
+    [Fact]
+    public async Task CreateRejectsExistingOutOfScopeAndConcurrentTargets()
+    {
+        var store = new CopilotWorkspacePatchStore();
+        var request = CreateEditRequest("创建文件", _root);
+        var existingPath = CreateFile("Existing.cs", "existing\n");
+        var outsidePath = Path.Combine(Path.GetTempPath(), "ColorVision-Outside-" + Guid.NewGuid().ToString("N") + ".cs");
+        var reservedPath = Path.Combine(_root, "CON.cs");
+        var alternateStreamPath = Path.Combine(_root, "Host.cs:generated.md");
+        var concurrentPath = Path.Combine(_root, "Concurrent.cs");
+
+        var existing = await PreviewCreateAsync(store, request, existingPath, "new\n");
+        var outside = await PreviewCreateAsync(store, request, outsidePath, "outside\n");
+        var reserved = await PreviewCreateAsync(store, request, reservedPath, "reserved\n");
+        var alternateStream = await PreviewCreateAsync(store, request, alternateStreamPath, "stream\n");
+        var preview = await PreviewCreateAsync(store, request, concurrentPath, "agent\n");
+        var previewId = ExtractField(preview.Content, "preview_id");
+        await File.WriteAllTextAsync(concurrentPath, "external\n", new UTF8Encoding(false));
+        var conflict = await new CopilotApplyCreateWorkspaceFileTool(store).ExecuteApprovedAsync(
+            request,
+            PreviewInput(previewId),
+            CancellationToken.None);
+
+        Assert.False(existing.Success);
+        Assert.Equal(CopilotToolFailureKind.Conflict, existing.FailureKind);
+        Assert.False(outside.Success);
+        Assert.Equal(CopilotToolFailureKind.Authorization, outside.FailureKind);
+        Assert.False(reserved.Success);
+        Assert.False(alternateStream.Success);
+        Assert.False(conflict.Success);
+        Assert.Equal(CopilotToolFailureKind.Conflict, conflict.FailureKind);
+        Assert.Equal("external\n", await File.ReadAllTextAsync(concurrentPath));
+    }
+
+    [Fact]
+    public async Task CreationPreviewCannotBeConsumedByExistingFilePatchTool()
+    {
+        var path = Path.Combine(_root, "NewFile.md");
+        var store = new CopilotWorkspacePatchStore();
+        var request = CreateEditRequest("创建文件 NewFile.md", _root);
+        var preview = await PreviewCreateAsync(store, request, path, "content\n");
+
+        var result = await new CopilotApplyWorkspacePatchTool(store).ExecuteApprovedAsync(
+            request,
+            PreviewInput(ExtractField(preview.Content, "preview_id")),
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Conflict, result.FailureKind);
+        Assert.False(File.Exists(path));
     }
 
     public void Dispose()
@@ -184,6 +280,19 @@ public sealed class CopilotWorkspacePatchAgentTests : IDisposable
         }, CancellationToken.None);
     }
 
+    private static Task<CopilotToolResult> PreviewCreateAsync(
+        CopilotWorkspacePatchStore store,
+        CopilotAgentRequest request,
+        string path,
+        string content)
+    {
+        return store.PreviewCreateAsync(request, new CopilotAgentToolInput
+        {
+            Path = path,
+            Arguments = new Dictionary<string, object?> { ["content"] = content },
+        }, CancellationToken.None);
+    }
+
     private static CopilotAgentToolInput PreviewInput(string previewId)
     {
         return new CopilotAgentToolInput
@@ -201,6 +310,6 @@ public sealed class CopilotWorkspacePatchAgentTests : IDisposable
 
     private static bool IsWorkspacePatchTool(ICopilotTool tool)
     {
-        return tool.Name is "PreviewWorkspacePatch" or "ApplyWorkspacePatch" or "RollbackWorkspacePatch";
+        return tool.Name is "PreviewWorkspacePatch" or "ApplyWorkspacePatch" or "PreviewCreateWorkspaceFile" or "ApplyCreateWorkspaceFile" or "RollbackWorkspacePatch";
     }
 }

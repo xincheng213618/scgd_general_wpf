@@ -3729,6 +3729,64 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesNativeApprovalForWorkspaceFileCreation()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var root = Path.Combine(Path.GetTempPath(), "ColorVision-Agent-Create-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "Generated", "Created.cs");
+            var store = new CopilotWorkspacePatchStore();
+            var request = new CopilotAgentRequest
+            {
+                UserText = "请创建文件 Created.cs",
+                Profile = CreateProfile(),
+                Mode = CopilotAgentMode.Auto,
+                WritableLocalRootPaths = [root],
+            };
+            var preview = await store.PreviewCreateAsync(request, new CopilotAgentToolInput
+            {
+                Path = path,
+                Arguments = new Dictionary<string, object?> { ["content"] = "public sealed class Created;\n" },
+            }, CancellationToken.None);
+            var previewId = preview.Content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                .Single(line => line.StartsWith("preview_id:", StringComparison.OrdinalIgnoreCase))["preview_id:".Length..].Trim();
+            var tool = new CopilotApplyCreateWorkspaceFileTool(store);
+            using var fakeChatClient = new FunctionCallingChatClient("colorvision_apply_create_workspace_file", new Dictionary<string, object?>
+            {
+                ["previewId"] = previewId,
+            });
+            var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+                new CopilotToolRegistry([tool]),
+                new CopilotAgentContextBuilder(),
+                _ => fakeChatClient);
+
+            var runTask = runtime.RunAsync(request, _ => { }, CancellationToken.None);
+            var action = await WaitForPendingActionAsync();
+
+            Assert.Equal("ApplyCreateWorkspaceFile", action.ToolName);
+            Assert.Contains(path, action.Description, StringComparison.OrdinalIgnoreCase);
+            Assert.False(File.Exists(path));
+            Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+            var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(File.Exists(path));
+            var step = Assert.Single(result.StepRecords);
+            Assert.Equal("ApplyCreateWorkspaceFile", step.Execution.ToolName);
+            Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+            Assert.Equal(action.ActionId, step.Execution.ApprovalActionId);
+            Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        }
+        finally
+        {
+            CopilotMcpConfirmationStore.Instance.ClearForTests();
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
     {
         var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());

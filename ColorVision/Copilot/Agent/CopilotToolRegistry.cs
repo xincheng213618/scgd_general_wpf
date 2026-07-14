@@ -70,6 +70,8 @@ namespace ColorVision.Copilot
                 new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
+                new CopilotPreviewCreateWorkspaceFileTool(workspacePatchStore),
+                new CopilotApplyCreateWorkspaceFileTool(workspacePatchStore),
                 new CopilotPreviewWorkspacePatchTool(workspacePatchStore),
                 new CopilotApplyWorkspacePatchTool(workspacePatchStore),
                 new CopilotRollbackWorkspacePatchTool(workspacePatchStore),
