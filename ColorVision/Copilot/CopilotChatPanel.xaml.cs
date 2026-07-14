@@ -1,3 +1,4 @@
+using ColorVision.Themes;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System;
@@ -7,6 +8,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -27,6 +30,7 @@ namespace ColorVision.Copilot
         private INotifyCollectionChanged? _attachedMessages;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
+        private bool _isThemeSubscriptionActive;
 
         public CopilotChatPanel()
         {
@@ -40,7 +44,37 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Loaded(object sender, RoutedEventArgs e)
         {
+            if (!_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = true;
+            }
+
+            SchedulePromptCaretBrushRefresh();
             UpdateResponsiveLayout();
+        }
+
+        private void ThemeManager_CurrentUIThemeChanged(Theme theme)
+        {
+            SchedulePromptCaretBrushRefresh();
+        }
+
+        private void SchedulePromptCaretBrushRefresh()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, RefreshPromptCaretBrush);
+        }
+
+        private void RefreshPromptCaretBrush()
+        {
+            var themeBrush = PromptTextBox.TryFindResource("GlobalTextBrush") as Brush;
+            var sourceBrush = themeBrush ?? PromptTextBox.Foreground;
+            PromptTextBox.CaretBrush = sourceBrush.CloneCurrentValue();
+            PromptTextBox.InvalidateVisual();
+        }
+
+        private void PromptTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            RefreshPromptCaretBrush();
         }
 
         private void CopilotChatPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -57,6 +91,12 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged -= ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = false;
+            }
+
             CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
         }
