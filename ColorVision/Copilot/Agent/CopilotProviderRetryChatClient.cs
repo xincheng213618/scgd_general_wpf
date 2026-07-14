@@ -38,8 +38,7 @@ namespace ColorVision.Copilot
             Func<TimeSpan, CancellationToken, Task>? delayAsync = null)
             : base(innerClient)
         {
-            if (maximumAttempts < 1)
-                throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumAttempts, 1);
 
             _maximumAttempts = maximumAttempts;
             _delayFactory = delayFactory ?? CreateDefaultDelay;
@@ -62,7 +61,7 @@ namespace ColorVision.Copilot
                 {
                     return await base.GetResponseAsync(materializedMessages, options, cancellationToken);
                 }
-                catch (Exception ex) when (TryCreateRetry(ex, cancellationToken, attempt, out var retry))
+                catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
                     _onRetry?.Invoke(retry);
                     await _delayAsync(retry.Delay, cancellationToken);
@@ -86,7 +85,7 @@ namespace ColorVision.Copilot
                 {
                     enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
                 }
-                catch (Exception ex) when (TryCreateRetry(ex, cancellationToken, attempt, out var retry))
+                catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
                     _onRetry?.Invoke(retry);
                     await _delayAsync(retry.Delay, cancellationToken);
@@ -136,9 +135,9 @@ namespace ColorVision.Copilot
 
         private bool TryCreateRetry(
             Exception exception,
-            CancellationToken cancellationToken,
             int failedAttempt,
-            out CopilotProviderRetryInfo retry)
+            out CopilotProviderRetryInfo retry,
+            CancellationToken cancellationToken)
         {
             retry = null!;
             if (failedAttempt >= _maximumAttempts
