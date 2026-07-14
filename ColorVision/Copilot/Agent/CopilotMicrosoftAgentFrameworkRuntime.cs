@@ -1191,6 +1191,8 @@ namespace ColorVision.Copilot
             }
             if (tools.Any(tool => string.Equals(tool.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RollbackWorkspacePatch may restore an applied preview only when the current user explicitly asks to undo it; it requires a fresh native approval and an unchanged applied-file hash.");
+            if (tools.Any(tool => string.Equals(tool.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("RunWorkspaceValidation is the only built-in command execution surface. It accepts only approved dotnet build/test tasks for workspace solution or project files, always runs after the relevant write has completed, never restores packages, and treats a nonzero exit as a completed validation outcome to analyze rather than a reason to repeat the same call.");
             builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
             builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");

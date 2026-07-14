@@ -75,6 +75,7 @@ namespace ColorVision.Copilot
                 new CopilotPreviewWorkspacePatchTool(workspacePatchStore),
                 new CopilotApplyWorkspacePatchTool(workspacePatchStore),
                 new CopilotRollbackWorkspacePatchTool(workspacePatchStore),
+                new CopilotWorkspaceValidationTool(),
             };
         }
     }

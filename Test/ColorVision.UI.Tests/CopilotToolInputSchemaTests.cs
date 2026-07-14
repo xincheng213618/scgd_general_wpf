@@ -49,4 +49,46 @@ public sealed class CopilotToolInputSchemaTests
         Assert.Equal(20, input.StartLine);
         Assert.Equal(30, input.EndLine);
     }
+
+    [Fact]
+    public void ArbitrarySchema_ValidatesTopLevelTypesEnumsAndNumericBounds()
+    {
+        var schema = CopilotToolInputSchema.FromJsonSchema(JsonSerializer.SerializeToElement(new
+        {
+            type = "object",
+            properties = new
+            {
+                task = new { type = "string", @enum = new[] { "build", "test" } },
+                timeoutSeconds = new { type = "integer", minimum = 10, maximum = 600 },
+            },
+            required = new[] { "task" },
+            additionalProperties = false,
+        }));
+
+        Assert.False(schema.TryBind(new Dictionary<string, object?>
+        {
+            ["task"] = "shell",
+        }, out _, out var enumError));
+        Assert.Contains("must be one of", enumError, StringComparison.OrdinalIgnoreCase);
+
+        Assert.False(schema.TryBind(new Dictionary<string, object?>
+        {
+            ["task"] = "build",
+            ["timeoutSeconds"] = "600",
+        }, out _, out var typeError));
+        Assert.Contains("JSON integer", typeError, StringComparison.OrdinalIgnoreCase);
+
+        Assert.False(schema.TryBind(new Dictionary<string, object?>
+        {
+            ["task"] = "test",
+            ["timeoutSeconds"] = JsonSerializer.SerializeToElement(601),
+        }, out _, out var rangeError));
+        Assert.Contains("at most 600", rangeError, StringComparison.OrdinalIgnoreCase);
+
+        Assert.True(schema.TryBind(new Dictionary<string, object?>
+        {
+            ["task"] = JsonSerializer.SerializeToElement("build"),
+            ["timeoutSeconds"] = 300,
+        }, out _, out var successError), successError);
+    }
 }

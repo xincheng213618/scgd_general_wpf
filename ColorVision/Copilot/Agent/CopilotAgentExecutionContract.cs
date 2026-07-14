@@ -14,7 +14,10 @@ namespace ColorVision.Copilot
         DirectUrlEvidence,
         PublicWebSearch,
         WorkspaceEdit,
+        WorkspaceEditAndValidation,
         WorkspaceCreate,
+        WorkspaceCreateAndValidation,
+        WorkspaceValidation,
         WorkspaceRollback,
     }
 
@@ -22,22 +25,27 @@ namespace ColorVision.Copilot
     {
         private readonly string[] _preferredToolNames;
         private readonly HashSet<string> _acceptedToolNames;
+        private readonly string[][] _requiredToolGroups;
 
         private CopilotAgentExecutionContract(
             CopilotAgentExecutionRequirement requirement,
-            IEnumerable<string> preferredToolNames)
+            IEnumerable<IEnumerable<string>> requiredToolGroups)
         {
             Requirement = requirement;
-            _preferredToolNames = preferredToolNames
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            _requiredToolGroups = requiredToolGroups
+                .Select(group => group
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray())
+                .Where(group => group.Length > 0)
                 .ToArray();
+            _preferredToolNames = _requiredToolGroups.SelectMany(group => group).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             _acceptedToolNames = _preferredToolNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
         public CopilotAgentExecutionRequirement Requirement { get; }
 
-        public bool IsRequired => Requirement != CopilotAgentExecutionRequirement.None && _preferredToolNames.Length > 0;
+        public bool IsRequired => Requirement != CopilotAgentExecutionRequirement.None && _requiredToolGroups.Length > 0;
 
         public IReadOnlyList<string> AcceptedToolNames => _preferredToolNames;
 
@@ -46,7 +54,10 @@ namespace ColorVision.Copilot
             CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
             CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
             CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
+            CopilotAgentExecutionRequirement.WorkspaceEditAndValidation => "approved workspace edit followed by validation",
             CopilotAgentExecutionRequirement.WorkspaceCreate => "approved workspace file creation",
+            CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "approved workspace file creation followed by validation",
+            CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
             CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
             _ => "no mandatory tool evidence",
         };
@@ -64,30 +75,46 @@ namespace ColorVision.Copilot
                     && !CopilotToolIntentPolicy.NeedsWorkspaceCreate(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
                 {
-                    return new CopilotAgentExecutionContract(CopilotAgentExecutionRequirement.None, Array.Empty<string>());
+                    return None();
                 }
             }
 
             var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
             var workspaceCreateTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceCreateApplyTool).Select(tool => tool.Name);
+            var workspaceValidationTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceValidationTool).Select(tool => tool.Name);
             var workspaceRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceRollbackTool).Select(tool => tool.Name);
+            var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
             if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
             {
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.WorkspaceRollback,
-                    workspaceRollbackTools);
+                    [workspaceRollbackTools]);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
             {
                 return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.WorkspaceCreate,
-                    workspaceCreateTools);
+                    needsValidation
+                        ? CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation
+                        : CopilotAgentExecutionRequirement.WorkspaceCreate,
+                    needsValidation
+                        ? [workspaceCreateTools, workspaceValidationTools]
+                        : [workspaceCreateTools]);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
             {
                 return new CopilotAgentExecutionContract(
-                    CopilotAgentExecutionRequirement.WorkspaceEdit,
-                    workspaceApplyTools);
+                    needsValidation
+                        ? CopilotAgentExecutionRequirement.WorkspaceEditAndValidation
+                        : CopilotAgentExecutionRequirement.WorkspaceEdit,
+                    needsValidation
+                        ? [workspaceApplyTools, workspaceValidationTools]
+                        : [workspaceApplyTools]);
+            }
+            if (needsValidation)
+            {
+                return new CopilotAgentExecutionContract(
+                    CopilotAgentExecutionRequirement.WorkspaceValidation,
+                    [workspaceValidationTools]);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -96,18 +123,22 @@ namespace ColorVision.Copilot
             {
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.DirectUrlEvidence,
-                    urlFetchTools.Concat(webSearchTools));
+                    [urlFetchTools.Concat(webSearchTools)]);
             }
 
             if (CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(request))
             {
                 return new CopilotAgentExecutionContract(
                     CopilotAgentExecutionRequirement.PublicWebSearch,
-                    webSearchTools);
+                    [webSearchTools]);
             }
 
-            return new CopilotAgentExecutionContract(CopilotAgentExecutionRequirement.None, Array.Empty<string>());
+            return None();
         }
+
+        private static CopilotAgentExecutionContract None() => new(
+            CopilotAgentExecutionRequirement.None,
+            Array.Empty<IEnumerable<string>>());
 
         public CopilotAgentExecutionContractEvaluation Evaluate(IReadOnlyList<CopilotAgentStepRecord> steps)
         {
@@ -118,22 +149,37 @@ namespace ColorVision.Copilot
             var relevant = steps
                 .Where(step => step != null && _acceptedToolNames.Contains(step.Execution.ToolName))
                 .OrderBy(step => step.Round)
+                .ThenBy(step => step.Execution.StartedAtUtc)
                 .ToArray();
-            var successful = relevant.LastOrDefault(step =>
-                step.Observation.Success
-                && step.Execution.State == CopilotToolExecutionState.Completed);
-            if (successful != null)
+            var cursor = -1;
+            string[]? missingGroup = null;
+            foreach (var group in _requiredToolGroups)
+            {
+                var matchedIndex = Array.FindIndex(relevant, cursor + 1, step =>
+                    group.Contains(step.Execution.ToolName, StringComparer.OrdinalIgnoreCase)
+                    && step.Observation.Success
+                    && step.Execution.State == CopilotToolExecutionState.Completed);
+                if (matchedIndex < 0)
+                {
+                    missingGroup = group;
+                    break;
+                }
+                cursor = matchedIndex;
+            }
+            if (missingGroup == null)
             {
                 return new CopilotAgentExecutionContractEvaluation
                 {
                     IsRequired = true,
                     IsSatisfied = true,
-                    LastRelevantStep = successful,
+                    LastRelevantStep = cursor >= 0 ? relevant[cursor] : null,
                 };
             }
 
-            var attemptedNames = relevant.Select(step => step.Execution.ToolName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var untriedNames = _preferredToolNames.Where(name => !attemptedNames.Contains(name)).ToArray();
+            var attemptedAfterCursor = relevant.Skip(cursor + 1)
+                .Select(step => step.Execution.ToolName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var untriedNames = missingGroup.Where(name => !attemptedAfterCursor.Contains(name)).ToArray();
             return new CopilotAgentExecutionContractEvaluation
             {
                 IsRequired = true,
@@ -159,9 +205,15 @@ namespace ColorVision.Copilot
                         ? "required_web_search_missing"
                         : Requirement == CopilotAgentExecutionRequirement.WorkspaceEdit
                             ? "required_workspace_edit_missing"
-                            : Requirement == CopilotAgentExecutionRequirement.WorkspaceCreate
-                                ? "required_workspace_create_missing"
-                                : "required_workspace_rollback_missing",
+                            : Requirement == CopilotAgentExecutionRequirement.WorkspaceEditAndValidation
+                                ? "required_workspace_edit_validation_missing"
+                                : Requirement == CopilotAgentExecutionRequirement.WorkspaceCreate
+                                    ? "required_workspace_create_missing"
+                                    : Requirement == CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation
+                                        ? "required_workspace_create_validation_missing"
+                                        : Requirement == CopilotAgentExecutionRequirement.WorkspaceValidation
+                                            ? "required_workspace_validation_missing"
+                                            : "required_workspace_rollback_missing",
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -183,8 +235,14 @@ namespace ColorVision.Copilot
                     $"Execution contract: the user explicitly requested a public web search, but no successful search evidence has been collected. Call the available {preferred} tool now and base the answer on its observation. If every available search path fails, report a concrete blocker instead of presenting unverified claims as searched results.",
                 CopilotAgentExecutionRequirement.WorkspaceEdit =>
                     $"Execution contract: the user explicitly requested a workspace edit, but no approved edit has completed. First call PreviewWorkspacePatch with one exact replacement, inspect its preview, then call {preferred} with the returned previewId. Never claim the file changed before the approved tool returns success.",
+                CopilotAgentExecutionRequirement.WorkspaceEditAndValidation =>
+                    $"Execution contract: the requested workspace edit and validation are not both complete in order. Apply the approved patch first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before the write or claim an unverified result.",
                 CopilotAgentExecutionRequirement.WorkspaceCreate =>
                     $"Execution contract: the user explicitly requested a new workspace file, but no approved creation has completed. First call PreviewCreateWorkspaceFile with the complete path and content, inspect its preview, then call {preferred} with the returned previewId. Never claim the file exists before the approved tool returns success.",
+                CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation =>
+                    $"Execution contract: the requested file creation and validation are not both complete in order. Create the approved file first, then call RunWorkspaceValidation and base the answer on its reported outcome. The next untried required tool is {preferred}; never validate before creation or claim an unverified result.",
+                CopilotAgentExecutionRequirement.WorkspaceValidation =>
+                    $"Execution contract: the user explicitly requested workspace validation, but no approved validation result was collected. Call {preferred} with a workspace solution or project path and report its structured passed/failed outcome; do not claim a build or test was run without this result.",
                 CopilotAgentExecutionRequirement.WorkspaceRollback =>
                     $"Execution contract: the user explicitly requested a workspace patch rollback, but no approved rollback has completed. Call {preferred} with the exact prior previewId. Never claim the rollback completed before the approved tool returns success.",
                 _ => string.Empty,

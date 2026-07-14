@@ -43,6 +43,18 @@ namespace ColorVision.Copilot
             "create a file", "create the file", "add a file", "add the file", "create a class", "add a class", "new source file",
         };
 
+        private static readonly string[] WorkspaceValidationMarkers =
+        {
+            "编译项目", "编译一下", "构建项目", "构建一下", "运行测试", "跑测试", "执行测试", "测试一下", "验证修改", "验证一下", "检查构建",
+            "build the project", "run the build", "run tests", "run the tests", "test the project", "verify the changes", "validate the changes",
+        };
+
+        private static readonly string[] WorkspaceValidationExplanationMarkers =
+        {
+            "怎么构建", "如何构建", "构建原理", "怎么测试", "如何测试", "测试原理",
+            "how to build", "how do i build", "how to test", "how do i test", "explain the build", "explain the test",
+        };
+
         private static readonly string[] PublicWebMarkers =
         {
             "搜索网页", "网上搜索", "联网搜索", "查网页", "查官网", "官网", "公开资料", "公开信息",
@@ -146,6 +158,19 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, WorkspaceCreateMarkers);
         }
 
+        public static bool NeedsWorkspaceValidation(CopilotAgentRequest? request)
+        {
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || request.WritableLocalRootPaths.Count == 0
+                || ContainsAny(request.UserText, WorkspaceValidationExplanationMarkers))
+            {
+                return false;
+            }
+
+            return ContainsAny(request.UserText, WorkspaceValidationMarkers);
+        }
+
         public static bool NeedsPublicWebSearch(CopilotAgentRequest? request)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat || ExplicitlyDisallowsPublicWebAccess(request))
@@ -214,6 +239,11 @@ namespace ColorVision.Copilot
         internal static bool IsWorkspaceCreateApplyTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "ApplyCreateWorkspaceFile", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsWorkspaceValidationTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
