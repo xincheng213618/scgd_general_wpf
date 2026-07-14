@@ -193,6 +193,19 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void AgentActivity_ShowsGitDiffInspectionCompactly()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.UpsertAgentTrace(CreateCompletedTrace("git-diff-1", "InspectGitDiff", 64));
+
+        var trace = Assert.Single(message.VisibleAgentTraceEntries);
+
+        Assert.Equal("读取了 Git 差异", trace.ActivityLabel);
+        Assert.Equal("Git 差异读取完成。", trace.ActivityDescription);
+        Assert.Equal("64ms", trace.ActivityDurationLabel);
+    }
+
+    [Fact]
     public void AgentActivity_GroupsConsecutiveDatabaseQueries()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

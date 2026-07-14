@@ -39,29 +39,11 @@ namespace ColorVision.Copilot
         public const int MaxEntries = 100;
         private const int MaxPathLength = 2_048;
         private static readonly TimeSpan ExecutionTimeout = TimeSpan.FromSeconds(15);
-        private static readonly IReadOnlyDictionary<string, string?> GitEnvironmentOverrides = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["GIT_DIR"] = null,
-            ["GIT_WORK_TREE"] = null,
-            ["GIT_COMMON_DIR"] = null,
-            ["GIT_INDEX_FILE"] = null,
-            ["GIT_OBJECT_DIRECTORY"] = null,
-            ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = null,
-            ["GIT_NAMESPACE"] = null,
-            ["GIT_SHALLOW_FILE"] = null,
-            ["GIT_CEILING_DIRECTORIES"] = null,
-            ["GIT_DISCOVERY_ACROSS_FILESYSTEM"] = null,
-            ["GIT_CONFIG_COUNT"] = null,
-            ["GIT_CONFIG_PARAMETERS"] = null,
-            ["GIT_PREFIX"] = null,
-            ["GIT_EXEC_PATH"] = null,
-            ["GIT_OPTIONAL_LOCKS"] = "0",
-        };
         private readonly ICopilotShellProcessRunner _runner;
         private readonly Func<string?> _gitExecutableProvider;
 
         public CopilotGitWorkingTreeInspectionService()
-            : this(new CopilotShellProcessRunner(), FindTrustedGitExecutable)
+            : this(new CopilotShellProcessRunner(), CopilotGitProcessSupport.FindTrustedGitExecutable)
         {
         }
 
@@ -82,19 +64,18 @@ namespace ColorVision.Copilot
             input ??= CopilotAgentToolInput.Empty;
             cancellationToken.ThrowIfCancellationRequested();
 
-            var allowedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
-                request.SearchRootPaths.Concat(request.WritableLocalRootPaths));
+            var allowedRoots = CopilotGitProcessSupport.GetAllowedRoots(request);
             if (allowedRoots.Count == 0)
                 return Failure(CopilotToolFailureKind.NotFound, "No Git-inspectable workspace is available.", "The current request has no existing search or writable root.");
 
-            if (!TryResolveTargetDirectory(input.Path, allowedRoots, out var targetDirectory, out var containingRoot, out var pathError))
+            if (!CopilotGitProcessSupport.TryResolveTargetPath(input.Path, allowedRoots, requireExisting: true, out _, out var targetDirectory, out var containingRoot, out var pathError))
                 return Failure(CopilotToolFailureKind.Validation, "The requested Git inspection path is outside the current workspace.", pathError);
 
-            var repositoryRoot = FindRepositoryRoot(targetDirectory, containingRoot);
+            var repositoryRoot = CopilotGitProcessSupport.FindRepositoryRoot(targetDirectory, containingRoot);
             if (string.IsNullOrWhiteSpace(repositoryRoot))
                 return Failure(CopilotToolFailureKind.NotFound, "No Git working tree was found in the selected workspace.", "A .git directory or linked-worktree marker was not found within the allowed root.");
 
-            var gitExecutable = NormalizeFile(_gitExecutableProvider());
+            var gitExecutable = CopilotGitProcessSupport.NormalizeFile(_gitExecutableProvider());
             if (string.IsNullOrWhiteSpace(gitExecutable))
                 return Failure(CopilotToolFailureKind.NotFound, "Git could not be located.", "A trusted Git for Windows executable was not found.");
 
@@ -108,7 +89,7 @@ namespace ColorVision.Copilot
                     repositoryRoot,
                     ExecutionTimeout)
                 {
-                    EnvironmentOverrides = GitEnvironmentOverrides,
+                    EnvironmentOverrides = CopilotGitProcessSupport.EnvironmentOverrides,
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -301,144 +282,6 @@ namespace ColorVision.Copilot
                     ahead = Math.Max(0, parsedAhead);
                 else if (part.StartsWith('-') && int.TryParse(part.AsSpan(1), out var parsedBehind))
                     behind = Math.Max(0, parsedBehind);
-            }
-        }
-
-        private static bool TryResolveTargetDirectory(
-            string? requestedPath,
-            IReadOnlyList<string> allowedRoots,
-            out string targetDirectory,
-            out string containingRoot,
-            out string error)
-        {
-            targetDirectory = string.Empty;
-            containingRoot = string.Empty;
-            error = string.Empty;
-            var candidate = string.IsNullOrWhiteSpace(requestedPath) ? allowedRoots[0] : requestedPath.Trim();
-            try
-            {
-                candidate = Path.GetFullPath(candidate);
-                if (File.Exists(candidate))
-                    candidate = Path.GetDirectoryName(candidate) ?? string.Empty;
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-            {
-                error = "The selected path is invalid.";
-                return false;
-            }
-
-            if (!Directory.Exists(candidate))
-            {
-                error = "The selected path is not an existing directory.";
-                return false;
-            }
-            containingRoot = allowedRoots.FirstOrDefault(root => IsWithinRoot(candidate, root)) ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(containingRoot))
-            {
-                error = "The selected path is not inside a current request root.";
-                return false;
-            }
-            if (ContainsNestedReparsePoint(candidate, containingRoot))
-            {
-                error = "The selected path crosses a reparse point below the allowed root.";
-                return false;
-            }
-
-            targetDirectory = candidate;
-            return true;
-        }
-
-        private static string FindRepositoryRoot(string startDirectory, string containingRoot)
-        {
-            var current = startDirectory;
-            while (IsWithinRoot(current, containingRoot))
-            {
-                if (Directory.Exists(Path.Combine(current, ".git")) || File.Exists(Path.Combine(current, ".git")))
-                    return current;
-                if (string.Equals(current, containingRoot, StringComparison.OrdinalIgnoreCase))
-                    break;
-                current = Directory.GetParent(current)?.FullName ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(current))
-                    break;
-            }
-            return string.Empty;
-        }
-
-        private static bool ContainsNestedReparsePoint(string path, string root)
-        {
-            if (string.Equals(path, root, StringComparison.OrdinalIgnoreCase))
-                return false;
-            var relative = Path.GetRelativePath(root, path);
-            var current = root;
-            foreach (var segment in relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
-            {
-                current = Path.Combine(current, segment);
-                try
-                {
-                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                        return true;
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static bool IsWithinRoot(string path, string root)
-        {
-            if (string.Equals(path, root, StringComparison.OrdinalIgnoreCase))
-                return true;
-            var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
-                ? root
-                : root + Path.DirectorySeparatorChar;
-            return path.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string? FindTrustedGitExecutable()
-        {
-            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var candidates = new List<string>();
-            if (!string.IsNullOrWhiteSpace(programFiles))
-            {
-                candidates.Add(Path.Combine(programFiles, "Git", "cmd", "git.exe"));
-                candidates.Add(Path.Combine(programFiles, "Git", "bin", "git.exe"));
-            }
-            if (!string.IsNullOrWhiteSpace(programFilesX86))
-                candidates.Add(Path.Combine(programFilesX86, "Git", "cmd", "git.exe"));
-            if (!string.IsNullOrWhiteSpace(localAppData))
-                candidates.Add(Path.Combine(localAppData, "Programs", "Git", "cmd", "git.exe"));
-            var githubDesktopRoot = Path.Combine(localAppData, "GitHubDesktop");
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(localAppData) && Directory.Exists(githubDesktopRoot))
-                {
-                    candidates.AddRange(Directory.EnumerateDirectories(githubDesktopRoot, "app-*")
-                        .OrderByDescending(path => path, StringComparer.OrdinalIgnoreCase)
-                        .Select(path => Path.Combine(path, "resources", "app", "git", "cmd", "git.exe")));
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
-            return candidates.Select(NormalizeFile).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path));
-        }
-
-        private static string NormalizeFile(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
-                return string.Empty;
-            try
-            {
-                var fullPath = Path.GetFullPath(path);
-                return File.Exists(fullPath) ? fullPath : string.Empty;
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-            {
-                return string.Empty;
             }
         }
 

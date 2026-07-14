@@ -4257,6 +4257,59 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_ApprovesStructuredGitDiffBeforeExecution()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        Directory.CreateDirectory(_tempRoot);
+        Directory.CreateDirectory(Path.Combine(_tempRoot, ".git"));
+        var executablePath = Path.Combine(_tempRoot, "git.exe");
+        File.WriteAllBytes(executablePath, []);
+        var runner = new CapturingShellProcessRunner(new CopilotShellProcessResult(
+            0,
+            false,
+            "diff --git a/file.cs b/file.cs\n-old\n+new\n",
+            string.Empty,
+            TimeSpan.FromMilliseconds(20)));
+        var tool = new CopilotInspectGitDiffTool(
+            new CopilotGitDiffInspectionService(runner, () => executablePath));
+        using var fakeChatClient = new FunctionCallingChatClient(
+            "colorvision_inspect_git_diff",
+            new Dictionary<string, object?> { ["scope"] = "unstaged" });
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "看看当前代码改了什么",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [_tempRoot],
+        }, _ => { }, CancellationToken.None);
+        var action = await WaitForPendingActionAsync();
+
+        Assert.Equal("InspectGitDiff", action.ToolName);
+        Assert.Equal(0, runner.CallCount);
+        Assert.Contains("No command text", action.Description, StringComparison.Ordinal);
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        var result = await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, runner.CallCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectGitDiff", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Always, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("\"scope\":\"unstaged\"", step.Observation.Content, StringComparison.Ordinal);
+        const string resultMarker = "result_json: ";
+        using var observationJson = JsonDocument.Parse(step.Observation.Content[(step.Observation.Content.IndexOf(resultMarker, StringComparison.Ordinal) + resultMarker.Length)..]);
+        Assert.Contains("+new", observationJson.RootElement.GetProperty("sections")[0].GetProperty("patch").GetString(), StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DoesNotForceStableDiagnosticToolAfterModelAnswers()
     {
         var tool = new CopilotInspectTcpPortTool();

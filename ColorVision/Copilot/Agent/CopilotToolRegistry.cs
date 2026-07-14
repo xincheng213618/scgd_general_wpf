@@ -86,6 +86,7 @@ namespace ColorVision.Copilot
                 new CopilotInspectWindowsSystemTool(),
                 new CopilotInspectTcpPortTool(),
                 new CopilotInspectGitWorkingTreeTool(),
+                new CopilotInspectGitDiffTool(),
                 new CopilotShellCommandTool(),
                 new CopilotPreviewWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotApplyWorkspacePatchEnvelopeTool(workspacePatchStore),
