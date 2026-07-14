@@ -37,7 +37,10 @@ namespace ColorVision.ServiceHost
                     return;
                 }
 
-                await PromptInstallAsync(owner, status, "检测到 ColorVision 后台服务需要更新，但当前服务未运行，是否现在重新安装/更新？\n\n此操作需要管理员权限。").ConfigureAwait(true);
+                string installMessage = status.State == ServiceHostInstallState.Running
+                    ? "检测到 ColorVision 后台服务版本过旧，不支持安全自更新。是否使用管理员权限重新安装/更新？\n\n这是旧版本升级到新版权限验证机制所需的一次性操作。"
+                    : "检测到 ColorVision 后台服务需要更新，但当前服务未运行，是否现在重新安装/更新？\n\n此操作需要管理员权限。";
+                await PromptInstallAsync(owner, status, installMessage).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
