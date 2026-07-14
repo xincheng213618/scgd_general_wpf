@@ -12,7 +12,7 @@ namespace ProjectARVRPro.Process
         public ProjectARVRReuslt Result { get; set; } = null!;
         public ObjectiveTestResult ObjectiveTestResult { get; set; } = null!;
 
-        public RecipeConfig RecipeConfig { get;  } = RecipeManager.GetInstance().RecipeConfig;
+        public RecipeConfig RecipeConfig { get; } = ProcessManager.GetInstance().RecipeConfig;
 
         public ImageView ImageView { get; set; } = null!;
     }

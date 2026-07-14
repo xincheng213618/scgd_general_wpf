@@ -207,6 +207,13 @@ namespace ColorVision.Copilot
             if (availableTools.Count == 0)
                 return null;
 
+            if (CopilotFlowCreationSupport.HasCreateIntent(request.UserText))
+            {
+                var createFlowTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "CreateFlow", StringComparison.OrdinalIgnoreCase));
+                if (createFlowTool != null)
+                    return createFlowTool;
+            }
+
             if (CopilotApplicationCapability.HasMenuIntent(request.UserText))
             {
                 var menuTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "ExecuteMenu", StringComparison.OrdinalIgnoreCase));
@@ -235,64 +242,16 @@ namespace ColorVision.Copilot
                     return docsTool;
             }
 
-            var preferredToolNames = request.Mode switch
-            {
-                CopilotAgentMode.Web => new[]
-                {
-                    "SearchDocs",
-                    "WebSearch",
-                    "FetchUrl",
-                    "ReadAttachedFile",
-                    "ReadLocalFile",
-                    "SearchFiles",
-                    "GrepText",
-                },
-                CopilotAgentMode.Diagnose => new[]
-                {
-                    "GetRecentLog",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "WebSearch",
-                    "FetchUrl",
-                },
-                _ => new[]
-                {
-                    "SearchDocs",
-                    "ReadLocalFile",
-                    "ReadAttachedFile",
-                    "ListDirectory",
-                    "SearchFiles",
-                    "GrepText",
-                    "WebSearch",
-                    "GetRecentLog",
-                    "FetchUrl",
-                },
-            };
-
-            foreach (var toolName in preferredToolNames)
-            {
-                if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
-                    && CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count == 0)
-                {
-                    continue;
-                }
-
-                var match = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, toolName, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                    return match;
-            }
-
-            return availableTools.Count == 1 ? availableTools[0] : null;
+            return null;
         }
 
         private static CopilotAgentToolInput BuildFallbackToolInput(CopilotAgentRequest request, string toolName)
         {
-            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, "CreateFlow", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotAgentToolInput
                 {
@@ -458,7 +417,8 @@ namespace ColorVision.Copilot
                 || string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "SetTheme", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(toolName, "SetLanguage", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "TemplatePatch", StringComparison.OrdinalIgnoreCase);
         }
 
     }

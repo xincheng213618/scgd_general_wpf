@@ -7,21 +7,34 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ColorVision.Copilot
 {
-    public readonly record struct CopilotFetchedWebPageContent(string Url, string Title, string Description, string Content);
+    public readonly record struct CopilotFetchedWebPageContent(
+        string Url,
+        string Title,
+        string Description,
+        string Content,
+        IReadOnlyList<string>? RelatedResourceUrls = null,
+        bool IsSparseExtraction = false)
+    {
+        public IReadOnlyList<string> DiscoveredResourceUrls => RelatedResourceUrls ?? Array.Empty<string>();
+    }
 
     public static class CopilotWebPageToolSupport
     {
-        public const int MaxWebPageDownloadBytes = 256 * 1024;
+        public const int MaxWebPageDownloadBytes = 2 * 1024 * 1024;
         public const int MaxWebPageContentChars = 12000;
+        public const int MaxWebPageRedirects = 5;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
+        private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
         private static readonly HttpClient HttpClient = CreateHttpClient();
 
         public static List<string> ExtractHttpUrls(string text)
@@ -50,7 +63,8 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                && !Regex.IsMatch(normalized, "^[a-z][a-z0-9+.-]*:", RegexOptions.IgnoreCase))
             {
                 normalized = "https://" + normalized;
             }
@@ -60,24 +74,39 @@ namespace ColorVision.Copilot
 
         public static async Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken)
         {
-            var uri = NormalizeAndValidateWebPageUri(url);
-            await EnsureAllowedWebPageUriAsync(uri, cancellationToken);
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(mediaType)
-                && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)
-                && !mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
-                && !mediaType.Contains("xhtml", StringComparison.OrdinalIgnoreCase))
+            var currentUri = NormalizeAndValidateWebPageUri(url);
+            for (var redirectCount = 0; ; redirectCount++)
             {
-                throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
-            }
+                await EnsureAllowedWebPageUriAsync(currentUri, cancellationToken);
 
-            var html = await ReadWebPageContentAsync(response, cancellationToken);
-            return ExtractWebPageContent(uri, html);
+                using var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
+                using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (IsRedirectStatusCode(response.StatusCode))
+                {
+                    if (redirectCount >= MaxWebPageRedirects)
+                        throw new InvalidOperationException($"The web page exceeded the redirect limit ({MaxWebPageRedirects}).");
+                    currentUri = ResolveRedirectWebPageUri(currentUri, response.Headers.Location);
+                    continue;
+                }
+
+                response.EnsureSuccessStatusCode();
+                var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+                if (!IsSupportedWebContentType(mediaType))
+                    throw new InvalidOperationException($"The target URL returned an unsupported content type: {mediaType}");
+
+                var content = await ReadWebPageContentAsync(response, cancellationToken);
+                return ExtractDownloadedContent(currentUri, mediaType, content);
+            }
+        }
+
+        public static Uri ResolveRedirectWebPageUri(Uri currentUri, Uri? location)
+        {
+            ArgumentNullException.ThrowIfNull(currentUri);
+            if (location == null)
+                throw new InvalidOperationException("The web page returned a redirect without a Location header.");
+
+            var resolved = location.IsAbsoluteUri ? location : new Uri(currentUri, location);
+            return ValidateWebPageUri(resolved);
         }
 
         public static string BuildFetchedWebPageContextBlock(CopilotFetchedWebPageContent page)
@@ -88,6 +117,16 @@ namespace ColorVision.Copilot
 
             if (!string.IsNullOrWhiteSpace(page.Description))
                 builder.AppendLine($"Description: {page.Description}");
+
+            if (page.IsSparseExtraction)
+                builder.AppendLine("Extraction note: The downloaded page was large but exposed very little static text; it likely relies on script-rendered data.");
+
+            if (page.DiscoveredResourceUrls.Count > 0)
+            {
+                builder.AppendLine("Discovered same-origin data resources:");
+                foreach (var relatedUrl in page.DiscoveredResourceUrls)
+                    builder.Append("- ").AppendLine(relatedUrl);
+            }
 
             builder.AppendLine("Body:");
             builder.AppendLine(page.Content);
@@ -113,14 +152,31 @@ namespace ColorVision.Copilot
                 builder.AppendLine();
             }
 
+            if (page.DiscoveredResourceUrls.Count > 0)
+            {
+                builder.AppendLine("Related data resources:");
+                foreach (var relatedUrl in page.DiscoveredResourceUrls)
+                    builder.Append("- ").AppendLine(relatedUrl);
+                builder.AppendLine();
+            }
+
             builder.Append(page.Content);
             return builder.ToString();
         }
 
-        private static CopilotFetchedWebPageContent ExtractWebPageContent(Uri uri, string html)
+        public static CopilotFetchedWebPageContent ExtractDownloadedContent(Uri uri, string mediaType, string content)
+        {
+            ArgumentNullException.ThrowIfNull(uri);
+            if (IsStructuredWebContentType(mediaType))
+                return ExtractStructuredWebContent(uri, mediaType, content);
+            return ExtractWebPageContent(uri, content);
+        }
+
+        internal static CopilotFetchedWebPageContent ExtractWebPageContent(Uri uri, string html)
         {
             var document = new HtmlDocument();
             document.LoadHtml(html ?? string.Empty);
+            var relatedResourceUrls = ExtractRelatedResourceUrls(uri, document);
 
             foreach (var removableNode in document.DocumentNode.SelectNodes("//script|//style|//noscript|//svg") ?? Enumerable.Empty<HtmlNode>())
             {
@@ -152,7 +208,114 @@ namespace ColorVision.Copilot
             if (content.Length > MaxWebPageContentChars)
                 content = content[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
 
-            return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content);
+            var sparseExtraction = (html?.Length ?? 0) >= 20_000 && content.Length < 500;
+            return new CopilotFetchedWebPageContent(uri.ToString(), title, description, content, relatedResourceUrls, sparseExtraction);
+        }
+
+        private static CopilotFetchedWebPageContent ExtractStructuredWebContent(Uri uri, string mediaType, string content)
+        {
+            var normalized = (content ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new InvalidOperationException("The structured web resource was empty.");
+
+            try
+            {
+                if (IsJsonContentType(mediaType))
+                {
+                    using var document = JsonDocument.Parse(normalized);
+                    normalized = JsonSerializer.Serialize(document.RootElement, IndentedJsonOptions);
+                }
+                else
+                {
+                    normalized = XDocument.Parse(normalized, LoadOptions.PreserveWhitespace).ToString();
+                }
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("The target URL returned malformed JSON.", ex);
+            }
+            catch (System.Xml.XmlException ex)
+            {
+                throw new InvalidOperationException("The target URL returned malformed XML.", ex);
+            }
+
+            if (normalized.Length > MaxWebPageContentChars)
+                normalized = normalized[..MaxWebPageContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxWebPageContentChars} characters.>";
+
+            var title = Path.GetFileName(uri.AbsolutePath.TrimEnd('/'));
+            if (string.IsNullOrWhiteSpace(title))
+                title = uri.Host;
+            return new CopilotFetchedWebPageContent(
+                uri.ToString(),
+                title,
+                $"Structured web resource ({mediaType}).",
+                normalized);
+        }
+
+        private static List<string> ExtractRelatedResourceUrls(Uri pageUri, HtmlDocument document)
+        {
+            var results = new List<string>();
+            var nodes = document.DocumentNode.SelectNodes("//a[@href]|//link[@href]") ?? Enumerable.Empty<HtmlNode>();
+            foreach (var node in nodes)
+            {
+                var href = HtmlEntity.DeEntitize(node.GetAttributeValue("href", string.Empty)).Trim();
+                if (string.IsNullOrWhiteSpace(href) || !Uri.TryCreate(pageUri, href, out var candidate))
+                    continue;
+                if (!IsSameOrigin(pageUri, candidate) || !IsStructuredResourceLink(node, candidate))
+                    continue;
+
+                var normalized = candidate.GetLeftPart(UriPartial.Path);
+                if (!results.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                    results.Add(normalized);
+                if (results.Count >= 8)
+                    break;
+            }
+            return results;
+        }
+
+        private static bool IsStructuredResourceLink(HtmlNode node, Uri candidate)
+        {
+            var extension = Path.GetExtension(candidate.AbsolutePath);
+            if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".rss", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".atom", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var relation = node.GetAttributeValue("rel", string.Empty);
+            var type = node.GetAttributeValue("type", string.Empty);
+            return relation.Contains("alternate", StringComparison.OrdinalIgnoreCase)
+                && (IsStructuredWebContentType(type) || type.Contains("rss", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsSameOrigin(Uri left, Uri right)
+        {
+            return string.Equals(left.Scheme, right.Scheme, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(left.Host, right.Host, StringComparison.OrdinalIgnoreCase)
+                && left.Port == right.Port;
+        }
+
+        private static bool IsSupportedWebContentType(string mediaType)
+        {
+            return string.IsNullOrWhiteSpace(mediaType)
+                || mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)
+                || mediaType.Contains("text/plain", StringComparison.OrdinalIgnoreCase)
+                || IsStructuredWebContentType(mediaType);
+        }
+
+        private static bool IsStructuredWebContentType(string mediaType)
+        {
+            return IsJsonContentType(mediaType)
+                || mediaType.Contains("xml", StringComparison.OrdinalIgnoreCase)
+                || mediaType.Contains("rss", StringComparison.OrdinalIgnoreCase)
+                || mediaType.Contains("atom", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsJsonContentType(string mediaType)
+        {
+            return mediaType.Contains("json", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ExtractWebPageDescription(HtmlDocument document)
@@ -184,6 +347,11 @@ namespace ColorVision.Copilot
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
                 throw new InvalidOperationException("The web page URL is not valid.");
 
+            return ValidateWebPageUri(uri);
+        }
+
+        private static Uri ValidateWebPageUri(Uri uri)
+        {
             if (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
             {
@@ -192,8 +360,19 @@ namespace ColorVision.Copilot
 
             if (uri.IsLoopback || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Fetching localhost or loopback URLs is not allowed.");
+            if (!string.IsNullOrWhiteSpace(uri.UserInfo))
+                throw new InvalidOperationException("Web page URLs containing embedded credentials are not allowed.");
 
             return uri;
+        }
+
+        private static bool IsRedirectStatusCode(HttpStatusCode statusCode)
+        {
+            return statusCode is HttpStatusCode.MovedPermanently
+                or HttpStatusCode.Redirect
+                or HttpStatusCode.RedirectMethod
+                or HttpStatusCode.TemporaryRedirect
+                or HttpStatusCode.PermanentRedirect;
         }
 
         private static async Task EnsureAllowedWebPageUriAsync(Uri uri, CancellationToken cancellationToken)
@@ -221,11 +400,18 @@ namespace ColorVision.Copilot
 
             if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                if (address.IsIPv6LinkLocal || address.IsIPv6SiteLocal)
+                if (address.IsIPv4MappedToIPv6)
+                    return IsBlockedWebPageAddress(address.MapToIPv4());
+                if (address.Equals(IPAddress.IPv6Any)
+                    || address.IsIPv6LinkLocal
+                    || address.IsIPv6SiteLocal
+                    || address.IsIPv6Multicast)
                     return true;
 
                 var bytes = address.GetAddressBytes();
-                return bytes.Length > 0 && (bytes[0] & 0xFE) == 0xFC;
+                return bytes.Length != 16
+                    || (bytes[0] & 0xFE) == 0xFC
+                    || bytes is [0x20, 0x01, 0x0D, 0xB8, ..];
             }
 
             if (address.AddressFamily != AddressFamily.InterNetwork)
@@ -243,7 +429,14 @@ namespace ColorVision.Copilot
                 169 when bytesV4[1] == 254 => true,
                 172 when bytesV4[1] >= 16 && bytesV4[1] <= 31 => true,
                 192 when bytesV4[1] == 168 => true,
+                192 when bytesV4[1] == 0 && bytesV4[2] == 0 => true,
+                192 when bytesV4[1] == 0 && bytesV4[2] == 2 => true,
+                192 when bytesV4[1] == 88 && bytesV4[2] == 99 => true,
+                198 when bytesV4[1] is 18 or 19 => true,
+                198 when bytesV4[1] == 51 && bytesV4[2] == 100 => true,
+                203 when bytesV4[1] == 0 && bytesV4[2] == 113 => true,
                 100 when bytesV4[1] >= 64 && bytesV4[1] <= 127 => true,
+                >= 224 => true,
                 _ => false,
             };
         }
@@ -275,7 +468,10 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+            })
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };

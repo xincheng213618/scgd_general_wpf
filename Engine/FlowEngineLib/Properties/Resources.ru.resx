@@ -84,9 +84,6 @@
     <value>03_3 Коррекция</value>
   </data>
 
-  <data name="03_3 第三方算法" xml:space="preserve">
-    <value>033 Сторонние алгоритмы</value>
-  </data>
 
   <data name="03_4 KB" xml:space="preserve">
     <value>034 КБ</value>
@@ -180,9 +177,6 @@
     <value>Серый 255</value>
   </data>
 
-  <data name="状态触发" xml:space="preserve">
-    <value>Государственный триггер</value>
-  </data>
 
   <data name="物理设备控制" xml:space="preserve">
     <value>Контроль физического оборудования</value>
@@ -276,9 +270,6 @@
     <value>Имя изображения</value>
   </data>
 
-  <data name="图像水平翻转" xml:space="preserve">
-    <value>Изображение по горизонтали</value>
-  </data>
 
   <data name="ImageCompound" xml:space="preserve">
     <value>Сшивание изображений</value>
@@ -976,9 +967,6 @@
     <value>Шаблон параметров</value>
   </data>
 
-  <data name="参数模板ID" xml:space="preserve">
-    <value>Идентификатор шаблона параметра</value>
-  </data>
 
   <data name="过滤模板" xml:space="preserve">
     <value>Шаблон фильтра</value>
@@ -1184,9 +1172,6 @@
     <value>Ручное подтверждение</value>
   </data>
 
-  <data name="最小超时" xml:space="preserve">
-    <value>Минимальный тайм-аут</value>
-  </data>
 
   <data name="最大超时" xml:space="preserve">
     <value>Максимальный тайм-аут</value>
@@ -1231,4 +1216,13 @@
   <data name="Port" xml:space="preserve">
     <value>порт</value>
   </data>
+  <data name="允许失败继续" xml:space="preserve"><value>Продолжать при ошибке</value></data>
+  <data name="服务返回Fail时按正常流程继续" xml:space="preserve"><value>Продолжать обычный поток, если служба возвращает Fail</value></data>
+  <data name="参数" xml:space="preserve"><value>Параметры</value></data>
+  <data name="上电" xml:space="preserve"><value>Включить питание</value></data>
+  <data name="下电" xml:space="preserve"><value>Выключить питание</value></data>
+  <data name="切图" xml:space="preserve"><value>Сменить изображение</value></data>
+  <data name="电压电流" xml:space="preserve"><value>Напряжение/ток</value></data>
+  <data name="屏幕缺陷检测" xml:space="preserve"><value>Обнаружение дефектов экрана</value></data>
+  <data name="亮点检测V2" xml:space="preserve"><value>Обнаружение ярких точек V2</value></data>
 </root>

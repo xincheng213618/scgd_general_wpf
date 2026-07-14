@@ -270,11 +270,11 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     }
 
     private void handleWebPermissionRequest(PermissionRequest request) {
-        if (!isVideoCaptureOnly(request)) {
+        if (!isVideoCaptureOnly(request) || !isTrustedCameraOrigin(request.getOrigin())) {
             request.deny();
             return;
         }
@@ -289,6 +289,12 @@ public class MainActivity extends Activity {
         }
         pendingWebCameraRequest = request;
         requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_WEB_CAMERA_PERMISSION);
+    }
+
+    private boolean isTrustedCameraOrigin(Uri origin) {
+        return origin != null
+                && ("https".equalsIgnoreCase(origin.getScheme()) || "http".equalsIgnoreCase(origin.getScheme()))
+                && "xc213618.ddns.me".equalsIgnoreCase(origin.getHost());
     }
 
     private boolean isVideoCaptureOnly(PermissionRequest request) {
@@ -713,7 +719,7 @@ public class MainActivity extends Activity {
         }
 
         EditText manualInput = new EditText(this);
-        manualInput.setHint("手动输入地址，例如 http://192.168.1.10:8787/mobile?token=...");
+        manualInput.setHint("请优先扫描电脑端短时安全配对码");
         manualInput.setSingleLine(false);
         manualInput.setMinLines(2);
         manualInput.setTextColor(primaryTextColor());
@@ -910,6 +916,9 @@ public class MainActivity extends Activity {
         addSettingsRow(connectionSection, "服务地址", savedUrl.isEmpty() ? "未配置" : getBaseFromUrl(savedUrl), v -> openCurrentDeviceOrSetup());
         addSettingsRow(connectionSection, "控制端口", getPortFromUrl(savedUrl), null);
         addSettingsRow(connectionSection, "配对状态", savedUrl.isEmpty() ? "未配对" : "已配对", null);
+        addSettingsRow(connectionSection, "安全现场运维",
+                appPreferences.hasOperationsProfile() ? "设备密钥已配对" : "尚未配对",
+                v -> openOperations());
 
         LinearLayout permissionSection = makeSettingsSection();
         content.addView(permissionSection, settingsSectionParams());
@@ -935,6 +944,7 @@ public class MainActivity extends Activity {
         LinearLayout actionSection = makeSettingsSection();
         content.addView(actionSection, settingsSectionParams());
         addSettingsRow(actionSection, savedUrl.isEmpty() ? "添加电脑" : "重新扫描二维码", "", v -> startQrScan());
+        addSettingsRow(actionSection, "打开现场运维伴侣", "", v -> openOperations());
         addSettingsRow(actionSection, "回到设备页", "", v -> openCurrentDeviceOrSetup());
         if (!savedUrl.isEmpty()) {
             addSettingsRow(actionSection, "断开当前电脑", "", v -> {
@@ -1255,7 +1265,14 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
-                saveAndOpen(data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT));
+                String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
+                if (result != null && result.startsWith("colorvision://pair")) {
+                    Intent operations = new Intent(this, OperationsActivity.class);
+                    operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, result);
+                    startActivity(operations);
+                } else {
+                    saveAndOpen(result);
+                }
                 return;
             }
             Toast.makeText(this, "已取消扫码，可手动输入连接地址", Toast.LENGTH_SHORT).show();
@@ -1272,6 +1289,15 @@ public class MainActivity extends Activity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void openOperations() {
+        if (appPreferences.hasOperationsProfile()) {
+            startActivity(new Intent(this, OperationsActivity.class));
+        } else {
+            Toast.makeText(this, "请扫描电脑端现场运维配对码", Toast.LENGTH_SHORT).show();
+            startQrScan();
+        }
     }
 
     @Override
@@ -1300,6 +1326,10 @@ public class MainActivity extends Activity {
         String url = parseConnectionUrl(rawContent);
         if (url.isEmpty()) {
             Toast.makeText(this, "没有识别到有效的连接地址", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (AppPreferences.containsUrlCredential(url)) {
+            Toast.makeText(this, "旧版 URL token 配对码已停用，请在电脑端刷新安全运维配对码", Toast.LENGTH_LONG).show();
             return;
         }
 

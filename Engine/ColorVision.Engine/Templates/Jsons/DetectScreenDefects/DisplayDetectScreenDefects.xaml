@@ -22,7 +22,7 @@
 
             <DockPanel Margin="0,2">
                 <Button Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="RunTemplate_Click" />
-                <TextBlock Text="屏幕缺陷检测" Width="60"/>
+                <TextBlock Text="{x:Static properties:Resources.ScreenDefectDetection}" Width="60"/>
                 <ComboBox x:Name="ComboxTemplate" SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -31,9 +31,9 @@
             </DockPanel>
 
             <DockPanel Margin="0,2">
-                <TextBlock Text="输出文件" Width="60"/>
+                <TextBlock Text="{x:Static properties:Resources.OutputFile}" Width="60"/>
                 <TextBox Width="130" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" Text="{Binding OutputFileName, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock Text="缓存" Margin="6,0,2,0"/>
+                <TextBlock Text="{x:Static properties:Resources.Cache}" Margin="6,0,2,0"/>
                 <TextBox Width="52" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" Text="{Binding BufferLen, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
 

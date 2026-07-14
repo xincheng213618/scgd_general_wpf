@@ -55,8 +55,21 @@ namespace ProjectARVRPro
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex = 0;
 
+        [DisplayName("显示日志栏"), Category("界面")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
+
+        [DisplayName("显示结果栏"), Category("界面")]
+        public bool ResultControlVisibility { get => _ResultControlVisibility; set { _ResultControlVisibility = value; OnPropertyChanged(); } }
+        private bool _ResultControlVisibility = true;
+
+        [DisplayName("显示状态栏"), Category("界面")]
+        public bool StatusControlVisibility { get => _StatusControlVisibility; set { _StatusControlVisibility = value; OnPropertyChanged(); } }
+        private bool _StatusControlVisibility = true;
+
+        [DisplayName("显示进度栏"), Category("界面")]
+        public bool ProgressControlVisibility { get => _ProgressControlVisibility; set { _ProgressControlVisibility = value; OnPropertyChanged(); } }
+        private bool _ProgressControlVisibility = true;
 
 
         [DisplayName("重试次数")]

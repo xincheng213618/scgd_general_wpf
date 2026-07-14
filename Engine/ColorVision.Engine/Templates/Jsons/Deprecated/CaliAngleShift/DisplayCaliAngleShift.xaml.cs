@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择色差校正模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, string.Format(Properties.Resources.SelectTemplateFirstFormat, Properties.Resources.ColorCorrection))) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
                 return false;
             }
 

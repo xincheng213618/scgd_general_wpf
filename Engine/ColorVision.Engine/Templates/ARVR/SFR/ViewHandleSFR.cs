@@ -124,9 +124,9 @@ namespace ColorVision.Engine.Templates.SFR
 
                 RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Analyze, Command = relayCommand });
 
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmSFR), ImageFilePath = result.FilePath })) });
 
             }
         }

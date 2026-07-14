@@ -22,6 +22,11 @@ public static class Lang
 
 	public static string Get(string key)
 	{
+		return GetOrDefault(key, "[" + key + "]");
+	}
+
+	public static string GetOrDefault(string key, string fallback)
+	{
 		try
 		{
 			string value = _resourceManager.GetString(key);
@@ -39,7 +44,7 @@ public static class Lang
 			catch { }
 		}
 
-		return "[" + key + "]";
+		return fallback;
 	}
 
 }

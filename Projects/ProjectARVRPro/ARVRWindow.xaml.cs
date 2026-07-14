@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -36,6 +37,11 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro
 {
+    public class ARVRWindowConfig : WindowConfig
+    {
+        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+    }
+
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
@@ -173,15 +179,8 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
 
-            if (ProjectARVRProConfig.Instance.LogControlVisibility)
-            {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                LogGrid.Children.Add(logOutput);
-            }
-            else
-            {
-                LogGrid.Visibility = Visibility.Collapsed;
-            }
+            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogGrid.Children.Add(logOutput);
 
 
             this.Closed += (s, e) =>
@@ -211,6 +210,15 @@ namespace ProjectARVRPro
         private void OpenDatabaseCleanup_Click(object sender, RoutedEventArgs e)
         {
             DatabaseCleanupWindow.OpenWindow();
+        }
+
+        private void ViewOptions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.ContextMenu != null)
+            {
+                button.ContextMenu.PlacementTarget = button;
+                button.ContextMenu.IsOpen = true;
+            }
         }
 
         public void Delete()
@@ -1065,7 +1073,7 @@ namespace ProjectARVRPro
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
-            outputText.Background = Brushes.White;
+            outputText.Background = Brushes.Transparent;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1084,7 +1092,7 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        outputText.Background = Brushes.White;
+                        outputText.Background = Brushes.Transparent;
                         outputText.Document.Blocks.Clear(); // 清除之前的内容
                     }
 

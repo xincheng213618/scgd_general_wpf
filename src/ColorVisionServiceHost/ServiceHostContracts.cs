@@ -5,13 +5,32 @@ using System.Text;
 
 namespace ColorVisionServiceHost;
 
-internal sealed class ServiceHostRequest
+public sealed class ServiceHostRequest
 {
+    public int ProtocolVersion { get; set; } = 2;
+
     public string RequestId { get; set; } = Guid.NewGuid().ToString("N");
+
+    public string OperationId { get; set; } = Guid.NewGuid().ToString("N");
 
     public string Command { get; set; } = string.Empty;
 
     public JToken? Data { get; set; }
+
+    public string? BrokerTicket { get; set; }
+}
+
+public sealed class ServiceHostRequestContext
+{
+    public int ProcessId { get; init; }
+
+    public string UserSid { get; init; } = string.Empty;
+
+    public string UserName { get; init; } = string.Empty;
+
+    public string ProcessPath { get; init; } = string.Empty;
+
+    public string ProcessSha256 { get; init; } = string.Empty;
 }
 
 internal sealed class ServiceHostResponse

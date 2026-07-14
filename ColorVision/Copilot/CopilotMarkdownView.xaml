@@ -3,15 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              mc:Ignorable="d"
              d:DesignHeight="120"
              d:DesignWidth="400">
     <Grid Background="Transparent">
-        <wv2:WebView2 x:Name="Browser"
-                      Focusable="False"
-                      IsHitTestVisible="False"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Top" />
+        <RichTextBox x:Name="DocumentViewer"
+                     AcceptsReturn="True"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Cursor="IBeam"
+                     FocusVisualStyle="{x:Null}"
+                     HorizontalScrollBarVisibility="Disabled"
+                     IsDocumentEnabled="True"
+                     IsReadOnly="True"
+                     IsReadOnlyCaretVisible="False"
+                     Padding="0"
+                     VerticalScrollBarVisibility="Disabled" />
     </Grid>
 </UserControl>

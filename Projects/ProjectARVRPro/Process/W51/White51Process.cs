@@ -12,7 +12,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W51
 {
-    public class White51Process : ProcessBase<W51ProcessConfig>
+    public class White51Process : ProcessBase<W51ProcessConfig, W51RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -131,9 +131,5 @@ namespace ProjectARVRPro.Process.W51
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W51RecipeConfig>();
-        }
     }
 }

@@ -16,7 +16,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W255
 {
-    public class White255Process : ProcessBase<W255ProcessConfig>
+    public class White255Process : ProcessBase<W255ProcessConfig, W255RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -289,9 +289,5 @@ namespace ProjectARVRPro.Process.W255
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W255RecipeConfig>();
-        }
     }
 }

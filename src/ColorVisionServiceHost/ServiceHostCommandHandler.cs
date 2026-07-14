@@ -7,6 +7,7 @@ namespace ColorVisionServiceHost;
 
 internal sealed class ServiceHostCommandHandler
 {
+    private readonly ServiceHostBrokerTicketService _tickets = new();
     private static readonly Dictionary<string, string> MaintenanceTaskScripts = new(StringComparer.OrdinalIgnoreCase)
     {
         ["register-file-associations"] = "RegisterFileAssociations.ps1",
@@ -18,21 +19,58 @@ internal sealed class ServiceHostCommandHandler
         ["RegistrationCenterService"] = ["RegWindowsService"],
         ["CVMainService_x64"] = ["CVMainWindowsService_x64"],
         ["CVMainService_dev"] = ["CVMainWindowsService_dev"],
+        ["CVArchService"] = ["RegWindowsService"],
         ["MySQL"] = ["mysqld"],
         ["MySQL57"] = ["mysqld"],
         ["MySQL80"] = ["mysqld"],
         ["mosquitto"] = ["mosquitto"],
     };
+    private static readonly Dictionary<string, string[]> ServiceExecutableNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["RegistrationCenterService"] = ["RegWindowsService.exe"],
+        ["CVMainService_x64"] = ["CVMainWindowsService_x64.exe"],
+        ["CVMainService_dev"] = ["CVMainWindowsService_dev.exe"],
+        ["CVArchService"] = ["RegWindowsService.exe"],
+        ["MySQL"] = ["mysqld.exe"],
+        ["MySQL57"] = ["mysqld.exe"],
+        ["MySQL80"] = ["mysqld.exe"],
+        ["mosquitto"] = ["mosquitto.exe"],
+    };
 
     private readonly DateTimeOffset _startedAt = DateTimeOffset.Now;
 
-    public ServiceHostResponse Handle(ServiceHostRequest request)
+    public ServiceHostResponse Handle(ServiceHostRequest request, ServiceHostRequestContext context)
     {
         string command = request.Command.Trim();
-        ServiceHostLog.Write($"Command received: {command}");
+        ServiceHostLog.Write($"Command received: {command}; operation={request.OperationId}; callerSid={context.UserSid}; callerPid={context.ProcessId}; callerSha256={context.ProcessSha256}");
 
         try
         {
+            if (request.ProtocolVersion != 2)
+                return ServiceHostResponse.FromObject(request.RequestId, false, "unsupported_protocol_version");
+
+            if (command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase))
+            {
+                string targetCommand = GetRequiredDataValue(request, "command").Trim();
+                if (!RequiresBrokerTicket(targetCommand))
+                    return ServiceHostResponse.FromObject(request.RequestId, false, "broker_ticket_target_not_allowed");
+                string ticket = _tickets.Issue(request, context, targetCommand);
+                ServiceHostLog.Write($"Broker ticket issued: operation={request.OperationId}; target={targetCommand}; callerSid={context.UserSid}; callerPid={context.ProcessId}");
+                return ServiceHostResponse.FromObject(request.RequestId, true, "broker_ticket_issued", new
+                {
+                    ticket,
+                    expiresInSeconds = 60,
+                    command = targetCommand,
+                    operationId = request.OperationId,
+                });
+            }
+
+            if (RequiresBrokerTicket(command) && !_tickets.ValidateAndConsume(request, context, out string ticketError))
+            {
+                ServiceHostLog.Write($"Broker ticket denied: operation={request.OperationId}; command={command}; error={ticketError}; callerSid={context.UserSid}; callerPid={context.ProcessId}");
+                return ServiceHostResponse.FromObject(request.RequestId, false, ticketError);
+            }
+
             ServiceHostResponse response = command.ToLowerInvariant() switch
             {
                 "ping" => ServiceHostResponse.FromObject(request.RequestId, true, "pong", new
@@ -60,6 +98,7 @@ internal sealed class ServiceHostCommandHandler
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
             };
 
+            ServiceHostLog.Write($"Command completed: operation={request.OperationId}; command={command}; success={response.Success}; callerSid={context.UserSid}; callerPid={context.ProcessId}");
             return response;
         }
         catch (Exception ex)
@@ -531,6 +570,8 @@ internal sealed class ServiceHostCommandHandler
             return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable was not found: {executablePath}");
         if (!string.Equals(Path.GetExtension(executablePath), ".exe", StringComparison.OrdinalIgnoreCase))
             return ServiceHostResponse.FromObject(request.RequestId, false, $"Service executable must be an .exe file: {executablePath}");
+        if (!IsAllowedServiceExecutable(serviceName, executablePath))
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"Executable is not approved for service {serviceName}: {Path.GetFileName(executablePath)}");
 
         string displayName = GetOptionalDataValue(request, "displayName", serviceName).Trim();
         string description = GetOptionalDataValue(request, "description", string.Empty).Trim();
@@ -958,11 +999,13 @@ internal sealed class ServiceHostCommandHandler
 
     private static bool IsAllowedServiceName(string serviceName)
     {
-        if (string.IsNullOrWhiteSpace(serviceName) || serviceName.Length > 256)
-            return false;
+        return ServiceExecutableNames.ContainsKey(serviceName);
+    }
 
-        return serviceName.IndexOfAny(['\\', '/', '"']) < 0
-            && !serviceName.Any(char.IsControl);
+    private static bool IsAllowedServiceExecutable(string serviceName, string executablePath)
+    {
+        return ServiceExecutableNames.TryGetValue(serviceName, out string[]? allowedNames)
+            && allowedNames.Contains(Path.GetFileName(executablePath), StringComparer.OrdinalIgnoreCase);
     }
 
     private static bool IsAllowedMySqlServiceName(string serviceName)
@@ -1353,6 +1396,13 @@ internal sealed class ServiceHostCommandHandler
         {
             return false;
         }
+    }
+
+    private static bool RequiresBrokerTicket(string command)
+    {
+        return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
+            && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
+            && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed record ProcessResult(string FileName, string Arguments, int ExitCode, string Output, string Error);

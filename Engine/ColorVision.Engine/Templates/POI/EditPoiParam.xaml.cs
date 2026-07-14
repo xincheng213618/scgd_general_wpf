@@ -1238,11 +1238,11 @@ namespace ColorVision.Engine.Templates.POI
                     if (TryOpenMeasureImage(item, allowCieFile: true))
                         return;
                 }
-                MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                        MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
             }
         }
 
@@ -1309,11 +1309,11 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         return;
                     }
-                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                        MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                 }
             }
             else
@@ -1649,12 +1649,12 @@ namespace ColorVision.Engine.Templates.POI
                                 }
                                 else
                                 {
-                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                    MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailedNoPath);
                                 }
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                                MessageBox.Show(Properties.Resources.OpenLatestServiceImageFailed, ex.Message);
                             }
                         }
                     }

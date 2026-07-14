@@ -99,7 +99,7 @@ namespace ColorVision.Engine.Templates.POI
 
             if (DeviceCamera.PhyCamera == null)
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfigurePhysicalCameraBeforeCalibration, "ColorVision");
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(DeviceCamera.PhyCamera);

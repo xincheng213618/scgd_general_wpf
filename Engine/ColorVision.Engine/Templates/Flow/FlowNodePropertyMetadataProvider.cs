@@ -2,6 +2,7 @@ using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
 using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
+using ST.Library.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public string? GetDisplayName(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetCustomAttribute<STNodePropertyAttribute>(inherit: true)?.Name;
+            return Localize(propertyInfo.GetCustomAttribute<STNodePropertyAttribute>(inherit: true)?.Name);
         }
 
         public Type? GetEditorType(PropertyInfo propertyInfo)
@@ -59,12 +60,20 @@ namespace ColorVision.Engine.Templates.Flow
 
         public string? GetDescription(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetCustomAttribute<STNodePropertyAttribute>(inherit: true)?.Description;
+            return Localize(propertyInfo.GetCustomAttribute<STNodePropertyAttribute>(inherit: true)?.Description);
         }
 
         public string? GetCategory(PropertyInfo propertyInfo)
         {
-            return propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category;
+            return Localize(propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category);
+        }
+
+        private static string? Localize(string? resourceKey)
+        {
+            if (string.IsNullOrWhiteSpace(resourceKey))
+                return resourceKey;
+
+            return Lang.GetOrDefault(resourceKey, resourceKey);
         }
     }
 }

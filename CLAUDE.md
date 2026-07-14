@@ -34,7 +34,7 @@ Native/                   # C++ OpenCV helper DLL and exported algorithms
 Plugins/                  # Runtime-discovered plugins
 ├── EventVWR/, Spectrum/, SystemMonitor/, Pattern/, etc.
 Projects/                 # Customer-specific project bundles
-├── ProjectARVR/, ProjectBlackMura/, ProjectKB/, etc.
+├── ProjectARVRLite/, ProjectARVRPro/, ProjectKB/, etc.
 Backend/                  # Python Flask backend for plugin marketplace
 └── marketplace/          # Plugin distribution server
 Scripts/                  # Python build and publish scripts
@@ -93,7 +93,7 @@ Scripts\release.bat
 Scripts\package_plugin.bat Pattern
 
 # Build project package
-Scripts\package_project.bat ProjectARVR
+Scripts\package_project.bat ProjectLUX
 ```
 
 ### Backend (Flask)

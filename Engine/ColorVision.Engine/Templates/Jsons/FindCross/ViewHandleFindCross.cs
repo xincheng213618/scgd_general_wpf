@@ -178,10 +178,10 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                         avalonEditWindow.ShowDialog();
                     }, a => File.Exists(mtfresult.ResultFileName));
 
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "选中1.0结果集", Command = SelectrelayCommand });
-                    result.ContextMenu.Items.Add(new MenuItem() { Header = "打开1.0结果集", Command = OpenrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.SelectResultSetFormat, "1.0"), Command = SelectrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = string.Format(Properties.Resources.OpenResultSetFormat, "1.0"), Command = OpenrelayCommand });
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFindCross), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFindCross), ImageFilePath = result.FilePath })) });
 
             }
         }

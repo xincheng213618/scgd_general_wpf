@@ -255,6 +255,34 @@ namespace ColorVision.UI.ServiceHost
 
         private ServiceHostResponse Send(string command, object? data, TimeSpan timeout)
         {
+            string operationId = Guid.NewGuid().ToString("N");
+            string? brokerTicket = null;
+            if (RequiresBrokerTicket(command))
+            {
+                ServiceHostRequest ticketRequest = new()
+                {
+                    OperationId = operationId,
+                    Command = "issue-broker-ticket",
+                    Data = CreateDataToken(new { command }),
+                };
+                ServiceHostResponse ticketResponse = SendRaw(ticketRequest, timeout);
+                if (!ticketResponse.Success || string.IsNullOrWhiteSpace(ticketResponse.Data?["ticket"]?.ToString()))
+                    return ticketResponse;
+                brokerTicket = ticketResponse.Data!["ticket"]!.ToString();
+            }
+
+            ServiceHostRequest request = new()
+            {
+                OperationId = operationId,
+                Command = command,
+                Data = CreateDataToken(data),
+                BrokerTicket = brokerTicket,
+            };
+            return SendRaw(request, timeout);
+        }
+
+        private ServiceHostResponse SendRaw(ServiceHostRequest request, TimeSpan timeout)
+        {
             int timeoutMilliseconds = Math.Max(1, (int)timeout.TotalMilliseconds);
             using NamedPipeClientStream pipe = new(".", _pipeName, PipeDirection.InOut);
             pipe.Connect(timeoutMilliseconds);
@@ -265,11 +293,6 @@ namespace ColorVision.UI.ServiceHost
                 pipe.WriteTimeout = timeoutMilliseconds;
             }
 
-            ServiceHostRequest request = new()
-            {
-                Command = command,
-                Data = CreateDataToken(data),
-            };
             string requestJson = JsonConvert.SerializeObject(request, ServiceHostProtocol.JsonSettings);
 
             using StreamWriter writer = new(pipe, ServiceHostProtocol.Encoding, leaveOpen: true) { AutoFlush = true };
@@ -282,6 +305,13 @@ namespace ColorVision.UI.ServiceHost
 
             return JsonConvert.DeserializeObject<ServiceHostResponse>(responseJson, ServiceHostProtocol.JsonSettings)
                 ?? throw new InvalidOperationException("ColorVisionServiceHost returned an invalid response.");
+        }
+
+        private static bool RequiresBrokerTicket(string command)
+        {
+            return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
+                && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
+                && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase);
         }
 
         private static JToken? CreateDataToken(object? data)

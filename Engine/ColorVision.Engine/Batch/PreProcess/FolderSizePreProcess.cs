@@ -21,35 +21,30 @@ namespace ColorVision.Engine.Batch.PreProcess
         private const long DefaultTargetBytes = 50L * OneGb;
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-        [Category("缓存清理")]
-        [Display(Name = "缓存目录", Description = "需要监控和清理的缓存目录。可以配置多个目录。")]
+        [Display(Name = "PreProcess_CacheFolders", Description = "PreProcess_CacheFoldersDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
         public List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default" };
 
-        [Category("缓存清理")]
-        [Display(Name = "缓存上限", Description = "缓存总大小超过该值后开始清理。")]
+        [Display(Name = "PreProcess_CacheLimit", Description = "PreProcess_CacheLimitDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TriggerSizeBytes { get => _TriggerSizeBytes; set { _TriggerSizeBytes = value; OnPropertyChanged(); } }
         private long _TriggerSizeBytes = DefaultTriggerBytes;
 
-        [Category("缓存清理")]
-        [Display(Name = "清理到", Description = "触发清理后删除最旧的缓存文件，直到缓存大小低于该值。")]
+        [Display(Name = "PreProcess_CleanupTarget", Description = "PreProcess_CleanupTargetDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(FolderSizeBytesPropertiesEditor))]
         public long TargetSizeBytes { get => _TargetSizeBytes; set { _TargetSizeBytes = value; OnPropertyChanged(); } }
         private long _TargetSizeBytes = DefaultTargetBytes;
 
-        [Category("缓存清理")]
-        [Display(Name = "缓存文件类型", Description = "只清理这些扩展名的文件；为空表示所有文件。")]
+        [Display(Name = "PreProcess_CacheFileTypes", Description = "PreProcess_CacheFileTypesDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
         public string FileExtensions { get => _FileExtensions; set { _FileExtensions = value; OnPropertyChanged(); } }
         private string _FileExtensions = ".jpg,.png,.tiff,.bmp,.cvraw,.cvcie";
 
-        [Category("缓存清理")]
-        [Display(Name = "包含子目录", Description = "启用后会统计并清理缓存目录下的子目录文件。")]
+        [Display(Name = "PreProcess_IncludeSubfolders", Description = "PreProcess_IncludeSubfoldersDesc", GroupName = "PreProcess_CacheCleanupGroup", ResourceType = typeof(Properties.Resources))]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
         private bool _IncludeSubfolders = true;
     }
 
-    [PreProcess("缓存大小清理", "缓存超过上限后，按时间删除最旧的缓存文件")]
+    [PreProcess("PreProcess_CacheCleanupName", "PreProcess_CacheCleanupDesc", ResourceType = typeof(Properties.Resources))]
     public class FolderSizePreProcess : PreProcessBase<FolderSizePreProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcess));

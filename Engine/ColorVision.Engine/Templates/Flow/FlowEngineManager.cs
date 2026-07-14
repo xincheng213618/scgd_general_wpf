@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Templates.Flow
     }
 
 
-    public class FlowEngineManager : ViewModelBase
+    public class FlowEngineManager : ViewModelBase, ICopilotBusinessContextSource
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
 
@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
             AskCopilotFlowCommand = new RelayCommand(a => AskCopilotAboutFlow());
-            ContextMenu.Items.Add(new MenuItem() { Header = "问 AI 分析当前流程", Command = AskCopilotFlowCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Property, Command = Config.EditCommand });
 
             FlowEngineControl = new FlowEngineControl(false);
@@ -166,18 +166,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void AskCopilotAboutFlow()
         {
-            var contextItem = CopilotBusinessContextBuilder.BuildFlowContextItem(CaptureCopilotFlowSnapshot());
-            var result = CopilotPromptRequestHelper.Dispatch(new CopilotPromptRequestOptions
-            {
-                Mode = CopilotPromptMode.Diagnose,
-                Prompt = "请基于已附加的流程上下文，解释当前流程结构、关键节点参数、最近运行/失败信息，并给出优先排查建议。不要假设流程已经重新运行，只能使用快照中已有的信息。",
-                StartNewConversation = true,
-                SendNow = true,
-                AttachContextSnapshot = true,
-                ContextAttachmentTitle = contextItem.Title,
-                ContextAttachmentSourceId = "flow-engine-manager",
-                ContextItems = new[] { contextItem },
-            });
+            var snapshot = CaptureCopilotFlowSnapshot();
+            var contextItem = CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot);
+            var bundle = CopilotBusinessContextBundle.FromItem(snapshot.SourceId, contextItem);
+            var prompt = CopilotBusinessContextCoordinator.BuildFlowDiagnosisPrompt(snapshot, Properties.Resources.Flow_AiAnalyzeCurrentFlowPrompt);
+            var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(bundle, prompt);
 
             if (!result.WasSent)
             {
@@ -192,6 +185,8 @@ namespace ColorVision.Engine.Templates.Flow
             var nodes = BuildNodeSnapshots();
             var batch = Batch;
             var recentRunMessage = View?.logTextBox?.Text ?? string.Empty;
+            var failureEvidence = ExtractRecentFlowFailureEvidence(recentRunMessage);
+            var focusedNodes = nodes.Where(node => node.IsSelected || node.IsActive).ToArray();
 
             return new CopilotFlowContextSnapshot
             {
@@ -207,9 +202,17 @@ namespace ColorVision.Engine.Templates.Flow
                 BatchProgress = $"{BatchProgress:0.##}%",
                 LastNodeSummary = DisplayFlow?.LastNode?.ToShortString() ?? string.Empty,
                 RecentRunMessage = recentRunMessage,
-                RecentFailureSummary = ExtractRecentFlowFailureSummary(recentRunMessage),
+                RecentFailureSummary = string.Join(Environment.NewLine, failureEvidence),
+                FocusedNodeSummary = string.Join(", ", focusedNodes.Select(node => FirstNonEmpty(node.Title, node.NodeName, node.NodeType, node.NodeId))),
+                FailureEvidence = failureEvidence,
                 Nodes = nodes,
             };
+        }
+
+        public CopilotBusinessContextBundle CaptureCopilotContext()
+        {
+            var snapshot = CaptureCopilotFlowSnapshot();
+            return CopilotBusinessContextBundle.FromItem(snapshot.SourceId, CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot));
         }
 
         private IReadOnlyList<CopilotFlowNodeContextSnapshot> BuildNodeSnapshots()
@@ -252,10 +255,10 @@ namespace ColorVision.Engine.Templates.Flow
                 .ToArray();
         }
 
-        private static string ExtractRecentFlowFailureSummary(string? recentRunMessage)
+        private static IReadOnlyList<string> ExtractRecentFlowFailureEvidence(string? recentRunMessage)
         {
             if (string.IsNullOrWhiteSpace(recentRunMessage))
-                return string.Empty;
+                return Array.Empty<string>();
 
             var failureTerms = new[]
             {
@@ -275,7 +278,7 @@ namespace ColorVision.Engine.Templates.Flow
                 .Reverse()
                 .ToArray();
 
-            return lines.Length == 0 ? string.Empty : string.Join(Environment.NewLine, lines);
+            return lines;
         }
 
         private static IReadOnlyList<CopilotContextProperty> BuildNodeParameterSummary(STNode node)

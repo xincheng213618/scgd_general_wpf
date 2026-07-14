@@ -24,7 +24,7 @@
         </Style>
     </UserControl.Resources>
     <StackPanel>
-        <DockPanel>
+        <DockPanel Margin="0,0,5,0">
             <Grid DockPanel.Dock="Right">
                 <ToggleButton Width="10" Height="10" HorizontalAlignment="Center" Command="{Binding PropertyCommand}" IsChecked="True" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                 <Image Height="18" Source="{DynamicResource DrawingImageProperty}" />
@@ -360,40 +360,40 @@
                                 <TextBox Grid.Row="1" Grid.Column="3" MinWidth="76" Text="{Binding DisplayConfig.LocalVideoRoiHeight}" />
                             </Grid>
                             <UniformGrid Margin="0,0,0,3" Columns="2">
-                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="默认区域" />
-                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="全幅" />
+                                <Button Margin="0,0,3,0" Click="LocalVideoRoiDefault_Click" Content="{x:Static properties:Resources.Camera_DefaultRegion}" />
+                                <Button Margin="3,0,0,0" Click="LocalVideoRoiFull_Click" Content="{x:Static properties:Resources.FullFrame}" />
                             </UniformGrid>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,3">
-                            <CheckBox Margin="0,0,0,3" Content="十字导引" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
+                            <CheckBox Margin="0,0,0,3" Content="{x:Static properties:Resources.Camera_CrossGuide}" IsChecked="{Binding DisplayConfig.IsCrossGuideEnabled}" />
                             <StackPanel Visibility="{Binding DisplayConfig.IsCrossGuideEnabled, Converter={StaticResource bool2VisibilityConverter}}">
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心X" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CenterlX}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterX}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="中心Y" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.CentralY}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideStandardCenterY}" />
                                     </DockPanel>
                                 </UniformGrid>
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="阈值" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Threshold}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideTolerancePx}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="间隔" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Interval}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideIntervalMs}" />
                                     </DockPanel>
                                 </UniformGrid>
                                 <UniformGrid Margin="0,0,0,3" Columns="2">
                                     <DockPanel Margin="0,0,3,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="亮度" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Brightness}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideThresholdRatio}" />
                                     </DockPanel>
                                     <DockPanel Margin="3,0,0,0">
-                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="覆盖" />
+                                        <TextBlock MinWidth="38" Margin="0,0,5,0" Text="{x:Static properties:Resources.Coverage}" />
                                         <TextBox Text="{Binding DisplayConfig.CrossGuideMinCoverageRatio}" />
                                     </DockPanel>
                                 </UniformGrid>

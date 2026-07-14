@@ -7,10 +7,7 @@ using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
-using ProjectARVRPro.Process.RGB.Blue;
-using ProjectARVRPro.Process.RGB.Green;
-using ProjectARVRPro.Process.RGB.Red;
-using ProjectARVRPro.Process.W25;
+using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
 using System.Collections.ObjectModel;
@@ -23,9 +20,6 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
-        [DisplayName("W25")]
-        public W25TestResult W25TestResult { get; set; }
-
         [DisplayName("W51")]
         public W51TestResult W51TestResult { get; set; }
 
@@ -35,13 +29,8 @@ namespace ProjectARVRPro
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
 
-        [DisplayName("R255")]
-        public RedTestResult RedTestResult { get; set; }
-
-        [DisplayName("G255")]
-        public GreenTestResult GreenTestResult { get; set; }
-        [DisplayName("B255")]
-        public BlueTestResult BlueTestResult { get; set; }
+        [DisplayName("亮色度测试")]
+        public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new();
 
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }

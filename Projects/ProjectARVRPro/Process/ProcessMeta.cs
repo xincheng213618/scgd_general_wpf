@@ -129,7 +129,7 @@ namespace ProjectARVRPro.Process
             };
 
             editor.ShowDialog();
-            RecipeManager.GetInstance().Save();
+            ProcessManager.GetInstance().SaveProcessGroups();
         }
 
         /// <summary>

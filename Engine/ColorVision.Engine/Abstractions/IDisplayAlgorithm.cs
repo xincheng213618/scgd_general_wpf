@@ -53,6 +53,7 @@ namespace ColorVision.Engine
         public int Order { get; }
         public string Name { get; }
         public string Group { get; }
+        public string DisplayName => Properties.Resources.ResourceManager.GetString(Name, Properties.Resources.Culture) ?? Name;
 
         public DisplayAlgorithmAttribute(int order, string name, string group)
         {

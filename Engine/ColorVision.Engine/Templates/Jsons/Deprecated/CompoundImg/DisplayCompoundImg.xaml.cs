@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, "请先选择图像拼接模板")) return;
+            if (!ServicesHelper.IsTemplateSelected(ComboxTemplate, string.Format(Properties.Resources.SelectTemplateFirstFormat, Properties.Resources.ImageStitching))) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 

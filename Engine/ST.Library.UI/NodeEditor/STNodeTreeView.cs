@@ -516,16 +516,17 @@ public class STNodeTreeView : Control
 			string[] array = nodeAttribute.Path.Split(m_chr_splitter);
 			for (int i = 0; i < array.Length; i++)
 			{
-				items = items.Add(array[i]);
+				string segment = Lang.GetOrDefault(array[i], array[i]);
+				items = items.Add(segment);
 				items.STNodeCount++;
-				text = text + "/" + array[i];
+				text = text + "/" + segment;
 			}
 		}
 		try
 		{
 			STNode sTNode = (STNode)Activator.CreateInstance(stNodeType);
 			STNodeTreeCollection sTNodeTreeCollection = new STNodeTreeCollection(sTNode.Title);
-			sTNodeTreeCollection.Path = (strLibName + "/" + nodeAttribute.Path).Trim('/');
+			sTNodeTreeCollection.Path = (strLibName + text).Trim('/');
 			sTNodeTreeCollection.STNodeType = stNodeType;
 			items[sTNodeTreeCollection.Name] = sTNodeTreeCollection;
 			sTNodeTreeCollection.STNodeTypeColor = sTNode.TitleColor;

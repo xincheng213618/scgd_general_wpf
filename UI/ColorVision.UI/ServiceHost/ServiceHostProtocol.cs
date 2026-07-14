@@ -86,11 +86,17 @@ namespace ColorVision.UI.ServiceHost
 
     public sealed class ServiceHostRequest
     {
+        public int ProtocolVersion { get; set; } = 2;
+
         public string RequestId { get; set; } = Guid.NewGuid().ToString("N");
+
+        public string OperationId { get; set; } = Guid.NewGuid().ToString("N");
 
         public string Command { get; set; } = string.Empty;
 
         public JToken? Data { get; set; }
+
+        public string? BrokerTicket { get; set; }
     }
 
     public sealed class ServiceHostResponse

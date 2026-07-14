@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
         {
             if (!File.Exists(path))
             {
-                MessageBox.Show($"文件不存在: {path}");
+                MessageBox.Show(string.Format(Properties.Resources.SfrPlot_FileNotFound, path));
                 return;
             }
 
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
             var data = JsonConvert.DeserializeObject<SFR2ResultFile>(json);
             if (data?.result == null || data.result.Count == 0)
             {
-                MessageBox.Show("结果为空或格式不匹配");
+                MessageBox.Show(Properties.Resources.SfrPlot_EmptyOrInvalidResult);
                 return;
             }
 
@@ -69,40 +69,40 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
         {
             if (!double.TryParse(TxtFreq.Text, out var f))
             {
-                TxtResult.Text = "频率输入错误";
+                TxtResult.Text = Properties.Resources.SfrPlot_InvalidFrequency;
                 return;
             }
             var series = TxtSeries.Text?.Trim();
             if (string.IsNullOrEmpty(series))
             {
-                TxtResult.Text = "请填写曲线名（如：Point_1-Left 或 Point_1-horAverage）";
+                TxtResult.Text = Properties.Resources.SfrPlot_EnterSeriesName;
                 return;
             }
 
             if (Plot.TryEvaluateMtfAtFrequency(series, f, out var mtf))
                 TxtResult.Text = $"{series}: MTF({f:F4}) = {mtf:F5}";
             else
-                TxtResult.Text = "未找到曲线或计算失败";
+                TxtResult.Text = Properties.Resources.SfrPlot_SeriesNotFoundOrCalculationFailed;
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(TxtMtf.Text, out var m))
             {
-                TxtResult.Text = "MTF输入错误";
+                TxtResult.Text = Properties.Resources.SfrPlot_InvalidMtf;
                 return;
             }
             var series = TxtSeries.Text?.Trim();
             if (string.IsNullOrEmpty(series))
             {
-                TxtResult.Text = "请填写曲线名（如：Point_1-Left 或 Point_1-horAverage）";
+                TxtResult.Text = Properties.Resources.SfrPlot_EnterSeriesName;
                 return;
             }
 
             if (Plot.TryEvaluateFrequencyAtMtf(series, m, out var freq))
                 TxtResult.Text = $"{series}: Freq(MTF={m:F4}) = {freq:F5}";
             else
-                TxtResult.Text = "未找到曲线或计算失败";
+                TxtResult.Text = Properties.Resources.SfrPlot_SeriesNotFoundOrCalculationFailed;
         }
     }
 }

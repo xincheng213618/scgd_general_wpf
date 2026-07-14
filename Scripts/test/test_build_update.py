@@ -1,6 +1,7 @@
-import unittest
 import os
 import tempfile
+import unittest
+import zipfile
 from unittest.mock import patch
 
 import build_update
@@ -21,6 +22,17 @@ class BuildUpdateTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertTrue(mocked_print.called)
         self.assertIn("无法从", mocked_print.call_args[0][0])
+
+    def test_main_fails_when_required_runtime_payload_is_missing(self):
+        with (
+            patch("build_update.get_file_version", return_value="1.2.3.4"),
+            patch("build_update.validate_release_runtime_payload", return_value=False),
+            patch("build_update.create_directory_if_not_exists") as mocked_create_directory,
+        ):
+            exit_code = build_update.main()
+
+        self.assertEqual(exit_code, 1)
+        mocked_create_directory.assert_not_called()
 
     def test_get_all_files_can_exclude_shell_extension_files(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -103,9 +115,35 @@ class BuildUpdateTests(unittest.TestCase):
         self.assertNotIn("publish/ColorVision.exe", included)
         self.assertNotIn("publish/runtimes/linux-x64/native.dll", included)
 
+    def test_incremental_zip_always_contains_required_runtime_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            old_zip = os.path.join(temp_dir, "old.zip")
+            new_version_dir = os.path.join(temp_dir, "new")
+            incremental_zip = os.path.join(temp_dir, "update.cvx")
+            os.makedirs(new_version_dir)
+            required_content = b"required-runtime"
+            unchanged_content = b"unchanged"
+            with zipfile.ZipFile(old_zip, "w", zipfile.ZIP_DEFLATED) as archive:
+                for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                    archive.writestr(required_file, required_content)
+                archive.writestr("Unchanged.dll", unchanged_content)
+            for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                with open(os.path.join(new_version_dir, required_file), "wb") as file:
+                    file.write(required_content)
+            with open(os.path.join(new_version_dir, "Unchanged.dll"), "wb") as file:
+                file.write(unchanged_content)
+
+            build_update.make_incremental_zip(old_zip, new_version_dir, incremental_zip)
+
+            with zipfile.ZipFile(incremental_zip, "r") as archive:
+                self.assertEqual(archive.namelist(), list(build_update.REQUIRED_MAIN_RUNTIME_FILES))
+                for required_file in build_update.REQUIRED_MAIN_RUNTIME_FILES:
+                    self.assertEqual(archive.read(required_file), required_content)
+
     def test_main_fails_when_incremental_upload_fails(self):
         with (
             patch("build_update.get_file_version", return_value="1.2.3.4"),
+            patch("build_update.validate_release_runtime_payload", return_value=True),
             patch("build_update.create_directory_if_not_exists"),
             patch("build_update.find_latest_zip", return_value="old.zip"),
             patch("build_update.make_incremental_zip"),

@@ -214,6 +214,7 @@ namespace ColorVision.Copilot
             CopyMcpTokenEnvironmentCommand = new RelayCommand(_ => CopyMcpTokenEnvironmentCommandToClipboard());
             TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
             RefreshMcpDiagnosticsCommand = new RelayCommand(_ => RefreshMcpDiagnostics());
+            RefreshExternalMcpClientsCommand = new RelayCommand(_ => _ = RefreshExternalMcpClientsAsync(), _ => !IsRefreshingExternalMcpClients);
             CopyMcpDiagnosticsCommand = new RelayCommand(_ => CopyMcpDiagnostics());
             TestSelectedProfileCommand = new RelayCommand(_ => _ = TestSelectedProfileConnectionAsync(), _ => CanTestSelectedProfile);
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
@@ -228,6 +229,7 @@ namespace ColorVision.Copilot
             McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
             McpEndpoint = BuildMcpEndpoint();
             McpBearerToken = config.McpBearerToken;
+            ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
             _isReadyForUserChanges = true;
@@ -267,6 +269,8 @@ namespace ColorVision.Copilot
         public RelayCommand TestMcpConnectionCommand { get; }
 
         public RelayCommand RefreshMcpDiagnosticsCommand { get; }
+
+        public RelayCommand RefreshExternalMcpClientsCommand { get; }
 
         public RelayCommand CopyMcpDiagnosticsCommand { get; }
 
@@ -416,6 +420,62 @@ namespace ColorVision.Copilot
             }
         }
 
+        public string ExternalMcpServersText
+        {
+            get => _externalMcpServersText;
+            set
+            {
+                if (SetProperty(ref _externalMcpServersText, value ?? string.Empty))
+                {
+                    ValidateExternalMcpServers(updateNotice: _isReadyForUserChanges);
+                    if (_isReadyForUserChanges)
+                        MarkSettingsPending("External MCP server configuration changed. Click Apply or Save to use it in Copilot.");
+                }
+            }
+        }
+        private string _externalMcpServersText = string.Empty;
+
+        public bool IsExternalMcpServersValid
+        {
+            get => _isExternalMcpServersValid;
+            private set
+            {
+                if (SetProperty(ref _isExternalMcpServersValid, value))
+                {
+                    OnPropertyChanged(nameof(CanApplySettings));
+                    OnPropertyChanged(nameof(CanSaveSettings));
+                    OnPropertyChanged(nameof(CanAddAndUseProfile));
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+        private bool _isExternalMcpServersValid = true;
+
+        public string ExternalMcpServersValidationText
+        {
+            get => _externalMcpServersValidationText;
+            private set => SetProperty(ref _externalMcpServersValidationText, value ?? string.Empty);
+        }
+        private string _externalMcpServersValidationText = "One server per line: name | endpoint | token environment variable | approval/read-only | optional tool=policy,...";
+
+        public string ExternalMcpClientsStatusText
+        {
+            get => _externalMcpClientsStatusText;
+            private set => SetProperty(ref _externalMcpClientsStatusText, value ?? string.Empty);
+        }
+        private string _externalMcpClientsStatusText = "No external MCP servers configured.";
+
+        public bool IsRefreshingExternalMcpClients
+        {
+            get => _isRefreshingExternalMcpClients;
+            private set
+            {
+                if (SetProperty(ref _isRefreshingExternalMcpClients, value))
+                    CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private bool _isRefreshingExternalMcpClients;
+
         public string CodexMcpConfigSnippet => BuildCodexMcpConfigSnippet();
 
         public string McpTokenEnvironmentCommandText => BuildMcpTokenEnvironmentCommand();
@@ -530,9 +590,9 @@ namespace ColorVision.Copilot
         }
         private bool _hasUnsavedSettings;
 
-        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid;
+        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid && IsExternalMcpServersValid;
 
-        public bool CanSaveSettings => IsMcpPortValid;
+        public bool CanSaveSettings => IsMcpPortValid && IsExternalMcpServersValid;
 
         public string SettingsCancelButtonText => HasUnsavedSettings ? "Cancel" : "Close";
 
@@ -840,6 +900,13 @@ namespace ColorVision.Copilot
         {
             if (!ApplyMcpPortText(updateNotice: true))
                 return false;
+            if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var externalMcpServers, out var externalMcpError))
+            {
+                IsExternalMcpServersValid = false;
+                ExternalMcpServersValidationText = externalMcpError;
+                SetSettingsNotice(externalMcpError);
+                return false;
+            }
 
             _isSavingSettings = true;
             try
@@ -857,6 +924,9 @@ namespace ColorVision.Copilot
                 config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()
                     : McpBearerToken.Trim();
+                config.ExternalMcpServers.Clear();
+                foreach (var server in externalMcpServers)
+                    config.ExternalMcpServers.Add(server.Clone());
 
                 config.EnsureInitialized();
                 McpPort = config.McpPort;
@@ -1315,6 +1385,94 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private bool ValidateExternalMcpServers(bool updateNotice)
+        {
+            if (CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
+            {
+                IsExternalMcpServersValid = true;
+                ExternalMcpServersValidationText = servers.Count == 0
+                    ? "Optional. Add an exact tool list in the fifth field to limit what Copilot can discover."
+                    : $"{servers.Count} external MCP server(s) configured. Exact tool lists are recommended; tokens are read only from environment variables.";
+                return true;
+            }
+
+            IsExternalMcpServersValid = false;
+            ExternalMcpServersValidationText = error;
+            if (updateNotice)
+                SetSettingsNotice(error);
+            return false;
+        }
+
+        private void RefreshExternalMcpClientsStatus(IEnumerable<CopilotMcpClientServerConfig>? servers)
+        {
+            var configuredServers = servers?.Where(server => server?.Enabled == true).Take(8).ToArray()
+                ?? Array.Empty<CopilotMcpClientServerConfig>();
+            if (configuredServers.Length == 0)
+            {
+                ExternalMcpClientsStatusText = "No external MCP servers configured.";
+                return;
+            }
+
+            ExternalMcpClientsStatusText = string.Join(" · ", configuredServers.Select(server =>
+            {
+                if (!CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health))
+                    return $"{server.Name}: not checked";
+                if (health.CacheInvalidated)
+                    return $"{server.Name}: tools changed (live refresh required)";
+
+                return health.State == CopilotMcpClientHealthState.Connected
+                    ? $"{server.Name}: connected ({health.ExposedToolCount}/{health.DiscoveredToolCount} tools, {(health.UsedCachedDiscovery ? "cached" : "live")}{(health.CapabilitiesChanged ? ", updated" : string.Empty)})"
+                    : $"{server.Name}: unavailable";
+            }));
+        }
+
+        private async Task RefreshExternalMcpClientsAsync()
+        {
+            if (IsRefreshingExternalMcpClients)
+                return;
+            if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
+            {
+                IsExternalMcpServersValid = false;
+                ExternalMcpServersValidationText = error;
+                SetSettingsNotice(error);
+                return;
+            }
+            if (servers.Count == 0)
+            {
+                ExternalMcpClientsStatusText = "No external MCP servers configured.";
+                SetSettingsNotice("Add an external MCP server before refreshing discovery.");
+                return;
+            }
+
+            IsRefreshingExternalMcpClients = true;
+            ExternalMcpClientsStatusText = "Refreshing external MCP discovery...";
+            try
+            {
+                var provider = new CopilotMcpToolProvider();
+                await using var lease = await provider.DiscoverAsync(new CopilotAgentRequest
+                {
+                    ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
+                    ForceExternalMcpToolRefresh = true,
+                }, CancellationToken.None);
+
+                RefreshExternalMcpClientsStatus(servers);
+                var connectedCount = servers.Count(server =>
+                    CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
+                    && health.State == CopilotMcpClientHealthState.Connected);
+                SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
+            }
+            catch (Exception ex)
+            {
+                var message = CopilotMcpAuditLogger.RedactText(ex.Message);
+                ExternalMcpClientsStatusText = "External MCP discovery refresh failed.";
+                SetSettingsNotice(message);
+            }
+            finally
+            {
+                IsRefreshingExternalMcpClients = false;
+            }
+        }
+
         private string BuildCodexMcpConfigSnippet()
         {
             return string.Join(Environment.NewLine, new[]
@@ -1332,9 +1490,11 @@ namespace ColorVision.Copilot
 
         private void RefreshMcpDiagnostics()
         {
+            RefreshExternalMcpClientsStatus(CopilotConfig.Instance.ExternalMcpServers);
             var entries = CopilotMcpAuditLogger.GetRecentEntries(20);
             var failureCount = entries.Count(CopilotMcpAuditLogger.IsRealFailureEntry);
             var approvalFlowCount = entries.Count(CopilotMcpAuditLogger.IsApprovalFlowEntry);
+            var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
 
             var server = CopilotMcpServer.Instance;
             var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
@@ -1344,7 +1504,7 @@ namespace ColorVision.Copilot
                 : $"{FormatAuditEntryForSummary(lastEntry)}.";
 
             McpDiagnosticsSummaryText =
-                $"Recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
+                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
 
             var lastError = CopilotMcpAuditLogger.GetLastError();
             McpLastErrorText = lastError == null
@@ -1367,7 +1527,7 @@ namespace ColorVision.Copilot
 
             if (!McpEnabled && !server.IsRunning && entries.Count == 0)
             {
-                McpDiagnosticsSummaryText = "MCP is disabled. Enable and save it before expecting external MCP traffic.";
+                McpDiagnosticsSummaryText = $"MCP is disabled. Capability catalog: {capabilityCatalog.Capabilities.Count} item(s), revision {capabilityCatalog.Revision}.";
                 McpServiceSummaryText = "Disabled";
                 McpActivitySummaryText = "No calls";
                 McpPendingSummaryText = "None";
@@ -1407,6 +1567,8 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Activity summary: {McpActivitySummaryText}");
             builder.AppendLine($"Pending summary: {McpPendingSummaryText}");
             builder.AppendLine($"Error summary: {McpErrorSummaryText}");
+            var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            builder.AppendLine($"Capability catalog: {capabilityCatalog.Capabilities.Count} item(s) from {capabilityCatalog.SourceCount} source(s), revision {capabilityCatalog.Revision}");
             builder.AppendLine(McpDiagnosticsSummaryText);
             builder.AppendLine(McpLastErrorText);
             builder.AppendLine();
@@ -1566,8 +1728,6 @@ namespace ColorVision.Copilot
                 Id = Guid.NewGuid().ToString("N"),
                 VendorType = vendorType,
                 Name = $"{CopilotVendorCatalog.GetLabel(vendorType)} {Profiles.Count + 1}",
-                MaxTokens = CopilotProfileConfig.DefaultMaxTokens,
-                Temperature = CopilotProfileConfig.DefaultTemperature,
             };
 
             ApplyVendorPreset(profile, resetName: false);

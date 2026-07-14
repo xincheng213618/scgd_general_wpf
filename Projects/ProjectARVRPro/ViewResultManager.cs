@@ -19,14 +19,6 @@ namespace ProjectARVRPro
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
 
-        [DisplayName("按类型排序"), Category("View")]
-        public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
-        private OrderByType _OrderByType = OrderByType.Desc;
-
-        [DisplayName("自动刷新"), Category("View")]
-        public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
-        private bool _AutoRefresh = true;
-
         [DisplayName("视图高度"), Category("View")]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
@@ -188,7 +180,7 @@ namespace ProjectARVRPro
         public void LoadAll(int count = 100)
         {
             ViewResluts.Clear();
-            var query = _db.Queryable<ProjectARVRReuslt>().OrderBy(x => x.Id, Config.OrderByType);
+            var query = _db.Queryable<ProjectARVRReuslt>().OrderBy(x => x.Id, OrderByType.Desc);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -215,23 +207,8 @@ namespace ProjectARVRPro
 
         private void AddViewResult(ProjectARVRReuslt item)
         {
-            if (Config.OrderByType == OrderByType.Desc)
-            {
-                ViewResluts.Insert(0, item); //倒序插入
-                if (Config.AutoRefresh)
-                {
-                    ViewReslutsSelectedIndex = 0;
-                }
-            }
-            else
-            {
-                ViewResluts.Add(item);
-                if (Config.AutoRefresh)
-                {
-                    ViewReslutsSelectedIndex = ViewResluts.Count - 1;
-                    ListView?.ScrollIntoView(item);
-                }
-            }
+            ViewResluts.Insert(0, item);
+            ViewReslutsSelectedIndex = 0;
         }
 
         public int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
@@ -282,7 +259,7 @@ namespace ProjectARVRPro
             ViewResluts.Clear();
 
             var query = _db.Queryable<ProjectARVRReuslt>();
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            query = query.OrderBy(x => x.Id, OrderByType.Desc);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)

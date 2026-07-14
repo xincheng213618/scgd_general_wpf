@@ -61,6 +61,18 @@ namespace ColorVision.Copilot.Mcp
 
         public string ErrorCode { get; init; } = string.Empty;
 
+        public bool RequiresApproval { get; init; }
+
+        public string ApprovalActionId { get; init; } = string.Empty;
+
+        public string ApprovalTitle { get; init; } = string.Empty;
+
+        public string ApprovalRiskLevel { get; init; } = string.Empty;
+
+        public DateTimeOffset ApprovalExpiresAtUtc { get; init; }
+
+        public bool ExecuteOnApproval { get; init; }
+
         public static CopilotMcpToolCallResult Ok(string text) => new()
         {
             Success = true,
@@ -72,6 +84,19 @@ namespace ColorVision.Copilot.Mcp
             Success = false,
             ErrorCode = errorCode ?? string.Empty,
             Text = message ?? string.Empty,
+        };
+
+        public static CopilotMcpToolCallResult ApprovalRequired(string message, ConfirmableAction action) => new()
+        {
+            Success = false,
+            ErrorCode = "confirmation_required",
+            Text = message ?? string.Empty,
+            RequiresApproval = true,
+            ApprovalActionId = action?.ActionId ?? string.Empty,
+            ApprovalTitle = action?.Title ?? string.Empty,
+            ApprovalRiskLevel = action?.RiskLevel ?? string.Empty,
+            ApprovalExpiresAtUtc = action?.ExpiresAt ?? default,
+            ExecuteOnApproval = action?.ExecuteOnApproval ?? false,
         };
     }
 
@@ -146,11 +171,15 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<CopilotLiveContext?> LiveContextProvider { get; init; } = () => CopilotLiveContextRegistry.Current;
 
+        public Func<CopilotAgentTaskEventJournalContext?> TaskEventJournalProvider { get; init; } = () => CopilotAgentTaskEventJournalRegistry.Current;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult> RecentLogProvider { get; init; } = CopilotRecentLogCapability.Capture;
 
         public Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyTemplatePatchHandler { get; init; } = ApplyTemplatePatchToActiveEditorAsync;
+
+        public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>> CreateFlowHandler { get; init; } = CreateDefaultFlowAsync;
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? OpenPanelHandler { get; init; }
 
@@ -171,6 +200,42 @@ namespace ColorVision.Copilot.Mcp
             return result.Success
                 ? CopilotMcpToolCallResult.Ok(result.Message)
                 : CopilotMcpToolCallResult.Fail(result.ErrorCode, result.Message);
+        }
+
+        private static async Task<CopilotMcpToolCallResult> CreateDefaultFlowAsync(string flowName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (Application.Current == null)
+                return CopilotMcpToolCallResult.Fail("application_unavailable", "The WPF application is not available.");
+
+            try
+            {
+                return await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var name = CopilotFlowCreationSupport.ResolveFlowName(null, flowName);
+                    var templateFlow = new TemplateFlow();
+                    templateFlow.Load();
+                    if (templateFlow.ExitsTemplateName(name))
+                        return CopilotMcpToolCallResult.Fail("flow_name_exists", $"A flow named {name} already exists.");
+
+                    templateFlow.Create(name);
+                    var created = TemplateFlow.Params.LastOrDefault(item => string.Equals(item.Key, name, StringComparison.OrdinalIgnoreCase));
+                    if (created == null)
+                        return CopilotMcpToolCallResult.Fail("flow_creation_failed", $"ColorVision did not create flow {name}.");
+
+                    FlowEngineManager.Current?.View.Refresh();
+                    return CopilotMcpToolCallResult.Ok($"Created empty flow {created.Key}; flow_id={created.Id}.");
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return CopilotMcpToolCallResult.Fail("flow_creation_failed", $"Failed to create the flow: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+            }
         }
 
         private static CopilotMcpRuntimeSettings CreateDefaultRuntimeSettings()

@@ -13,7 +13,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTF.MTFHV048
 {
-    public class MTFHV048Process : ProcessBase<MTFHV048ProcessConfig>
+    public class MTFHV048Process : ProcessBase<MTFHV048ProcessConfig, MTFHV048RecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -253,9 +253,5 @@ namespace ProjectARVRPro.Process.MTF.MTFHV048
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHV048RecipeConfig>();
-        }
     }
 }

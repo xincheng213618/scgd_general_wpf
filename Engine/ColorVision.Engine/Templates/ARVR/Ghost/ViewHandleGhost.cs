@@ -28,9 +28,9 @@ namespace ColorVision.Engine.Templates.Ghost
             var csvBuilder = new StringBuilder();
             List<string> headers = new List<string>();
             headers.Add("id");
-            headers.Add("质心坐标");
-            headers.Add("光斑灰度");
-            headers.Add("鬼影灰度");
+            headers.Add(Properties.Resources.CentroidCoordinates);
+            headers.Add(Properties.Resources.SpotGrayscale);
+            headers.Add(Properties.Resources.GhostGrayscale);
             csvBuilder.AppendLine(string.Join(",", headers));
 
             foreach (var item in ViewResults)
@@ -134,7 +134,7 @@ namespace ColorVision.Engine.Templates.Ghost
                 }
             }
 
-            List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
+            List<string> header = new() { Properties.Resources.CentroidCoordinates, Properties.Resources.SpotGrayscale, Properties.Resources.GhostGrayscale };
             List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 
             if (ctx.ListView.View is GridView gridView)

@@ -81,17 +81,17 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsUseCFW), Properties.Resources.LabelEnableCFW);
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsBingNDDevice), Properties.Resources.LabelBindNDDevice, nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDBindDeviceCode), "ND 设备", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDBindDeviceCode), Properties.Resources.FilterWheel_NdDevice, nameof(CFWPORT.IsUseCFW));
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsCOM), Properties.Resources.EnableSerialPort, nameof(CFWPORT.IsUseCFW));
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.SzComName), Properties.Resources.Serial, nameof(CFWPORT.IsUseCFW));
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.BaudRate), Properties.Resources.BaudRate, nameof(CFWPORT.IsUseCFW));
             AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.CFWNum), Properties.Resources.LabelFilterWheelCount, nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.EnableResetND), "重置 ND", nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsNDPort), "ND 端口", nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMaxExpTime), "最大曝光", nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMinExpTime), "最小曝光", nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDRate), "倍率", nameof(CFWPORT.IsUseCFW));
-            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDCaliNameGroups), "校准组", nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.EnableResetND), Properties.Resources.FilterWheel_ResetNd, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.IsNDPort), Properties.Resources.FilterWheel_NdPort, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMaxExpTime), Properties.Resources.FilterWheel_MaxExposure, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDMinExpTime), Properties.Resources.FilterWheel_MinExposure, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDRate), Properties.Resources.FilterWheel_Rate, nameof(CFWPORT.IsUseCFW));
+            AddGeneratedField(CfwConfigPanel, EditConfig.CFW, nameof(CFWPORT.NDCaliNameGroups), Properties.Resources.FilterWheel_CalibrationGroups, nameof(CFWPORT.IsUseCFW));
 
             AddGeneratedPanel(CameraCfgPanel, EditConfig.CameraCfg);
             AddGeneratedPanel(FileServerPanel, EditConfig.FileServerCfg);

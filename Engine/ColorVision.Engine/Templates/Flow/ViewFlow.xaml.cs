@@ -611,7 +611,7 @@ namespace ColorVision.Engine.Services.Flow
             string? logPath = ServiceLogPanelProvider.GetServiceLogPath(panelId);
             if (string.IsNullOrEmpty(logPath) || !File.Exists(logPath))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到对应服务日志，请确认服务已安装并已生成日志。", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_ServiceLogNotFound, "ColorVision");
                 return;
             }
 
@@ -622,7 +622,7 @@ namespace ColorVision.Engine.Services.Flow
             catch (Exception ex)
             {
                 log.Error($"打开服务日志失败: {logPath}", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"打开服务日志失败：{ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_OpenServiceLogFailed, ex.Message), "ColorVision");
             }
         }
 

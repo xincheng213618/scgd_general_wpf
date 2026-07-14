@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterProcess : ProcessBase<OpticCenterProcessConfig>
+    public class OpticCenterProcess : ProcessBase<OpticCenterProcessConfig, OpticCenterRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -131,9 +131,5 @@ namespace ProjectARVRPro.Process.OpticCenter
             
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
-        }
     }
 }

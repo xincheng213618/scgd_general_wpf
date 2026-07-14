@@ -113,6 +113,126 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void WebSearch_ExtractsDuckDuckGoLiteResultsAndSnippets()
+    {
+        const string html = """
+            <html><body><table>
+              <tr><td>1.</td><td><a class="result-link" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fquota">Quota radar</a></td></tr>
+              <tr><td></td><td class="result-snippet">Current quota and reset information.</td></tr>
+              <tr><td>2.</td><td><a class="result-link" href="https://example.com/quota">Duplicate quota radar</a></td></tr>
+            </table></body></html>
+            """;
+
+        var hits = CopilotWebSearchCapability.ExtractDuckDuckGoLiteHits(html);
+
+        var hit = Assert.Single(hits);
+        Assert.Equal("Quota radar", hit.Title);
+        Assert.Equal("https://example.com/quota", hit.Url);
+        Assert.Contains("reset information", hit.Snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WebSearch_ExtractsBingRssResultsAndRejectsMalformedXml()
+    {
+        const string rss = """
+            <rss><channel>
+              <item><title>Codex &amp; Radar</title><link>https://codexradar.com/</link><description><![CDATA[Model and <b>quota</b> information.]]></description></item>
+              <item><title>Duplicate</title><link>https://codexradar.com/</link><description>Duplicate result.</description></item>
+              <item><title>Unsafe</title><link>file:///C:/secret.txt</link><description>Unsafe result.</description></item>
+            </channel></rss>
+            """;
+
+        var hits = CopilotWebSearchCapability.ExtractBingRssHits(rss);
+
+        var hit = Assert.Single(hits);
+        Assert.Equal("Codex & Radar", hit.Title);
+        Assert.Equal("https://codexradar.com/", hit.Url);
+        Assert.Equal("Model and quota information.", hit.Snippet);
+        Assert.Empty(CopilotWebSearchCapability.ExtractBingRssHits("<rss>"));
+    }
+
+    [Fact]
+    public void WebPage_SparseSpaDiscoversOnlySameOriginStructuredResources()
+    {
+        var html = $$"""
+            <html>
+              <head>
+                <title>Codex Radar</title>
+                <link rel="alternate" type="application/json" href="/current.json">
+                <script>{{new string('x', 25_000)}}</script>
+              </head>
+              <body>
+                <main>Only static card</main>
+                <a href="/feed.xml">RSS</a>
+                <a href="https://other.example/private.json">External data</a>
+              </body>
+            </html>
+            """;
+
+        var page = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/"),
+            "text/html",
+            html);
+
+        Assert.True(page.IsSparseExtraction);
+        Assert.Contains("Only static card", page.Content, StringComparison.Ordinal);
+        Assert.Contains("https://codexradar.com/current.json", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("https://codexradar.com/feed.xml", page.DiscoveredResourceUrls, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain(page.DiscoveredResourceUrls, url => url.Contains("other.example", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void WebPage_ExtractsJsonAndXmlResourcesAsReadableEvidence()
+    {
+        var jsonPage = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/current.json"),
+            "application/json",
+            """{"model_iq":{"latest":{"passed":7}}}""");
+        var rssPage = CopilotWebPageToolSupport.ExtractDownloadedContent(
+            new Uri("https://codexradar.com/feed.xml"),
+            "application/rss+xml",
+            """<rss><channel><title>Reset updates</title></channel></rss>""");
+
+        Assert.Equal("current.json", jsonPage.Title);
+        Assert.Contains("model_iq", jsonPage.Content, StringComparison.Ordinal);
+        Assert.Contains(Environment.NewLine, jsonPage.Content, StringComparison.Ordinal);
+        Assert.Equal("feed.xml", rssPage.Title);
+        Assert.Contains("Reset updates", rssPage.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WebPage_RedirectResolutionRejectsUnsafeTargets()
+    {
+        var current = new Uri("https://example.com/articles/start");
+
+        Assert.Equal(
+            "https://example.com/data/current.json",
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("/data/current.json", UriKind.Relative)).ToString());
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("http://127.0.0.1/private")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("file:///C:/Windows/win.ini")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, new Uri("https://user:secret@example.com/private")));
+        Assert.Throws<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.ResolveRedirectWebPageUri(current, null));
+    }
+
+    [Theory]
+    [InlineData("http://10.0.0.1/private")]
+    [InlineData("http://169.254.169.254/latest/meta-data")]
+    [InlineData("http://192.0.2.1/documentation")]
+    [InlineData("http://[::ffff:10.0.0.1]/private")]
+    [InlineData("http://[2001:db8::1]/documentation")]
+    [InlineData("http://[ff02::1]/multicast")]
+    [InlineData("file:///C:/Windows/win.ini")]
+    public async Task WebPage_RejectsNonPublicAddressesBeforeSendingRequest(string url)
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotWebPageToolSupport.LoadWebPageContentAsync(url, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ReadLocalFile_ReadsSelectedLineRange()
     {
         var filePath = Path.Combine(_tempRoot, "settings.json");

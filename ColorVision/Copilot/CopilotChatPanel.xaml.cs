@@ -14,8 +14,11 @@ namespace ColorVision.Copilot
     {
         private const double CompactSidebarThreshold = 960;
         private const double CompactComposerThreshold = 560;
-        private const double ExpandedSidebarWidth = 220;
+        private const double ExpandedSidebarWidth = 232;
         private const double CollapsedSidebarWidth = 48;
+        private const double ProfileSelectorPopupMainWidth = 230;
+        private const double ProfileSelectorPopupSubmenuWidth = 284;
+        private const double ProfileSelectorPopupShadowInset = 14;
         private const byte VirtualKeyLeftWindows = 0x5B;
         private const byte VirtualKeyH = 0x48;
         private const uint KeyEventKeyUp = 0x0002;
@@ -54,6 +57,7 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
         }
 
@@ -168,14 +172,77 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
-        private void SettingsMenuButton_Click(object sender, RoutedEventArgs e)
+        private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
-            if (sender is not FrameworkElement element || element.ContextMenu == null)
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
+        {
+            ProfileSelectorButton.IsChecked = false;
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false, advancedSettingsVisible: false);
+        }
+
+        private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true, advancedSettingsVisible: false);
+        }
+
+        private void AdvancedSettingsSelectorRowButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: AdvancedSettingsSelectorRowButton.IsChecked == true);
+        }
+
+        private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not DependencyObject source
+                || ItemsControl.ContainerFromElement(ProfileListBox, source) is not ListBoxItem)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(new Action(CloseProfileSelectorPopup), System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private void ReasoningOptionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { Tag: CopilotReasoningMode mode }
+                && DataContext is CopilotChatViewModel viewModel)
+            {
+                viewModel.SetSelectedProfileReasoningMode(mode);
+            }
+
+            CloseProfileSelectorPopup();
+        }
+
+        private void CloseSelectorPopupButton_Click(object sender, RoutedEventArgs e)
+        {
+            CloseProfileSelectorPopup();
+        }
+
+        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible, bool advancedSettingsVisible)
+        {
+            ModelSelectorRowButton.IsChecked = modelVisible;
+            ReasoningSelectorRowButton.IsChecked = reasoningVisible;
+            AdvancedSettingsSelectorRowButton.IsChecked = advancedSettingsVisible;
+            ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
+            ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
+            AdvancedSettingsSubmenuBorder.Visibility = advancedSettingsVisible ? Visibility.Visible : Visibility.Collapsed;
+            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible || advancedSettingsVisible ? ProfileSelectorPopupSubmenuWidth : 0);
+            ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
+        }
+
+        private void CloseProfileSelectorPopup()
+        {
+            if (ProfileSelectorPopup == null)
                 return;
 
-            element.ContextMenu.PlacementTarget = element;
-            element.ContextMenu.Placement = PlacementMode.Bottom;
-            element.ContextMenu.IsOpen = true;
+            ProfileSelectorPopup.IsOpen = false;
         }
 
         private async void VoiceInputButton_Click(object sender, RoutedEventArgs e)
@@ -258,28 +325,14 @@ namespace ColorVision.Copilot
             CompactSidebarToggleButton.Visibility = _isCompactSidebar && !showCollapsedStrip ? Visibility.Visible : Visibility.Collapsed;
 
             var isCompactComposer = ActualWidth > 0 && ActualWidth < CompactComposerThreshold;
-            ComposerFooterSecondRowDefinition.Height = isCompactComposer ? GridLength.Auto : new GridLength(0);
-            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(14, 0, 14, 14) : new Thickness(64, 0, 64, 18);
-
-            Grid.SetRow(ComposerSelectorGrid, 0);
-            Grid.SetColumn(ComposerSelectorGrid, isCompactComposer ? 0 : 3);
-            Grid.SetColumnSpan(ComposerSelectorGrid, isCompactComposer ? 5 : 1);
-            ComposerSelectorGrid.Margin = isCompactComposer ? new Thickness(0, 0, 0, 8) : new Thickness(10, 0, 10, 0);
-
-            Grid.SetRow(AttachMenuButton, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(AttachMenuButton, 0);
-
-            Grid.SetRow(ControlModePill, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(ControlModePill, 1);
-
-            Grid.SetRow(ComposerActionStack, isCompactComposer ? 1 : 0);
-            Grid.SetColumn(ComposerActionStack, 4);
-
-            ProfileComboBox.MaxWidth = isCompactComposer ? double.PositiveInfinity : 180;
+            ComposerShellBorder.Margin = isCompactComposer ? new Thickness(10, 0, 10, 10) : new Thickness(24, 0, 24, 14);
+            ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
+            ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
+            ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
 
             CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
-            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(10, 7, 10, 7) : new Thickness(12, 9, 12, 9);
-            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(10, 4, 10, 4) : new Thickness(12, 5, 12, 5);
+            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(8, 6, 8, 6) : new Thickness(10, 7, 10, 7);
+            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(8, 3, 8, 3) : new Thickness(10, 4, 10, 4);
 
             UpdateEmptyStateVisibility();
         }

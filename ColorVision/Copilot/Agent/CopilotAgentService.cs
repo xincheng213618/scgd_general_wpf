@@ -1,6 +1,7 @@
 #pragma warning disable CA1826,CA1859
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -8,21 +9,32 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentService
+    public sealed class CopilotAgentService : ICopilotAgentRuntime
     {
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentPlanner _planner;
         private readonly CopilotToolRegistry _toolRegistry;
         private readonly CopilotAgentContextBuilder _contextBuilder;
+        private readonly CopilotToolExecutor _toolExecutor;
 
         public CopilotAgentService(
             CopilotChatService chatService,
             CopilotToolRegistry toolRegistry,
             CopilotAgentContextBuilder contextBuilder)
+            : this(chatService, toolRegistry, contextBuilder, new CopilotToolExecutor())
+        {
+        }
+
+        public CopilotAgentService(
+            CopilotChatService chatService,
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
+            _toolExecutor = toolExecutor ?? throw new ArgumentNullException(nameof(toolExecutor));
             _planner = new CopilotAgentPlanner(_chatService, _contextBuilder);
         }
 
@@ -34,6 +46,33 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
+            var runBudget = CopilotAgentRunBudget.Resolve(request);
+            var stopwatch = Stopwatch.StartNew();
+            using var timeBudgetCancellation = new CancellationTokenSource(runBudget.TotalDuration);
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeBudgetCancellation.Token);
+            try
+            {
+                return await RunCoreAsync(request, onEvent, runBudget, stopwatch, linkedCancellation.Token);
+            }
+            catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                onEvent(CopilotAgentEvent.RuntimeDiagnostic("Built-in Agent total-time budget exhausted; the compatibility run was stopped."));
+                onEvent(CopilotAgentEvent.Completed());
+                return new CopilotAgentRunResult
+                {
+                    Budget = runBudget.CreateSnapshot(new CopilotAgentBudgetSnapshot(), stopwatch.Elapsed, 0, timeBudgetExhausted: true),
+                    StopReason = CopilotAgentStopReason.BudgetExhausted,
+                };
+            }
+        }
+
+        private async Task<CopilotAgentRunResult> RunCoreAsync(
+            CopilotAgentRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CopilotAgentRunBudget runBudget,
+            Stopwatch stopwatch,
+            CancellationToken cancellationToken)
+        {
             onEvent(CopilotAgentEvent.Status("Analyzing task..."));
 
             var toolResults = new List<CopilotToolResult>();
@@ -42,16 +81,19 @@ namespace ColorVision.Copilot
                 (request.ReadableLocalFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path)),
                 StringComparer.OrdinalIgnoreCase);
-            var maxToolRounds = request.Profile?.MaxToolRounds > 0
-                ? request.Profile.MaxToolRounds
-                : CopilotProfileConfig.DefaultMaxToolRounds;
             var executedStepSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var executedAnyTool = false;
             var totalUsage = CopilotTokenUsage.Empty;
+            var providerCalls = 0;
 
-            for (var round = 1; round <= maxToolRounds; round++)
+            for (var round = 1; round <= runBudget.MaxToolCalls; round++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (totalUsage.EffectiveTotalTokens >= runBudget.RequestTokenBudget)
+                {
+                    onEvent(CopilotAgentEvent.RuntimeDiagnostic("Built-in Agent request-token budget reached; finishing with the collected observations."));
+                    break;
+                }
 
                 var roundRequest = CreateRoundRequest(request, readableLocalFilePaths);
                 var tools = _toolRegistry.FindTools(roundRequest)
@@ -65,15 +107,25 @@ namespace ColorVision.Copilot
                     break;
                 }
 
-                onEvent(CopilotAgentEvent.Status($"Round {round}: planning next step."));
-                var planResult = await _planner.PlanNextAsync(
-                    roundRequest,
-                    tools,
-                    stepRecords,
-                    readableLocalFilePaths,
-                    cancellationToken);
-                totalUsage = totalUsage.Add(planResult.Usage);
-                var plan = planResult.Plan;
+                CopilotAgentPlan plan;
+                if (TryCreateRequiredWebPlan(roundRequest, tools, stepRecords, out var requiredWebPlan))
+                {
+                    plan = requiredWebPlan;
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: applying required web evidence policy."));
+                }
+                else
+                {
+                    onEvent(CopilotAgentEvent.Status($"Round {round}: planning next step."));
+                    var planResult = await _planner.PlanNextAsync(
+                        roundRequest,
+                        tools,
+                        stepRecords,
+                        readableLocalFilePaths,
+                        cancellationToken);
+                    providerCalls++;
+                    totalUsage = totalUsage.Add(planResult.Usage);
+                    plan = planResult.Plan;
+                }
 
                 if (plan.Action == CopilotAgentPlanAction.Finish)
                 {
@@ -99,29 +151,18 @@ namespace ColorVision.Copilot
                     ? $"Round {round}: planner fallback selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"
                     : $"Round {round}: planner selected {selectedTool.Name}. {plan.Reason}{BuildPlanDetail(plan)}"));
 
-                CopilotToolResult result;
-                try
+                var outcome = await _toolExecutor.ExecuteAsync(new CopilotToolInvocation
                 {
-                    result = await selectedTool.ExecuteAsync(executionRequest, executionInput, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    result = new CopilotToolResult
-                    {
-                        ToolName = selectedTool.Name,
-                        Success = false,
-                        Summary = $"{selectedTool.Name} execution failed.",
-                        ErrorMessage = ex.Message,
-                    };
-                }
-
+                    Round = round,
+                    RuntimeName = "built-in",
+                    Tool = selectedTool,
+                    AgentRequest = executionRequest,
+                    ToolInput = executionInput,
+                    ToolCall = CopilotToolCall.FromPlan(plan, selectedTool.Name),
+                }, onEvent, cancellationToken);
+                var result = outcome.Result;
                 toolResults.Add(result);
-                stepRecords.Add(CreateStepRecord(round, selectedTool.Name, plan, result));
-                onEvent(CopilotAgentEvent.FromToolResult(result));
+                stepRecords.Add(outcome.StepRecord);
 
                 var discoveredNewReadableFiles = TryMergeReadableLocalFilePaths(readableLocalFilePaths, result.SuggestedReadableLocalFilePaths);
                 if (discoveredNewReadableFiles)
@@ -144,15 +185,88 @@ namespace ColorVision.Copilot
                         onEvent(CopilotAgentEvent.AnswerDelta(delta.Content));
                 },
                 cancellationToken);
+            providerCalls++;
             totalUsage = totalUsage.Add(finalUsage);
 
+            var consumedTokens = totalUsage.EffectiveTotalTokens;
+            var tokenSnapshot = new CopilotAgentBudgetSnapshot
+            {
+                RequestTokenBudget = runBudget.RequestTokenBudget,
+                ConsumedTokens = consumedTokens,
+                ProviderCalls = providerCalls,
+                BudgetExhausted = consumedTokens >= runBudget.RequestTokenBudget,
+            };
+            var budgetSnapshot = runBudget.CreateSnapshot(tokenSnapshot, stopwatch.Elapsed, stepRecords.Count, timeBudgetExhausted: false);
             onEvent(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
             {
                 PreparedUserMessageContent = preparedPrompt.PreparedUserMessageContent,
                 StepRecords = stepRecords.ToArray(),
                 Usage = totalUsage,
+                Budget = budgetSnapshot,
+                StopReason = budgetSnapshot.BudgetExhausted ? CopilotAgentStopReason.BudgetExhausted : CopilotAgentStopReason.Completed,
             };
+        }
+
+        private static bool TryCreateRequiredWebPlan(
+            CopilotAgentRequest request,
+            IReadOnlyList<ICopilotTool> availableTools,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            out CopilotAgentPlan plan)
+        {
+            plan = new CopilotAgentPlan();
+            var urls = CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText);
+            if (urls.Count == 0 || HasWebAccessOptOut(request.UserText))
+                return false;
+
+            var fetchStep = stepRecords.FirstOrDefault(step => string.Equals(step.ToolCall.ToolName, "FetchUrl", StringComparison.OrdinalIgnoreCase));
+            if (fetchStep == null)
+            {
+                var fetchTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "FetchUrl", StringComparison.OrdinalIgnoreCase));
+                if (fetchTool != null)
+                {
+                    plan = new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Tool,
+                        ToolName = fetchTool.Name,
+                        ToolInput = new CopilotAgentToolInput { Query = string.Join(" ", urls.Take(3)) },
+                        Reason = "The user provided a web page URL, so direct page evidence is required before answering.",
+                        IsFallback = true,
+                    };
+                    return true;
+                }
+            }
+
+            var fetchFailed = fetchStep != null && !fetchStep.Observation.Success;
+            if (fetchFailed && !stepRecords.Any(step => string.Equals(step.ToolCall.ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase)))
+            {
+                var webSearchTool = availableTools.FirstOrDefault(tool => string.Equals(tool.Name, "WebSearch", StringComparison.OrdinalIgnoreCase));
+                if (webSearchTool != null)
+                {
+                    plan = new CopilotAgentPlan
+                    {
+                        Action = CopilotAgentPlanAction.Tool,
+                        ToolName = webSearchTool.Name,
+                        ToolInput = new CopilotAgentToolInput { Query = request.UserText },
+                        Reason = "Direct page retrieval failed, so public web search is the next read-only fallback.",
+                        IsFallback = true,
+                    };
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasWebAccessOptOut(string text)
+        {
+            var value = text ?? string.Empty;
+            string[] markers =
+            {
+                "不要访问", "别访问", "不要打开", "无需访问", "不要联网",
+                "do not access", "don't access", "do not open", "don't open", "without opening",
+            };
+            return markers.Any(marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
         }
 
         private static CopilotAgentRequest CreateRoundRequest(
@@ -172,6 +286,11 @@ namespace ColorVision.Copilot
                 ReadableLocalDirectoryPaths = request.ReadableLocalDirectoryPaths,
                 PreferBatchReadLocalFiles = request.PreferBatchReadLocalFiles,
                 Mode = request.Mode,
+                SessionCheckpoint = request.SessionCheckpoint,
+                Recovery = request.Recovery,
+                RunControl = request.RunControl,
+                RunBudgetOverride = request.RunBudgetOverride,
+                ExternalMcpServers = request.ExternalMcpServers,
             };
         }
 
@@ -222,20 +341,6 @@ namespace ColorVision.Copilot
             }
 
             return added;
-        }
-
-        private static CopilotAgentStepRecord CreateStepRecord(
-            int round,
-            string toolName,
-            CopilotAgentPlan plan,
-            CopilotToolResult result)
-        {
-            return new CopilotAgentStepRecord
-            {
-                Round = round,
-                ToolCall = CopilotToolCall.FromPlan(plan, toolName),
-                Observation = CopilotToolObservation.FromResult(result),
-            };
         }
 
         private static string BuildPlanDetail(CopilotAgentPlan plan)

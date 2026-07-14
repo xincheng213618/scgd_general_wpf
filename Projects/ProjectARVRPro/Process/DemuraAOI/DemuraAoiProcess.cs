@@ -8,13 +8,8 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.DemuraAOI
 {
-    public class DemuraAoiProcess : ProcessBase<DemuraAoiProcessConfig>
+    public class DemuraAoiProcess : ProcessBase<DemuraAoiProcessConfig, DemuraAoiRecipeConfig>
     {
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DemuraAoiRecipeConfig>();
-        }
-
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null || ctx.ObjectiveTestResult == null) return false;
@@ -120,6 +115,14 @@ namespace ProjectARVRPro.Process.DemuraAOI
                 output.AppendLine($"AOIGrade:{result.Grading.GradeLevel}, MaxDefectDensity:{result.Grading.MaxDefectDensity}, DarkTotalDefects:{result.Grading.DarkTotalDefects}, BrightTotalDefects:{result.Grading.BrightTotalDefects}");
             if (result.Black != null)
                 output.AppendLine($"BlackGrade:{result.Black.GradeLevel}, BrightCount:{result.Black.BrightCount}");
+            if (result.Sensor != null)
+            {
+                output.AppendLine($"SensorChannel:{result.Sensor.Channel}");
+                output.AppendLine("SensorVoltages:" + string.Join(", ", result.Sensor.Voltages.Select(item => $"{item.Name}={item.Value}")));
+                output.AppendLine("SensorCurrents:" + string.Join(", ", result.Sensor.Currents.Select(item => $"{item.Name}={item.Value}")));
+            }
+            if (result.Spectrometer != null)
+                output.AppendLine($"Spectrometer:Lv={result.Spectrometer.Luminance}, Blue={result.Spectrometer.BluePercent}, x={result.Spectrometer.X}, y={result.Spectrometer.Y}, u={result.Spectrometer.U}, v={result.Spectrometer.VChromaticity}, CCT={result.Spectrometer.CorrelatedColorTemperature}, Ld={result.Spectrometer.DominantWavelength}, Purity={result.Spectrometer.ColorPurity}, Lp={result.Spectrometer.PeakWavelength}, Ra={result.Spectrometer.ColorRenderingIndex}, HW={result.Spectrometer.HalfBandwidth}");
             foreach (string warning in result.Warnings)
                 output.AppendLine($"Warning:{warning}");
 
@@ -136,6 +139,8 @@ namespace ProjectARVRPro.Process.DemuraAOI
             target.W255 = parseResult.W255;
             target.Grading = parseResult.Grading;
             target.Black = parseResult.Black;
+            target.Sensor = parseResult.Sensor;
+            target.Spectrometer = parseResult.Spectrometer;
             target.DataErrors = parseResult.DataErrors.ToList();
             target.Warnings = parseResult.Warnings.ToList();
             target.SpecificationFailures = evaluation.SpecificationFailures.ToList();

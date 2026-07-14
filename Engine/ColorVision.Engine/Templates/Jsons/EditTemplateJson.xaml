@@ -42,14 +42,14 @@
             <Button Content="{x:Static properties:Resources.VerifyJson}" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
             <Button Content="json" Click="Button_Click_1" Margin="0,0,5,0"/>
             <Button Content="{x:Static properties:Resources.Reset}" Command="{Binding ResetCommand}"/>
-            <Button x:Name="AskCopilotButton" Content="问 Copilot" Click="AskCopilotButton_Click" Margin="12,0,0,0">
+            <Button x:Name="AskCopilotButton" Content="{x:Static properties:Resources.Copilot_Ask}" Click="AskCopilotButton_Click" Margin="12,0,0,0">
                 <Button.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="{x:Static properties:Resources.ExplainTemplate}" Click="AskCopilotExplainTemplate_Click" />
                         <MenuItem Header="{x:Static properties:Resources.ExplainParameters}" Click="AskCopilotExplainParameters_Click" />
                         <MenuItem Header="{x:Static properties:Resources.CheckConfigAnomaly}" Click="AskCopilotDiagnoseTemplate_Click" />
                         <Separator />
-                        <MenuItem Header="发送到 Copilot..." Click="AskCopilotOpenPanel_Click" />
+                        <MenuItem Header="{x:Static properties:Resources.Copilot_SendWithEllipsis}" Click="AskCopilotOpenPanel_Click" />
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>

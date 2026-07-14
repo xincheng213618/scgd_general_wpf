@@ -198,7 +198,7 @@ namespace ProjectARVRPro.Process
             // Subscribe to config changes to persist (recursively for nested objects)
             Action saveAction = configType switch
             {
-                ConfigType.Recipe => () => RecipeManager.GetInstance().Save(),
+                ConfigType.Recipe => () => ProcessManager.GetInstance().SaveProcessGroups(),
                 ConfigType.Process => () => { meta.ConfigJson = JsonConvert.SerializeObject(config); },
                 _ => () => { }
             };

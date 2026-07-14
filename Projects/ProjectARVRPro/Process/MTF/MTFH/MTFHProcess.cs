@@ -17,7 +17,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     /// <summary>
     /// 旧版MTFH解析 - 使用 MTFResult.result + mtfValue
     /// </summary>
-    public class MTFHProcess : ProcessBase<MTFHProcessConfig>
+    public class MTFHProcess : ProcessBase<MTFHProcessConfig, MTFHRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -203,9 +203,5 @@ namespace ProjectARVRPro.Process.MTF.MTFH
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHRecipeConfig>();
-        }
     }
 }

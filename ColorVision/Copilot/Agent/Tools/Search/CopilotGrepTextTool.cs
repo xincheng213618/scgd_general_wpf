@@ -10,12 +10,12 @@ namespace ColorVision.Copilot
 
         public string Description => "Search text files in the current solution for keyword or identifier matches.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Keyword, identifier, or exact text pattern to find.", required: true);
+
         public bool CanHandle(CopilotAgentRequest request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat || request.SearchRootPaths.Count == 0)
-                return false;
-
-            return true;
+            return request?.SearchRootPaths?.Count > 0
+                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
         }
 
         public Task<CopilotToolResult> ExecuteAsync(

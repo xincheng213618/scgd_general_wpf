@@ -8,8 +8,11 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotProfileConfig : ViewModelBase
     {
-        public const int DefaultMaxTokens = 2048;
-        public const int DefaultMaxToolRounds = 6;
+        public const int DefaultMaxTokens = 8192;
+        public const int DefaultMaxToolRounds = 12;
+        public const int DefaultAgentRequestTokenBudget = 65536;
+        public const int DefaultMaxAgentPasses = 4;
+        public const int DefaultAgentTimeoutSeconds = 300;
         public const double DefaultTemperature = 0.2;
 
         public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the ColorVision context that the app provides. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. Use all available context and tool observations first; if ColorVision-specific context is incomplete, answer only the parts that are supported. Do not guess or invent project-specific implementation details, and do not create a visible section about missing context or say that context was not found. 3. Do not ask the user to provide files, source code, configuration, or documentation unless they explicitly ask what to attach next. 4. Answer general questions normally even when no local context is available, while keeping project-specific claims separate from general principles. 5. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 6. Do not claim that you performed an operation unless the app context explicitly shows that it happened.";
@@ -29,8 +32,10 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _vendorType, value))
                 {
+                    ReasoningMode = CopilotReasoningCapabilities.Normalize(value, ReasoningMode);
                     OnPropertyChanged(nameof(VendorLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnPropertyChanged(nameof(ReasoningLabel));
                 }
             }
         }
@@ -123,35 +128,21 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         [Browsable(false)]
-        public string EffectiveSystemPrompt => string.IsNullOrWhiteSpace(_systemPromptOverride)
-            ? BuildEffectiveSystemPrompt(CustomSystemPrompt)
-            : _systemPromptOverride;
+        public string EffectiveSystemPrompt => string.IsNullOrWhiteSpace(_systemPromptOverride) ? DefaultSystemPrompt : _systemPromptOverride;
 
-        [DisplayName("Custom prompt")]
-        [Description("Optional extra instructions appended after ColorVision's built-in prompt")]
-        public string CustomSystemPrompt
-        {
-            get => _customSystemPrompt;
-            set
-            {
-                if (SetProperty(ref _customSystemPrompt, NormalizeText(value)))
-                    OnEffectiveSystemPromptChanged();
-            }
-        }
-        private string _customSystemPrompt = string.Empty;
         private string _systemPromptOverride = string.Empty;
 
-        [DisplayName("Max output tokens")]
-        [Description("Maximum tokens generated in one response")]
+        [JsonIgnore]
+        [Browsable(false)]
         public int MaxTokens
         {
             get => _maxTokens;
-            set => SetProperty(ref _maxTokens, Math.Clamp(value, 128, 8192));
+            set => SetProperty(ref _maxTokens, Math.Clamp(value, 32, DefaultMaxTokens));
         }
         private int _maxTokens = DefaultMaxTokens;
 
-        [DisplayName("Temperature")]
-        [Description("Lower values are more stable; higher values are more creative")]
+        [JsonIgnore]
+        [Browsable(false)]
         public double Temperature
         {
             get => _temperature;
@@ -159,14 +150,51 @@ namespace ColorVision.Copilot
         }
         private double _temperature = DefaultTemperature;
 
-        [DisplayName("Max tool rounds")]
-        [Description("Maximum tool-call rounds allowed for one Agent request")]
+        [DisplayName("Reasoning")]
+        [Description("Provider-aware thinking mode or reasoning effort")]
+        public CopilotReasoningMode ReasoningMode
+        {
+            get => _reasoningMode;
+            set
+            {
+                var normalized = CopilotReasoningCapabilities.Normalize(VendorType, value);
+                if (SetProperty(ref _reasoningMode, normalized))
+                    OnPropertyChanged(nameof(ReasoningLabel));
+            }
+        }
+        private CopilotReasoningMode _reasoningMode = CopilotReasoningMode.Default;
+
+        [Browsable(false)]
         public int MaxToolRounds
         {
             get => _maxToolRounds;
-            set => SetProperty(ref _maxToolRounds, Math.Max(1, value));
+            set => SetProperty(ref _maxToolRounds, Math.Clamp(value, CopilotAgentRunBudget.MinimumToolCalls, CopilotAgentRunBudget.MaximumToolCalls));
         }
         private int _maxToolRounds = DefaultMaxToolRounds;
+
+        [Browsable(false)]
+        public int AgentRequestTokenBudget
+        {
+            get => _agentRequestTokenBudget;
+            set => SetProperty(ref _agentRequestTokenBudget, Math.Clamp(value, CopilotAgentRunBudget.MinimumRequestTokenBudget, CopilotAgentRunBudget.MaximumRequestTokenBudget));
+        }
+        private int _agentRequestTokenBudget = DefaultAgentRequestTokenBudget;
+
+        [Browsable(false)]
+        public int MaxAgentPasses
+        {
+            get => _maxAgentPasses;
+            set => SetProperty(ref _maxAgentPasses, Math.Clamp(value, CopilotAgentRunBudget.MinimumAgentPasses, CopilotAgentRunBudget.MaximumAgentPasses));
+        }
+        private int _maxAgentPasses = DefaultMaxAgentPasses;
+
+        [Browsable(false)]
+        public int AgentTimeoutSeconds
+        {
+            get => _agentTimeoutSeconds;
+            set => SetProperty(ref _agentTimeoutSeconds, Math.Clamp(value, (int)CopilotAgentRunBudget.MinimumTotalDuration.TotalSeconds, (int)CopilotAgentRunBudget.MaximumTotalDuration.TotalSeconds));
+        }
+        private int _agentTimeoutSeconds = DefaultAgentTimeoutSeconds;
 
         [JsonIgnore]
         public bool IsConfigured =>
@@ -194,6 +222,9 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string ProviderLabel => ProviderType == CopilotProviderType.AnthropicCompatible ? "Anthropic Compatible" : "OpenAI Compatible";
+
+        [JsonIgnore]
+        public string ReasoningLabel => CopilotReasoningCapabilities.GetLabel(CopilotReasoningCapabilities.GetEffectiveMode(this));
 
         [JsonIgnore]
         public string DisplayLabel
@@ -241,6 +272,31 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (AgentRequestTokenBudget <= 0)
+            {
+                AgentRequestTokenBudget = DefaultAgentRequestTokenBudget;
+                changed = true;
+            }
+
+            if (MaxAgentPasses <= 0)
+            {
+                MaxAgentPasses = DefaultMaxAgentPasses;
+                changed = true;
+            }
+
+            if (AgentTimeoutSeconds <= 0)
+            {
+                AgentTimeoutSeconds = DefaultAgentTimeoutSeconds;
+                changed = true;
+            }
+
+            var normalizedReasoningMode = CopilotReasoningCapabilities.Normalize(VendorType, ReasoningMode);
+            if (ReasoningMode != normalizedReasoningMode)
+            {
+                ReasoningMode = normalizedReasoningMode;
+                changed = true;
+            }
+
             if (!Enum.IsDefined(VendorType))
             {
                 VendorType = CopilotVendorType.Custom;
@@ -271,10 +327,13 @@ namespace ColorVision.Copilot
                 ApiKey = ApiKey,
                 BaseUrl = BaseUrl,
                 Model = Model,
-                CustomSystemPrompt = CustomSystemPrompt,
                 MaxTokens = MaxTokens,
                 MaxToolRounds = MaxToolRounds,
+                AgentRequestTokenBudget = AgentRequestTokenBudget,
+                MaxAgentPasses = MaxAgentPasses,
+                AgentTimeoutSeconds = AgentTimeoutSeconds,
                 Temperature = Temperature,
+                ReasoningMode = ReasoningMode,
             };
 
             if (!string.IsNullOrWhiteSpace(_systemPromptOverride))
@@ -292,9 +351,6 @@ namespace ColorVision.Copilot
                 ProviderType = CopilotProviderType.AnthropicCompatible,
                 BaseUrl = "https://api.deepseek.com/anthropic",
                 Model = "deepseek-v4-pro",
-                MaxTokens = DefaultMaxTokens,
-                MaxToolRounds = DefaultMaxToolRounds,
-                Temperature = DefaultTemperature,
             };
         }
 
@@ -306,20 +362,6 @@ namespace ColorVision.Copilot
 
             _systemPromptOverride = normalized;
             OnEffectiveSystemPromptChanged();
-        }
-
-        public static string BuildEffectiveSystemPrompt(string? customSystemPrompt)
-        {
-            var customPrompt = NormalizeText(customSystemPrompt);
-            if (string.IsNullOrWhiteSpace(customPrompt))
-                return DefaultSystemPrompt;
-
-            return string.Join(
-                Environment.NewLine,
-                DefaultSystemPrompt,
-                string.Empty,
-                "User custom instructions (apply only when they do not conflict with the built-in ColorVision behavior and safety rules):",
-                customPrompt);
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;

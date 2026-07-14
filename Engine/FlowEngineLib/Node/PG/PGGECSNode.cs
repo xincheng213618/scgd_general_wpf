@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 
@@ -108,8 +109,16 @@ public class PGGECSNode : CVBaseServerNode
 
 public class PGGECSCommandPropertyDescriptor : STNodePropertyDescriptor
 {
+	private const string SerializedSwitchImageName = "指定";
+
 	protected override object GetValueFromString(string strText)
 	{
-		return strText?.Trim().Trim('[', ']') == "指定" ? PGGECSCommCmdType.切图 : base.GetValueFromString(strText);
+		return strText?.Trim().Trim('[', ']') == SerializedSwitchImageName ? PGGECSCommCmdType.切图 : base.GetValueFromString(strText);
+	}
+
+	protected override byte[] GetBytesFromValue()
+	{
+		// Keep new flow files readable by FlowEngineLib versions whose enum member was named "指定".
+		return PropertyInfo.GetValue(Node) is PGGECSCommCmdType.切图 ? Encoding.UTF8.GetBytes(SerializedSwitchImageName) : base.GetBytesFromValue();
 	}
 }

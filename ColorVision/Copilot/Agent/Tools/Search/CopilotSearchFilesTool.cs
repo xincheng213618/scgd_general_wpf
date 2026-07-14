@@ -10,16 +10,12 @@ namespace ColorVision.Copilot
 
         public string Description => "Find candidate files in the current solution by file name or path fragment.";
 
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("File name or path fragment to locate.", required: true);
+
         public bool CanHandle(CopilotAgentRequest request)
         {
-            if (request == null
-                || request.Mode == CopilotAgentMode.Chat
-                || request.SearchRootPaths.Count == 0)
-            {
-                return false;
-            }
-
-            return true;
+            return request?.SearchRootPaths?.Count > 0
+                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
         }
 
         public Task<CopilotToolResult> ExecuteAsync(

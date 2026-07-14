@@ -9,7 +9,7 @@ using System.Text;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterDynamicProcess : ProcessBase<OpticCenterDynamicProcessConfig>
+    public class OpticCenterDynamicProcess : ProcessBase<OpticCenterDynamicProcessConfig, OpticCenterRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -121,10 +121,6 @@ namespace ProjectARVRPro.Process.OpticCenter
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
-        }
 
         private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
         {

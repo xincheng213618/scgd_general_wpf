@@ -99,6 +99,10 @@ namespace ColorVision.UI
 
         public string RecentFailureSummary { get; init; } = string.Empty;
 
+        public string FocusedNodeSummary { get; init; } = string.Empty;
+
+        public IReadOnlyList<string> FailureEvidence { get; init; } = Array.Empty<string>();
+
         public IReadOnlyList<CopilotFlowNodeContextSnapshot> Nodes { get; init; } = Array.Empty<CopilotFlowNodeContextSnapshot>();
     }
 
@@ -213,8 +217,10 @@ namespace ColorVision.UI
             AppendKeyValue(builder, "Batch progress", snapshot.BatchProgress);
             AppendKeyValue(builder, "Batch result", snapshot.BatchResult);
             AppendKeyValue(builder, "Last node", snapshot.LastNodeSummary);
+            AppendKeyValue(builder, "Focused node", snapshot.FocusedNodeSummary);
             AppendKeyValue(builder, "Recent failure summary", snapshot.RecentFailureSummary);
             AppendKeyValue(builder, "Recent run message", snapshot.RecentRunMessage);
+            AppendList(builder, "Failure evidence", snapshot.FailureEvidence);
 
             if (snapshot.Nodes.Count > 0)
             {

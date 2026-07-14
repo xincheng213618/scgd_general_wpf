@@ -60,6 +60,16 @@ All admin endpoints require authentication (session login or Basic Auth or Beare
 
 Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
 
+Operations relay uses two dedicated scopes and does not accept Basic/session auth:
+
+- `ops:relay` — desktop outbound heartbeat, task polling, receipts, and bounded support events.
+- `ops:operator` — list hosts and create catalog-bound tasks. Privileged ServiceHost commands are not valid relay tasks.
+
+Create a desktop relay key with `python app.py --create-api-key colorvision-relay --scopes ops:relay`, then set
+`COLORVISION_OPERATIONS_RELAY_URL` (HTTPS, or loopback HTTP for development only) and
+`COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
+no inbound port or arbitrary command channel is opened.
+
 ### Endpoint Scopes
 
 | Endpoint | Required Scope |

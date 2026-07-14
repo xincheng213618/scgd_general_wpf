@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Black
 {
-    public class BlackProcess : ProcessBase<BlackProcessConfig>
+    public class BlackProcess : ProcessBase<BlackProcessConfig, BlackRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -143,9 +143,5 @@ namespace ProjectARVRPro.Process.Black
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlackRecipeConfig>();
-        }
     }
 }

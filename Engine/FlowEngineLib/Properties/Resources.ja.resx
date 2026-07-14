@@ -84,9 +84,6 @@
     <value>03_3 補正</value>
   </data>
 
-  <data name="03_3 第三方算法" xml:space="preserve">
-    <value>033 サードパーティのアルゴリズム</value>
-  </data>
 
   <data name="03_4 KB" xml:space="preserve">
     <value>034 KB</value>
@@ -180,9 +177,6 @@
     <value>グレー255</value>
   </data>
 
-  <data name="状态触发" xml:space="preserve">
-    <value>状態トリガー</value>
-  </data>
 
   <data name="物理设备控制" xml:space="preserve">
     <value>物理的な機器制御</value>
@@ -276,9 +270,6 @@
     <value>画像名</value>
   </data>
 
-  <data name="图像水平翻转" xml:space="preserve">
-    <value>画像の水平反転</value>
-  </data>
 
   <data name="ImageCompound" xml:space="preserve">
     <value>画像のステッチ</value>
@@ -976,9 +967,6 @@
     <value>パラメータテンプレート</value>
   </data>
 
-  <data name="参数模板ID" xml:space="preserve">
-    <value>パラメータテンプレートID</value>
-  </data>
 
   <data name="过滤模板" xml:space="preserve">
     <value>フィルターテンプレート</value>
@@ -1184,9 +1172,6 @@
     <value>手動確認</value>
   </data>
 
-  <data name="最小超时" xml:space="preserve">
-    <value>最小タイムアウト</value>
-  </data>
 
   <data name="最大超时" xml:space="preserve">
     <value>最大タイムアウト</value>
@@ -1231,4 +1216,13 @@
   <data name="Port" xml:space="preserve">
     <value>ポート</value>
   </data>
+  <data name="允许失败继续" xml:space="preserve"><value>失敗しても続行</value></data>
+  <data name="服务返回Fail时按正常流程继续" xml:space="preserve"><value>サービスが Fail を返しても通常フローを続行します</value></data>
+  <data name="参数" xml:space="preserve"><value>パラメーター</value></data>
+  <data name="上电" xml:space="preserve"><value>電源オン</value></data>
+  <data name="下电" xml:space="preserve"><value>電源オフ</value></data>
+  <data name="切图" xml:space="preserve"><value>画像切り替え</value></data>
+  <data name="电压电流" xml:space="preserve"><value>電圧/電流</value></data>
+  <data name="屏幕缺陷检测" xml:space="preserve"><value>画面欠陥検出</value></data>
+  <data name="亮点检测V2" xml:space="preserve"><value>輝点検出 V2</value></data>
 </root>

@@ -11,6 +11,16 @@ namespace ColorVision.Copilot
 
         public string Description => "Switch the application theme requested by the user. input.query can contain a target theme such as default, dark, light, pink, or cyan.";
 
+        public CopilotToolAccess Access => CopilotToolAccess.Write;
+
+        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.Low;
+
+        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Never;
+
+        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Idempotent;
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Requested theme name: default, dark, light, pink, or cyan.", required: true);
+
         public bool CanHandle(CopilotAgentRequest request)
         {
             return request != null

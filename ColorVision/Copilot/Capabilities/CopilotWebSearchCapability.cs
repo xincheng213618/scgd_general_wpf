@@ -1,12 +1,14 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -35,6 +37,8 @@ namespace ColorVision.Copilot
 
         public string ErrorMessage { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public IReadOnlyList<CopilotWebSearchHit> Hits { get; init; } = Array.Empty<CopilotWebSearchHit>();
 
         public CopilotCapabilityResult ToCapabilityResult()
@@ -45,6 +49,7 @@ namespace ColorVision.Copilot
                 Summary = Summary,
                 Content = Content,
                 ErrorMessage = ErrorMessage,
+                FailureKind = FailureKind,
             };
         }
     }
@@ -52,8 +57,14 @@ namespace ColorVision.Copilot
     public static class CopilotWebSearchCapability
     {
         private const int MaxResults = 8;
-        private const string ProviderName = "DuckDuckGo HTML";
+        public const int MaxSearchResponseBytes = 512 * 1024;
         private static readonly HttpClient HttpClient = CreateHttpClient();
+        private static readonly SearchProvider[] Providers =
+        {
+            new("DuckDuckGo HTML", query => "https://html.duckduckgo.com/html/?q=" + Uri.EscapeDataString(query), ExtractDuckDuckGoHits),
+            new("DuckDuckGo Lite", query => "https://lite.duckduckgo.com/lite/?q=" + Uri.EscapeDataString(query), ExtractDuckDuckGoLiteHits),
+            new("Bing RSS", query => "https://www.bing.com/search?q=" + Uri.EscapeDataString(query) + "&format=rss", ExtractBingRssHits),
+        };
 
         public static async Task<CopilotWebSearchResult> SearchAsync(string? query, CancellationToken cancellationToken)
         {
@@ -64,61 +75,66 @@ namespace ColorVision.Copilot
                 {
                     Success = false,
                     Query = string.Empty,
-                    Provider = ProviderName,
+                    Provider = string.Empty,
                     Summary = "Missing web search query.",
                     ErrorMessage = "The web search tool requires a non-empty query.",
+                    FailureKind = CopilotToolFailureKind.Validation,
                 };
             }
 
-            try
+            var failures = new List<(string Provider, string Message, CopilotToolFailureKind Kind)>();
+            foreach (var provider in Providers)
             {
-                var searchUrl = "https://duckduckgo.com/html/?q=" + Uri.EscapeDataString(normalizedQuery);
-                using var request = new HttpRequestMessage(HttpMethod.Get, searchUrl);
-                using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                response.EnsureSuccessStatusCode();
-
-                var html = await response.Content.ReadAsStringAsync(cancellationToken);
-                var hits = ExtractDuckDuckGoHits(html)
-                    .Take(MaxResults)
-                    .ToArray();
-
-                if (hits.Length == 0)
+                try
                 {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, provider.BuildUrl(normalizedQuery));
+                    using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    var payload = await ReadSearchResponseAsync(response, cancellationToken);
+                    var hits = provider.ExtractHits(payload)
+                        .Take(MaxResults)
+                        .ToArray();
+                    if (hits.Length == 0)
+                    {
+                        failures.Add((provider.Name, "No result title and URL pairs could be extracted.", CopilotToolFailureKind.NotFound));
+                        continue;
+                    }
+
                     return new CopilotWebSearchResult
                     {
-                        Success = false,
+                        Success = true,
                         Query = normalizedQuery,
-                        Provider = ProviderName,
-                        Summary = "Web search completed but returned no usable results.",
-                        ErrorMessage = "No result title and URL pairs could be extracted from the search response.",
+                        Provider = provider.Name,
+                        Hits = hits,
+                        Summary = $"Web search found {hits.Length} results for \"{normalizedQuery}\" via {provider.Name}.",
+                        Content = BuildContent(provider.Name, normalizedQuery, hits),
                     };
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    failures.Add((provider.Name, ex.Message, CopilotToolFailureClassifier.Classify(ex)));
+                }
+            }
 
-                return new CopilotWebSearchResult
-                {
-                    Success = true,
-                    Query = normalizedQuery,
-                    Provider = ProviderName,
-                    Hits = hits,
-                    Summary = $"Web search found {hits.Length} results for \"{normalizedQuery}\".",
-                    Content = BuildContent(normalizedQuery, hits),
-                };
-            }
-            catch (OperationCanceledException)
+            var failureKind = failures.Count > 0 && failures.All(failure => failure.Kind == CopilotToolFailureKind.NotFound)
+                ? CopilotToolFailureKind.NotFound
+                : failures.LastOrDefault(failure => failure.Kind != CopilotToolFailureKind.NotFound).Kind;
+            if (failureKind == CopilotToolFailureKind.None)
+                failureKind = CopilotToolFailureKind.Unspecified;
+            return new CopilotWebSearchResult
             {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                return new CopilotWebSearchResult
-                {
-                    Success = false,
-                    Query = normalizedQuery,
-                    Provider = ProviderName,
-                    Summary = "Web search failed.",
-                    ErrorMessage = ex.Message,
-                };
-            }
+                Success = false,
+                Query = normalizedQuery,
+                Provider = string.Join(" -> ", failures.Select(failure => failure.Provider)),
+                Summary = "Web search failed across all configured providers.",
+                ErrorMessage = string.Join(" | ", failures.Select(failure => $"{failure.Provider}: {failure.Message}")),
+                FailureKind = failureKind,
+            };
         }
 
         public static IReadOnlyList<CopilotWebSearchHit> ExtractDuckDuckGoHits(string html)
@@ -162,11 +178,76 @@ namespace ColorVision.Copilot
             return results;
         }
 
-        private static string BuildContent(string query, IReadOnlyList<CopilotWebSearchHit> hits)
+        public static IReadOnlyList<CopilotWebSearchHit> ExtractDuckDuckGoLiteHits(string html)
+        {
+            var document = new HtmlDocument();
+            document.LoadHtml(html ?? string.Empty);
+            var results = new List<CopilotWebSearchHit>();
+            var links = document.DocumentNode.SelectNodes("//a[contains(concat(' ', normalize-space(@class), ' '), ' result-link ')]")
+                ?? Enumerable.Empty<HtmlNode>();
+            foreach (var link in links)
+            {
+                var title = NormalizeText(HtmlEntity.DeEntitize(link.InnerText));
+                var url = NormalizeResultUrl(link.GetAttributeValue("href", string.Empty));
+                if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)
+                    || results.Any(item => string.Equals(item.Url, url, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var row = link.Ancestors("tr").FirstOrDefault();
+                var snippetNode = row?.SelectSingleNode("following-sibling::tr[1]//*[contains(concat(' ', normalize-space(@class), ' '), ' result-snippet ')]");
+                results.Add(new CopilotWebSearchHit
+                {
+                    Rank = results.Count + 1,
+                    Title = title,
+                    Url = url,
+                    Snippet = NormalizeText(HtmlEntity.DeEntitize(snippetNode?.InnerText ?? string.Empty)),
+                });
+            }
+            return results;
+        }
+
+        public static IReadOnlyList<CopilotWebSearchHit> ExtractBingRssHits(string xml)
+        {
+            XDocument document;
+            try
+            {
+                document = XDocument.Parse(xml ?? string.Empty, LoadOptions.None);
+            }
+            catch (System.Xml.XmlException)
+            {
+                return Array.Empty<CopilotWebSearchHit>();
+            }
+
+            var results = new List<CopilotWebSearchHit>();
+            foreach (var item in document.Descendants().Where(element => element.Name.LocalName == "item"))
+            {
+                var title = NormalizeHtmlText(item.Elements().FirstOrDefault(element => element.Name.LocalName == "title")?.Value ?? string.Empty);
+                var url = NormalizeResultUrl(item.Elements().FirstOrDefault(element => element.Name.LocalName == "link")?.Value ?? string.Empty);
+                if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(url)
+                    || results.Any(hit => string.Equals(hit.Url, url, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var description = item.Elements().FirstOrDefault(element => element.Name.LocalName == "description")?.Value ?? string.Empty;
+                results.Add(new CopilotWebSearchHit
+                {
+                    Rank = results.Count + 1,
+                    Title = title,
+                    Url = url,
+                    Snippet = NormalizeHtmlText(description),
+                });
+            }
+            return results;
+        }
+
+        private static string BuildContent(string providerName, string query, IReadOnlyList<CopilotWebSearchHit> hits)
         {
             var builder = new StringBuilder();
             builder.AppendLine("[Web Search Results]");
-            builder.AppendLine($"Provider: {ProviderName}");
+            builder.AppendLine($"Provider: {providerName}");
             builder.AppendLine($"Query: {query}");
             builder.AppendLine();
 
@@ -242,6 +323,38 @@ namespace ColorVision.Copilot
             return normalized;
         }
 
+        private static string NormalizeHtmlText(string value)
+        {
+            var document = new HtmlDocument();
+            document.LoadHtml(value ?? string.Empty);
+            return NormalizeText(HtmlEntity.DeEntitize(document.DocumentNode.InnerText));
+        }
+
+        private static async Task<string> ReadSearchResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+        {
+            if (response.Content.Headers.ContentLength > MaxSearchResponseBytes)
+                throw new InvalidOperationException($"Search response exceeded the size limit ({MaxSearchResponseBytes / 1024} KB).");
+
+            await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var buffer = new MemoryStream();
+            var chunk = new byte[8192];
+            var totalBytes = 0;
+            while (true)
+            {
+                var bytesRead = await source.ReadAsync(chunk.AsMemory(), cancellationToken);
+                if (bytesRead <= 0)
+                    break;
+                totalBytes += bytesRead;
+                if (totalBytes > MaxSearchResponseBytes)
+                    throw new InvalidOperationException($"Search response exceeded the size limit ({MaxSearchResponseBytes / 1024} KB).");
+                await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
+            }
+
+            buffer.Position = 0;
+            using var reader = new StreamReader(buffer, Encoding.UTF8, true);
+            return await reader.ReadToEndAsync(cancellationToken);
+        }
+
         private static HttpClient CreateHttpClient()
         {
             var client = new HttpClient
@@ -251,5 +364,10 @@ namespace ColorVision.Copilot
             client.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-Copilot-WebSearch/1.0");
             return client;
         }
+
+        private sealed record SearchProvider(
+            string Name,
+            Func<string, string> BuildUrl,
+            Func<string, IReadOnlyList<CopilotWebSearchHit>> ExtractHits);
     }
 }

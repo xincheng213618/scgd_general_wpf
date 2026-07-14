@@ -8,26 +8,20 @@
 
 | 项目 | 业务定位 | 外部触发 | 主要结果 | 最先看的代码 |
 | --- | --- | --- | --- | --- |
-| `ProjectARVR` | 早期 AR/VR 综合光学测试，固定切图顺序 | Socket JSON：`ProjectARVRInit`、`SwitchPGCompleted` | `ObjectiveTestResult`、整机 CSV、Socket `ProjectARVRResult` | `ARVRWindow.xaml.cs`、`Services/SocketControl.cs`、`ObjectiveTestResult.cs` |
 | `ProjectARVRLite` | 轻量 AR/VR 快速测试，可配置启用项 | Socket JSON，初始化时可自动开窗 | `ObjectiveTestResult`、按 SN/日期保存 CSV、Socket 结果 | `ARVRWindow.xaml.cs`、`TestTypeConfig.cs`、`Services/SocketControl.cs` |
 | `ProjectARVRPro` | 当前主力 AR/VR 专业流程组项目 | Socket JSON、`RunAll`、`SwitchGroup`、雷鸟串口切图、AOI Relay | SQLite、CSV、Legacy CSV、客户 XLSX、Socket 结果 | `ARVRWindow.xaml.cs`、`Process/`、`Recipe/`、`Services/SocketControl.cs`、`SocketRelay/` |
 | `ProjectARVRPro.IntegrationDemo` | 给客户/上位机验证 ARVRPro TCP JSON 的示例 | 客户端主动连 `6666`，发送 JSON 事件 | 原始 JSON、解析后的结果表、CSV | `Program.cs`、`MainWindow.xaml.cs`、`Contracts/` |
-| `ProjectBlackMura` | 显示面板 Black Mura 检测 | 串口 PG/MES：`CON`、`CCPI`、`CSN`、`CGI` | Excel 报告、POI overlay、Mura 结果 | `MainWindow.xaml.cs`、`HYMesManager.cs`、`ExcelReportGenerator.cs` |
-| `ProjectHeyuan` | 河源精电四点 WBRO 颜色/亮度测试 | STX/ETX 串口，`CSN`、`CMI`、`CGI`、`CPT` | WBRO CSV、MES 上传结果 | `ProjectHeyuanWindow.xaml.cs`、`HYMesManager.cs`、`TempResult.cs` |
 | `ProjectKB` | 键盘背光亮度、均匀性和自动修正 | Modbus TCP、MES DLL、可选 TCP Socket | SQLite、文本、summary、CSV、MES 上传 | `ProjectKBWindow.xaml.cs`、`Modbus/`、`MesDll.cs`、`BacklightAutotuneService.cs` |
 | `ProjectLUX` | LUX 亮度、色彩、MTF、畸变等自动化测试 | 文本 Socket：`T00XX,SN;` | `ProjectLUX.db`、`C_*.csv`、`B_*.csv`、`D_*.csv`、PDF/CSV | `LUXWindow.xaml.cs`、`Process/`、`Recipe/`、`Fix/`、`Services/SocketControl.cs` |
-| `ProjectShiyuan` | 视源 JND/POI 结果导出和固定图像后处理 | 当前以手动窗口和 Flow 执行为主 | JND CSV、POI CSV、输入图复制、伪彩图 | `ShiyuanProjectWindow.xaml.cs`、`ShiyuanProjectExport.cs`、`ProjectShiYuanConfig.cs` |
 
 ## 按协议和触发方式分类
 
 | 类型 | 项目 | 入口 | 对接要点 |
 | --- | --- | --- | --- |
-| JSON Socket 项目 | `ProjectARVR`、`ProjectARVRLite`、`ProjectARVRPro` | `Services/SocketControl.cs`、各类 handler | `EventName`、SN 初始化、切图确认、最终 `ProjectARVRResult` 字段 |
+| JSON Socket 项目 | `ProjectARVRLite`、`ProjectARVRPro` | `Services/SocketControl.cs`、各类 handler | `EventName`、SN 初始化、切图确认、最终 `ProjectARVRResult` 字段 |
 | 文本 Socket 项目 | `ProjectLUX` | `Services/SocketControl.cs` | `T00XX` 和 `ProcessMeta.SocketCode` 的对应关系 |
-| 串口/MES 项目 | `ProjectBlackMura`、`ProjectHeyuan` | `HYMesManager.cs`、`SerialMsg.cs` | STX/ETX、设备编号、动作返回码、失败是否允许 NG 过站 |
 | PLC/Modbus 项目 | `ProjectKB` | `Modbus/ModbusControl.cs` | holding register 地址、触发值 `1`、完成回写 `0`、SN 为空策略 |
 | 客户对接示例 | `ProjectARVRPro.IntegrationDemo` | `Contracts/`、`Program.cs` | 只保留公开 JSON 契约，不引入 ColorVision 内部逻辑 |
-| 手动/离线导出 | `ProjectShiyuan` | 主窗口按钮、Flow 模板选择 | `DataPath`、固定图像路径、JND/POI 输出文件 |
 
 如果某个项目同时支持多种入口，现场排障时要先问清楚当前客户实际启用哪条链路。比如 `ProjectKB` 可能是 Modbus 自动触发，也可能只启用了 MES/SN 上传，不能把所有外部入口混成一条协议。
 
@@ -35,12 +29,11 @@
 
 | 输出类型 | 项目 | 关键文件或配置 | 验收点 |
 | --- | --- | --- | --- |
-| 整机 CSV | `ProjectARVR`、`ProjectARVRLite`、`ProjectARVRPro`、`ProjectLUX` | `ObjectiveTestResult`、CSV exporter、`ViewResultManager.Config` | 文件名、目录、字段顺序、PASS/FAIL、旧格式兼容 |
+| 整机 CSV | `ProjectARVRLite`、`ProjectARVRPro`、`ProjectLUX` | `ObjectiveTestResult`、CSV exporter、`ViewResultManager.Config` | 文件名、目录、字段顺序、PASS/FAIL、旧格式兼容 |
 | SQLite/本地结果 | `ProjectARVRPro`、`ProjectLUX`、`ProjectKB` | `ViewResultManager`、`Project*Reuslt`、`KBItemMaster` | 能按 SN/时间查询，批次和流程模板能对上 |
-| Excel/XLSX | `ProjectBlackMura`、`ProjectARVRPro` | `ExcelReportGenerator`、`CustomTestResultExportService` | 模板字段、客户标题、路径、依赖库 |
-| MES/串口上传 | `ProjectBlackMura`、`ProjectHeyuan`、`ProjectKB` | `HYMesManager`、`MesDll.cs`、`Summary` | 返回码约定、设备编号、工站/线别/工号 |
-| Socket 结果返回 | `ProjectARVR*`、`ProjectLUX` | Socket handler、`ObjectiveTestResult`、Legacy converter | `Data` 字段结构、状态码、超时/失败返回 |
-| 图像和伪彩图 | `ProjectBlackMura`、`ProjectShiyuan` | `ImageView`、`OpenCVMediaHelper`、固定输入图路径 | 图像存在、overlay 坐标、伪彩图命名 |
+| Excel/XLSX | `ProjectARVRPro` | `CustomTestResultExportService` | 模板字段、客户标题、路径、依赖库 |
+| MES 上传 | `ProjectKB` | `MesDll.cs`、`Summary` | 返回码约定、设备编号、工站/线别/工号 |
+| Socket 结果返回 | `ProjectARVRLite`、`ProjectARVRPro`、`ProjectLUX` | Socket handler、`ObjectiveTestResult`、Legacy converter | `Data` 字段结构、状态码、超时/失败返回 |
 | Summary/文本 | `ProjectKB` | `Summary.cs`、`ViewResultManager.Config` | 模型分目录、良率汇总、失败项附加 |
 
 修改结果字段时不要只改一个出口。ARVRPro 典型要同时核对标准 CSV、Legacy 输出、Socket `Data` 和客户定制 XLSX；KB 典型要同时核对 CSV、summary、MES `Collect_test` 和数据库字段。
@@ -49,14 +42,10 @@
 
 | 项目 | 流程组织方式 | 配置文件/对象 | 风险点 |
 | --- | --- | --- | --- |
-| `ProjectARVR` | 固定枚举顺序跑到 `OpticCenter` | `StepIndex`、`ARVRTestType`、模板关键字 | 枚举里存在的后续项不代表自动链路已实现 |
 | `ProjectARVRLite` | 启用项配置决定顺序 | `ProjectARVRLiteTestTypeConfig.json`、`ARVR1TestType` | 配置启用未实现分支会导致自动流程异常 |
 | `ProjectARVRPro` | `ProcessGroup` + `ProcessMeta` | `ProcessGroups.json`、`PictureSwitchConfig` | 流程组、切图、Recipe、输出格式必须一起迁移 |
 | `ProjectLUX` | `ProcessGroup` + `SocketCode` | `ProcessGroups.json`、`ProcessMeta.SocketCode` | 改流程名但不改 SocketCode 会导致外部命令找不到步骤 |
-| `ProjectBlackMura` | 固定五色流程 | `StepIndex`、模板名关键字 | PG 切图返回和模板关键字必须匹配 |
-| `ProjectHeyuan` | 固定四点结果顺序 | `White/Blue/Red/Orange`、`TempResult` | Flow 结果不足 4 个 POI 会直接造成业务错误 |
 | `ProjectKB` | 当前 Flow 模板 + Recipe | `RecipeManager`、`KBRecipeConfig`、Modbus 配置 | POI 名称/宽度必须和 KB 模板匹配 |
-| `ProjectShiyuan` | 手动选择 Flow 模板 | `TemplateSelectedIndex`、`DataPath` | 串口配置保留但主链路未完成自动上传 |
 
 流程组项目优先维护 `Process/`、`Recipe/`、`Fix/` 和 `ObjectiveTestResult`；固定流程项目优先维护主窗口状态机和模板关键字。
 
@@ -64,21 +53,17 @@
 
 | 项目 | 冒烟验收 |
 | --- | --- |
-| `ProjectARVR` | 打开窗口后发送 `ProjectARVRInit`，能收到第一条 `SwitchPG`，完成到 `OpticCenter` 后生成 CSV 和 `ProjectARVRResult` |
 | `ProjectARVRLite` | 检查启用项配置，跑一轮启用测试，确认预处理、CSV、Socket 返回都成功 |
 | `ProjectARVRPro` | 切换一个流程组，跑 `RunAll` 或完整 `ProjectARVRInit` 链路，确认 PictureSwitch、Recipe、CSV/Legacy/Socket 输出 |
 | `ProjectARVRPro.IntegrationDemo` | 解析样例 JSON，联机发送 `ProjectARVRInit` 或 `RunAll`，确认半包/粘包 reader 能读完整结果 |
-| `ProjectBlackMura` | 串口 PG 上电、切五色图，跑完后生成 `<SN>.xlsx`，窗口有 POI overlay |
-| `ProjectHeyuan` | 串口连接，Flow 输出 4 个 POI，生成 WBRO CSV，PASS 时触发 `CMI`/`CPT` 链路 |
 | `ProjectKB` | Modbus 写 `1` 能触发流程，结束写回 `0`，CSV/summary/MES 输出符合当前配置 |
 | `ProjectLUX` | 发送一个 `T00XX,SN;`，能匹配当前组的 `SocketCode`，生成对应 CSV/SQLite 结果 |
-| `ProjectShiyuan` | 手动跑 Flow，生成 JND/POI CSV，固定路径图片存在时能复制并生成伪彩图 |
 
 ## 打包
 
 构建和打包命令：`dotnet build Projects/<Project>/<Project>.csproj -c Release -p:Platform=x64`，再运行 `Scripts\package_project.bat <Project>`。
 
-交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；BlackMura/Heyuan 看串口和客户报表；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录；Shiyuan 看 `DataPath`。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
+交付时额外确认：ARVR 系列看 Socket、切图、CSV/Legacy；KB 看 `FunTestDll.dll`、Modbus 和 MES；LUX 看 `SocketCode`、Recipe/Fix 和输出目录。`ProjectARVRPro.IntegrationDemo` 不是插件包，发布给客户时走 `dotnet publish`。
 
 ## 变更归属
 

@@ -23,60 +23,50 @@ namespace ColorVision.Engine.Batch.PreProcess
 
     public class ScriptPreProcessConfig : PreProcessConfigBase
     {
-        [Category("脚本")]
-        [Display(Name = "脚本类型", Description = "Auto 会根据脚本扩展名自动选择 Python/Cmd/PowerShell/Executable；未填写脚本文件时按 Cmd 执行命令文本。")]
+        [Display(Name = "PreProcess_ScriptType", Description = "PreProcess_ScriptTypeDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         public PreProcessScriptType ScriptType { get => _ScriptType; set { _ScriptType = value; OnPropertyChanged(); } }
         private PreProcessScriptType _ScriptType = PreProcessScriptType.Auto;
 
-        [Category("脚本")]
-        [Display(Name = "脚本文件", Description = "支持 .py/.pyw、.cmd/.bat、.ps1 或 exe；为空时执行命令文本。")]
+        [Display(Name = "PreProcess_ScriptFile", Description = "PreProcess_ScriptFileDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string ScriptFile { get => _ScriptFile; set { _ScriptFile = value ?? string.Empty; OnPropertyChanged(); } }
         private string _ScriptFile = string.Empty;
 
-        [Category("脚本")]
-        [Display(Name = "命令文本", Description = "脚本文件为空时执行的命令。Auto 模式下会使用 cmd.exe /c 执行。")]
+        [Display(Name = "PreProcess_CommandText", Description = "PreProcess_CommandTextDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         public string CommandText { get => _CommandText; set { _CommandText = value ?? string.Empty; OnPropertyChanged(); } }
         private string _CommandText = string.Empty;
 
-        [Category("脚本")]
-        [Display(Name = "参数", Description = "传给脚本或 exe 的参数。支持 {FlowName}、{SerialNumber}、{SN} 占位符。")]
+        [Display(Name = "PreProcess_Arguments", Description = "PreProcess_ArgumentsDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         public string Arguments { get => _Arguments; set { _Arguments = value ?? string.Empty; OnPropertyChanged(); } }
         private string _Arguments = string.Empty;
 
-        [Category("脚本")]
-        [Display(Name = "工作目录", Description = "可选。为空时优先使用脚本所在目录，否则使用程序当前目录。")]
+        [Display(Name = "PreProcess_WorkingDirectory", Description = "PreProcess_WorkingDirectoryDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string WorkingDirectory { get => _WorkingDirectory; set { _WorkingDirectory = value ?? string.Empty; OnPropertyChanged(); } }
         private string _WorkingDirectory = string.Empty;
 
-        [Category("脚本")]
-        [Display(Name = "Python执行器", Description = "Python 模式使用的 python.exe 路径或命令名，例如 python、py、conda 环境下的 python.exe。")]
+        [Display(Name = "PreProcess_PythonExecutable", Description = "PreProcess_PythonExecutableDesc", GroupName = "PreProcess_ScriptGroup", ResourceType = typeof(Properties.Resources))]
         public string PythonExecutable { get => _PythonExecutable; set { _PythonExecutable = value ?? string.Empty; OnPropertyChanged(); } }
         private string _PythonExecutable = "python";
 
-        [Category("执行")]
-        [Display(Name = "超时(ms)", Description = "脚本最长执行时间。小于等于 0 表示不限制。")]
+        [Display(Name = "PreProcess_TimeoutMs", Description = "PreProcess_TimeoutMsDesc", GroupName = "PreProcess_ExecutionGroup", ResourceType = typeof(Properties.Resources))]
         public int TimeoutMs { get => _TimeoutMs; set { _TimeoutMs = value; OnPropertyChanged(); } }
         private int _TimeoutMs = 60000;
 
-        [Category("执行")]
-        [Display(Name = "成功退出码", Description = "逗号/分号/空格分隔，支持范围，例如 0 或 0,2 或 0-3。")]
+        [Display(Name = "PreProcess_SuccessExitCodes", Description = "PreProcess_SuccessExitCodesDesc", GroupName = "PreProcess_ExecutionGroup", ResourceType = typeof(Properties.Resources))]
         public string SuccessExitCodes { get => _SuccessExitCodes; set { _SuccessExitCodes = value ?? string.Empty; OnPropertyChanged(); } }
         private string _SuccessExitCodes = "0";
 
-        [Category("执行")]
-        [Display(Name = "失败中止流程", Description = "启用后脚本超时或退出码失败会取消流程启动。")]
+        [Display(Name = "PreProcess_StopFlowOnFailure", Description = "PreProcess_StopFlowOnFailureDesc", GroupName = "PreProcess_ExecutionGroup", ResourceType = typeof(Properties.Resources))]
         public bool StopFlowOnFailure { get => _StopFlowOnFailure; set { _StopFlowOnFailure = value; OnPropertyChanged(); } }
         private bool _StopFlowOnFailure = true;
 
-        [Category("执行")]
-        [Display(Name = "最大输出字符", Description = "stdout/stderr 写入日志的最大字符数，避免日志过大。")]
+        [Display(Name = "PreProcess_MaxOutputChars", Description = "PreProcess_MaxOutputCharsDesc", GroupName = "PreProcess_ExecutionGroup", ResourceType = typeof(Properties.Resources))]
         public int MaxOutputChars { get => _MaxOutputChars; set { _MaxOutputChars = Math.Max(0, value); OnPropertyChanged(); } }
         private int _MaxOutputChars = 8000;
     }
 
-    [PreProcess("执行脚本", "流程启动前执行用户自定义脚本或命令")]
+    [PreProcess("PreProcess_ScriptName", "PreProcess_ScriptDesc", ResourceType = typeof(Properties.Resources))]
     public class ScriptPreProcess : PreProcessBase<ScriptPreProcessConfig>
     {
         private const string DefaultCmdExecutable = "cmd.exe";
@@ -99,7 +89,7 @@ namespace ColorVision.Engine.Batch.PreProcess
                 using Process process = new() { StartInfo = startInfo };
                 if (!process.Start())
                 {
-                    return HandleFailure("ScriptPreProcess: 脚本启动失败");
+                    return HandleFailure($"ScriptPreProcess: {Properties.Resources.CommandLineScript_StartFailed}");
                 }
 
                 Task<string> stdoutTask = ReadCappedAsync(process.StandardOutput, Config.MaxOutputChars);
@@ -132,7 +122,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                 if (timedOut)
                 {
-                    return HandleFailure($"ScriptPreProcess: 脚本执行超时 {Config.TimeoutMs} ms");
+                    return HandleFailure($"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_Timeout, Config.TimeoutMs)}");
                 }
 
                 if (IsSuccessExitCode(process.ExitCode))
@@ -143,14 +133,14 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                 string detail = FirstNonEmptyLine(stderr) ?? FirstNonEmptyLine(stdout) ?? string.Empty;
                 string message = string.IsNullOrWhiteSpace(detail)
-                    ? $"ScriptPreProcess: 脚本执行失败，ExitCode={process.ExitCode}"
-                    : $"ScriptPreProcess: 脚本执行失败，ExitCode={process.ExitCode}，{TrimMessage(detail, 240)}";
+                    ? $"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_ExecutionFailed, process.ExitCode)}"
+                    : $"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_ExecutionFailedWithDetail, process.ExitCode, TrimMessage(detail, 240))}";
                 return HandleFailure(message);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                return HandleFailure($"ScriptPreProcess: 脚本执行异常 {ex.Message}");
+                return HandleFailure($"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_ExecutionException, ex.Message)}");
             }
         }
 
@@ -168,7 +158,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
             if (string.IsNullOrWhiteSpace(scriptFile) && string.IsNullOrWhiteSpace(commandText))
             {
-                errorMessage = "ScriptPreProcess: 脚本文件和命令文本不能同时为空";
+                errorMessage = $"ScriptPreProcess: {Properties.Resources.CommandLineScript_FileAndCommandEmpty}";
                 return false;
             }
 
@@ -179,7 +169,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
             if (!Directory.Exists(workingDirectory))
             {
-                errorMessage = $"ScriptPreProcess: 工作目录不存在 {workingDirectory}";
+                errorMessage = $"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_WorkingDirectoryNotFound, workingDirectory)}";
                 return false;
             }
 
@@ -306,7 +296,7 @@ namespace ColorVision.Engine.Batch.PreProcess
                 return false;
             }
 
-            log.Warn($"{message}。已配置为失败不中止流程。");
+            log.Warn(string.Format(Properties.Resources.PreProcess_FailureIgnored, message));
             return true;
         }
 
@@ -443,7 +433,7 @@ namespace ColorVision.Engine.Batch.PreProcess
                 return true;
             }
 
-            errorMessage = $"ScriptPreProcess: 脚本文件不存在 {scriptFile}";
+            errorMessage = $"ScriptPreProcess: {string.Format(Properties.Resources.CommandLineScript_FileNotFound, scriptFile)}";
             return false;
         }
 

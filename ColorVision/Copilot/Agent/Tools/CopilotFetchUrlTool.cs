@@ -9,18 +9,19 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotFetchUrlTool : ICopilotTool
     {
-        private const int MaxUrlsPerRequest = 3;
+        private const int MaxResourcesPerRequest = 3;
 
         public string Name => "FetchUrl";
 
         public string Description => "Fetch the title, description, and readable body text for web pages mentioned by the user.";
 
+        public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
+
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("One or more complete http/https URLs to fetch, separated by spaces.", required: true);
+
         public bool CanHandle(CopilotAgentRequest request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
-                return false;
-
-            return true;
+            return CopilotToolIntentPolicy.NeedsUrlFetch(request);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(
@@ -31,7 +32,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var urls = ResolveUrls(request, toolInput)
-                .Take(MaxUrlsPerRequest)
+                .Take(MaxResourcesPerRequest)
                 .ToArray();
 
             if (urls.Length == 0)
@@ -42,16 +43,27 @@ namespace ColorVision.Copilot
                     Success = false,
                     Summary = "No fetchable web page URL was detected.",
                     ErrorMessage = "The current request has no processable web page URL; the planner can provide a complete URL in input.query.",
+                    FailureKind = CopilotToolFailureKind.Validation,
                 };
             }
 
             var builder = new StringBuilder();
             var successCount = 0;
+            var attemptedCount = 0;
+            var discoveredCount = 0;
             var errors = new List<string>();
+            var failureKinds = new List<CopilotToolFailureKind>();
+            var pendingUrls = new Queue<string>(urls);
+            var visitedUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var url in urls)
+            while (pendingUrls.Count > 0 && attemptedCount < MaxResourcesPerRequest)
             {
+                var url = pendingUrls.Dequeue();
+                if (!visitedUrls.Add(url))
+                    continue;
+
                 cancellationToken.ThrowIfCancellationRequested();
+                attemptedCount++;
 
                 try
                 {
@@ -59,6 +71,19 @@ namespace ColorVision.Copilot
                     builder.AppendLine(CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page));
                     builder.AppendLine();
                     successCount++;
+
+                    if (page.IsSparseExtraction)
+                    {
+                        foreach (var relatedUrl in page.DiscoveredResourceUrls)
+                        {
+                            if (pendingUrls.Count + attemptedCount >= MaxResourcesPerRequest)
+                                break;
+                            if (visitedUrls.Contains(relatedUrl) || pendingUrls.Contains(relatedUrl, StringComparer.OrdinalIgnoreCase))
+                                continue;
+                            pendingUrls.Enqueue(relatedUrl);
+                            discoveredCount++;
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -69,6 +94,7 @@ namespace ColorVision.Copilot
                     builder.AppendLine(CopilotWebPageToolSupport.BuildFailedWebPageContextBlock(url, ex.Message));
                     builder.AppendLine();
                     errors.Add($"{url}: {ex.Message}");
+                    failureKinds.Add(CopilotToolFailureClassifier.Classify(ex));
                 }
             }
 
@@ -77,10 +103,14 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? $"Fetched {successCount}/{urls.Length} web pages."
-                    : $"Failed to fetch any web pages from {urls.Length} URLs.",
+                    ? $"Fetched {successCount}/{attemptedCount} web resources"
+                        + (discoveredCount > 0 ? $" ({urls.Length} requested, {discoveredCount} discovered)." : ".")
+                    : $"Failed to fetch any web resources from {attemptedCount} URLs.",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
+                FailureKind = successCount == 0 && failureKinds.Count > 0 && failureKinds.All(kind => kind == CopilotToolFailureKind.Transient)
+                    ? CopilotToolFailureKind.Transient
+                    : successCount == 0 ? CopilotToolFailureKind.Unspecified : CopilotToolFailureKind.None,
             };
         }
 

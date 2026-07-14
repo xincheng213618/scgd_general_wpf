@@ -998,12 +998,12 @@ namespace ColorVision.Database
                     return string.Empty;
                 }
 
-                logCallback?.Invoke("已追加模板引用的字典依赖数据");
+                logCallback?.Invoke(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAdded);
                 return $"-- Referenced template dictionary dependencies{Environment.NewLine}{sql}";
             }
             catch (Exception ex)
             {
-                logCallback?.Invoke($"追加模板字典依赖失败: {ex.Message}");
+                logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
                 return string.Empty;
             }
         }

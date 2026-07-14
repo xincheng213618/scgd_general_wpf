@@ -63,13 +63,13 @@ namespace ColorVision.Engine.Batch
                 string text = action.DisplayName;
                 if (!string.Equals(text, action.Metadata.DisplayName, StringComparison.Ordinal))
                 {
-                    text += $"\n类型: {action.Metadata.DisplayName}";
+                    text += $"\n{string.Format(Properties.Resources.Flow_PreProcess_TypeFormat, action.Metadata.DisplayName)}";
                 }
                 if (!string.IsNullOrWhiteSpace(action.Metadata.Description))
                 {
                     text += $"\n\n{action.Metadata.Description}";
                 }
-                text += $"\n\n应用模板: {action.TemplateSummary}";
+                text += $"\n\n{string.Format(Properties.Resources.Flow_PreProcess_AppliedTemplatesFormat, action.TemplateSummary)}";
                 return text;
             }
             return string.Empty;
@@ -133,7 +133,7 @@ namespace ColorVision.Engine.Batch
             {
                 var placeholder = new TextBlock
                 {
-                    Text = "请选择一个预处理动作",
+                    Text = Properties.Resources.Flow_PreProcess_SelectAction,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 32, 0, 0),
                     Opacity = 0.58
@@ -158,10 +158,10 @@ namespace ColorVision.Engine.Batch
             var stack = new StackPanel();
             border.Child = stack;
 
-            AddSectionHeader(stack, "动作设置");
-            AddBoundTextBox(stack, "动作名称", action, nameof(PreProcessAction.ActionName), null);
-            AddBoundCheckBox(stack, "启用", action, nameof(PreProcessAction.IsEnabled));
-            AddBoundTextBox(stack, "应用模板", action, nameof(PreProcessAction.TemplateNames), "为空表示全部模板；多个模板可用逗号或分号分隔。");
+            AddSectionHeader(stack, Properties.Resources.Flow_PreProcess_ActionSettings);
+            AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_ActionName, action, nameof(PreProcessAction.ActionName), null);
+            AddBoundCheckBox(stack, Properties.Resources.IsEnable, action, nameof(PreProcessAction.IsEnabled));
+            AddBoundTextBox(stack, Properties.Resources.Flow_PreProcess_AppliedTemplates, action, nameof(PreProcessAction.TemplateNames), Properties.Resources.Flow_PreProcess_AllTemplatesHint);
 
             PropertyPanel.Children.Add(border);
         }
@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Batch
             var stack = new StackPanel();
             border.Child = stack;
 
-            AddSectionHeader(stack, "参数");
+            AddSectionHeader(stack, Properties.Resources.Parameter);
 
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
             stack.Children.Add(configPanel);

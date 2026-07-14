@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
 {
-    public class DistortionDynamicProcess : ProcessBase<DistortionDynamicProcessConfig>
+    public class DistortionDynamicProcess : ProcessBase<DistortionDynamicProcessConfig, DistortionRecipeConfig>
     {
         public override async Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -180,10 +180,6 @@ namespace ProjectARVRPro.Process.Distortion
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return;
         }
 
-        public override IRecipeConfig GetRecipeConfig()
-        {
-            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
-        }
 
         private ObjectiveTestItem Build(string name, double value, double low, double up) => new ObjectiveTestItem
         {

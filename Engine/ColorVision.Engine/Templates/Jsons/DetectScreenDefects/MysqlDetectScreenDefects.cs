@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.Jsons.DetectScreenDefects
 {
     public class MysqlDetectScreenDefects : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复屏幕缺陷检测";
+        public string GetMysqlCommandName() => Properties.Resources.ScreenDefect_RestoreDatabase;
 
         public string GetRecover()
         {

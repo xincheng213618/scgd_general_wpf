@@ -6,6 +6,7 @@ import time
 from pathlib import PurePosixPath
 
 from file_manager import FileManager
+from release_runtime import REQUIRED_MAIN_RUNTIME_FILES, validate_release_runtime_payload
 
 
 ALLOWED_RUNTIME_PREFIXES = (
@@ -14,6 +15,10 @@ ALLOWED_RUNTIME_PREFIXES = (
 )
 EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
+FORCED_INCREMENTAL_FILES = {
+    file_name.replace('\\', '/').casefold()
+    for file_name in REQUIRED_MAIN_RUNTIME_FILES
+}
 
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
@@ -311,7 +316,9 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
 
     for rel_path, new_file in new_files_dict.items():
         old_file = old_files_dict.get(rel_path)
-        if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
+        normalized_rel_path = normalize_archive_relative_path(rel_path).casefold()
+        force_include = normalized_rel_path in FORCED_INCREMENTAL_FILES
+        if force_include or not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
             files_to_zip.append(new_file)
 
     # 创建增量 ZIP 包
@@ -359,6 +366,9 @@ def main() -> int:
     version = get_file_version(exe_path)
     if not version:
         print(f"无法从 {exe_path} 读取版本号，终止。")
+        return 1
+
+    if not validate_release_runtime_payload(new_version_dir):
         return 1
 
     print("打包版本: " + version)

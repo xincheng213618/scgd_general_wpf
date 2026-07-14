@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
                     DFovView view1 = new DFovView(item);
                     result.ViewResults.Add(view1);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV2), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmFOV2), ImageFilePath = result.FilePath })) });
             }
         }
 

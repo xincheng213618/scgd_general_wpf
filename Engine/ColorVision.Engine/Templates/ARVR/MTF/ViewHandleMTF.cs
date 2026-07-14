@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.MTF
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() {"Id", "Name", "位置", "大小", "形状", "MTF" };
+            List<string> properties = new() { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "MTF" };
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
@@ -99,8 +99,8 @@ namespace ColorVision.Engine.Templates.MTF
                 varianceValues[property] /= count;
             }
 
-            csvBuilder.AppendLine("\n统计信息");
-            csvBuilder.AppendLine("属性,最大值,最大值所在名称,最小值,最小值所在名称,平均值,方差,均匀性");
+            csvBuilder.AppendLine($"\n{Properties.Resources.Statistics}");
+            csvBuilder.AppendLine(Properties.Resources.MtfStatisticsCsvHeader);
 
             foreach (var property in properties.Skip(4))
             {
@@ -136,7 +136,7 @@ namespace ColorVision.Engine.Templates.MTF
                     ViewResultMTF mTFResultData = new(item);
                     result.ViewResults.Add(mTFResultData);
                 }
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF), ImageFilePath = result.FilePath })) });
+                result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMTF), ImageFilePath = result.FilePath })) });
 
             }
         }
@@ -187,7 +187,7 @@ namespace ColorVision.Engine.Templates.MTF
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "位置", "大小", "形状", "MTF" };
+            header = new() { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "MTF" };
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
 
 

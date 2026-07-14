@@ -80,7 +80,7 @@
                         <Button x:Name="button3" ToolTip="{x:Static properties:Resources.ClearPOI}" Click="Button3_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
-                        <Button Content="{x:Static properties:Resources.SaveAs}" ToolTip="另存为需要先保存数据，不保存的数据暂时无法创建新的副本" Click="CreateCopy_Click"/>
+                        <Button Content="{x:Static properties:Resources.SaveAs}" ToolTip="{x:Static properties:Resources.POI_SaveAsRequiresSavedData}" Click="CreateCopy_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -144,7 +144,7 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
                                 <TextBlock  HorizontalAlignment="Left" Text="{x:Static properties:Resources.UseDrawToAddLayoutArea}"/>
-                                <Button Content="{x:Static properties:Resources.FrameSelectArea}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="在图像上框选设置布点区域"/>
+                                <Button Content="{x:Static properties:Resources.FrameSelectArea}" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="{x:Static properties:Resources.FrameSelectAreaToolTip}"/>
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                 <TextBlock   HorizontalAlignment="Left"  Text="{x:Static properties:Resources.LayoutAreaDisplay}"/>
                             </StackPanel>
@@ -174,7 +174,7 @@
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
                                     <DockPanel Margin="0,2" >
-                                        <Button Content="{x:Static properties:Resources.FindLightArea}" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
+                                        <Button Content="{x:Static properties:Resources.FindLightArea}" Margin="5,0,0,0" ToolTip="{x:Static properties:Resources.RunOnce}"  Click="FindLuminousArea_Click"   />
                                         <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
                                             <Button.Triggers>
                                                 <EventTrigger RoutedEvent="Button.Click">
