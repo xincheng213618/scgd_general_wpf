@@ -4098,6 +4098,48 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_UsesStructuredWindowsSystemInspectionWithoutApproval()
+    {
+        CopilotMcpConfirmationStore.Instance.ClearForTests();
+        var provider = new FixedWindowsSystemInfoProvider(new CopilotWindowsSystemInfoSnapshot(
+            "Windows 11 Pro",
+            "24H2",
+            "Professional",
+            "Client",
+            "10.0.26100.0",
+            26100,
+            3775,
+            "X64",
+            "X64",
+            ".NET 10.0.0"));
+        var tool = new CopilotInspectWindowsSystemTool(new CopilotWindowsSystemInspectionService(provider));
+        using var fakeChatClient = new FunctionCallingChatClient(
+            "colorvision_inspect_windows_system",
+            new Dictionary<string, object?>());
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        var result = await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "检查当前 Windows 版本",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
+        Assert.Equal(2, fakeChatClient.StreamCallCount);
+        Assert.Equal(1, provider.ReadCount);
+        var step = Assert.Single(result.StepRecords);
+        Assert.Equal("InspectWindowsSystem", step.Execution.ToolName);
+        Assert.Equal(CopilotToolApprovalMode.Never, step.Execution.ApprovalMode);
+        Assert.True(step.Observation.Success);
+        Assert.Contains("build: 26100.3775", step.Observation.Content, StringComparison.Ordinal);
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DoesNotForceStableDiagnosticToolAfterModelAnswers()
     {
         var tool = new CopilotInspectTcpPortTool();
@@ -4742,6 +4784,17 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             LastCommand = command;
             Interlocked.Increment(ref _callCount);
             return Task.FromResult(result);
+        }
+    }
+
+    private sealed class FixedWindowsSystemInfoProvider(CopilotWindowsSystemInfoSnapshot snapshot) : ICopilotWindowsSystemInfoProvider
+    {
+        public int ReadCount { get; private set; }
+
+        public CopilotWindowsSystemInfoSnapshot Read()
+        {
+            ReadCount++;
+            return snapshot;
         }
     }
 

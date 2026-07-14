@@ -258,6 +258,8 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 
 `PreviewWorkspacePatchEnvelope` 将这条链路收敛为一次结构化预览调用：同一信封可按顺序表达 1–8 个 `add`、`update`、`delete` 操作，每个路径只能出现一次。`add` 携带完整 UTF-8 内容，`update` 仍要求唯一精确匹配的 `oldText/newText`，`delete` 只接受可写工作区根内可解码的现有文本文件；单独授权的根外文件可以更新但不能删除，避免回滚时把原路径误当成新文件授权。预览阶段不写入，内部直接生成并保留同一变更集；`ApplyWorkspacePatchEnvelope` 经一次原生审批后复用整组路径检查、前置 SHA-256 验证、原子单文件写入和逆序补偿。删除记录绑定删除前字节与哈希，应用后目标必须缺失；`RollbackWorkspacePatchEnvelope` 仅在目标仍缺失时恢复原字节，若外部进程重新创建了同名路径则整组回滚在写入前失败，绝不覆盖。旧的逐文件预览与 `PreviewWorkspaceChangeSet` 保留为兼容入口，但 Agent instructions 和执行契约优先选择统一信封。
 
+当前 Windows 版本、显示版本、Edition、安装类型、系统构建号与 UBR、系统/进程架构和 .NET 运行时由 `InspectWindowsSystem` 提供。工具无参数，直接使用 .NET 运行时信息和只读的 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion`，注册表不可读时退回有界的运行时信息；它不启动进程、不接受命令文本，也不需要审批。该 Schema 与其他内置诊断稳定提供给模型，Windows 版本问题应优先使用它，不能改用 SQL 或应用日志猜测机器状态。
+
 单个 TCP 端口的常见检查由 `InspectTcpPort` 提供。例如模型可以根据“我想要知道 6666 端口有没有被占用”发出 `{"port":6666}` 的结构化调用；宿主执行固定的只读 PowerShell 诊断，不接受模型提供的命令文本，因此不需要审批。结果是有界的结构化数据：是否占用、绑定数量、本地/远程端点、连接状态、PID 和进程名；最多返回 64 条绑定并标记截断。工具 Schema 与通用 Shell 同时可见，模型应优先选择风险更低、参数更窄的专用工具；询问“如何检查端口”之类的概念问题则可以直接回答，宿主不会按关键词强制调用。
 
 通用 Windows 命令由 `RunShellCommand` 提供，并与专用诊断工具一起稳定注册。模型需要在结构化参数中给出完整命令、`PowerShell` / `CMD` / `Auto`、可选现有工作目录和 5–600 秒超时；仅在回复文本中展示命令不会触发宿主执行。设置窗口的 `Default shell` 可选择“自动（PowerShell）”、`PowerShell` 或 `CMD`。宿主始终以无窗口、非交互方式运行命令，关闭标准输入，并有界返回真实 exit code、stdout、stderr 和耗时；取消或超时会终止整个进程树。由于当前宿主没有类似 Codex 的系统级文件沙箱，所有通用命令即使由模型选中也必须经过 Agent Framework 原生审批，审批内容显示 Shell、工作目录和完整命令；参数审计只保存字段名。普通概念问答可以直接回答，宿主不会根据“端口”“系统”等词强制调用 Shell。
