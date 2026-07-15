@@ -1152,6 +1152,8 @@ namespace ColorVision.Copilot
                 || line.StartsWith("No extra tools are needed", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("Reused the context", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("Agent Skills enabled", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Agent Skills selected", StringComparison.OrdinalIgnoreCase)
+                || line.StartsWith("Agent Skill history", StringComparison.OrdinalIgnoreCase)
                 || line.StartsWith("MCP client", StringComparison.OrdinalIgnoreCase);
         }
 

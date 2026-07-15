@@ -1252,10 +1252,59 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
+                    <Border Grid.Row="0"
+                            Margin="0,0,0,8"
+                            Padding="12,9"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Visibility="{Binding HasContextDiagnostics, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Opacity="0.72"
+                                       Text="/context · 本地快照" />
+                            <Button Grid.Column="1"
+                                    Width="22"
+                                    Height="22"
+                                    Padding="0"
+                                    Style="{StaticResource AttachmentCloseButtonStyle}"
+                                    Command="{Binding DismissContextDiagnosticsCommand}"
+                                    Content="×"
+                                    ToolTip="关闭上下文快照" />
+                            <ScrollViewer Grid.Row="1"
+                                          Grid.ColumnSpan="2"
+                                          MaxHeight="168"
+                                          Margin="0,6,0,0"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <TextBlock FontFamily="Consolas"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.82"
+                                           Text="{Binding ContextDiagnosticsText}"
+                                           TextWrapping="Wrap" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
                     <Border x:Name="CurrentLiveContextBorder"
-                            Grid.Row="0"
+                            Grid.Row="1"
                             Margin="0,0,0,8"
                             Padding="12,9"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -1310,7 +1359,7 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="1" Margin="0,0,0,10"
+                    <StackPanel Grid.Row="2" Margin="0,0,0,10"
                                 Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       MaxHeight="104"
@@ -1433,7 +1482,39 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Grid Grid.Row="2"
+                    <Border Grid.Row="3"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Visibility="{Binding HasLocalCommandSuggestion, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Button Padding="10,6"
+                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                Command="{Binding CompleteLocalCommandCommand}"
+                                Click="LocalCommandSuggestionButton_Click"
+                                ToolTip="Tab 补全，Enter 直接执行">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock FontFamily="Consolas"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding LocalCommandSuggestion}" />
+                                <TextBlock Grid.Column="1"
+                                           Margin="12,0,0,0"
+                                           Opacity="0.62"
+                                           Text="查看本地上下文预算与注入统计" />
+                                <TextBlock Grid.Column="2"
+                                           Margin="14,0,0,0"
+                                           Opacity="0.48"
+                                           Text="Tab 补全 · Enter 执行" />
+                            </Grid>
+                        </Button>
+                    </Border>
+
+                    <Grid Grid.Row="4"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -1473,7 +1554,7 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="3" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="5" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />

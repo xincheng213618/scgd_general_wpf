@@ -3,6 +3,7 @@ using ColorVision.Copilot;
 using ColorVision.UI;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -75,6 +76,147 @@ public class CopilotBusinessContextTests
         Assert.All(selected, message => Assert.Equal("assistant", message.Role));
         Assert.Equal("answer-4", selected[0].Content);
         Assert.Equal("answer-11", selected[^1].Content);
+    }
+
+    [Fact]
+    public void ConversationHistoryWindowBoundsCharactersAndKeepsGoalWithLatestTurn()
+    {
+        CopilotRequestMessage[] history =
+        [
+            new("user", "ORIGINAL-GOAL-" + new string('g', 9_000)),
+            new("assistant", "older-answer-1-" + new string('a', 9_000)),
+            new("user", "older-question-2-" + new string('q', 9_000)),
+            new("assistant", "older-answer-2-" + new string('a', 9_000)),
+            new("user", "LATEST-QUESTION-" + new string('q', 9_000)),
+            new("assistant", "LATEST-ANSWER-" + new string('a', 9_000)),
+        ];
+
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History = history,
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
+
+        Assert.Equal(3, selected.Length);
+        Assert.StartsWith("ORIGINAL-GOAL-", selected[0].Content, StringComparison.Ordinal);
+        Assert.StartsWith("LATEST-QUESTION-", selected[^2].Content, StringComparison.Ordinal);
+        Assert.StartsWith("LATEST-ANSWER-", selected[^1].Content, StringComparison.Ordinal);
+        Assert.All(selected, message => Assert.True(message.Content.Length <= CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength));
+        Assert.True(selected.Sum(message => message.Content.Length) <= 32_000);
+        Assert.Contains(selected, message => message.Content.EndsWith("...<conversation history truncated>", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ConversationHistoryWindowReportsCountBasedReduction()
+    {
+        var history = Enumerable.Range(0, 20)
+            .Select(index => new CopilotRequestMessage(
+                index % 2 == 0 ? "user" : "assistant",
+                index == 0 ? "ORIGINAL-GOAL" : $"message-{index}"))
+            .ToArray();
+
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History = history,
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
+
+        Assert.True(selected.Length <= 8);
+        Assert.Equal("ORIGINAL-GOAL", selected[0].Content);
+        Assert.Equal("message-19", selected[^1].Content);
+    }
+
+    [Fact]
+    public void ConversationHistoryWindowDropsAssistantPrefixWhenUserGoalExists()
+    {
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History =
+            [
+                new CopilotRequestMessage("assistant", "orphaned-prefix"),
+                new CopilotRequestMessage("user", "actual-goal"),
+                new CopilotRequestMessage("assistant", "goal-answer"),
+            ],
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
+
+        Assert.Collection(
+            selected,
+            message => Assert.Equal("actual-goal", message.Content),
+            message => Assert.Equal("goal-answer", message.Content));
+    }
+
+    [Fact]
+    public void ContextDiagnostics_RecognizesOnlyTheExactLocalCommand()
+    {
+        Assert.True(CopilotContextDiagnostics.IsCommand("/context"));
+        Assert.True(CopilotContextDiagnostics.IsCommand("  /CONTEXT  "));
+        Assert.False(CopilotContextDiagnostics.IsCommand("/context explain"));
+        Assert.False(CopilotContextDiagnostics.IsCommand("please show context"));
+        Assert.False(CopilotContextDiagnostics.IsCommand(null));
+        Assert.True(CopilotContextDiagnostics.IsCommandPrefix("/"));
+        Assert.True(CopilotContextDiagnostics.IsCommandPrefix("  /Contex  "));
+        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("/context"));
+        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("/context extra"));
+        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("context"));
+    }
+
+    [Fact]
+    public void ContextDiagnostics_FormatsChatSnapshotWithoutAgentExtensions()
+    {
+        var report = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            ProfileLabel = "Local Model",
+            Mode = CopilotAgentMode.Chat,
+            SystemPromptCharacters = 120,
+            SourceHistoryMessages = 18,
+            RetainedHistoryMessages = 7,
+            SourceHistoryCharacters = 80_000,
+            RetainedHistoryCharacters = 28_000,
+            AttachmentCount = 2,
+            FileAttachmentCount = 1,
+            ImageAttachmentCount = 1,
+            HasLiveWindowContext = true,
+        });
+
+        Assert.Contains("未调用模型、工具或 MCP", report, StringComparison.Ordinal);
+        Assert.Contains("Local Model", report, StringComparison.Ordinal);
+        Assert.Contains("7/18", report, StringComparison.Ordinal);
+        Assert.Contains("28,000/80,000", report, StringComparison.Ordinal);
+        Assert.Contains("当前 Chat 模式不注入项目指令、Skills 或 MCP 工具", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("能力目录：", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ContextDiagnostics_FormatsBoundedAgentExtensionStatistics()
+    {
+        var report = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            ProfileLabel = "Agent Model",
+            Mode = CopilotAgentMode.Auto,
+            AgentContextEnabled = true,
+            ProjectInstructionDocuments = 2,
+            ProjectInstructionPromptCharacters = 12_345,
+            RecordedSkillRuns = 30,
+            TrackedSkills = 6,
+            HistoricalExplicitOnlySkills = 2,
+            RegisteredCapabilities = 24,
+            EnabledExternalMcpServers = 1,
+        });
+
+        Assert.Contains("项目指令：2 个文档", report, StringComparison.Ordinal);
+        Assert.Contains("12,345 字符", report, StringComparison.Ordinal);
+        Assert.Contains("6 个已跟踪", report, StringComparison.Ordinal);
+        Assert.Contains("2 个低使用率仅显式调用", report, StringComparison.Ordinal);
+        Assert.Contains("最多 16 个相关 Skill / 8,000 元数据字符", report, StringComparison.Ordinal);
+        Assert.Contains("能力目录：24 个已注册能力", report, StringComparison.Ordinal);
+        Assert.Contains("外部 MCP：1 个启用服务", report, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -282,6 +424,59 @@ public class CopilotBusinessContextTests
     }
 
     [Fact]
+    public void ProjectInstructions_PrefersOverrideAndFallsBackFromEmptyOverride()
+    {
+        using var temp = new TemporaryDirectory();
+        var moduleDirectory = Path.Combine(temp.Path, "src", "module");
+        Directory.CreateDirectory(moduleDirectory);
+        var activeDocumentPath = Path.Combine(moduleDirectory, "Feature.cs");
+        File.WriteAllText(activeDocumentPath, "class Feature {}", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(temp.Path, "AGENTS.md"), "root base guidance", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(temp.Path, "AGENTS.override.md"), "root override guidance", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(moduleDirectory, "AGENTS.override.md"), "   \r\n", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(moduleDirectory, "AGENTS.md"), "module fallback guidance", Encoding.UTF8);
+
+        var documents = CopilotAgentProjectInstructions.Discover([temp.Path], activeDocumentPath);
+
+        Assert.Collection(documents,
+            root =>
+            {
+                Assert.Equal(Path.Combine(temp.Path, "AGENTS.override.md"), root.Path);
+                Assert.Equal("root override guidance", root.Content);
+            },
+            nested =>
+            {
+                Assert.Equal(Path.Combine(moduleDirectory, "AGENTS.md"), nested.Path);
+                Assert.Equal("module fallback guidance", nested.Content);
+            });
+        Assert.DoesNotContain(documents, document => document.Content.Contains("root base", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ProjectInstructions_StripsHtmlCommentsOutsideCodeFences()
+    {
+        using var temp = new TemporaryDirectory();
+        var activeDocumentPath = Path.Combine(temp.Path, "Feature.cs");
+        File.WriteAllText(activeDocumentPath, "class Feature {}", Encoding.UTF8);
+        File.WriteAllText(Path.Combine(temp.Path, "AGENTS.md"), """
+            visible guidance
+            <!-- maintainer-only note -->
+            ```html
+            <!-- preserved example -->
+            ```
+            tail guidance <!-- inline maintainer note -->
+            """, Encoding.UTF8);
+
+        var document = Assert.Single(CopilotAgentProjectInstructions.Discover([temp.Path], activeDocumentPath));
+
+        Assert.Contains("visible guidance", document.Content, StringComparison.Ordinal);
+        Assert.Contains("<!-- preserved example -->", document.Content, StringComparison.Ordinal);
+        Assert.Contains("tail guidance", document.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("maintainer-only", document.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("inline maintainer", document.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ProjectInstructions_BoundsDocumentsAndRedactsSecrets()
     {
         using var temp = new TemporaryDirectory();
@@ -355,6 +550,29 @@ public class CopilotBusinessContextTests
         Assert.Contains("DOCUMENT-2-SENTINEL", prompt, StringComparison.Ordinal);
         Assert.DoesNotContain("DOCUMENT-3-SENTINEL", prompt, StringComparison.Ordinal);
         Assert.DoesNotContain("DOCUMENT-4-SENTINEL", prompt, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ProjectInstructions_PromptBuilderBoundsFinalSerializedJson()
+    {
+        var newlineHeavyContent = string.Join("\n", Enumerable.Repeat("instruction", 900));
+        var documents = Enumerable.Range(1, CopilotAgentProjectInstructions.MaxDocuments)
+            .Select(index => new CopilotProjectInstructionDocument
+            {
+                Path = $@"C:\workspace\scope-{index}\AGENTS.md",
+                Content = $"DOCUMENT-{index}-SENTINEL\n" + newlineHeavyContent,
+            })
+            .ToArray();
+
+        var prompt = CopilotAgentProjectInstructions.BuildPromptBlock(documents);
+
+        Assert.True(prompt.Length <= CopilotAgentProjectInstructions.MaxPromptCharacters,
+            $"Expected final serialized prompt <= {CopilotAgentProjectInstructions.MaxPromptCharacters:N0}, actual {prompt.Length:N0}.");
+        Assert.Contains("DOCUMENT-1-SENTINEL", prompt, StringComparison.Ordinal);
+        Assert.Contains("DOCUMENT-2-SENTINEL", prompt, StringComparison.Ordinal);
+        var jsonLines = prompt.Split(Environment.NewLine).Skip(2).Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+        Assert.NotEmpty(jsonLines);
+        Assert.All(jsonLines, line => JsonDocument.Parse(line).Dispose());
     }
 
     [Fact]

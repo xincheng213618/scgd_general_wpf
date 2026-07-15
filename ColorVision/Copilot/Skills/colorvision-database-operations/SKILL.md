@@ -1,6 +1,6 @@
 ---
 name: colorvision-database-operations
-description: Query and explain ColorVision MySQL business data, discover table schemas, compose read-only SQL, and perform explicitly requested data cleanup through approved SQL tools. Use when the user asks about flow counts, measurement records, result data, table fields or relations, SQL queries, or database cleanup in ColorVision.
+description: Query and explain ColorVision MySQL business data, discover schemas, compose read-only SQL, and perform explicitly requested cleanup through approved SQL tools. Use for flow counts, measurements, results, fields, relations, queries, and cleanup; Chinese intents include 数据库、表、字段、关系、查询、结果数据、清理.
 ---
 
 # ColorVision database operations

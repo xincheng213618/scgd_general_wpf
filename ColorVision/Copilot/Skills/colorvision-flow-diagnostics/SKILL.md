@@ -1,6 +1,6 @@
 ---
 name: colorvision-flow-diagnostics
-description: Diagnose ColorVision workflow, node, device, timeout, and ContinueOnFail problems from live context, recent logs, and relevant project code. Use when the user asks why a ColorVision flow or device task failed, stalled, skipped, or produced an unexpected result.
+description: Diagnose ColorVision workflow, node, device, timeout, and ContinueOnFail problems from live context, recent logs, and relevant project code. Use for flow or device failures, stalls, skips, and unexpected results; Chinese intents include 流程、节点、设备、超时、失败、卡住、跳过、结果异常.
 ---
 
 # ColorVision flow diagnostics

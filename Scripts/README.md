@@ -10,6 +10,7 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 | Publish plugin package | `Scripts\package_plugin.bat <PluginName>` |
 | Publish project package | `Scripts\package_project.bat <ProjectName>` |
 | Publish an existing output directory | `py Scripts\package_cvxp.py --src-dir <output-dir>` |
+| Validate plugin manifest only | `py Scripts\package_cvxp.py --project-file <plugin.csproj> --validate-only` |
 | Refresh host shared-file manifest | `py Scripts\generate_shared_files.py` |
 
 `build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
@@ -40,7 +41,7 @@ Do not put real credentials in docs or checked-in command examples.
 | `release.bat` | Normal release wrapper |
 | `build.py` | Release internal: main installer build/upload |
 | `build_update.py` | Release internal: incremental package build/upload |
-| `package_cvxp.py` | `.cvxp` package creation, upload, and cleanup |
+| `package_cvxp.py` | Plugin manifest validation plus `.cvxp` package creation, upload, and cleanup |
 | `package_plugin.bat` | Repo plugin wrapper around `package_cvxp.py --build` |
 | `package_project.bat` | Repo project wrapper around `package_cvxp.py --build` |
 | `generate_shared_files.py` | Generate `shared_files.json` from a host output directory |

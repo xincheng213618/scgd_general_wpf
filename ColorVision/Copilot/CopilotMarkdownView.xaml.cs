@@ -333,21 +333,7 @@ namespace ColorVision.Copilot
             table.SetResourceReference(TextElement.ForegroundProperty, "GlobalTextBrush");
             for (var columnIndex = 0; columnIndex < model.Headers.Count; columnIndex++)
             {
-                var column = new TableColumn();
-                if (model.Headers.Count == 3)
-                {
-                    column.Width = columnIndex switch
-                    {
-                        0 => new GridLength(1.2, GridUnitType.Star),
-                        1 => new GridLength(2.8, GridUnitType.Star),
-                        _ => GridLength.Auto,
-                    };
-                }
-                else
-                {
-                    column.Width = new GridLength(1, GridUnitType.Star);
-                }
-                table.Columns.Add(column);
+                table.Columns.Add(new TableColumn { Width = GetTableColumnWidth(model, columnIndex) });
             }
 
             var rowGroup = new TableRowGroup();
@@ -366,6 +352,41 @@ namespace ColorVision.Copilot
 
             table.RowGroups.Add(rowGroup);
             CurrentDocument.Blocks.Add(table);
+        }
+
+        private static GridLength GetTableColumnWidth(CopilotMarkdownTableModel model, int columnIndex)
+        {
+            if (columnIndex == 0)
+                return new GridLength(MeasureBoundedTableColumn(model, columnIndex, 96, 220));
+            if (model.Headers.Count > 2 && columnIndex == model.Headers.Count - 1)
+                return new GridLength(MeasureBoundedTableColumn(model, columnIndex, 72, 140));
+            return new GridLength(1, GridUnitType.Star);
+        }
+
+        private static double MeasureBoundedTableColumn(
+            CopilotMarkdownTableModel model,
+            int columnIndex,
+            double minimumWidth,
+            double maximumWidth)
+        {
+            var values = model.Rows
+                .Take(64)
+                .Select(row => row[columnIndex])
+                .Prepend(model.Headers[columnIndex]);
+            var contentWidth = values.Max(EstimateTableCellWidth) + 28;
+            return Math.Clamp(contentWidth, minimumWidth, maximumWidth);
+        }
+
+        private static double EstimateTableCellWidth(string? value)
+        {
+            var width = 0d;
+            foreach (var character in value ?? string.Empty)
+            {
+                width += character <= 0x7f ? 7 : 13;
+                if (width >= 220)
+                    return width;
+            }
+            return width;
         }
 
         private static TableRow CreateTableRow(

@@ -189,4 +189,55 @@ public sealed class CopilotProfileConfigTests
         Assert.True(restored.EnsureInitialized());
         Assert.Equal(CopilotShellKind.Auto, restored.PreferredShell);
     }
+
+    [Fact]
+    public void Config_NormalizesAndBoundsDisabledPluginSubagentRoles()
+    {
+        var config = new CopilotConfig
+        {
+            McpBearerToken = "test-token",
+            DisabledPluginSubagentRoles = new System.Collections.ObjectModel.ObservableCollection<string>(
+                Enumerable.Range(0, 300).Select(index => $"sample.plugin/reviewer-{index:000}")),
+        };
+        config.DisabledPluginSubagentRoles.Add(" SAMPLE.PLUGIN/REVIEWER-000 ");
+        config.DisabledPluginSubagentRoles.Add("not-a-role-key");
+
+        Assert.True(config.EnsureInitialized());
+        Assert.Equal(256, config.DisabledPluginSubagentRoles.Count);
+        Assert.Equal("sample.plugin/reviewer-000", config.DisabledPluginSubagentRoles[0]);
+        Assert.DoesNotContain("not-a-role-key", config.DisabledPluginSubagentRoles);
+
+        var json = JsonConvert.SerializeObject(config);
+        var restored = JsonConvert.DeserializeObject<CopilotConfig>(json)!;
+        Assert.Contains("sample.plugin/reviewer-000", restored.DisabledPluginSubagentRoles);
+    }
+
+    [Fact]
+    public void EnsureInitialized_MigratesLegacyAgentRequestTokenBudgetOnce()
+    {
+        var config = new CopilotConfig
+        {
+            McpBearerToken = "test-token",
+            SchemaVersion = 0,
+        };
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            Id = "legacy-agent-budget",
+            Name = "Legacy Agent Budget",
+            AgentRequestTokenBudget = 65_536,
+        });
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            Id = "custom-agent-budget",
+            Name = "Custom Agent Budget",
+            AgentRequestTokenBudget = 96_000,
+        });
+
+        Assert.True(config.EnsureInitialized());
+        Assert.Equal(CopilotConfig.CurrentSchemaVersion, config.SchemaVersion);
+        Assert.Equal(CopilotProfileConfig.DefaultAgentRequestTokenBudget, config.FindProfile("legacy-agent-budget")!.AgentRequestTokenBudget);
+        Assert.Equal(96_000, config.FindProfile("custom-agent-budget")!.AgentRequestTokenBudget);
+
+        Assert.False(config.EnsureInitialized());
+    }
 }

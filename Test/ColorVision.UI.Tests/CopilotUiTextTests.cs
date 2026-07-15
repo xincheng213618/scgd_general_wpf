@@ -85,6 +85,8 @@ public sealed class CopilotUiTextTests
         {
             "Analyzing task...",
             "Round 1: planning next step.",
+            "Agent Skills selected · 2/4 active · 1 explicit-only (low-use 1).",
+            "Agent Skill history · 4 tracked across 20 recorded run(s) · 1 historical explicit-only.",
             "[SearchFiles]" + Environment.NewLine + "Status: Failed" + Environment.NewLine + "Summary: Missing searchable roots.",
         });
         message.MarkThinkingCompleted();
@@ -97,6 +99,7 @@ public sealed class CopilotUiTextTests
         Assert.Equal("已处理 1m 4s", message.ThinkingHeader);
         Assert.DoesNotContain("Analyzing task", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Round 1", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Agent Skill", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("SearchFiles", message.ThinkingContent, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -10,7 +10,6 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentContextBuilder
     {
-        private const int MaxHistoryMessages = 8;
         private const int MaxAttachmentContentChars = 12000;
         private const int MaxAnswerObservationSteps = 12;
         private const int MaxAnswerObservationContentChars = 6000;
@@ -25,7 +24,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var preparedUserMessageContent = BuildAnswerUserMessageContent(request, stepRecords ?? Array.Empty<CopilotAgentStepRecord>());
-            var messages = CopilotConversationHistoryWindow.Select(request.History, MaxHistoryMessages).ToList();
+            var messages = CopilotConversationHistoryWindow.Select(request.History).ToList();
 
             messages.Add(new CopilotRequestMessage("user", preparedUserMessageContent));
             return new CopilotAgentPreparedPrompt(messages, preparedUserMessageContent);

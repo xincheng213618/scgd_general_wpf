@@ -51,6 +51,48 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotPluginSubagentRoleSetting : ViewModelBase
+    {
+        private readonly Action _changed;
+
+        public CopilotPluginSubagentRoleSetting(
+            CopilotPluginSubagentRoleInfo role,
+            bool isEnabled,
+            string permissionSummary,
+            string budgetSummary,
+            Action changed)
+        {
+            Key = role.Key;
+            DisplayName = role.DisplayName;
+            SourceText = $"{role.SourceName} · {role.ToolName}";
+            PermissionSummary = permissionSummary;
+            BudgetSummary = budgetSummary;
+            _isEnabled = isEnabled;
+            _changed = changed ?? throw new ArgumentNullException(nameof(changed));
+        }
+
+        public string Key { get; }
+
+        public string DisplayName { get; }
+
+        public string SourceText { get; }
+
+        public string PermissionSummary { get; }
+
+        public string BudgetSummary { get; }
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (SetProperty(ref _isEnabled, value))
+                    _changed();
+            }
+        }
+        private bool _isEnabled;
+    }
+
     public sealed class CopilotSettingsViewModel : ViewModelBase
     {
         private static readonly HttpClient McpHttpClient = new()
@@ -243,6 +285,8 @@ namespace ColorVision.Copilot
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
+
+        public ObservableCollection<CopilotPluginSubagentRoleSetting> PluginSubagentRoles { get; } = new();
 
         public IReadOnlyList<CopilotProviderOption> ProviderOptions { get; }
 
@@ -693,6 +737,20 @@ namespace ColorVision.Copilot
         }
         private string _subagentRolesDiagnosticsText = string.Empty;
 
+        public string AgentSkillsSummaryText
+        {
+            get => _agentSkillsSummaryText;
+            private set => SetProperty(ref _agentSkillsSummaryText, value ?? string.Empty);
+        }
+        private string _agentSkillsSummaryText = string.Empty;
+
+        public string AgentSkillsDiagnosticsText
+        {
+            get => _agentSkillsDiagnosticsText;
+            private set => SetProperty(ref _agentSkillsDiagnosticsText, value ?? string.Empty);
+        }
+        private string _agentSkillsDiagnosticsText = string.Empty;
+
         public CopilotVendorType NewProfileVendorType
         {
             get => _newProfileVendorType;
@@ -963,12 +1021,22 @@ namespace ColorVision.Copilot
                 foreach (var server in externalMcpServers)
                     config.ExternalMcpServers.Add(server.Clone());
 
+                var visibleRoleKeys = PluginSubagentRoles.Select(role => role.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var disabledRoleKeys = config.DisabledPluginSubagentRoles
+                    .Where(roleKey => !visibleRoleKeys.Contains(roleKey))
+                    .Concat(PluginSubagentRoles.Where(role => !role.IsEnabled).Select(role => role.Key))
+                    .ToArray();
+                config.DisabledPluginSubagentRoles.Clear();
+                foreach (var roleKey in CopilotPluginSubagentRolePreference.NormalizeKeys(disabledRoleKeys))
+                    config.DisabledPluginSubagentRoles.Add(roleKey);
+
                 config.EnsureInitialized();
                 McpPort = config.McpPort;
                 McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
                 McpEndpoint = BuildMcpEndpoint();
                 McpBearerToken = config.McpBearerToken;
                 ConfigHandler.GetInstance().Save<CopilotConfig>();
+                CopilotPluginSubagentRoleLoader.Shared.SetDisabledRoleKeys(config.DisabledPluginSubagentRoles);
                 CopilotMcpServer.Instance.ApplyConfig();
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
@@ -1533,6 +1601,7 @@ namespace ColorVision.Copilot
             var subagentCatalog = CopilotSubagentRoleCatalog.Default;
             var pluginSubagents = CopilotPluginSubagentRoleLoader.Shared.GetSnapshot();
             RefreshSubagentRoleDiagnostics(subagentCatalog, pluginSubagents);
+            RefreshAgentSkillDiagnostics();
 
             var server = CopilotMcpServer.Instance;
             var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
@@ -1579,17 +1648,24 @@ namespace ColorVision.Copilot
             CopilotPluginSubagentRoleLoaderSnapshot pluginSnapshot)
         {
             var builtInCount = catalog.Roles.Count(role => string.Equals(role.SourceId, "builtin", StringComparison.OrdinalIgnoreCase));
-            var pluginCount = catalog.Roles.Count - builtInCount;
+            var disabledPluginCount = pluginSnapshot.DeclaredRoles.Count(role => !role.IsEnabled);
+            var advertisedCharacters = pluginSnapshot.DeclaredRoles.Sum(role => role.AdvertisedCharacters);
             SubagentRolesSummaryText =
-                $"{catalog.Roles.Count} role(s): {builtInCount} built-in, {pluginCount} plugin; registry revision {catalog.Revision}; manifest issues: {pluginSnapshot.Issues.Count}.";
+                $"{builtInCount} built-in; {pluginSnapshot.LoadedRoleCount}/{pluginSnapshot.DeclaredRoles.Count} plugin roles enabled; {disabledPluginCount} disabled; {advertisedCharacters:N0} advertised characters; registry revision {catalog.Revision}; manifest issues: {pluginSnapshot.Issues.Count}.";
 
             var lines = new List<string>();
-            foreach (var role in catalog.Roles.OrderBy(role => role.SourceId, StringComparer.OrdinalIgnoreCase).ThenBy(role => role.Id, StringComparer.OrdinalIgnoreCase))
+            foreach (var role in catalog.Roles.Where(role => string.Equals(role.SourceId, "builtin", StringComparison.OrdinalIgnoreCase)).OrderBy(role => role.Id, StringComparer.OrdinalIgnoreCase))
             {
-                lines.Add($"{role.DisplayName} ({role.ToolName})");
+                lines.Add($"[built-in] {role.DisplayName} ({role.ToolName})");
                 lines.Add($"  source={role.SourceName} [{role.SourceId}] version={role.SourceVersion}");
                 lines.Add($"  domain={role.ContextScope}; tools={FormatSubagentCapabilities(role.ReadCapabilities)}; child={role.ChildMode}; parents={string.Join(",", role.ParentModes)}");
                 lines.Add($"  fingerprint={role.CapabilityFingerprint}");
+            }
+            foreach (var role in pluginSnapshot.DeclaredRoles)
+            {
+                lines.Add($"[{(role.IsEnabled ? "enabled" : "disabled")}] {role.DisplayName} ({role.ToolName})");
+                lines.Add($"  source={role.SourceName} [{role.SourceId}]; role={role.RoleId}; domain={role.ContextScope}; tools={FormatSubagentCapabilities(role.ReadCapabilities)}");
+                lines.Add($"  budget={role.MaximumToolCalls} tools/{role.MaximumAgentPasses} passes/{role.MaximumDuration.TotalSeconds:0}s/{role.MaximumAnswerCharacters:N0} answer chars; advertised={role.AdvertisedCharacters:N0} chars");
             }
             foreach (var issue in pluginSnapshot.Issues)
             {
@@ -1597,6 +1673,50 @@ namespace ColorVision.Copilot
                 lines.Add($"! {issue.SourceId}{roleLabel}: {issue.Message}");
             }
             SubagentRolesDiagnosticsText = lines.Count == 0 ? "No subagent roles registered." : string.Join(Environment.NewLine, lines);
+            SynchronizePluginSubagentRoleSettings(pluginSnapshot.DeclaredRoles);
+        }
+
+        private void SynchronizePluginSubagentRoleSettings(IReadOnlyList<CopilotPluginSubagentRoleInfo> roles)
+        {
+            var pendingValues = PluginSubagentRoles.ToDictionary(role => role.Key, role => role.IsEnabled, StringComparer.OrdinalIgnoreCase);
+            PluginSubagentRoles.Clear();
+            foreach (var role in roles)
+            {
+                var isEnabled = pendingValues.TryGetValue(role.Key, out var pendingValue) ? pendingValue : role.IsEnabled;
+                PluginSubagentRoles.Add(new CopilotPluginSubagentRoleSetting(
+                    role,
+                    isEnabled,
+                    $"Read access: {role.ContextScope} · {FormatSubagentCapabilities(role.ReadCapabilities)}",
+                    $"Limit: {role.MaximumToolCalls} tool calls · {role.MaximumAgentPasses} passes · {role.MaximumDuration.TotalSeconds:0}s · {role.MaximumAnswerCharacters:N0} answer chars · {role.AdvertisedCharacters:N0} prompt chars",
+                    OnPluginSubagentRoleSettingChanged));
+            }
+        }
+
+        private void OnPluginSubagentRoleSettingChanged()
+        {
+            MarkSettingsPending("Plugin subagent role selection changed. Click Apply or Save to update the model tool list.");
+        }
+
+        private void RefreshAgentSkillDiagnostics()
+        {
+            try
+            {
+                var snapshot = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+                var usedCount = snapshot.Entries.Count(entry => entry.LoadedRuns > 0);
+                AgentSkillsSummaryText = snapshot.RecordedRuns == 0
+                    ? "No skill usage has been recorded yet."
+                    : $"{snapshot.Entries.Count} tracked across {snapshot.RecordedRuns} run(s); {usedCount} loaded; {snapshot.HistoricalExplicitOnlySkills.Count} low-use explicit-only.";
+                AgentSkillsDiagnosticsText = snapshot.Entries.Count == 0
+                    ? "Run Copilot with Agent Skills enabled to collect bounded usage evidence."
+                    : string.Join(Environment.NewLine, snapshot.Entries.Select(entry =>
+                        $"{entry.Name}: loaded {entry.LoadedRuns}/{entry.SelectedRuns} selected run(s) ({entry.LoadRate:P0}); last selected {FormatLocalTime(entry.LastSelectedAtUtc)}"
+                        + (entry.SelectedRuns >= CopilotAgentSkillUsageStore.LowUseMinimumSelectedRuns && entry.LoadedRuns == 0 ? " · explicit-only until directly requested" : string.Empty)));
+            }
+            catch (Exception ex)
+            {
+                AgentSkillsSummaryText = "Skill usage history is unavailable.";
+                AgentSkillsDiagnosticsText = SanitizeError(ex.Message);
+            }
         }
 
         private static string FormatSubagentCapabilities(CopilotSubagentReadCapabilities capabilities)
@@ -1656,6 +1776,10 @@ namespace ColorVision.Copilot
             builder.AppendLine("Subagent roles:");
             builder.AppendLine(SubagentRolesSummaryText);
             builder.AppendLine(SubagentRolesDiagnosticsText);
+            builder.AppendLine();
+            builder.AppendLine("Agent Skills:");
+            builder.AppendLine(AgentSkillsSummaryText);
+            builder.AppendLine(AgentSkillsDiagnosticsText);
             builder.AppendLine();
             builder.AppendLine("Recent audit entries:");
             builder.AppendLine(McpRecentAuditText);

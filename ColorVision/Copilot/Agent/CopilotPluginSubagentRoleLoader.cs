@@ -2,7 +2,6 @@ using ColorVision.UI.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ColorVision.Copilot
 {
@@ -19,25 +18,54 @@ namespace ColorVision.Copilot
     {
         public int LoadedRoleCount { get; init; }
 
+        public IReadOnlyList<CopilotPluginSubagentRoleInfo> DeclaredRoles { get; init; } = Array.Empty<CopilotPluginSubagentRoleInfo>();
+
         public IReadOnlyList<CopilotPluginSubagentRoleLoadIssue> Issues { get; init; } = Array.Empty<CopilotPluginSubagentRoleLoadIssue>();
+    }
+
+    public sealed class CopilotPluginSubagentRoleInfo
+    {
+        public string Key { get; init; } = string.Empty;
+
+        public string SourceId { get; init; } = string.Empty;
+
+        public string SourceName { get; init; } = string.Empty;
+
+        public string RoleId { get; init; } = string.Empty;
+
+        public string ToolName { get; init; } = string.Empty;
+
+        public string DisplayName { get; init; } = string.Empty;
+
+        public CopilotSubagentContextScope ContextScope { get; init; }
+
+        public CopilotSubagentReadCapabilities ReadCapabilities { get; init; }
+
+        public int MaximumToolCalls { get; init; }
+
+        public int MaximumAgentPasses { get; init; }
+
+        public TimeSpan MaximumDuration { get; init; }
+
+        public int MaximumAnswerCharacters { get; init; }
+
+        public int AdvertisedCharacters { get; init; }
+
+        public bool IsEnabled { get; init; }
     }
 
     public sealed class CopilotPluginSubagentRoleLoader : IDisposable
     {
-        private static readonly CopilotAgentMode[] DefaultParentModes =
-        [
-            CopilotAgentMode.Auto,
-            CopilotAgentMode.Explain,
-            CopilotAgentMode.Web,
-            CopilotAgentMode.Code,
-            CopilotAgentMode.Diagnose,
-        ];
+        internal const int MaximumRolesPerPlugin = CopilotSubagentRoleManifestValidator.MaximumRolesPerPlugin;
+        internal const int MaximumAdvertisedCharactersPerPlugin = CopilotSubagentRoleManifestValidator.MaximumAdvertisedCharactersPerPlugin;
 
         private readonly CopilotSubagentRoleRegistry _roleRegistry;
         private readonly Dictionary<string, LoadedRegistration> _registrations = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _syncRoot = new();
         private PluginInfo[] _trackedPlugins = Array.Empty<PluginInfo>();
         private CopilotPluginSubagentRoleLoadIssue[] _issues = Array.Empty<CopilotPluginSubagentRoleLoadIssue>();
+        private CopilotPluginSubagentRoleInfo[] _declaredRoles = Array.Empty<CopilotPluginSubagentRoleInfo>();
+        private HashSet<string> _disabledRoleKeys = new(StringComparer.OrdinalIgnoreCase);
         private bool _disposed;
 
         public CopilotPluginSubagentRoleLoader(CopilotSubagentRoleRegistry roleRegistry)
@@ -49,15 +77,41 @@ namespace ColorVision.Copilot
 
         public CopilotPluginSubagentRoleLoaderSnapshot Synchronize(IEnumerable<PluginInfo>? plugins)
         {
+            return Synchronize(plugins, Array.Empty<string>());
+        }
+
+        public CopilotPluginSubagentRoleLoaderSnapshot Synchronize(IEnumerable<PluginInfo>? plugins, IEnumerable<string>? disabledRoleKeys)
+        {
             var pluginSnapshot = (plugins ?? Array.Empty<PluginInfo>()).Where(plugin => plugin != null).Distinct().ToArray();
+            SetDisabledRoleKeysCore(disabledRoleKeys);
             TrackPlugins(pluginSnapshot);
             return SynchronizeCore(pluginSnapshot);
+        }
+
+        public CopilotPluginSubagentRoleLoaderSnapshot SetDisabledRoleKeys(IEnumerable<string>? disabledRoleKeys)
+        {
+            PluginInfo[] plugins;
+            lock (_syncRoot)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                _disabledRoleKeys = CopilotPluginSubagentRolePreference.NormalizeKeys(disabledRoleKeys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                plugins = _trackedPlugins.ToArray();
+            }
+            return SynchronizeCore(plugins);
         }
 
         private CopilotPluginSubagentRoleLoaderSnapshot SynchronizeCore(IReadOnlyList<PluginInfo> plugins)
         {
             var candidates = new List<RoleCandidate>();
+            var declaredRoles = new List<CopilotPluginSubagentRoleInfo>();
             var issues = new List<CopilotPluginSubagentRoleLoadIssue>();
+            HashSet<string> disabledRoleKeys;
+            lock (_syncRoot)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                disabledRoleKeys = _disabledRoleKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
             foreach (var plugin in plugins
                 .Where(plugin => plugin?.Enabled == true && plugin.Manifest != null)
                 .OrderBy(plugin => plugin.Manifest.Id, StringComparer.OrdinalIgnoreCase))
@@ -65,24 +119,49 @@ namespace ColorVision.Copilot
                 var roleManifests = plugin.Manifest.CopilotAgents ?? [];
                 if (roleManifests.Count == 0)
                     continue;
+                if (roleManifests.Count > MaximumRolesPerPlugin)
+                {
+                    issues.Add(CreateIssue(plugin.Manifest.Id, string.Empty, $"A plugin can declare at most {MaximumRolesPerPlugin} Copilot roles."));
+                    continue;
+                }
                 if (plugin.Assembly == null)
                 {
                     issues.Add(CreateIssue(plugin.Manifest.Id, string.Empty, "The plugin assembly did not load, so its Copilot roles were not registered."));
                     continue;
                 }
 
+                var pluginCandidates = new List<RoleCandidate>();
                 foreach (var roleManifest in roleManifests.Where(role => role != null))
                 {
                     try
                     {
                         var registration = CreateRegistration(plugin, roleManifest);
                         var descriptor = CopilotSubagentRoleFactory.Create(registration, isBuiltIn: false);
-                        candidates.Add(new RoleCandidate(registration, descriptor));
+                        pluginCandidates.Add(new RoleCandidate(registration, descriptor));
                     }
                     catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
                     {
                         issues.Add(CreateIssue(plugin.Manifest.Id, roleManifest.Id, ex.Message));
                     }
+                }
+
+                var advertisedCharacters = pluginCandidates.Sum(candidate =>
+                    candidate.Descriptor.ToolName.Length
+                    + candidate.Descriptor.DisplayName.Length
+                    + candidate.Descriptor.Description.Length);
+                if (advertisedCharacters > MaximumAdvertisedCharactersPerPlugin)
+                {
+                    issues.Add(CreateIssue(plugin.Manifest.Id, string.Empty, $"Copilot role names and descriptions exceed the per-plugin limit of {MaximumAdvertisedCharactersPerPlugin:N0} characters."));
+                    continue;
+                }
+
+                foreach (var candidate in pluginCandidates)
+                {
+                    var key = CopilotPluginSubagentRolePreference.CreateKey(candidate.Descriptor.SourceId, candidate.Descriptor.Id);
+                    var isEnabled = !disabledRoleKeys.Contains(key);
+                    declaredRoles.Add(CreateRoleInfo(candidate.Descriptor, key, isEnabled));
+                    if (isEnabled)
+                        candidates.Add(candidate);
                 }
             }
 
@@ -130,6 +209,10 @@ namespace ColorVision.Copilot
                     .ThenBy(issue => issue.RoleId, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(issue => issue.Message, StringComparer.Ordinal)
                     .ToArray();
+                _declaredRoles = declaredRoles
+                    .OrderBy(role => role.SourceId, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(role => role.RoleId, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
                 return CreateSnapshotLocked();
             }
         }
@@ -154,6 +237,8 @@ namespace ColorVision.Copilot
                     registration.Handle.Dispose();
                 _registrations.Clear();
                 _issues = Array.Empty<CopilotPluginSubagentRoleLoadIssue>();
+                _declaredRoles = Array.Empty<CopilotPluginSubagentRoleInfo>();
+                _disabledRoleKeys.Clear();
             }
         }
 
@@ -190,39 +275,65 @@ namespace ColorVision.Copilot
             return new CopilotPluginSubagentRoleLoaderSnapshot
             {
                 LoadedRoleCount = _registrations.Count,
+                DeclaredRoles = _declaredRoles.ToArray(),
                 Issues = _issues.ToArray(),
+            };
+        }
+
+        private void SetDisabledRoleKeysCore(IEnumerable<string>? disabledRoleKeys)
+        {
+            lock (_syncRoot)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                _disabledRoleKeys = CopilotPluginSubagentRolePreference.NormalizeKeys(disabledRoleKeys)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static CopilotPluginSubagentRoleInfo CreateRoleInfo(CopilotSubagentRoleDescriptor descriptor, string key, bool isEnabled)
+        {
+            return new CopilotPluginSubagentRoleInfo
+            {
+                Key = key,
+                SourceId = descriptor.SourceId,
+                SourceName = descriptor.SourceName,
+                RoleId = descriptor.Id,
+                ToolName = descriptor.ToolName,
+                DisplayName = descriptor.DisplayName,
+                ContextScope = descriptor.ContextScope,
+                ReadCapabilities = descriptor.ReadCapabilities,
+                MaximumToolCalls = descriptor.MaximumToolCalls,
+                MaximumAgentPasses = descriptor.MaximumAgentPasses,
+                MaximumDuration = descriptor.MaximumDuration,
+                MaximumAnswerCharacters = descriptor.MaximumAnswerCharacters,
+                AdvertisedCharacters = descriptor.ToolName.Length + descriptor.DisplayName.Length + descriptor.Description.Length,
+                IsEnabled = isEnabled,
             };
         }
 
         private static CopilotSubagentRoleRegistration CreateRegistration(PluginInfo plugin, CopilotSubagentRoleManifest role)
         {
-            var scope = ParseScope(role.Scope);
-            var childMode = string.IsNullOrWhiteSpace(role.ChildMode)
-                ? scope == CopilotSubagentContextScope.PublicWeb ? CopilotAgentMode.Web : CopilotAgentMode.Code
-                : ParseEnum<CopilotAgentMode>(role.ChildMode, "child mode");
-            var parentModes = role.ParentModes == null || role.ParentModes.Count == 0
-                ? DefaultParentModes
-                : role.ParentModes.Select(value => ParseEnum<CopilotAgentMode>(value, "parent mode")).ToArray();
-            var roleId = role.Id?.Trim() ?? string.Empty;
+            CopilotSubagentRoleManifestValidator.ValidatePluginSource(plugin.Manifest.Id, FirstNonEmpty(plugin.Manifest.Name, plugin.Name, plugin.Manifest.Id), FirstNonEmpty(plugin.Manifest.Version, plugin.AssemblyVersion?.ToString(), "0"));
+            CopilotSubagentRoleManifestContract contract = CopilotSubagentRoleManifestValidator.Create(role);
 
             return new CopilotSubagentRoleRegistration
             {
                 SourceId = (plugin.Manifest.Id ?? string.Empty).Trim().ToLowerInvariant(),
                 SourceName = FirstNonEmpty(plugin.Manifest.Name, plugin.Name, plugin.Manifest.Id),
                 SourceVersion = FirstNonEmpty(plugin.Manifest.Version, plugin.AssemblyVersion?.ToString(), "0"),
-                RoleId = roleId,
-                ToolName = FirstNonEmpty(role.ToolName, CreateDefaultToolName(roleId)),
-                DisplayName = FirstNonEmpty(role.Name, roleId),
-                Description = role.Description?.Trim() ?? string.Empty,
-                RuntimeInstructions = role.Instructions?.Trim() ?? string.Empty,
-                ContextScope = scope,
-                ReadCapabilities = ParseCapabilities(role.Capabilities),
-                ChildMode = childMode,
-                ParentModes = parentModes,
-                MaximumToolCalls = DefaultIfZero(role.MaximumToolCalls, 6),
-                MaximumAgentPasses = DefaultIfZero(role.MaximumAgentPasses, 2),
-                MaximumDuration = TimeSpan.FromSeconds(DefaultIfZero(role.MaximumDurationSeconds, 90)),
-                MaximumAnswerCharacters = DefaultIfZero(role.MaximumAnswerCharacters, 12_000),
+                RoleId = contract.Id,
+                ToolName = contract.ToolName,
+                DisplayName = contract.DisplayName,
+                Description = contract.Description,
+                RuntimeInstructions = contract.Instructions,
+                ContextScope = ParseScope(contract.Scope),
+                ReadCapabilities = ParseCapabilities(contract.Capabilities),
+                ChildMode = ParseEnum<CopilotAgentMode>(contract.ChildMode, "child mode"),
+                ParentModes = contract.ParentModes.Select(value => ParseEnum<CopilotAgentMode>(value, "parent mode")).ToArray(),
+                MaximumToolCalls = contract.MaximumToolCalls,
+                MaximumAgentPasses = contract.MaximumAgentPasses,
+                MaximumDuration = TimeSpan.FromSeconds(contract.MaximumDurationSeconds),
+                MaximumAnswerCharacters = contract.MaximumAnswerCharacters,
             };
         }
 
@@ -263,18 +374,6 @@ namespace ColorVision.Copilot
             throw new FormatException($"Unknown subagent {label} '{value}'.");
         }
 
-        private static string CreateDefaultToolName(string roleId)
-        {
-            var builder = new StringBuilder("Delegate");
-            foreach (var segment in (roleId ?? string.Empty).Split(['-', '_', '.'], StringSplitOptions.RemoveEmptyEntries))
-            {
-                builder.Append(char.ToUpperInvariant(segment[0]));
-                if (segment.Length > 1)
-                    builder.Append(segment.AsSpan(1));
-            }
-            return builder.ToString();
-        }
-
         private static string NormalizeToken(string? value)
         {
             return new string((value ?? string.Empty)
@@ -282,8 +381,6 @@ namespace ColorVision.Copilot
                 .Select(char.ToLowerInvariant)
                 .ToArray());
         }
-
-        private static int DefaultIfZero(int value, int defaultValue) => value == 0 ? defaultValue : value;
 
         private static string FirstNonEmpty(params string?[] values)
         {

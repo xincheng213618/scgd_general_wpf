@@ -188,6 +188,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0"
@@ -207,25 +208,77 @@
                                           Margin="0,0,0,8"
                                           Header="{Binding SubagentRolesSummaryText}"
                                           Foreground="{DynamicResource GlobalTextBrush}">
-                                    <TextBox Height="128"
+                                    <StackPanel Margin="0,8,0,0">
+                                        <TextBlock Margin="0,0,0,8"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.72"
+                                                   Text="Plugin roles are opt-out individually. Disabled roles leave the model tool list after Apply, reducing prompt metadata and preventing execution."
+                                                   TextWrapping="Wrap"/>
+                                        <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding PluginSubagentRoles}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Margin="0,0,0,6"
+                                                                Padding="10,8"
+                                                                Background="{DynamicResource GlobalBorderBrush}"
+                                                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="4">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <CheckBox Margin="0,2,10,0"
+                                                                          VerticalAlignment="Top"
+                                                                          IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                                <StackPanel Grid.Column="1">
+                                                                    <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}"/>
+                                                                    <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.68" Text="{Binding SourceText}" TextWrapping="Wrap"/>
+                                                                    <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.68" Text="{Binding PermissionSummary}" TextWrapping="Wrap"/>
+                                                                    <TextBlock Margin="0,2,0,0" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.68" Text="{Binding BudgetSummary}" TextWrapping="Wrap"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                        <TextBox Height="100"
+                                                 Margin="0,8,0,0"
+                                                 FontFamily="Consolas"
+                                                 FontSize="11"
+                                                 HorizontalScrollBarVisibility="Auto"
+                                                 IsReadOnly="True"
+                                                 Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
+                                                 TextWrapping="NoWrap"
+                                                 VerticalScrollBarVisibility="Auto" />
+                                    </StackPanel>
+                                </Expander>
+
+                                <Expander Grid.Row="3"
+                                          Margin="0,0,0,8"
+                                          Header="{Binding AgentSkillsSummaryText}"
+                                          Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBox Height="112"
                                              Margin="0,8,0,0"
                                              FontFamily="Consolas"
                                              FontSize="11"
                                              HorizontalScrollBarVisibility="Auto"
                                              IsReadOnly="True"
-                                             Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
+                                             Text="{Binding AgentSkillsDiagnosticsText, Mode=OneWay}"
                                              TextWrapping="NoWrap"
                                              VerticalScrollBarVisibility="Auto" />
                                 </Expander>
 
-                                <TextBox Grid.Row="3"
+                                <TextBox Grid.Row="4"
                                          Height="96"
                                          IsReadOnly="True"
                                          Text="{Binding McpRecentAuditText, Mode=OneWay}"
                                          TextWrapping="Wrap"
                                          VerticalScrollBarVisibility="Auto" />
 
-                                <WrapPanel Grid.Row="4" Margin="0,8,0,0">
+                                <WrapPanel Grid.Row="5" Margin="0,8,0,0">
                                     <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding RefreshMcpDiagnosticsCommand}" Content="Refresh" />
                                     <Button Padding="10,4" Command="{Binding CopyMcpDiagnosticsCommand}" Content="Copy Diagnostics" />
                                 </WrapPanel>

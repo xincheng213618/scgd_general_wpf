@@ -601,6 +601,211 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFlowGraph_ReturnsStructuredPortsEdgesRevisionAndRedactsProperties()
+    {
+        var flowSnapshot = new CopilotFlowContextSnapshot
+        {
+            Revision = "revision-123",
+            FlowName = "InspectionFlow",
+            TemplateId = "template-1",
+            Nodes = new[]
+            {
+                new CopilotFlowNodeContextSnapshot
+                {
+                    InstanceId = "instance-camera",
+                    NodeId = "instance-camera",
+                    TypeKey = "FlowEngineLib.dll|FlowEngineLib.CVCameraNode",
+                    RuntimeType = "FlowEngineLib.CVCameraNode",
+                    Title = "Camera",
+                    Left = 10,
+                    Top = 20,
+                    OutputPorts = new[]
+                    {
+                        new CopilotFlowPortContextSnapshot { PortId = "out:0", Name = "Image", DataType = "CVImage", ConnectionCount = 1 },
+                    },
+                    Parameters = new[]
+                    {
+                        new CopilotContextProperty { Name = "ApiKey", Value = "secret-value" },
+                    },
+                },
+                new CopilotFlowNodeContextSnapshot
+                {
+                    InstanceId = "instance-algorithm",
+                    NodeId = "instance-algorithm",
+                    TypeKey = "FlowEngineLib.dll|FlowEngineLib.AlgorithmNode",
+                    RuntimeType = "FlowEngineLib.AlgorithmNode",
+                    Title = "Algorithm",
+                    InputPorts = new[]
+                    {
+                        new CopilotFlowPortContextSnapshot { PortId = "in:0", Name = "Image", DataType = "CVImage", ConnectionCount = 1 },
+                    },
+                },
+            },
+            Edges = new[]
+            {
+                new CopilotFlowEdgeContextSnapshot
+                {
+                    SourceNodeId = "instance-camera",
+                    SourcePortId = "out:0",
+                    TargetNodeId = "instance-algorithm",
+                    TargetPortId = "in:0",
+                    DataType = "CVImage",
+                },
+            },
+        };
+        var handler = CreateHandler(flowSnapshotProvider: _ => Task.FromResult<CopilotFlowContextSnapshot?>(flowSnapshot));
+
+        var response = await CallToolAsync(handler, "get_flow_graph", new { include_properties = true, max_nodes = 80 });
+        var toolResult = ReadToolResult(response);
+
+        Assert.False(toolResult.IsError);
+        Assert.Contains("colorvision.flow-graph.v1", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("revision-123", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("FlowEngineLib.CVCameraNode", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("instance-camera", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("out:0", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("instance-algorithm", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("redacted", toolResult.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-value", toolResult.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetFlowNodeCatalog_ReturnsExactCameraTypeAndWritablePropertySchema()
+    {
+        var catalog = new CopilotFlowNodeCatalogSnapshot
+        {
+            Query = "相机",
+            TotalMatches = 2,
+            NodeTypes = new[]
+            {
+                new CopilotFlowNodeTypeContextSnapshot
+                {
+                    TypeKey = "FlowEngineLib.dll|FlowEngineLib.CVCameraNode",
+                    RuntimeType = "FlowEngineLib.CVCameraNode",
+                    CategoryPath = "/02 相机",
+                    Title = "ColorVision相机",
+                    NodeType = "Camera",
+                    DefaultDeviceCode = "DEV.Camera.Default",
+                    Properties = new[]
+                    {
+                        new CopilotFlowNodePropertySchemaSnapshot
+                        {
+                            PropertyName = "ExpTime",
+                            DisplayName = "曝光时间",
+                            DataType = "System.Single",
+                            IsWritable = true,
+                        },
+                    },
+                },
+            },
+        };
+        var handler = CreateHandler(flowNodeCatalogProvider: (_, _, _) => Task.FromResult<CopilotFlowNodeCatalogSnapshot?>(catalog));
+
+        var response = await CallToolAsync(handler, "get_flow_node_catalog", new { query = "相机", max_results = 30 });
+        var toolResult = ReadToolResult(response);
+
+        Assert.False(toolResult.IsError);
+        Assert.Contains("colorvision.flow-node-catalog.v1", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("FlowEngineLib.dll|FlowEngineLib.CVCameraNode", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("DEV.Camera.Default", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("ExpTime", toolResult.Text, StringComparison.Ordinal);
+        Assert.Contains("Choose an exact typeKey", toolResult.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PreviewAndApplyFlowPatch_UseRevisionAndRequireApprovalBeforeMutation()
+    {
+        var applyCount = 0;
+        var handler = CreateHandler(
+            previewFlowPatchHandler: (request, _) => Task.FromResult(CopilotMcpToolCallResult.Ok($"preview operation={request.Operation}; type={request.TypeKey}; position={request.Left},{request.Top}; revision={request.ExpectedRevision}")),
+            applyFlowPatchHandler: (_, _) =>
+            {
+                applyCount++;
+                return Task.FromResult(CopilotMcpToolCallResult.Ok("applied"));
+            });
+
+        var preview = ReadToolResult(await CallToolAsync(handler, "preview_flow_patch", new
+        {
+            operation = "add_node",
+            type_key = "FlowEngineLib.dll|FlowEngineLib.CVCameraNode",
+            left = 120,
+            top = 240,
+            expected_revision = "revision-123",
+        }));
+        var apply = ReadToolResult(await CallToolAsync(handler, "apply_flow_patch", new
+        {
+            operation = "add_node",
+            type_key = "FlowEngineLib.dll|FlowEngineLib.CVCameraNode",
+            left = 120,
+            top = 240,
+            expected_revision = "revision-123",
+        }));
+
+        Assert.False(preview.IsError);
+        Assert.Contains("revision-123", preview.Text, StringComparison.Ordinal);
+        Assert.True(apply.IsError);
+        Assert.Contains("must approve", apply.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Does not save or run", apply.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, applyCount);
+    }
+
+    [Theory]
+    [InlineData("set_property")]
+    [InlineData("connect")]
+    public async Task PreviewFlowPatch_PassesBoundedPropertyAndConnectionOperations(string operation)
+    {
+        CopilotFlowPatchRequest? captured = null;
+        var handler = CreateHandler(previewFlowPatchHandler: (request, _) =>
+        {
+            captured = request;
+            return Task.FromResult(CopilotMcpToolCallResult.Ok("previewed"));
+        });
+        object arguments = operation == "set_property"
+            ? new { operation, expected_revision = "revision-1", node_id = "node-1", property_name = "Exposure", value = "12.5" }
+            : new { operation, expected_revision = "revision-1", source_node_id = "node-1", source_port_id = "out:0", target_node_id = "node-2", target_port_id = "in:0" };
+
+        var result = ReadToolResult(await CallToolAsync(handler, "preview_flow_patch", arguments));
+
+        Assert.False(result.IsError);
+        Assert.NotNull(captured);
+        Assert.Equal(operation, captured.Operation);
+        Assert.Equal("revision-1", captured.ExpectedRevision);
+        if (operation == "set_property")
+        {
+            Assert.Equal("node-1", captured.NodeId);
+            Assert.Equal("Exposure", captured.PropertyName);
+            Assert.Equal("12.5", captured.Value);
+        }
+        else
+        {
+            Assert.Equal("out:0", captured.SourcePortId);
+            Assert.Equal("in:0", captured.TargetPortId);
+        }
+    }
+
+    [Fact]
+    public async Task PreviewFlowPatch_RejectsIncompleteOperationBeforeHandler()
+    {
+        var handlerCalls = 0;
+        var handler = CreateHandler(previewFlowPatchHandler: (_, _) =>
+        {
+            handlerCalls++;
+            return Task.FromResult(CopilotMcpToolCallResult.Ok("unexpected"));
+        });
+
+        var result = ReadToolResult(await CallToolAsync(handler, "preview_flow_patch", new
+        {
+            operation = "connect",
+            expected_revision = "revision-1",
+            source_node_id = "node-1",
+        }));
+
+        Assert.True(result.IsError);
+        Assert.Contains("source_port_id", result.Text, StringComparison.Ordinal);
+        Assert.Equal(0, handlerCalls);
+    }
+
+    [Fact]
     public async Task GetActiveTemplateContext_ReturnsTemplateSummaryWithoutSecrets()
     {
         var liveContext = new CopilotLiveContext
@@ -1416,6 +1621,9 @@ public sealed class CopilotMcpTests : IDisposable
         Func<CopilotLiveContext?>? liveContextProvider = null,
         Func<CopilotAgentTaskEventJournalContext?>? taskEventJournalProvider = null,
         Func<CancellationToken, Task<CopilotFlowContextSnapshot?>>? flowSnapshotProvider = null,
+        Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>>? flowNodeCatalogProvider = null,
+        Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? previewFlowPatchHandler = null,
+        Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyFlowPatchHandler = null,
         Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyTemplatePatchHandler = null,
         Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult>? recentLogProvider = null)
     {
@@ -1439,6 +1647,9 @@ public sealed class CopilotMcpTests : IDisposable
             LiveContextProvider = liveContextProvider ?? (() => null),
             TaskEventJournalProvider = taskEventJournalProvider ?? (() => null),
             FlowSnapshotProvider = flowSnapshotProvider ?? (_ => Task.FromResult<CopilotFlowContextSnapshot?>(null)),
+            FlowNodeCatalogProvider = flowNodeCatalogProvider ?? ((_, _, _) => Task.FromResult<CopilotFlowNodeCatalogSnapshot?>(null)),
+            PreviewFlowPatchHandler = previewFlowPatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("flow_unavailable", "No test Flow editor is available."))),
+            ApplyFlowPatchHandler = applyFlowPatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("flow_unavailable", "No test Flow editor is available."))),
             ApplyTemplatePatchHandler = applyTemplatePatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("apply_template_patch_unavailable", "No test apply handler is available."))),
             RecentLogProvider = recentLogProvider ?? ((_, _, _, _) => new CopilotCapabilityResult
             {

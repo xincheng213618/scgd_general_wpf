@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
         private readonly ICopilotExternalToolProvider _externalToolProvider;
         private readonly CopilotCapabilityCatalog _capabilityCatalog;
+        private readonly CopilotAgentSkillUsageStore _skillUsageStore;
         private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
@@ -75,7 +76,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutor toolExecutor,
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
             ICopilotExternalToolProvider externalToolProvider,
-            CopilotCapabilityCatalog? capabilityCatalog = null)
+            CopilotCapabilityCatalog? capabilityCatalog = null,
+            CopilotAgentSkillUsageStore? skillUsageStore = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
@@ -83,6 +85,7 @@ namespace ColorVision.Copilot
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
             _externalToolProvider = externalToolProvider ?? throw new ArgumentNullException(nameof(externalToolProvider));
             _capabilityCatalog = capabilityCatalog ?? CopilotCapabilityCatalog.Shared;
+            _skillUsageStore = skillUsageStore ?? CopilotAgentSkillUsageStore.Shared;
             _approvalCoordinator = new CopilotFrameworkApprovalCoordinator();
         }
 
@@ -251,14 +254,19 @@ namespace ColorVision.Copilot
             var taskLedgerEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
             var agentModeEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode);
             var skillsFeatureEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills);
-            using var agentSkills = skillsFeatureEnabled ? CopilotAgentSkills.Create(request) : CopilotAgentSkills.Disabled();
+            var historicalExplicitOnlySkillNames = skillsFeatureEnabled
+                ? _skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToArray()
+                : Array.Empty<string>();
+            using var agentSkills = skillsFeatureEnabled
+                ? CopilotAgentSkills.Create(request, historicalExplicitOnlySkillNames)
+                : CopilotAgentSkills.Disabled();
             var agentSkillsEnabled = skillsFeatureEnabled && agentSkills.IsEnabled;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
             emit(CopilotAgentEvent.RuntimeDiagnostic(!skillsFeatureEnabled
                 ? "Agent Skills disabled by the isolated runtime tool surface."
                 : agentSkillsEnabled
-                    ? $"Agent Skills enabled · {agentSkills.SkillNames.Count} skill(s) from {agentSkills.SearchPaths.Count} trusted root(s) · scripts disabled."
+                    ? agentSkills.BuildStartupDiagnostic()
                     : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
             var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
             if (projectInstructionCount > 0)
@@ -555,6 +563,10 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; finalizing the current task checkpoint."));
                 }
             }
+            catch (CopilotAgentTokenBudgetExceededException ex)
+            {
+                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
+            }
             catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
             {
                 if (bridge.StepRecords.Count == 0 && answerText.Length == 0)
@@ -642,6 +654,24 @@ namespace ColorVision.Copilot
                 bridge.StepRecords.Count,
                 timeBudgetExhausted,
                 bridge.ToolBudgetExhausted);
+            var skillSelectionDiagnostic = agentSkills.BuildSelectionDiagnostic();
+            if (!string.IsNullOrWhiteSpace(skillSelectionDiagnostic))
+                emit(CopilotAgentEvent.RuntimeDiagnostic(skillSelectionDiagnostic));
+            if (agentSkills.TryGetRunUsage(out var selectedSkillNames, out var loadedSkillNames))
+            {
+                try
+                {
+                    var skillUsage = _skillUsageStore.RecordRun(selectedSkillNames, loadedSkillNames, DateTimeOffset.UtcNow);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"Agent Skill history · {skillUsage.Entries.Count} tracked across {skillUsage.RecordedRuns} recorded run(s)"
+                        + $" · {skillUsage.Entries.Count(entry => entry.LoadedRuns > 0)} used"
+                        + $" · {skillUsage.HistoricalExplicitOnlySkills.Count} historical explicit-only."));
+                }
+                catch (Exception ex)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent Skill history could not be updated ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
+                }
+            }
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"

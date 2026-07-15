@@ -10,7 +10,7 @@ namespace ColorVision.Copilot
     {
         public const int DefaultMaxTokens = 8192;
         public const int DefaultMaxToolRounds = 12;
-        public const int DefaultAgentRequestTokenBudget = 65536;
+        public const int DefaultAgentRequestTokenBudget = 131072;
         public const int DefaultMaxAgentPasses = 4;
         public const int DefaultAgentTimeoutSeconds = 300;
         public const double DefaultTemperature = 0.2;

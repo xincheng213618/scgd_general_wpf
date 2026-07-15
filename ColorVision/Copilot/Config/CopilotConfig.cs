@@ -14,12 +14,19 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
+        public const int CurrentSchemaVersion = 1;
+        private const int LegacyAgentRequestTokenBudget = 65536;
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; set; } = new();
 
         public ObservableCollection<CopilotMcpClientServerConfig> ExternalMcpServers { get; set; } = new();
+
+        public ObservableCollection<string> DisabledPluginSubagentRoles { get; set; } = new();
+
+        [Browsable(false)]
+        public int SchemaVersion { get; set; }
 
         public const int DefaultMcpPort = 38473;
 
@@ -76,6 +83,16 @@ namespace ColorVision.Copilot
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
+            DisabledPluginSubagentRoles ??= new ObservableCollection<string>();
+
+            var normalizedDisabledRoles = CopilotPluginSubagentRolePreference.NormalizeKeys(DisabledPluginSubagentRoles);
+            if (!DisabledPluginSubagentRoles.SequenceEqual(normalizedDisabledRoles, StringComparer.OrdinalIgnoreCase))
+            {
+                DisabledPluginSubagentRoles.Clear();
+                foreach (var roleKey in normalizedDisabledRoles)
+                    DisabledPluginSubagentRoles.Add(roleKey);
+                changed = true;
+            }
 
             if (!Enum.IsDefined(PreferredShell))
             {
@@ -100,6 +117,15 @@ namespace ColorVision.Copilot
             if (Profiles.Count == 0)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
+                changed = true;
+            }
+
+            if (SchemaVersion < CurrentSchemaVersion)
+            {
+                foreach (var profile in Profiles.Where(profile => profile.AgentRequestTokenBudget == LegacyAgentRequestTokenBudget))
+                    profile.AgentRequestTokenBudget = CopilotProfileConfig.DefaultAgentRequestTokenBudget;
+
+                SchemaVersion = CurrentSchemaVersion;
                 changed = true;
             }
 

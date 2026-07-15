@@ -10,6 +10,7 @@
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
+| 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新共享文件表 | `py Scripts\generate_shared_files.py` | 只有宿主输出目录共享 DLL 明显变化时才需要 |
 
 `build.py` 和 `build_update.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；`build_update.py` 没有安全的 `--help` 查询模式，直接执行会进入增量包生成和上传流程。
@@ -32,7 +33,7 @@ Scripts\release.bat
 | 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
-插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。打包会读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，再生成 `.cvxp`。
+插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json`；若声明 `copilot_agents`，还会检查角色 ID、工具名、作用域、只读能力、模式、预算、重复项，以及单插件最多 16 个角色和 8,000 个常驻名称/说明字符的上限。需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。
 
 ## 上传配置
 

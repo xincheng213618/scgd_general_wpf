@@ -9,6 +9,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -53,6 +54,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         void ShowDownloadWindow();
         void ShowWarning(string message, string title);
         void ShowError(string message, string title);
+        bool ConfirmInstall(string message, string title);
         void OpenFolder(string? folderPath);
     }
 
@@ -130,6 +132,11 @@ namespace ColorVision.UI.Desktop.Marketplace
             RunOnUiThread(() => MessageBox.Show(Application.Current.GetActiveWindow(), message, title, MessageBoxButton.OK, MessageBoxImage.Error));
         }
 
+        public bool ConfirmInstall(string message, string title)
+        {
+            return RunOnUiThread(() => MessageBox.Show(Application.Current.GetActiveWindow(), message, title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes);
+        }
+
         public void OpenFolder(string? folderPath)
         {
             RunOnUiThread(() => PlatformHelper.OpenFolder(folderPath));
@@ -151,6 +158,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             dispatcher.InvokeAsync(() => RunSafely(action, AdapterLog));
+        }
+
+        private static T RunOnUiThread<T>(Func<T> action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                return action();
+            return dispatcher.Invoke(action);
         }
 
         private static void RunSafely(Action action, ILog logger)
@@ -393,8 +408,37 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return false;
 
             cancellationToken.ThrowIfCancellationRequested();
+            MarketplaceCopilotPackagePreflight preflight = MarketplaceCopilotPackagePreflightReader.Read(packagePath, request);
+            if (!TryApproveSingleInstall(preflight, request))
+                return false;
+
             _installer.Install(restartArguments, packagePath);
             return true;
+        }
+
+        public bool TryApproveBatchInstall(IEnumerable<string> packagePaths, IEnumerable<MarketplacePackageRequest>? requests = null)
+        {
+            MarketplacePackageRequest[] requestSnapshot = requests?.ToArray() ?? Array.Empty<MarketplacePackageRequest>();
+            List<MarketplaceCopilotPackagePreflight> preflights = packagePaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(path => MarketplaceCopilotPackagePreflightReader.Read(path, FindRequestForPackagePath(path, requestSnapshot)))
+                .ToList();
+            MarketplaceCopilotPackagePreflight? invalid = preflights.FirstOrDefault(item => !item.IsValid);
+            if (invalid != null)
+            {
+                _ui.ShowError(BuildInvalidPackageMessage(invalid.ErrorMessage), Resources.PluginManagerWindow);
+                return false;
+            }
+
+            MarketplaceCopilotPackagePreflight[] permissionPackages = preflights
+                .Where(item => item.RequiresPermissionReview)
+                .ToArray();
+            if (permissionPackages.Length == 0)
+                return true;
+
+            string packageNames = string.Join(", ", permissionPackages.Select(item => FirstNonEmpty(item.PluginName, item.PluginId, "Unknown")));
+            _ui.ShowWarning(BuildBatchReviewRequiredMessage(permissionPackages.Length, packageNames), Resources.PluginManagerWindow);
+            return false;
         }
 
         public void StartBackgroundBatchInstall(IEnumerable<MarketplacePackageRequest> requests, string? restartArguments = null, Action? onEmpty = null, CancellationToken cancellationToken = default)
@@ -422,6 +466,12 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
+                if (!TryApproveBatchInstall(packagePaths, distinctRequests))
+                {
+                    RunOnUIThread(() => onEmpty?.Invoke());
+                    return;
+                }
+
                 _installer.Install(restartArguments, packagePaths.ToArray());
             }
             catch (OperationCanceledException)
@@ -540,6 +590,84 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 log.Warn($"Failed to delete file: {filePath}", ex);
             }
+        }
+
+        private bool TryApproveSingleInstall(MarketplaceCopilotPackagePreflight preflight, MarketplacePackageRequest request)
+        {
+            if (!preflight.IsValid)
+            {
+                _ui.ShowError(BuildInvalidPackageMessage(preflight.ErrorMessage), Resources.PluginManagerWindow);
+                return false;
+            }
+
+            if (!preflight.RequiresPermissionReview)
+                return true;
+
+            return _ui.ConfirmInstall(BuildPermissionReviewMessage(preflight), BuildPermissionReviewTitle(preflight, request));
+        }
+
+        private static string BuildPermissionReviewTitle(MarketplaceCopilotPackagePreflight preflight, MarketplacePackageRequest request)
+        {
+            string name = FirstNonEmpty(preflight.PluginName, preflight.PluginId, request.PluginId, "ColorVision");
+            string version = FirstNonEmpty(preflight.Version, request.Version);
+            return string.IsNullOrWhiteSpace(version) ? name : $"{name} v{version}";
+        }
+
+        private static string BuildPermissionReviewMessage(MarketplaceCopilotPackagePreflight preflight)
+        {
+            bool chinese = IsChineseUi();
+            var builder = new StringBuilder();
+            builder.AppendLine(chinese
+                ? $"此插件声明了 {preflight.Roles.Count} 个 Copilot 子 Agent 角色。请在安装前确认其只读权限和运行预算："
+                : $"This plugin declares {preflight.Roles.Count} Copilot subagent role(s). Review their read permissions and run budgets before installation:");
+            builder.AppendLine();
+            foreach (MarketplaceCopilotRolePreview role in preflight.Roles)
+            {
+                builder.AppendLine($"• {role.DisplayName} ({role.ToolName})");
+                builder.AppendLine(chinese
+                    ? $"  权限：{role.Scope} · {string.Join(", ", role.Capabilities)}"
+                    : $"  Access: {role.Scope} · {string.Join(", ", role.Capabilities)}");
+                builder.AppendLine(chinese
+                    ? $"  预算：{role.MaximumToolCalls} 次工具调用 · {role.MaximumAgentPasses} 轮 · {role.MaximumDurationSeconds} 秒 · 最多 {role.MaximumAnswerCharacters:N0} 字符"
+                    : $"  Budget: {role.MaximumToolCalls} tool calls · {role.MaximumAgentPasses} passes · {role.MaximumDurationSeconds}s · {role.MaximumAnswerCharacters:N0} answer characters");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine(chinese
+                ? $"提示元数据：{preflight.AdvertisedCharacters:N0}/{CopilotSubagentRoleManifestValidator.MaximumAdvertisedCharactersPerPlugin:N0} 字符。角色安装后默认启用，可在 Copilot 设置中逐项关闭。"
+                : $"Prompt metadata: {preflight.AdvertisedCharacters:N0}/{CopilotSubagentRoleManifestValidator.MaximumAdvertisedCharactersPerPlugin:N0} characters. Roles start enabled and can be disabled individually in Copilot settings.");
+            builder.Append(chinese ? "是否继续安装？" : "Continue installation?");
+            return builder.ToString();
+        }
+
+        private static string BuildInvalidPackageMessage(string error)
+        {
+            return IsChineseUi()
+                ? $"插件包预检失败，未执行安装。\n\n{error}"
+                : $"Plugin package preflight failed. The package was not installed.\n\n{error}";
+        }
+
+        private static string BuildBatchReviewRequiredMessage(int packageCount, string packageNames)
+        {
+            return IsChineseUi()
+                ? $"批量更新已停止：{packageCount} 个插件包声明了 Copilot 子 Agent 角色（{packageNames}）。请逐个更新这些插件，以便在安装前审核权限和提示成本。"
+                : $"Bulk update stopped because {packageCount} package(s) declare Copilot subagent roles ({packageNames}). Update them individually to review permissions and prompt cost before installation.";
+        }
+
+        private static bool IsChineseUi()
+        {
+            return string.Equals(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, "zh", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FirstNonEmpty(params string?[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? string.Empty;
+        }
+
+        private static MarketplacePackageRequest? FindRequestForPackagePath(string packagePath, IReadOnlyList<MarketplacePackageRequest> requests)
+        {
+            string fileName = Path.GetFileName(packagePath);
+            return requests.FirstOrDefault(request => string.Equals(fileName, $"{request.PluginId}-{request.Version}.cvxp", StringComparison.OrdinalIgnoreCase));
         }
 
         private static void RunOnUIThread(Action action)

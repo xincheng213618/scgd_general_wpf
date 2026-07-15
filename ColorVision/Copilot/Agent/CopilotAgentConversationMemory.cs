@@ -110,15 +110,12 @@ namespace ColorVision.Copilot
 
         private static CopilotRequestMessage[] SelectBounded(IReadOnlyList<CopilotRequestMessage> messages)
         {
-            var selected = CopilotConversationHistoryWindow
-                .Select(messages, CopilotAgentSessionCheckpoint.MaxConversationMemoryMessages)
-                .ToList();
-            while (selected.Sum(message => message.Content.Length) > CopilotAgentSessionCheckpoint.MaxConversationMemoryCharacters
-                && selected.Count > 2)
-            {
-                selected.RemoveAt(1);
-            }
-            return selected.ToArray();
+            return CopilotConversationHistoryWindow.Select(
+                    messages,
+                    CopilotAgentSessionCheckpoint.MaxConversationMemoryMessages,
+                    CopilotAgentSessionCheckpoint.MaxConversationMemoryCharacters,
+                    CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength)
+                .ToArray();
         }
 
         private static string CreateKey(CopilotRequestMessage message) => message.Role + "\n" + message.Content;

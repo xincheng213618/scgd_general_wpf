@@ -202,7 +202,9 @@ namespace ColorVision
             if (shouldLoadPlugins)
             {
                 PluginLoader.LoadPlugins();
-                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(PluginLoader.Config.Plugins.Values);
+                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(
+                    PluginLoader.Config.Plugins.Values,
+                    ColorVision.Copilot.CopilotConfig.Instance.DisabledPluginSubagentRoles);
             }
             else
                 ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(Array.Empty<PluginInfo>());

@@ -46,6 +46,14 @@ namespace ColorVision.UI
 
     public sealed class CopilotFlowNodeContextSnapshot
     {
+        public string InstanceId { get; init; } = string.Empty;
+
+        public string TypeKey { get; init; } = string.Empty;
+
+        public string RuntimeType { get; init; } = string.Empty;
+
+        public string CategoryPath { get; init; } = string.Empty;
+
         public string Title { get; init; } = string.Empty;
 
         public string NodeName { get; init; } = string.Empty;
@@ -58,6 +66,14 @@ namespace ColorVision.UI
 
         public string Position { get; init; } = string.Empty;
 
+        public int Left { get; init; }
+
+        public int Top { get; init; }
+
+        public int Width { get; init; }
+
+        public int Height { get; init; }
+
         public string Mark { get; init; } = string.Empty;
 
         public bool IsActive { get; init; }
@@ -68,12 +84,95 @@ namespace ColorVision.UI
 
         public IReadOnlyList<string> Outputs { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<CopilotFlowPortContextSnapshot> InputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
+
+        public IReadOnlyList<CopilotFlowPortContextSnapshot> OutputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
+
         public IReadOnlyList<CopilotContextProperty> Parameters { get; init; } = Array.Empty<CopilotContextProperty>();
+    }
+
+    public sealed class CopilotFlowPortContextSnapshot
+    {
+        public string PortId { get; init; } = string.Empty;
+
+        public string Name { get; init; } = string.Empty;
+
+        public string DataType { get; init; } = string.Empty;
+
+        public bool IsSingle { get; init; }
+
+        public int ConnectionCount { get; init; }
+    }
+
+    public sealed class CopilotFlowEdgeContextSnapshot
+    {
+        public string SourceNodeId { get; init; } = string.Empty;
+
+        public string SourcePortId { get; init; } = string.Empty;
+
+        public string SourcePortName { get; init; } = string.Empty;
+
+        public string TargetNodeId { get; init; } = string.Empty;
+
+        public string TargetPortId { get; init; } = string.Empty;
+
+        public string TargetPortName { get; init; } = string.Empty;
+
+        public string DataType { get; init; } = string.Empty;
+    }
+
+    public sealed class CopilotFlowNodePropertySchemaSnapshot
+    {
+        public string PropertyName { get; init; } = string.Empty;
+
+        public string DisplayName { get; init; } = string.Empty;
+
+        public string Description { get; init; } = string.Empty;
+
+        public string DataType { get; init; } = string.Empty;
+
+        public bool IsWritable { get; init; }
+    }
+
+    public sealed class CopilotFlowNodeTypeContextSnapshot
+    {
+        public string TypeKey { get; init; } = string.Empty;
+
+        public string RuntimeType { get; init; } = string.Empty;
+
+        public string CategoryPath { get; init; } = string.Empty;
+
+        public string Title { get; init; } = string.Empty;
+
+        public string Description { get; init; } = string.Empty;
+
+        public string NodeType { get; init; } = string.Empty;
+
+        public string DefaultDeviceCode { get; init; } = string.Empty;
+
+        public IReadOnlyList<CopilotFlowPortContextSnapshot> InputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
+
+        public IReadOnlyList<CopilotFlowPortContextSnapshot> OutputPorts { get; init; } = Array.Empty<CopilotFlowPortContextSnapshot>();
+
+        public IReadOnlyList<CopilotFlowNodePropertySchemaSnapshot> Properties { get; init; } = Array.Empty<CopilotFlowNodePropertySchemaSnapshot>();
+    }
+
+    public sealed class CopilotFlowNodeCatalogSnapshot
+    {
+        public string Query { get; init; } = string.Empty;
+
+        public int TotalMatches { get; init; }
+
+        public bool IsTruncated { get; init; }
+
+        public IReadOnlyList<CopilotFlowNodeTypeContextSnapshot> NodeTypes { get; init; } = Array.Empty<CopilotFlowNodeTypeContextSnapshot>();
     }
 
     public sealed class CopilotFlowContextSnapshot
     {
         public string SourceId { get; init; } = "flow";
+
+        public string Revision { get; init; } = string.Empty;
 
         public string FlowName { get; init; } = string.Empty;
 
@@ -104,6 +203,8 @@ namespace ColorVision.UI
         public IReadOnlyList<string> FailureEvidence { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<CopilotFlowNodeContextSnapshot> Nodes { get; init; } = Array.Empty<CopilotFlowNodeContextSnapshot>();
+
+        public IReadOnlyList<CopilotFlowEdgeContextSnapshot> Edges { get; init; } = Array.Empty<CopilotFlowEdgeContextSnapshot>();
     }
 
     public sealed class CopilotDeviceContextSnapshot

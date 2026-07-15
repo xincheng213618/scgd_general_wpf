@@ -163,6 +163,47 @@ namespace ColorVision.Copilot.Mcp
                 }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }."),
                 Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."),
                 Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."),
+                Tool("get_flow_graph", "Return the active ColorVision flow as a bounded structured graph with a revision, stable node ids, runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema(new Dictionary<string, object>
+                {
+                    ["node_id"] = StringProperty("Optional stable node instance id or node id to focus."),
+                    ["include_properties"] = BooleanProperty("Include redacted node property values. Defaults to false."),
+                    ["max_nodes"] = IntegerProperty("Maximum nodes to return. Defaults to 80.", 1, 200),
+                }), "context", "read-only", "Call get_flow_graph with { \"max_nodes\": 80 } before planning a flow edit."),
+                Tool("get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact runtime type keys, categories, default device codes, and writable property schemas; do not guess a camera node type.", Schema(new Dictionary<string, object>
+                {
+                    ["query"] = StringProperty("Optional title, category, type, or device-code search text, for example 相机 or camera."),
+                    ["max_results"] = IntegerProperty("Maximum node types to return. Defaults to 30.", 1, 100),
+                }), "context", "read-only", "Call get_flow_node_catalog with { \"query\": \"相机\", \"max_results\": 30 }."),
+                Tool("preview_flow_patch", "Validate one bounded Flow graph change without editing: add_node, set_property, or connect. Use exact ids/type keys from the Flow graph and node catalog.", Schema(new Dictionary<string, object>
+                {
+                    ["operation"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = new[] { "add_node", "set_property", "connect" }, ["description"] = "Bounded graph operation." },
+                    ["expected_revision"] = StringProperty("Current revision returned by get_flow_graph."),
+                    ["type_key"] = StringProperty("add_node: exact typeKey returned by get_flow_node_catalog."),
+                    ["left"] = IntegerProperty("add_node: canvas X coordinate.", -100000, 100000),
+                    ["top"] = IntegerProperty("add_node: canvas Y coordinate.", -100000, 100000),
+                    ["node_id"] = StringProperty("set_property: stable node instance id."),
+                    ["property_name"] = StringProperty("set_property: exact writable propertyName returned by get_flow_node_catalog."),
+                    ["value"] = StringProperty("set_property: new string representation accepted by the node's existing STNodeProperty descriptor."),
+                    ["source_node_id"] = StringProperty("connect: stable source node instance id."),
+                    ["source_port_id"] = StringProperty("connect: structured source output port id such as out:0."),
+                    ["target_node_id"] = StringProperty("connect: stable target node instance id."),
+                    ["target_port_id"] = StringProperty("connect: structured target input port id such as in:0."),
+                }, "operation", "expected_revision"), "context", "read-only", "Call preview_flow_patch with one exact operation and the current graph revision."),
+                Tool("apply_flow_patch", "Apply one previously previewed add_node, set_property, or connect change after explicit approval. Rechecks the graph revision and never saves or runs the flow.", Schema(new Dictionary<string, object>
+                {
+                    ["operation"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = new[] { "add_node", "set_property", "connect" }, ["description"] = "Bounded graph operation." },
+                    ["expected_revision"] = StringProperty("Exact revision returned by preview_flow_patch."),
+                    ["type_key"] = StringProperty("add_node: exact loaded type key."),
+                    ["left"] = IntegerProperty("add_node: canvas X coordinate.", -100000, 100000),
+                    ["top"] = IntegerProperty("add_node: canvas Y coordinate.", -100000, 100000),
+                    ["node_id"] = StringProperty("set_property: stable node instance id."),
+                    ["property_name"] = StringProperty("set_property: exact writable property name."),
+                    ["value"] = StringProperty("set_property: previewed value."),
+                    ["source_node_id"] = StringProperty("connect: stable source node instance id."),
+                    ["source_port_id"] = StringProperty("connect: source output port id."),
+                    ["target_node_id"] = StringProperty("connect: stable target node instance id."),
+                    ["target_port_id"] = StringProperty("connect: target input port id."),
+                }, "operation", "expected_revision"), "app-control", "confirmation-required", "Call apply_flow_patch with the exact operation and values used by preview_flow_patch, then wait for approval."),
                 Tool("diagnose_flow_failure", "Build a read-only failure diagnosis from the active flow, matched node, template context, and recent logs. This never runs a flow.", Schema(new Dictionary<string, object>
                 {
                     ["node_id"] = StringProperty("Optional flow node id to focus the diagnosis."),
@@ -409,6 +450,10 @@ namespace ColorVision.Copilot.Mcp
                 .Register("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
                 .Register("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
                 .Register("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
+                .Register("get_flow_graph", (arguments, _, token) => GetFlowGraphAsync(arguments, token))
+                .Register("get_flow_node_catalog", (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token))
+                .Register("preview_flow_patch", (arguments, _, token) => PreviewFlowPatchAsync(arguments, token))
+                .Register("apply_flow_patch", (arguments, caller, token) => ApplyFlowPatchAsync(arguments, caller, token))
                 .Register("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
                 .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
                 .Register("execute_menu", (arguments, caller, token) => ExecuteMenuAsync(arguments, caller, token))
@@ -830,6 +875,196 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Ok("No active flow is available.");
 
             return CopilotMcpToolCallResult.Ok(FormatFlowSnapshot(snapshot));
+        }
+
+        private async Task<CopilotMcpToolCallResult> GetFlowGraphAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
+            if (snapshot == null)
+                return CopilotMcpToolCallResult.Ok("No active flow is available.");
+
+            var nodeId = GetString(arguments, "node_id");
+            var includeProperties = GetBool(arguments, "include_properties") ?? false;
+            var maxNodes = Math.Clamp(GetInt(arguments, "max_nodes") ?? 80, 1, 200);
+            var candidates = string.IsNullOrWhiteSpace(nodeId)
+                ? snapshot.Nodes
+                : snapshot.Nodes.Where(node => string.Equals(node.InstanceId, nodeId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(node.NodeId, nodeId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var nodes = candidates.Take(maxNodes).ToArray();
+            var nodeIds = nodes.Select(node => node.InstanceId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var edges = snapshot.Edges.Where(edge => nodeIds.Contains(edge.SourceNodeId) && nodeIds.Contains(edge.TargetNodeId)).ToArray();
+            var payload = new
+            {
+                format = "colorvision.flow-graph.v1",
+                snapshot.Revision,
+                snapshot.FlowName,
+                snapshot.TemplateId,
+                snapshot.Status,
+                snapshot.IsRunning,
+                totalNodeCount = snapshot.Nodes.Count,
+                returnedNodeCount = nodes.Length,
+                isTruncated = candidates.Count > nodes.Length,
+                nodes = nodes.Select(node => new
+                {
+                    node.InstanceId,
+                    node.NodeId,
+                    node.TypeKey,
+                    node.RuntimeType,
+                    node.CategoryPath,
+                    node.Title,
+                    node.NodeName,
+                    node.NodeType,
+                    node.DeviceCode,
+                    position = new { node.Left, node.Top, node.Width, node.Height },
+                    node.Mark,
+                    node.IsActive,
+                    node.IsSelected,
+                    inputs = node.InputPorts,
+                    outputs = node.OutputPorts,
+                    properties = includeProperties
+                        ? node.Parameters.Select(property => new { property.Name, Value = CopilotMcpAuditLogger.RedactArgument(property.Name, property.Value) }).ToArray()
+                        : Array.Empty<object>(),
+                }),
+                edges,
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private async Task<CopilotMcpToolCallResult> GetFlowNodeCatalogAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var query = GetString(arguments, "query");
+            var maxResults = Math.Clamp(GetInt(arguments, "max_results") ?? 30, 1, 100);
+            var catalog = await _environment.FlowNodeCatalogProvider(query, maxResults, cancellationToken);
+            if (catalog == null)
+                return CopilotMcpToolCallResult.Ok("No active Flow node catalog is available.");
+
+            var payload = new
+            {
+                format = "colorvision.flow-node-catalog.v1",
+                catalog.Query,
+                catalog.TotalMatches,
+                catalog.IsTruncated,
+                nodeTypes = catalog.NodeTypes,
+                guidance = "Choose an exact typeKey. If several camera nodes match, ask which camera/device behavior is intended before proposing a mutation.",
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
+                return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
+            return await _environment.PreviewFlowPatchHandler(request, cancellationToken);
+        }
+
+        private async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
+        {
+            if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
+                return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
+
+            if (IsInAppAgentFrameworkApproved(callerSource))
+                return await _environment.ApplyFlowPatchHandler(request, cancellationToken);
+
+            var preview = await _environment.PreviewFlowPatchHandler(request, cancellationToken);
+            if (!preview.Success)
+                return preview;
+
+            var normalizedArguments = BuildFlowPatchArguments(request);
+            return CreateConfirmableActionResult(
+                "Confirm Flow graph change",
+                DescribeFlowPatch(request),
+                "apply_flow_patch",
+                normalizedArguments,
+                preview.Text + Environment.NewLine + "Does not save or run the flow.",
+                token => _environment.ApplyFlowPatchHandler(request, token),
+                executeOnApproval: IsInAppAgent(callerSource));
+        }
+
+        private static bool TryBuildFlowPatchRequest(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            out CopilotFlowPatchRequest request,
+            out string error)
+        {
+            request = new CopilotFlowPatchRequest();
+            var operation = GetString(arguments, "operation").Trim().ToLowerInvariant();
+            var expectedRevision = GetString(arguments, "expected_revision").Trim();
+            if (string.IsNullOrWhiteSpace(expectedRevision))
+            {
+                error = "A current expected_revision from get_flow_graph is required.";
+                return false;
+            }
+
+            request = new CopilotFlowPatchRequest
+            {
+                Operation = operation,
+                ExpectedRevision = expectedRevision,
+                TypeKey = GetString(arguments, "type_key").Trim(),
+                Left = GetInt(arguments, "left") ?? 0,
+                Top = GetInt(arguments, "top") ?? 0,
+                NodeId = GetString(arguments, "node_id").Trim(),
+                PropertyName = GetString(arguments, "property_name").Trim(),
+                Value = GetString(arguments, "value"),
+                SourceNodeId = GetString(arguments, "source_node_id").Trim(),
+                SourcePortId = GetString(arguments, "source_port_id").Trim(),
+                TargetNodeId = GetString(arguments, "target_node_id").Trim(),
+                TargetPortId = GetString(arguments, "target_port_id").Trim(),
+            };
+
+            error = operation switch
+            {
+                "add_node" when string.IsNullOrWhiteSpace(request.TypeKey) => "add_node requires type_key.",
+                "add_node" when GetInt(arguments, "left") == null || GetInt(arguments, "top") == null => "add_node requires integer left and top coordinates.",
+                "set_property" when string.IsNullOrWhiteSpace(request.NodeId) => "set_property requires node_id.",
+                "set_property" when string.IsNullOrWhiteSpace(request.PropertyName) => "set_property requires property_name.",
+                "set_property" when arguments == null || !arguments.ContainsKey("value") => "set_property requires value; an empty string is allowed.",
+                "connect" when string.IsNullOrWhiteSpace(request.SourceNodeId) => "connect requires source_node_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.SourcePortId) => "connect requires source_port_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.TargetNodeId) => "connect requires target_node_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.TargetPortId) => "connect requires target_port_id.",
+                "add_node" or "set_property" or "connect" => string.Empty,
+                _ => "operation must be add_node, set_property, or connect.",
+            };
+            return string.IsNullOrEmpty(error);
+        }
+
+        private static IReadOnlyDictionary<string, JsonElement> BuildFlowPatchArguments(CopilotFlowPatchRequest request)
+        {
+            var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["operation"] = JsonSerializer.SerializeToElement(request.Operation),
+                ["expected_revision"] = JsonSerializer.SerializeToElement(request.ExpectedRevision),
+            };
+            if (request.Operation == "add_node")
+            {
+                arguments["type_key"] = JsonSerializer.SerializeToElement(request.TypeKey);
+                arguments["left"] = JsonSerializer.SerializeToElement(request.Left);
+                arguments["top"] = JsonSerializer.SerializeToElement(request.Top);
+            }
+            else if (request.Operation == "set_property")
+            {
+                arguments["node_id"] = JsonSerializer.SerializeToElement(request.NodeId);
+                arguments["property_name"] = JsonSerializer.SerializeToElement(request.PropertyName);
+                arguments["value"] = JsonSerializer.SerializeToElement(request.Value);
+            }
+            else
+            {
+                arguments["source_node_id"] = JsonSerializer.SerializeToElement(request.SourceNodeId);
+                arguments["source_port_id"] = JsonSerializer.SerializeToElement(request.SourcePortId);
+                arguments["target_node_id"] = JsonSerializer.SerializeToElement(request.TargetNodeId);
+                arguments["target_port_id"] = JsonSerializer.SerializeToElement(request.TargetPortId);
+            }
+            return arguments;
+        }
+
+        private static string DescribeFlowPatch(CopilotFlowPatchRequest request)
+        {
+            return request.Operation switch
+            {
+                "add_node" => $"Add Flow node {request.TypeKey} at ({request.Left}, {request.Top}).",
+                "set_property" => $"Set Flow node {request.NodeId} property {request.PropertyName} to the previewed value.",
+                "connect" => $"Connect {request.SourceNodeId}/{request.SourcePortId} to {request.TargetNodeId}/{request.TargetPortId}.",
+                _ => "Apply Flow graph change.",
+            };
         }
 
         private async Task<CopilotMcpToolCallResult> DiagnoseFlowFailureAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)

@@ -37,9 +37,52 @@ public sealed class CopilotMarkdownTableTests
                 var table = Assert.Single(viewer.Document.Blocks.OfType<Table>());
                 Assert.Equal(3, table.Columns.Count);
                 Assert.Equal(3, table.RowGroups.Single().Rows.Count);
+                Assert.Equal(GridUnitType.Pixel, table.Columns[0].Width.GridUnitType);
+                Assert.True(table.Columns[0].Width.Value >= 96);
+                Assert.Equal(GridUnitType.Star, table.Columns[1].Width.GridUnitType);
+                Assert.Equal(GridUnitType.Pixel, table.Columns[2].Width.GridUnitType);
+                Assert.True(table.Columns[2].Width.Value >= 72);
                 var documentText = new TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text;
                 Assert.Contains("t_scgd_measure_batch", documentText, StringComparison.Ordinal);
                 Assert.DoesNotContain("|------|", documentText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void MarkdownView_GivesTwoColumnSummaryANonCollapsingFirstColumn()
+    {
+        RunOnStaThread(() =>
+        {
+            var view = new CopilotMarkdownView
+            {
+                Markdown = "| 文章数 | 最近更新 |\n| ---: | --- |\n| 387 篇 | 2024.11.1 记 |\n| 277 篇 | 关于锚点与未来自我的一次对话 |",
+            };
+            var window = new Window
+            {
+                Content = view,
+                Height = 260,
+                ShowInTaskbar = false,
+                Width = 520,
+                WindowStyle = WindowStyle.None,
+            };
+
+            try
+            {
+                window.Show();
+                PumpDispatcher(TimeSpan.FromMilliseconds(250));
+
+                var viewer = Assert.IsType<RichTextBox>(LogicalTreeHelper.FindLogicalNode(view, "DocumentViewer"));
+                var table = Assert.Single(viewer.Document.Blocks.OfType<Table>());
+                Assert.Equal(GridUnitType.Pixel, table.Columns[0].Width.GridUnitType);
+                Assert.True(table.Columns[0].Width.Value >= 96);
+                Assert.Equal(GridUnitType.Star, table.Columns[1].Width.GridUnitType);
+                Assert.Equal(1, CountRenderedLines(Assert.Single(table.RowGroups[0].Rows[0].Cells[0].Blocks.OfType<Paragraph>())));
+                Assert.Equal(1, CountRenderedLines(Assert.Single(table.RowGroups[0].Rows[1].Cells[0].Blocks.OfType<Paragraph>())));
             }
             finally
             {
@@ -81,6 +124,20 @@ public sealed class CopilotMarkdownTableTests
                 window.Close();
             }
         });
+    }
+
+    private static int CountRenderedLines(Paragraph paragraph)
+    {
+        var lineCount = 1;
+        var position = paragraph.ContentStart;
+        while (position.GetLineStartPosition(1, out var moved) is { } next
+            && moved > 0
+            && next.CompareTo(paragraph.ContentEnd) < 0)
+        {
+            lineCount += moved;
+            position = next;
+        }
+        return lineCount;
     }
 
     private static void RunOnStaThread(Action action)

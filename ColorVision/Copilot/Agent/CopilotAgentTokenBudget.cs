@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotAgentTokenBudgetExceededException : Exception
+    {
+        public CopilotAgentTokenBudgetExceededException()
+            : base("This Agent run reached its bounded token budget after completing the recorded tool calls. Continue in a new message if additional work is needed.")
+        {
+        }
+    }
+
     public sealed class CopilotAgentTokenBudget
     {
         public const int DefaultContextWindowTokens = 32768;
@@ -39,8 +47,6 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotTokenBudgetChatClient : DelegatingChatClient
     {
-        private const string BudgetExhaustedAnswer = "This Agent run reached its bounded token budget after completing the recorded tool calls. Continue in a new message if additional work is needed.";
-
         private readonly CopilotAgentTokenBudget _budget;
         private readonly Action<CopilotAgentBudgetSnapshot>? _onBudgetExhausted;
         private readonly object _syncRoot = new();
@@ -91,7 +97,7 @@ namespace ColorVision.Copilot
         {
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
             if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
-                return new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, BudgetExhaustedAnswer));
+                throw new CopilotAgentTokenBudgetExceededException();
 
             var response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
@@ -106,10 +112,7 @@ namespace ColorVision.Copilot
         {
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
             if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
-            {
-                yield return new ChatResponseUpdate(ChatRole.Assistant, BudgetExhaustedAnswer);
-                yield break;
-            }
+                throw new CopilotAgentTokenBudgetExceededException();
 
             var usage = CopilotTokenUsage.Empty;
             long responseCharacters = 0;

@@ -94,6 +94,41 @@ public sealed class CopilotPluginSubagentRoleLoaderTests
     }
 
     [Fact]
+    public void Synchronize_DisabledRoleIsNotRegisteredAndCanBeReenabled()
+    {
+        var capabilityCatalog = new CopilotCapabilityCatalog();
+        var roleRegistry = new CopilotSubagentRoleRegistry(capabilityCatalog);
+        var toolRegistry = CopilotToolRegistry.CreateDefault(roleRegistry);
+        using var loader = new CopilotPluginSubagentRoleLoader(roleRegistry);
+        var plugin = CreatePlugin();
+
+        var disabled = loader.Synchronize([plugin], ["sample.plugin/plugin-reviewer"]);
+        var declared = Assert.Single(disabled.DeclaredRoles);
+
+        Assert.Equal(0, disabled.LoadedRoleCount);
+        Assert.False(declared.IsEnabled);
+        Assert.Equal("sample.plugin/plugin-reviewer", declared.Key);
+        Assert.Equal(5, declared.MaximumToolCalls);
+        Assert.True(declared.AdvertisedCharacters > 0);
+        Assert.DoesNotContain(roleRegistry.GetSnapshot().Roles, role => role.Id == "plugin-reviewer");
+        Assert.DoesNotContain(capabilityCatalog.GetSnapshot().Capabilities, entry => entry.Id == "subagent:sample.plugin:plugin-reviewer");
+        Assert.DoesNotContain(toolRegistry.Tools, tool => tool.Name == "DelegatePluginReviewer");
+
+        plugin.Enabled = false;
+        plugin.Enabled = true;
+        Assert.False(Assert.Single(loader.GetSnapshot().DeclaredRoles).IsEnabled);
+        Assert.DoesNotContain(roleRegistry.GetSnapshot().Roles, role => role.Id == "plugin-reviewer");
+
+        var enabled = loader.SetDisabledRoleKeys([]);
+
+        Assert.Equal(1, enabled.LoadedRoleCount);
+        Assert.True(Assert.Single(enabled.DeclaredRoles).IsEnabled);
+        Assert.Contains(roleRegistry.GetSnapshot().Roles, role => role.Id == "plugin-reviewer");
+        Assert.Contains(capabilityCatalog.GetSnapshot().Capabilities, entry => entry.Id == "subagent:sample.plugin:plugin-reviewer");
+        Assert.Contains(toolRegistry.Tools, tool => tool.Name == "DelegatePluginReviewer");
+    }
+
+    [Fact]
     public void Synchronize_RejectsMixedTrustDomainAndReportsManifestIssue()
     {
         var roleRegistry = new CopilotSubagentRoleRegistry();
@@ -127,6 +162,38 @@ public sealed class CopilotPluginSubagentRoleLoaderTests
     }
 
     [Fact]
+    public void Synchronize_RejectsPluginWhoseRoleCountExceedsRuntimeLimit()
+    {
+        var roleRegistry = new CopilotSubagentRoleRegistry();
+        using var loader = new CopilotPluginSubagentRoleLoader(roleRegistry);
+        var plugin = CreatePlugin();
+        plugin.Manifest.CopilotAgents = Enumerable.Range(0, 17)
+            .Select(index => CreateRole(index, "Delegate a bounded read-only review."))
+            .ToList();
+
+        var snapshot = loader.Synchronize([plugin]);
+
+        Assert.Equal(0, snapshot.LoadedRoleCount);
+        Assert.Contains(snapshot.Issues, issue => issue.Message.Contains("at most 16", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Synchronize_RejectsPluginWhoseAdvertisedRoleMetadataExceedsRuntimeLimit()
+    {
+        var roleRegistry = new CopilotSubagentRoleRegistry();
+        using var loader = new CopilotPluginSubagentRoleLoader(roleRegistry);
+        var plugin = CreatePlugin();
+        plugin.Manifest.CopilotAgents = Enumerable.Range(0, 7)
+            .Select(index => CreateRole(index, new string('a', 1_180)))
+            .ToList();
+
+        var snapshot = loader.Synchronize([plugin]);
+
+        Assert.Equal(0, snapshot.LoadedRoleCount);
+        Assert.Contains(snapshot.Issues, issue => issue.Message.Contains("8,000", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void SettingsDiagnostics_ListsSubagentSourceVersionDomainAndFingerprint()
     {
         var viewModel = new CopilotSettingsViewModel();
@@ -135,6 +202,45 @@ public sealed class CopilotPluginSubagentRoleLoaderTests
         Assert.Contains("source=ColorVision [builtin] version=1", viewModel.SubagentRolesDiagnosticsText, StringComparison.Ordinal);
         Assert.Contains("domain=WorkspaceReadOnly", viewModel.SubagentRolesDiagnosticsText, StringComparison.Ordinal);
         Assert.Contains("fingerprint=", viewModel.SubagentRolesDiagnosticsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SettingsSave_PersistsVisibleAndTemporarilyUnavailableDisabledRoles()
+    {
+        var config = CopilotConfig.Instance;
+        var originalDisabledRoles = config.DisabledPluginSubagentRoles.ToArray();
+
+        try
+        {
+            config.DisabledPluginSubagentRoles.Clear();
+            config.DisabledPluginSubagentRoles.Add("absent.plugin/old-role");
+            var viewModel = new CopilotSettingsViewModel();
+            viewModel.PluginSubagentRoles.Clear();
+            viewModel.PluginSubagentRoles.Add(new CopilotPluginSubagentRoleSetting(
+                new CopilotPluginSubagentRoleInfo
+                {
+                    Key = "sample.plugin/plugin-reviewer",
+                    SourceName = "Sample Plugin",
+                    DisplayName = "Plugin Reviewer",
+                    ToolName = "DelegatePluginReviewer",
+                },
+                isEnabled: false,
+                permissionSummary: "Read access: WorkspaceReadOnly",
+                budgetSummary: "Limit: bounded",
+                changed: () => { }));
+
+            Assert.True(viewModel.Save());
+            Assert.Contains("absent.plugin/old-role", config.DisabledPluginSubagentRoles);
+            Assert.Contains("sample.plugin/plugin-reviewer", config.DisabledPluginSubagentRoles);
+        }
+        finally
+        {
+            config.DisabledPluginSubagentRoles.Clear();
+            foreach (var roleKey in originalDisabledRoles)
+                config.DisabledPluginSubagentRoles.Add(roleKey);
+            ColorVision.UI.ConfigHandler.GetInstance().Save<CopilotConfig>();
+            CopilotPluginSubagentRoleLoader.Shared.SetDisabledRoleKeys(config.DisabledPluginSubagentRoles);
+        }
     }
 
     private static PluginInfo CreatePlugin()
@@ -169,6 +275,25 @@ public sealed class CopilotPluginSubagentRoleLoaderTests
                     },
                 ],
             },
+        };
+    }
+
+    private static CopilotSubagentRoleManifest CreateRole(int index, string description)
+    {
+        return new CopilotSubagentRoleManifest
+        {
+            Id = $"reviewer-{index:00}",
+            Name = $"Reviewer {index:00}",
+            Description = description,
+            Instructions = "Review only the supplied workspace evidence and return a concise result.",
+            Scope = "WorkspaceReadOnly",
+            Capabilities = ["GrepText", "ReadLocalFile"],
+            ChildMode = "Code",
+            ParentModes = ["Code", "Diagnose"],
+            MaximumToolCalls = 5,
+            MaximumAgentPasses = 2,
+            MaximumDurationSeconds = 60,
+            MaximumAnswerCharacters = 8_000,
         };
     }
 }

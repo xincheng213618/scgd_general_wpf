@@ -308,13 +308,41 @@ namespace ColorVision.Copilot
                 }
             }
 
+            if (DataContext is CopilotChatViewModel completionViewModel
+                && e.Key == Key.Tab
+                && completionViewModel.TryCompleteLocalCommand())
+            {
+                MovePromptCaretToEnd();
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 return;
 
             if (DataContext is CopilotChatViewModel viewModel)
+            {
+                viewModel.TryCompleteLocalCommand();
                 viewModel.SendCommand.Execute(null);
+            }
 
             e.Handled = true;
+        }
+
+        private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                MovePromptCaretToEnd();
+            });
+        }
+
+        private void MovePromptCaretToEnd()
+        {
+            PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            PromptTextBox.CaretIndex = PromptTextBox.Text.Length;
         }
 
         private void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)

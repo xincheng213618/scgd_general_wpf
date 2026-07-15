@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
         private string _pendingActionFeedbackText = string.Empty;
         private string _agentRunNoticeConversationId = string.Empty;
         private string _agentRunNoticeText = string.Empty;
+        private string _contextDiagnosticsText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
 
@@ -140,6 +141,8 @@ namespace ColorVision.Copilot
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
             ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(action => _ = ApprovePendingActionAsync(action), action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
+            DismissContextDiagnosticsCommand = new RelayCommand(_ => DismissContextDiagnostics(), _ => HasContextDiagnostics);
+            CompleteLocalCommandCommand = new RelayCommand(_ => TryCompleteLocalCommand(), _ => HasLocalCommandSuggestion);
 
             _pendingActionExpiryTimer = new DispatcherTimer
             {
@@ -331,9 +334,28 @@ namespace ColorVision.Copilot
 
         public ICommand RejectPendingActionCommand { get; }
 
+        public ICommand DismissContextDiagnosticsCommand { get; }
+
+        public ICommand CompleteLocalCommandCommand { get; }
+
         public bool IsConversationEmpty => Messages.Count == 0;
 
         public bool HasAttachments => Attachments.Count > 0;
+
+        public string ContextDiagnosticsText
+        {
+            get => _contextDiagnosticsText;
+            private set
+            {
+                if (SetProperty(ref _contextDiagnosticsText, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasContextDiagnostics));
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+
+        public bool HasContextDiagnostics => !string.IsNullOrWhiteSpace(ContextDiagnosticsText);
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -459,6 +481,8 @@ namespace ColorVision.Copilot
                 if (SetProperty(ref _inputText, value ?? string.Empty))
                 {
                     OnPropertyChanged(nameof(IsInputEmpty));
+                    OnPropertyChanged(nameof(LocalCommandSuggestion));
+                    OnPropertyChanged(nameof(HasLocalCommandSuggestion));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
                     RefreshComposerTokenEstimate();
                     CommandManager.InvalidateRequerySuggested();
@@ -490,9 +514,24 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => IsConversationEmpty ? "随心输入" : "要求后续变更";
+        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · /context 查看上下文" : "要求后续变更 · /context 查看上下文";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
+
+        public string LocalCommandSuggestion => CopilotContextDiagnostics.IsCommandPrefix(InputText)
+            ? CopilotContextDiagnostics.Command
+            : string.Empty;
+
+        public bool HasLocalCommandSuggestion => !string.IsNullOrEmpty(LocalCommandSuggestion);
+
+        public bool TryCompleteLocalCommand()
+        {
+            if (!HasLocalCommandSuggestion)
+                return false;
+
+            InputText = LocalCommandSuggestion;
+            return true;
+        }
 
         private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
 
@@ -599,10 +638,68 @@ namespace ColorVision.Copilot
             }
         }
 
+        private bool TryExecuteLocalCommand(string prompt)
+        {
+            if (!CopilotContextDiagnostics.IsCommand(prompt))
+                return false;
+
+            ContextDiagnosticsText = BuildContextDiagnosticsReport();
+            InputText = string.Empty;
+            return true;
+        }
+
+        private string BuildContextDiagnosticsReport()
+        {
+            var mode = ResolveComposerRequestMode();
+            var agentContextEnabled = mode != CopilotAgentMode.Chat;
+            var history = CaptureConversationHistorySelection();
+            var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
+            CopilotAgentSkillUsageSnapshot? skillUsage = null;
+            if (agentContextEnabled)
+            {
+                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+                var searchRoots = BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
+                projectInstructions = CopilotAgentProjectInstructions.Discover(searchRoots, turnSnapshot.ActiveDocumentPath).ToArray();
+                skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+            }
+
+            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+            {
+                ProfileLabel = SelectedProfile?.DisplayLabel ?? string.Empty,
+                Mode = mode,
+                SystemPromptCharacters = SelectedProfile?.EffectiveSystemPrompt.Length ?? 0,
+                SourceHistoryMessages = history.SourceMessageCount,
+                RetainedHistoryMessages = history.Messages.Length,
+                SourceHistoryCharacters = history.SourceCharacters,
+                RetainedHistoryCharacters = history.RetainedCharacters,
+                AttachmentCount = Attachments.Count,
+                FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
+                ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),
+                WebAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.WebPage),
+                HasLiveWindowContext = HasCurrentLiveContext,
+                AgentContextEnabled = agentContextEnabled,
+                ProjectInstructionDocuments = projectInstructions.Length,
+                ProjectInstructionPromptCharacters = CopilotAgentProjectInstructions.BuildPromptBlock(projectInstructions).Length,
+                RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
+                TrackedSkills = skillUsage?.Entries.Count ?? 0,
+                HistoricalExplicitOnlySkills = skillUsage?.HistoricalExplicitOnlySkills.Count ?? 0,
+                RegisteredCapabilities = capabilitySnapshot.Capabilities.Count,
+                EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
+            });
+        }
+
+        private void DismissContextDiagnostics()
+        {
+            ContextDiagnosticsText = string.Empty;
+        }
+
         private async Task SendAsync()
         {
             var prompt = (InputText ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
+                return;
+            if (TryExecuteLocalCommand(prompt))
                 return;
 
             var requestMode = ResolveComposerRequestMode();
@@ -656,6 +753,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            DismissContextDiagnostics();
             InputText = string.Empty;
             await hostedRun.Completion;
             if (!hostedRun.HasStarted)
@@ -796,7 +894,7 @@ namespace ColorVision.Copilot
                 assistantMessage.IsExecutionInProgress = true;
                 assistantMessage.IsExecutionExpanded = true;
 
-                var history = BuildVisibleConversationHistory(conversation, userMessage, 8);
+                var history = BuildVisibleConversationHistory(conversation, userMessage, AgentHistoryMessageLimit);
                 history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
 
                 return await _chatService.StreamReplyAsync(
@@ -839,7 +937,7 @@ namespace ColorVision.Copilot
             {
                 UserText = (userMessage.Content ?? string.Empty).Trim(),
                 Profile = requestProfile,
-                History = BuildVisibleConversationHistory(conversation, userMessage, 8),
+                History = BuildVisibleConversationHistory(conversation, userMessage, AgentHistoryMessageLimit),
                 Attachments = turnSnapshot.Attachments,
                 ContextItems = contextItems,
                 SearchRootPaths = searchRootPaths,
@@ -1357,13 +1455,18 @@ namespace ColorVision.Copilot
 
         private CopilotHostedTurnSnapshot CaptureHostedTurnSnapshot(CopilotConversationRecord conversation)
         {
-            var attachments = conversation.Attachments
+            return CaptureHostedTurnSnapshot(conversation.Attachments);
+        }
+
+        private CopilotHostedTurnSnapshot CaptureHostedTurnSnapshot(IEnumerable<CopilotAttachmentItem> attachments)
+        {
+            var attachmentSnapshot = attachments
                 .Select(CloneAttachment)
                 .ToArray();
             return new CopilotHostedTurnSnapshot(
                 _activeDocumentPath,
                 SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty,
-                attachments);
+                attachmentSnapshot);
         }
 
         private static CopilotAttachmentItem CloneAttachment(CopilotAttachmentItem source)
@@ -2023,22 +2126,32 @@ namespace ColorVision.Copilot
 
         private List<CopilotRequestMessage> BuildConversationHistory(bool includeAttachmentContext)
         {
-            var history = new List<CopilotRequestMessage>();
-
-            if (includeAttachmentContext)
-            {
-                var attachmentContext = BuildAttachmentContextBlock();
-                if (!string.IsNullOrWhiteSpace(attachmentContext))
-                    history.Add(new CopilotRequestMessage("user", attachmentContext));
-            }
-
-            history.AddRange(Messages
+            var history = Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
                 .Select(message => new CopilotRequestMessage(
                     message.IsUser ? "user" : "assistant",
-                    message.ModelContent.Trim())));
+                    message.ModelContent.Trim()))
+                .ToArray();
 
-            return history;
+            var attachmentContext = includeAttachmentContext ? BuildAttachmentContextBlock() : string.Empty;
+            if (string.IsNullOrWhiteSpace(attachmentContext))
+                return CopilotConversationHistoryWindow.Select(history).ToList();
+
+            var attachment = CopilotConversationHistoryWindow.Select(
+                    [new CopilotRequestMessage("user", attachmentContext)],
+                    maximumMessages: 1,
+                    maximumCharacters: CopilotConversationHistoryWindow.DefaultMaximumContentCharacters,
+                    maximumContentCharacters: CopilotConversationHistoryWindow.DefaultMaximumContentCharacters)
+                .Single();
+            var selected = CopilotConversationHistoryWindow.Select(
+                    history,
+                    CopilotConversationHistoryWindow.DefaultMaximumMessages - 1,
+                    CopilotConversationHistoryWindow.DefaultMaximumCharacters - attachment.Content.Length,
+                    CopilotConversationHistoryWindow.DefaultMaximumContentCharacters)
+                .ToList();
+            selected.Insert(0, attachment);
+
+            return selected;
         }
 
         private static List<CopilotRequestMessage> BuildVisibleConversationHistory(
@@ -2144,6 +2257,7 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
             _selectedConversation = conversation;
+            DismissContextDiagnostics();
             if (_selectedConversation != null)
                 _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
 
@@ -2970,6 +3084,7 @@ namespace ColorVision.Copilot
         {
             builder.AppendLine($"Model: {SelectedProfile?.DisplayLabel ?? "No model selected"}");
             builder.AppendLine($"Prompt: {BuildPromptSummary()}");
+            builder.AppendLine($"Conversation context: {BuildConversationContextSummary()}");
             builder.AppendLine($"Attachments: {BuildAttachmentSummary()}");
             builder.AppendLine($"Window context: {BuildWindowContextSummary()}");
 
@@ -2983,6 +3098,27 @@ namespace ColorVision.Copilot
             return string.IsNullOrWhiteSpace(text)
                 ? "Empty"
                 : $"{text.Length} characters";
+        }
+
+        private string BuildConversationContextSummary()
+        {
+            var selection = CaptureConversationHistorySelection();
+            if (selection.SourceMessageCount == 0)
+                return "None";
+
+            var retained = $"{selection.Messages.Length} message(s), {selection.RetainedCharacters:N0} characters";
+            return selection.WasReduced
+                ? $"{retained} retained from {selection.SourceMessageCount} message(s), {selection.SourceCharacters:N0} characters"
+                : retained;
+        }
+
+        private CopilotConversationHistorySelection CaptureConversationHistorySelection()
+        {
+            return CopilotConversationHistoryWindow.SelectWithDiagnostics(Messages
+                .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
+                .Select(message => new CopilotRequestMessage(
+                    message.IsUser ? "user" : "assistant",
+                    message.ModelContent.Trim())));
         }
 
         private string BuildAttachmentSummary()
