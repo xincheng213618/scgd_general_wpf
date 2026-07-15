@@ -6,6 +6,7 @@ namespace ColorVision.Copilot
 {
     public enum CopilotLocalCommandKind
     {
+        Status,
         Context,
         Skills,
         Mcp,
@@ -18,7 +19,8 @@ namespace ColorVision.Copilot
         string Name,
         string Description,
         CopilotLocalCommandKind Kind,
-        bool AcceptsArguments = false);
+        bool AcceptsArguments = false,
+        bool AvailableWhileAgentRuns = false);
 
     public sealed record CopilotLocalCommandInvocation(
         CopilotLocalCommand Command,
@@ -30,9 +32,10 @@ namespace ColorVision.Copilot
 
         private static readonly CopilotLocalCommand[] Commands =
         [
-            new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context),
-            new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills),
-            new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp),
+            new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true),
+            new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true),
+            new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true),
+            new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp, AvailableWhileAgentRuns: true),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true),
             new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation),

@@ -192,7 +192,10 @@ public class CopilotBusinessContextTests
     [Fact]
     public void LocalCommandCatalog_FiltersAndResolvesExactCommands()
     {
-        Assert.Equal(["/context", "/skills", "/mcp", "/compact", "/review", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        Assert.Equal(["/status", "/context", "/skills", "/mcp", "/compact", "/review", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        var status = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse("/status"));
+        Assert.Equal(CopilotLocalCommandKind.Status, status.Command.Kind);
+        Assert.True(status.Command.AvailableWhileAgentRuns);
         Assert.Equal("/context", Assert.Single(CopilotLocalCommandCatalog.Suggest("  /Contex  ")).Name);
         Assert.Equal(CopilotLocalCommandKind.Context, CopilotLocalCommandCatalog.FindExact("  /CONTEXT  ")?.Kind);
         Assert.Equal(CopilotLocalCommandKind.Skills, CopilotLocalCommandCatalog.FindExact("/skills")?.Kind);
@@ -209,6 +212,48 @@ public class CopilotBusinessContextTests
         Assert.Null(CopilotLocalCommandCatalog.FindExact("/compact explain"));
         Assert.Null(CopilotLocalCommandCatalog.Parse("/new explain"));
         Assert.Null(CopilotLocalCommandCatalog.FindExact(null));
+    }
+
+    [Fact]
+    public void StatusDiagnostics_FormatsOperationalStateWithoutSecrets()
+    {
+        var report = CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+        {
+            ApplicationVersion = "4.1.1",
+            ProfileLabel = "Xiaomi Mimo 4",
+            ProfileDetails = "Xiaomi Mimo · Anthropic Compatible · mimo-v2.5-pro",
+            ProfileConfigured = true,
+            ReasoningLabel = "默认",
+            Mode = CopilotAgentMode.Auto,
+            AgentState = "Running",
+            QueuedAgentRuns = 1,
+            MaximumQueuedAgentRuns = 3,
+            WorkspacePath = @"C:\Work\ColorVision",
+            ActiveDocumentPath = @"C:\Work\ColorVision\Flow.Default.stn",
+            PreferredShell = CopilotShellKind.Auto,
+            ContextWindowTokens = 1_048_576,
+            RequestTokenBudget = 1_048_576,
+            MaximumToolCalls = 128,
+            MaximumAgentPasses = 32,
+            TimeoutSeconds = 7_200,
+            RegisteredCapabilities = 42,
+            ApprovalCapabilities = 12,
+            TrackedSkills = 7,
+            ExplicitOnlySkills = 2,
+            McpListenerEnabled = true,
+            McpListenerRunning = true,
+            EnabledExternalMcpServers = 2,
+            PendingApprovals = 1,
+        });
+
+        Assert.Contains("版本：4.1.1", report, StringComparison.Ordinal);
+        Assert.Contains("模型：Xiaomi Mimo 4", report, StringComparison.Ordinal);
+        Assert.Contains("Agent：Running · 队列 1/3", report, StringComparison.Ordinal);
+        Assert.Contains(@"工作区：C:\Work\ColorVision", report, StringComparison.Ordinal);
+        Assert.Contains("上下文 1,048,576 Token", report, StringComparison.Ordinal);
+        Assert.Contains("2 个低使用率仅显式调用", report, StringComparison.Ordinal);
+        Assert.Contains("内置监听器 运行中 · 外部启用 2 · 待审批 1", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("API Key", report, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -657,6 +657,9 @@ namespace ColorVision.Copilot
             var command = invocation.Command;
             switch (command.Kind)
             {
+                case CopilotLocalCommandKind.Status:
+                    ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
+                    break;
                 case CopilotLocalCommandKind.Context:
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
                     break;
@@ -680,6 +683,44 @@ namespace ColorVision.Copilot
                     return false;
             }
             return true;
+        }
+
+        private string BuildStatusDiagnosticsReport()
+        {
+            var profile = SelectedProfile;
+            var defaults = _config.AgentDefaults;
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+            var activeRun = ActiveHostedRun;
+            return CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
+            {
+                ApplicationVersion = typeof(CopilotChatViewModel).Assembly.GetName().Version?.ToString(3) ?? "unknown",
+                ProfileLabel = profile?.DisplayLabel ?? string.Empty,
+                ProfileDetails = profile?.SecondaryLabel ?? string.Empty,
+                ProfileConfigured = profile?.IsConfigured == true,
+                ReasoningLabel = profile?.ReasoningLabel ?? "默认",
+                Mode = ResolveComposerRequestMode(),
+                AgentState = activeRun?.State.ToString() ?? "Idle",
+                QueuedAgentRuns = _taskHost.QueuedCount,
+                MaximumQueuedAgentRuns = _taskHost.MaxQueuedRuns,
+                WorkspacePath = turnSnapshot.SolutionDirectoryPath,
+                ActiveDocumentPath = turnSnapshot.ActiveDocumentPath,
+                PreferredShell = defaults.PreferredShell,
+                ContextWindowTokens = defaults.ContextWindowTokens,
+                RequestTokenBudget = defaults.RequestTokenBudget,
+                MaximumToolCalls = defaults.MaxToolCalls,
+                MaximumAgentPasses = defaults.MaxAgentPasses,
+                TimeoutSeconds = defaults.TimeoutSeconds,
+                RegisteredCapabilities = capabilitySnapshot.Capabilities.Count,
+                ApprovalCapabilities = capabilitySnapshot.Capabilities.Count(capability => capability.ApprovalMode != CopilotToolApprovalMode.Never),
+                TrackedSkills = skillUsage.Entries.Count,
+                ExplicitOnlySkills = skillUsage.HistoricalExplicitOnlySkills.Count,
+                McpListenerEnabled = _config.McpEnabled,
+                McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
+                EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
+                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+            });
         }
 
         private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)
@@ -2028,6 +2069,10 @@ namespace ColorVision.Copilot
         {
             if (IsViewingActiveRun)
             {
+                var invocation = CopilotLocalCommandCatalog.Parse(InputText);
+                if (invocation?.Command.AvailableWhileAgentRuns == true && TryExecuteLocalCommand(InputText))
+                    return;
+
                 TrySteerCurrentRun();
                 return;
             }
