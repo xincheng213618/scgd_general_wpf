@@ -21,7 +21,7 @@ using System.ClientModel;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotMicrosoftAgentFrameworkRuntime : ICopilotAgentRuntime, ICopilotAgentSteeringRuntime
+    public sealed class CopilotMicrosoftAgentFrameworkRuntime
     {
         // Business tools use their own hard limit in HarnessToolBridge. Framework
         // functions (todo/mode/approval) and the final answer still need iterations.
@@ -157,6 +157,21 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static void ValidateProfile(CopilotProfileConfig? profile)
+        {
+            if (profile == null || !profile.IsConfigured)
+                throw new NotSupportedException("Agent Framework is unavailable for this profile: profile configuration is incomplete.");
+
+            if (profile.ProviderType is not (CopilotProviderType.OpenAICompatible or CopilotProviderType.AnthropicCompatible))
+                throw new NotSupportedException("Agent Framework is unavailable for this profile: provider protocol is unsupported.");
+
+            if (!Uri.TryCreate(profile.BaseUrl, UriKind.Absolute, out var endpoint)
+                || (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new NotSupportedException("Agent Framework is unavailable for this profile: base URL is invalid.");
+            }
+        }
+
         private async Task<CopilotAgentRunResult> RunCoreAsync(
             CopilotAgentRequest request,
             Action<CopilotAgentEvent> onEvent,
@@ -166,8 +181,7 @@ namespace ColorVision.Copilot
             CancellationToken callerCancellationToken,
             CancellationToken cancellationToken)
         {
-            if (!CopilotAgentRuntimeRouter.CanUseAgentFramework(request.Profile, out var unsupportedReason))
-                throw new NotSupportedException(unsupportedReason);
+            ValidateProfile(request.Profile);
 
             var requestedCheckpoint = request.SessionCheckpoint;
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(requestedCheckpoint?.TaskEventJournal);

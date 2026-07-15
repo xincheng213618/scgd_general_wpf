@@ -32,7 +32,7 @@ namespace ColorVision.Copilot
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
-        private readonly ICopilotAgentRuntime _agentRuntime;
+        private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
@@ -75,8 +75,7 @@ namespace ColorVision.Copilot
             _agentContextBuilder = new CopilotAgentContextBuilder();
             var toolRegistry = CopilotToolRegistry.CreateDefault();
             var toolExecutor = new CopilotToolExecutor();
-            var agentFrameworkRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder, toolExecutor);
-            _agentRuntime = new CopilotAgentRuntimeRouter(agentFrameworkRuntime);
+            _agentRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder, toolExecutor);
             _taskHost = CopilotAgentTaskHost.Shared;
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
@@ -2109,8 +2108,7 @@ namespace ColorVision.Copilot
             var activeRun = ActiveHostedRun;
             if (!CanSteerCurrentRun || activeRun == null || string.IsNullOrWhiteSpace(steeringMessage))
                 return;
-            if (_agentRuntime is not ICopilotAgentSteeringRuntime steeringRuntime
-                || !steeringRuntime.TryEnqueueSteeringMessage(steeringMessage))
+            if (!_agentRuntime.TryEnqueueSteeringMessage(steeringMessage))
                 return;
 
             var activeConversation = Conversations.FirstOrDefault(conversation => string.Equals(conversation.Id, activeRun.ConversationId, StringComparison.Ordinal));

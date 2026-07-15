@@ -1636,42 +1636,27 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentRuntimeRouter_UsesFrameworkForOpenAiAndAnthropicProfiles()
+    public async Task AgentFrameworkRuntime_RejectsInvalidProfileBeforeCreatingChatClient()
     {
-        var framework = new RecordingAgentRuntime("agent-framework");
-        var router = new CopilotAgentRuntimeRouter(framework);
-        var profile = CreateProfile();
-        var events = new List<CopilotAgentEvent>();
-
-        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(1, framework.RunCount);
-
-        profile.ProviderType = CopilotProviderType.AnthropicCompatible;
-        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(2, framework.RunCount);
-
-        profile.ProviderType = CopilotProviderType.OpenAICompatible;
-        profile.VendorType = CopilotVendorType.Xiaomi;
-        profile.ReasoningMode = CopilotReasoningMode.Enabled;
-        await router.RunAsync(new CopilotAgentRequest { Profile = profile }, events.Add, CancellationToken.None);
-        Assert.Equal(3, framework.RunCount);
-    }
-
-    [Fact]
-    public async Task AgentRuntimeRouter_RejectsInvalidProfileWithoutCallingFramework()
-    {
-        var framework = new RecordingAgentRuntime("agent-framework");
-        var router = new CopilotAgentRuntimeRouter(framework);
+        var chatClientCreated = false;
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            _ =>
+            {
+                chatClientCreated = true;
+                throw new InvalidOperationException("The invalid profile must be rejected first.");
+            });
         var profile = CreateProfile();
         profile.BaseUrl = "relative-endpoint";
 
-        var error = await Assert.ThrowsAsync<NotSupportedException>(() => router.RunAsync(
+        var error = await Assert.ThrowsAsync<NotSupportedException>(() => runtime.RunAsync(
             new CopilotAgentRequest { Profile = profile },
             _ => { },
             CancellationToken.None));
 
         Assert.Contains("base URL is invalid", error.Message, StringComparison.Ordinal);
-        Assert.Equal(0, framework.RunCount);
+        Assert.False(chatClientCreated);
     }
 
     [Fact]
@@ -4981,30 +4966,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentRuntimeRouter_PropagatesFrameworkFailureBeforeMaterialProgress()
-    {
-        var router = new CopilotAgentRuntimeRouter(new ThrowingAgentRuntime());
-
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => router.RunAsync(
-            new CopilotAgentRequest { Profile = CreateProfile() },
-            _ => { },
-            CancellationToken.None));
-
-        Assert.Equal("framework unavailable", error.Message);
-    }
-
-    [Fact]
-    public async Task AgentRuntimeRouter_PropagatesFrameworkFailureAfterToolExecutionStarts()
-    {
-        var router = new CopilotAgentRuntimeRouter(new ToolStartingThenThrowingAgentRuntime());
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => router.RunAsync(
-            new CopilotAgentRequest { Profile = CreateProfile() },
-            _ => { },
-            CancellationToken.None));
-    }
-
-    [Fact]
     public void ToolRegistry_RejectsDuplicateToolNames()
     {
         var error = Assert.Throws<ArgumentException>(() => new CopilotToolRegistry(new[]
@@ -5432,44 +5393,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 ErrorMessage = ApprovedExecutionCount > 1 ? string.Empty : "Temporary application service failure.",
                 FailureKind = ApprovedExecutionCount > 1 ? CopilotToolFailureKind.None : CopilotToolFailureKind.Transient,
             };
-        }
-    }
-
-    private sealed class ThrowingAgentRuntime : ICopilotAgentRuntime
-    {
-        public Task<CopilotAgentRunResult> RunAsync(CopilotAgentRequest request, Action<CopilotAgentEvent> onEvent, CancellationToken cancellationToken)
-        {
-            onEvent(CopilotAgentEvent.Status("framework-started"));
-            throw new InvalidOperationException("framework unavailable");
-        }
-    }
-
-    private sealed class ToolStartingThenThrowingAgentRuntime : ICopilotAgentRuntime
-    {
-        public Task<CopilotAgentRunResult> RunAsync(CopilotAgentRequest request, Action<CopilotAgentEvent> onEvent, CancellationToken cancellationToken)
-        {
-            onEvent(CopilotAgentEvent.ToolStarted(new CopilotToolExecutionInfo
-            {
-                CallId = "call-1",
-                Round = 1,
-                RuntimeName = "agent-framework",
-                ToolName = "SetTheme",
-                State = CopilotToolExecutionState.Running,
-                StartedAtUtc = DateTimeOffset.UtcNow,
-            }));
-            throw new InvalidOperationException("framework failed after dispatching a tool");
-        }
-    }
-
-    private sealed class RecordingAgentRuntime(string runtimeName) : ICopilotAgentRuntime
-    {
-        public int RunCount { get; private set; }
-
-        public Task<CopilotAgentRunResult> RunAsync(CopilotAgentRequest request, Action<CopilotAgentEvent> onEvent, CancellationToken cancellationToken)
-        {
-            RunCount++;
-            onEvent(CopilotAgentEvent.Status(runtimeName));
-            return Task.FromResult(new CopilotAgentRunResult());
         }
     }
 
