@@ -273,7 +273,12 @@ namespace ColorVision.Copilot
             ClearConnectProviderSearchCommand = new RelayCommand(_ => ConnectProviderSearchText = string.Empty);
 
             McpEnabled = config.McpEnabled;
-            PreferredShell = config.PreferredShell;
+            AgentContextWindowTokens = config.AgentDefaults.ContextWindowTokens;
+            AgentRequestTokenBudget = config.AgentDefaults.RequestTokenBudget;
+            MaxAgentToolCalls = config.AgentDefaults.MaxToolCalls;
+            MaxAgentPasses = config.AgentDefaults.MaxAgentPasses;
+            AgentTimeoutSeconds = config.AgentDefaults.TimeoutSeconds;
+            PreferredShell = config.AgentDefaults.PreferredShell;
             McpPort = config.McpPort;
             McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
             McpEndpoint = BuildMcpEndpoint();
@@ -311,6 +316,66 @@ namespace ColorVision.Copilot
             }
         }
         private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
+
+        public int AgentContextWindowTokens
+        {
+            get => _agentContextWindowTokens;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens);
+                if (SetProperty(ref _agentContextWindowTokens, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent context-window budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentContextWindowTokens = CopilotAgentDefaultsConfig.DefaultContextWindowTokens;
+
+        public int AgentRequestTokenBudget
+        {
+            get => _agentRequestTokenBudget;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumRequestTokenBudget, CopilotAgentRunBudget.MaximumRequestTokenBudget);
+                if (SetProperty(ref _agentRequestTokenBudget, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent request-token budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentRequestTokenBudget = CopilotAgentDefaultsConfig.DefaultRequestTokenBudget;
+
+        public int MaxAgentToolCalls
+        {
+            get => _maxAgentToolCalls;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumToolCalls, CopilotAgentRunBudget.MaximumToolCalls);
+                if (SetProperty(ref _maxAgentToolCalls, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent tool-call budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _maxAgentToolCalls = CopilotAgentDefaultsConfig.DefaultMaxToolCalls;
+
+        public int MaxAgentPasses
+        {
+            get => _maxAgentPasses;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumAgentPasses, CopilotAgentRunBudget.MaximumAgentPasses);
+                if (SetProperty(ref _maxAgentPasses, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent pass budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _maxAgentPasses = CopilotAgentDefaultsConfig.DefaultMaxAgentPasses;
+
+        public int AgentTimeoutSeconds
+        {
+            get => _agentTimeoutSeconds;
+            set
+            {
+                var normalized = Math.Clamp(value, (int)CopilotAgentRunBudget.MinimumTotalDuration.TotalSeconds, (int)CopilotAgentRunBudget.MaximumTotalDuration.TotalSeconds);
+                if (SetProperty(ref _agentTimeoutSeconds, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent timeout changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentTimeoutSeconds = CopilotAgentDefaultsConfig.DefaultTimeoutSeconds;
 
         public RelayCommand AddProfileCommand { get; }
 
@@ -1012,7 +1077,12 @@ namespace ColorVision.Copilot
                 }
 
                 config.McpEnabled = McpEnabled;
-                config.PreferredShell = PreferredShell;
+                config.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
+                config.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
+                config.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
+                config.AgentDefaults.MaxAgentPasses = MaxAgentPasses;
+                config.AgentDefaults.TimeoutSeconds = AgentTimeoutSeconds;
+                config.AgentDefaults.PreferredShell = PreferredShell;
                 config.McpPort = McpPort;
                 config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()
@@ -1709,8 +1779,8 @@ namespace ColorVision.Copilot
                 AgentSkillsDiagnosticsText = snapshot.Entries.Count == 0
                     ? "Run Copilot with Agent Skills enabled to collect bounded usage evidence."
                     : string.Join(Environment.NewLine, snapshot.Entries.Select(entry =>
-                        $"{entry.Name}: loaded {entry.LoadedRuns}/{entry.SelectedRuns} selected run(s) ({entry.LoadRate:P0}); last selected {FormatLocalTime(entry.LastSelectedAtUtc)}"
-                        + (entry.SelectedRuns >= CopilotAgentSkillUsageStore.LowUseMinimumSelectedRuns && entry.LoadedRuns == 0 ? " · explicit-only until directly requested" : string.Empty)));
+                        $"{entry.Name}: loaded {entry.LoadedRuns}/{entry.SelectedRuns} selected run(s) ({entry.LoadRate:P0}); consecutive misses {entry.ConsecutiveSelectedWithoutLoad}/{CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold}; last selected {FormatLocalTime(entry.LastSelectedAtUtc)}"
+                        + (entry.ConsecutiveSelectedWithoutLoad >= CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold ? " · explicit-only until directly requested and loaded" : string.Empty)));
             }
             catch (Exception ex)
             {

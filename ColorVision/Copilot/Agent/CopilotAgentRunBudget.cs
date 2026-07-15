@@ -2,8 +2,23 @@ using System;
 
 namespace ColorVision.Copilot
 {
+    public sealed class CopilotAgentRunBudgetDefaults
+    {
+        public int ContextWindowTokens { get; init; } = CopilotAgentDefaultsConfig.DefaultContextWindowTokens;
+
+        public int RequestTokenBudget { get; init; } = CopilotAgentDefaultsConfig.DefaultRequestTokenBudget;
+
+        public int MaxToolCalls { get; init; } = CopilotAgentDefaultsConfig.DefaultMaxToolCalls;
+
+        public int MaxAgentPasses { get; init; } = CopilotAgentDefaultsConfig.DefaultMaxAgentPasses;
+
+        public TimeSpan TotalDuration { get; init; } = TimeSpan.FromSeconds(CopilotAgentDefaultsConfig.DefaultTimeoutSeconds);
+    }
+
     public sealed class CopilotAgentRunBudgetOverride
     {
+        public int? ContextWindowTokens { get; init; }
+
         public int? RequestTokenBudget { get; init; }
 
         public int? MaxToolCalls { get; init; }
@@ -18,13 +33,15 @@ namespace ColorVision.Copilot
         public const int MinimumRequestTokenBudget = 4096;
         public const int MaximumRequestTokenBudget = 1_048_576;
         public const int MinimumToolCalls = 1;
-        public const int MaximumToolCalls = 64;
+        public const int MaximumToolCalls = 512;
         public const int MinimumAgentPasses = 1;
-        public const int MaximumAgentPasses = 16;
+        public const int MaximumAgentPasses = 128;
         public static readonly TimeSpan MinimumTotalDuration = TimeSpan.FromSeconds(1);
-        public static readonly TimeSpan MaximumTotalDuration = TimeSpan.FromHours(1);
+        public static readonly TimeSpan MaximumTotalDuration = TimeSpan.FromHours(24);
 
         public int RequestTokenBudget { get; init; }
+
+        public int ContextWindowTokens { get; init; }
 
         public int MaxToolCalls { get; init; }
 
@@ -35,24 +52,28 @@ namespace ColorVision.Copilot
         public static CopilotAgentRunBudget Resolve(CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var profile = request.Profile;
+            var defaults = request.RunBudgetDefaults;
             var requestOverride = request.RunBudgetOverride;
             return new CopilotAgentRunBudget
             {
+                ContextWindowTokens = Clamp(
+                    requestOverride?.ContextWindowTokens ?? defaults?.ContextWindowTokens ?? CopilotAgentDefaultsConfig.DefaultContextWindowTokens,
+                    CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    CopilotAgentTokenBudget.MaximumContextWindowTokens),
                 RequestTokenBudget = Clamp(
-                    requestOverride?.RequestTokenBudget ?? profile?.AgentRequestTokenBudget ?? CopilotProfileConfig.DefaultAgentRequestTokenBudget,
+                    requestOverride?.RequestTokenBudget ?? defaults?.RequestTokenBudget ?? CopilotAgentDefaultsConfig.DefaultRequestTokenBudget,
                     MinimumRequestTokenBudget,
                     MaximumRequestTokenBudget),
                 MaxToolCalls = Clamp(
-                    requestOverride?.MaxToolCalls ?? profile?.MaxToolRounds ?? CopilotProfileConfig.DefaultMaxToolRounds,
+                    requestOverride?.MaxToolCalls ?? defaults?.MaxToolCalls ?? CopilotAgentDefaultsConfig.DefaultMaxToolCalls,
                     MinimumToolCalls,
                     MaximumToolCalls),
                 MaxAgentPasses = Clamp(
-                    requestOverride?.MaxAgentPasses ?? profile?.MaxAgentPasses ?? CopilotProfileConfig.DefaultMaxAgentPasses,
+                    requestOverride?.MaxAgentPasses ?? defaults?.MaxAgentPasses ?? CopilotAgentDefaultsConfig.DefaultMaxAgentPasses,
                     MinimumAgentPasses,
                     MaximumAgentPasses),
                 TotalDuration = Clamp(
-                    requestOverride?.TotalDuration ?? TimeSpan.FromSeconds(profile?.AgentTimeoutSeconds ?? CopilotProfileConfig.DefaultAgentTimeoutSeconds),
+                    requestOverride?.TotalDuration ?? defaults?.TotalDuration ?? TimeSpan.FromSeconds(CopilotAgentDefaultsConfig.DefaultTimeoutSeconds),
                     MinimumTotalDuration,
                     MaximumTotalDuration),
             };

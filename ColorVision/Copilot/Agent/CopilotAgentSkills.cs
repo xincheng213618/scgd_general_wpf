@@ -13,16 +13,21 @@ namespace ColorVision.Copilot
     {
         internal const int MaxActiveSkills = 16;
         internal const int MaxAdvertisedSkillCharacters = 8_000;
+        internal const int SkillMetadataContextPercent = 2;
+        private const int EstimatedCharactersPerToken = 4;
         private readonly BudgetedAgentSkillsSource? _budgetedSource;
+        private readonly int _metadataCharacterBudget;
 
         private CopilotAgentSkills(
             IReadOnlyList<string> searchPaths,
             BudgetedAgentSkillsSource? budgetedSource,
-            AgentSkillsSource? source)
+            AgentSkillsSource? source,
+            int metadataCharacterBudget)
         {
             SearchPaths = searchPaths;
             _budgetedSource = budgetedSource;
             Source = source;
+            _metadataCharacterBudget = metadataCharacterBudget;
         }
 
         public IReadOnlyList<string> SearchPaths { get; }
@@ -31,11 +36,12 @@ namespace ColorVision.Copilot
 
         public bool IsEnabled => Source != null;
 
-        internal static CopilotAgentSkills Disabled() => new([], null, null);
+        internal static CopilotAgentSkills Disabled() => new([], null, null, 0);
 
         public static CopilotAgentSkills Create(
             CopilotAgentRequest request,
             IEnumerable<string>? historicalExplicitOnlySkillNames = null,
+            int contextWindowTokens = CopilotAgentTokenBudget.DefaultContextWindowTokens,
             string? applicationBaseDirectory = null)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -54,19 +60,27 @@ namespace ColorVision.Copilot
                 },
                 loggerFactory: null);
             source = new DeduplicatingAgentSkillsSource(source, loggerFactory: null);
+            var metadataCharacterBudget = ResolveMetadataCharacterBudget(contextWindowTokens);
             var budgetedSource = new BudgetedAgentSkillsSource(
                 source,
                 request.UserText,
                 historicalExplicitOnlySkillNames,
                 MaxActiveSkills,
-                MaxAdvertisedSkillCharacters);
+                metadataCharacterBudget);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
-            return new CopilotAgentSkills(searchPaths, budgetedSource, source);
+            return new CopilotAgentSkills(searchPaths, budgetedSource, source, metadataCharacterBudget);
+        }
+
+        internal static int ResolveMetadataCharacterBudget(int contextWindowTokens)
+        {
+            var boundedContextTokens = Math.Max(1, contextWindowTokens);
+            var proportionalCharacters = (long)boundedContextTokens * EstimatedCharactersPerToken * SkillMetadataContextPercent / 100;
+            return (int)Math.Clamp(proportionalCharacters, 1, MaxAdvertisedSkillCharacters);
         }
 
         public string BuildStartupDiagnostic()
         {
-            return $"Agent Skills enabled · up to {MaxActiveSkills} relevant skill(s) and {MaxAdvertisedSkillCharacters:N0} metadata characters from {SearchPaths.Count} trusted root(s) · scripts disabled.";
+            return $"Agent Skills enabled · up to {MaxActiveSkills} relevant skill(s) and {_metadataCharacterBudget:N0} metadata characters ({SkillMetadataContextPercent}% context, {MaxAdvertisedSkillCharacters:N0} hard cap) from {SearchPaths.Count} trusted root(s) · scripts disabled.";
         }
 
         public string? BuildSelectionDiagnostic()
@@ -96,6 +110,8 @@ namespace ColorVision.Copilot
             }
             if (budgetOmittedCount > 0)
                 builder.Append(" · ").Append(budgetOmittedCount).Append(" omitted by the active-skill budget");
+            if (snapshot.ShortenedDescriptionNames.Count > 0)
+                builder.Append(" · ").Append(snapshot.ShortenedDescriptionNames.Count).Append(" description(s) shortened by the metadata budget");
             if (snapshot.LoadedNames.Length == 0)
                 builder.Append(" · none loaded this run.");
             else
@@ -222,7 +238,8 @@ namespace ColorVision.Copilot
                         selectedNames,
                         GetLoadedNames(selectedNames),
                         selection.MetadataExplicitOnlyNames,
-                        selection.HistoricalExplicitOnlyNames);
+                        selection.HistoricalExplicitOnlyNames,
+                        selection.ShortenedDescriptionNames);
                 }
                 return selection.SelectedSkills.Select(skill => (AgentSkill)new TrackingAgentSkill(skill, TrackLoad)).ToArray();
             }
@@ -289,9 +306,10 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> SelectedNames,
             string[] LoadedNames,
             IReadOnlyList<string> MetadataExplicitOnlyNames,
-            IReadOnlyList<string> HistoricalExplicitOnlyNames)
+            IReadOnlyList<string> HistoricalExplicitOnlyNames,
+            IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], []);
         }
 
     }

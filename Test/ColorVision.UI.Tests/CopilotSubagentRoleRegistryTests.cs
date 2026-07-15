@@ -286,8 +286,8 @@ public sealed class CopilotSubagentRoleRegistryTests : IDisposable
                 BaseUrl = "https://example.test/v1",
                 Model = "test-model",
                 MaxTokens = 256,
-                MaxToolRounds = 8,
             },
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults { MaxToolCalls = 8 },
             Mode = mode,
             SearchRootPaths = roots,
         };

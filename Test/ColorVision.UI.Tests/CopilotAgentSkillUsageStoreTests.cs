@@ -24,17 +24,19 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
         Assert.Equal(2, flow.SelectedRuns);
         Assert.Equal(1, flow.LoadedRuns);
         Assert.Equal(0.5, flow.LoadRate);
+        Assert.Equal(1, flow.ConsecutiveSelectedWithoutLoad);
         var database = Assert.Single(snapshot.Entries, entry => entry.Name == "database-operations");
         Assert.Equal(1, database.SelectedRuns);
         Assert.Equal(0, database.LoadedRuns);
+        Assert.Equal(1, database.ConsecutiveSelectedWithoutLoad);
     }
 
     [Fact]
-    public void Snapshot_MakesOnlyRepeatedlySelectedNeverLoadedSkillsExplicitOnly()
+    public void Snapshot_DemotesConsecutiveMissesAndARealLoadRestoresImplicitEligibility()
     {
         var store = new CopilotAgentSkillUsageStore(_tempRoot);
         var timestamp = new DateTimeOffset(2026, 7, 15, 1, 0, 0, TimeSpan.Zero);
-        for (var index = 0; index < CopilotAgentSkillUsageStore.LowUseMinimumSelectedRuns; index++)
+        for (var index = 0; index < CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold; index++)
         {
             store.RecordRun(
                 ["never-loaded", "sometimes-loaded"],
@@ -46,6 +48,49 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
         var candidate = Assert.Single(snapshot.HistoricalExplicitOnlySkills);
         Assert.Equal("never-loaded", candidate.Name);
         Assert.DoesNotContain(snapshot.HistoricalExplicitOnlySkills, entry => entry.Name == "sometimes-loaded");
+
+        snapshot = store.RecordRun(["sometimes-loaded"], [], timestamp.AddHours(1));
+        Assert.Contains(snapshot.HistoricalExplicitOnlySkills, entry => entry.Name == "sometimes-loaded");
+
+        snapshot = store.RecordRun(["sometimes-loaded"], ["sometimes-loaded"], timestamp.AddHours(2));
+        var restored = Assert.Single(snapshot.Entries, entry => entry.Name == "sometimes-loaded");
+        Assert.Equal(0, restored.ConsecutiveSelectedWithoutLoad);
+        Assert.DoesNotContain(snapshot.HistoricalExplicitOnlySkills, entry => entry.Name == "sometimes-loaded");
+    }
+
+    [Fact]
+    public void Snapshot_MigratesNeverLoadedVersionOneHistoryIntoConsecutiveMisses()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        File.WriteAllText(Path.Combine(_tempRoot, "skill-usage.json"), """
+            {
+              "SchemaVersion": 1,
+              "RecordedRuns": 20,
+              "Entries": [
+                {
+                  "Name": "legacy-unused",
+                  "SelectedRuns": 20,
+                  "LoadedRuns": 0,
+                  "FirstSelectedAtUtc": "2026-07-15T01:00:00+00:00",
+                  "LastSelectedAtUtc": "2026-07-15T02:00:00+00:00"
+                },
+                {
+                  "Name": "legacy-used",
+                  "SelectedRuns": 20,
+                  "LoadedRuns": 1,
+                  "FirstSelectedAtUtc": "2026-07-15T01:00:00+00:00",
+                  "LastSelectedAtUtc": "2026-07-15T02:00:00+00:00"
+                }
+              ]
+            }
+            """);
+
+        var snapshot = new CopilotAgentSkillUsageStore(_tempRoot).GetSnapshot();
+
+        Assert.Equal(20, Assert.Single(snapshot.Entries, entry => entry.Name == "legacy-unused").ConsecutiveSelectedWithoutLoad);
+        Assert.Equal(0, Assert.Single(snapshot.Entries, entry => entry.Name == "legacy-used").ConsecutiveSelectedWithoutLoad);
+        Assert.Contains(snapshot.HistoricalExplicitOnlySkills, entry => entry.Name == "legacy-unused");
+        Assert.DoesNotContain(snapshot.HistoricalExplicitOnlySkills, entry => entry.Name == "legacy-used");
     }
 
     [Fact]

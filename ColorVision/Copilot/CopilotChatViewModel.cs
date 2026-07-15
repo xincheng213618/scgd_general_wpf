@@ -664,6 +664,7 @@ namespace ColorVision.Copilot
             }
 
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var agentDefaults = CopilotConfig.Instance.AgentDefaults;
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = SelectedProfile?.DisplayLabel ?? string.Empty,
@@ -684,6 +685,13 @@ namespace ColorVision.Copilot
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
                 TrackedSkills = skillUsage?.Entries.Count ?? 0,
                 HistoricalExplicitOnlySkills = skillUsage?.HistoricalExplicitOnlySkills.Count ?? 0,
+                SkillMetadataCharacterBudget = CopilotAgentSkills.ResolveMetadataCharacterBudget(
+                    agentDefaults.ContextWindowTokens),
+                AgentContextWindowTokens = agentDefaults.ContextWindowTokens,
+                AgentRequestTokenBudget = agentDefaults.RequestTokenBudget,
+                AgentMaxToolCalls = agentDefaults.MaxToolCalls,
+                AgentMaxPasses = agentDefaults.MaxAgentPasses,
+                AgentTimeoutSeconds = agentDefaults.TimeoutSeconds,
                 RegisteredCapabilities = capabilitySnapshot.Capabilities.Count,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
             });
@@ -932,6 +940,8 @@ namespace ColorVision.Copilot
 
             contextItems = MergeCurrentLiveContextSummary(contextItems);
             var sessionCheckpoint = conversation.AgentSessionCheckpoint;
+            var copilotConfig = CopilotConfig.Instance;
+            var agentDefaults = copilotConfig.AgentDefaults.Clone();
 
             var agentRequest = new CopilotAgentRequest
             {
@@ -948,12 +958,13 @@ namespace ColorVision.Copilot
                 WritableLocalRootPaths = writableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
-                PreferredShell = CopilotConfig.Instance.PreferredShell,
+                PreferredShell = agentDefaults.PreferredShell,
                 Mode = userMessage.RequestMode,
                 SessionCheckpoint = sessionCheckpoint,
                 Recovery = sessionCheckpoint == null ? null : userMessage.RecoveryRequest,
                 RunControl = hostedRun.RunControl,
-                ExternalMcpServers = CopilotConfig.Instance.ExternalMcpServers
+                RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
+                ExternalMcpServers = copilotConfig.ExternalMcpServers
                     .Where(server => server?.Enabled == true)
                     .Select(server => server.Clone())
                     .ToArray(),

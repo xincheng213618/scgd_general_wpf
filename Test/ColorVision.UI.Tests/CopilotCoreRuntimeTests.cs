@@ -997,7 +997,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         using var fakeChatClient = new ScriptedHarnessChatClient(options =>
         {
             Assert.Contains("focused-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
-            Assert.DoesNotContain("metadata-skill-08", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.Contains("metadata-skill-08", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain(new string('x', 950), options.Instructions ?? string.Empty, StringComparison.Ordinal);
             return CreateLoadSkillCall(options, "focused-workflow");
         });
         var skillUsageStore = new CopilotAgentSkillUsageStore(Path.Combine(_tempRoot, "metadata-skill-usage-state"));
@@ -1014,13 +1015,18 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             UserText = "Use focused-workflow for this task.",
             Profile = CreateProfile(),
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults { ContextWindowTokens = 32_768 },
             Mode = CopilotAgentMode.Auto,
             SearchRootPaths = new[] { _tempRoot },
         }, events.Add, CancellationToken.None);
 
-        Assert.InRange(skillUsageStore.GetSnapshot().Entries.Count, 2, 11);
+        var usageEntries = skillUsageStore.GetSnapshot().Entries;
+        Assert.All(Enumerable.Range(0, 11), index => Assert.Contains(usageEntries, entry => entry.Name == $"metadata-skill-{index:00}"));
+        Assert.Contains(usageEntries, entry => entry.Name == "focused-workflow" && entry.LoadedRuns == 1);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
-            && item.Text.Contains("omitted by the active-skill budget", StringComparison.Ordinal));
+            && item.Text.Contains("2,621 metadata characters", StringComparison.Ordinal));
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("description(s) shortened by the metadata budget", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -1110,7 +1116,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             """);
         var skillUsageStore = new CopilotAgentSkillUsageStore(Path.Combine(_tempRoot, "low-use-skill-state"));
         var timestamp = new DateTimeOffset(2026, 7, 15, 1, 0, 0, TimeSpan.Zero);
-        for (var index = 0; index < CopilotAgentSkillUsageStore.LowUseMinimumSelectedRuns; index++)
+        for (var index = 0; index < CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold; index++)
             skillUsageStore.RecordRun(["stale-workflow"], [], timestamp.AddMinutes(index));
 
         using var implicitClient = new ScriptedHarnessChatClient(options =>
@@ -4853,7 +4859,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             BaseUrl = "https://example.test/v1",
             Model = "test-model",
             MaxTokens = 256,
-            MaxToolRounds = 3,
         };
     }
 

@@ -112,7 +112,9 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="12,12,12,10">
+        <TabControl Grid.Row="0" Margin="12,12,12,10">
+            <TabItem Header="Models">
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280" />
                 <ColumnDefinition Width="12" />
@@ -315,56 +317,81 @@
                                 </StackPanel>
                             </Expander>
 
-                            <Expander Margin="0,8,0,0" Header="Agent run limits" IsExpanded="False" Foreground="{DynamicResource GlobalTextBrush}">
-                                <StackPanel Margin="0,10,0,0">
-                                    <TextBlock Margin="0,0,0,10"
-                                               Style="{StaticResource SettingsHintTextStyle}"
-                                               Text="Agent defaults. Run limits are per profile; the default Windows shell is shared."
-                                               TextWrapping="Wrap" />
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="160" />
-                                            <ColumnDefinition Width="120" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="Request tokens" />
-                                        <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.AgentRequestTokenBudget}" ToolTip="Total provider-token budget across the Agent run." />
-
-                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Tool calls" />
-                                        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.MaxToolRounds}" ToolTip="Maximum tool calls reserved during one Agent run." />
-
-                                        <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="Agent passes" />
-                                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.MaxAgentPasses}" ToolTip="Maximum automatic continuation passes for incomplete tasks." />
-
-                                        <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Timeout (seconds)" />
-                                        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Text="{Binding SelectedProfile.AgentTimeoutSeconds}" ToolTip="Total wall-clock budget for one Agent run." />
-
-                                        <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Default shell" />
-                                        <ComboBox Grid.Row="4"
-                                                  Grid.Column="1"
-                                                  Grid.ColumnSpan="2"
-                                                  ItemsSource="{Binding ShellOptions}"
-                                                  DisplayMemberPath="Label"
-                                                  SelectedValuePath="Value"
-                                                  SelectedValue="{Binding PreferredShell, UpdateSourceTrigger=PropertyChanged}"
-                                                  ToolTip="Default Windows shell used by approved Agent command execution." />
-                                    </Grid>
-                                </StackPanel>
-                            </Expander>
                         </StackPanel>
 
                     </StackPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
+            </TabItem>
+
+            <TabItem Header="Agent">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                        <StackPanel MaxWidth="760">
+                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Agent defaults" />
+                            <TextBlock Margin="0,6,0,16"
+                                       Style="{StaticResource SettingsHintTextStyle}"
+                                       Text="Shared by every model connection. These values bound a complete Agent task; model connection and generation settings stay independent."
+                                       TextWrapping="Wrap" />
+
+                            <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
+                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.76"
+                                           Text="Long-running defaults: a 1M context window, 1M cumulative request tokens, 128 tool calls, 32 Agent passes, and a two-hour wall-clock window. Per-request overrides can still tighten a specific task."
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <Grid Margin="0,4,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180" />
+                                    <ColumnDefinition Width="160" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="Context window" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentContextWindowTokens, UpdateSourceTrigger=PropertyChanged}" ToolTip="Context window used by Agent compaction and Skill metadata budgeting." />
+                                <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="32,768–1,048,576; default 1,048,576" />
+
+                                <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Request tokens" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentRequestTokenBudget, UpdateSourceTrigger=PropertyChanged}" ToolTip="Cumulative provider-token budget across one Agent task." />
+                                <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="4,096–1,048,576; default 1,048,576" />
+
+                                <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="Tool calls" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentToolCalls, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum business tool calls during one Agent task." />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–512; default 128" />
+
+                                <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="Agent passes" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,12,10" Text="{Binding MaxAgentPasses, UpdateSourceTrigger=PropertyChanged}" ToolTip="Maximum automatic continuation passes for an incomplete task." />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–128; default 32" />
+
+                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Timeout (seconds)" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,12,10" Text="{Binding AgentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" ToolTip="Total wall-clock budget for one Agent task." />
+                                <TextBlock Grid.Row="4" Grid.Column="2" Style="{StaticResource SettingsHintTextStyle}" Text="1–86,400; default 7,200" />
+
+                                <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Default shell" />
+                                <ComboBox Grid.Row="5"
+                                          Grid.Column="1"
+                                          Grid.ColumnSpan="2"
+                                          ItemsSource="{Binding ShellOptions}"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding PreferredShell, UpdateSourceTrigger=PropertyChanged}"
+                                          ToolTip="Default Windows shell used by approved Agent command execution." />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <Border Grid.Row="1"
                 Margin="12,0,12,12"

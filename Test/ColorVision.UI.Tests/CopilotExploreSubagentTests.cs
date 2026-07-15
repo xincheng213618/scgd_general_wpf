@@ -364,8 +364,8 @@ public sealed class CopilotExploreSubagentTests : IDisposable
                 BaseUrl = "https://example.test/v1",
                 Model = "test-model",
                 MaxTokens = 256,
-                MaxToolRounds = 8,
             },
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults { MaxToolCalls = 8 },
             Mode = CopilotAgentMode.Code,
             SearchRootPaths = roots,
         };
@@ -377,6 +377,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         {
             UserText = request.UserText,
             Profile = request.Profile,
+            RunBudgetDefaults = request.RunBudgetDefaults,
             History = [new CopilotRequestMessage("assistant", text)],
             Mode = request.Mode,
             SearchRootPaths = request.SearchRootPaths,

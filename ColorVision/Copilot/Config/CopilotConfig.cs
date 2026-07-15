@@ -14,8 +14,7 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 1;
-        private const int LegacyAgentRequestTokenBudget = 65536;
+        public const int CurrentSchemaVersion = 2;
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -25,18 +24,12 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<string> DisabledPluginSubagentRoles { get; set; } = new();
 
+        public CopilotAgentDefaultsConfig AgentDefaults { get; set; } = new();
+
         [Browsable(false)]
         public int SchemaVersion { get; set; }
 
         public const int DefaultMcpPort = 38473;
-
-        [Browsable(false)]
-        public CopilotShellKind PreferredShell
-        {
-            get => _preferredShell;
-            set => SetProperty(ref _preferredShell, value);
-        }
-        private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
 
         [Browsable(false)]
         public bool McpEnabled
@@ -84,6 +77,12 @@ namespace ColorVision.Copilot
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
             DisabledPluginSubagentRoles ??= new ObservableCollection<string>();
+            if (AgentDefaults == null)
+            {
+                AgentDefaults = new CopilotAgentDefaultsConfig();
+                changed = true;
+            }
+            changed |= AgentDefaults.EnsureValid();
 
             var normalizedDisabledRoles = CopilotPluginSubagentRolePreference.NormalizeKeys(DisabledPluginSubagentRoles);
             if (!DisabledPluginSubagentRoles.SequenceEqual(normalizedDisabledRoles, StringComparer.OrdinalIgnoreCase))
@@ -91,12 +90,6 @@ namespace ColorVision.Copilot
                 DisabledPluginSubagentRoles.Clear();
                 foreach (var roleKey in normalizedDisabledRoles)
                     DisabledPluginSubagentRoles.Add(roleKey);
-                changed = true;
-            }
-
-            if (!Enum.IsDefined(PreferredShell))
-            {
-                PreferredShell = CopilotShellKind.Auto;
                 changed = true;
             }
 
@@ -122,9 +115,6 @@ namespace ColorVision.Copilot
 
             if (SchemaVersion < CurrentSchemaVersion)
             {
-                foreach (var profile in Profiles.Where(profile => profile.AgentRequestTokenBudget == LegacyAgentRequestTokenBudget))
-                    profile.AgentRequestTokenBudget = CopilotProfileConfig.DefaultAgentRequestTokenBudget;
-
                 SchemaVersion = CurrentSchemaVersion;
                 changed = true;
             }

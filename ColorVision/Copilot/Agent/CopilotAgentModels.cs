@@ -90,6 +90,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRunControl? RunControl { get; init; }
 
+        public CopilotAgentRunBudgetDefaults? RunBudgetDefaults { get; init; }
+
         public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();

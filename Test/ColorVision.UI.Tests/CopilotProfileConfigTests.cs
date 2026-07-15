@@ -28,15 +28,11 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void Serialize_PersistsAgentBudgetsButNotInternalModelPolicy()
+    public void Serialize_ProfileDoesNotPersistAgentDefaultsOrInternalModelPolicy()
     {
         var profile = new CopilotProfileConfig
         {
             MaxTokens = 256,
-            MaxToolRounds = 3,
-            AgentRequestTokenBudget = 48_000,
-            MaxAgentPasses = 5,
-            AgentTimeoutSeconds = 180,
             Temperature = 0.8,
         };
 
@@ -46,10 +42,10 @@ public sealed class CopilotProfileConfigTests
         Assert.Null(root.Property("SystemPrompt"));
         Assert.Null(root.Property("CustomSystemPrompt"));
         Assert.Null(root.Property("MaxTokens"));
-        Assert.Equal(3, root.Value<int>("MaxToolRounds"));
-        Assert.Equal(48_000, root.Value<int>("AgentRequestTokenBudget"));
-        Assert.Equal(5, root.Value<int>("MaxAgentPasses"));
-        Assert.Equal(180, root.Value<int>("AgentTimeoutSeconds"));
+        Assert.Null(root.Property("MaxToolRounds"));
+        Assert.Null(root.Property("AgentRequestTokenBudget"));
+        Assert.Null(root.Property("MaxAgentPasses"));
+        Assert.Null(root.Property("AgentTimeoutSeconds"));
         Assert.Null(root.Property("Temperature"));
         Assert.Null(root.Property("UseAgentFramework"));
     }
@@ -66,7 +62,7 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void Deserialize_LoadsAgentBudgetsAndIgnoresRemovedModelPolicy()
+    public void Deserialize_IgnoresRemovedAgentAndModelPolicyFields()
     {
         const string json = """
             {
@@ -85,26 +81,29 @@ public sealed class CopilotProfileConfigTests
 
         Assert.Equal(CopilotProfileConfig.DefaultSystemPrompt, profile.EffectiveSystemPrompt);
         Assert.Equal(CopilotProfileConfig.DefaultMaxTokens, profile.MaxTokens);
-        Assert.Equal(2, profile.MaxToolRounds);
-        Assert.Equal(48_000, profile.AgentRequestTokenBudget);
-        Assert.Equal(3, profile.MaxAgentPasses);
-        Assert.Equal(90, profile.AgentTimeoutSeconds);
         Assert.Equal(CopilotProfileConfig.DefaultTemperature, profile.Temperature);
+        var serialized = JObject.Parse(JsonConvert.SerializeObject(profile));
+        Assert.Null(serialized.Property("MaxToolRounds"));
+        Assert.Null(serialized.Property("AgentRequestTokenBudget"));
+        Assert.Null(serialized.Property("MaxAgentPasses"));
+        Assert.Null(serialized.Property("AgentTimeoutSeconds"));
     }
 
     [Fact]
-    public void RunBudget_ResolvesRequestOverrideBeforeProfileDefaultsAndSafetyLimits()
+    public void RunBudget_ResolvesRequestOverrideBeforeIndependentDefaultsAndSafetyLimits()
     {
-        var profile = new CopilotProfileConfig
+        var defaults = new CopilotAgentRunBudgetDefaults
         {
-            AgentRequestTokenBudget = 96_000,
-            MaxToolRounds = 8,
+            ContextWindowTokens = 800_000,
+            RequestTokenBudget = 96_000,
+            MaxToolCalls = 8,
             MaxAgentPasses = 6,
-            AgentTimeoutSeconds = 240,
+            TotalDuration = TimeSpan.FromSeconds(240),
         };
         var resolved = CopilotAgentRunBudget.Resolve(new CopilotAgentRequest
         {
-            Profile = profile,
+            Profile = new CopilotProfileConfig(),
+            RunBudgetDefaults = defaults,
             RunBudgetOverride = new CopilotAgentRunBudgetOverride
             {
                 RequestTokenBudget = 20_000,
@@ -114,15 +113,18 @@ public sealed class CopilotProfileConfigTests
         });
 
         Assert.Equal(20_000, resolved.RequestTokenBudget);
+        Assert.Equal(800_000, resolved.ContextWindowTokens);
         Assert.Equal(8, resolved.MaxToolCalls);
         Assert.Equal(2, resolved.MaxAgentPasses);
         Assert.Equal(TimeSpan.FromSeconds(30), resolved.TotalDuration);
 
         var clamped = CopilotAgentRunBudget.Resolve(new CopilotAgentRequest
         {
-            Profile = profile,
+            Profile = new CopilotProfileConfig(),
+            RunBudgetDefaults = defaults,
             RunBudgetOverride = new CopilotAgentRunBudgetOverride
             {
+                ContextWindowTokens = 1,
                 RequestTokenBudget = 1,
                 MaxToolCalls = int.MaxValue,
                 MaxAgentPasses = 0,
@@ -130,6 +132,7 @@ public sealed class CopilotProfileConfigTests
             },
         });
 
+        Assert.Equal(CopilotAgentTokenBudget.MinimumContextWindowTokens, clamped.ContextWindowTokens);
         Assert.Equal(CopilotAgentRunBudget.MinimumRequestTokenBudget, clamped.RequestTokenBudget);
         Assert.Equal(CopilotAgentRunBudget.MaximumToolCalls, clamped.MaxToolCalls);
         Assert.Equal(CopilotAgentRunBudget.MinimumAgentPasses, clamped.MaxAgentPasses);
@@ -173,21 +176,31 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void Config_PersistsPreferredShellAndRepairsInvalidValue()
+    public void Config_PersistsIndependentAgentDefaults()
     {
         var config = new CopilotConfig
         {
-            PreferredShell = CopilotShellKind.CommandPrompt,
+            AgentDefaults = new CopilotAgentDefaultsConfig
+            {
+                ContextWindowTokens = 950_000,
+                RequestTokenBudget = 900_000,
+                MaxToolCalls = 96,
+                MaxAgentPasses = 24,
+                TimeoutSeconds = 5_400,
+                PreferredShell = CopilotShellKind.CommandPrompt,
+            },
             McpBearerToken = "test-token",
         };
 
         var json = JsonConvert.SerializeObject(config);
         var restored = JsonConvert.DeserializeObject<CopilotConfig>(json)!;
 
-        Assert.Equal(CopilotShellKind.CommandPrompt, restored.PreferredShell);
-        restored.PreferredShell = (CopilotShellKind)999;
-        Assert.True(restored.EnsureInitialized());
-        Assert.Equal(CopilotShellKind.Auto, restored.PreferredShell);
+        Assert.Equal(950_000, restored.AgentDefaults.ContextWindowTokens);
+        Assert.Equal(900_000, restored.AgentDefaults.RequestTokenBudget);
+        Assert.Equal(96, restored.AgentDefaults.MaxToolCalls);
+        Assert.Equal(24, restored.AgentDefaults.MaxAgentPasses);
+        Assert.Equal(5_400, restored.AgentDefaults.TimeoutSeconds);
+        Assert.Equal(CopilotShellKind.CommandPrompt, restored.AgentDefaults.PreferredShell);
     }
 
     [Fact]
@@ -213,7 +226,7 @@ public sealed class CopilotProfileConfigTests
     }
 
     [Fact]
-    public void EnsureInitialized_MigratesLegacyAgentRequestTokenBudgetOnce()
+    public void EnsureInitialized_UsesLargeIndependentAgentDefaultsWithoutProfileMigration()
     {
         var config = new CopilotConfig
         {
@@ -222,21 +235,19 @@ public sealed class CopilotProfileConfigTests
         };
         config.Profiles.Add(new CopilotProfileConfig
         {
-            Id = "legacy-agent-budget",
-            Name = "Legacy Agent Budget",
-            AgentRequestTokenBudget = 65_536,
-        });
-        config.Profiles.Add(new CopilotProfileConfig
-        {
-            Id = "custom-agent-budget",
-            Name = "Custom Agent Budget",
-            AgentRequestTokenBudget = 96_000,
+            Id = "model-only-profile",
+            Name = "Model Only Profile",
         });
 
         Assert.True(config.EnsureInitialized());
         Assert.Equal(CopilotConfig.CurrentSchemaVersion, config.SchemaVersion);
-        Assert.Equal(CopilotProfileConfig.DefaultAgentRequestTokenBudget, config.FindProfile("legacy-agent-budget")!.AgentRequestTokenBudget);
-        Assert.Equal(96_000, config.FindProfile("custom-agent-budget")!.AgentRequestTokenBudget);
+        Assert.Equal(1_048_576, config.AgentDefaults.ContextWindowTokens);
+        Assert.Equal(1_048_576, config.AgentDefaults.RequestTokenBudget);
+        Assert.Equal(128, config.AgentDefaults.MaxToolCalls);
+        Assert.Equal(32, config.AgentDefaults.MaxAgentPasses);
+        Assert.Equal(7_200, config.AgentDefaults.TimeoutSeconds);
+        Assert.Equal(CopilotShellKind.Auto, config.AgentDefaults.PreferredShell);
+        Assert.NotNull(config.FindProfile("model-only-profile"));
 
         Assert.False(config.EnsureInitialized());
     }

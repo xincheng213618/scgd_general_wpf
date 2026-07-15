@@ -16,6 +16,8 @@ namespace ColorVision.Copilot
 
         public int LoadedRuns { get; set; }
 
+        public int ConsecutiveSelectedWithoutLoad { get; set; }
+
         public DateTimeOffset FirstSelectedAtUtc { get; set; }
 
         public DateTimeOffset LastSelectedAtUtc { get; set; }
@@ -38,9 +40,9 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentSkillUsageStore
     {
-        public const int LowUseMinimumSelectedRuns = 20;
+        public const int LowUseConsecutiveMissThreshold = 20;
 
-        private const int CurrentSchemaVersion = 1;
+        private const int CurrentSchemaVersion = 2;
         private const int MaxSkillNameLength = 64;
         private const int MaxEntries = 128;
         private const int MaxFileBytes = 1_048_576;
@@ -103,6 +105,11 @@ namespace ColorVision.Copilot
                     {
                         entry.LoadedRuns = Increment(entry.LoadedRuns);
                         entry.LastLoadedAtUtc = timestamp;
+                        entry.ConsecutiveSelectedWithoutLoad = 0;
+                    }
+                    else
+                    {
+                        entry.ConsecutiveSelectedWithoutLoad = Increment(entry.ConsecutiveSelectedWithoutLoad);
                     }
                 }
 
@@ -140,9 +147,10 @@ namespace ColorVision.Copilot
                     return new UsageState();
 
                 var state = JsonSerializer.Deserialize<UsageState>(File.ReadAllText(StateFilePath), SerializerOptions) ?? new UsageState();
+                var storedSchemaVersion = state.SchemaVersion;
                 state.SchemaVersion = CurrentSchemaVersion;
                 state.RecordedRuns = Math.Max(0, state.RecordedRuns);
-                state.Entries = NormalizeEntries(state.Entries);
+                state.Entries = NormalizeEntries(state.Entries, storedSchemaVersion);
                 return state;
             }
             catch
@@ -172,7 +180,7 @@ namespace ColorVision.Copilot
         private static CopilotAgentSkillUsageSnapshot CreateSnapshot(UsageState state)
         {
             var entries = state.Entries
-                .Select(CloneEntry)
+                .Select(entry => CloneEntry(entry))
                 .OrderByDescending(entry => entry.LastSelectedAtUtc)
                 .ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -182,14 +190,15 @@ namespace ColorVision.Copilot
                 UpdatedAtUtc = state.UpdatedAtUtc == default ? null : state.UpdatedAtUtc,
                 Entries = entries,
                 HistoricalExplicitOnlySkills = entries
-                    .Where(entry => entry.SelectedRuns >= LowUseMinimumSelectedRuns && entry.LoadedRuns == 0)
-                    .OrderByDescending(entry => entry.SelectedRuns)
+                    .Where(entry => entry.ConsecutiveSelectedWithoutLoad >= LowUseConsecutiveMissThreshold)
+                    .OrderByDescending(entry => entry.ConsecutiveSelectedWithoutLoad)
+                    .ThenByDescending(entry => entry.SelectedRuns)
                     .ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)
                     .ToArray(),
             };
         }
 
-        private static List<CopilotAgentSkillUsageEntry> NormalizeEntries(IEnumerable<CopilotAgentSkillUsageEntry>? entries)
+        private static List<CopilotAgentSkillUsageEntry> NormalizeEntries(IEnumerable<CopilotAgentSkillUsageEntry>? entries, int storedSchemaVersion)
         {
             return (entries ?? Array.Empty<CopilotAgentSkillUsageEntry>())
                 .Where(entry => entry != null)
@@ -197,7 +206,7 @@ namespace ColorVision.Copilot
                 .Where(item => item.Name != null)
                 .GroupBy(item => item.Name!, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.OrderByDescending(item => item.Entry.LastSelectedAtUtc).First().Entry)
-                .Select(CloneEntry)
+                .Select(entry => CloneEntry(entry, storedSchemaVersion))
                 .Take(MaxEntries)
                 .ToList();
         }
@@ -221,11 +230,22 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentSkillUsageEntry CloneEntry(CopilotAgentSkillUsageEntry entry)
         {
+            return CloneEntry(entry, CurrentSchemaVersion);
+        }
+
+        private static CopilotAgentSkillUsageEntry CloneEntry(CopilotAgentSkillUsageEntry entry, int storedSchemaVersion)
+        {
+            var selectedRuns = Math.Max(0, entry.SelectedRuns);
+            var loadedRuns = Math.Clamp(entry.LoadedRuns, 0, selectedRuns);
+            var consecutiveMisses = storedSchemaVersion < 2
+                ? loadedRuns == 0 ? selectedRuns : 0
+                : Math.Clamp(entry.ConsecutiveSelectedWithoutLoad, 0, selectedRuns);
             return new CopilotAgentSkillUsageEntry
             {
                 Name = NormalizeName(entry.Name) ?? string.Empty,
-                SelectedRuns = Math.Max(0, entry.SelectedRuns),
-                LoadedRuns = Math.Clamp(entry.LoadedRuns, 0, Math.Max(0, entry.SelectedRuns)),
+                SelectedRuns = selectedRuns,
+                LoadedRuns = loadedRuns,
+                ConsecutiveSelectedWithoutLoad = consecutiveMisses,
                 FirstSelectedAtUtc = entry.FirstSelectedAtUtc,
                 LastSelectedAtUtc = entry.LastSelectedAtUtc,
                 LastLoadedAtUtc = entry.LastLoadedAtUtc,

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -50,17 +52,31 @@ namespace ColorVision.Copilot
                 .ThenBy(candidate => candidate.Index)
                 .ToArray();
             var selected = new List<(AgentSkill Skill, int Index)>();
+            var shortenedDescriptionNames = new List<string>();
             var advertisedCharacters = 0;
-            foreach (var candidate in ranked)
+            for (var rankedIndex = 0; rankedIndex < ranked.Length; rankedIndex++)
             {
+                var candidate = ranked[rankedIndex];
                 if (selected.Count >= maximumCount)
                     break;
 
-                var metadataCharacters = candidate.Skill.Frontmatter.Name.Length + candidate.Skill.Frontmatter.Description.Length;
-                if (selected.Count > 0 && advertisedCharacters + metadataCharacters > maximumMetadataCharacters)
+                var remainingCharacters = maximumMetadataCharacters - advertisedCharacters;
+                var minimumCharacters = candidate.Skill.Frontmatter.Name.Length + 1;
+                if (remainingCharacters < minimumCharacters)
                     continue;
 
-                selected.Add((candidate.Skill, candidate.Index));
+                var remainingCandidateCount = Math.Min(maximumCount - selected.Count, ranked.Length - rankedIndex);
+                var fairCharacterShare = Math.Max(minimumCharacters, remainingCharacters / Math.Max(1, remainingCandidateCount));
+                var maximumDescriptionCharacters = Math.Max(1, fairCharacterShare - candidate.Skill.Frontmatter.Name.Length);
+                var selectedSkill = candidate.Skill;
+                if (candidate.Skill.Frontmatter.Description.Length > maximumDescriptionCharacters)
+                {
+                    selectedSkill = new MetadataBudgetAgentSkill(candidate.Skill, Shorten(candidate.Skill.Frontmatter.Description, maximumDescriptionCharacters));
+                    shortenedDescriptionNames.Add(candidate.Skill.Frontmatter.Name);
+                }
+
+                var metadataCharacters = selectedSkill.Frontmatter.Name.Length + selectedSkill.Frontmatter.Description.Length;
+                selected.Add((selectedSkill, candidate.Index));
                 advertisedCharacters += metadataCharacters;
             }
             var selectedSkills = selected
@@ -70,7 +86,17 @@ namespace ColorVision.Copilot
             return new CopilotAgentSkillSelection(
                 selectedSkills,
                 metadataExplicitOnlyNames.ToArray(),
-                historicalExplicitOnlyNames.ToArray());
+                historicalExplicitOnlyNames.ToArray(),
+                shortenedDescriptionNames.ToArray());
+        }
+
+        private static string Shorten(string value, int maximumCharacters)
+        {
+            if (value.Length <= maximumCharacters)
+                return value;
+            if (maximumCharacters <= 1)
+                return value[..maximumCharacters];
+            return value[..(maximumCharacters - 1)].TrimEnd() + "…";
         }
 
         private static bool IsExplicitlyRequested(string query, string skillName)
@@ -232,10 +258,46 @@ namespace ColorVision.Copilot
         }
 
         private sealed record SkillCandidate(AgentSkill Skill, int Index, int Score);
+
+        private sealed class MetadataBudgetAgentSkill : AgentSkill
+        {
+            private readonly AgentSkill _inner;
+            private readonly AgentSkillFrontmatter _frontmatter;
+
+            public MetadataBudgetAgentSkill(AgentSkill inner, string description)
+            {
+                _inner = inner;
+                var source = inner.Frontmatter;
+                _frontmatter = new AgentSkillFrontmatter(source.Name, description, source.Compatibility)
+                {
+                    AllowedTools = source.AllowedTools,
+                    License = source.License,
+                    Metadata = source.Metadata,
+                };
+            }
+
+            public override AgentSkillFrontmatter Frontmatter => _frontmatter;
+
+            public override ValueTask<string> GetContentAsync(CancellationToken cancellationToken = default)
+            {
+                return _inner.GetContentAsync(cancellationToken);
+            }
+
+            public override ValueTask<AgentSkillResource?> GetResourceAsync(string name, CancellationToken cancellationToken = default)
+            {
+                return _inner.GetResourceAsync(name, cancellationToken);
+            }
+
+            public override ValueTask<AgentSkillScript?> GetScriptAsync(string name, CancellationToken cancellationToken = default)
+            {
+                return _inner.GetScriptAsync(name, cancellationToken);
+            }
+        }
     }
 
     internal sealed record CopilotAgentSkillSelection(
         IReadOnlyList<AgentSkill> SelectedSkills,
         IReadOnlyList<string> MetadataExplicitOnlyNames,
-        IReadOnlyList<string> HistoricalExplicitOnlyNames);
+        IReadOnlyList<string> HistoricalExplicitOnlyNames,
+        IReadOnlyList<string> ShortenedDescriptionNames);
 }

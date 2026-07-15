@@ -42,6 +42,18 @@ namespace ColorVision.Copilot
 
         public int HistoricalExplicitOnlySkills { get; init; }
 
+        public int SkillMetadataCharacterBudget { get; init; }
+
+        public int AgentContextWindowTokens { get; init; }
+
+        public int AgentRequestTokenBudget { get; init; }
+
+        public int AgentMaxToolCalls { get; init; }
+
+        public int AgentMaxPasses { get; init; }
+
+        public int AgentTimeoutSeconds { get; init; }
+
         public int RegisteredCapabilities { get; init; }
 
         public int EnabledExternalMcpServers { get; init; }
@@ -113,6 +125,17 @@ namespace ColorVision.Copilot
                 .Append(" 个文档，序列化提示 ")
                 .Append(FormatCount(snapshot.ProjectInstructionPromptCharacters))
                 .AppendLine(" 字符");
+            builder.Append("Agent 预算：上下文 ")
+                .Append(FormatCount(snapshot.AgentContextWindowTokens))
+                .Append(" Token / 累计请求 ")
+                .Append(FormatCount(snapshot.AgentRequestTokenBudget))
+                .Append(" Token / 工具 ")
+                .Append(FormatCount(snapshot.AgentMaxToolCalls))
+                .Append(" / pass ")
+                .Append(FormatCount(snapshot.AgentMaxPasses))
+                .Append(" / 超时 ")
+                .Append(FormatCount(snapshot.AgentTimeoutSeconds))
+                .AppendLine(" 秒");
             builder.Append("Agent Skills：")
                 .Append(FormatCount(snapshot.TrackedSkills))
                 .Append(" 个已跟踪，")
@@ -122,9 +145,13 @@ namespace ColorVision.Copilot
                 .AppendLine(" 次");
             builder.Append("Skill 预算：下一请求最多 ")
                 .Append(CopilotAgentSkills.MaxActiveSkills)
-                .Append(" 个相关 Skill / ")
+                .Append(" 个相关 Skill / 当前 ")
+                .Append(FormatCount(snapshot.SkillMetadataCharacterBudget))
+                .Append(" 元数据字符（上下文 ")
+                .Append(CopilotAgentSkills.SkillMetadataContextPercent)
+                .Append("% / 硬上限 ")
                 .Append(FormatCount(CopilotAgentSkills.MaxAdvertisedSkillCharacters))
-                .AppendLine(" 元数据字符");
+                .AppendLine("）");
             builder.Append("能力目录：")
                 .Append(FormatCount(snapshot.RegisteredCapabilities))
                 .AppendLine(" 个已注册能力；实际工具仍按请求过滤");
