@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
         private static readonly Regex UnorderedListRegex = new(@"^\s*[-+*]\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex OrderedListRegex = new(@"^\s*(\d+)[.)]\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex InlineRegex = new(@"(\*\*[^*\r\n]+\*\*|`[^`\r\n]+`|\*[^*\r\n]+\*|\[[^\]\r\n]+\]\([^)]+\))", RegexOptions.Compiled);
+        private static readonly Regex ThematicBreakRegex = new(@"^\s{0,3}((\*\s*){3,}|(-\s*){3,}|(_\s*){3,})$", RegexOptions.Compiled);
 
         private readonly DispatcherTimer _renderTimer;
         private string _pendingMarkdown = string.Empty;
@@ -142,8 +143,9 @@ namespace ColorVision.Copilot
                 codeBuilder.Clear();
             }
 
-            foreach (var sourceLine in lines)
+            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
             {
+                var sourceLine = lines[lineIndex];
                 var line = sourceLine ?? string.Empty;
                 if (!string.IsNullOrEmpty(displayMathClosing))
                 {
@@ -206,6 +208,21 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     FlushParagraph();
+                    continue;
+                }
+
+                if (CopilotMarkdownTableParser.TryParse(lines, lineIndex, out var table, out var consumedLineCount))
+                {
+                    FlushParagraph();
+                    AddTable(table);
+                    lineIndex += consumedLineCount - 1;
+                    continue;
+                }
+
+                if (ThematicBreakRegex.IsMatch(line))
+                {
+                    FlushParagraph();
+                    AddThematicBreak();
                     continue;
                 }
 
@@ -303,6 +320,94 @@ namespace ColorVision.Copilot
             block.SetResourceReference(Block.BackgroundProperty, "ButtonBackground");
             block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
             block.Inlines.Add(new Run(code));
+            CurrentDocument.Blocks.Add(block);
+        }
+
+        private void AddTable(CopilotMarkdownTableModel model)
+        {
+            var table = new Table
+            {
+                CellSpacing = 0,
+                Margin = new Thickness(0, 3, 0, 10),
+            };
+            table.SetResourceReference(TextElement.ForegroundProperty, "GlobalTextBrush");
+            for (var columnIndex = 0; columnIndex < model.Headers.Count; columnIndex++)
+            {
+                var column = new TableColumn();
+                if (model.Headers.Count == 3)
+                {
+                    column.Width = columnIndex switch
+                    {
+                        0 => new GridLength(1.2, GridUnitType.Star),
+                        1 => new GridLength(2.8, GridUnitType.Star),
+                        _ => GridLength.Auto,
+                    };
+                }
+                else
+                {
+                    column.Width = new GridLength(1, GridUnitType.Star);
+                }
+                table.Columns.Add(column);
+            }
+
+            var rowGroup = new TableRowGroup();
+            rowGroup.Rows.Add(CreateTableRow(model.Headers, model.Alignments, isHeader: true, isSection: false));
+            foreach (var cells in model.Rows)
+            {
+                var isSection = !string.IsNullOrWhiteSpace(cells[0]) && cells.Skip(1).All(string.IsNullOrWhiteSpace);
+                rowGroup.Rows.Add(CreateTableRow(cells, model.Alignments, isHeader: false, isSection));
+            }
+            if (model.WasTruncated)
+            {
+                var truncatedCells = Enumerable.Repeat(string.Empty, model.Headers.Count).ToArray();
+                truncatedCells[0] = $"… table limited to {CopilotMarkdownTableParser.MaximumRows} rows";
+                rowGroup.Rows.Add(CreateTableRow(truncatedCells, model.Alignments, isHeader: false, isSection: true));
+            }
+
+            table.RowGroups.Add(rowGroup);
+            CurrentDocument.Blocks.Add(table);
+        }
+
+        private static TableRow CreateTableRow(
+            IReadOnlyList<string> cells,
+            IReadOnlyList<CopilotMarkdownTableAlignment> alignments,
+            bool isHeader,
+            bool isSection)
+        {
+            var row = new TableRow();
+            for (var columnIndex = 0; columnIndex < cells.Count; columnIndex++)
+            {
+                var paragraph = CreateParagraph(12.5, isHeader || isSection ? FontWeights.SemiBold : FontWeights.Normal, new Thickness(0));
+                paragraph.LineHeight = 18;
+                paragraph.TextAlignment = alignments[columnIndex] switch
+                {
+                    CopilotMarkdownTableAlignment.Center => TextAlignment.Center,
+                    CopilotMarkdownTableAlignment.Right => TextAlignment.Right,
+                    _ => TextAlignment.Left,
+                };
+                AddInlines(paragraph.Inlines, cells[columnIndex]);
+
+                var cell = new TableCell(paragraph)
+                {
+                    BorderThickness = new Thickness(columnIndex == 0 ? 1 : 0, isHeader ? 1 : 0, 1, 1),
+                    Padding = new Thickness(7, isHeader || isSection ? 5 : 4, 7, isHeader || isSection ? 5 : 4),
+                };
+                cell.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
+                if (isHeader || isSection)
+                    cell.SetResourceReference(Block.BackgroundProperty, "GlobalBorderBrush1");
+                row.Cells.Add(cell);
+            }
+            return row;
+        }
+
+        private void AddThematicBreak()
+        {
+            var block = new Paragraph
+            {
+                BorderThickness = new Thickness(0, 1, 0, 0),
+                Margin = new Thickness(0, 6, 0, 10),
+            };
+            block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
             CurrentDocument.Blocks.Add(block);
         }
 
