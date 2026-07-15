@@ -679,6 +679,20 @@ namespace ColorVision.Copilot
         }
         private string _mcpRecentAuditText = string.Empty;
 
+        public string SubagentRolesSummaryText
+        {
+            get => _subagentRolesSummaryText;
+            private set => SetProperty(ref _subagentRolesSummaryText, value ?? string.Empty);
+        }
+        private string _subagentRolesSummaryText = string.Empty;
+
+        public string SubagentRolesDiagnosticsText
+        {
+            get => _subagentRolesDiagnosticsText;
+            private set => SetProperty(ref _subagentRolesDiagnosticsText, value ?? string.Empty);
+        }
+        private string _subagentRolesDiagnosticsText = string.Empty;
+
         public CopilotVendorType NewProfileVendorType
         {
             get => _newProfileVendorType;
@@ -1516,6 +1530,9 @@ namespace ColorVision.Copilot
             var failureCount = entries.Count(CopilotMcpAuditLogger.IsRealFailureEntry);
             var approvalFlowCount = entries.Count(CopilotMcpAuditLogger.IsApprovalFlowEntry);
             var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var subagentCatalog = CopilotSubagentRoleCatalog.Default;
+            var pluginSubagents = CopilotPluginSubagentRoleLoader.Shared.GetSnapshot();
+            RefreshSubagentRoleDiagnostics(subagentCatalog, pluginSubagents);
 
             var server = CopilotMcpServer.Instance;
             var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
@@ -1525,7 +1542,7 @@ namespace ColorVision.Copilot
                 : $"{FormatAuditEntryForSummary(lastEntry)}.";
 
             McpDiagnosticsSummaryText =
-                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
+                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); subagent roles: {subagentCatalog.Roles.Count}; recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
 
             var lastError = CopilotMcpAuditLogger.GetLastError();
             McpLastErrorText = lastError == null
@@ -1555,6 +1572,49 @@ namespace ColorVision.Copilot
                 McpErrorSummaryText = "None";
                 McpDiagnosticsHeaderText = "Diagnostics";
             }
+        }
+
+        private void RefreshSubagentRoleDiagnostics(
+            CopilotSubagentRoleCatalog catalog,
+            CopilotPluginSubagentRoleLoaderSnapshot pluginSnapshot)
+        {
+            var builtInCount = catalog.Roles.Count(role => string.Equals(role.SourceId, "builtin", StringComparison.OrdinalIgnoreCase));
+            var pluginCount = catalog.Roles.Count - builtInCount;
+            SubagentRolesSummaryText =
+                $"{catalog.Roles.Count} role(s): {builtInCount} built-in, {pluginCount} plugin; registry revision {catalog.Revision}; manifest issues: {pluginSnapshot.Issues.Count}.";
+
+            var lines = new List<string>();
+            foreach (var role in catalog.Roles.OrderBy(role => role.SourceId, StringComparer.OrdinalIgnoreCase).ThenBy(role => role.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                lines.Add($"{role.DisplayName} ({role.ToolName})");
+                lines.Add($"  source={role.SourceName} [{role.SourceId}] version={role.SourceVersion}");
+                lines.Add($"  domain={role.ContextScope}; tools={FormatSubagentCapabilities(role.ReadCapabilities)}; child={role.ChildMode}; parents={string.Join(",", role.ParentModes)}");
+                lines.Add($"  fingerprint={role.CapabilityFingerprint}");
+            }
+            foreach (var issue in pluginSnapshot.Issues)
+            {
+                var roleLabel = string.IsNullOrWhiteSpace(issue.RoleId) ? string.Empty : "/" + issue.RoleId;
+                lines.Add($"! {issue.SourceId}{roleLabel}: {issue.Message}");
+            }
+            SubagentRolesDiagnosticsText = lines.Count == 0 ? "No subagent roles registered." : string.Join(Environment.NewLine, lines);
+        }
+
+        private static string FormatSubagentCapabilities(CopilotSubagentReadCapabilities capabilities)
+        {
+            var names = new List<string>();
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.SearchFiles))
+                names.Add(nameof(CopilotSubagentReadCapabilities.SearchFiles));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.GrepText))
+                names.Add(nameof(CopilotSubagentReadCapabilities.GrepText));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ReadLocalFile))
+                names.Add(nameof(CopilotSubagentReadCapabilities.ReadLocalFile));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ListDirectory))
+                names.Add(nameof(CopilotSubagentReadCapabilities.ListDirectory));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.WebSearch))
+                names.Add(nameof(CopilotSubagentReadCapabilities.WebSearch));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.FetchUrl))
+                names.Add(nameof(CopilotSubagentReadCapabilities.FetchUrl));
+            return names.Count == 0 ? "None" : string.Join(",", names);
         }
 
         private void CopyMcpDiagnostics()
@@ -1592,6 +1652,10 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Capability catalog: {capabilityCatalog.Capabilities.Count} item(s) from {capabilityCatalog.SourceCount} source(s), revision {capabilityCatalog.Revision}");
             builder.AppendLine(McpDiagnosticsSummaryText);
             builder.AppendLine(McpLastErrorText);
+            builder.AppendLine();
+            builder.AppendLine("Subagent roles:");
+            builder.AppendLine(SubagentRolesSummaryText);
+            builder.AppendLine(SubagentRolesDiagnosticsText);
             builder.AppendLine();
             builder.AppendLine("Recent audit entries:");
             builder.AppendLine(McpRecentAuditText);

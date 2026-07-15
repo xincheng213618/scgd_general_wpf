@@ -187,6 +187,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0"
@@ -202,14 +203,29 @@
                                            Text="{Binding McpLastErrorText}"
                                            TextWrapping="Wrap" />
 
-                                <TextBox Grid.Row="2"
+                                <Expander Grid.Row="2"
+                                          Margin="0,0,0,8"
+                                          Header="{Binding SubagentRolesSummaryText}"
+                                          Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBox Height="128"
+                                             Margin="0,8,0,0"
+                                             FontFamily="Consolas"
+                                             FontSize="11"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             IsReadOnly="True"
+                                             Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Auto" />
+                                </Expander>
+
+                                <TextBox Grid.Row="3"
                                          Height="96"
                                          IsReadOnly="True"
                                          Text="{Binding McpRecentAuditText, Mode=OneWay}"
                                          TextWrapping="Wrap"
                                          VerticalScrollBarVisibility="Auto" />
 
-                                <WrapPanel Grid.Row="3" Margin="0,8,0,0">
+                                <WrapPanel Grid.Row="4" Margin="0,8,0,0">
                                     <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding RefreshMcpDiagnosticsCommand}" Content="Refresh" />
                                     <Button Padding="10,4" Command="{Binding CopyMcpDiagnosticsCommand}" Content="Copy Diagnostics" />
                                 </WrapPanel>

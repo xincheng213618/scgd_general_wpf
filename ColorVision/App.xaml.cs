@@ -202,7 +202,10 @@ namespace ColorVision
             if (shouldLoadPlugins)
             {
                 PluginLoader.LoadPlugins();
+                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(PluginLoader.Config.Plugins.Values);
             }
+            else
+                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(Array.Empty<PluginInfo>());
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
@@ -240,6 +243,7 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
+            ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Dispose();
             CopilotMcpServer.Instance.Stop();
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位

@@ -33,6 +33,8 @@ public interface IPlugin
 
 其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
 
+插件还可通过可选的 `copilot_agents` 数组声明专用只读 Agent 角色。角色只在插件启用且 DLL 成功加载后注册；禁用或移除插件会同步注销。插件只能选择 `WorkspaceReadOnly`（`SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory`）或 `PublicWeb`（`WebSearch`、`FetchUrl`）之一，不能混合两个信任域，也不能声明 Shell、数据库、写入或递归委派能力。示例与全部字段见 [Copilot Agent Runtime](../core-concepts/copilot-agent-runtime.md)。
+
 ### 3. 装载流程
 
 主程序启动后，`PluginLoader` 会：
@@ -42,6 +44,7 @@ public interface IPlugin
 3. 根据清单计算 DLL 路径。
 4. 校验依赖与版本。
 5. 装载程序集，并把插件信息写入内部缓存。
+6. 对启用且程序集加载成功的插件，同步其声明式 Copilot Agent 角色。
 
 如果插件目录没有清单，平台仍会尝试按“目录名同名 DLL”的方式装载，但这不再是推荐形态。
 
