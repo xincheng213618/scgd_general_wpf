@@ -185,6 +185,7 @@ namespace ColorVision.Copilot
                 ExternalMcpServers = Array.Empty<CopilotMcpClientServerConfig>(),
                 ForceExternalMcpToolRefresh = false,
                 RuntimeRoleInstructions = role.RuntimeInstructions,
+                HarnessFeatures = CopilotAgentHarnessFeatures.None,
             };
         }
 

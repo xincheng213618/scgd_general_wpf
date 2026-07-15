@@ -101,6 +101,9 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         Assert.DoesNotContain(functionNames, name => name.Contains("delegate", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(functionNames, name => name.Contains("shell", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(functionNames, name => name.Contains("database", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(functionNames, name => name.Contains("todo", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(functionNames, name => name.Contains("mode", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(functionNames, name => name.Contains("skill", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(chatClient.AllMessageText, "PARENT_HISTORY_SECRET", StringComparison.Ordinal);
         Assert.Contains("Read target.cs", chatClient.AllMessageText, StringComparison.Ordinal);
         Assert.Contains("fresh, read-only Explore subagent", chatClient.LastOptions?.Instructions ?? string.Empty, StringComparison.Ordinal);
@@ -166,6 +169,9 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         Assert.Empty(child.History);
         Assert.Empty(child.Attachments);
         Assert.Empty(child.ContextItems);
+        var harnessFeatures = typeof(CopilotAgentRequest).GetProperty("HarnessFeatures", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(harnessFeatures);
+        Assert.Equal(0, Convert.ToInt32(harnessFeatures.GetValue(child)));
     }
 
     [Fact]

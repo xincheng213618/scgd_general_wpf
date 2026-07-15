@@ -66,6 +66,9 @@ public sealed class CopilotScoutSubagentTests : IDisposable
         Assert.Equal(2, result.Budget.MaxAgentPasses);
         var functionNames = chatClient.LastOptions?.Tools?.Select(tool => tool.Name).OrderBy(name => name).ToArray() ?? [];
         Assert.Equal(["colorvision_fetch_url", "colorvision_web_search"], functionNames);
+        Assert.DoesNotContain(functionNames, name => name.Contains("todo", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(functionNames, name => name.Contains("mode", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(functionNames, name => name.Contains("skill", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("fresh, read-only Scout subagent", chatClient.LastOptions?.Instructions ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains("Compare the current official documentation", chatClient.AllMessageText, StringComparison.Ordinal);
         Assert.DoesNotContain("PARENT_HISTORY_SECRET", chatClient.AllMessageText, StringComparison.Ordinal);

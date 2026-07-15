@@ -33,6 +33,8 @@ namespace ColorVision.Copilot
 
         public bool IsEnabled => Source != null && SkillNames.Count > 0;
 
+        internal static CopilotAgentSkills Disabled() => new([], [], null);
+
         public static CopilotAgentSkills Create(CopilotAgentRequest request, string? applicationBaseDirectory = null)
         {
             ArgumentNullException.ThrowIfNull(request);

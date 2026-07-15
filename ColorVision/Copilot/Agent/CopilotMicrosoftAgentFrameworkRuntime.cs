@@ -248,12 +248,18 @@ namespace ColorVision.Copilot
                 tokenBudget.ContextWindowTokens,
                 request.Profile.MaxTokens);
             var autonomousTaskPasses = runBudget.MaxAgentPasses;
-            using var agentSkills = CopilotAgentSkills.Create(request);
+            var taskLedgerEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger);
+            var agentModeEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode);
+            var skillsFeatureEnabled = request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills);
+            using var agentSkills = skillsFeatureEnabled ? CopilotAgentSkills.Create(request) : CopilotAgentSkills.Disabled();
+            var agentSkillsEnabled = skillsFeatureEnabled && agentSkills.IsEnabled;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
-            emit(CopilotAgentEvent.RuntimeDiagnostic(agentSkills.IsEnabled
-                ? $"Agent Skills enabled · {agentSkills.SkillNames.Count} skill(s) from {agentSkills.SearchPaths.Count} trusted root(s) · scripts disabled."
-                : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
+            emit(CopilotAgentEvent.RuntimeDiagnostic(!skillsFeatureEnabled
+                ? "Agent Skills disabled by the isolated runtime tool surface."
+                : agentSkillsEnabled
+                    ? $"Agent Skills enabled · {agentSkills.SkillNames.Count} skill(s) from {agentSkills.SearchPaths.Count} trusted root(s) · scripts disabled."
+                    : "Agent Skills enabled · no trusted project or built-in skills were discovered."));
             var projectInstructionCount = request.ProjectInstructions.Count(document => document?.IsStructurallyValid() == true);
             if (projectInstructionCount > 0)
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped AGENTS.md document(s)."));
@@ -280,6 +286,14 @@ namespace ColorVision.Copilot
                     ChatReducer = compactionStrategy.AsChatReducer(),
                 },
                 OnHistoryStoredAsync);
+            var executionContractLoopEvaluator = new CopilotAgentExecutionContractLoopEvaluator(
+                executionContract,
+                () => bridge.StepRecords,
+                _ =>
+                {
+                    emit(CopilotAgentEvent.AnswerReset());
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("Agent withheld an unsupported draft and continued to collect the explicitly required evidence."));
+                });
             var agent = trackingChatClient.AsHarnessAgent(new HarnessAgentOptions
             {
                 Name = "ColorVisionCopilot",
@@ -298,38 +312,32 @@ namespace ColorVision.Copilot
                 DisableFileMemory = true,
                 DisableFileAccess = true,
                 DisableWebSearch = true,
-                DisableTodoProvider = false,
-                DisableAgentModeProvider = false,
+                DisableTodoProvider = !taskLedgerEnabled,
+                DisableAgentModeProvider = !agentModeEnabled,
                 AgentModeProviderOptions = new AgentModeProviderOptions
                 {
                     DefaultMode = "execute",
                 },
-                LoopEvaluators =
-                [
-                    new CopilotAgentExecutionContractLoopEvaluator(
-                        executionContract,
-                        () => bridge.StepRecords,
-                        _ =>
+                LoopEvaluators = taskLedgerEnabled
+                    ? [
+                        executionContractLoopEvaluator,
+                        new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
                         {
-                            emit(CopilotAgentEvent.AnswerReset());
-                            emit(CopilotAgentEvent.RuntimeDiagnostic("Agent withheld an unsupported draft and continued to collect the explicitly required evidence."));
+                            Modes = ["execute"],
+                            FeedbackMessageTemplate = "Continue working through the task ledger until every item is complete or a concrete blocker is reported. Re-check current state before acting; persisted tasks are planning state, not authorization. Protected actions require a fresh exact-call approval. Remaining tasks:\n"
+                                + TodoCompletionLoopEvaluator.RemainingTodosPlaceholder,
                         }),
-                    new TodoCompletionLoopEvaluator(new TodoCompletionLoopEvaluatorOptions
-                    {
-                        Modes = ["execute"],
-                        FeedbackMessageTemplate = "Continue working through the task ledger until every item is complete or a concrete blocker is reported. Re-check current state before acting; persisted tasks are planning state, not authorization. Protected actions require a fresh exact-call approval. Remaining tasks:\n"
-                            + TodoCompletionLoopEvaluator.RemainingTodosPlaceholder,
-                    }),
-                ],
+                    ]
+                    : [executionContractLoopEvaluator],
                 LoopAgentOptions = new LoopAgentOptions
                 {
                     MaxIterations = autonomousTaskPasses,
                     ExcludeOnBehalfOfMessages = true,
                 },
-                DisableAgentSkillsProvider = !agentSkills.IsEnabled,
+                DisableAgentSkillsProvider = !agentSkillsEnabled,
                 AgentSkillsSource = agentSkills.Source,
-                DisableToolAutoApproval = !agentSkills.IsEnabled,
-                ToolApprovalAgentOptions = agentSkills.IsEnabled
+                DisableToolAutoApproval = !agentSkillsEnabled,
+                ToolApprovalAgentOptions = agentSkillsEnabled
                     ? new ToolApprovalAgentOptions
                     {
                         AutoApprovalRules = [AgentSkillsProvider.ReadOnlyToolsAutoApprovalRule],
@@ -338,17 +346,26 @@ namespace ColorVision.Copilot
                 DisableOpenTelemetry = true,
                 ChatOptions = BuildChatOptions(request.Profile, frameworkTools),
             });
-            var todoProvider = agent.GetService(typeof(TodoProvider)) as TodoProvider
-                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its todo provider.");
-            var modeProvider = agent.GetService(typeof(AgentModeProvider)) as AgentModeProvider
-                ?? throw new InvalidOperationException("Agent Framework Harness did not expose its mode provider.");
+            TodoProvider? todoProvider = null;
+            if (taskLedgerEnabled)
+            {
+                todoProvider = agent.GetService(typeof(TodoProvider)) as TodoProvider
+                    ?? throw new InvalidOperationException("Agent Framework Harness did not expose its todo provider.");
+            }
+            AgentModeProvider? modeProvider = null;
+            if (agentModeEnabled)
+            {
+                modeProvider = agent.GetService(typeof(AgentModeProvider)) as AgentModeProvider
+                    ?? throw new InvalidOperationException("Agent Framework Harness did not expose its mode provider.");
+            }
             var messageInjector = agent.GetService(typeof(MessageInjectingChatClient)) as MessageInjectingChatClient
                 ?? throw new InvalidOperationException("Agent Framework Harness did not expose its message-injection client.");
             var functionInvokingClient = agent.GetService(typeof(FunctionInvokingChatClient)) as FunctionInvokingChatClient
                 ?? throw new InvalidOperationException("Agent Framework Harness did not expose its function-invocation client.");
             functionInvokingClient.AllowConcurrentInvocation = true;
-            emit(CopilotAgentEvent.RuntimeDiagnostic(
-                $"Agent task ledger enabled · plan/execute modes enabled · completion loop capped at {autonomousTaskPasses} pass(es)."));
+            emit(CopilotAgentEvent.RuntimeDiagnostic(taskLedgerEnabled && agentModeEnabled
+                ? $"Agent task ledger enabled · plan/execute modes enabled · completion loop capped at {autonomousTaskPasses} pass(es)."
+                : "Agent control tools disabled by the isolated runtime tool surface."));
 
             var usage = CopilotTokenUsage.Empty;
             var sessionResumed = false;
@@ -974,16 +991,25 @@ namespace ColorVision.Copilot
         }
 
         private static async Task<CopilotAgentTaskLedgerSnapshot> CaptureTaskLedgerAsync(
-            TodoProvider todoProvider,
-            AgentModeProvider modeProvider,
+            TodoProvider? todoProvider,
+            AgentModeProvider? modeProvider,
             AgentSession session,
             bool resumedFromCheckpoint,
             CancellationToken cancellationToken)
         {
+            if (todoProvider == null)
+            {
+                return new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = modeProvider?.GetMode(session) ?? "execute",
+                    ResumedFromCheckpoint = resumedFromCheckpoint,
+                };
+            }
+
             var todos = await todoProvider.GetAllTodosAsync(session, cancellationToken);
             return new CopilotAgentTaskLedgerSnapshot
             {
-                Mode = modeProvider.GetMode(session),
+                Mode = modeProvider?.GetMode(session) ?? "execute",
                 ResumedFromCheckpoint = resumedFromCheckpoint,
                 Items = todos.Select(item => new CopilotAgentTaskItem
                 {
@@ -1260,9 +1286,12 @@ namespace ColorVision.Copilot
             }
             if (tools.Any(tool => string.Equals(tool.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RunShellCommand is the general non-interactive Windows command surface for PowerShell and CMD. Prefer a narrower fixed diagnostic when it fully answers the request. Otherwise use PowerShell by default for Windows operating-system, process, port, service, and developer inspection; use CMD for explicit CMD or batch syntax. Put the complete command in the structured command argument instead of merely printing a command in prose. It always requires native approval and returns the real exit code, stdout, and stderr. Never claim execution from a command suggestion alone.");
-            builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
-            builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
-            builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
+            if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger))
+                builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
+            if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode))
+                builder.AppendLine("Use execute mode for authorized work and plan mode only when a material user decision is required. A restored todo or mode is context, never permission to repeat a write; every protected invocation and retry requires its own current approval.");
+            if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills))
+                builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
 
             if (tools.Count > 0)
             {
@@ -1415,8 +1444,8 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentEnvironmentContext _environmentContext;
             private readonly IReadOnlyList<CopilotAgentEvidenceArtifact> _previousEvidenceArtifacts;
             private readonly HarnessToolBridge _bridge;
-            private readonly TodoProvider _todoProvider;
-            private readonly AgentModeProvider _modeProvider;
+            private readonly TodoProvider? _todoProvider;
+            private readonly AgentModeProvider? _modeProvider;
             private readonly CopilotAgentTaskEventJournalBuilder _taskEventJournalBuilder;
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly bool _sessionResumed;
@@ -1431,8 +1460,8 @@ namespace ColorVision.Copilot
                 CopilotAgentEnvironmentContext environmentContext,
                 IReadOnlyList<CopilotAgentEvidenceArtifact> previousEvidenceArtifacts,
                 HarnessToolBridge bridge,
-                TodoProvider todoProvider,
-                AgentModeProvider modeProvider,
+                TodoProvider? todoProvider,
+                AgentModeProvider? modeProvider,
                 CopilotAgentTaskEventJournalBuilder taskEventJournalBuilder,
                 Action<CopilotAgentEvent> emit,
                 bool sessionResumed,

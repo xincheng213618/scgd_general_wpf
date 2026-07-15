@@ -6,6 +6,16 @@ using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
+    [Flags]
+    internal enum CopilotAgentHarnessFeatures
+    {
+        None = 0,
+        TaskLedger = 1,
+        AgentMode = 2,
+        Skills = 4,
+        Full = TaskLedger | AgentMode | Skills,
+    }
+
     public enum CopilotAgentMode
     {
         Chat,
@@ -87,6 +97,8 @@ namespace ColorVision.Copilot
         public bool ForceExternalMcpToolRefresh { get; init; }
 
         internal string RuntimeRoleInstructions { get; init; } = string.Empty;
+
+        internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;
     }
 
     public sealed class CopilotDelegatedRunUsage
