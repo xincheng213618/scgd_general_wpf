@@ -51,7 +51,8 @@ namespace ColorVision.Copilot
         private string _pendingActionFeedbackText = string.Empty;
         private string _agentRunNoticeConversationId = string.Empty;
         private string _agentRunNoticeText = string.Empty;
-        private string _contextDiagnosticsText = string.Empty;
+        private string _localCommandResultTitle = string.Empty;
+        private string _localCommandResultText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
 
@@ -141,8 +142,8 @@ namespace ColorVision.Copilot
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
             ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(action => _ = ApprovePendingActionAsync(action), action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
-            DismissContextDiagnosticsCommand = new RelayCommand(_ => DismissContextDiagnostics(), _ => HasContextDiagnostics);
-            CompleteLocalCommandCommand = new RelayCommand(_ => TryCompleteLocalCommand(), _ => HasLocalCommandSuggestion);
+            DismissLocalCommandResultCommand = new RelayCommand(_ => DismissLocalCommandResult(), _ => HasLocalCommandResult);
+            CompleteLocalCommandCommand = new RelayCommand(command => TryCompleteLocalCommand(command as CopilotLocalCommand), _ => HasLocalCommandSuggestions);
 
             _pendingActionExpiryTimer = new DispatcherTimer
             {
@@ -334,7 +335,7 @@ namespace ColorVision.Copilot
 
         public ICommand RejectPendingActionCommand { get; }
 
-        public ICommand DismissContextDiagnosticsCommand { get; }
+        public ICommand DismissLocalCommandResultCommand { get; }
 
         public ICommand CompleteLocalCommandCommand { get; }
 
@@ -342,20 +343,26 @@ namespace ColorVision.Copilot
 
         public bool HasAttachments => Attachments.Count > 0;
 
-        public string ContextDiagnosticsText
+        public string LocalCommandResultTitle
         {
-            get => _contextDiagnosticsText;
+            get => _localCommandResultTitle;
+            private set => SetProperty(ref _localCommandResultTitle, value ?? string.Empty);
+        }
+
+        public string LocalCommandResultText
+        {
+            get => _localCommandResultText;
             private set
             {
-                if (SetProperty(ref _contextDiagnosticsText, value ?? string.Empty))
-                {
-                    OnPropertyChanged(nameof(HasContextDiagnostics));
-                    CommandManager.InvalidateRequerySuggested();
-                }
+                if (!SetProperty(ref _localCommandResultText, value ?? string.Empty))
+                    return;
+
+                OnPropertyChanged(nameof(HasLocalCommandResult));
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        public bool HasContextDiagnostics => !string.IsNullOrWhiteSpace(ContextDiagnosticsText);
+        public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -481,8 +488,8 @@ namespace ColorVision.Copilot
                 if (SetProperty(ref _inputText, value ?? string.Empty))
                 {
                     OnPropertyChanged(nameof(IsInputEmpty));
-                    OnPropertyChanged(nameof(LocalCommandSuggestion));
-                    OnPropertyChanged(nameof(HasLocalCommandSuggestion));
+                    OnPropertyChanged(nameof(LocalCommandSuggestions));
+                    OnPropertyChanged(nameof(HasLocalCommandSuggestions));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
                     RefreshComposerTokenEstimate();
                     CommandManager.InvalidateRequerySuggested();
@@ -514,22 +521,21 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · /context 查看上下文" : "要求后续变更 · /context 查看上下文";
+        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · 输入 / 查看本地命令" : "要求后续变更 · 输入 / 查看本地命令";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
 
-        public string LocalCommandSuggestion => CopilotContextDiagnostics.IsCommandPrefix(InputText)
-            ? CopilotContextDiagnostics.Command
-            : string.Empty;
+        public IReadOnlyList<CopilotLocalCommand> LocalCommandSuggestions => CopilotLocalCommandCatalog.Suggest(InputText);
 
-        public bool HasLocalCommandSuggestion => !string.IsNullOrEmpty(LocalCommandSuggestion);
+        public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
 
-        public bool TryCompleteLocalCommand()
+        public bool TryCompleteLocalCommand(CopilotLocalCommand? command = null)
         {
-            if (!HasLocalCommandSuggestion)
+            command ??= LocalCommandSuggestions.FirstOrDefault();
+            if (command == null)
                 return false;
 
-            InputText = LocalCommandSuggestion;
+            InputText = command.Name;
             return true;
         }
 
@@ -640,12 +646,44 @@ namespace ColorVision.Copilot
 
         private bool TryExecuteLocalCommand(string prompt)
         {
-            if (!CopilotContextDiagnostics.IsCommand(prompt))
+            var command = CopilotLocalCommandCatalog.FindExact(prompt);
+            if (command == null)
                 return false;
 
-            ContextDiagnosticsText = BuildContextDiagnosticsReport();
             InputText = string.Empty;
+            switch (command.Kind)
+            {
+                case CopilotLocalCommandKind.Context:
+                    ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
+                    break;
+                case CopilotLocalCommandKind.Skills:
+                    ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
+                    break;
+                case CopilotLocalCommandKind.Mcp:
+                    ShowLocalCommandResult(command, McpStatusToolTip);
+                    break;
+                case CopilotLocalCommandKind.NewConversation:
+                    DismissLocalCommandResult();
+                    StartNewChat();
+                    break;
+                default:
+                    return false;
+            }
             return true;
+        }
+
+        private string BuildAgentSkillDiagnosticsReport()
+        {
+            var agentDefaults = CopilotConfig.Instance.AgentDefaults;
+            return CopilotAgentSkillDiagnostics.FormatReport(
+                CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
+                CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens));
+        }
+
+        private void ShowLocalCommandResult(CopilotLocalCommand command, string report)
+        {
+            LocalCommandResultTitle = $"{command.Name} · 本地快照";
+            LocalCommandResultText = report;
         }
 
         private string BuildContextDiagnosticsReport()
@@ -697,9 +735,10 @@ namespace ColorVision.Copilot
             });
         }
 
-        private void DismissContextDiagnostics()
+        private void DismissLocalCommandResult()
         {
-            ContextDiagnosticsText = string.Empty;
+            LocalCommandResultTitle = string.Empty;
+            LocalCommandResultText = string.Empty;
         }
 
         private async Task SendAsync()
@@ -761,7 +800,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            DismissContextDiagnostics();
+            DismissLocalCommandResult();
             InputText = string.Empty;
             await hostedRun.Completion;
             if (!hostedRun.HasStarted)
@@ -2268,7 +2307,7 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
             _selectedConversation = conversation;
-            DismissContextDiagnostics();
+            DismissLocalCommandResult();
             if (_selectedConversation != null)
                 _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
 

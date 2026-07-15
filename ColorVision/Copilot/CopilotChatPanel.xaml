@@ -1262,7 +1262,7 @@
                             Style="{StaticResource CopilotInsetBorderStyle}"
                             BorderThickness="1"
                             CornerRadius="12"
-                            Visibility="{Binding HasContextDiagnostics, Converter={StaticResource bool2VisibilityConverter}}">
+                            Visibility="{Binding HasLocalCommandResult, Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -1278,15 +1278,15 @@
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource GlobalTextBrush}"
                                        Opacity="0.72"
-                                       Text="/context · 本地快照" />
+                                       Text="{Binding LocalCommandResultTitle}" />
                             <Button Grid.Column="1"
                                     Width="22"
                                     Height="22"
                                     Padding="0"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"
-                                    Command="{Binding DismissContextDiagnosticsCommand}"
+                                    Command="{Binding DismissLocalCommandResultCommand}"
                                     Content="×"
-                                    ToolTip="关闭上下文快照" />
+                                    ToolTip="关闭本地命令结果" />
                             <ScrollViewer Grid.Row="1"
                                           Grid.ColumnSpan="2"
                                           MaxHeight="168"
@@ -1297,7 +1297,7 @@
                                            FontSize="11"
                                            Foreground="{DynamicResource GlobalTextBrush}"
                                            Opacity="0.82"
-                                           Text="{Binding ContextDiagnosticsText}"
+                                           Text="{Binding LocalCommandResultText}"
                                            TextWrapping="Wrap" />
                             </ScrollViewer>
                         </Grid>
@@ -1483,35 +1483,45 @@
                     </StackPanel>
 
                     <Border Grid.Row="3"
+                            MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
                             BorderThickness="1"
                             CornerRadius="7"
-                            Visibility="{Binding HasLocalCommandSuggestion, Converter={StaticResource bool2VisibilityConverter}}">
-                        <Button Padding="10,6"
-                                Style="{StaticResource ComposerPopoverButtonStyle}"
-                                Command="{Binding CompleteLocalCommandCommand}"
-                                Click="LocalCommandSuggestionButton_Click"
-                                ToolTip="Tab 补全，Enter 直接执行">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock FontFamily="Consolas"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding LocalCommandSuggestion}" />
-                                <TextBlock Grid.Column="1"
-                                           Margin="12,0,0,0"
-                                           Opacity="0.62"
-                                           Text="查看本地上下文预算与注入统计" />
-                                <TextBlock Grid.Column="2"
-                                           Margin="14,0,0,0"
-                                           Opacity="0.48"
-                                           Text="Tab 补全 · Enter 执行" />
-                            </Grid>
-                        </Button>
+                            Visibility="{Binding HasLocalCommandSuggestions, Converter={StaticResource bool2VisibilityConverter}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding LocalCommandSuggestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Padding="10,6"
+                                                Style="{StaticResource ComposerPopoverButtonStyle}"
+                                                Command="{Binding DataContext.CompleteLocalCommandCommand, Source={x:Reference Root}}"
+                                                CommandParameter="{Binding}"
+                                                Click="LocalCommandSuggestionButton_Click"
+                                                ToolTip="点击或使用 Tab 补全；Enter 执行">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock FontFamily="Consolas"
+                                                           FontWeight="SemiBold"
+                                                           Text="{Binding Name}" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="12,0,0,0"
+                                                           Opacity="0.62"
+                                                           Text="{Binding Description}" />
+                                                <TextBlock Grid.Column="2"
+                                                           Margin="14,0,0,0"
+                                                           Opacity="0.48"
+                                                           Text="Tab 补全" />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                     </Border>
 
                     <Grid Grid.Row="4"

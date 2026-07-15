@@ -119,6 +119,35 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
         Assert.Equal(128, snapshot.Entries.Count);
     }
 
+    [Fact]
+    public void SkillDiagnostics_ExplainsUsageAndReversibleExplicitOnlyState()
+    {
+        var timestamp = new DateTimeOffset(2026, 7, 15, 1, 2, 3, TimeSpan.Zero);
+        var entry = new CopilotAgentSkillUsageEntry
+        {
+            Name = "legacy-workflow",
+            SelectedRuns = 24,
+            LoadedRuns = 1,
+            ConsecutiveSelectedWithoutLoad = CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold,
+            LastSelectedAtUtc = timestamp,
+        };
+        var snapshot = new CopilotAgentSkillUsageSnapshot
+        {
+            RecordedRuns = 24,
+            Entries = [entry],
+            HistoricalExplicitOnlySkills = [entry],
+        };
+
+        var report = CopilotAgentSkillDiagnostics.FormatReport(snapshot, 8_000);
+
+        Assert.Contains("1 tracked across 24 run(s); 1 loaded; 1 low-use explicit-only", report, StringComparison.Ordinal);
+        Assert.Contains("Metadata budget: 8,000 characters", report, StringComparison.Ordinal);
+        Assert.Contains("loaded 1/24", report, StringComparison.Ordinal);
+        Assert.Contains("consecutive misses 20/20", report, StringComparison.Ordinal);
+        Assert.Contains("remain installed", report, StringComparison.Ordinal);
+        Assert.Contains("direct load restores", report, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempRoot))

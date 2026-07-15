@@ -1772,15 +1772,8 @@ namespace ColorVision.Copilot
             try
             {
                 var snapshot = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
-                var usedCount = snapshot.Entries.Count(entry => entry.LoadedRuns > 0);
-                AgentSkillsSummaryText = snapshot.RecordedRuns == 0
-                    ? "No skill usage has been recorded yet."
-                    : $"{snapshot.Entries.Count} tracked across {snapshot.RecordedRuns} run(s); {usedCount} loaded; {snapshot.HistoricalExplicitOnlySkills.Count} low-use explicit-only.";
-                AgentSkillsDiagnosticsText = snapshot.Entries.Count == 0
-                    ? "Run Copilot with Agent Skills enabled to collect bounded usage evidence."
-                    : string.Join(Environment.NewLine, snapshot.Entries.Select(entry =>
-                        $"{entry.Name}: loaded {entry.LoadedRuns}/{entry.SelectedRuns} selected run(s) ({entry.LoadRate:P0}); consecutive misses {entry.ConsecutiveSelectedWithoutLoad}/{CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold}; last selected {FormatLocalTime(entry.LastSelectedAtUtc)}"
-                        + (entry.ConsecutiveSelectedWithoutLoad >= CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold ? " · explicit-only until directly requested and loaded" : string.Empty)));
+                AgentSkillsSummaryText = CopilotAgentSkillDiagnostics.FormatSummary(snapshot);
+                AgentSkillsDiagnosticsText = CopilotAgentSkillDiagnostics.FormatEntries(snapshot);
             }
             catch (Exception ex)
             {

@@ -61,21 +61,6 @@ namespace ColorVision.Copilot
 
     public static class CopilotContextDiagnostics
     {
-        public const string Command = "/context";
-
-        public static bool IsCommand(string? text)
-        {
-            return string.Equals((text ?? string.Empty).Trim(), Command, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public static bool IsCommandPrefix(string? text)
-        {
-            var normalized = (text ?? string.Empty).Trim();
-            return normalized.Length > 0
-                && normalized.Length < Command.Length
-                && Command.StartsWith(normalized, StringComparison.OrdinalIgnoreCase);
-        }
-
         public static string Format(CopilotContextDiagnosticSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);

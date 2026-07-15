@@ -153,18 +153,17 @@ public class CopilotBusinessContextTests
     }
 
     [Fact]
-    public void ContextDiagnostics_RecognizesOnlyTheExactLocalCommand()
+    public void LocalCommandCatalog_FiltersAndResolvesExactCommands()
     {
-        Assert.True(CopilotContextDiagnostics.IsCommand("/context"));
-        Assert.True(CopilotContextDiagnostics.IsCommand("  /CONTEXT  "));
-        Assert.False(CopilotContextDiagnostics.IsCommand("/context explain"));
-        Assert.False(CopilotContextDiagnostics.IsCommand("please show context"));
-        Assert.False(CopilotContextDiagnostics.IsCommand(null));
-        Assert.True(CopilotContextDiagnostics.IsCommandPrefix("/"));
-        Assert.True(CopilotContextDiagnostics.IsCommandPrefix("  /Contex  "));
-        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("/context"));
-        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("/context extra"));
-        Assert.False(CopilotContextDiagnostics.IsCommandPrefix("context"));
+        Assert.Equal(["/context", "/skills", "/mcp", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        Assert.Equal("/context", Assert.Single(CopilotLocalCommandCatalog.Suggest("  /Contex  ")).Name);
+        Assert.Equal(CopilotLocalCommandKind.Context, CopilotLocalCommandCatalog.FindExact("  /CONTEXT  ")?.Kind);
+        Assert.Equal(CopilotLocalCommandKind.Skills, CopilotLocalCommandCatalog.FindExact("/skills")?.Kind);
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context"));
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context extra"));
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest("context"));
+        Assert.Null(CopilotLocalCommandCatalog.FindExact("/context explain"));
+        Assert.Null(CopilotLocalCommandCatalog.FindExact(null));
     }
 
     [Fact]

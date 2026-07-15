@@ -91,7 +91,9 @@ Marketplace 安装会在下载和文件哈希校验通过后，只读打开 `.cv
 
 该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口消除低价值历史，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code context window](https://code.claude.com/docs/en/context-window) 先清理旧输出、再压缩对话的原则一致。Harness 指令仍由当前 Profile 和运行时单独提供。
 
-输入框支持唯一的本地诊断命令 `/context`。输入 `/` 到 `/contex` 的任意有效前缀时会显示单一候选；Tab 补全，Enter 补全后直接执行，鼠标选择只补全并把焦点送回输入框。候选完全由本地前缀匹配产生，不扫描 Skill 或工具目录。该命令在 Profile 校验和任务调度之前执行，不调用模型、工具或 MCP，也不写入会话消息或模型历史；结果只显示在可关闭的临时面板中，因此未配置模型时也能检查当前上下文。快照只公开有界统计：模型与模式、系统提示字符数、对话历史保留比例和预算、附件与窗口上下文、Agent 模式下的项目指令大小、Skill 历史降级统计、已注册能力数和启用的外部 MCP 数，不输出提示正文、文件路径或凭据。Chat 模式不会为了诊断额外发现项目指令或 Skill；Agent 模式只在用户显式执行该命令时读取项目指令，并仅读取已有的 Skill 使用统计。这里借鉴 [Claude Code `/context`](https://code.claude.com/docs/en/context-window) 的可见上下文诊断，并保持 [Codex slash commands](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 的低成本键盘控制原则；当前不建立通用 slash-command 框架，避免增加常驻路由和维护成本。
+输入框使用一个有界的本地 Slash 命令目录。输入 `/` 会显示全部候选，继续输入会按命令名前缀过滤；Tab 补全第一项，Enter 补全后直接执行，也可以点击任意候选。目录目前只保留四个能复用既有能力的命令：`/context` 查看上下文、预算与注入统计，`/skills` 查看 Skill 使用率、连续未加载和可逆 explicit-only 状态，`/mcp` 查看本地服务、审批与最近调用状态，`/new` 复用现有新会话逻辑。没有为命令系统引入模型调用、动态反射、工具扫描或新的权限面。
+
+这些命令在 Profile 校验和任务调度之前执行，不写入会话消息或模型历史，因此未配置模型时仍可使用。诊断结果只显示在可关闭的临时面板中；`/context` 不输出提示正文、文件路径或凭据，`/skills` 只读取有界的本地使用统计，`/mcp` 复用已有脱敏状态，`/new` 与界面上的新会话按钮保持同一语义。命令匹配和结果格式分别集中在 `CopilotLocalCommandCatalog` 与现有诊断组件中，不再把 `/context` 的识别、补全和说明散落在 ViewModel/XAML。这个小目录采用 [Codex slash commands](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 和 [Claude Code interactive mode](https://code.claude.com/docs/en/interactive-mode) 的“输入 `/` 展示、继续输入过滤”原则，但不照搬与 ColorVision 无关的命令。
 
 ## 工具契约
 
