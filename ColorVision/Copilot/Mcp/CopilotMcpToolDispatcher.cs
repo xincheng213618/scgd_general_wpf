@@ -1976,7 +1976,7 @@ namespace ColorVision.Copilot.Mcp
             foreach (var property in proposedObject)
                 currentObject[property.Key] = property.Value?.DeepClone();
 
-            return currentObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            return currentObject.ToJsonString(StructuredJsonOptions);
         }
 
         private static string BuildTemplatePatchPreviewText(TemplatePatchComputation computation, CopilotMcpTemplatePatchPreview? storedPreview)
@@ -2719,7 +2719,7 @@ namespace ColorVision.Copilot.Mcp
                 ["proposed_changes"] = JsonNode.Parse(proposedChanges.GetRawText()),
             };
 
-            return payload.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            return payload.ToJsonString(StructuredJsonOptions);
         }
 
         private static string EscapeForInlineJson(string? value)

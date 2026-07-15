@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -188,6 +189,9 @@ namespace ColorVision.Copilot.Mcp
 
     public sealed class CopilotMcpToolEnvironment
     {
+        private static readonly JsonSerializerOptions FlowPatchPreviewJsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+        private static readonly string[] FlowPatchPreviewEffects = ["Changes only the active Flow editor after approval", "Does not save or run the flow"];
+
         public Func<CopilotMcpWorkspaceSnapshot> WorkspaceSnapshotProvider { get; init; } = CreateDefaultWorkspaceSnapshot;
 
         public Func<CopilotMcpRuntimeSettings> RuntimeSettingsProvider { get; init; } = CreateDefaultRuntimeSettings;
@@ -291,13 +295,13 @@ namespace ColorVision.Copilot.Mcp
                     },
                     _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),
                 };
-                return CopilotMcpToolCallResult.Ok(System.Text.Json.JsonSerializer.Serialize(new
+                return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(new
                 {
                     format = "colorvision.flow-patch-preview.v1",
                     expectedRevision = currentRevision,
                     change,
-                    effects = new[] { "Changes only the active Flow editor after approval", "Does not save or run the flow" },
-                }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true }));
+                    effects = FlowPatchPreviewEffects,
+                }, FlowPatchPreviewJsonOptions));
             }, cancellationToken);
         }
 
