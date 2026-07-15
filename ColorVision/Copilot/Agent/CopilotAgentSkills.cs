@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
                 .Append(" active");
             var omittedCount = snapshot.DiscoveredCount - snapshot.SelectedNames.Count;
             var explicitOnlyCount = snapshot.MetadataExplicitOnlyNames.Count + snapshot.HistoricalExplicitOnlyNames.Count + snapshot.ManualExplicitOnlyNames.Count;
-            var budgetOmittedCount = Math.Max(0, omittedCount - explicitOnlyCount - snapshot.ManualOffNames.Count);
+            var budgetOmittedCount = Math.Max(0, omittedCount - explicitOnlyCount - snapshot.ManualOffNames.Count - snapshot.IrrelevantNames.Count);
             if (explicitOnlyCount > 0)
             {
                 builder.Append(" · ").Append(explicitOnlyCount).Append(" explicit-only");
@@ -115,6 +115,8 @@ namespace ColorVision.Copilot
                 builder.Append(" · ").Append(snapshot.ManualNameOnlyNames.Count).Append(" manual name-only");
             if (snapshot.ManualOffNames.Count > 0)
                 builder.Append(" · ").Append(snapshot.ManualOffNames.Count).Append(" manually off");
+            if (snapshot.IrrelevantNames.Count > 0)
+                builder.Append(" · ").Append(snapshot.IrrelevantNames.Count).Append(" irrelevant omitted");
             if (budgetOmittedCount > 0)
                 builder.Append(" · ").Append(budgetOmittedCount).Append(" omitted by the active-skill budget");
             if (snapshot.ShortenedDescriptionNames.Count > 0)
@@ -255,6 +257,7 @@ namespace ColorVision.Copilot
                         selection.ManualNameOnlyNames,
                         selection.ManualExplicitOnlyNames,
                         selection.ManualOffNames,
+                        selection.IrrelevantNames,
                         selection.ShortenedDescriptionNames);
                 }
                 return selection.SelectedSkills.Select(skill => (AgentSkill)new TrackingAgentSkill(skill, TrackLoad)).ToArray();
@@ -326,9 +329,10 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> ManualNameOnlyNames,
             IReadOnlyList<string> ManualExplicitOnlyNames,
             IReadOnlyList<string> ManualOffNames,
+            IReadOnlyList<string> IrrelevantNames,
             IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], []);
         }
 
     }

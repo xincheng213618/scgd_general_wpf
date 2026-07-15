@@ -13,6 +13,12 @@ namespace ColorVision.Copilot
     {
         private const int MaxInvocationPolicyFileBytes = 32_768;
         private const string NameOnlyDescription = "\u200B";
+        private static readonly HashSet<string> RelevanceStopWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "a", "an", "and", "are", "as", "at", "be", "by", "can", "do", "does", "explain", "for", "from",
+            "help", "how", "i", "in", "is", "it", "me", "of", "on", "or", "please", "requested", "task", "the",
+            "this", "to", "use", "user", "what", "when", "where", "which", "why", "with", "you", "your",
+        };
 
         public static CopilotAgentSkillSelection Select(
             IReadOnlyList<AgentSkill> skills,
@@ -25,17 +31,22 @@ namespace ColorVision.Copilot
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
             var queryCjkBigrams = ExtractCjkBigrams(query);
+            var explicitlyRequestedNames = skills
+                .Select(skill => skill.Frontmatter.Name)
+                .Where(skillName => IsExplicitlyRequested(query, skillName))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var metadataExplicitOnlyNames = new List<string>();
             var historicalExplicitOnlyNames = new List<string>();
             var manualNameOnlyNames = new List<string>();
             var manualExplicitOnlyNames = new List<string>();
             var manualOffNames = new List<string>();
+            var irrelevantNames = new List<string>();
             var candidates = new List<SkillCandidate>(skills.Count);
             for (var index = 0; index < skills.Count; index++)
             {
                 var skill = skills[index];
                 var skillName = skill.Frontmatter.Name;
-                var explicitlyRequested = IsExplicitlyRequested(query, skillName);
+                var explicitlyRequested = explicitlyRequestedNames.Contains(skillName);
                 var overrideState = skillOverrides?.TryGetValue(skillName, out var configuredState) == true && Enum.IsDefined(configuredState)
                     ? configuredState
                     : CopilotAgentSkillOverrideState.Auto;
@@ -69,10 +80,25 @@ namespace ColorVision.Copilot
                     : skill;
                 if (overrideState == CopilotAgentSkillOverrideState.NameOnly)
                     manualNameOnlyNames.Add(skillName);
+                if (explicitlyRequestedNames.Count > 0
+                    && !explicitlyRequested
+                    && overrideState != CopilotAgentSkillOverrideState.NameOnly)
+                {
+                    irrelevantNames.Add(skillName);
+                    continue;
+                }
+                var relevanceScore = CalculateRelevanceScore(advertisedSkill.Frontmatter, query, queryWords, queryCjkBigrams);
+                if (!explicitlyRequested
+                    && overrideState != CopilotAgentSkillOverrideState.NameOnly
+                    && relevanceScore <= 0)
+                {
+                    irrelevantNames.Add(skillName);
+                    continue;
+                }
                 candidates.Add(new SkillCandidate(
                     advertisedSkill,
                     index,
-                    CalculateRelevanceScore(advertisedSkill.Frontmatter, query, queryWords, queryCjkBigrams)));
+                    relevanceScore));
             }
             var ranked = candidates
                 .OrderByDescending(candidate => candidate.Score)
@@ -118,6 +144,7 @@ namespace ColorVision.Copilot
                 manualNameOnlyNames.ToArray(),
                 manualExplicitOnlyNames.ToArray(),
                 manualOffNames.ToArray(),
+                irrelevantNames.ToArray(),
                 shortenedDescriptionNames.ToArray());
         }
 
@@ -264,7 +291,11 @@ namespace ColorVision.Copilot
             void AddWord()
             {
                 if (builder.Length >= 3)
-                    words.Add(builder.ToString());
+                {
+                    var word = builder.ToString();
+                    if (!RelevanceStopWords.Contains(word))
+                        words.Add(word);
+                }
                 builder.Clear();
             }
         }
@@ -333,5 +364,6 @@ namespace ColorVision.Copilot
         IReadOnlyList<string> ManualNameOnlyNames,
         IReadOnlyList<string> ManualExplicitOnlyNames,
         IReadOnlyList<string> ManualOffNames,
+        IReadOnlyList<string> IrrelevantNames,
         IReadOnlyList<string> ShortenedDescriptionNames);
 }

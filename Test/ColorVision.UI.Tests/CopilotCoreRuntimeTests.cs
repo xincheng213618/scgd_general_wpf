@@ -926,7 +926,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_BudgetsSkillsAndKeepsAnExplicitlyRequestedSkill()
+    public async Task AgentFrameworkRuntime_KeepsExplicitSkillAndOmitsUnrelatedSkillMetadata()
     {
         var skillsRoot = Path.Combine(_tempRoot, ".agents", "skills");
         for (var index = 0; index < 20; index++)
@@ -969,10 +969,93 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         }, events.Add, CancellationToken.None);
 
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
-            && item.Text.Contains("omitted by the active-skill budget", StringComparison.Ordinal));
+            && item.Text.Contains("irrelevant omitted", StringComparison.Ordinal));
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("loaded this run: critical-diagnostics", StringComparison.Ordinal));
-        Assert.Equal(16, skillUsageStore.GetSnapshot().Entries.Count);
+        var usage = Assert.Single(skillUsageStore.GetSnapshot().Entries);
+        Assert.Equal("critical-diagnostics", usage.Name);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_OmitsAllIrrelevantSkillsFromInitialContext()
+    {
+        var skillsRoot = Path.Combine(_tempRoot, ".agents", "skills");
+        foreach (var item in new[]
+        {
+            (Name: "database-cleanup", Description: "Clean old database records."),
+            (Name: "flow-authoring", Description: "Add and connect workflow nodes."),
+            (Name: "release-deployment", Description: "Publish a release to production."),
+        })
+            WriteTestSkill(skillsRoot, item.Name, item.Description);
+
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.DoesNotContain("database-cleanup", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("flow-authoring", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("release-deployment", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            return null;
+        });
+        var skillUsageStore = new CopilotAgentSkillUsageStore(Path.Combine(_tempRoot, "irrelevant-skill-state"));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => fakeChatClient,
+            new StaticExternalToolProvider(),
+            skillUsageStore: skillUsageStore);
+        var events = new List<CopilotAgentEvent>();
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Explain how color temperature is calculated.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+        }, events.Add, CancellationToken.None);
+
+        Assert.Contains(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && item.Text.Contains("0/", StringComparison.Ordinal)
+            && item.Text.Contains("irrelevant omitted", StringComparison.Ordinal));
+        Assert.Empty(skillUsageStore.GetSnapshot().Entries);
+    }
+
+    [Fact]
+    public async Task AgentFrameworkRuntime_SelectsCjkRelevantSkillWithoutAdvertisingUnrelatedSkill()
+    {
+        var skillsRoot = Path.Combine(_tempRoot, ".agents", "skills");
+        foreach (var item in new[]
+        {
+            (Name: "color-temperature-analysis", Description: "分析色温、色坐标和相关计算。"),
+            (Name: "database-maintenance", Description: "清理数据库中的历史记录。"),
+        })
+            WriteTestSkill(skillsRoot, item.Name, item.Description);
+
+        using var fakeChatClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.Contains("color-temperature-analysis", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("database-maintenance", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            return CreateLoadSkillCall(options, "color-temperature-analysis");
+        });
+        var skillUsageStore = new CopilotAgentSkillUsageStore(Path.Combine(_tempRoot, "cjk-skill-state"));
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => fakeChatClient,
+            new StaticExternalToolProvider(),
+            skillUsageStore: skillUsageStore);
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "帮我分析色温计算",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+        }, _ => { }, CancellationToken.None);
+
+        var usage = Assert.Single(skillUsageStore.GetSnapshot().Entries);
+        Assert.Equal("color-temperature-analysis", usage.Name);
+        Assert.Equal(1, usage.LoadedRuns);
     }
 
     [Fact]
@@ -1013,7 +1096,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         await runtime.RunAsync(new CopilotAgentRequest
         {
-            UserText = "Use focused-workflow for this task.",
+            UserText = "Use a focused general workflow for this task.",
             Profile = CreateProfile(),
             RunBudgetDefaults = new CopilotAgentRunBudgetDefaults { ContextWindowTokens = 32_768 },
             Mode = CopilotAgentMode.Auto,
@@ -5786,6 +5869,20 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         {
             [nameProperty] = skillName,
         });
+    }
+
+    private static void WriteTestSkill(string skillsRoot, string name, string description)
+    {
+        var directory = Path.Combine(skillsRoot, name);
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(Path.Combine(directory, "SKILL.md"), $$"""
+            ---
+            name: {{name}}
+            description: {{description}}
+            ---
+
+            Follow the specialized workflow.
+            """);
     }
 
     private static FunctionCallContent CreateReadSkillResourceCall(ChatOptions options, string skillName, string resourceName)
