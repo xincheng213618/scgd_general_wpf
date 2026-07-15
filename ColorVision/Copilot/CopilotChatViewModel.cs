@@ -23,7 +23,6 @@ namespace ColorVision.Copilot
 {
     public class CopilotChatViewModel : ViewModelBase
     {
-        private const int AgentHistoryMessageLimit = 8;
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
         private const int CompactHistoryLimit = 4;
@@ -674,7 +673,7 @@ namespace ColorVision.Copilot
 
         private string BuildAgentSkillDiagnosticsReport()
         {
-            var agentDefaults = CopilotConfig.Instance.AgentDefaults;
+            var agentDefaults = _config.AgentDefaults;
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
                 CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),
@@ -703,7 +702,8 @@ namespace ColorVision.Copilot
             }
 
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
-            var agentDefaults = CopilotConfig.Instance.AgentDefaults;
+            var agentDefaults = _config.AgentDefaults;
+            var historyLimits = ResolveConversationHistoryLimits(SelectedProfile);
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = SelectedProfile?.DisplayLabel ?? string.Empty,
@@ -713,6 +713,9 @@ namespace ColorVision.Copilot
                 RetainedHistoryMessages = history.Messages.Length,
                 SourceHistoryCharacters = history.SourceCharacters,
                 RetainedHistoryCharacters = history.RetainedCharacters,
+                HistoryMaximumMessages = historyLimits.MaximumMessages,
+                HistoryMaximumCharacters = historyLimits.MaximumCharacters,
+                HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,
                 AttachmentCount = Attachments.Count,
                 FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
                 ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),
@@ -919,7 +922,7 @@ namespace ColorVision.Copilot
             if (refreshExternalContext || string.IsNullOrWhiteSpace(userMessage.RequestContent))
                 userMessage.RequestContent = await BuildUserRequestContentAsync(prompt, cancellationToken);
 
-            var history = BuildConversationHistory(includeAttachmentContext: true);
+            var history = BuildConversationHistory(requestProfile, includeAttachmentContext: true);
             return await _chatService.StreamReplyAsync(
                 requestProfile,
                 history,
@@ -943,7 +946,7 @@ namespace ColorVision.Copilot
                 assistantMessage.IsExecutionInProgress = true;
                 assistantMessage.IsExecutionExpanded = true;
 
-                var history = BuildVisibleConversationHistory(conversation, userMessage, AgentHistoryMessageLimit);
+                var history = BuildVisibleConversationHistory(conversation, userMessage, requestProfile);
                 history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
 
                 return await _chatService.StreamReplyAsync(
@@ -988,7 +991,7 @@ namespace ColorVision.Copilot
             {
                 UserText = (userMessage.Content ?? string.Empty).Trim(),
                 Profile = requestProfile,
-                History = BuildVisibleConversationHistory(conversation, userMessage, AgentHistoryMessageLimit),
+                History = BuildVisibleConversationHistory(conversation, userMessage, requestProfile),
                 Attachments = turnSnapshot.Attachments,
                 ContextItems = contextItems,
                 SearchRootPaths = searchRootPaths,
@@ -2177,7 +2180,7 @@ namespace ColorVision.Copilot
             SelectConversation(conversation, persist: false, preferredProfileId: preferredProfileId);
         }
 
-        private List<CopilotRequestMessage> BuildConversationHistory(bool includeAttachmentContext)
+        private List<CopilotRequestMessage> BuildConversationHistory(CopilotProfileConfig profile, bool includeAttachmentContext)
         {
             var history = Messages
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
@@ -2187,30 +2190,31 @@ namespace ColorVision.Copilot
                 .ToArray();
 
             var attachmentContext = includeAttachmentContext ? BuildAttachmentContextBlock() : string.Empty;
+            var limits = ResolveConversationHistoryLimits(profile);
             if (string.IsNullOrWhiteSpace(attachmentContext))
-                return CopilotConversationHistoryWindow.Select(history).ToList();
+                return CopilotConversationHistoryWindow.Select(history, limits).ToList();
 
             var attachment = CopilotConversationHistoryWindow.Select(
                     [new CopilotRequestMessage("user", attachmentContext)],
                     maximumMessages: 1,
-                    maximumCharacters: CopilotConversationHistoryWindow.DefaultMaximumContentCharacters,
-                    maximumContentCharacters: CopilotConversationHistoryWindow.DefaultMaximumContentCharacters)
+                    maximumCharacters: limits.MaximumContentCharacters,
+                    maximumContentCharacters: limits.MaximumContentCharacters)
                 .Single();
             var selected = CopilotConversationHistoryWindow.Select(
                     history,
-                    CopilotConversationHistoryWindow.DefaultMaximumMessages - 1,
-                    CopilotConversationHistoryWindow.DefaultMaximumCharacters - attachment.Content.Length,
-                    CopilotConversationHistoryWindow.DefaultMaximumContentCharacters)
+                    Math.Max(1, limits.MaximumMessages - 1),
+                    Math.Max(1, limits.MaximumCharacters - attachment.Content.Length),
+                    limits.MaximumContentCharacters)
                 .ToList();
             selected.Insert(0, attachment);
 
             return selected;
         }
 
-        private static List<CopilotRequestMessage> BuildVisibleConversationHistory(
+        private List<CopilotRequestMessage> BuildVisibleConversationHistory(
             CopilotConversationRecord conversation,
             CopilotChatMessage? stopBeforeMessage,
-            int maxMessages)
+            CopilotProfileConfig profile)
         {
             var messages = conversation.Messages.AsEnumerable();
             if (stopBeforeMessage != null)
@@ -2226,7 +2230,14 @@ namespace ColorVision.Copilot
                     message.IsUser ? "user" : "assistant",
                     message.Content.Trim()))
                 .ToArray();
-            return CopilotConversationHistoryWindow.Select(history, maxMessages).ToList();
+            return CopilotConversationHistoryWindow.Select(history, ResolveConversationHistoryLimits(profile)).ToList();
+        }
+
+        private CopilotConversationHistoryLimits ResolveConversationHistoryLimits(CopilotProfileConfig? profile)
+        {
+            return CopilotConversationHistoryWindow.ResolveLimits(
+                _config.AgentDefaults.ContextWindowTokens,
+                profile?.MaxTokens ?? CopilotProfileConfig.DefaultMaxTokens);
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -3171,7 +3182,8 @@ namespace ColorVision.Copilot
                 .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
                 .Select(message => new CopilotRequestMessage(
                     message.IsUser ? "user" : "assistant",
-                    message.ModelContent.Trim())));
+                    message.ModelContent.Trim())),
+                ResolveConversationHistoryLimits(SelectedProfile));
         }
 
         private string BuildAttachmentSummary()

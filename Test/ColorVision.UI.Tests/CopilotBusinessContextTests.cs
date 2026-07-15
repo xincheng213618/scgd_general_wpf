@@ -28,11 +28,11 @@ public class CopilotBusinessContextTests
             Mode = CopilotAgentMode.Auto,
         }, Array.Empty<CopilotAgentStepRecord>());
 
-        Assert.Equal(8, prepared.Messages.Count);
+        Assert.Equal(13, prepared.Messages.Count);
         Assert.Equal("ORIGINAL-USER-GOAL", prepared.Messages[0].Content);
-        Assert.Equal("history-6", prepared.Messages[1].Content);
+        Assert.Equal("history-1", prepared.Messages[1].Content);
         Assert.Equal("history-11", prepared.Messages[^2].Content);
-        Assert.DoesNotContain(prepared.Messages, message => message.Content is "history-4" or "history-5");
+        Assert.Contains(prepared.Messages, message => message.Content == "history-4");
         Assert.Contains("continue the same task", prepared.Messages[^1].Content, StringComparison.Ordinal);
     }
 
@@ -72,9 +72,9 @@ public class CopilotBusinessContextTests
         }, Array.Empty<CopilotAgentStepRecord>());
         var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
 
-        Assert.Equal(8, selected.Length);
+        Assert.Equal(12, selected.Length);
         Assert.All(selected, message => Assert.Equal("assistant", message.Role));
-        Assert.Equal("answer-4", selected[0].Content);
+        Assert.Equal("answer-0", selected[0].Content);
         Assert.Equal("answer-11", selected[^1].Content);
     }
 
@@ -96,15 +96,18 @@ public class CopilotBusinessContextTests
             UserText = "current request",
             History = history,
             Profile = new CopilotProfileConfig(),
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+            },
         }, Array.Empty<CopilotAgentStepRecord>());
         var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
 
-        Assert.Equal(3, selected.Length);
         Assert.StartsWith("ORIGINAL-GOAL-", selected[0].Content, StringComparison.Ordinal);
         Assert.StartsWith("LATEST-QUESTION-", selected[^2].Content, StringComparison.Ordinal);
         Assert.StartsWith("LATEST-ANSWER-", selected[^1].Content, StringComparison.Ordinal);
-        Assert.All(selected, message => Assert.True(message.Content.Length <= CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength));
-        Assert.True(selected.Sum(message => message.Content.Length) <= 32_000);
+        Assert.All(selected, message => Assert.True(message.Content.Length <= 8_000));
+        Assert.True(selected.Sum(message => message.Content.Length) <= 49_152);
         Assert.Contains(selected, message => message.Content.EndsWith("...<conversation history truncated>", StringComparison.Ordinal));
     }
 
@@ -122,12 +125,46 @@ public class CopilotBusinessContextTests
             UserText = "current request",
             History = history,
             Profile = new CopilotProfileConfig(),
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+            },
         }, Array.Empty<CopilotAgentStepRecord>());
         var selected = prepared.Messages.Take(prepared.Messages.Count - 1).ToArray();
 
-        Assert.True(selected.Length <= 8);
+        Assert.True(selected.Length <= 12);
         Assert.Equal("ORIGINAL-GOAL", selected[0].Content);
         Assert.Equal("message-19", selected[^1].Content);
+    }
+
+    [Fact]
+    public void ConversationHistoryLimitsScaleWithIndependentContextWindow()
+    {
+        var history = Enumerable.Range(0, 20)
+            .Select(index => new CopilotRequestMessage(index % 2 == 0 ? "user" : "assistant", $"message-{index}"))
+            .ToArray();
+        var minimum = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History = history,
+            Profile = new CopilotProfileConfig(),
+            RunBudgetDefaults = new CopilotAgentRunBudgetDefaults
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+            },
+        }, Array.Empty<CopilotAgentStepRecord>());
+        var defaults = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "current request",
+            History = history,
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+
+        Assert.InRange(minimum.Messages.Count, 10, 13);
+        Assert.Equal(21, defaults.Messages.Count);
+        Assert.True(minimum.Messages.Count < defaults.Messages.Count);
+        Assert.Equal("message-0", minimum.Messages[0].Content);
+        Assert.Equal("message-19", minimum.Messages[^2].Content);
     }
 
     [Fact]
@@ -178,6 +215,9 @@ public class CopilotBusinessContextTests
             RetainedHistoryMessages = 7,
             SourceHistoryCharacters = 80_000,
             RetainedHistoryCharacters = 28_000,
+            HistoryMaximumMessages = 508,
+            HistoryMaximumCharacters = 2_080_768,
+            HistoryMaximumContentCharacters = 260_096,
             AttachmentCount = 2,
             FileAttachmentCount = 1,
             ImageAttachmentCount = 1,
@@ -188,6 +228,7 @@ public class CopilotBusinessContextTests
         Assert.Contains("Local Model", report, StringComparison.Ordinal);
         Assert.Contains("7/18", report, StringComparison.Ordinal);
         Assert.Contains("28,000/80,000", report, StringComparison.Ordinal);
+        Assert.Contains("最多 508 条 / 2,080,768 字符 / 单条 260,096 字符（上下文 50%）", report, StringComparison.Ordinal);
         Assert.Contains("当前 Chat 模式不注入项目指令、Skills 或 MCP 工具", report, StringComparison.Ordinal);
         Assert.DoesNotContain("能力目录：", report, StringComparison.Ordinal);
     }

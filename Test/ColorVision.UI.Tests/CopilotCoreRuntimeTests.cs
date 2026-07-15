@@ -2327,15 +2327,15 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_CompactsOversizedHistoryBeforeProviderCall()
+    public async Task AgentFrameworkRuntime_BoundsOversizedHistoryBeforeProviderCall()
     {
         using var fakeChatClient = new CapturingFinalChatClient();
         var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
             new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
             new CopilotAgentContextBuilder(),
             _ => fakeChatClient);
-        var oversizedHistory = Enumerable.Range(1, 8)
-            .Select(index => new CopilotRequestMessage(index % 2 == 0 ? "assistant" : "user", $"history-{index}:" + new string('x', 40_000)))
+        var oversizedHistory = Enumerable.Range(1, 12)
+            .Select(index => new CopilotRequestMessage(index % 2 == 0 ? "assistant" : "user", $"history-{index}:" + new string('x', 300_000)))
             .ToArray();
 
         var result = await runtime.RunAsync(new CopilotAgentRequest

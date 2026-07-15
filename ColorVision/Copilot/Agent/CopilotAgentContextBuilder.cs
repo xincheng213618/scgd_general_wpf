@@ -24,7 +24,11 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var preparedUserMessageContent = BuildAnswerUserMessageContent(request, stepRecords ?? Array.Empty<CopilotAgentStepRecord>());
-            var messages = CopilotConversationHistoryWindow.Select(request.History).ToList();
+            var runBudget = CopilotAgentRunBudget.Resolve(request);
+            var historyLimits = CopilotConversationHistoryWindow.ResolveLimits(
+                runBudget.ContextWindowTokens,
+                request.Profile?.MaxTokens ?? CopilotProfileConfig.DefaultMaxTokens);
+            var messages = CopilotConversationHistoryWindow.Select(request.History, historyLimits).ToList();
 
             messages.Add(new CopilotRequestMessage("user", preparedUserMessageContent));
             return new CopilotAgentPreparedPrompt(messages, preparedUserMessageContent);

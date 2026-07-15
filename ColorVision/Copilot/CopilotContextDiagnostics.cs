@@ -20,6 +20,12 @@ namespace ColorVision.Copilot
 
         public int RetainedHistoryCharacters { get; init; }
 
+        public int HistoryMaximumMessages { get; init; }
+
+        public int HistoryMaximumCharacters { get; init; }
+
+        public int HistoryMaximumContentCharacters { get; init; }
+
         public int AttachmentCount { get; init; }
 
         public int FileAttachmentCount { get; init; }
@@ -91,12 +97,14 @@ namespace ColorVision.Copilot
                     .AppendLine(" 字符保留");
             }
             builder.Append("历史预算：最多 ")
-                .Append(CopilotConversationHistoryWindow.DefaultMaximumMessages)
+                .Append(FormatCount(snapshot.HistoryMaximumMessages))
                 .Append(" 条 / ")
-                .Append(FormatCount(CopilotConversationHistoryWindow.DefaultMaximumCharacters))
+                .Append(FormatCount(snapshot.HistoryMaximumCharacters))
                 .Append(" 字符 / 单条 ")
-                .Append(FormatCount(CopilotConversationHistoryWindow.DefaultMaximumContentCharacters))
-                .AppendLine(" 字符");
+                .Append(FormatCount(snapshot.HistoryMaximumContentCharacters))
+                .Append(" 字符（上下文 ")
+                .Append(CopilotConversationHistoryWindow.HistoryContextPercent)
+                .AppendLine("%）");
             builder.Append("附件：").AppendLine(FormatAttachments(snapshot));
             builder.Append("窗口上下文：").AppendLine(snapshot.HasLiveWindowContext ? "已提供" : "无");
             builder.AppendLine();

@@ -13,28 +13,80 @@ namespace ColorVision.Copilot
         public bool WasReduced => Messages.Length < SourceMessageCount || RetainedCharacters < SourceCharacters;
     }
 
+    internal readonly record struct CopilotConversationHistoryLimits(
+        int MaximumMessages,
+        int MaximumCharacters,
+        int MaximumContentCharacters);
+
     internal static class CopilotConversationHistoryWindow
     {
-        public const int DefaultMaximumMessages = 8;
-        public const int DefaultMaximumCharacters = 32_000;
-        public const int DefaultMaximumContentCharacters = 8_000;
+        public const int HistoryContextPercent = 50;
+        public const int MaximumMessageLimit = 512;
+        public const int MaximumContentCharacterLimit = 262_144;
+
+        private const int EstimatedCharactersPerToken = 4;
+        private const int MinimumMessages = 8;
+        private const int TokensPerMessageSlot = 1_024;
+        private const int MinimumContentCharacters = 8_000;
 
         private const string TruncationSuffix = "\n...<conversation history truncated>";
 
+        public static CopilotConversationHistoryLimits ResolveLimits(int contextWindowTokens, int maxOutputTokens)
+        {
+            var boundedContextTokens = Math.Clamp(
+                contextWindowTokens,
+                CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                CopilotAgentTokenBudget.MaximumContextWindowTokens);
+            var boundedOutputTokens = Math.Clamp(maxOutputTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
+            var inputTokens = Math.Max(1, boundedContextTokens - boundedOutputTokens);
+            var historyTokens = Math.Max(1, (long)inputTokens * HistoryContextPercent / 100);
+            var maximumCharacters = (int)Math.Clamp(
+                historyTokens * EstimatedCharactersPerToken,
+                MinimumContentCharacters,
+                int.MaxValue);
+            var maximumMessages = (int)Math.Clamp(
+                historyTokens / TokensPerMessageSlot,
+                MinimumMessages,
+                MaximumMessageLimit);
+            var maximumContentCharacters = Math.Clamp(
+                maximumCharacters / 8,
+                MinimumContentCharacters,
+                MaximumContentCharacterLimit);
+            return new CopilotConversationHistoryLimits(maximumMessages, maximumCharacters, maximumContentCharacters);
+        }
+
         public static IReadOnlyList<CopilotRequestMessage> Select(
             IEnumerable<CopilotRequestMessage>? history,
-            int maximumMessages = DefaultMaximumMessages,
-            int maximumCharacters = DefaultMaximumCharacters,
-            int maximumContentCharacters = DefaultMaximumContentCharacters)
+            CopilotConversationHistoryLimits limits)
+        {
+            return SelectWithDiagnostics(history, limits).Messages;
+        }
+
+        public static IReadOnlyList<CopilotRequestMessage> Select(
+            IEnumerable<CopilotRequestMessage>? history,
+            int maximumMessages,
+            int maximumCharacters,
+            int maximumContentCharacters)
         {
             return SelectWithDiagnostics(history, maximumMessages, maximumCharacters, maximumContentCharacters).Messages;
         }
 
         public static CopilotConversationHistorySelection SelectWithDiagnostics(
             IEnumerable<CopilotRequestMessage>? history,
-            int maximumMessages = DefaultMaximumMessages,
-            int maximumCharacters = DefaultMaximumCharacters,
-            int maximumContentCharacters = DefaultMaximumContentCharacters)
+            CopilotConversationHistoryLimits limits)
+        {
+            return SelectWithDiagnostics(
+                history,
+                limits.MaximumMessages,
+                limits.MaximumCharacters,
+                limits.MaximumContentCharacters);
+        }
+
+        public static CopilotConversationHistorySelection SelectWithDiagnostics(
+            IEnumerable<CopilotRequestMessage>? history,
+            int maximumMessages,
+            int maximumCharacters,
+            int maximumContentCharacters)
         {
             if (maximumMessages <= 0 || maximumCharacters <= 0 || maximumContentCharacters <= 0)
                 return new CopilotConversationHistorySelection([], 0, 0, 0);

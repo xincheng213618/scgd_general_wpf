@@ -87,9 +87,11 @@ Marketplace 安装会在下载和文件哈希校验通过后，只读打开 `.cv
 
 明确的工作区修改请求使用同一类执行契约：只有 `ApplyWorkspacePatch` 或 `ApplyCreateWorkspaceFile` 成功完成才算执行了对应修改，模型仅输出代码或声称“已经修改”不能满足契约。现有文件修改采用 `PreviewWorkspacePatch -> ApplyWorkspacePatch` 两阶段协议；预览只允许做一次精确且唯一的 `oldText/newText` 替换，并绑定当前文件 SHA-256。新文件采用 `PreviewCreateWorkspaceFile -> ApplyCreateWorkspaceFile`，只允许在当前解决方案可写根内创建白名单文本扩展，绝不覆盖已存在路径；缺失目录树先在同一父目录构造随机暂存树，再原子移动到首个缺失目录，避免与其他进程竞争时误认目录所有权。应用阶段必须使用原预览 ID、重新核对可写范围和冲突条件，并经 Agent Framework 原生审批。成功应用的两类预览都可由 `RollbackWorkspacePatch` 在再次审批且当前文件仍匹配应用后 SHA-256 时恢复原始字节或删除 Agent 创建的文件；只有 Agent 原子创建且回滚时仍为空的目录才会清理。预览只在当前进程中保留 30 分钟，不跨应用重启构成恢复授权。
 
-普通 Chat 与进入 Framework 的可见对话历史统一经过可信窗口：只保留规范化的 `user` / `assistant` 角色，拒绝 `system`、工具和未知角色，防止历史数据提升为运行时指令。默认最多发送 8 条、32,000 字符，单条最多 8,000 字符；窗口始终保留最初用户目标和最近一轮，字符超限时优先删除完整的旧 `user -> assistant` 轮次，避免留下失去问题来源的孤立回复。无用户消息的异常历史只做有界截断，不会构造默认空目标。Chat 附件上下文占用一个独立的 8,000 字符槽位，并计入同一个 32,000 字符预算。
+普通 Chat 与进入 Framework 的可见对话历史统一经过可信窗口：只保留规范化的 `user` / `assistant` 角色，拒绝 `system`、工具和未知角色，防止历史数据提升为运行时指令。窗口不再使用固定的 8 条 / 32,000 字符旧限制，而是从独立 Agent 上下文配置和当前最大输出计算：约 50% 的输入空间分给可见历史，其余空间保留给系统提示、项目指令、Skills、工具 Schema、附件、运行时观察和输出。在默认 1,048,576 Token 上下文、8,192 Token 输出下，历史上限为 508 条 / 2,080,768 字符，单条最多 260,096 字符；32,768 Token 的最小上下文则自动收紧为约 12 条 / 49,152 字符。最终仍有 512 条和单条 262,144 字符的结构性上限，防止状态异常导致无界枚举或单条消息垄断上下文。
 
-该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口消除低价值历史，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code context window](https://code.claude.com/docs/en/context-window) 先清理旧输出、再压缩对话的原则一致。Harness 指令仍由当前 Profile 和运行时单独提供。
+窗口始终保留最初用户目标和最近一轮，字符超限时优先删除完整的旧 `user -> assistant` 轮次，避免留下失去问题来源的孤立回复。无用户消息的异常历史只做有界截断，不会构造默认空目标。Chat 附件上下文占用一个独立槽位，并计入同一个自适应字符预算；`/context` 显示本轮实际解析出的条数、总字符和单条字符上限。
+
+该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口为其他上下文组成留出稳定余量，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code `/compact`](https://code.claude.com/docs/en/commands) 对长对话主动压缩的原则一致。Harness 指令仍由当前 Profile 和运行时单独提供。
 
 输入框使用一个有界的本地 Slash 命令目录。输入 `/` 会显示全部候选，继续输入会按命令名前缀过滤；Tab 补全第一项，Enter 补全后直接执行，也可以点击任意候选。目录目前只保留四个能复用既有能力的命令：`/context` 查看上下文、预算与注入统计，`/skills` 查看 Skill 使用率、连续未加载和可逆 explicit-only 状态，`/mcp` 查看本地服务、审批与最近调用状态，`/new` 复用现有新会话逻辑。没有为命令系统引入模型调用、动态反射、工具扫描或新的权限面。
 
