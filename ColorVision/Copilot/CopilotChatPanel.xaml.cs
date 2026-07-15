@@ -1,3 +1,4 @@
+using ColorVision.Themes;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System;
@@ -7,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.Copilot
@@ -28,6 +30,7 @@ namespace ColorVision.Copilot
         private INotifyCollectionChanged? _attachedMessages;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
+        private bool _isThemeSubscriptionActive;
 
         public CopilotChatPanel()
         {
@@ -42,12 +45,40 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Loaded(object sender, RoutedEventArgs e)
         {
+            if (!_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = true;
+            }
+
+            SchedulePromptCaretBrushRefresh(ThemeManager.Current.CurrentUITheme);
             UpdateResponsiveLayout();
         }
 
         private static void BindPromptCaretToThemeResource(TextBox promptTextBox)
         {
             promptTextBox.SetResourceReference(TextBoxBase.CaretBrushProperty, "GlobalTextBrush");
+        }
+
+        private void ThemeManager_CurrentUIThemeChanged(Theme theme)
+        {
+            SchedulePromptCaretBrushRefresh(theme);
+        }
+
+        private void SchedulePromptCaretBrushRefresh(Theme theme)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, () => ApplyPromptCaretBrush(PromptTextBox, theme));
+        }
+
+        private static void ApplyPromptCaretBrush(TextBox promptTextBox, Theme theme)
+        {
+            promptTextBox.CaretBrush = theme == Theme.Dark ? Brushes.White : Brushes.Black;
+            promptTextBox.InvalidateVisual();
+        }
+
+        private void PromptTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            ApplyPromptCaretBrush(PromptTextBox, ThemeManager.Current.CurrentUITheme);
         }
 
         private void CopilotChatPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -64,6 +95,12 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged -= ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = false;
+            }
+
             CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
         }
