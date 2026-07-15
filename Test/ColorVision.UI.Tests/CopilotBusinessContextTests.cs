@@ -192,7 +192,7 @@ public class CopilotBusinessContextTests
     [Fact]
     public void LocalCommandCatalog_FiltersAndResolvesExactCommands()
     {
-        Assert.Equal(["/status", "/context", "/skills", "/mcp", "/compact", "/review", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        Assert.Equal(["/status", "/context", "/skills", "/mcp", "/diff", "/compact", "/review", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
         var status = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse("/status"));
         Assert.Equal(CopilotLocalCommandKind.Status, status.Command.Kind);
         Assert.True(status.Command.AvailableWhileAgentRuns);
@@ -204,6 +204,9 @@ public class CopilotBusinessContextTests
         Assert.Equal("keep flow decisions", compact.Arguments);
         var review = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse("/review focus on concurrency"));
         Assert.Equal(CopilotLocalCommandKind.Review, review.Command.Kind);
+        var diff = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse("/diff staged"));
+        Assert.Equal(CopilotLocalCommandKind.Diff, diff.Command.Kind);
+        Assert.Equal("staged", diff.Arguments);
         Assert.Equal("focus on concurrency", review.Arguments);
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context"));
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context extra"));

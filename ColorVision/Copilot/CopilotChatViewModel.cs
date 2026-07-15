@@ -34,6 +34,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
+        private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
@@ -57,6 +58,7 @@ namespace ColorVision.Copilot
         private string _localCommandResultText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
+        private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
 
         public CopilotChatViewModel()
@@ -77,6 +79,7 @@ namespace ColorVision.Copilot
             var toolExecutor = new CopilotToolExecutor();
             _agentRuntime = new CopilotMicrosoftAgentFrameworkRuntime(toolRegistry, _agentContextBuilder, toolExecutor);
             _taskHost = CopilotAgentTaskHost.Shared;
+            _localGitDiffService = new CopilotLocalGitDiffService();
             _contextRegistry = CopilotContextRegistry.CreateDefault();
             _config = CopilotConfig.Instance;
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
@@ -687,6 +690,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Mcp:
                     ShowLocalCommandResult(command, McpStatusToolTip);
                     break;
+                case CopilotLocalCommandKind.Diff:
+                    _ = ShowGitDiffAsync(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.Compact:
                     _ = CompactConversationAsync(command, invocation.Arguments);
                     break;
@@ -757,6 +763,33 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Review);
             InputText = prompt.ToString();
             _ = SendAsync();
+        }
+
+        private async Task ShowGitDiffAsync(CopilotLocalCommand command, string scope)
+        {
+            if (_isInspectingGitDiff)
+            {
+                ShowLocalCommandResult(command, "Git 变更快照正在生成，请稍候。");
+                return;
+            }
+
+            _isInspectingGitDiff = true;
+            ShowLocalCommandResult(command, "正在读取本地 Git 变更…不会调用模型，也不会修改文件。");
+            try
+            {
+                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+                var searchRoots = BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
+                var result = await _localGitDiffService.ExecuteAsync(searchRoots, scope, CancellationToken.None);
+                ShowLocalCommandResult(command, result.Report);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                ShowLocalCommandResult(command, "Git 变更快照失败：" + CopilotMcpAuditLogger.RedactText(ex.Message));
+            }
+            finally
+            {
+                _isInspectingGitDiff = false;
+            }
         }
 
         private async Task CompactConversationAsync(CopilotLocalCommand command, string focusInstructions)

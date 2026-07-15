@@ -1287,19 +1287,22 @@
                                     Command="{Binding DismissLocalCommandResultCommand}"
                                     Content="×"
                                     ToolTip="关闭本地命令结果" />
-                            <ScrollViewer Grid.Row="1"
-                                          Grid.ColumnSpan="2"
-                                          MaxHeight="168"
-                                          Margin="0,6,0,0"
-                                          HorizontalScrollBarVisibility="Disabled"
-                                          VerticalScrollBarVisibility="Auto">
-                                <TextBlock FontFamily="Consolas"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           Opacity="0.82"
-                                           Text="{Binding LocalCommandResultText}"
-                                           TextWrapping="Wrap" />
-                            </ScrollViewer>
+                            <TextBox Grid.Row="1"
+                                     Grid.ColumnSpan="2"
+                                     MaxHeight="168"
+                                     Margin="0,6,0,0"
+                                     Padding="0"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource GlobalTextBrush}"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     IsReadOnly="True"
+                                     Opacity="0.82"
+                                     Text="{Binding LocalCommandResultText, Mode=OneWay}"
+                                     TextWrapping="NoWrap"
+                                     VerticalScrollBarVisibility="Auto" />
                         </Grid>
                     </Border>
 
