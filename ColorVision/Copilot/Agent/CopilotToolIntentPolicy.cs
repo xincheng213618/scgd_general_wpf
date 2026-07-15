@@ -33,12 +33,6 @@ namespace ColorVision.Copilot
             "do not modify", "don't modify", "do not edit", "don't edit", "explain only", "analysis only", "read only",
         };
 
-        private static readonly string[] WorkspaceChangeSetMarkers =
-        {
-            "多文件", "多个文件", "两个文件", "三个文件", "一组文件", "所有这些文件", "批量修改文件", "批量创建文件",
-            "multiple files", "two files", "three files", "several files", "a set of files", "all these files", "batch edit files",
-        };
-
         private static readonly string[] WorkspaceRollbackMarkers =
         {
             "撤销修改", "撤销刚才", "回滚修改", "回滚刚才", "回滚补丁", "还原文件", "恢复原文件",
@@ -243,13 +237,6 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, WorkspaceRollbackMarkers);
         }
 
-        public static bool NeedsWorkspaceChangeSet(CopilotAgentRequest? request)
-        {
-            return request != null
-                && (NeedsWorkspaceEdit(request) || NeedsWorkspaceCreate(request) || NeedsWorkspaceRollback(request))
-                && ContainsAny(request.UserText, WorkspaceChangeSetMarkers);
-        }
-
         public static bool NeedsWorkspaceCreate(CopilotAgentRequest? request)
         {
             if (request == null
@@ -412,35 +399,12 @@ namespace ColorVision.Copilot
 
         internal static bool IsWorkspaceApplyTool(ICopilotTool? tool)
         {
-            return string.Equals(tool?.Name, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "ApplyWorkspacePatch", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static bool IsWorkspaceChangeSetApplyTool(ICopilotTool? tool)
-        {
-            return string.Equals(tool?.Name, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(tool?.Name, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool IsWorkspaceRollbackTool(ICopilotTool? tool)
         {
-            return string.Equals(tool?.Name, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "RollbackWorkspacePatch", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static bool IsWorkspaceChangeSetRollbackTool(ICopilotTool? tool)
-        {
-            return string.Equals(tool?.Name, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "RollbackWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static bool IsWorkspaceCreateApplyTool(ICopilotTool? tool)
-        {
-            return string.Equals(tool?.Name, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "ApplyCreateWorkspaceFile", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool?.Name, "ApplyWorkspaceChangeSet", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(tool?.Name, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool IsWorkspaceValidationTool(ICopilotTool? tool)

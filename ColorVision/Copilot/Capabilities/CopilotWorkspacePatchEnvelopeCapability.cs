@@ -45,8 +45,8 @@ namespace ColorVision.Copilot
                     };
                     var preview = operation.Kind switch
                     {
-                        WorkspacePatchOperation.Create => await PreviewCreateAsync(request, childInput, cancellationToken),
-                        WorkspacePatchOperation.Replace => await PreviewAsync(request, childInput, cancellationToken),
+                        WorkspacePatchOperation.Create => await PreviewCreateOperationAsync(request, childInput, cancellationToken),
+                        WorkspacePatchOperation.Replace => await PreviewUpdateOperationAsync(request, childInput, cancellationToken),
                         WorkspacePatchOperation.Delete => await PreviewDeleteAsync(request, childInput, cancellationToken),
                         _ => throw new InvalidOperationException("Unsupported workspace envelope operation."),
                     };
@@ -398,6 +398,16 @@ namespace ColorVision.Copilot
                 ["preview_id:".Length..]
                 .Trim() ?? string.Empty;
             return IsSinglePreviewId(previewId);
+        }
+
+        private static bool IsSinglePreviewId(string previewId)
+        {
+            return previewId.StartsWith("workspace-patch:", StringComparison.Ordinal)
+                    && previewId.Length == "workspace-patch:".Length + 32
+                || previewId.StartsWith("workspace-create:", StringComparison.Ordinal)
+                    && previewId.Length == "workspace-create:".Length + 32
+                || previewId.StartsWith("workspace-delete:", StringComparison.Ordinal)
+                    && previewId.Length == "workspace-delete:".Length + 32;
         }
 
         private static bool IsInsideWritableRoot(CopilotAgentRequest request, string fullPath)

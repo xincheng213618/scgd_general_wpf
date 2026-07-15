@@ -39,6 +39,18 @@ namespace ColorVision.Copilot
                 ["required"] = new[] { "operations" },
                 ["additionalProperties"] = false,
             }));
+
+        public static CopilotToolInputSchema ChangeSetId { get; } = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.SerializeToElement(new Dictionary<string, object?>
+            {
+                ["type"] = "object",
+                ["properties"] = new Dictionary<string, object?>
+                {
+                    ["changeSetId"] = new { type = "string", description = "Exact change_set_id returned by PreviewWorkspacePatchEnvelope." },
+                },
+                ["required"] = new[] { "changeSetId" },
+                ["additionalProperties"] = false,
+            }));
     }
 
     public sealed class CopilotPreviewWorkspacePatchEnvelopeTool : ICopilotTool
@@ -89,7 +101,7 @@ namespace ColorVision.Copilot
             CopilotToolIdempotency.NonIdempotent,
             auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly);
 
-        public CopilotToolInputSchema InputSchema => CopilotWorkspaceChangeSetSchemas.ChangeSetId;
+        public CopilotToolInputSchema InputSchema => CopilotWorkspacePatchEnvelopeSchemas.ChangeSetId;
 
         public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
             || CopilotToolIntentPolicy.NeedsWorkspaceCreate(request);
@@ -139,7 +151,7 @@ namespace ColorVision.Copilot
             CopilotToolIdempotency.NonIdempotent,
             auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly);
 
-        public CopilotToolInputSchema InputSchema => CopilotWorkspaceChangeSetSchemas.ChangeSetId;
+        public CopilotToolInputSchema InputSchema => CopilotWorkspacePatchEnvelopeSchemas.ChangeSetId;
 
         public bool CanHandle(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsWorkspaceRollback(request);
 

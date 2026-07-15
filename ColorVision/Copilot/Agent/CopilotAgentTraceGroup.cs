@@ -121,10 +121,7 @@ namespace ColorVision.Copilot
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
                 "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",
-                "PreviewWorkspacePatch" or "PreviewCreateWorkspaceFile" or "PreviewWorkspaceChangeSet"
-                    or "ApplyWorkspacePatch" or "ApplyCreateWorkspaceFile" or "ApplyWorkspaceChangeSet"
-                    or "RollbackWorkspacePatch" or "RollbackWorkspaceChangeSet"
-                    or "PreviewWorkspacePatchEnvelope" or "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope" => "workspace",
+                "PreviewWorkspacePatchEnvelope" or "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope" => "workspace",
                 "CreateFlow" or "ApplyTemplatePatch" or "TemplatePatch" or "ExecuteMenu" or "SetLanguage" or "SetTheme" => "application",
                 _ => "tool:" + toolName,
             };

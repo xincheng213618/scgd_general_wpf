@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,26 +13,6 @@ namespace ColorVision.Copilot
         private const int MaxChangeSetFiles = 8;
         private const int MaxChangeSets = 8;
         private readonly Dictionary<string, WorkspaceChangeSetRecord> _changeSets = new(StringComparer.Ordinal);
-
-        public Task<CopilotToolResult> PreviewChangeSetAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            cancellationToken.ThrowIfCancellationRequested();
-            input ??= CopilotAgentToolInput.Empty;
-            if (!TryGetPreviewIds(input, out var previewIds)
-                || previewIds.Length < 2
-                || previewIds.Length > MaxChangeSetFiles)
-            {
-                return Task.FromResult(Failure("PreviewWorkspaceChangeSet", CopilotToolFailureKind.Validation,
-                    "The workspace change-set preview list is invalid.",
-                    $"previewIds must contain 2-{MaxChangeSetFiles} unique workspace patch or creation preview identifiers."));
-            }
-
-            return Task.FromResult(CreateChangeSetPreview(previewIds, "PreviewWorkspaceChangeSet", minimumFiles: 2));
-        }
 
         private CopilotToolResult CreateChangeSetPreview(string[] previewIds, string toolName, int minimumFiles)
         {
@@ -100,22 +79,6 @@ namespace ColorVision.Copilot
                 Summary = $"Prepared one conflict-checked workspace change set for {records.Length} file(s).",
                 Content = BuildChangeSetContent(changeSet, records, preview: true),
             };
-        }
-
-        public Task<CopilotToolResult> ApplyChangeSetAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            return MutateChangeSetAsync(request, input, rollback: false, "ApplyWorkspaceChangeSet", cancellationToken);
-        }
-
-        public Task<CopilotToolResult> RollbackChangeSetAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            return MutateChangeSetAsync(request, input, rollback: true, "RollbackWorkspaceChangeSet", cancellationToken);
         }
 
         public Task<CopilotToolResult> ApplyPatchEnvelopeAsync(
@@ -377,6 +340,7 @@ namespace ColorVision.Copilot
                 rollback,
                 rollback ? null : record.Operation,
                 changeSetId,
+                rollback ? "RollbackWorkspacePatchEnvelope" : "ApplyWorkspacePatchEnvelope",
                 cancellationToken);
         }
 
@@ -542,59 +506,11 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool TryGetPreviewIds(CopilotAgentToolInput input, out string[] previewIds)
-        {
-            previewIds = Array.Empty<string>();
-            if (input?.Arguments == null)
-                return false;
-            var pair = input.Arguments.FirstOrDefault(item => string.Equals(item.Key, "previewIds", StringComparison.OrdinalIgnoreCase));
-            if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null)
-                return false;
-
-            IEnumerable<string> values;
-            if (pair.Value is JsonElement { ValueKind: JsonValueKind.Array } element)
-            {
-                var items = element.EnumerateArray().ToArray();
-                if (items.Any(item => item.ValueKind != JsonValueKind.String))
-                    return false;
-                values = items.Select(item => item.GetString() ?? string.Empty);
-            }
-            else if (pair.Value is IEnumerable<string> strings)
-            {
-                values = strings;
-            }
-            else if (pair.Value is IEnumerable<object?> objects)
-            {
-                var items = objects.ToArray();
-                if (items.Any(item => item is not string))
-                    return false;
-                values = items.Cast<string>();
-            }
-            else
-            {
-                return false;
-            }
-
-            previewIds = values.Select(value => value.Trim()).ToArray();
-            return previewIds.Length == previewIds.Distinct(StringComparer.Ordinal).Count()
-                && previewIds.All(IsSinglePreviewId);
-        }
-
         private static bool TryGetChangeSetId(CopilotAgentToolInput input, out string changeSetId)
         {
             return TryGetTextArgument(input, "changeSetId", out changeSetId)
                 && changeSetId.StartsWith("workspace-change-set:", StringComparison.Ordinal)
                 && changeSetId.Length == "workspace-change-set:".Length + 32;
-        }
-
-        private static bool IsSinglePreviewId(string previewId)
-        {
-            return previewId.StartsWith("workspace-patch:", StringComparison.Ordinal)
-                    && previewId.Length == "workspace-patch:".Length + 32
-                || previewId.StartsWith("workspace-create:", StringComparison.Ordinal)
-                    && previewId.Length == "workspace-create:".Length + 32
-                || previewId.StartsWith("workspace-delete:", StringComparison.Ordinal)
-                    && previewId.Length == "workspace-delete:".Length + 32;
         }
 
         private static string BuildChangeSetContent(

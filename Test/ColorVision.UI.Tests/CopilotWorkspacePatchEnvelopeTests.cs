@@ -102,6 +102,132 @@ public sealed class CopilotWorkspacePatchEnvelopeTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdatePreservesOriginalEncodingAndLineEndingsAcrossRollback()
+    {
+        var path = CreateFile("Sample.cs", "class Sample\n{\n    int Value = 1;\n}\n");
+        var originalBytes = await File.ReadAllBytesAsync(path);
+        var store = new CopilotWorkspacePatchStore();
+        var request = Request("修改 Sample.cs");
+        var preview = await new CopilotPreviewWorkspacePatchEnvelopeTool(store).ExecuteAsync(
+            request,
+            EnvelopeInput(Update(path, "    int Value = 1;\r\n", "    int Value = 2;\r\n")),
+            CancellationToken.None);
+        Assert.True(preview.Success, preview.ErrorMessage);
+        var input = ChangeSetInput(ExtractField(preview.Content, "change_set_id"));
+
+        var applied = await new CopilotApplyWorkspacePatchEnvelopeTool(store).ExecuteApprovedAsync(request, input, CancellationToken.None);
+        Assert.True(applied.Success, applied.ErrorMessage);
+        var appliedBytes = await File.ReadAllBytesAsync(path);
+        Assert.False(appliedBytes.AsSpan().StartsWith(Encoding.UTF8.Preamble));
+        Assert.Equal("class Sample\n{\n    int Value = 2;\n}\n", Encoding.UTF8.GetString(appliedBytes));
+
+        var rolledBack = await new CopilotRollbackWorkspacePatchEnvelopeTool(store).ExecuteApprovedAsync(
+            Request("回滚刚才的文件修改"), input, CancellationToken.None);
+        Assert.True(rolledBack.Success, rolledBack.ErrorMessage);
+        Assert.Equal(originalBytes, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task PreviewRejectsOutOfScopeAmbiguousAndUnsafeCreateOperations()
+    {
+        var allowedRoot = Path.Combine(_root, "allowed");
+        Directory.CreateDirectory(allowedRoot);
+        var outsidePath = CreateFile(Path.Combine("other", "Outside.cs"), "class Outside { }\n");
+        var ambiguousPath = CreateFile(Path.Combine("allowed", "Repeated.cs"), "token token\n");
+        var existingPath = CreateFile(Path.Combine("allowed", "Existing.cs"), "existing\n");
+        var request = new CopilotAgentRequest
+        {
+            UserText = "修改并创建文件",
+            Mode = CopilotAgentMode.Auto,
+            WritableLocalRootPaths = [allowedRoot],
+        };
+        var tool = new CopilotPreviewWorkspacePatchEnvelopeTool(new CopilotWorkspacePatchStore());
+
+        var outOfScope = await tool.ExecuteAsync(request, EnvelopeInput(Update(outsidePath, "Outside", "Inside")), CancellationToken.None);
+        var ambiguous = await tool.ExecuteAsync(request, EnvelopeInput(Update(ambiguousPath, "token", "value")), CancellationToken.None);
+        var existing = await tool.ExecuteAsync(request, EnvelopeInput(Add(existingPath, "new\n")), CancellationToken.None);
+        var reserved = await tool.ExecuteAsync(request, EnvelopeInput(Add(Path.Combine(allowedRoot, "CON.cs"), "reserved\n")), CancellationToken.None);
+        var alternateStream = await tool.ExecuteAsync(request, EnvelopeInput(Add(Path.Combine(allowedRoot, "Host.cs:generated.md"), "stream\n")), CancellationToken.None);
+
+        Assert.Equal(CopilotToolFailureKind.Authorization, outOfScope.FailureKind);
+        Assert.Equal(CopilotToolFailureKind.Conflict, ambiguous.FailureKind);
+        Assert.Contains("2 locations", ambiguous.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal(CopilotToolFailureKind.Conflict, existing.FailureKind);
+        Assert.False(reserved.Success);
+        Assert.False(alternateStream.Success);
+    }
+
+    [Fact]
+    public async Task SingleUpdateSupportsExplicitWritableFile()
+    {
+        var path = CreateFile(Path.Combine("external", "Notes.md"), "before\n");
+        var request = new CopilotAgentRequest
+        {
+            UserText = "修改 Notes.md",
+            Mode = CopilotAgentMode.Auto,
+            WritableLocalFilePaths = [path],
+        };
+
+        var preview = await new CopilotPreviewWorkspacePatchEnvelopeTool(new CopilotWorkspacePatchStore()).ExecuteAsync(
+            request,
+            EnvelopeInput(Update(path, "before", "after")),
+            CancellationToken.None);
+
+        Assert.True(preview.Success, preview.ErrorMessage);
+        Assert.Contains("file_count: 1", preview.Content, StringComparison.Ordinal);
+        Assert.Equal("before\n", await File.ReadAllTextAsync(path));
+    }
+
+    [Fact]
+    public async Task AddRefusesPathCreatedAfterPreview()
+    {
+        var path = Path.Combine(_root, "Concurrent.cs");
+        var store = new CopilotWorkspacePatchStore();
+        var request = Request("创建 Concurrent.cs");
+        var preview = await new CopilotPreviewWorkspacePatchEnvelopeTool(store).ExecuteAsync(
+            request,
+            EnvelopeInput(Add(path, "agent\n")),
+            CancellationToken.None);
+        Assert.True(preview.Success, preview.ErrorMessage);
+        await File.WriteAllTextAsync(path, "external\n", new UTF8Encoding(false));
+
+        var result = await new CopilotApplyWorkspacePatchEnvelopeTool(store).ExecuteApprovedAsync(
+            request,
+            ChangeSetInput(ExtractField(preview.Content, "change_set_id")),
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Conflict, result.FailureKind);
+        Assert.Equal("external\n", await File.ReadAllTextAsync(path));
+    }
+
+    [Fact]
+    public async Task CancelledApplyKeepsEnvelopeReusable()
+    {
+        var firstPath = CreateFile("CancelOne.cs", "one\n");
+        var secondPath = CreateFile("CancelTwo.cs", "two\n");
+        var store = new CopilotWorkspacePatchStore();
+        var request = Request("修改两个文件");
+        var preview = await new CopilotPreviewWorkspacePatchEnvelopeTool(store).ExecuteAsync(
+            request,
+            EnvelopeInput(Update(firstPath, "one", "ONE"), Update(secondPath, "two", "TWO")),
+            CancellationToken.None);
+        Assert.True(preview.Success, preview.ErrorMessage);
+        var input = ChangeSetInput(ExtractField(preview.Content, "change_set_id"));
+        var applyTool = new CopilotApplyWorkspacePatchEnvelopeTool(store);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            applyTool.ExecuteApprovedAsync(request, input, cancellation.Token));
+
+        var applied = await applyTool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+        Assert.True(applied.Success, applied.ErrorMessage);
+        Assert.Equal("ONE\n", await File.ReadAllTextAsync(firstPath));
+        Assert.Equal("TWO\n", await File.ReadAllTextAsync(secondPath));
+    }
+
+    [Fact]
     public async Task SingleDeleteEnvelopeRollbackNeverOverwritesRecreatedPath()
     {
         var deletePath = CreateFile("Recreated.cs", "original\n");
@@ -152,7 +278,7 @@ public sealed class CopilotWorkspacePatchEnvelopeTests : IDisposable
     }
 
     [Fact]
-    public void RegistryPrefersUnifiedEnvelopeWithoutExposingItToOrdinaryQuestions()
+    public void RegistryExposesOnlyUnifiedWorkspaceWriteToolsForMatchingIntent()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
@@ -167,8 +293,8 @@ public sealed class CopilotWorkspacePatchEnvelopeTests : IDisposable
         Assert.Contains(delete, tool => tool.Name == "PreviewWorkspacePatchEnvelope");
         Assert.Contains(delete, tool => tool.Name == "ApplyWorkspacePatchEnvelope");
         Assert.Contains(rollback, tool => tool.Name == "RollbackWorkspacePatchEnvelope");
-        Assert.True(edit.FindIndex(tool => tool.Name == "ApplyWorkspacePatchEnvelope")
-            < edit.FindIndex(tool => tool.Name == "ApplyWorkspaceChangeSet"));
+        var registeredNames = registry.Tools.Select(tool => tool.Name).ToArray();
+        Assert.DoesNotContain(registeredNames, name => LegacyWorkspaceWriteToolNames.Contains(name));
     }
 
     public void Dispose()
@@ -238,17 +364,16 @@ public sealed class CopilotWorkspacePatchEnvelopeTests : IDisposable
             .First(item => item.StartsWith(fieldName + ":", StringComparison.OrdinalIgnoreCase));
         return line[(line.IndexOf(':') + 1)..].Trim();
     }
-}
 
-internal static class CopilotToolListExtensions
-{
-    public static int FindIndex(this IReadOnlyList<ICopilotTool> tools, Func<ICopilotTool, bool> predicate)
+    private static readonly HashSet<string> LegacyWorkspaceWriteToolNames = new(StringComparer.Ordinal)
     {
-        for (var index = 0; index < tools.Count; index++)
-        {
-            if (predicate(tools[index]))
-                return index;
-        }
-        return -1;
-    }
+        "PreviewWorkspacePatch",
+        "ApplyWorkspacePatch",
+        "PreviewCreateWorkspaceFile",
+        "ApplyCreateWorkspaceFile",
+        "PreviewWorkspaceChangeSet",
+        "ApplyWorkspaceChangeSet",
+        "RollbackWorkspacePatch",
+        "RollbackWorkspaceChangeSet",
+    };
 }

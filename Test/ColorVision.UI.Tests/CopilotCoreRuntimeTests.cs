@@ -4297,7 +4297,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
-    public async Task AgentFrameworkRuntime_UsesNativeApprovalForWorkspaceFileCreation()
+    public async Task AgentFrameworkRuntime_UsesNativeApprovalForWorkspacePatchEnvelope()
     {
         CopilotMcpConfirmationStore.Instance.ClearForTests();
         var root = Path.Combine(Path.GetTempPath(), "ColorVision-Agent-Create-" + Guid.NewGuid().ToString("N"));
@@ -4313,17 +4313,27 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 Mode = CopilotAgentMode.Auto,
                 WritableLocalRootPaths = [root],
             };
-            var preview = await store.PreviewCreateAsync(request, new CopilotAgentToolInput
+            var preview = await new CopilotPreviewWorkspacePatchEnvelopeTool(store).ExecuteAsync(request, new CopilotAgentToolInput
             {
-                Path = path,
-                Arguments = new Dictionary<string, object?> { ["content"] = "public sealed class Created;\n" },
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["operations"] = new[]
+                    {
+                        new Dictionary<string, object?>
+                        {
+                            ["operation"] = "add",
+                            ["path"] = path,
+                            ["content"] = "public sealed class Created;\n",
+                        },
+                    },
+                },
             }, CancellationToken.None);
-            var previewId = preview.Content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-                .Single(line => line.StartsWith("preview_id:", StringComparison.OrdinalIgnoreCase))["preview_id:".Length..].Trim();
-            var tool = new CopilotApplyCreateWorkspaceFileTool(store);
-            using var fakeChatClient = new FunctionCallingChatClient("colorvision_apply_create_workspace_file", new Dictionary<string, object?>
+            var changeSetId = preview.Content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                .Single(line => line.StartsWith("change_set_id:", StringComparison.OrdinalIgnoreCase))["change_set_id:".Length..].Trim();
+            var tool = new CopilotApplyWorkspacePatchEnvelopeTool(store);
+            using var fakeChatClient = new FunctionCallingChatClient("colorvision_apply_workspace_patch_envelope", new Dictionary<string, object?>
             {
-                ["previewId"] = previewId,
+                ["changeSetId"] = changeSetId,
             });
             var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
                 new CopilotToolRegistry([tool]),
@@ -4333,7 +4343,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             var runTask = runtime.RunAsync(request, _ => { }, CancellationToken.None);
             var action = await WaitForPendingActionAsync();
 
-            Assert.Equal("ApplyCreateWorkspaceFile", action.ToolName);
+            Assert.Equal("ApplyWorkspacePatchEnvelope", action.ToolName);
             Assert.Contains(path, action.Description, StringComparison.OrdinalIgnoreCase);
             Assert.False(File.Exists(path));
             Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
@@ -4341,7 +4351,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
             Assert.True(File.Exists(path));
             var step = Assert.Single(result.StepRecords);
-            Assert.Equal("ApplyCreateWorkspaceFile", step.Execution.ToolName);
+            Assert.Equal("ApplyWorkspacePatchEnvelope", step.Execution.ToolName);
             Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
             Assert.Equal(action.ActionId, step.Execution.ApprovalActionId);
             Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
@@ -4522,33 +4532,6 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("ExecuteDatabaseSql", step.Execution.ToolName);
         Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
         Assert.Equal(action.ActionId, step.Execution.ApprovalActionId);
-        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
-    }
-
-    [Fact]
-    public async Task AgentFrameworkRuntime_RequiresWholeChangeSetForExplicitMultiFileEdit()
-    {
-        var tool = new TestAgentTool("ApplyWorkspaceChangeSet");
-        using var fakeChatClient = new InitiallyAnswersThenCallsFunctionChatClient(
-            "colorvision_apply_workspace_change_set",
-            new Dictionary<string, object?>());
-        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
-            new CopilotToolRegistry([tool]),
-            new CopilotAgentContextBuilder(),
-            _ => fakeChatClient);
-
-        var result = await runtime.RunAsync(new CopilotAgentRequest
-        {
-            UserText = "请修改多个文件",
-            Profile = CreateProfile(),
-            Mode = CopilotAgentMode.Auto,
-            WritableLocalRootPaths = [_tempRoot],
-        }, _ => { }, CancellationToken.None);
-
-        Assert.Equal(1, tool.ExecutionCount);
-        Assert.Equal(3, fakeChatClient.StreamCallCount);
-        Assert.Contains(fakeChatClient.StreamMessages[1], message =>
-            message.Text.Contains("multi-file workspace edit", StringComparison.Ordinal));
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
     }
 

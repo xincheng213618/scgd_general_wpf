@@ -181,7 +181,7 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.Contains(tools, tool => tool.Name == "InspectGitWorkingTree");
         Assert.Contains(tools, tool => tool.Name == "InspectGitDiff");
         Assert.Contains(tools, tool => tool.Name == "SearchFiles");
-        Assert.DoesNotContain(tools, tool => tool.Name is "ApplyWorkspacePatch" or "ApplyWorkspaceChangeSet" or "RunShellCommand");
+        Assert.DoesNotContain(tools, tool => tool.Name is "ApplyWorkspacePatchEnvelope" or "RunShellCommand");
     }
 
     [Theory]

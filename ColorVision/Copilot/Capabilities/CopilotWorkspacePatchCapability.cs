@@ -22,7 +22,7 @@ namespace ColorVision.Copilot
         private readonly object _syncRoot = new();
         private readonly Dictionary<string, WorkspacePatchRecord> _records = new(StringComparer.Ordinal);
 
-        public async Task<CopilotToolResult> PreviewAsync(
+        private async Task<CopilotToolResult> PreviewUpdateOperationAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
@@ -33,19 +33,19 @@ namespace ColorVision.Copilot
                 || !TryGetTextArgument(input, "newText", out var requestedNewText)
                 || string.IsNullOrWhiteSpace(input.Path))
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Validation,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "Workspace patch arguments are incomplete.", "path, oldText, and newText are required string arguments.");
             }
             if (requestedOldText.Length == 0 || requestedOldText.Length > MaxReplacementCharacters
                 || requestedNewText.Length > MaxReplacementCharacters)
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Validation,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "Workspace patch text is outside the allowed size.",
                     $"oldText must contain 1-{MaxReplacementCharacters} characters and newText at most {MaxReplacementCharacters} characters.");
             }
             if (!CopilotWorkspacePatchScope.TryResolve(request, input.Path, MaxFileBytes, out var fullPath, out var scopeError))
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Authorization,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Authorization,
                     "The target file is outside the current writable workspace scope.", scopeError);
             }
 
@@ -60,13 +60,13 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Internal,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Internal,
                     "The target file could not be read for patch preview.", ex.Message);
             }
 
             if (!TryDecodeText(originalBytes, out var originalText, out var encodingInfo, out var decodeError))
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Validation,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "The target is not a supported text file.", decodeError);
             }
 
@@ -75,14 +75,14 @@ namespace ColorVision.Copilot
             var newText = NormalizeNewlines(requestedNewText, newline);
             if (string.Equals(oldText, newText, StringComparison.Ordinal))
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Validation,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "The proposed replacement does not change the file.", "oldText and newText are identical after newline normalization.");
             }
 
             var occurrenceCount = CountOccurrences(originalText, oldText);
             if (occurrenceCount != 1)
             {
-                return Failure("PreviewWorkspacePatch", CopilotToolFailureKind.Conflict,
+                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Conflict,
                     occurrenceCount == 0 ? "The exact oldText was not found in the target file." : "The oldText is ambiguous in the target file.",
                     occurrenceCount == 0
                         ? "Read the current file and prepare a replacement that matches its exact text."
@@ -111,14 +111,14 @@ namespace ColorVision.Copilot
 
             return new CopilotToolResult
             {
-                ToolName = "PreviewWorkspacePatch",
+                ToolName = "PreviewWorkspacePatchEnvelope",
                 Success = true,
                 Summary = $"Prepared a conflict-checked workspace patch preview for {Path.GetFileName(fullPath)}.",
                 Content = BuildPreviewContent(record),
             };
         }
 
-        public Task<CopilotToolResult> PreviewCreateAsync(
+        private Task<CopilotToolResult> PreviewCreateOperationAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             CancellationToken cancellationToken)
@@ -129,12 +129,12 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(input.Path)
                 || !TryGetTextArgument(input, "content", out var content))
             {
-                return Task.FromResult(Failure("PreviewCreateWorkspaceFile", CopilotToolFailureKind.Validation,
+                return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "Workspace file creation arguments are incomplete.", "path and content are required string arguments."));
             }
             if (content.Length > MaxNewFileCharacters)
             {
-                return Task.FromResult(Failure("PreviewCreateWorkspaceFile", CopilotToolFailureKind.Validation,
+                return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "The new workspace file content is outside the allowed size.",
                     $"content must contain at most {MaxNewFileCharacters} characters."));
             }
@@ -143,7 +143,7 @@ namespace ColorVision.Copilot
                 var failureKind = File.Exists(SafeFullPath(input.Path)) || Directory.Exists(SafeFullPath(input.Path))
                     ? CopilotToolFailureKind.Conflict
                     : CopilotToolFailureKind.Authorization;
-                return Task.FromResult(Failure("PreviewCreateWorkspaceFile", failureKind,
+                return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", failureKind,
                     failureKind == CopilotToolFailureKind.Conflict
                         ? "The requested workspace file already exists."
                         : "The requested file is outside the current writable workspace scope.",
@@ -157,12 +157,12 @@ namespace ColorVision.Copilot
             }
             catch (EncoderFallbackException ex)
             {
-                return Task.FromResult(Failure("PreviewCreateWorkspaceFile", CopilotToolFailureKind.Validation,
+                return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "The new workspace file content is not valid UTF-8 text.", ex.Message));
             }
             if (createdBytes.Length > MaxFileBytes)
             {
-                return Task.FromResult(Failure("PreviewCreateWorkspaceFile", CopilotToolFailureKind.Validation,
+                return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "The encoded workspace file exceeds the allowed size.",
                     $"The UTF-8 content exceeds the {MaxFileBytes}-byte workspace file limit."));
             }
@@ -184,86 +184,11 @@ namespace ColorVision.Copilot
             StoreRecord(record, now);
             return Task.FromResult(new CopilotToolResult
             {
-                ToolName = "PreviewCreateWorkspaceFile",
+                ToolName = "PreviewWorkspacePatchEnvelope",
                 Success = true,
                 Summary = $"Prepared a conflict-checked workspace file creation preview for {Path.GetFileName(fullPath)}.",
                 Content = BuildPreviewContent(record),
             });
-        }
-
-        public async Task<CopilotToolResult> ApplyAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Replace, changeSetId: null, cancellationToken);
-        }
-
-        public async Task<CopilotToolResult> ApplyCreateAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            return await MutateAsync(request, input, rollback: false, WorkspacePatchOperation.Create, changeSetId: null, cancellationToken);
-        }
-
-        public async Task<CopilotToolResult> RollbackAsync(
-            CopilotAgentRequest request,
-            CopilotAgentToolInput input,
-            CancellationToken cancellationToken)
-        {
-            return await MutateAsync(request, input, rollback: true, expectedOperation: null, changeSetId: null, cancellationToken);
-        }
-
-        public string GetConcurrencyKey(CopilotAgentToolInput input, string fallbackToolName)
-        {
-            if (TryGetPreviewId(input, out var previewId))
-            {
-                lock (_syncRoot)
-                {
-                    if (_records.TryGetValue(previewId, out var record))
-                        return "path:" + record.FullPath;
-                }
-            }
-            return "tool:" + fallbackToolName;
-        }
-
-        public CopilotToolApprovalPresentation CreateApprovalPresentation(
-            CopilotAgentToolInput input,
-            bool rollback)
-        {
-            if (!TryGetPreviewId(input, out var previewId))
-            {
-                return new CopilotToolApprovalPresentation(
-                    rollback ? "Approve workspace patch rollback" : "Approve workspace patch",
-                    "The patch preview identifier is missing or invalid.");
-            }
-
-            lock (_syncRoot)
-            {
-                if (!_records.TryGetValue(previewId, out var record))
-                {
-                    return new CopilotToolApprovalPresentation(
-                        rollback ? "Approve workspace patch rollback" : "Approve workspace patch",
-                        $"The referenced patch preview {previewId} is no longer available.");
-                }
-
-                return new CopilotToolApprovalPresentation(
-                    rollback
-                        ? record.Operation == WorkspacePatchOperation.Create
-                            ? $"Delete created file {Path.GetFileName(record.FullPath)}"
-                            : $"Rollback {Path.GetFileName(record.FullPath)}"
-                        : record.Operation == WorkspacePatchOperation.Create
-                            ? $"Create {Path.GetFileName(record.FullPath)}"
-                            : $"Apply patch to {Path.GetFileName(record.FullPath)}",
-                    rollback
-                        ? record.Operation == WorkspacePatchOperation.Create
-                            ? $"Delete the Agent-created file {record.FullPath}. The rollback will run only if it still has SHA-256 {record.AfterSha256}."
-                            : $"Restore the pre-patch bytes for {record.FullPath}. The rollback will run only if the file still has SHA-256 {record.AfterSha256}."
-                        : record.Operation == WorkspacePatchOperation.Create
-                            ? $"Create a new UTF-8 text file at {record.FullPath}. The write will run only while that path does not exist; resulting SHA-256: {record.AfterSha256}."
-                            : $"Replace one exact text region in {record.FullPath}. The write will run only if the file still has SHA-256 {record.BeforeSha256}; resulting SHA-256: {record.AfterSha256}.");
-            }
         }
 
         private async Task<CopilotToolResult> MutateAsync(
@@ -272,15 +197,11 @@ namespace ColorVision.Copilot
             bool rollback,
             WorkspacePatchOperation? expectedOperation,
             string? changeSetId,
+            string toolName,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             input ??= CopilotAgentToolInput.Empty;
-            var toolName = rollback
-                ? "RollbackWorkspacePatch"
-                : expectedOperation == WorkspacePatchOperation.Create
-                    ? "ApplyCreateWorkspaceFile"
-                    : "ApplyWorkspacePatch";
             if (!TryGetPreviewId(input, out var previewId))
             {
                 return Failure(toolName, CopilotToolFailureKind.Validation,
