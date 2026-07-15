@@ -28,6 +28,40 @@ public class CopilotFlowGraphToolTests
     }
 
     [Fact]
+    public void ActiveFlowContextKeepsReadToolsButRequiresCurrentMutationIntentForWriteTools()
+    {
+        var registry = CopilotToolRegistry.CreateDefault();
+        var inspectTools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "这个节点是什么？",
+            Mode = CopilotAgentMode.Auto,
+            ContextItems = [new CopilotContextItem { Id = "surface:flow", Title = "Flow context · Default" }],
+        });
+
+        Assert.Contains(inspectTools, tool => tool.Name == "InspectFlowGraph");
+        Assert.Contains(inspectTools, tool => tool.Name == "SearchFlowNodeCatalog");
+        Assert.DoesNotContain(inspectTools, tool => tool.Name is "PreviewFlowPatch" or "ApplyFlowPatch");
+
+        var mutateTools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "添加一个相机节点",
+            Mode = CopilotAgentMode.Auto,
+            ContextItems = [new CopilotContextItem { Id = "surface:flow", Title = "Flow context · Default" }],
+        });
+        Assert.Contains(mutateTools, tool => tool.Name == "PreviewFlowPatch");
+        Assert.Contains(mutateTools, tool => tool.Name == "ApplyFlowPatch");
+
+        var adviceTools = registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = "如何添加一个相机节点？",
+            Mode = CopilotAgentMode.Auto,
+            ContextItems = [new CopilotContextItem { Id = "surface:flow", Title = "Flow context · Default" }],
+        });
+        Assert.Contains(adviceTools, tool => tool.Name == "InspectFlowGraph");
+        Assert.DoesNotContain(adviceTools, tool => tool.Name is "PreviewFlowPatch" or "ApplyFlowPatch");
+    }
+
+    [Fact]
     public void FlowPatchSchemaUsesOneOperationEnumAndRevisionInsteadOfSeparateTools()
     {
         var preview = new CopilotPreviewFlowPatchTool();

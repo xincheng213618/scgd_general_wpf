@@ -89,7 +89,7 @@ public sealed class CopilotFlowExecutionStatisticsTests
     }
 
     [Fact]
-    public void ToolSchemaKeepsStatisticsSurfaceNarrowWhileAgentAvailabilityStaysStable()
+    public void ToolSchemaAndRequestIntentKeepStatisticsSurfaceNarrow()
     {
         var tool = new CopilotQueryFlowExecutionStatsTool(new CopilotFlowExecutionStatisticsService(
             new FakeStatisticsSource(), () => FixedNow));
@@ -110,7 +110,7 @@ public sealed class CopilotFlowExecutionStatisticsTests
         Assert.Contains(registry.FindTools(Request("查询今天执行了多少次流程")), item => item.Name == tool.Name);
         Assert.Contains(registry.FindTools(Request("最近七天流程成功率")), item => item.Name == tool.Name);
         Assert.Contains(registry.FindTools(Request("如何统计流程执行次数")), item => item.Name == tool.Name);
-        Assert.Contains(registry.FindTools(Request("数据库是什么")), item => item.Name == tool.Name);
+        Assert.DoesNotContain(registry.FindTools(Request("数据库是什么")), item => item.Name == tool.Name);
         Assert.DoesNotContain(registry.FindTools(new CopilotAgentRequest { UserText = "数据库是什么", Mode = CopilotAgentMode.Chat }), item => item.Name == tool.Name);
     }
 

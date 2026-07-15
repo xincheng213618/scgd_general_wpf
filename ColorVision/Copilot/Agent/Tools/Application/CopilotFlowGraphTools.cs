@@ -43,6 +43,8 @@ namespace ColorVision.Copilot
             : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value)
         {
         }
+
+        public override bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsFlowMutation(request);
     }
 
     public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation
@@ -69,7 +71,7 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
+        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsFlowMutation(request);
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
@@ -163,7 +165,7 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-        public bool IsAvailable(CopilotAgentRequest request) => request != null && request.Mode != CopilotAgentMode.Chat;
+        public virtual bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsFlowGraph(request);
 
         public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {

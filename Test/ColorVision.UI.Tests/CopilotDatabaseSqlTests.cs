@@ -173,19 +173,27 @@ public sealed class CopilotDatabaseSqlTests
     }
 
     [Fact]
-    public void AgentReceivesStableDatabaseSchemasAndExecutionKeepsThemSeparated()
+    public void AgentPublishesDatabaseToolsOnlyForRelevantReadOrWriteIntent()
     {
         var registry = new CopilotToolRegistry([
             new CopilotQueryDatabaseSqlTool(new CopilotDatabaseSqlService(new FakeExecutor())),
             new CopilotExecuteDatabaseSqlTool(new CopilotDatabaseSqlService(new FakeExecutor())),
         ]);
 
-        foreach (var prompt in new[] { "数据库里现在数据有多少", "清理数据库", "解释一下畸变校正", "SQL 是什么" })
-        {
-            var tools = registry.FindTools(Request(prompt));
-            Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
-            Assert.Contains(tools, tool => tool.Name == "ExecuteDatabaseSql");
-        }
+        var readTools = registry.FindTools(Request("数据库里现在数据有多少"));
+        Assert.Contains(readTools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(readTools, tool => tool.Name == "ExecuteDatabaseSql");
+
+        var writeTools = registry.FindTools(Request("清理数据库"));
+        Assert.Contains(writeTools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.Contains(writeTools, tool => tool.Name == "ExecuteDatabaseSql");
+
+        var adviceTools = registry.FindTools(Request("如何清理数据库"));
+        Assert.Contains(adviceTools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(adviceTools, tool => tool.Name == "ExecuteDatabaseSql");
+
+        foreach (var prompt in new[] { "解释一下畸变校正", "SQL 是什么" })
+            Assert.DoesNotContain(registry.FindTools(Request(prompt)), tool => tool.Name is "QueryDatabaseSql" or "ExecuteDatabaseSql");
 
         Assert.DoesNotContain(registry.FindTools(new CopilotAgentRequest { UserText = "查询数据库", Mode = CopilotAgentMode.Chat }), tool => tool.Name is "QueryDatabaseSql" or "ExecuteDatabaseSql");
     }

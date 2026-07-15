@@ -218,7 +218,9 @@ namespace ColorVision.Copilot
             await using var externalToolLease = await _externalToolProvider.DiscoverAsync(request, cancellationToken);
             foreach (var diagnostic in externalToolLease.Diagnostics)
                 emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic));
+            var registeredToolCount = _toolRegistry.Tools.Count + externalToolLease.Tools.Count;
             var availableTools = MergeAvailableTools(request, _toolRegistry.FindTools(request), externalToolLease.Tools, emit);
+            emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot, availableToolNames, environmentContext);

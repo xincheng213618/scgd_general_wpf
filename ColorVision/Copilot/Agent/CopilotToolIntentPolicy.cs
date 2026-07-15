@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
@@ -108,6 +109,93 @@ namespace ColorVision.Copilot
             "new topic", "another question", "unrelated", "by the way",
         };
 
+        private static readonly string[] FollowUpMarkers =
+        {
+            "继续", "再看", "再查", "再检查", "再试", "现在呢", "然后呢", "还有呢", "刚才的", "上一个",
+            "continue", "again", "check again", "what about", "then", "the previous", "that result",
+        };
+
+        private static readonly string[] FlowGraphMarkers =
+        {
+            "流程图", "工作流程", "流程节点", "流程里", "流程中", "节点连线", "相机节点", "算法节点", ".stn",
+            "flow graph", "flow editor", "workflow", "flow node", "camera node", "algorithm node",
+        };
+
+        private static readonly string[] FlowMutationMarkers =
+        {
+            "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动",
+            "add node", "create node", "insert node", "connect node", "set node", "update node", "move node",
+        };
+
+        private static readonly string[] MutationExplanationMarkers =
+        {
+            "如何", "怎么", "怎样", "是什么", "为什么", "介绍", "解释", "原理", "教程",
+            "how to", "how do", "what is", "why", "explain", "tutorial",
+        };
+
+        private static readonly string[] FlowStatisticsMarkers =
+        {
+            "流程统计", "流程执行数", "流程执行次数", "执行了多少次流程", "多少次流程", "流程运行数", "流程完成率", "流程成功率", "流程平均耗时", "今天流程", "昨天流程",
+            "flow statistics", "flow count", "flow completion rate", "flow success rate", "flow average duration",
+        };
+
+        private static readonly string[] DatabaseMarkers =
+        {
+            "数据库", "数据库表", "数据表", "SQL", "MySQL", "查询数据", "数据量", "记录数", "行数",
+            "database", "database table", "table schema", "query data", "row count",
+        };
+
+        private static readonly string[] DatabaseMutationMarkers =
+        {
+            "修改数据库", "更新数据库", "写入数据库", "插入数据", "删除数据", "清理数据库", "创建数据库表", "修改数据库表", "删除数据库表",
+            "insert into", "update database", "update table", "delete from", "create table", "alter table", "drop table", "truncate table", "rename table",
+        };
+
+        private static readonly string[] DatabaseExplanationMarkers =
+        {
+            "数据库是什么", "数据库原理", "SQL是什么", "SQL 是什么", "解释SQL", "解释 SQL",
+            "what is a database", "what is database", "what is sql", "explain sql",
+        };
+
+        private static readonly string[] RecentLogMarkers =
+        {
+            "日志", "最近错误", "最近异常", "报错", "错误日志", "异常日志", "崩溃", "失败原因",
+            "application log", "recent log", "error log", "exception log", "crash log",
+        };
+
+        private static readonly string[] WindowsSystemMarkers =
+        {
+            "Windows版本", "Windows 版本", "操作系统", "系统版本", "系统的版本", "系统信息", "系统架构", ".NET版本", ".NET 版本",
+            "windows version", "operating system", "os version", "system information", "build number", ".net runtime",
+        };
+
+        private static readonly string[] WindowsProcessMarkers =
+        {
+            "进程", "进程号", "PID", "CPU占用", "CPU 占用", "内存占用", "程序很卡", "应用很卡", "卡顿",
+            "process", "process id", "cpu usage", "memory usage", "working set",
+        };
+
+        private static readonly string[] WindowsServiceMarkers =
+        {
+            "Windows服务", "Windows 服务", "系统服务", "服务列表", "服务状态", "服务是否运行", "服务是否在运行", "服务现在运行", "服务运行吗",
+            "windows service", "service name", "service status", "list services",
+        };
+
+        private static readonly string[] TcpPortMarkers =
+        {
+            "端口", "TCP", "监听地址", "端口占用", "port", "tcp listener", "listening port",
+        };
+
+        private static readonly string[] ShellMarkers =
+        {
+            "运行PowerShell", "运行 PowerShell", "执行PowerShell", "执行 PowerShell", "用PowerShell", "用 PowerShell", "使用PowerShell", "使用 PowerShell",
+            "运行pwsh", "运行 pwsh", "执行pwsh", "执行 pwsh", "用pwsh", "用 pwsh",
+            "运行CMD", "运行 CMD", "执行CMD", "执行 CMD", "用CMD", "用 CMD", "使用CMD", "使用 CMD",
+            "在命令行运行", "在命令行执行", "在终端运行", "在终端执行", "运行命令", "执行命令", "运行脚本", "执行脚本",
+            "run powershell", "use powershell", "execute powershell", "run pwsh", "use pwsh", "run cmd", "use cmd", "execute cmd",
+            "shell command", "terminal command", "run command", "execute command", "run script", "execute script",
+        };
+
         private static readonly string[] FollowUpWebToolNames =
         {
             "FetchUrl", "WebSearch", "DelegateScout",
@@ -207,6 +295,83 @@ namespace ColorVision.Copilot
 
             return request.Mode == CopilotAgentMode.Web
                 || CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0;
+        }
+
+        public static bool NeedsFlowGraph(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (HasFlowContext(request!)
+                    || MatchesCurrentOrContinuation(request!, FlowGraphMarkers,
+                        "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"));
+        }
+
+        public static bool NeedsFlowMutation(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && ContainsAny(request!.UserText, FlowMutationMarkers)
+                && !ContainsAny(request.UserText, MutationExplanationMarkers)
+                && (HasFlowContext(request) || ContainsAny(request.UserText, FlowGraphMarkers));
+        }
+
+        public static bool NeedsFlowExecutionStatistics(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && MatchesCurrentOrContinuation(request!, FlowStatisticsMarkers, "QueryFlowExecutionStats");
+        }
+
+        public static bool NeedsDatabaseRead(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && !ContainsAny(request!.UserText, DatabaseExplanationMarkers)
+                && MatchesCurrentOrContinuation(request, DatabaseMarkers, "QueryDatabaseSql", "ExecuteDatabaseSql");
+        }
+
+        public static bool NeedsDatabaseWrite(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && ContainsAny(request!.UserText, DatabaseMarkers)
+                && ContainsAny(request.UserText, DatabaseMutationMarkers)
+                && !ContainsAny(request.UserText, MutationExplanationMarkers);
+        }
+
+        public static bool NeedsRecentLogs(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (request!.Mode == CopilotAgentMode.Diagnose
+                    || MatchesCurrentOrContinuation(request, RecentLogMarkers, "GetRecentLog"));
+        }
+
+        public static bool NeedsWindowsSystemInspection(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (request!.Mode == CopilotAgentMode.Diagnose
+                    || MatchesCurrentOrContinuation(request, WindowsSystemMarkers, "InspectWindowsSystem"));
+        }
+
+        public static bool NeedsWindowsProcessInspection(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (request!.Mode == CopilotAgentMode.Diagnose
+                    || MatchesCurrentOrContinuation(request, WindowsProcessMarkers, "InspectWindowsProcesses"));
+        }
+
+        public static bool NeedsWindowsServiceInspection(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (request!.Mode == CopilotAgentMode.Diagnose
+                    || MatchesCurrentOrContinuation(request, WindowsServiceMarkers, "InspectWindowsServices"));
+        }
+
+        public static bool NeedsTcpPortInspection(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (request!.Mode == CopilotAgentMode.Diagnose
+                    || MatchesCurrentOrContinuation(request, TcpPortMarkers, "InspectTcpPort"));
+        }
+
+        public static bool NeedsShellExecution(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request) && ContainsAny(request!.UserText, ShellMarkers);
         }
 
         internal static bool ExplicitlyRequiresPublicWebSearch(CopilotAgentRequest? request)
@@ -343,6 +508,42 @@ namespace ColorVision.Copilot
                 string.Equals(item.RunId, previousStop.RunId, StringComparison.Ordinal)
                 && item.Type == CopilotAgentTaskEventType.ToolCompleted
                 && string.Equals(item.ToolName, toolName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool MatchesCurrentOrContinuation(CopilotAgentRequest request, string[] markers, params string[] toolNames)
+        {
+            if (ContainsAny(request.UserText, markers))
+                return true;
+            if (!IsExplicitContinuation(request))
+                return false;
+            if ((request.History ?? Array.Empty<CopilotRequestMessage>())
+                .Where(message => !string.IsNullOrWhiteSpace(message.Content))
+                .TakeLast(VisibleHistoryEvidenceLimit)
+                .Any(message => ContainsAny(message.Content, markers)))
+            {
+                return true;
+            }
+            return toolNames.Any(toolName => HasRecentCheckpointToolEvidence(request.SessionCheckpoint, toolName));
+        }
+
+        private static bool IsExplicitContinuation(CopilotAgentRequest request)
+        {
+            return request.History.Count > 0
+                && request.UserText.Length <= MaximumFollowUpCharacters
+                && ContainsAny(request.UserText, FollowUpMarkers)
+                && !ContainsAny(request.UserText, NewTopicMarkers);
+        }
+
+        private static bool HasFlowContext(CopilotAgentRequest request)
+        {
+            return request.ContextItems.Any(item =>
+                (item.Id ?? string.Empty).EndsWith(":flow", StringComparison.OrdinalIgnoreCase)
+                || (item.Title ?? string.Empty).StartsWith("Flow context", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsAgentRequest(CopilotAgentRequest? request)
+        {
+            return request != null && request.Mode != CopilotAgentMode.Chat;
         }
 
         private static bool HasRecentCheckpointWebEvidence(CopilotAgentSessionCheckpoint? checkpoint)

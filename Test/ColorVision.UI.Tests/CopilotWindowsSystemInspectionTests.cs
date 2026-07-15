@@ -39,21 +39,31 @@ public sealed class CopilotWindowsSystemInspectionTests
     }
 
     [Fact]
-    public void RegistryKeepsWindowsSystemDiagnosticAvailableForAgentSelection()
+    public void RegistryExposesWindowsSystemInspectionOnlyForRelevantIntentOrFollowUp()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
-        foreach (var prompt in new[]
+        Assert.Contains(
+            registry.FindTools(Request("检查当前 Windows 版本")),
+            tool => tool.Name == "InspectWindowsSystem");
+        foreach (var prompt in new[] { "数据库里现在有多少数据", "解释一下色彩空间" })
         {
-            "检查当前 Windows 版本",
-            "数据库里现在有多少数据",
-            "解释一下色彩空间",
-            "继续",
-        })
-        {
-            var tools = registry.FindTools(Request(prompt));
-            Assert.Contains(tools, tool => tool.Name == "InspectWindowsSystem");
+            Assert.DoesNotContain(
+                registry.FindTools(Request(prompt)),
+                tool => tool.Name == "InspectWindowsSystem");
         }
+
+        var followUp = new CopilotAgentRequest
+        {
+            UserText = "继续",
+            Mode = CopilotAgentMode.Auto,
+            History =
+            [
+                new CopilotRequestMessage("user", "检查当前 Windows 版本"),
+                new CopilotRequestMessage("assistant", "Windows 版本信息如下。"),
+            ],
+        };
+        Assert.Contains(registry.FindTools(followUp), tool => tool.Name == "InspectWindowsSystem");
 
         Assert.DoesNotContain(
             registry.FindTools(Request("检查当前 Windows 版本", CopilotAgentMode.Chat)),

@@ -105,7 +105,7 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
     }
 
     [Fact]
-    public void RegistryKeepsStructuredPortAndGeneralShellToolsAvailableForAgentSelection()
+    public void RegistryExposesStructuredPortInspectionWithoutUnrelatedShellExecution()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
@@ -113,24 +113,27 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
         {
             "我想要知道6666端口有没有被占用",
             "检查6666端口和7777端口",
-            "用 CMD 检查 6666 端口",
             "解释一下TCP端口",
         })
         {
             var tools = registry.FindTools(Request(prompt, hasHistory: true));
             Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
-            Assert.Contains(tools, tool => tool.Name == "RunShellCommand");
+            Assert.DoesNotContain(tools, tool => tool.Name == "RunShellCommand");
         }
+
+        var explicitShellTools = registry.FindTools(Request("用 CMD 检查 6666 端口", hasHistory: true));
+        Assert.Contains(explicitShellTools, tool => tool.Name == "InspectTcpPort");
+        Assert.Contains(explicitShellTools, tool => tool.Name == "RunShellCommand");
     }
 
     [Fact]
     public void RegistryPublishesDistinctPortAndShellSafetyContracts()
     {
         var registry = CopilotToolRegistry.CreateDefault();
-        var request = Request("我想要知道6666端口有没有被占用", hasHistory: true);
-        var tools = registry.FindTools(request);
-        var inspection = Assert.Single(tools, tool => tool.Name == "InspectTcpPort");
-        var shell = Assert.Single(tools, tool => tool.Name == "RunShellCommand");
+        var inspectionTools = registry.FindTools(Request("我想要知道6666端口有没有被占用", hasHistory: true));
+        var shellTools = registry.FindTools(Request("运行 PowerShell 命令检查网络", hasHistory: true));
+        var inspection = Assert.Single(inspectionTools, tool => tool.Name == "InspectTcpPort");
+        var shell = Assert.Single(shellTools, tool => tool.Name == "RunShellCommand");
 
         Assert.Equal(CopilotToolAccess.ReadOnly, inspection.Capability.Access);
         Assert.Equal(CopilotToolApprovalMode.Never, inspection.Capability.ApprovalMode);
@@ -144,7 +147,7 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
     [InlineData("现在呢")]
     [InlineData("再检查一遍")]
     [InlineData("check again")]
-    public void RegistryKeepsCoreDiagnosticSurfaceStableForFollowUp(string followUp)
+    public void RegistryRetainsOnlyPortInspectionForExplicitFollowUp(string followUp)
     {
         var request = new CopilotAgentRequest
         {
@@ -161,9 +164,7 @@ public sealed class CopilotTcpPortInspectionTests : IDisposable
         var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
 
         Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
-        Assert.Contains(tools, tool => tool.Name == "RunShellCommand");
-        Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
-        Assert.Contains(tools, tool => tool.Name == "GetRecentLog");
+        Assert.DoesNotContain(tools, tool => tool.Name is "RunShellCommand" or "QueryDatabaseSql" or "ExecuteDatabaseSql" or "GetRecentLog");
     }
 
     public void Dispose()

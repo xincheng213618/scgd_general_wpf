@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.UI.Tests;
@@ -42,43 +43,41 @@ public sealed class CopilotToolIntentPolicyTests
     }
 
     [Fact]
-    public void AutoMode_StableCoreToolsDoNotChangeWithPromptWording()
+    public void AutoMode_DomainToolsFollowCurrentIntentInsteadOfStayingGloballyVisible()
     {
         var registry = CopilotToolRegistry.CreateDefault();
-        var prompts = new[]
-        {
-            "检查当前系统的版本",
-            "数据库里现在有多少数据",
-            "查看最近的应用错误日志",
-            "解释一下畸变校正",
-        };
-        var expectedNames = new[]
-        {
-            "GetRecentLog",
-            "QueryFlowExecutionStats",
-            "QueryDatabaseSql",
-            "ExecuteDatabaseSql",
-            "InspectWindowsSystem",
-            "InspectWindowsServices",
-            "InspectTcpPort",
-            "RunShellCommand",
-        };
-        string[]? firstCoreNames = null;
+        var systemTools = Find("检查当前系统的版本");
+        Assert.Contains(systemTools, tool => tool.Name == "InspectWindowsSystem");
+        Assert.DoesNotContain(systemTools, tool => tool.Name is "QueryDatabaseSql" or "GetRecentLog" or "InspectTcpPort" or "RunShellCommand");
 
-        foreach (var prompt in prompts)
-        {
-            var tools = registry.FindTools(new CopilotAgentRequest
-            {
-                UserText = prompt,
-                Mode = CopilotAgentMode.Auto,
-                History = [new CopilotRequestMessage("assistant", "previous answer")],
-            });
+        var databaseTools = Find("数据库里现在有多少数据");
+        Assert.Contains(databaseTools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(databaseTools, tool => tool.Name is "ExecuteDatabaseSql" or "InspectWindowsSystem" or "GetRecentLog" or "RunShellCommand");
 
-            Assert.All(expectedNames, name => Assert.Contains(tools, tool => tool.Name == name));
-            var coreNames = tools.OfType<ICopilotAgentDrivenTool>().Select(tool => tool.Name).ToArray();
-            firstCoreNames ??= coreNames;
-            Assert.Equal(firstCoreNames, coreNames);
-        }
+        var logTools = Find("查看最近的应用错误日志");
+        Assert.Contains(logTools, tool => tool.Name == "GetRecentLog");
+        Assert.DoesNotContain(logTools, tool => tool.Name is "QueryDatabaseSql" or "InspectWindowsSystem" or "RunShellCommand");
+
+        var genericTools = Find("解释一下畸变校正");
+        Assert.DoesNotContain(genericTools, tool => tool.Name is
+            "GetRecentLog" or "QueryFlowExecutionStats" or "QueryDatabaseSql" or "ExecuteDatabaseSql"
+            or "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices"
+            or "InspectTcpPort" or "RunShellCommand" or "InspectFlowGraph" or "SearchFlowNodeCatalog"
+            or "PreviewFlowPatch" or "ApplyFlowPatch");
+
+        var flowTools = Find("在流程里添加一个相机节点");
+        Assert.Contains(flowTools, tool => tool.Name == "InspectFlowGraph");
+        Assert.Contains(flowTools, tool => tool.Name == "SearchFlowNodeCatalog");
+        Assert.Contains(flowTools, tool => tool.Name == "PreviewFlowPatch");
+        Assert.Contains(flowTools, tool => tool.Name == "ApplyFlowPatch");
+        Assert.True(flowTools.Count > genericTools.Count);
+
+        IReadOnlyList<ICopilotTool> Find(string prompt) => registry.FindTools(new CopilotAgentRequest
+        {
+            UserText = prompt,
+            Mode = CopilotAgentMode.Auto,
+            History = [new CopilotRequestMessage("assistant", "previous answer")],
+        });
     }
 
     [Theory]
@@ -126,12 +125,11 @@ public sealed class CopilotToolIntentPolicyTests
 
         Assert.Contains(tools, tool => tool.Name == "FetchUrl");
         Assert.Contains(tools, tool => tool.Name == "WebSearch");
-        Assert.Contains(tools, tool => tool.Name == "RunShellCommand" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
-        Assert.Contains(tools, tool => tool.Name == "ExecuteDatabaseSql" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
+        Assert.DoesNotContain(tools, tool => tool.Name is "RunShellCommand" or "ExecuteDatabaseSql");
     }
 
     [Fact]
-    public void AutoMode_ShortFollowUpKeepsStableCoreAgentTools()
+    public void AutoMode_ExplicitFollowUpRetainsOnlyTheRelevantReadTool()
     {
         var request = new CopilotAgentRequest
         {
@@ -144,9 +142,24 @@ public sealed class CopilotToolIntentPolicyTests
         var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
 
         Assert.Contains(tools, tool => tool.Name == "QueryDatabaseSql");
+        Assert.DoesNotContain(tools, tool => tool.Name is "ExecuteDatabaseSql" or "GetRecentLog" or "InspectTcpPort" or "RunShellCommand");
+    }
+
+    [Fact]
+    public void DiagnoseMode_ExposesStructuredReadDiagnosticsButNotArbitraryShell()
+    {
+        var tools = CopilotToolRegistry.CreateDefault().FindTools(new CopilotAgentRequest
+        {
+            UserText = "帮我诊断这个问题",
+            Mode = CopilotAgentMode.Diagnose,
+        });
+
         Assert.Contains(tools, tool => tool.Name == "GetRecentLog");
+        Assert.Contains(tools, tool => tool.Name == "InspectWindowsSystem");
+        Assert.Contains(tools, tool => tool.Name == "InspectWindowsProcesses");
+        Assert.Contains(tools, tool => tool.Name == "InspectWindowsServices");
         Assert.Contains(tools, tool => tool.Name == "InspectTcpPort");
-        Assert.Contains(tools, tool => tool.Name == "RunShellCommand" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
+        Assert.DoesNotContain(tools, tool => tool.Name == "RunShellCommand");
     }
 
     [Fact]

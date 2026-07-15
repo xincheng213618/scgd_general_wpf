@@ -264,12 +264,15 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
-    public void RegistryKeepsShellAvailableForAgentSelectionOutsideChatMode()
+    public void RegistryExposesShellOnlyForExplicitShellIntentOutsideChatMode()
     {
         var registry = CopilotToolRegistry.CreateDefault();
 
-        foreach (var prompt in new[] { "我想要知道6666端口有没有被占用", "解释一下畸变校正", "检查当前系统的版本", "继续解释" })
+        foreach (var prompt in new[] { "运行 PowerShell 命令", "用 CMD 执行命令", "在终端运行脚本" })
             Assert.Contains(registry.FindTools(Request(prompt, hasHistory: true)), tool => tool.Name == "RunShellCommand");
+        foreach (var prompt in new[] { "我想要知道6666端口有没有被占用", "解释一下畸变校正", "检查当前系统的版本", "继续解释" })
+            Assert.DoesNotContain(registry.FindTools(Request(prompt, hasHistory: true)), tool => tool.Name == "RunShellCommand");
+        Assert.DoesNotContain(registry.FindTools(Request("PowerShell 是什么", hasHistory: true)), tool => tool.Name == "RunShellCommand");
         Assert.DoesNotContain(registry.FindTools(Request("检查端口", mode: CopilotAgentMode.Chat)), tool => tool.Name == "RunShellCommand");
     }
 
