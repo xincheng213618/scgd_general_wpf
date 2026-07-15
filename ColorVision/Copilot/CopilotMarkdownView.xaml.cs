@@ -32,6 +32,7 @@ namespace ColorVision.Copilot
         private readonly DispatcherTimer _renderTimer;
         private string _pendingMarkdown = string.Empty;
         private FlowDocument? _renderDocument;
+        private double _lastRenderedWidth;
 
         public CopilotMarkdownView()
         {
@@ -42,6 +43,7 @@ namespace ColorVision.Copilot
             };
             _renderTimer.Tick += RenderTimer_Tick;
             Loaded += CopilotMarkdownView_Loaded;
+            SizeChanged += CopilotMarkdownView_SizeChanged;
             Unloaded += CopilotMarkdownView_Unloaded;
         }
 
@@ -67,6 +69,14 @@ namespace ColorVision.Copilot
             _renderTimer.Stop();
         }
 
+        private void CopilotMarkdownView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (!e.WidthChanged || _lastRenderedWidth <= 0 || Math.Abs(e.NewSize.Width - _lastRenderedWidth) < 24)
+                return;
+
+            ScheduleRender();
+        }
+
         private void RenderTimer_Tick(object? sender, EventArgs e)
         {
             _renderTimer.Stop();
@@ -85,6 +95,7 @@ namespace ColorVision.Copilot
 
         private void RenderMarkdown(string markdown)
         {
+            _lastRenderedWidth = ActualWidth;
             try
             {
                 DocumentViewer.Document = BuildMarkdownDocument(markdown);
@@ -325,15 +336,23 @@ namespace ColorVision.Copilot
 
         private void AddTable(CopilotMarkdownTableModel model)
         {
+            var availableWidth = GetAvailableTableWidth();
+            if (ShouldUseKeyValueLayout(model, availableWidth))
+            {
+                AddTableAsKeyValueRecords(model);
+                return;
+            }
+
             var table = new Table
             {
                 CellSpacing = 0,
                 Margin = new Thickness(0, 3, 0, 10),
             };
             table.SetResourceReference(TextElement.ForegroundProperty, "GlobalTextBrush");
+            var columnWidths = CalculateTableColumnWidths(model, availableWidth);
             for (var columnIndex = 0; columnIndex < model.Headers.Count; columnIndex++)
             {
-                table.Columns.Add(new TableColumn { Width = GetTableColumnWidth(model, columnIndex) });
+                table.Columns.Add(new TableColumn { Width = new GridLength(columnWidths[columnIndex]) });
             }
 
             var rowGroup = new TableRowGroup();
@@ -354,13 +373,104 @@ namespace ColorVision.Copilot
             CurrentDocument.Blocks.Add(table);
         }
 
-        private static GridLength GetTableColumnWidth(CopilotMarkdownTableModel model, int columnIndex)
+        private double GetAvailableTableWidth()
         {
-            if (columnIndex == 0)
-                return new GridLength(MeasureBoundedTableColumn(model, columnIndex, 96, 220));
-            if (model.Headers.Count > 2 && columnIndex == model.Headers.Count - 1)
-                return new GridLength(MeasureBoundedTableColumn(model, columnIndex, 72, 140));
-            return new GridLength(1, GridUnitType.Star);
+            var width = DocumentViewer.ActualWidth;
+            if (!double.IsFinite(width) || width < 1)
+                width = ActualWidth;
+            if (!double.IsFinite(width) || width < 1)
+                width = 640;
+            return Math.Max(160, width - 4);
+        }
+
+        private static bool ShouldUseKeyValueLayout(CopilotMarkdownTableModel model, double availableWidth)
+        {
+            if (model.Headers.Count < 2)
+                return false;
+
+            var hasLongValue = model.Rows.Take(64).SelectMany(row => row.Skip(1)).Any(value => EstimateTableCellWidth(value) >= 220);
+            return model.Headers.Count == 2
+                ? availableWidth < 320 && hasLongValue
+                : availableWidth < model.Headers.Count * 140 && hasLongValue;
+        }
+
+        private static double[] CalculateTableColumnWidths(CopilotMarkdownTableModel model, double availableWidth)
+        {
+            var columnCount = model.Headers.Count;
+            var minimumWidths = new double[columnCount];
+            var preferredWidths = new double[columnCount];
+            for (var columnIndex = 0; columnIndex < columnCount; columnIndex++)
+            {
+                var isFirst = columnIndex == 0;
+                var isCompactLast = columnCount > 2 && columnIndex == columnCount - 1;
+                var minimumWidth = isFirst ? 96 : isCompactLast ? 72 : 88;
+                var maximumWidth = isFirst ? 220 : isCompactLast ? 140 : 420;
+                minimumWidths[columnIndex] = minimumWidth;
+                preferredWidths[columnIndex] = MeasureBoundedTableColumn(model, columnIndex, minimumWidth, maximumWidth);
+            }
+
+            var minimumTotal = minimumWidths.Sum();
+            if (minimumTotal >= availableWidth)
+            {
+                var scale = availableWidth / minimumTotal;
+                return minimumWidths.Select(width => width * scale).ToArray();
+            }
+
+            var preferredTotal = preferredWidths.Sum();
+            if (preferredTotal <= availableWidth)
+                return preferredWidths;
+
+            var remainingWidth = availableWidth - minimumTotal;
+            var growthTotal = preferredWidths.Select((width, index) => width - minimumWidths[index]).Sum();
+            if (growthTotal <= 0)
+                return minimumWidths;
+
+            return minimumWidths
+                .Select((width, index) => width + remainingWidth * (preferredWidths[index] - width) / growthTotal)
+                .ToArray();
+        }
+
+        private void AddTableAsKeyValueRecords(CopilotMarkdownTableModel model)
+        {
+            foreach (var row in model.Rows)
+            {
+                var section = new Section
+                {
+                    BorderThickness = new Thickness(0, 0, 0, 1),
+                    Margin = new Thickness(0, 2, 0, 6),
+                    Padding = new Thickness(0, 0, 0, 6),
+                };
+                section.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
+
+                if (model.Headers.Count == 2 && !string.IsNullOrWhiteSpace(row[0]))
+                {
+                    AddKeyValuePair(section, row[0], row[1]);
+                }
+                else
+                {
+                    for (var columnIndex = 0; columnIndex < model.Headers.Count; columnIndex++)
+                    {
+                        if (!string.IsNullOrWhiteSpace(row[columnIndex]))
+                            AddKeyValuePair(section, model.Headers[columnIndex], row[columnIndex]);
+                    }
+                }
+
+                if (section.Blocks.Count > 0)
+                    CurrentDocument.Blocks.Add(section);
+            }
+
+            if (model.WasTruncated)
+                AddTextBlock($"… table limited to {CopilotMarkdownTableParser.MaximumRows} rows", new Thickness(0, 0, 0, 8));
+        }
+
+        private static void AddKeyValuePair(Section section, string key, string value)
+        {
+            var paragraph = CreateParagraph(12.5, FontWeights.Normal, new Thickness(0, 0, 0, 4));
+            var keyRun = new Run(key) { FontWeight = FontWeights.SemiBold };
+            paragraph.Inlines.Add(keyRun);
+            paragraph.Inlines.Add(new LineBreak());
+            AddInlines(paragraph.Inlines, value);
+            section.Blocks.Add(paragraph);
         }
 
         private static double MeasureBoundedTableColumn(
