@@ -418,7 +418,19 @@ namespace ColorVision.Copilot
 
             var preferredTotal = preferredWidths.Sum();
             if (preferredTotal <= availableWidth)
-                return preferredWidths;
+            {
+                var result = preferredWidths.ToArray();
+                var flexibleColumns = Enumerable.Range(1, Math.Max(0, columnCount - 1))
+                    .Where(index => columnCount <= 2 || index < columnCount - 1)
+                    .ToArray();
+                if (flexibleColumns.Length == 0)
+                    flexibleColumns = [columnCount - 1];
+
+                var extraPerColumn = (availableWidth - preferredTotal) / flexibleColumns.Length;
+                foreach (var columnIndex in flexibleColumns)
+                    result[columnIndex] += extraPerColumn;
+                return result;
+            }
 
             var remainingWidth = availableWidth - minimumTotal;
             var growthTotal = preferredWidths.Select((width, index) => width - minimumWidths[index]).Sum();

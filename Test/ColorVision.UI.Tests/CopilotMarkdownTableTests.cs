@@ -42,7 +42,7 @@ public sealed class CopilotMarkdownTableTests
                 Assert.Equal(GridUnitType.Pixel, table.Columns[1].Width.GridUnitType);
                 Assert.Equal(GridUnitType.Pixel, table.Columns[2].Width.GridUnitType);
                 Assert.True(table.Columns[2].Width.Value >= 72);
-                Assert.True(table.Columns.Sum(column => column.Width.Value) <= viewer.ActualWidth);
+                Assert.InRange(table.Columns.Sum(column => column.Width.Value), viewer.ActualWidth - 12, viewer.ActualWidth);
                 var documentText = new TextRange(viewer.Document.ContentStart, viewer.Document.ContentEnd).Text;
                 Assert.Contains("t_scgd_measure_batch", documentText, StringComparison.Ordinal);
                 Assert.DoesNotContain("|------|", documentText, StringComparison.Ordinal);
@@ -82,7 +82,7 @@ public sealed class CopilotMarkdownTableTests
                 Assert.Equal(GridUnitType.Pixel, table.Columns[0].Width.GridUnitType);
                 Assert.True(table.Columns[0].Width.Value >= 96);
                 Assert.Equal(GridUnitType.Pixel, table.Columns[1].Width.GridUnitType);
-                Assert.True(table.Columns.Sum(column => column.Width.Value) <= viewer.ActualWidth);
+                Assert.InRange(table.Columns.Sum(column => column.Width.Value), viewer.ActualWidth - 12, viewer.ActualWidth);
                 Assert.Equal(1, CountRenderedLines(Assert.Single(table.RowGroups[0].Rows[0].Cells[0].Blocks.OfType<Paragraph>())));
                 Assert.Equal(1, CountRenderedLines(Assert.Single(table.RowGroups[0].Rows[1].Cells[0].Blocks.OfType<Paragraph>())));
             }
@@ -162,6 +162,66 @@ public sealed class CopilotMarkdownTableTests
                 Assert.InRange(valueRect.X - labelRect.X, 80, 260);
                 Assert.True(valueRect.X < viewer.ActualWidth - 80, $"Value column starts outside the visible width at {valueRect.X:0.##}/{viewer.ActualWidth:0.##}.");
                 Assert.InRange(firstRow.Cells[1].ContentEnd.GetCharacterRect(LogicalDirection.Backward).Y - valueRect.Y, 0, 60);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void MarkdownView_KeepsKeyValueRowsCompactInsideChatMessageHierarchy()
+    {
+        RunOnStaThread(() =>
+        {
+            var view = new CopilotMarkdownView
+            {
+                Markdown = "| 项目 | 内容 |\n|------|------|\n| **网站名称** | 信成的博客 |\n| **副标题** | xincheng |\n| **作者** | Mr.Xin |\n| **类型** | 个人博客 |\n| **建站工具** | [Hexo](https://hexo.io/)（静态博客生成器） |\n| **文章总数** | 30 篇 |\n| **RSS 订阅** | 有（atom.xml） |\n| **最后更新** | 2022-10-03 |",
+            };
+            var timeline = new ItemsControl();
+            timeline.Items.Add(view);
+            var assistantPanel = new StackPanel();
+            assistantPanel.Children.Add(timeline);
+            var messages = new ItemsControl
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin = new Thickness(16, 12, 16, 12),
+                MaxWidth = 880,
+            };
+            messages.Items.Add(assistantPanel);
+            var window = new Window
+            {
+                Content = new ScrollViewer
+                {
+                    Content = messages,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                },
+                Height = 1000,
+                ShowInTaskbar = false,
+                Width = 2000,
+                WindowStyle = WindowStyle.None,
+            };
+
+            try
+            {
+                window.Show();
+                PumpDispatcher(TimeSpan.FromMilliseconds(350));
+
+                var viewer = Assert.IsType<RichTextBox>(LogicalTreeHelper.FindLogicalNode(view, "DocumentViewer"));
+                var table = Assert.Single(viewer.Document.Blocks.OfType<Table>());
+                var rows = table.RowGroups.Single().Rows.Skip(1).ToArray();
+                Assert.Equal(8, rows.Length);
+                Assert.True(view.ActualHeight < 360, $"Expected compact key-value rows, actual view height was {view.ActualHeight:0.##}.");
+                Assert.InRange(table.Columns.Sum(column => column.Width.Value), viewer.ActualWidth - 12, viewer.ActualWidth);
+                Assert.All(rows, row =>
+                {
+                    var labelRect = row.Cells[0].ContentStart.GetCharacterRect(LogicalDirection.Forward);
+                    var valueRect = row.Cells[1].ContentStart.GetCharacterRect(LogicalDirection.Forward);
+                    var valueEndRect = row.Cells[1].ContentEnd.GetCharacterRect(LogicalDirection.Backward);
+                    Assert.InRange(valueRect.X - labelRect.X, 80, 260);
+                    Assert.InRange(valueEndRect.Y - valueRect.Y, 0, 60);
+                });
             }
             finally
             {
