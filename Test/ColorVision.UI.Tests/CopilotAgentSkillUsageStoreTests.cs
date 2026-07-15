@@ -149,7 +149,7 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
         Assert.Contains("loaded 1/24", report, StringComparison.Ordinal);
         Assert.Contains("consecutive misses 20/20", report, StringComparison.Ordinal);
         Assert.Contains("remain installed", report, StringComparison.Ordinal);
-        Assert.Contains("direct load restores", report, StringComparison.Ordinal);
+        Assert.Contains("invoke $skill-name or /skill-name", report, StringComparison.Ordinal);
         Assert.Contains("legacy-workflow=explicit-only", report, StringComparison.Ordinal);
         Assert.Contains("verbose-reference=name-only", report, StringComparison.Ordinal);
     }

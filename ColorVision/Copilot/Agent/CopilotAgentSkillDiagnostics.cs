@@ -42,7 +42,7 @@ namespace ColorVision.Copilot
                 .Append("% context, ")
                 .Append(CopilotAgentSkills.MaxAdvertisedSkillCharacters.ToString("N0"))
                 .AppendLine(" hard cap).")
-                .AppendLine("Low-use skills remain installed and become explicit-only after consecutive misses; a direct load restores implicit eligibility.")
+                .AppendLine("Low-use skills remain installed and become explicit-only after consecutive misses; invoke $skill-name or /skill-name and load it to restore implicit eligibility.")
                 .Append("Manual overrides: ")
                 .AppendLine(FormatOverrides(overrides))
                 .AppendLine()
@@ -93,7 +93,7 @@ namespace ColorVision.Copilot
                 .Append("; last selected ")
                 .Append(entry.LastSelectedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
             if (entry.ConsecutiveSelectedWithoutLoad >= CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold)
-                builder.Append(" · explicit-only until directly requested and loaded");
+                builder.Append(" · explicit-only until invoked as $skill-name or /skill-name and loaded");
             return builder.ToString();
         }
     }

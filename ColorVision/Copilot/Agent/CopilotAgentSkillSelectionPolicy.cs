@@ -31,9 +31,9 @@ namespace ColorVision.Copilot
             var query = userText?.Trim() ?? string.Empty;
             var queryWords = ExtractAsciiWords(query);
             var queryCjkBigrams = ExtractCjkBigrams(query);
-            var explicitlyRequestedNames = skills
+            var explicitlyInvokedNames = skills
                 .Select(skill => skill.Frontmatter.Name)
-                .Where(skillName => IsExplicitlyRequested(query, skillName))
+                .Where(skillName => IsExplicitlyInvoked(query, skillName))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var metadataExplicitOnlyNames = new List<string>();
             var historicalExplicitOnlyNames = new List<string>();
@@ -46,7 +46,7 @@ namespace ColorVision.Copilot
             {
                 var skill = skills[index];
                 var skillName = skill.Frontmatter.Name;
-                var explicitlyRequested = explicitlyRequestedNames.Contains(skillName);
+                var explicitlyInvoked = explicitlyInvokedNames.Contains(skillName);
                 var overrideState = skillOverrides?.TryGetValue(skillName, out var configuredState) == true && Enum.IsDefined(configuredState)
                     ? configuredState
                     : CopilotAgentSkillOverrideState.Auto;
@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (!explicitlyRequested)
+                if (!explicitlyInvoked)
                 {
                     if (DisallowsImplicitInvocation(skill))
                     {
@@ -80,15 +80,15 @@ namespace ColorVision.Copilot
                     : skill;
                 if (overrideState == CopilotAgentSkillOverrideState.NameOnly)
                     manualNameOnlyNames.Add(skillName);
-                if (explicitlyRequestedNames.Count > 0
-                    && !explicitlyRequested
+                if (explicitlyInvokedNames.Count > 0
+                    && !explicitlyInvoked
                     && overrideState != CopilotAgentSkillOverrideState.NameOnly)
                 {
                     irrelevantNames.Add(skillName);
                     continue;
                 }
                 var relevanceScore = CalculateRelevanceScore(advertisedSkill.Frontmatter, query, queryWords, queryCjkBigrams);
-                if (!explicitlyRequested
+                if (!explicitlyInvoked
                     && overrideState != CopilotAgentSkillOverrideState.NameOnly
                     && relevanceScore <= 0)
                 {
@@ -157,7 +157,7 @@ namespace ColorVision.Copilot
             return value[..(maximumCharacters - 1)].TrimEnd() + "…";
         }
 
-        private static bool IsExplicitlyRequested(string query, string skillName)
+        private static bool IsExplicitlyInvoked(string query, string skillName)
         {
             var startIndex = 0;
             while (startIndex < query.Length)
@@ -166,10 +166,15 @@ namespace ColorVision.Copilot
                 if (index < 0)
                     return false;
 
-                var beforeIsBoundary = index == 0 || !IsSkillNameCharacter(query[index - 1]);
+                var prefixIndex = index - 1;
+                var hasInvocationPrefix = prefixIndex >= 0 && query[prefixIndex] is '$' or '/';
+                var beforePrefixIsBoundary = prefixIndex == 0
+                    || prefixIndex > 0
+                        && !IsSkillNameCharacter(query[prefixIndex - 1])
+                        && query[prefixIndex - 1] is not '$' and not '/';
                 var endIndex = index + skillName.Length;
                 var afterIsBoundary = endIndex == query.Length || !IsSkillNameCharacter(query[endIndex]);
-                if (beforeIsBoundary && afterIsBoundary)
+                if (hasInvocationPrefix && beforePrefixIsBoundary && afterIsBoundary)
                     return true;
                 startIndex = index + 1;
             }

@@ -962,7 +962,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         await runtime.RunAsync(new CopilotAgentRequest
         {
-            UserText = "Use critical-diagnostics for this task.",
+            UserText = "Use $critical-diagnostics for this task.",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
             SearchRootPaths = new[] { _tempRoot },
@@ -1320,6 +1320,27 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             && item.Text.Contains("low-use 1", StringComparison.Ordinal));
         Assert.Contains(skillUsageStore.GetSnapshot().HistoricalExplicitOnlySkills, entry => entry.Name == "stale-workflow");
 
+        using var mentionedClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.DoesNotContain("stale-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            return null;
+        });
+        var mentionedRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => mentionedClient,
+            new StaticExternalToolProvider(),
+            skillUsageStore: skillUsageStore);
+
+        await mentionedRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Do not use stale-workflow for this task.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+        }, _ => { }, CancellationToken.None);
+
         using var explicitClient = new ScriptedHarnessChatClient(options =>
         {
             Assert.Contains("stale-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
@@ -1335,7 +1356,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         await explicitRuntime.RunAsync(new CopilotAgentRequest
         {
-            UserText = "Use $stale-workflow now.",
+            UserText = "Use /stale-workflow now.",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Auto,
             SearchRootPaths = new[] { _tempRoot },
