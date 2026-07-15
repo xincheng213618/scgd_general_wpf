@@ -110,7 +110,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] FollowUpWebToolNames =
         {
-            "FetchUrl", "WebSearch",
+            "FetchUrl", "WebSearch", "DelegateScout",
         };
 
         public static bool NeedsLocalEvidence(CopilotAgentRequest? request)
@@ -372,7 +372,9 @@ namespace ColorVision.Copilot
             if (tool == null)
                 return false;
 
-            return IsUrlFetchTool(tool) || IsPublicWebSearchTool(tool);
+            return string.Equals(tool.Name, "DelegateScout", StringComparison.OrdinalIgnoreCase)
+                || IsUrlFetchTool(tool)
+                || IsPublicWebSearchTool(tool);
         }
 
         private static bool IsFollowUpWebToolIdentity(string? name, string? description)

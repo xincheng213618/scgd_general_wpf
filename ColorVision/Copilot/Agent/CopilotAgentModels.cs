@@ -91,6 +91,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotDelegatedRunUsage
     {
+        public string RoleId { get; init; } = string.Empty;
+
         public string RunId { get; init; } = string.Empty;
 
         public int RequestTokenBudget { get; init; }

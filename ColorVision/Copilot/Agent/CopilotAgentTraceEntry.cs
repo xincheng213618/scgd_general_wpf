@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 5;
+        public const int CurrentSchemaVersion = 6;
         private const int MaxSummaryLength = 800;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
         public string ErrorMessage { get; set; } = string.Empty;
 
         public string DelegatedRunId { get; set; } = string.Empty;
+
+        public string DelegatedRoleId { get; set; } = string.Empty;
 
         public CopilotAgentStopReason DelegatedStopReason { get; set; }
 
@@ -136,8 +138,10 @@ namespace ColorVision.Copilot
                     builder.AppendLine().Append("Resource: ").Append(ConcurrencyKey);
                 if (!string.IsNullOrWhiteSpace(DelegatedRunId))
                 {
-                    builder.AppendLine().Append("Child run: ").Append(DelegatedRunId)
-                        .Append(" · stop: ").Append(DelegatedStopReason)
+                    builder.AppendLine().Append("Child run: ").Append(DelegatedRunId);
+                    if (!string.IsNullOrWhiteSpace(DelegatedRoleId))
+                        builder.Append(" · role: ").Append(DelegatedRoleId);
+                    builder.Append(" · stop: ").Append(DelegatedStopReason)
                         .Append(" · provider calls: ").Append(DelegatedProviderCalls)
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);
                     builder.AppendLine().Append("Child budget: ").Append(DelegatedConsumedTokens)
@@ -177,6 +181,7 @@ namespace ColorVision.Copilot
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
                 if (result.DelegatedRunUsage != null)
                 {
+                    entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
@@ -202,6 +207,7 @@ namespace ColorVision.Copilot
             var originalConcurrencyKey = ConcurrencyKey;
             var originalResultSummary = ResultSummary;
             var originalErrorMessage = ErrorMessage;
+            var originalDelegatedRoleId = DelegatedRoleId;
             var originalDelegatedRunId = DelegatedRunId;
             var originalDelegatedStopReason = DelegatedStopReason;
             var originalDelegatedRequestTokenBudget = DelegatedRequestTokenBudget;
@@ -224,6 +230,7 @@ namespace ColorVision.Copilot
             ConcurrencyKey = SanitizeIdentifier(ConcurrencyKey);
             ResultSummary = Sanitize(ResultSummary);
             ErrorMessage = Sanitize(ErrorMessage);
+            DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
             DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
@@ -253,6 +260,7 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalConcurrencyKey, ConcurrencyKey, StringComparison.Ordinal)
                 || !string.Equals(originalResultSummary, ResultSummary, StringComparison.Ordinal)
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
+                || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
                 || originalDelegatedStopReason != DelegatedStopReason
                 || originalDelegatedRequestTokenBudget != DelegatedRequestTokenBudget
@@ -375,6 +383,7 @@ namespace ColorVision.Copilot
                 "ReadLocalFile" or "ReadAttachedFile" => ("正在读取文件", "读取了文件"),
                 "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => ("正在搜索文件", "搜索了文件"),
                 "DelegateExplore" => ("正在委派代码探索", "委派了代码探索"),
+                "DelegateScout" => ("正在查阅外部资料", "查阅了外部资料"),
                 "GetRecentLog" => ("正在读取日志", "读取了日志"),
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => ("正在查询数据库", "查询了数据库"),
                 "ExecuteDatabaseSql" => ("正在执行数据库 SQL", "执行了数据库 SQL"),
@@ -443,6 +452,7 @@ namespace ColorVision.Copilot
                 "ReadLocalFile" or "ReadAttachedFile" => "已读取文件内容。",
                 "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "已完成文件搜索。",
                 "DelegateExplore" => "只读 Explore 子 Agent 已返回结果。",
+                "DelegateScout" => "只读 Scout 子 Agent 已返回外部资料。",
                 "GetRecentLog" => "已读取最近日志。",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "已获得数据库查询结果。",
                 "ExecuteDatabaseSql" => "数据库 SQL 已执行。",

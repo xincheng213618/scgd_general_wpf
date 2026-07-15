@@ -1,12 +1,25 @@
 #pragma warning disable CA1001
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    internal sealed class CopilotExploreSubagentCoordinator
+    internal static class CopilotSubagentCoordination
+    {
+        private static readonly ConditionalWeakTable<CopilotAgentRequest, CopilotSubagentCoordinator> Coordinators = new();
+
+        public static CopilotSubagentCoordinator GetCoordinator(CopilotAgentRequest parentRequest)
+        {
+            ArgumentNullException.ThrowIfNull(parentRequest);
+            return Coordinators.GetValue(parentRequest, static request => new CopilotSubagentCoordinator(request));
+        }
+    }
+
+    internal sealed class CopilotSubagentCoordinator
     {
         public const int MaximumConcurrentRuns = 2;
         public const int MaximumRunTokenBudget = 16_384;
@@ -19,7 +32,7 @@ namespace ColorVision.Copilot
         private long _committedTokens;
         private int _reservedTokens;
 
-        public CopilotExploreSubagentCoordinator(CopilotAgentRequest parentRequest)
+        public CopilotSubagentCoordinator(CopilotAgentRequest parentRequest)
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
             var parentTokenBudget = CopilotAgentRunBudget.Resolve(parentRequest).RequestTokenBudget;
@@ -31,8 +44,9 @@ namespace ColorVision.Copilot
                 : CopilotAgentRunBudget.MinimumRequestTokenBudget;
         }
 
-        public async Task<CopilotExploreSubagentLease?> TryAcquireAsync(CancellationToken cancellationToken)
+        public async Task<CopilotSubagentLease?> TryAcquireAsync(string roleId, CancellationToken cancellationToken)
         {
+            var normalizedRoleId = NormalizeRoleId(roleId);
             var stopwatch = Stopwatch.StartNew();
             await _slots.WaitAsync(cancellationToken);
 
@@ -51,14 +65,22 @@ namespace ColorVision.Copilot
             }
 
             stopwatch.Stop();
-            return new CopilotExploreSubagentLease(
+            return new CopilotSubagentLease(
                 this,
-                "explore-" + Guid.NewGuid().ToString("N")[..12],
+                normalizedRoleId + "-" + Guid.NewGuid().ToString("N")[..12],
                 tokenBudget,
                 stopwatch.ElapsedMilliseconds);
         }
 
-        private void Release(CopilotExploreSubagentLease lease, long? consumedTokens)
+        private static string NormalizeRoleId(string roleId)
+        {
+            var normalized = (roleId ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalized.Length == 0 || normalized.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '-'))
+                throw new ArgumentException("Subagent role id must contain only ASCII letters, digits, or hyphens.", nameof(roleId));
+            return normalized;
+        }
+
+        private void Release(CopilotSubagentLease lease, long? consumedTokens)
         {
             lock (_syncRoot)
             {
@@ -69,13 +91,13 @@ namespace ColorVision.Copilot
             _slots.Release();
         }
 
-        internal sealed class CopilotExploreSubagentLease : IDisposable
+        internal sealed class CopilotSubagentLease : IDisposable
         {
-            private CopilotExploreSubagentCoordinator? _owner;
+            private CopilotSubagentCoordinator? _owner;
             private long? _consumedTokens;
 
-            public CopilotExploreSubagentLease(
-                CopilotExploreSubagentCoordinator owner,
+            public CopilotSubagentLease(
+                CopilotSubagentCoordinator owner,
                 string runId,
                 int requestTokenBudget,
                 long queueDurationMs)

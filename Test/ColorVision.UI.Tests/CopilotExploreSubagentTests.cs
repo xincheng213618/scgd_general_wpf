@@ -74,10 +74,11 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         using var chatClient = new FunctionCallingChatClient(
             "colorvision_read_local_file",
             new Dictionary<string, object?> { ["path"] = filePath });
-        var runner = new CopilotExploreSubagentRunner(_ => chatClient);
+        var runner = new CopilotSubagentRunner(_ => chatClient);
         var parentRequest = WithHistory(CreateRequest("parent task", [_tempRoot]), "PARENT_HISTORY_SECRET");
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
 
-        var result = await runner.RunAsync(parentRequest, new CopilotExploreSubagentRunRequest
+        var result = await runner.RunAsync(parentRequest, role, new CopilotSubagentRunRequest
         {
             RunId = "explore-test-run",
             Task = "Read target.cs and report where Target is declared.",
@@ -142,13 +143,14 @@ public sealed class CopilotExploreSubagentTests : IDisposable
                 },
             ],
         };
-        var createChild = typeof(CopilotExploreSubagentRunner).GetMethod("CreateChildRequest", BindingFlags.Static | BindingFlags.NonPublic);
+        var createChild = typeof(CopilotSubagentRunner).GetMethod("CreateChildRequest", BindingFlags.Static | BindingFlags.NonPublic);
 
         Assert.NotNull(createChild);
         var child = Assert.IsType<CopilotAgentRequest>(createChild.Invoke(null,
         [
             parent,
-            new CopilotExploreSubagentRunRequest
+            CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId),
+            new CopilotSubagentRunRequest
             {
                 RunId = "explore-context",
                 Task = "inspect",
@@ -170,7 +172,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
     public async Task ParentRuntime_ReturnsDelegatedResultAndAccountsForChildUsage()
     {
         Directory.CreateDirectory(_tempRoot);
-        var childResult = new CopilotExploreSubagentResult
+        var childResult = new CopilotSubagentResult
         {
             Answer = "Target is declared in target.cs:1.",
             StopReason = CopilotAgentStopReason.Completed,
@@ -211,7 +213,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
     public async Task DelegateTool_ReturnsBoundedChildMetricsAndFriendlyTraceLabel()
     {
         Directory.CreateDirectory(_tempRoot);
-        var runner = new FixedExploreRunner(new CopilotExploreSubagentResult
+        var runner = new FixedExploreRunner(new CopilotSubagentResult
         {
             Answer = "Evidence summary.",
             StopReason = CopilotAgentStopReason.Completed,
@@ -240,6 +242,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         Assert.Equal("委派了代码探索", trace.ActivityLabel);
         Assert.Equal("只读 Explore 子 Agent 已返回结果。", trace.ActivityDescription);
         Assert.Equal(result.DelegatedRunUsage?.RunId, trace.DelegatedRunId);
+        Assert.Equal(CopilotSubagentRoleCatalog.ExploreRoleId, trace.DelegatedRoleId);
         Assert.Equal(16_384, trace.DelegatedRequestTokenBudget);
         Assert.Equal(9, trace.DelegatedConsumedTokens);
         Assert.Contains("Child run: explore-", trace.DiagnosticDetails, StringComparison.Ordinal);
@@ -257,6 +260,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         using var frameworkDocument = JsonDocument.Parse(frameworkResult);
         var delegatedRun = frameworkDocument.RootElement.GetProperty("delegated_run");
         Assert.Equal(result.DelegatedRunUsage?.RunId, delegatedRun.GetProperty("run_id").GetString());
+        Assert.Equal(CopilotSubagentRoleCatalog.ExploreRoleId, delegatedRun.GetProperty("role").GetString());
         Assert.Equal(16_384, delegatedRun.GetProperty("request_token_budget").GetInt32());
         Assert.Equal("completed", delegatedRun.GetProperty("stop_reason").GetString());
     }
@@ -381,22 +385,23 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         };
     }
 
-    private sealed class FixedExploreRunner : ICopilotExploreSubagentRunner
+    private sealed class FixedExploreRunner : ICopilotSubagentRunner
     {
-        private readonly CopilotExploreSubagentResult _result;
+        private readonly CopilotSubagentResult _result;
 
-        public FixedExploreRunner(CopilotExploreSubagentResult? result = null)
+        public FixedExploreRunner(CopilotSubagentResult? result = null)
         {
-            _result = result ?? new CopilotExploreSubagentResult { Answer = "fixed answer", StopReason = CopilotAgentStopReason.Completed };
+            _result = result ?? new CopilotSubagentResult { Answer = "fixed answer", StopReason = CopilotAgentStopReason.Completed };
         }
 
         private int _callCount;
 
         public int CallCount => Volatile.Read(ref _callCount);
 
-        public Task<CopilotExploreSubagentResult> RunAsync(
+        public Task<CopilotSubagentResult> RunAsync(
             CopilotAgentRequest parentRequest,
-            CopilotExploreSubagentRunRequest runRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -405,13 +410,13 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         }
     }
 
-    private sealed class BlockingExploreRunner : ICopilotExploreSubagentRunner
+    private sealed class BlockingExploreRunner : ICopilotSubagentRunner
     {
         private int _activeRuns;
         private int _callCount;
         private int _maximumActiveRuns;
 
-        public ConcurrentQueue<CopilotExploreSubagentRunRequest> RunRequests { get; } = new();
+        public ConcurrentQueue<CopilotSubagentRunRequest> RunRequests { get; } = new();
 
         public TaskCompletionSource TwoRunsActive { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -421,9 +426,10 @@ public sealed class CopilotExploreSubagentTests : IDisposable
 
         public int MaximumActiveRuns => Volatile.Read(ref _maximumActiveRuns);
 
-        public async Task<CopilotExploreSubagentResult> RunAsync(
+        public async Task<CopilotSubagentResult> RunAsync(
             CopilotAgentRequest parentRequest,
-            CopilotExploreSubagentRunRequest runRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
             CancellationToken cancellationToken)
         {
             RunRequests.Enqueue(runRequest);
@@ -436,7 +442,7 @@ public sealed class CopilotExploreSubagentTests : IDisposable
             try
             {
                 await ReleaseAll.Task.WaitAsync(cancellationToken);
-                return new CopilotExploreSubagentResult
+                return new CopilotSubagentResult
                 {
                     RunId = runRequest.RunId,
                     RequestTokenBudget = runRequest.RequestTokenBudget,
@@ -466,23 +472,24 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         }
     }
 
-    private sealed class BudgetConsumingExploreRunner : ICopilotExploreSubagentRunner
+    private sealed class BudgetConsumingExploreRunner : ICopilotSubagentRunner
     {
         private int _callCount;
 
-        public ConcurrentQueue<CopilotExploreSubagentRunRequest> RunRequests { get; } = new();
+        public ConcurrentQueue<CopilotSubagentRunRequest> RunRequests { get; } = new();
 
         public int CallCount => Volatile.Read(ref _callCount);
 
-        public Task<CopilotExploreSubagentResult> RunAsync(
+        public Task<CopilotSubagentResult> RunAsync(
             CopilotAgentRequest parentRequest,
-            CopilotExploreSubagentRunRequest runRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotSubagentRunRequest runRequest,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             RunRequests.Enqueue(runRequest);
             Interlocked.Increment(ref _callCount);
-            return Task.FromResult(new CopilotExploreSubagentResult
+            return Task.FromResult(new CopilotSubagentResult
             {
                 RunId = runRequest.RunId,
                 RequestTokenBudget = runRequest.RequestTokenBudget,

@@ -116,7 +116,7 @@ namespace ColorVision.Copilot
                 "FetchUrl" or "WebSearch" => "web",
                 "ReadLocalFile" or "ReadAttachedFile" or "GetRecentLog" => "file-read",
                 "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "file-search",
-                "DelegateExplore" => "delegation",
+                "DelegateExplore" or "DelegateScout" => "delegation",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
                 "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",

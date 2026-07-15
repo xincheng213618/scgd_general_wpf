@@ -130,6 +130,7 @@ namespace ColorVision.Copilot
                 var delegated = result.DelegatedRunUsage;
                 payload["delegated_run"] = new Dictionary<string, object?>
                 {
+                    ["role"] = SanitizeInline(delegated.RoleId, 40),
                     ["run_id"] = SanitizeInline(delegated.RunId, 120),
                     ["stop_reason"] = delegated.StopReason.ToString().ToLowerInvariant(),
                     ["request_token_budget"] = Math.Max(0, delegated.RequestTokenBudget),

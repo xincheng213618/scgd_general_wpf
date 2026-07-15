@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
                 new CopilotSearchFilesTool(),
                 new CopilotGrepTextTool(),
                 new CopilotDelegateExploreTool(),
+                new CopilotDelegateScoutTool(),
                 new CopilotWebSearchTool(),
                 new CopilotReadLocalFileTool(),
                 new CopilotListDirectoryTool(),
