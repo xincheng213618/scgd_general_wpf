@@ -108,7 +108,7 @@ namespace ProjectARVRPro.Process.Demura
 
         [Category("烧录配置")]
         [DisplayName("生成后自动烧录")]
-        [Description("生成bin后读取通用传感器配置，直连PG发送SENDFILE指令")]
+        [Description("生成bin后直连PG，依次下发文件、确认上电、擦除FLASH并烧录")]
         public bool BurnAfterGenerate { get => _BurnAfterGenerate; set { _BurnAfterGenerate = value; OnPropertyChanged(); } }
         private bool _BurnAfterGenerate = true;
 
@@ -132,9 +132,9 @@ namespace ProjectARVRPro.Process.Demura
 
         [Category("烧录配置")]
         [DisplayName("PG目标文件名")]
-        [Description("SENDFILE指令最后一个参数，默认DemuraMerged.bin")]
+        [Description("SENDFILE指令最后一个参数，默认DemuraDynamic.bin")]
         public string BurnTargetFileName { get => _BurnTargetFileName; set { _BurnTargetFileName = value; OnPropertyChanged(); } }
-        private string _BurnTargetFileName = "DemuraMerged.bin";
+        private string _BurnTargetFileName = GecsProtocol.DefaultDemuraFileName;
 
         [Category("烧录配置")]
         [DisplayName("PG通道")]
@@ -162,7 +162,7 @@ namespace ProjectARVRPro.Process.Demura
 
         [Category("烧录配置")]
         [DisplayName("TCP回包超时ms")]
-        [Description("发送SENDFILE后等待PG回包的时间")]
+        [Description("等待SENDFILE、状态查询、擦除及烧录回包的单步超时时间")]
         public int BurnTcpResponseTimeoutMs { get => _BurnTcpResponseTimeoutMs; set { _BurnTcpResponseTimeoutMs = value; OnPropertyChanged(); } }
         private int _BurnTcpResponseTimeoutMs = 60000;
     }

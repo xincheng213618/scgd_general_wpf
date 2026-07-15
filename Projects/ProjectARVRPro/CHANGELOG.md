@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.7.45] 2026.07.15
+
+1. Demura烧录目标文件名改为`DemuraDynamic.bin`，并兼容迁移旧默认值`DemuraMerged.bin`。
+2. 根据GECS V2.4协议封装PG命令，SENDFILE后查询`POWER,STATE`，仅在OFF时发送POWER ON。
+3. 烧录流程改为SENDFILE、确认上电、DEMURA ERASE、DEMURA WRITE，不再在正常烧录结束后自动POWER OFF。
+
 ## [1.1.7.42] 2026.07.10
 
 1. 保存按钮改用动态主题图标资源，兼容多主题及运行时主题切换。
