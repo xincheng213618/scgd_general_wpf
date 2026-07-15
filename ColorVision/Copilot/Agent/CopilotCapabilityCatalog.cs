@@ -19,6 +19,11 @@ namespace ColorVision.Copilot
         string CatalogCapabilityKey { get; }
     }
 
+    public interface ICopilotCapabilityCatalogVersionIdentity
+    {
+        string CatalogVersionFingerprint { get; }
+    }
+
     public sealed class CopilotCapabilityCatalogEntry
     {
         public string Id { get; init; } = string.Empty;
@@ -226,7 +231,7 @@ namespace ColorVision.Copilot
         private static CopilotCapabilityCatalog CreateSharedCatalog()
         {
             var catalog = new CopilotCapabilityCatalog();
-            catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "builtin", "ColorVision", CopilotToolRegistry.CreateDefaultTools());
+            catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, "builtin", "ColorVision", CopilotToolRegistry.CreateBuiltInCatalogTools());
             return catalog;
         }
 
@@ -278,6 +283,9 @@ namespace ColorVision.Copilot
             var description = Sanitize(tool.Description, MaximumDescriptionLength);
             var schema = GetSchemaText(tool);
             var schemaFingerprint = CreateHash(schema)[..16].ToLowerInvariant();
+            var versionFingerprint = tool is ICopilotCapabilityCatalogVersionIdentity versionIdentity
+                ? versionIdentity.CatalogVersionFingerprint?.Trim() ?? string.Empty
+                : string.Empty;
             var signatureText = string.Join("\n", new[]
             {
                 id,
@@ -294,6 +302,7 @@ namespace ColorVision.Copilot
                 ((int)capability.AuditArgumentMode).ToString(),
                 ((int)capability.EvidenceMode).ToString(),
                 schema,
+                versionFingerprint,
             });
             return new Candidate(
                 id,

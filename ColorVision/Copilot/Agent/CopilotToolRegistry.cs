@@ -7,8 +7,14 @@ namespace ColorVision.Copilot
     public sealed class CopilotToolRegistry
     {
         private readonly IReadOnlyList<ICopilotTool> _tools;
+        private readonly CopilotSubagentRoleRegistry? _subagentRoleRegistry;
 
         public CopilotToolRegistry(IEnumerable<ICopilotTool> tools)
+            : this(tools, null)
+        {
+        }
+
+        private CopilotToolRegistry(IEnumerable<ICopilotTool> tools, CopilotSubagentRoleRegistry? subagentRoleRegistry)
         {
             var registeredTools = tools?.ToArray() ?? Array.Empty<ICopilotTool>();
             if (registeredTools.Any(tool => tool == null))
@@ -32,15 +38,16 @@ namespace ColorVision.Copilot
                 throw new ArgumentException($"A Copilot tool named '{duplicateName}' is already registered.", nameof(tools));
 
             _tools = registeredTools;
+            _subagentRoleRegistry = subagentRoleRegistry;
         }
 
-        public IReadOnlyList<ICopilotTool> Tools => _tools;
+        public IReadOnlyList<ICopilotTool> Tools => GetCurrentTools();
 
         public IReadOnlyList<ICopilotTool> FindTools(CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            return _tools
+            return GetCurrentTools()
                 .Where(tool => IsAvailableForAgent(tool, request)
                     || tool is not ICopilotAgentDrivenTool && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool))
                 .ToArray();
@@ -55,12 +62,26 @@ namespace ColorVision.Copilot
                 : tool.CanHandle(request);
         }
 
-        public static CopilotToolRegistry CreateDefault()
+        public static CopilotToolRegistry CreateDefault(CopilotSubagentRoleRegistry? subagentRoleRegistry = null)
         {
-            return new CopilotToolRegistry(CreateDefaultTools());
+            return new CopilotToolRegistry(CreateCoreDefaultTools(), subagentRoleRegistry ?? CopilotSubagentRoleRegistry.Shared);
         }
 
         internal static ICopilotTool[] CreateDefaultTools()
+        {
+            return CreateCoreDefaultTools()
+                .Concat(CreateDelegateTools(CopilotSubagentRoleRegistry.Shared.GetSnapshot().Roles))
+                .ToArray();
+        }
+
+        internal static ICopilotTool[] CreateBuiltInCatalogTools()
+        {
+            return CreateCoreDefaultTools()
+                .Concat(CreateDelegateTools(CopilotSubagentRoleCatalog.CreateBuiltInRoles()))
+                .ToArray();
+        }
+
+        private static ICopilotTool[] CreateCoreDefaultTools()
         {
             var workspacePatchStore = new CopilotWorkspacePatchStore();
             return new ICopilotTool[]
@@ -75,8 +96,6 @@ namespace ColorVision.Copilot
                 new CopilotFetchUrlTool(),
                 new CopilotSearchFilesTool(),
                 new CopilotGrepTextTool(),
-                new CopilotDelegateExploreTool(),
-                new CopilotDelegateScoutTool(),
                 new CopilotWebSearchTool(),
                 new CopilotReadLocalFileTool(),
                 new CopilotListDirectoryTool(),
@@ -105,6 +124,19 @@ namespace ColorVision.Copilot
                 new CopilotRollbackWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotWorkspaceValidationTool(),
             };
+        }
+
+        private IReadOnlyList<ICopilotTool> GetCurrentTools()
+        {
+            if (_subagentRoleRegistry == null)
+                return _tools;
+            return _tools.Concat(CreateDelegateTools(_subagentRoleRegistry.GetSnapshot().Roles)).ToArray();
+        }
+
+        private static IEnumerable<ICopilotTool> CreateDelegateTools(IEnumerable<CopilotSubagentRoleDescriptor> roles)
+        {
+            return (roles ?? Array.Empty<CopilotSubagentRoleDescriptor>())
+                .Select(role => (ICopilotTool)new CopilotRegisteredSubagentTool(role));
         }
     }
 }

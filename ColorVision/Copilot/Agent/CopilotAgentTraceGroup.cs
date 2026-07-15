@@ -117,6 +117,7 @@ namespace ColorVision.Copilot
                 "ReadLocalFile" or "ReadAttachedFile" or "GetRecentLog" => "file-read",
                 "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "file-search",
                 "DelegateExplore" or "DelegateScout" => "delegation",
+                _ when toolName.StartsWith("Delegate", StringComparison.Ordinal) => "delegation",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
                 "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" => "command",

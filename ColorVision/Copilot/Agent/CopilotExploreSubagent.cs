@@ -138,13 +138,13 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(role);
             ArgumentNullException.ThrowIfNull(runRequest);
 
-            var isExplore = string.Equals(role.Id, CopilotSubagentRoleCatalog.ExploreRoleId, StringComparison.OrdinalIgnoreCase);
-            var roots = isExplore ? SelectExploreRoots(parentRequest) : Array.Empty<string>();
-            var activeDocumentPath = isExplore
+            var usesWorkspaceContext = role.ContextScope == CopilotSubagentContextScope.WorkspaceReadOnly;
+            var roots = usesWorkspaceContext ? SelectExploreRoots(parentRequest) : Array.Empty<string>();
+            var activeDocumentPath = usesWorkspaceContext
                 && CopilotWorkspaceSearchSupport.IsPathWithinRoots(parentRequest.ActiveDocumentPath, roots)
                     ? parentRequest.ActiveDocumentPath
                     : string.Empty;
-            var projectInstructions = isExplore
+            var projectInstructions = usesWorkspaceContext
                 ? (parentRequest.ProjectInstructions ?? Array.Empty<CopilotProjectInstructionDocument>())
                     .Where(document => document != null && CopilotWorkspaceSearchSupport.IsPathWithinRoots(document.Path, roots))
                     .Take(CopilotAgentProjectInstructions.MaxDocuments)
@@ -166,7 +166,7 @@ namespace ColorVision.Copilot
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),
                 WritableLocalRootPaths = Array.Empty<string>(),
                 WritableLocalFilePaths = Array.Empty<string>(),
-                PreferBatchReadLocalFiles = isExplore,
+                PreferBatchReadLocalFiles = usesWorkspaceContext,
                 PreferredShell = CopilotShellKind.Auto,
                 Mode = role.ChildMode,
                 SessionCheckpoint = null,
@@ -235,7 +235,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public class CopilotDelegateSubagentTool : ICopilotAgentDrivenTool
+    public class CopilotDelegateSubagentTool : ICopilotAgentDrivenTool, ICopilotCapabilityCatalogIdentity, ICopilotCapabilityCatalogVersionIdentity
     {
         private readonly CopilotSubagentRoleDescriptor _role;
         private readonly ICopilotSubagentRunner _runner;
@@ -249,6 +249,12 @@ namespace ColorVision.Copilot
         public string Name => _role.ToolName;
 
         public string Description => _role.Description;
+
+        public string CatalogCapabilityKey => _role.Id;
+
+        public string CatalogVersionFingerprint => _role.CapabilityFingerprint;
+
+        internal CopilotSubagentRoleDescriptor Role => _role;
 
         public CopilotToolCapabilityDescriptor Capability { get; } = new()
         {
@@ -384,9 +390,9 @@ namespace ColorVision.Copilot
 
         private string SuccessSummary()
         {
-            return string.Equals(_role.Id, CopilotSubagentRoleCatalog.ScoutRoleId, StringComparison.OrdinalIgnoreCase)
-                ? "只读 Scout 子 Agent 已返回外部资料。"
-                : "只读 Explore 子 Agent 已返回调查结果。";
+            return _role.ContextScope == CopilotSubagentContextScope.PublicWeb
+                ? $"只读 {_role.DisplayName} 子 Agent 已返回外部资料。"
+                : $"只读 {_role.DisplayName} 子 Agent 已返回调查结果。";
         }
 
         private static bool TryReadTask(IReadOnlyDictionary<string, object?>? arguments, out string task)
@@ -427,6 +433,14 @@ namespace ColorVision.Copilot
 
         public CopilotDelegateScoutTool(ICopilotSubagentRunner runner)
             : base(CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ScoutRoleId), runner)
+        {
+        }
+    }
+
+    internal sealed class CopilotRegisteredSubagentTool : CopilotDelegateSubagentTool
+    {
+        public CopilotRegisteredSubagentTool(CopilotSubagentRoleDescriptor role)
+            : base(role, new CopilotSubagentRunner())
         {
         }
     }

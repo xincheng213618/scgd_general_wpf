@@ -1279,8 +1279,7 @@ namespace ColorVision.Copilot
                 builder.AppendLine("DelegateExplore starts a fresh, bounded, read-only child Agent for broad or high-output multi-file workspace investigation. Give it a self-contained evidence request, then integrate its returned findings and continue the parent task. Do not delegate a known single-file read, any write, shell, database, web, or approval task.");
             if (tools.Any(tool => string.Equals(tool.Name, "DelegateScout", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("DelegateScout starts a fresh, bounded, read-only child Agent for broad public documentation or dependency research. It has only WebSearch and FetchUrl, receives no local workspace or conversation context, and must return exact source URLs. Use direct WebSearch or FetchUrl for a simple lookup; use Scout when multiple external sources must be found, read, and synthesized.");
-            if (tools.Any(tool => string.Equals(tool.Name, "DelegateExplore", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(tool.Name, "DelegateScout", StringComparison.OrdinalIgnoreCase)))
+            if (tools.Any(tool => tool is CopilotDelegateSubagentTool))
             {
                 builder.AppendLine("Specialized child Agents receive no parent conversation history, share one request-scoped delegated token pool and two cancellable concurrency slots, and cannot delegate recursively. When two investigations are genuinely independent, issue up to two distinct subagent calls in the same response; never split dependent work or duplicate the same task.");
             }

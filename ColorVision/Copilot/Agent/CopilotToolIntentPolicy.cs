@@ -372,7 +372,9 @@ namespace ColorVision.Copilot
             if (tool == null)
                 return false;
 
-            return string.Equals(tool.Name, "DelegateScout", StringComparison.OrdinalIgnoreCase)
+            return (tool is CopilotDelegateSubagentTool delegatedTool
+                    && delegatedTool.Role.ContextScope == CopilotSubagentContextScope.PublicWeb)
+                || string.Equals(tool.Name, "DelegateScout", StringComparison.OrdinalIgnoreCase)
                 || IsUrlFetchTool(tool)
                 || IsPublicWebSearchTool(tool);
         }
@@ -380,6 +382,9 @@ namespace ColorVision.Copilot
         private static bool IsFollowUpWebToolIdentity(string? name, string? description)
         {
             if (FollowUpWebToolNames.Contains(name ?? string.Empty, StringComparer.OrdinalIgnoreCase))
+                return true;
+            if (CopilotSubagentRoleCatalog.Default.TryGetByToolName(name ?? string.Empty, out var role)
+                && role?.ContextScope == CopilotSubagentContextScope.PublicWeb)
                 return true;
 
             var identity = $"{name} {description}";

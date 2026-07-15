@@ -47,6 +47,30 @@ CopilotToolRegistry
 
 同一父请求的全部 `Explore` / `Scout` 运行共享一个委派 Token 池：总量通常为父请求预算的一半，最低 4,096、最高 32,768 Token；单个子运行按并发公平分配并至少需要 4,096 Token。成功后按真实用量结算，异常或取消时保守消耗已预留额度，预算不足时不再启动新的供应商调用。每个子运行生成带角色前缀的独立 `explore-*` / `scout-*` ID，父工具 trace 的 `CallId` 与角色、该 ID、停止原因、排队时间、工具次数和 Token 预算一起持久化；子运行内部的逐工具噪声仍不复制到主聊天。供应商调用数、Token 与估算用量继续归集进父运行预算，父 Agent 收到结果后仍需综合证据并完成最终回答。这一角色分工保持了 [OpenCode Agents](https://opencode.ai/docs/agents/) 中“主 Agent 选择带独立提示词和权限的 Explore / Scout”的核心语义；整体仍由 [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/) 提供 Agent、Session、工具与中间件执行基础，并保留 ColorVision 自己的预算、隔离和审批模型。
 
+受信任的进程内插件可通过 `CopilotSubagentRoleRegistry.Shared.RegisterTrustedPluginRole` 注册专用角色，并持有返回的 `IDisposable` 直到插件退出。注册项声明稳定来源 ID/版本、角色提示、父/子模式、预算以及 `CopilotSubagentReadCapabilities`；插件不能提交任意 `ICopilotTool` 工厂。宿主只允许两类互斥工具面：`WorkspaceReadOnly` 可从 `SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory` 中选择，`PublicWeb` 可从 `WebSearch`、`FetchUrl` 中选择。工作区和网页能力不能混用，所有插件角色仍禁用 Harness todo/mode/Skills、写入、Shell、数据库、MCP、审批与递归委派。示例：
+
+```csharp
+private readonly IDisposable _copilotRole = CopilotSubagentRoleRegistry.Shared.RegisterTrustedPluginRole(
+    new CopilotSubagentRoleRegistration
+    {
+        SourceId = "spectrum.plugin",
+        SourceName = "Spectrum Plugin",
+        SourceVersion = "1.2.0",
+        RoleId = "spectrum-reviewer",
+        ToolName = "DelegateSpectrumReviewer",
+        DisplayName = "Spectrum Reviewer",
+        Description = "Review spectrum implementations using bounded workspace evidence.",
+        RuntimeInstructions = "Inspect only the requested spectrum code and return exact file evidence.",
+        ContextScope = CopilotSubagentContextScope.WorkspaceReadOnly,
+        ReadCapabilities = CopilotSubagentReadCapabilities.GrepText | CopilotSubagentReadCapabilities.ReadLocalFile,
+        ChildMode = CopilotAgentMode.Code,
+        ParentModes = [CopilotAgentMode.Code, CopilotAgentMode.Diagnose],
+        MaximumToolCalls = 5,
+    });
+```
+
+注册时会快照可变集合并验证全局角色/工具名唯一性、来源版本一致性、提示长度和预算上限。角色来源版本、提示、权限集合、模式和预算共同生成 64 位十六进制 SHA-256 指纹；委派工具通过 `ICopilotCapabilityCatalogVersionIdentity` 把它并入 Capability Catalog 签名。现有 `CopilotToolRegistry` 每轮读取最新角色 revision，因此注册和注销无需重建聊天面板；Capability Catalog 以 `Plugin / subagent:<sourceId>` 独立来源发布，角色变更会触发 checkpoint capability drift 和重新规划。
+
 稳定的内置 Agent 能力不依赖上一轮关键词，因此“现在呢”“再检查一遍”等短追问仍能看到相同 Schema，并由模型结合会话历史重新发起结构化调用。动态或意图作用域工具仍可续租最近一轮真正成功执行过、只读、幂等且无需审批的能力；写工具和通用 Shell 不通过续租获得额外授权。checkpoint 恢复后也会用当前能力目录重新规划，不把旧调用参数当成授权。
 
 执行契约比工具暴露策略更严格地区分“可能需要最新信息”和“用户明确要求搜索”：直接 URL、`Web` 模式以及“联网搜索 / search the web”等明确动作词才强制成功的网页证据。普通概念问题不会因为当前工具面中恰好存在 `WebSearch` 就增加模型轮次或产生失败搜索；没有匹配工具可用时也不会制造无意义循环，而是保留模型正常回答或说明能力边界的空间。
@@ -307,13 +331,13 @@ netstat -ano | findstr :6666
 
 这是一套基础框架，不等同于 Codex、Claude Code 或 OpenCode 的完整能力。当前已采用相同的核心分工：稳定工具目录和 JSON Schema 交给模型选择，宿主执行确定性的参数校验、权限、审批、隔离、审计与结果回传；关键词策略仅保留在确实需要缩减外部/动态能力的边界，不再承担核心诊断工具路由。后续按优先级扩展：
 
-1. 在宿主管理的内置 `Explore` / `Scout` 目录之上增加受信任的插件角色注册与版本化能力指纹；任何写操作仍只由父 Agent 通过现有预览和原生审批路径执行。
+1. 将插件角色注册接入插件管理器的安装/卸载生命周期，并在设置诊断中展示来源、版本、权限域和指纹；底层注册、注销与 checkpoint 漂移语义已经完成。
 2. 通用 Shell 在没有系统沙箱时继续保持每次原生审批。当前 runner 已完成 Job Object 进程树归组；后续再增加受限 Windows 身份、文件系统与网络边界，形成真正的系统沙箱。
 3. 将同一 Capability Fabric 扩展到 LAN 和 ServiceHost，保持能力白名单、身份、审批、evidence 和审计语义一致。
 
 框架中间件与函数调用层的设计参考 [Microsoft Agent Framework Middleware](https://learn.microsoft.com/en-us/agent-framework/agents/middleware/)；请求预算中间件使用官方建议的 [DelegatingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.ai.delegatingchatclient?view=net-11.0-pp) 组合方式。
 
-相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotExploreSubagentTests`、`CopilotScoutSubagentTests` 与 `CopilotToolExecutorTests`。局部验证命令：
+相关测试集中在 `CopilotCoreRuntimeTests`、`CopilotExploreSubagentTests`、`CopilotScoutSubagentTests`、`CopilotSubagentRoleRegistryTests` 与 `CopilotToolExecutorTests`。局部验证命令：
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj --filter "FullyQualifiedName~Copilot" --no-restore -p:BuildProjectReferences=false
