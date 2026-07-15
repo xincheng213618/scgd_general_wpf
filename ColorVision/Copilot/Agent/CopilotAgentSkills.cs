@@ -65,6 +65,7 @@ namespace ColorVision.Copilot
                 source,
                 request.UserText,
                 historicalExplicitOnlySkillNames,
+                request.SkillOverrides,
                 MaxActiveSkills,
                 metadataCharacterBudget);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
@@ -98,8 +99,8 @@ namespace ColorVision.Copilot
                 .Append(snapshot.DiscoveredCount)
                 .Append(" active");
             var omittedCount = snapshot.DiscoveredCount - snapshot.SelectedNames.Count;
-            var explicitOnlyCount = snapshot.MetadataExplicitOnlyNames.Count + snapshot.HistoricalExplicitOnlyNames.Count;
-            var budgetOmittedCount = omittedCount - explicitOnlyCount;
+            var explicitOnlyCount = snapshot.MetadataExplicitOnlyNames.Count + snapshot.HistoricalExplicitOnlyNames.Count + snapshot.ManualExplicitOnlyNames.Count;
+            var budgetOmittedCount = Math.Max(0, omittedCount - explicitOnlyCount - snapshot.ManualOffNames.Count);
             if (explicitOnlyCount > 0)
             {
                 builder.Append(" · ").Append(explicitOnlyCount).Append(" explicit-only");
@@ -107,7 +108,13 @@ namespace ColorVision.Copilot
                     builder.Append(" (policy ").Append(snapshot.MetadataExplicitOnlyNames.Count).Append(')');
                 if (snapshot.HistoricalExplicitOnlyNames.Count > 0)
                     builder.Append(" (low-use ").Append(snapshot.HistoricalExplicitOnlyNames.Count).Append(')');
+                if (snapshot.ManualExplicitOnlyNames.Count > 0)
+                    builder.Append(" (manual ").Append(snapshot.ManualExplicitOnlyNames.Count).Append(')');
             }
+            if (snapshot.ManualNameOnlyNames.Count > 0)
+                builder.Append(" · ").Append(snapshot.ManualNameOnlyNames.Count).Append(" manual name-only");
+            if (snapshot.ManualOffNames.Count > 0)
+                builder.Append(" · ").Append(snapshot.ManualOffNames.Count).Append(" manually off");
             if (budgetOmittedCount > 0)
                 builder.Append(" · ").Append(budgetOmittedCount).Append(" omitted by the active-skill budget");
             if (snapshot.ShortenedDescriptionNames.Count > 0)
@@ -200,6 +207,7 @@ namespace ColorVision.Copilot
             private readonly int _maximumCount;
             private readonly int _maximumMetadataCharacters;
             private readonly HashSet<string> _historicalExplicitOnlySkillNames;
+            private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides;
             private readonly HashSet<string> _loadedNames = new(StringComparer.OrdinalIgnoreCase);
             private SkillSelectionSnapshot _snapshot = SkillSelectionSnapshot.Empty;
 
@@ -207,6 +215,7 @@ namespace ColorVision.Copilot
                 AgentSkillsSource innerSource,
                 string? userText,
                 IEnumerable<string>? historicalExplicitOnlySkillNames,
+                IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
                 int maximumCount,
                 int maximumMetadataCharacters)
                 : base(innerSource)
@@ -214,6 +223,9 @@ namespace ColorVision.Copilot
                 _userText = userText ?? string.Empty;
                 _historicalExplicitOnlySkillNames = (historicalExplicitOnlySkillNames ?? Array.Empty<string>())
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                _skillOverrides = skillOverrides == null
+                    ? new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, CopilotAgentSkillOverrideState>(skillOverrides, StringComparer.OrdinalIgnoreCase);
                 _maximumCount = maximumCount;
                 _maximumMetadataCharacters = maximumMetadataCharacters;
             }
@@ -227,6 +239,7 @@ namespace ColorVision.Copilot
                     discovered.ToArray(),
                     _userText,
                     _historicalExplicitOnlySkillNames,
+                    _skillOverrides,
                     _maximumCount,
                     _maximumMetadataCharacters);
                 var selectedNames = selection.SelectedSkills.Select(skill => skill.Frontmatter.Name).ToArray();
@@ -239,6 +252,9 @@ namespace ColorVision.Copilot
                         GetLoadedNames(selectedNames),
                         selection.MetadataExplicitOnlyNames,
                         selection.HistoricalExplicitOnlyNames,
+                        selection.ManualNameOnlyNames,
+                        selection.ManualExplicitOnlyNames,
+                        selection.ManualOffNames,
                         selection.ShortenedDescriptionNames);
                 }
                 return selection.SelectedSkills.Select(skill => (AgentSkill)new TrackingAgentSkill(skill, TrackLoad)).ToArray();
@@ -307,9 +323,12 @@ namespace ColorVision.Copilot
             string[] LoadedNames,
             IReadOnlyList<string> MetadataExplicitOnlyNames,
             IReadOnlyList<string> HistoricalExplicitOnlyNames,
+            IReadOnlyList<string> ManualNameOnlyNames,
+            IReadOnlyList<string> ManualExplicitOnlyNames,
+            IReadOnlyList<string> ManualOffNames,
             IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], []);
         }
 
     }

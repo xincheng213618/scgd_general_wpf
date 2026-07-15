@@ -138,7 +138,11 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
             HistoricalExplicitOnlySkills = [entry],
         };
 
-        var report = CopilotAgentSkillDiagnostics.FormatReport(snapshot, 8_000);
+        var report = CopilotAgentSkillDiagnostics.FormatReport(snapshot, 8_000, new Dictionary<string, CopilotAgentSkillOverrideState>
+        {
+            ["legacy-workflow"] = CopilotAgentSkillOverrideState.UserInvocableOnly,
+            ["verbose-reference"] = CopilotAgentSkillOverrideState.NameOnly,
+        });
 
         Assert.Contains("1 tracked across 24 run(s); 1 loaded; 1 low-use explicit-only", report, StringComparison.Ordinal);
         Assert.Contains("Metadata budget: 8,000 characters", report, StringComparison.Ordinal);
@@ -146,6 +150,8 @@ public sealed class CopilotAgentSkillUsageStoreTests : IDisposable
         Assert.Contains("consecutive misses 20/20", report, StringComparison.Ordinal);
         Assert.Contains("remain installed", report, StringComparison.Ordinal);
         Assert.Contains("direct load restores", report, StringComparison.Ordinal);
+        Assert.Contains("legacy-workflow=explicit-only", report, StringComparison.Ordinal);
+        Assert.Contains("verbose-reference=name-only", report, StringComparison.Ordinal);
     }
 
     public void Dispose()

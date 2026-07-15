@@ -94,6 +94,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
 
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }

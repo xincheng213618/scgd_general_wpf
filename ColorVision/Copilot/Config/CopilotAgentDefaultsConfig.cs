@@ -1,6 +1,9 @@
 using ColorVision.Common.MVVM;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -60,6 +63,9 @@ namespace ColorVision.Copilot
         }
         private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
 
+        [Browsable(false)]
+        public ObservableCollection<CopilotAgentSkillOverrideConfig> SkillOverrides { get; set; } = new();
+
         public bool EnsureValid()
         {
             var normalizedContextWindowTokens = Math.Clamp(ContextWindowTokens, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens);
@@ -68,18 +74,30 @@ namespace ColorVision.Copilot
             var normalizedMaxAgentPasses = Math.Clamp(MaxAgentPasses, CopilotAgentRunBudget.MinimumAgentPasses, CopilotAgentRunBudget.MaximumAgentPasses);
             var normalizedTimeoutSeconds = Math.Clamp(TimeoutSeconds, (int)CopilotAgentRunBudget.MinimumTotalDuration.TotalSeconds, (int)CopilotAgentRunBudget.MaximumTotalDuration.TotalSeconds);
             var normalizedShell = Enum.IsDefined(PreferredShell) ? PreferredShell : CopilotShellKind.Auto;
+            SkillOverrides ??= new ObservableCollection<CopilotAgentSkillOverrideConfig>();
+            var normalizedSkillOverrides = CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides);
+            var skillOverridesChanged = !SkillOverrides
+                .Select(item => (item?.Name ?? string.Empty, item?.State ?? CopilotAgentSkillOverrideState.Auto))
+                .SequenceEqual(normalizedSkillOverrides.Select(item => (item.Name, item.State)));
             var changed = normalizedContextWindowTokens != ContextWindowTokens
                 || normalizedRequestTokenBudget != RequestTokenBudget
                 || normalizedMaxToolCalls != MaxToolCalls
                 || normalizedMaxAgentPasses != MaxAgentPasses
                 || normalizedTimeoutSeconds != TimeoutSeconds
-                || normalizedShell != PreferredShell;
+                || normalizedShell != PreferredShell
+                || skillOverridesChanged;
             ContextWindowTokens = normalizedContextWindowTokens;
             RequestTokenBudget = normalizedRequestTokenBudget;
             MaxToolCalls = normalizedMaxToolCalls;
             MaxAgentPasses = normalizedMaxAgentPasses;
             TimeoutSeconds = normalizedTimeoutSeconds;
             PreferredShell = normalizedShell;
+            if (skillOverridesChanged)
+            {
+                SkillOverrides.Clear();
+                foreach (var item in normalizedSkillOverrides)
+                    SkillOverrides.Add(item);
+            }
             return changed;
         }
 
@@ -93,6 +111,7 @@ namespace ColorVision.Copilot
                 MaxAgentPasses = MaxAgentPasses,
                 TimeoutSeconds = TimeoutSeconds,
                 PreferredShell = PreferredShell,
+                SkillOverrides = new ObservableCollection<CopilotAgentSkillOverrideConfig>(SkillOverrides.Select(item => item.Clone())),
             };
         }
 
@@ -106,6 +125,12 @@ namespace ColorVision.Copilot
                 MaxAgentPasses = MaxAgentPasses,
                 TotalDuration = TimeSpan.FromSeconds(TimeoutSeconds),
             };
+        }
+
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> CreateSkillOverrideSnapshot()
+        {
+            return CopilotAgentSkillOverrideConfig.Normalize(SkillOverrides)
+                .ToDictionary(item => item.Name, item => item.State, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

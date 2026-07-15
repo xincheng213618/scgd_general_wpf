@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -25,7 +26,10 @@ namespace ColorVision.Copilot
             return string.Join(Environment.NewLine, snapshot.Entries.Select(FormatEntry));
         }
 
-        public static string FormatReport(CopilotAgentSkillUsageSnapshot snapshot, int metadataCharacterBudget)
+        public static string FormatReport(
+            CopilotAgentSkillUsageSnapshot snapshot,
+            int metadataCharacterBudget,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides = null)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             var builder = new StringBuilder();
@@ -39,9 +43,37 @@ namespace ColorVision.Copilot
                 .Append(CopilotAgentSkills.MaxAdvertisedSkillCharacters.ToString("N0"))
                 .AppendLine(" hard cap).")
                 .AppendLine("Low-use skills remain installed and become explicit-only after consecutive misses; a direct load restores implicit eligibility.")
+                .Append("Manual overrides: ")
+                .AppendLine(FormatOverrides(overrides))
                 .AppendLine()
                 .Append(FormatEntries(snapshot));
             return builder.ToString();
+        }
+
+        public static string FormatOverrides(IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides)
+        {
+            if (overrides == null || overrides.Count == 0)
+                return "none (Auto for every skill).";
+
+            var visibleOverrides = overrides
+                .Where(item => item.Value != CopilotAgentSkillOverrideState.Auto)
+                .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(item => $"{item.Key}={FormatState(item.Value)}")
+                .ToArray();
+            return visibleOverrides.Length == 0
+                ? "none (Auto for every skill)."
+                : string.Join(", ", visibleOverrides);
+        }
+
+        private static string FormatState(CopilotAgentSkillOverrideState state)
+        {
+            return state switch
+            {
+                CopilotAgentSkillOverrideState.NameOnly => "name-only",
+                CopilotAgentSkillOverrideState.UserInvocableOnly => "explicit-only",
+                CopilotAgentSkillOverrideState.Off => "off",
+                _ => "auto",
+            };
         }
 
         private static string FormatEntry(CopilotAgentSkillUsageEntry entry)

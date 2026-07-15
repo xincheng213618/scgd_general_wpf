@@ -1102,6 +1102,97 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_AppliesManualSkillVisibilityWithoutDeletingSkills()
+    {
+        var skillsRoot = Path.Combine(_tempRoot, ".agents", "skills");
+        foreach (var item in new[]
+        {
+            (Name: "name-only-workflow", Marker: "NAME_ONLY_DESCRIPTION_MARKER"),
+            (Name: "explicit-workflow", Marker: "EXPLICIT_DESCRIPTION_MARKER"),
+            (Name: "off-workflow", Marker: "OFF_DESCRIPTION_MARKER"),
+        })
+        {
+            var directory = Path.Combine(skillsRoot, item.Name);
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "SKILL.md"), $$"""
+                ---
+                name: {{item.Name}}
+                description: {{item.Marker}}
+                ---
+
+                Full {{item.Name}} instructions remain installed.
+                """);
+        }
+
+        var skillUsageStore = new CopilotAgentSkillUsageStore(Path.Combine(_tempRoot, "manual-override-skill-state"));
+        var timestamp = new DateTimeOffset(2026, 7, 15, 1, 0, 0, TimeSpan.Zero);
+        for (var index = 0; index < CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold; index++)
+            skillUsageStore.RecordRun(["name-only-workflow"], [], timestamp.AddMinutes(index));
+
+        var overrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["name-only-workflow"] = CopilotAgentSkillOverrideState.NameOnly,
+            ["explicit-workflow"] = CopilotAgentSkillOverrideState.UserInvocableOnly,
+            ["off-workflow"] = CopilotAgentSkillOverrideState.Off,
+        };
+        using var implicitClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.Contains("name-only-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("NAME_ONLY_DESCRIPTION_MARKER", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("explicit-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("off-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            return null;
+        });
+        var implicitRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => implicitClient,
+            new StaticExternalToolProvider(),
+            skillUsageStore: skillUsageStore);
+        var implicitEvents = new List<CopilotAgentEvent>();
+
+        await implicitRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Choose a workflow.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+            SkillOverrides = overrides,
+        }, implicitEvents.Add, CancellationToken.None);
+
+        Assert.Contains(implicitEvents, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic && item.Text.Contains("manual name-only", StringComparison.Ordinal));
+        Assert.Contains(implicitEvents, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic && item.Text.Contains("manual 1", StringComparison.Ordinal));
+        Assert.Contains(implicitEvents, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic && item.Text.Contains("manually off", StringComparison.Ordinal));
+
+        using var explicitClient = new ScriptedHarnessChatClient(options =>
+        {
+            Assert.Contains("explicit-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.Contains("EXPLICIT_DESCRIPTION_MARKER", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            Assert.DoesNotContain("off-workflow", options.Instructions ?? string.Empty, StringComparison.Ordinal);
+            return CreateLoadSkillCall(options, "explicit-workflow");
+        });
+        var explicitRuntime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => explicitClient,
+            new StaticExternalToolProvider(),
+            skillUsageStore: skillUsageStore);
+
+        await explicitRuntime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Use $explicit-workflow and do not use $off-workflow.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = new[] { _tempRoot },
+            SkillOverrides = overrides,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.True(File.Exists(Path.Combine(skillsRoot, "off-workflow", "SKILL.md")));
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_DemotesNeverLoadedSkillUntilExplicitlyRequested()
     {
         var skillDirectory = Path.Combine(_tempRoot, ".agents", "skills", "stale-workflow");

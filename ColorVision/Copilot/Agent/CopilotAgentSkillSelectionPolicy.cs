@@ -12,11 +12,13 @@ namespace ColorVision.Copilot
     internal static class CopilotAgentSkillSelectionPolicy
     {
         private const int MaxInvocationPolicyFileBytes = 32_768;
+        private const string NameOnlyDescription = "\u200B";
 
         public static CopilotAgentSkillSelection Select(
             IReadOnlyList<AgentSkill> skills,
             string? userText,
             IReadOnlySet<string> historicalExplicitOnlySkillNames,
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillOverrides,
             int maximumCount,
             int maximumMetadataCharacters)
         {
@@ -25,27 +27,52 @@ namespace ColorVision.Copilot
             var queryCjkBigrams = ExtractCjkBigrams(query);
             var metadataExplicitOnlyNames = new List<string>();
             var historicalExplicitOnlyNames = new List<string>();
+            var manualNameOnlyNames = new List<string>();
+            var manualExplicitOnlyNames = new List<string>();
+            var manualOffNames = new List<string>();
             var candidates = new List<SkillCandidate>(skills.Count);
             for (var index = 0; index < skills.Count; index++)
             {
                 var skill = skills[index];
-                if (!IsExplicitlyRequested(query, skill.Frontmatter.Name))
+                var skillName = skill.Frontmatter.Name;
+                var explicitlyRequested = IsExplicitlyRequested(query, skillName);
+                var overrideState = skillOverrides?.TryGetValue(skillName, out var configuredState) == true && Enum.IsDefined(configuredState)
+                    ? configuredState
+                    : CopilotAgentSkillOverrideState.Auto;
+                if (overrideState == CopilotAgentSkillOverrideState.Off)
+                {
+                    manualOffNames.Add(skillName);
+                    continue;
+                }
+
+                if (!explicitlyRequested)
                 {
                     if (DisallowsImplicitInvocation(skill))
                     {
-                        metadataExplicitOnlyNames.Add(skill.Frontmatter.Name);
+                        metadataExplicitOnlyNames.Add(skillName);
                         continue;
                     }
-                    if (historicalExplicitOnlySkillNames.Contains(skill.Frontmatter.Name))
+                    if (overrideState == CopilotAgentSkillOverrideState.UserInvocableOnly)
                     {
-                        historicalExplicitOnlyNames.Add(skill.Frontmatter.Name);
+                        manualExplicitOnlyNames.Add(skillName);
+                        continue;
+                    }
+                    if (overrideState == CopilotAgentSkillOverrideState.Auto && historicalExplicitOnlySkillNames.Contains(skillName))
+                    {
+                        historicalExplicitOnlyNames.Add(skillName);
                         continue;
                     }
                 }
+
+                var advertisedSkill = overrideState == CopilotAgentSkillOverrideState.NameOnly
+                    ? new FrontmatterDescriptionAgentSkill(skill, NameOnlyDescription)
+                    : skill;
+                if (overrideState == CopilotAgentSkillOverrideState.NameOnly)
+                    manualNameOnlyNames.Add(skillName);
                 candidates.Add(new SkillCandidate(
-                    skill,
+                    advertisedSkill,
                     index,
-                    CalculateRelevanceScore(skill.Frontmatter, query, queryWords, queryCjkBigrams)));
+                    CalculateRelevanceScore(advertisedSkill.Frontmatter, query, queryWords, queryCjkBigrams)));
             }
             var ranked = candidates
                 .OrderByDescending(candidate => candidate.Score)
@@ -61,17 +88,18 @@ namespace ColorVision.Copilot
                     break;
 
                 var remainingCharacters = maximumMetadataCharacters - advertisedCharacters;
-                var minimumCharacters = candidate.Skill.Frontmatter.Name.Length + 1;
+                var hasDescription = candidate.Skill.Frontmatter.Description.Length > 0;
+                var minimumCharacters = candidate.Skill.Frontmatter.Name.Length + (hasDescription ? 1 : 0);
                 if (remainingCharacters < minimumCharacters)
                     continue;
 
                 var remainingCandidateCount = Math.Min(maximumCount - selected.Count, ranked.Length - rankedIndex);
                 var fairCharacterShare = Math.Max(minimumCharacters, remainingCharacters / Math.Max(1, remainingCandidateCount));
-                var maximumDescriptionCharacters = Math.Max(1, fairCharacterShare - candidate.Skill.Frontmatter.Name.Length);
+                var maximumDescriptionCharacters = hasDescription ? Math.Max(1, fairCharacterShare - candidate.Skill.Frontmatter.Name.Length) : 0;
                 var selectedSkill = candidate.Skill;
                 if (candidate.Skill.Frontmatter.Description.Length > maximumDescriptionCharacters)
                 {
-                    selectedSkill = new MetadataBudgetAgentSkill(candidate.Skill, Shorten(candidate.Skill.Frontmatter.Description, maximumDescriptionCharacters));
+                    selectedSkill = new FrontmatterDescriptionAgentSkill(candidate.Skill, Shorten(candidate.Skill.Frontmatter.Description, maximumDescriptionCharacters));
                     shortenedDescriptionNames.Add(candidate.Skill.Frontmatter.Name);
                 }
 
@@ -87,6 +115,9 @@ namespace ColorVision.Copilot
                 selectedSkills,
                 metadataExplicitOnlyNames.ToArray(),
                 historicalExplicitOnlyNames.ToArray(),
+                manualNameOnlyNames.ToArray(),
+                manualExplicitOnlyNames.ToArray(),
+                manualOffNames.ToArray(),
                 shortenedDescriptionNames.ToArray());
         }
 
@@ -259,12 +290,12 @@ namespace ColorVision.Copilot
 
         private sealed record SkillCandidate(AgentSkill Skill, int Index, int Score);
 
-        private sealed class MetadataBudgetAgentSkill : AgentSkill
+        private sealed class FrontmatterDescriptionAgentSkill : AgentSkill
         {
             private readonly AgentSkill _inner;
             private readonly AgentSkillFrontmatter _frontmatter;
 
-            public MetadataBudgetAgentSkill(AgentSkill inner, string description)
+            public FrontmatterDescriptionAgentSkill(AgentSkill inner, string description)
             {
                 _inner = inner;
                 var source = inner.Frontmatter;
@@ -299,5 +330,8 @@ namespace ColorVision.Copilot
         IReadOnlyList<AgentSkill> SelectedSkills,
         IReadOnlyList<string> MetadataExplicitOnlyNames,
         IReadOnlyList<string> HistoricalExplicitOnlyNames,
+        IReadOnlyList<string> ManualNameOnlyNames,
+        IReadOnlyList<string> ManualExplicitOnlyNames,
+        IReadOnlyList<string> ManualOffNames,
         IReadOnlyList<string> ShortenedDescriptionNames);
 }

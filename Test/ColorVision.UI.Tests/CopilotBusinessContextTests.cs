@@ -205,6 +205,7 @@ public class CopilotBusinessContextTests
             RecordedSkillRuns = 30,
             TrackedSkills = 6,
             HistoricalExplicitOnlySkills = 2,
+            ManualSkillOverrides = 3,
             SkillMetadataCharacterBudget = 2_621,
             AgentContextWindowTokens = 1_048_576,
             AgentRequestTokenBudget = 1_048_576,
@@ -220,6 +221,7 @@ public class CopilotBusinessContextTests
         Assert.Contains("Agent 预算：上下文 1,048,576 Token / 累计请求 1,048,576 Token / 工具 128 / pass 32 / 超时 7,200 秒", report, StringComparison.Ordinal);
         Assert.Contains("6 个已跟踪", report, StringComparison.Ordinal);
         Assert.Contains("2 个低使用率仅显式调用", report, StringComparison.Ordinal);
+        Assert.Contains("3 个手动覆盖", report, StringComparison.Ordinal);
         Assert.Contains("最多 16 个相关 Skill / 当前 2,621 元数据字符", report, StringComparison.Ordinal);
         Assert.Contains("上下文 2% / 硬上限 8,000", report, StringComparison.Ordinal);
         Assert.Contains("能力目录：24 个已注册能力", report, StringComparison.Ordinal);

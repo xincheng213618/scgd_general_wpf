@@ -677,7 +677,8 @@ namespace ColorVision.Copilot
             var agentDefaults = CopilotConfig.Instance.AgentDefaults;
             return CopilotAgentSkillDiagnostics.FormatReport(
                 CopilotAgentSkillUsageStore.Shared.GetSnapshot(),
-                CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens));
+                CopilotAgentSkills.ResolveMetadataCharacterBudget(agentDefaults.ContextWindowTokens),
+                agentDefaults.CreateSkillOverrideSnapshot());
         }
 
         private void ShowLocalCommandResult(CopilotLocalCommand command, string report)
@@ -723,6 +724,7 @@ namespace ColorVision.Copilot
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
                 TrackedSkills = skillUsage?.Entries.Count ?? 0,
                 HistoricalExplicitOnlySkills = skillUsage?.HistoricalExplicitOnlySkills.Count ?? 0,
+                ManualSkillOverrides = agentDefaults.SkillOverrides.Count,
                 SkillMetadataCharacterBudget = CopilotAgentSkills.ResolveMetadataCharacterBudget(
                     agentDefaults.ContextWindowTokens),
                 AgentContextWindowTokens = agentDefaults.ContextWindowTokens,
@@ -1003,6 +1005,7 @@ namespace ColorVision.Copilot
                 Recovery = sessionCheckpoint == null ? null : userMessage.RecoveryRequest,
                 RunControl = hostedRun.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
+                SkillOverrides = agentDefaults.CreateSkillOverrideSnapshot(),
                 ExternalMcpServers = copilotConfig.ExternalMcpServers
                     .Where(server => server?.Enabled == true)
                     .Select(server => server.Clone())

@@ -42,6 +42,8 @@ namespace ColorVision.Copilot
 
         public int HistoricalExplicitOnlySkills { get; init; }
 
+        public int ManualSkillOverrides { get; init; }
+
         public int SkillMetadataCharacterBudget { get; init; }
 
         public int AgentContextWindowTokens { get; init; }
@@ -125,7 +127,9 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(snapshot.TrackedSkills))
                 .Append(" 个已跟踪，")
                 .Append(FormatCount(snapshot.HistoricalExplicitOnlySkills))
-                .Append(" 个低使用率仅显式调用，统计运行 ")
+                .Append(" 个低使用率仅显式调用，")
+                .Append(FormatCount(snapshot.ManualSkillOverrides))
+                .Append(" 个手动覆盖，统计运行 ")
                 .Append(FormatCount(snapshot.RecordedSkillRuns))
                 .AppendLine(" 次");
             builder.Append("Skill 预算：下一请求最多 ")

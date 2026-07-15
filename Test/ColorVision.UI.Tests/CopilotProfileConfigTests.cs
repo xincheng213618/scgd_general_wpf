@@ -188,6 +188,11 @@ public sealed class CopilotProfileConfigTests
                 MaxAgentPasses = 24,
                 TimeoutSeconds = 5_400,
                 PreferredShell = CopilotShellKind.CommandPrompt,
+                SkillOverrides = new System.Collections.ObjectModel.ObservableCollection<CopilotAgentSkillOverrideConfig>
+                {
+                    new() { Name = "legacy-workflow", State = CopilotAgentSkillOverrideState.UserInvocableOnly },
+                    new() { Name = "verbose-reference", State = CopilotAgentSkillOverrideState.NameOnly },
+                },
             },
             McpBearerToken = "test-token",
         };
@@ -201,6 +206,30 @@ public sealed class CopilotProfileConfigTests
         Assert.Equal(24, restored.AgentDefaults.MaxAgentPasses);
         Assert.Equal(5_400, restored.AgentDefaults.TimeoutSeconds);
         Assert.Equal(CopilotShellKind.CommandPrompt, restored.AgentDefaults.PreferredShell);
+        Assert.Contains(restored.AgentDefaults.SkillOverrides, item => item.Name == "legacy-workflow" && item.State == CopilotAgentSkillOverrideState.UserInvocableOnly);
+        Assert.Contains(restored.AgentDefaults.SkillOverrides, item => item.Name == "verbose-reference" && item.State == CopilotAgentSkillOverrideState.NameOnly);
+    }
+
+    [Fact]
+    public void AgentDefaults_NormalizesSkillOverridesAndOmitsAutoEntries()
+    {
+        var defaults = new CopilotAgentDefaultsConfig
+        {
+            SkillOverrides = new System.Collections.ObjectModel.ObservableCollection<CopilotAgentSkillOverrideConfig>
+            {
+                new() { Name = " FLOW-DIAGNOSTICS ", State = CopilotAgentSkillOverrideState.NameOnly },
+                new() { Name = "flow-diagnostics", State = CopilotAgentSkillOverrideState.UserInvocableOnly },
+                new() { Name = "invalid skill", State = CopilotAgentSkillOverrideState.Off },
+                new() { Name = "unused-workflow", State = CopilotAgentSkillOverrideState.Auto },
+            },
+        };
+
+        Assert.True(defaults.EnsureValid());
+        var item = Assert.Single(defaults.SkillOverrides);
+        Assert.Equal("flow-diagnostics", item.Name);
+        Assert.Equal(CopilotAgentSkillOverrideState.UserInvocableOnly, item.State);
+        Assert.Equal(CopilotAgentSkillOverrideState.UserInvocableOnly, defaults.CreateSkillOverrideSnapshot()["flow-diagnostics"]);
+        Assert.False(defaults.EnsureValid());
     }
 
     [Fact]

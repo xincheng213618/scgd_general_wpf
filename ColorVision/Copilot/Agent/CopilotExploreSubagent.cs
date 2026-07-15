@@ -172,6 +172,7 @@ namespace ColorVision.Copilot
                 SessionCheckpoint = null,
                 Recovery = null,
                 RunControl = null,
+                SkillOverrides = parentRequest.SkillOverrides,
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
                     RequestTokenBudget = Math.Clamp(
