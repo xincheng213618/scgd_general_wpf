@@ -192,13 +192,16 @@ public class CopilotBusinessContextTests
     [Fact]
     public void LocalCommandCatalog_FiltersAndResolvesExactCommands()
     {
-        Assert.Equal(["/context", "/skills", "/mcp", "/compact", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        Assert.Equal(["/context", "/skills", "/mcp", "/compact", "/review", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
         Assert.Equal("/context", Assert.Single(CopilotLocalCommandCatalog.Suggest("  /Contex  ")).Name);
         Assert.Equal(CopilotLocalCommandKind.Context, CopilotLocalCommandCatalog.FindExact("  /CONTEXT  ")?.Kind);
         Assert.Equal(CopilotLocalCommandKind.Skills, CopilotLocalCommandCatalog.FindExact("/skills")?.Kind);
         var compact = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse(" /COMPACT keep flow decisions "));
         Assert.Equal(CopilotLocalCommandKind.Compact, compact.Command.Kind);
         Assert.Equal("keep flow decisions", compact.Arguments);
+        var review = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse("/review focus on concurrency"));
+        Assert.Equal(CopilotLocalCommandKind.Review, review.Command.Kind);
+        Assert.Equal("focus on concurrency", review.Arguments);
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context"));
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context extra"));
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("context"));
@@ -206,6 +209,22 @@ public class CopilotBusinessContextTests
         Assert.Null(CopilotLocalCommandCatalog.FindExact("/compact explain"));
         Assert.Null(CopilotLocalCommandCatalog.Parse("/new explain"));
         Assert.Null(CopilotLocalCommandCatalog.FindExact(null));
+    }
+
+    [Fact]
+    public void ReviewMode_AddsFindingsFirstReadOnlyInstructions()
+    {
+        var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(new CopilotAgentRequest
+        {
+            UserText = "Review the current uncommitted workspace changes.",
+            Mode = CopilotAgentMode.Review,
+            Profile = new CopilotProfileConfig(),
+        }, Array.Empty<CopilotAgentStepRecord>());
+
+        Assert.Contains("read-only code review", prepared.PreparedUserMessageContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Never modify files", prepared.PreparedUserMessageContent, StringComparison.Ordinal);
+        Assert.Contains("ordered by severity", prepared.PreparedUserMessageContent, StringComparison.Ordinal);
+        Assert.Contains("residual risks or test gaps", prepared.PreparedUserMessageContent, StringComparison.Ordinal);
     }
 
     [Fact]

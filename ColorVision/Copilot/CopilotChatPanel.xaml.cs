@@ -218,28 +218,23 @@ namespace ColorVision.Copilot
 
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
         }
 
         private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
         {
             ProfileSelectorButton.IsChecked = false;
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
         }
 
         private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false);
         }
 
         private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true, advancedSettingsVisible: false);
-        }
-
-        private void AdvancedSettingsSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: AdvancedSettingsSelectorRowButton.IsChecked == true);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true);
         }
 
         private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -269,15 +264,13 @@ namespace ColorVision.Copilot
             CloseProfileSelectorPopup();
         }
 
-        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible, bool advancedSettingsVisible)
+        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible)
         {
             ModelSelectorRowButton.IsChecked = modelVisible;
             ReasoningSelectorRowButton.IsChecked = reasoningVisible;
-            AdvancedSettingsSelectorRowButton.IsChecked = advancedSettingsVisible;
             ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
             ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
-            AdvancedSettingsSubmenuBorder.Visibility = advancedSettingsVisible ? Visibility.Visible : Visibility.Collapsed;
-            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible || advancedSettingsVisible ? ProfileSelectorPopupSubmenuWidth : 0);
+            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible ? ProfileSelectorPopupSubmenuWidth : 0);
             ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
         }
 

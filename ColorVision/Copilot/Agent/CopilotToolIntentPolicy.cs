@@ -118,7 +118,7 @@ namespace ColorVision.Copilot
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
 
-            if (request.Mode == CopilotAgentMode.Diagnose
+            if (request.Mode is CopilotAgentMode.Diagnose or CopilotAgentMode.Review
                 || request.ReadableLocalFilePaths.Count > 0
                 || request.ReadableLocalDirectoryPaths.Count > 0)
             {
@@ -132,6 +132,7 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
+                || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
             {
@@ -145,6 +146,7 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
+                || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0)
             {
                 return false;
@@ -164,6 +166,7 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
+                || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
             {
@@ -177,6 +180,7 @@ namespace ColorVision.Copilot
         {
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
+                || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceValidationExplanationMarkers))
             {

@@ -4,13 +4,21 @@ using System.Windows.Controls;
 
 namespace ColorVision.Copilot
 {
+    public enum CopilotSettingsPage
+    {
+        Models,
+        Agent,
+        Mcp,
+    }
+
     public partial class CopilotSettingsWindow : Window
     {
-        public CopilotSettingsWindow()
+        public CopilotSettingsWindow(CopilotSettingsPage initialPage = CopilotSettingsPage.Models)
         {
             InitializeComponent();
             this.ApplyCaption();
             DataContext = new CopilotSettingsViewModel();
+            SettingsTabs.SelectedIndex = (int)initialPage;
         }
 
         public bool HasAppliedChanges => ViewModel.HasAppliedChanges;

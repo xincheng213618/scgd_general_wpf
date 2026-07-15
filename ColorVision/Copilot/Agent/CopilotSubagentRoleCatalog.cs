@@ -57,6 +57,7 @@ namespace ColorVision.Copilot
             CopilotAgentMode.Explain,
             CopilotAgentMode.Web,
             CopilotAgentMode.Code,
+            CopilotAgentMode.Review,
             CopilotAgentMode.Diagnose,
         ];
 

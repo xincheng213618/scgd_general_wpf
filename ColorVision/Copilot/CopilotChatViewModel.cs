@@ -122,7 +122,6 @@ namespace ColorVision.Copilot
             CancelCommand = new RelayCommand(_ => CancelActiveRun(), _ => IsBusy);
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings());
-            OpenMcpSettingsCommand = new RelayCommand(_ => OpenMcpSettings());
             AddFileAttachmentCommand = new RelayCommand(_ => AddFileAttachment(), _ => !IsBusy);
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => _ = AddWebPageAttachmentAsync(), _ => !IsBusy);
@@ -287,8 +286,6 @@ namespace ColorVision.Copilot
         public ICommand PrimaryActionCommand { get; }
 
         public ICommand OpenSettingsCommand { get; }
-
-        public ICommand OpenMcpSettingsCommand { get; }
 
         public ICommand AddFileAttachmentCommand { get; }
 
@@ -672,6 +669,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Compact:
                     _ = CompactConversationAsync(command, invocation.Arguments);
                     break;
+                case CopilotLocalCommandKind.Review:
+                    StartWorkspaceReview(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
@@ -680,6 +680,24 @@ namespace ColorVision.Copilot
                     return false;
             }
             return true;
+        }
+
+        private void StartWorkspaceReview(CopilotLocalCommand command, string focusInstructions)
+        {
+            if (IsBusy)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再开始审查。");
+                return;
+            }
+
+            var prompt = new StringBuilder("Review the current uncommitted workspace changes. Do not modify files or apply fixes.");
+            if (!string.IsNullOrWhiteSpace(focusInstructions))
+                prompt.Append(" Focus: ").Append(focusInstructions.Trim());
+
+            DismissLocalCommandResult();
+            SetPendingRequestModeOverride(CopilotAgentMode.Review);
+            InputText = prompt.ToString();
+            _ = SendAsync();
         }
 
         private async Task CompactConversationAsync(CopilotLocalCommand command, string focusInstructions)
@@ -2263,24 +2281,9 @@ namespace ColorVision.Copilot
             _taskHost.RequestCancel(activeRun.Id);
         }
 
-        private void OpenSettings()
+        private void OpenSettings(CopilotSettingsPage initialPage = CopilotSettingsPage.Models)
         {
-            var window = new CopilotSettingsWindow
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            };
-
-            var result = window.ShowDialog();
-            if (result != true && !window.HasAppliedChanges)
-                return;
-
-            ReloadStateFromConfig();
-        }
-
-        private void OpenMcpSettings()
-        {
-            var window = new CopilotMcpSettingsWindow(new CopilotSettingsViewModel())
+            var window = new CopilotSettingsWindow(initialPage)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,

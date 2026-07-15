@@ -149,6 +149,28 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.Contains(tools, tool => tool.Name == "RunShellCommand" && tool.Capability.ApprovalMode == CopilotToolApprovalMode.Always);
     }
 
+    [Fact]
+    public void ReviewMode_ExposesEvidenceToolsButNeverWriteTools()
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = "Review the changes and then modify every issue you find.",
+            Mode = CopilotAgentMode.Review,
+            SearchRootPaths = [@"C:\workspace"],
+            WritableLocalRootPaths = [@"C:\workspace"],
+            WritableLocalFilePaths = [@"C:\workspace\Sample.cs"],
+        };
+
+        var tools = CopilotToolRegistry.CreateDefault().FindTools(request);
+
+        Assert.NotEmpty(tools);
+        Assert.All(tools, tool => Assert.Equal(CopilotToolAccess.ReadOnly, tool.Capability.Access));
+        Assert.Contains(tools, tool => tool.Name == "InspectGitWorkingTree");
+        Assert.Contains(tools, tool => tool.Name == "InspectGitDiff");
+        Assert.Contains(tools, tool => tool.Name == "SearchFiles");
+        Assert.DoesNotContain(tools, tool => tool.Name is "ApplyWorkspacePatch" or "ApplyWorkspaceChangeSet" or "RunShellCommand");
+    }
+
     [Theory]
     [InlineData("另外，畸变校正是什么？")]
     [InlineData("换个话题，介绍一下色彩空间")]

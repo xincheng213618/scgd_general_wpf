@@ -23,6 +23,7 @@ namespace ColorVision.Copilot
         Explain,
         Web,
         Code,
+        Review,
         Diagnose,
     }
 

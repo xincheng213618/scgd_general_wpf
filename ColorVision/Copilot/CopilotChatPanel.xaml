@@ -1751,24 +1751,23 @@
 
                                             <Border Height="1" Margin="6,3" Background="{DynamicResource ButtonBorderBrush}" />
 
-                                            <ToggleButton x:Name="AdvancedSettingsSelectorRowButton"
-                                                          Click="AdvancedSettingsSelectorRowButton_Click"
-                                                          Style="{StaticResource ComposerPopoverRowToggleStyle}">
+                                            <Button Command="{Binding OpenSettingsCommand}"
+                                                    Click="CloseSelectorPopupButton_Click"
+                                                    Style="{StaticResource ComposerPopoverButtonStyle}">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Text="高级设置" />
-                                                    <TextBlock Grid.Column="2"
+                                                    <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold" Text="设置" />
+                                                    <TextBlock Grid.Column="1"
                                                                VerticalAlignment="Center"
                                                                FontFamily="Segoe MDL2 Assets"
                                                                FontSize="11"
                                                                Opacity="0.68"
-                                                               Text="&#xE76C;" />
+                                                               Text="&#xE713;" />
                                                 </Grid>
-                                            </ToggleButton>
+                                            </Button>
                                         </StackPanel>
                                     </Border>
 
@@ -1889,64 +1888,6 @@
                                         </StackPanel>
                                     </Border>
 
-                                    <Border x:Name="AdvancedSettingsSubmenuBorder"
-                                            Grid.Column="0"
-                                            Width="276"
-                                            Margin="0,0,8,0"
-                                            Padding="4"
-                                            VerticalAlignment="Bottom"
-                                            Background="{DynamicResource ButtonBackground}"
-                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="14"
-                                            Visibility="Collapsed">
-                                        <Border.Effect>
-                                            <DropShadowEffect BlurRadius="16" Opacity="0.2" ShadowDepth="2" />
-                                        </Border.Effect>
-                                        <StackPanel>
-                                            <TextBlock Margin="8,5,8,4"
-                                                       FontSize="10"
-                                                       FontWeight="SemiBold"
-                                                       Opacity="0.58"
-                                                       Text="高级设置" />
-                                            <Button Click="CloseSelectorPopupButton_Click"
-                                                    Command="{Binding OpenSettingsCommand}"
-                                                    Style="{StaticResource ComposerPopoverButtonStyle}">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock VerticalAlignment="Center" FontSize="11" Text="模型设置" />
-                                                    <TextBlock Grid.Column="1"
-                                                               Margin="12,0,2,0"
-                                                               VerticalAlignment="Center"
-                                                               FontFamily="Segoe MDL2 Assets"
-                                                               FontSize="10"
-                                                               Opacity="0.68"
-                                                               Text="&#xE713;" />
-                                                </Grid>
-                                            </Button>
-                                            <Button Click="CloseSelectorPopupButton_Click"
-                                                    Command="{Binding OpenMcpSettingsCommand}"
-                                                    Style="{StaticResource ComposerPopoverButtonStyle}">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock VerticalAlignment="Center" FontSize="11" Text="MCP 设置" />
-                                                    <TextBlock Grid.Column="1"
-                                                               Margin="12,0,2,0"
-                                                               VerticalAlignment="Center"
-                                                               FontFamily="Segoe MDL2 Assets"
-                                                               FontSize="10"
-                                                               Opacity="0.68"
-                                                               Text="&#xE713;" />
-                                                </Grid>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
                                 </Grid>
                                 </Border>
                             </Popup>

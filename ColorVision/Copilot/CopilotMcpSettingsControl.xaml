@@ -262,30 +262,44 @@
             </Expander>
         </Border>
 
-        <Border Margin="0,12,0,0" Padding="12,10" Style="{StaticResource McpSurfaceBorderStyle}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock VerticalAlignment="Center"
-                           Style="{StaticResource McpFooterStatusTextStyle}"
-                           Text="{Binding SettingsStatusText}"/>
-                <Button Grid.Column="1"
-                        Margin="0,0,8,0"
-                        Padding="14,6"
-                        Click="ApplyButton_Click"
-                        Content="Apply"
-                        IsEnabled="{Binding CanApplySettings}"/>
-                <Button Grid.Column="2"
-                        Padding="14,6"
-                        Click="SaveButton_Click"
-                        Content="{x:Static properties:Resources.Save}"
-                        IsEnabled="{Binding CanSaveSettings}"
-                        Style="{StaticResource CopilotPrimaryButtonStyle}"/>
-            </Grid>
+        <Border Margin="0,12,0,0" Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource McpPanelTitleStyle}" Text="Copilot MCP clients"/>
+                <TextBlock Margin="0,6,0,10"
+                           Style="{StaticResource McpHintTextStyle}"
+                           Text="Connect Copilot to explicit Streamable HTTP MCP servers. One server per line: name | endpoint | token environment variable | default policy | optional tool=policy,... Use an exact tool list when possible; blank or * exposes every discovered tool."/>
+                <TextBox MinHeight="104"
+                         AcceptsReturn="True"
+                         Text="{Binding ExternalMcpServersText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"/>
+                <TextBlock Margin="0,6,0,0"
+                           FontSize="11"
+                           Text="{Binding ExternalMcpServersValidationText}"
+                           TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource McpHintTextStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsExternalMcpServersValid}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource McpValidationErrorBrush}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Opacity" Value="0.95"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <DockPanel Margin="0,8,0,0" LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Margin="10,0,0,0"
+                            Padding="10,4"
+                            Command="{Binding RefreshExternalMcpClientsCommand}"
+                            Content="Refresh Discovery"/>
+                    <TextBlock VerticalAlignment="Center"
+                               Style="{StaticResource McpHintTextStyle}"
+                               Text="{Binding ExternalMcpClientsStatusText}"/>
+                </DockPanel>
+            </StackPanel>
         </Border>
     </StackPanel>
 </UserControl>

@@ -1446,6 +1446,8 @@ namespace ColorVision.Copilot
             {
                 if (tool == null || string.IsNullOrWhiteSpace(tool.Name))
                     continue;
+                if (!CopilotToolRegistry.IsAllowedForMode(tool, request))
+                    continue;
                 var directlyAvailable = CopilotToolRegistry.IsAvailableForAgent(tool, request);
                 var retainedForFollowUp = tool is not ICopilotAgentDrivenTool
                     && !directlyAvailable

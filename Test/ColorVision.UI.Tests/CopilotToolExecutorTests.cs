@@ -193,6 +193,26 @@ public sealed class CopilotToolExecutorTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ReviewModeDeniesWriteToolEvenWhenToolClaimsAvailability()
+    {
+        var tool = new RecordingTool(
+            "WriteTool",
+            TimeSpan.FromSeconds(1),
+            access: CopilotToolAccess.Write,
+            canHandle: true);
+        var executor = new CopilotToolExecutor();
+
+        var outcome = await executor.ExecuteAsync(
+            CreateInvocation(tool, mode: CopilotAgentMode.Review),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Denied, outcome.Execution.State);
+        Assert.Contains("Review mode permits read-only tools only", outcome.Result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_MapsStructuredApprovalAndLinksActionToCall()
     {
         var tool = new ApprovalTool();
@@ -347,7 +367,8 @@ public sealed class CopilotToolExecutorTests : IDisposable
         ICopilotTool tool,
         CopilotAgentToolInput? input = null,
         int attempt = 1,
-        int maxAttempts = 1)
+        int maxAttempts = 1,
+        CopilotAgentMode mode = CopilotAgentMode.Auto)
     {
         input ??= CopilotAgentToolInput.Empty;
         return new CopilotToolInvocation
@@ -360,7 +381,7 @@ public sealed class CopilotToolExecutorTests : IDisposable
             AgentRequest = new CopilotAgentRequest
             {
                 Profile = new CopilotProfileConfig(),
-                Mode = CopilotAgentMode.Auto,
+                Mode = mode,
                 UserText = "explicit test request",
             },
             ToolInput = input,

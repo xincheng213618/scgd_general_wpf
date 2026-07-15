@@ -112,7 +112,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0" Margin="12,12,12,10">
+        <TabControl x:Name="SettingsTabs" Grid.Row="0" Margin="12,12,12,10">
             <TabItem Header="Models">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -481,6 +481,13 @@
                             </Expander>
                         </StackPanel>
                     </Border>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="MCP">
+                <ScrollViewer Padding="10"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <local:CopilotMcpSettingsControl DataContext="{Binding}"/>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
