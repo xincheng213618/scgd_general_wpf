@@ -192,15 +192,75 @@ public class CopilotBusinessContextTests
     [Fact]
     public void LocalCommandCatalog_FiltersAndResolvesExactCommands()
     {
-        Assert.Equal(["/context", "/skills", "/mcp", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
+        Assert.Equal(["/context", "/skills", "/mcp", "/compact", "/new"], CopilotLocalCommandCatalog.Suggest("/").Select(command => command.Name));
         Assert.Equal("/context", Assert.Single(CopilotLocalCommandCatalog.Suggest("  /Contex  ")).Name);
         Assert.Equal(CopilotLocalCommandKind.Context, CopilotLocalCommandCatalog.FindExact("  /CONTEXT  ")?.Kind);
         Assert.Equal(CopilotLocalCommandKind.Skills, CopilotLocalCommandCatalog.FindExact("/skills")?.Kind);
+        var compact = Assert.IsType<CopilotLocalCommandInvocation>(CopilotLocalCommandCatalog.Parse(" /COMPACT keep flow decisions "));
+        Assert.Equal(CopilotLocalCommandKind.Compact, compact.Command.Kind);
+        Assert.Equal("keep flow decisions", compact.Arguments);
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context"));
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("/context extra"));
         Assert.Empty(CopilotLocalCommandCatalog.Suggest("context"));
         Assert.Null(CopilotLocalCommandCatalog.FindExact("/context explain"));
+        Assert.Null(CopilotLocalCommandCatalog.FindExact("/compact explain"));
+        Assert.Null(CopilotLocalCommandCatalog.Parse("/new explain"));
         Assert.Null(CopilotLocalCommandCatalog.FindExact(null));
+    }
+
+    [Fact]
+    public void ConversationCompactionContext_KeepsSummaryAndOnlyMessagesAfterBoundary()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var oldGoal = new CopilotChatMessage(CopilotChatRole.User, "build the flow");
+        var oldAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, "inspected the flow");
+        var newRequest = new CopilotChatMessage(CopilotChatRole.User, "add a camera node");
+        var newAnswer = new CopilotChatMessage(CopilotChatRole.Assistant, "camera node added");
+        conversation.Messages.Add(oldGoal);
+        conversation.Messages.Add(oldAnswer);
+        conversation.Messages.Add(newRequest);
+        conversation.Messages.Add(newAnswer);
+        conversation.Compaction = new CopilotConversationCompaction
+        {
+            Summary = "Goal: build the flow. The existing graph was inspected.",
+            ThroughMessageId = oldAnswer.Id,
+        };
+
+        var history = CopilotConversationCompactionContext.Build(conversation, stopBeforeMessage: null, useModelContent: true);
+
+        Assert.Collection(
+            history,
+            message =>
+            {
+                Assert.Equal("user", message.Role);
+                Assert.Contains("historical context", message.Content, StringComparison.Ordinal);
+                Assert.Contains("Goal: build the flow", message.Content, StringComparison.Ordinal);
+            },
+            message => Assert.Equal("add a camera node", message.Content),
+            message => Assert.Equal("camera node added", message.Content));
+        Assert.Equal(2, CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation));
+
+        var beforeAnswer = CopilotConversationCompactionContext.Build(conversation, newAnswer, useModelContent: false);
+        Assert.Equal(2, beforeAnswer.Count);
+        Assert.Equal("add a camera node", beforeAnswer[^1].Content);
+    }
+
+    [Fact]
+    public void ConversationCompactionContext_FallsBackToFullHistoryWhenBoundaryIsMissing()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "original goal"));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "original answer"));
+        conversation.Compaction = new CopilotConversationCompaction
+        {
+            Summary = "stale summary",
+            ThroughMessageId = "missing-message",
+        };
+
+        var history = CopilotConversationCompactionContext.Build(conversation, stopBeforeMessage: null, useModelContent: true);
+
+        Assert.Equal(["original goal", "original answer"], history.Select(message => message.Content));
+        Assert.Equal(2, CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation));
     }
 
     [Fact]
@@ -218,6 +278,8 @@ public class CopilotBusinessContextTests
             HistoryMaximumMessages = 508,
             HistoryMaximumCharacters = 2_080_768,
             HistoryMaximumContentCharacters = 260_096,
+            CompactedSourceMessages = 16,
+            CompactionSummaryCharacters = 2_048,
             AttachmentCount = 2,
             FileAttachmentCount = 1,
             ImageAttachmentCount = 1,
@@ -229,6 +291,7 @@ public class CopilotBusinessContextTests
         Assert.Contains("7/18", report, StringComparison.Ordinal);
         Assert.Contains("28,000/80,000", report, StringComparison.Ordinal);
         Assert.Contains("最多 508 条 / 2,080,768 字符 / 单条 260,096 字符（上下文 50%）", report, StringComparison.Ordinal);
+        Assert.Contains("主动压缩：16 条来源已归纳为 2,048 字符摘要；完整记录仍保留在本地", report, StringComparison.Ordinal);
         Assert.Contains("当前 Chat 模式不注入项目指令、Skills 或 MCP 工具", report, StringComparison.Ordinal);
         Assert.DoesNotContain("能力目录：", report, StringComparison.Ordinal);
     }

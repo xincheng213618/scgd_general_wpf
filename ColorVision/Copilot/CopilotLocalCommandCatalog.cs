@@ -9,13 +9,19 @@ namespace ColorVision.Copilot
         Context,
         Skills,
         Mcp,
+        Compact,
         NewConversation,
     }
 
     public sealed record CopilotLocalCommand(
         string Name,
         string Description,
-        CopilotLocalCommandKind Kind);
+        CopilotLocalCommandKind Kind,
+        bool AcceptsArguments = false);
+
+    public sealed record CopilotLocalCommandInvocation(
+        CopilotLocalCommand Command,
+        string Arguments);
 
     public static class CopilotLocalCommandCatalog
     {
@@ -26,6 +32,7 @@ namespace ColorVision.Copilot
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills),
             new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp),
+            new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation),
         ];
 
@@ -33,17 +40,30 @@ namespace ColorVision.Copilot
 
         public static CopilotLocalCommand? FindExact(string? input)
         {
+            var invocation = Parse(input);
+            return invocation is { Arguments.Length: 0 } ? invocation.Command : null;
+        }
+
+        public static CopilotLocalCommandInvocation? Parse(string? input)
+        {
             var normalized = Normalize(input);
-            if (normalized.Length == 0 || normalized.Any(char.IsWhiteSpace))
+            if (normalized.Length == 0)
                 return null;
 
-            return Commands.FirstOrDefault(command => string.Equals(command.Name, normalized, StringComparison.OrdinalIgnoreCase));
+            var separatorIndex = normalized.IndexOfAny([' ', '\t', '\r', '\n']);
+            var name = separatorIndex < 0 ? normalized : normalized[..separatorIndex];
+            var arguments = separatorIndex < 0 ? string.Empty : normalized[(separatorIndex + 1)..].Trim();
+            var command = Commands.FirstOrDefault(item => string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (command == null || (!command.AcceptsArguments && arguments.Length > 0))
+                return null;
+
+            return new CopilotLocalCommandInvocation(command, arguments);
         }
 
         public static IReadOnlyList<CopilotLocalCommand> Suggest(string? input)
         {
             var normalized = Normalize(input);
-            if (!normalized.StartsWith("/", StringComparison.Ordinal)
+            if (!normalized.StartsWith('/')
                 || normalized.Any(char.IsWhiteSpace)
                 || FindExact(normalized) != null)
             {

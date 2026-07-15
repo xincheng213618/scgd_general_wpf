@@ -26,7 +26,9 @@ namespace ColorVision.Copilot
         private const int AttachmentContentLimit = 12000;
         private const int MaxWebPageInjectionChars = 8000;
         private const int CompactHistoryLimit = 4;
+        private const int CompactSummaryOutputTokens = 4096;
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
+        private const string CompactSystemPrompt = "You compact an existing conversation for seamless continuation. Preserve the user's active goal, constraints, decisions, verified facts, relevant files, commands and results, unfinished work, blockers, and safe next steps. Remove greetings, repetition, obsolete exploration, and verbose tool traces. Never invent facts or treat historical actions as current authorization. Return only a concise Markdown continuation summary.";
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
@@ -40,6 +42,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
+        private CancellationTokenSource? _compactConversationCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -54,6 +57,7 @@ namespace ColorVision.Copilot
         private string _localCommandResultText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
+        private bool _isCompactingConversation;
 
         public CopilotChatViewModel()
             : this(new CopilotChatService())
@@ -408,12 +412,14 @@ namespace ColorVision.Copilot
             ? Properties.Resources.CopilotSelectHistoryOrNew
             : Properties.Resources.CopilotConfigureModelFirst;
 
-        public string PrimaryActionGlyph => IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
+        public string PrimaryActionGlyph => _isCompactingConversation ? "■" : IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
 
         public string PrimaryActionToolTip
         {
             get
             {
+                if (_isCompactingConversation)
+                    return "停止上下文压缩";
                 if (IsViewingQueuedRun)
                     return "取消这个排队任务";
                 if (IsViewingActiveRun)
@@ -530,7 +536,8 @@ namespace ColorVision.Copilot
 
         public bool TryCompleteLocalCommand(CopilotLocalCommand? command = null)
         {
-            command ??= LocalCommandSuggestions.FirstOrDefault();
+            var suggestions = LocalCommandSuggestions;
+            command ??= suggestions.Count > 0 ? suggestions[0] : null;
             if (command == null)
                 return false;
 
@@ -645,11 +652,12 @@ namespace ColorVision.Copilot
 
         private bool TryExecuteLocalCommand(string prompt)
         {
-            var command = CopilotLocalCommandCatalog.FindExact(prompt);
-            if (command == null)
+            var invocation = CopilotLocalCommandCatalog.Parse(prompt);
+            if (invocation == null)
                 return false;
 
             InputText = string.Empty;
+            var command = invocation.Command;
             switch (command.Kind)
             {
                 case CopilotLocalCommandKind.Context:
@@ -661,6 +669,9 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Mcp:
                     ShowLocalCommandResult(command, McpStatusToolTip);
                     break;
+                case CopilotLocalCommandKind.Compact:
+                    _ = CompactConversationAsync(command, invocation.Arguments);
+                    break;
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
@@ -669,6 +680,119 @@ namespace ColorVision.Copilot
                     return false;
             }
             return true;
+        }
+
+        private async Task CompactConversationAsync(CopilotLocalCommand command, string focusInstructions)
+        {
+            var conversation = SelectedConversation;
+            var profile = SelectedProfile;
+            if (IsBusy || _isCompactingConversation)
+            {
+                ShowLocalCommandResult(command, "当前有请求正在执行，请完成或停止后再压缩上下文。");
+                return;
+            }
+            if (conversation == null || profile?.IsConfigured != true)
+            {
+                ShowLocalCommandResult(command, "请先选择并配置可用模型。");
+                return;
+            }
+
+            var sourceMessages = conversation.Messages
+                .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
+                .ToArray();
+            var newMessageCount = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
+            if (sourceMessages.Length < 2 || newMessageCount < 2)
+            {
+                var reason = conversation.Compaction == null
+                    ? "至少需要一轮完整对话后才能压缩。"
+                    : "上次压缩后还没有足够的新对话，不需要重复压缩。";
+                ShowLocalCommandResult(command, reason);
+                return;
+            }
+
+            var boundaryMessage = sourceMessages[^1];
+            var compactProfile = profile.Clone();
+            compactProfile.UseSystemPromptOverride(CompactSystemPrompt);
+            compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
+            compactProfile.Temperature = 0.1;
+
+            var rawHistory = CopilotConversationCompactionContext.Build(conversation, stopBeforeMessage: null, useModelContent: true);
+            var request = rawHistory
+                .Append(new CopilotRequestMessage("user", BuildCompactRequest(focusInstructions)))
+                .ToArray();
+            var selectedRequest = CopilotConversationHistoryWindow.Select(request, ResolveConversationHistoryLimits(compactProfile)).ToArray();
+            var compactedInput = selectedRequest.Take(Math.Max(0, selectedRequest.Length - 1)).ToArray();
+            var sourceCharacters = compactedInput.Sum(message => message.Content.Length);
+
+            using var cancellation = new CancellationTokenSource();
+            _compactConversationCts = cancellation;
+            _isCompactingConversation = true;
+            IsBusy = true;
+            ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
+            try
+            {
+                var reply = await _chatService.CompleteReplyAsync(compactProfile, selectedRequest, cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                var summary = NormalizeCompactSummary(reply.Content);
+                if (summary.Length == 0)
+                    throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
+                if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(boundaryMessage))
+                    throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
+
+                conversation.Compaction = new CopilotConversationCompaction
+                {
+                    Summary = summary,
+                    ThroughMessageId = boundaryMessage.Id,
+                    CreatedAtUtc = DateTimeOffset.UtcNow,
+                    SourceMessageCount = compactedInput.Length,
+                    SourceCharacters = sourceCharacters,
+                };
+                conversation.AgentSessionCheckpoint = null;
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState();
+
+                var retainedAfterBoundary = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
+                ShowLocalCommandResult(
+                    command,
+                    $"已压缩 {compactedInput.Length:N0} 条有效上下文、{sourceCharacters:N0} 个字符。\n"
+                    + $"后续请求将使用 {summary.Length:N0} 字符摘要，并保留边界后的 {retainedAfterBoundary:N0} 条新消息；界面中的完整对话未删除。"
+                    + (string.IsNullOrWhiteSpace(focusInstructions) ? string.Empty : "\n聚焦要求：" + focusInstructions.Trim()));
+                RefreshComposerTokenEstimate();
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                ShowLocalCommandResult(command, "上下文压缩已取消，原有对话和压缩状态均未改变。");
+            }
+            catch (Exception ex)
+            {
+                ShowLocalCommandResult(command, "压缩失败：" + CopilotMcpAuditLogger.RedactText(ex.Message));
+            }
+            finally
+            {
+                if (ReferenceEquals(_compactConversationCts, cancellation))
+                    _compactConversationCts = null;
+                _isCompactingConversation = false;
+                IsBusy = _taskHost.IsActive;
+            }
+        }
+
+        private static string BuildCompactRequest(string focusInstructions)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("Create a continuation summary for all conversation context above.");
+            builder.AppendLine("Keep the active goal, user constraints and preferences, decisions, verified state, important paths and identifiers, completed work and evidence, remaining work, blockers, and the next concrete action.");
+            builder.AppendLine("Omit greetings, repetition, superseded alternatives, and low-value detail. Return only the summary.");
+            if (!string.IsNullOrWhiteSpace(focusInstructions))
+                builder.Append("Additional focus from the user: ").Append(focusInstructions.Trim());
+            return builder.ToString().Trim();
+        }
+
+        private static string NormalizeCompactSummary(string summary)
+        {
+            var normalized = (summary ?? string.Empty).Trim();
+            return normalized.Length <= CopilotConversationCompaction.MaximumSummaryCharacters
+                ? normalized
+                : normalized[..CopilotConversationCompaction.MaximumSummaryCharacters].TrimEnd();
         }
 
         private string BuildAgentSkillDiagnosticsReport()
@@ -704,6 +828,7 @@ namespace ColorVision.Copilot
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
             var agentDefaults = _config.AgentDefaults;
             var historyLimits = ResolveConversationHistoryLimits(SelectedProfile);
+            var compaction = SelectedConversation?.Compaction;
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
                 ProfileLabel = SelectedProfile?.DisplayLabel ?? string.Empty,
@@ -716,6 +841,8 @@ namespace ColorVision.Copilot
                 HistoryMaximumMessages = historyLimits.MaximumMessages,
                 HistoryMaximumCharacters = historyLimits.MaximumCharacters,
                 HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,
+                CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
+                CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,
                 AttachmentCount = Attachments.Count,
                 FileAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.File),
                 ImageAttachmentCount = Attachments.Count(item => item.Type == CopilotAttachmentType.Image),
@@ -1865,6 +1992,11 @@ namespace ColorVision.Copilot
 
         private void ExecutePrimaryAction()
         {
+            if (_isCompactingConversation)
+            {
+                _compactConversationCts?.Cancel();
+                return;
+            }
             if (IsViewingQueuedRun || IsViewingActiveRun)
             {
                 CancelCurrentReply(discardAgentCheckpoint: !CanPauseAgentRun);
@@ -2104,6 +2236,11 @@ namespace ColorVision.Copilot
 
         private void CancelActiveRun()
         {
+            if (_isCompactingConversation)
+            {
+                _compactConversationCts?.Cancel();
+                return;
+            }
             CancelCurrentReply(discardAgentCheckpoint: true);
         }
 
@@ -2182,12 +2319,9 @@ namespace ColorVision.Copilot
 
         private List<CopilotRequestMessage> BuildConversationHistory(CopilotProfileConfig profile, bool includeAttachmentContext)
         {
-            var history = Messages
-                .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
-                .Select(message => new CopilotRequestMessage(
-                    message.IsUser ? "user" : "assistant",
-                    message.ModelContent.Trim()))
-                .ToArray();
+            var history = SelectedConversation == null
+                ? Array.Empty<CopilotRequestMessage>()
+                : CopilotConversationCompactionContext.Build(SelectedConversation, stopBeforeMessage: null, useModelContent: true).ToArray();
 
             var attachmentContext = includeAttachmentContext ? BuildAttachmentContextBlock() : string.Empty;
             var limits = ResolveConversationHistoryLimits(profile);
@@ -2216,20 +2350,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage? stopBeforeMessage,
             CopilotProfileConfig profile)
         {
-            var messages = conversation.Messages.AsEnumerable();
-            if (stopBeforeMessage != null)
-            {
-                var index = conversation.Messages.IndexOf(stopBeforeMessage);
-                if (index >= 0)
-                    messages = conversation.Messages.Take(index);
-            }
-
-            var history = messages
-                .Where(message => !string.IsNullOrWhiteSpace(message.Content))
-                .Select(message => new CopilotRequestMessage(
-                    message.IsUser ? "user" : "assistant",
-                    message.Content.Trim()))
-                .ToArray();
+            var history = CopilotConversationCompactionContext.Build(conversation, stopBeforeMessage, useModelContent: false);
             return CopilotConversationHistoryWindow.Select(history, ResolveConversationHistoryLimits(profile)).ToList();
         }
 
@@ -3178,12 +3299,10 @@ namespace ColorVision.Copilot
 
         private CopilotConversationHistorySelection CaptureConversationHistorySelection()
         {
-            return CopilotConversationHistoryWindow.SelectWithDiagnostics(Messages
-                .Where(message => !string.IsNullOrWhiteSpace(message.ModelContent))
-                .Select(message => new CopilotRequestMessage(
-                    message.IsUser ? "user" : "assistant",
-                    message.ModelContent.Trim())),
-                ResolveConversationHistoryLimits(SelectedProfile));
+            var history = SelectedConversation == null
+                ? Array.Empty<CopilotRequestMessage>()
+                : CopilotConversationCompactionContext.Build(SelectedConversation, stopBeforeMessage: null, useModelContent: true);
+            return CopilotConversationHistoryWindow.SelectWithDiagnostics(history, ResolveConversationHistoryLimits(SelectedProfile));
         }
 
         private string BuildAttachmentSummary()

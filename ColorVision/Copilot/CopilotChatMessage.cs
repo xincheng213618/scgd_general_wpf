@@ -108,6 +108,8 @@ namespace ColorVision.Copilot
             CreatedAt = DateTime.Now;
         }
 
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
         public CopilotChatRole Role
         {
             get => _role;
@@ -612,6 +614,12 @@ namespace ColorVision.Copilot
         public bool EnsureValid()
         {
             var changed = false;
+
+            if (string.IsNullOrWhiteSpace(Id))
+            {
+                Id = Guid.NewGuid().ToString("N");
+                changed = true;
+            }
 
             if (CreatedAt == default)
             {
@@ -1333,6 +1341,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
 
+        public CopilotConversationCompaction? Compaction { get; set; }
+
         [JsonIgnore]
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
@@ -1387,6 +1397,11 @@ namespace ColorVision.Copilot
             if (AgentSessionCheckpoint != null && !AgentSessionCheckpoint.IsStructurallyValid())
             {
                 AgentSessionCheckpoint = null;
+                changed = true;
+            }
+            if (Compaction != null && !Compaction.IsStructurallyValid())
+            {
+                Compaction = null;
                 changed = true;
             }
 

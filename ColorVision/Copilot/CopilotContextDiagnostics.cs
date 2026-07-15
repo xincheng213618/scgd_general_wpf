@@ -26,6 +26,10 @@ namespace ColorVision.Copilot
 
         public int HistoryMaximumContentCharacters { get; init; }
 
+        public int CompactedSourceMessages { get; init; }
+
+        public int CompactionSummaryCharacters { get; init; }
+
         public int AttachmentCount { get; init; }
 
         public int FileAttachmentCount { get; init; }
@@ -105,6 +109,14 @@ namespace ColorVision.Copilot
                 .Append(" 字符（上下文 ")
                 .Append(CopilotConversationHistoryWindow.HistoryContextPercent)
                 .AppendLine("%）");
+            if (snapshot.CompactionSummaryCharacters > 0)
+            {
+                builder.Append("主动压缩：")
+                    .Append(FormatCount(snapshot.CompactedSourceMessages))
+                    .Append(" 条来源已归纳为 ")
+                    .Append(FormatCount(snapshot.CompactionSummaryCharacters))
+                    .AppendLine(" 字符摘要；完整记录仍保留在本地");
+            }
             builder.Append("附件：").AppendLine(FormatAttachments(snapshot));
             builder.Append("窗口上下文：").AppendLine(snapshot.HasLiveWindowContext ? "已提供" : "无");
             builder.AppendLine();
