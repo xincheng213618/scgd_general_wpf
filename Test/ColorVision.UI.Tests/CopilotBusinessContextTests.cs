@@ -342,6 +342,7 @@ public class CopilotBusinessContextTests
             HistoryMaximumMessages = 508,
             HistoryMaximumCharacters = 2_080_768,
             HistoryMaximumContentCharacters = 260_096,
+            HistoryContextWindowTokens = 1_048_576,
             CompactedSourceMessages = 16,
             CompactionSummaryCharacters = 2_048,
             AttachmentCount = 2,
@@ -354,9 +355,11 @@ public class CopilotBusinessContextTests
         Assert.Contains("Local Model", report, StringComparison.Ordinal);
         Assert.Contains("7/18", report, StringComparison.Ordinal);
         Assert.Contains("28,000/80,000", report, StringComparison.Ordinal);
-        Assert.Contains("最多 508 条 / 2,080,768 字符 / 单条 260,096 字符（上下文 50%）", report, StringComparison.Ordinal);
+        Assert.Contains("最多 508 条 / 2,080,768 字符 / 单条 260,096 字符（上下文 50%，窗口 1,048,576 Token）", report, StringComparison.Ordinal);
         Assert.Contains("主动压缩：16 条来源已归纳为 2,048 字符摘要；完整记录仍保留在本地", report, StringComparison.Ordinal);
         Assert.Contains("当前 Chat 模式不注入项目指令、Skills 或 MCP 工具", report, StringComparison.Ordinal);
+        Assert.Contains("对话历史已被窗口预算裁剪", report, StringComparison.Ordinal);
+        Assert.Contains("/compact", report, StringComparison.Ordinal);
         Assert.DoesNotContain("能力目录：", report, StringComparison.Ordinal);
     }
 
@@ -370,6 +373,20 @@ public class CopilotBusinessContextTests
             AgentContextEnabled = true,
             ProjectInstructionDocuments = 2,
             ProjectInstructionPromptCharacters = 12_345,
+            ProjectInstructions =
+            [
+                new CopilotProjectInstructionDocument
+                {
+                    Path = Path.Combine(@"C:\workspace", "AGENTS.md"),
+                    Content = "root guidance",
+                },
+                new CopilotProjectInstructionDocument
+                {
+                    Path = Path.Combine(@"C:\workspace", "module", "AGENTS.override.md"),
+                    Content = new string('x', 12_000),
+                    IsTruncated = true,
+                },
+            ],
             RecordedSkillRuns = 30,
             TrackedSkills = 6,
             HistoricalExplicitOnlySkills = 2,
@@ -386,6 +403,8 @@ public class CopilotBusinessContextTests
 
         Assert.Contains("项目指令：2 个文档", report, StringComparison.Ordinal);
         Assert.Contains("12,345 字符", report, StringComparison.Ordinal);
+        Assert.Contains($"workspace{Path.DirectorySeparatorChar}AGENTS.md · 13 字符", report, StringComparison.Ordinal);
+        Assert.Contains($"module{Path.DirectorySeparatorChar}AGENTS.override.md · 12,000 字符 · 已截断", report, StringComparison.Ordinal);
         Assert.Contains("Agent 预算：上下文 1,048,576 Token / 累计请求 1,048,576 Token / 工具 128 / pass 32 / 超时 7,200 秒", report, StringComparison.Ordinal);
         Assert.Contains("6 个已跟踪", report, StringComparison.Ordinal);
         Assert.Contains("2 个低使用率仅显式调用", report, StringComparison.Ordinal);
@@ -394,6 +413,36 @@ public class CopilotBusinessContextTests
         Assert.Contains("上下文 2% / 硬上限 8,000", report, StringComparison.Ordinal);
         Assert.Contains("能力目录：24 个已注册能力", report, StringComparison.Ordinal);
         Assert.Contains("外部 MCP：1 个启用服务", report, StringComparison.Ordinal);
+        Assert.Contains("1 个项目指令文档已截断", report, StringComparison.Ordinal);
+        Assert.Contains("更靠近目标代码的 AGENTS.md", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ContextDiagnostics_RecommendsCompactionOnlyAtHighHistoryPressure()
+    {
+        var lowPressure = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            SourceHistoryMessages = 10,
+            RetainedHistoryMessages = 10,
+            SourceHistoryCharacters = 20_000,
+            RetainedHistoryCharacters = 20_000,
+            HistoryMaximumCharacters = 100_000,
+        });
+        var highPressure = CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
+        {
+            AgentContextEnabled = true,
+            SourceHistoryMessages = 10,
+            RetainedHistoryMessages = 10,
+            SourceHistoryCharacters = 80_000,
+            RetainedHistoryCharacters = 80_000,
+            HistoryMaximumCharacters = 100_000,
+            EnabledExternalMcpServers = 4,
+        });
+
+        Assert.DoesNotContain("优化建议：", lowPressure, StringComparison.Ordinal);
+        Assert.Contains("至少 75%", highPressure, StringComparison.Ordinal);
+        Assert.Contains("/compact", highPressure, StringComparison.Ordinal);
+        Assert.Contains("已启用 4 个外部 MCP 服务", highPressure, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Copilot
@@ -26,6 +29,8 @@ namespace ColorVision.Copilot
 
         public int HistoryMaximumContentCharacters { get; init; }
 
+        public int HistoryContextWindowTokens { get; init; }
+
         public int CompactedSourceMessages { get; init; }
 
         public int CompactionSummaryCharacters { get; init; }
@@ -45,6 +50,8 @@ namespace ColorVision.Copilot
         public int ProjectInstructionDocuments { get; init; }
 
         public int ProjectInstructionPromptCharacters { get; init; }
+
+        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public long RecordedSkillRuns { get; init; }
 
@@ -73,6 +80,9 @@ namespace ColorVision.Copilot
 
     public static class CopilotContextDiagnostics
     {
+        private const int HighHistoryPressurePercent = 75;
+        private const int ExternalMcpSuggestionThreshold = 4;
+
         public static string Format(CopilotContextDiagnosticSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
@@ -108,7 +118,9 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(snapshot.HistoryMaximumContentCharacters))
                 .Append(" 字符（上下文 ")
                 .Append(CopilotConversationHistoryWindow.HistoryContextPercent)
-                .AppendLine("%）");
+                .Append("%，窗口 ")
+                .Append(FormatCount(snapshot.HistoryContextWindowTokens))
+                .AppendLine(" Token）");
             if (snapshot.CompactionSummaryCharacters > 0)
             {
                 builder.Append("主动压缩：")
@@ -124,6 +136,7 @@ namespace ColorVision.Copilot
             if (!snapshot.AgentContextEnabled)
             {
                 builder.AppendLine("Agent 扩展：当前 Chat 模式不注入项目指令、Skills 或 MCP 工具。");
+                AppendOptimizationSuggestions(builder, snapshot);
                 return builder.ToString().TrimEnd();
             }
 
@@ -132,6 +145,7 @@ namespace ColorVision.Copilot
                 .Append(" 个文档，序列化提示 ")
                 .Append(FormatCount(snapshot.ProjectInstructionPromptCharacters))
                 .AppendLine(" 字符");
+            AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);
             builder.Append("Agent 预算：上下文 ")
                 .Append(FormatCount(snapshot.AgentContextWindowTokens))
                 .Append(" Token / 累计请求 ")
@@ -167,7 +181,74 @@ namespace ColorVision.Copilot
             builder.Append("外部 MCP：")
                 .Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .AppendLine(" 个启用服务；仅在 Agent 请求中发现工具");
+            AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendProjectInstructionDetails(
+            StringBuilder builder,
+            IReadOnlyList<CopilotProjectInstructionDocument> documents)
+        {
+            foreach (var document in (documents ?? Array.Empty<CopilotProjectInstructionDocument>())
+                .Where(document => document?.IsStructurallyValid() == true)
+                .Take(CopilotAgentProjectInstructions.MaxDocuments))
+            {
+                builder.Append("  - ")
+                    .Append(FormatInstructionPath(document.Path))
+                    .Append(" · ")
+                    .Append(FormatCount(document.Content.Length))
+                    .Append(" 字符");
+                if (document.IsTruncated)
+                    builder.Append(" · 已截断");
+                builder.AppendLine();
+            }
+        }
+
+        private static void AppendOptimizationSuggestions(StringBuilder builder, CopilotContextDiagnosticSnapshot snapshot)
+        {
+            var suggestions = new List<string>();
+            var historyWasReduced = snapshot.SourceHistoryMessages > snapshot.RetainedHistoryMessages
+                || snapshot.SourceHistoryCharacters > snapshot.RetainedHistoryCharacters;
+            if (historyWasReduced)
+            {
+                suggestions.Add("对话历史已被窗口预算裁剪；长任务建议运行 /compact，并可在命令后写明需要保留的重点。");
+            }
+            else if (snapshot.HistoryMaximumCharacters > 0
+                && (long)snapshot.RetainedHistoryCharacters * 100 / snapshot.HistoryMaximumCharacters >= HighHistoryPressurePercent)
+            {
+                suggestions.Add("对话历史已使用至少 75% 的历史预算；继续长任务前可运行 /compact，避免临近上限时丢失早期细节。");
+            }
+
+            var truncatedInstructions = snapshot.ProjectInstructions.Count(document => document?.IsTruncated == true);
+            if (truncatedInstructions > 0)
+            {
+                suggestions.Add($"{FormatCount(truncatedInstructions)} 个项目指令文档已截断；请精简通用规则，或把局部规则放到更靠近目标代码的 AGENTS.md。");
+            }
+
+            if (snapshot.AgentContextEnabled
+                && snapshot.EnabledExternalMcpServers >= ExternalMcpSuggestionThreshold)
+            {
+                suggestions.Add($"已启用 {FormatCount(snapshot.EnabledExternalMcpServers)} 个外部 MCP 服务；可在设置中停用当前项目不需要的服务，减少工具发现和上下文噪声。");
+            }
+
+            if (suggestions.Count == 0)
+                return;
+
+            builder.AppendLine();
+            builder.AppendLine("优化建议：");
+            foreach (var suggestion in suggestions)
+                builder.Append("- ").AppendLine(suggestion);
+        }
+
+        private static string FormatInstructionPath(string path)
+        {
+            var normalized = (path ?? string.Empty).Trim();
+            if (normalized.Length == 0)
+                return "AGENTS.md";
+
+            var parent = Path.GetFileName(Path.GetDirectoryName(normalized));
+            var fileName = Path.GetFileName(normalized);
+            return string.IsNullOrWhiteSpace(parent) ? fileName : Path.Combine(parent, fileName);
         }
 
         private static string FormatAttachments(CopilotContextDiagnosticSnapshot snapshot)
