@@ -523,11 +523,30 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · 输入 / 查看本地命令" : "要求后续变更 · 输入 / 查看本地命令";
+        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
 
-        public IReadOnlyList<CopilotLocalCommand> LocalCommandSuggestions => CopilotLocalCommandCatalog.Suggest(InputText);
+        public IReadOnlyList<CopilotLocalCommand> LocalCommandSuggestions
+        {
+            get
+            {
+                var input = (InputText ?? string.Empty).Trim();
+                if (input.Length == 0 || input[0] is not '/' and not '$')
+                    return Array.Empty<CopilotLocalCommand>();
+                if (input.StartsWith('/') && CopilotLocalCommandCatalog.FindExact(input) != null)
+                    return Array.Empty<CopilotLocalCommand>();
+                if (ResolveComposerRequestMode() == CopilotAgentMode.Chat)
+                    return CopilotLocalCommandCatalog.Suggest(input);
+
+                var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+                var searchRoots = BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
+                var skills = CopilotAgentSkillCatalog.DiscoverCached(
+                    searchRoots,
+                    _config.AgentDefaults.CreateSkillOverrideSnapshot());
+                return CopilotLocalCommandCatalog.Suggest(input, skills);
+            }
+        }
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
 
@@ -538,7 +557,7 @@ namespace ColorVision.Copilot
             if (command == null)
                 return false;
 
-            InputText = command.Name;
+            InputText = command.Name + (command.AcceptsArguments ? " " : string.Empty);
             return true;
         }
 

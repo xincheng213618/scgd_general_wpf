@@ -13,6 +13,7 @@ namespace ColorVision.Copilot
         Compact,
         Review,
         NewConversation,
+        Skill,
     }
 
     public sealed record CopilotLocalCommand(
@@ -28,7 +29,7 @@ namespace ColorVision.Copilot
 
     public static class CopilotLocalCommandCatalog
     {
-        private const int MaxSuggestions = 8;
+        private const int MaxSuggestions = 16;
 
         private static readonly CopilotLocalCommand[] Commands =
         [
@@ -65,18 +66,33 @@ namespace ColorVision.Copilot
             return new CopilotLocalCommandInvocation(command, arguments);
         }
 
-        public static IReadOnlyList<CopilotLocalCommand> Suggest(string? input)
+        public static IReadOnlyList<CopilotLocalCommand> Suggest(
+            string? input,
+            IReadOnlyList<CopilotAgentSkillCatalogItem>? skills = null)
         {
             var normalized = Normalize(input);
-            if (!normalized.StartsWith('/')
+            if (normalized.Length == 0
+                || normalized[0] is not '/' and not '$'
                 || normalized.Any(char.IsWhiteSpace)
-                || FindExact(normalized) != null)
+                || normalized.StartsWith('/') && FindExact(normalized) != null)
             {
                 return Array.Empty<CopilotLocalCommand>();
             }
 
-            return Commands
-                .Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
+            var suggestions = normalized.StartsWith('/')
+                ? Commands.Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase))
+                : Enumerable.Empty<CopilotLocalCommand>();
+            var skillSuggestions = (skills ?? Array.Empty<CopilotAgentSkillCatalogItem>())
+                .Select(skill => new CopilotLocalCommand(
+                    normalized[0] + skill.Name,
+                    "Skill · " + skill.Description,
+                    CopilotLocalCommandKind.Skill,
+                    AcceptsArguments: true))
+                .Where(command => command.Name.StartsWith(normalized, StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(command.Name, normalized, StringComparison.OrdinalIgnoreCase));
+            return suggestions
+                .Concat(skillSuggestions)
+                .DistinctBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
                 .Take(MaxSuggestions)
                 .ToArray();
         }

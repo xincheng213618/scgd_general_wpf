@@ -212,6 +212,23 @@ public class CopilotBusinessContextTests
         Assert.Null(CopilotLocalCommandCatalog.FindExact("/compact explain"));
         Assert.Null(CopilotLocalCommandCatalog.Parse("/new explain"));
         Assert.Null(CopilotLocalCommandCatalog.FindExact(null));
+
+        var skills = new[]
+        {
+            new CopilotAgentSkillCatalogItem("flow-authoring", "Add and connect workflow nodes."),
+            new CopilotAgentSkillCatalogItem("flow-diagnostics", "Diagnose workflow failures."),
+        };
+        var dollarSuggestion = Assert.Single(CopilotLocalCommandCatalog.Suggest("$flow-a", skills));
+        Assert.Equal("$flow-authoring", dollarSuggestion.Name);
+        Assert.Equal(CopilotLocalCommandKind.Skill, dollarSuggestion.Kind);
+        Assert.True(dollarSuggestion.AcceptsArguments);
+        Assert.Equal("/flow-diagnostics", Assert.Single(CopilotLocalCommandCatalog.Suggest("/flow-d", skills)).Name);
+        Assert.Empty(CopilotLocalCommandCatalog.Suggest("$flow-authoring", skills));
+        Assert.Contains(CopilotLocalCommandCatalog.Suggest("/", skills), item => item.Name == "/flow-authoring");
+        var boundedSuggestions = CopilotLocalCommandCatalog.Suggest(
+            "$",
+            Enumerable.Range(0, 20).Select(index => new CopilotAgentSkillCatalogItem($"skill-{index:00}", "Bounded.")).ToArray());
+        Assert.Equal(16, boundedSuggestions.Count);
     }
 
     [Fact]
