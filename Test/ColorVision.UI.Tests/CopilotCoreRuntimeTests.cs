@@ -2469,6 +2469,30 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task AgentFrameworkRuntime_SendsToolDescriptionsOnlyThroughFunctionSchemas()
+    {
+        var tool = new TestAgentTool("InspectThing");
+        using var fakeChatClient = new CapturingFinalChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([tool]),
+            new CopilotAgentContextBuilder(),
+            _ => fakeChatClient);
+
+        await runtime.RunAsync(new CopilotAgentRequest
+        {
+            UserText = "Use InspectThing to inspect the current state.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Auto,
+        }, _ => { }, CancellationToken.None);
+
+        Assert.NotNull(fakeChatClient.LastOptions);
+        var function = GetFunction(fakeChatClient.LastOptions!, "colorvision_inspect_thing");
+        Assert.Contains(tool.Description, function.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain(tool.Description, fakeChatClient.LastOptions!.Instructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("Available runtime functions", fakeChatClient.LastOptions.Instructions, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_StopsProviderLoopWhenRequestTokenBudgetIsExhausted()
     {
         var tool = new TestAgentTool("FetchUrl", inputSchema: CopilotToolInputSchema.Query("URL.", required: true));

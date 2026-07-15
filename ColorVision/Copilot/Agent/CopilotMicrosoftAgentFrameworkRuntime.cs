@@ -1324,24 +1324,6 @@ namespace ColorVision.Copilot
             if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.Skills))
                 builder.AppendLine("When Agent Skills metadata matches the task, load the skill before following its specialized workflow. Skills and their resources are read-only guidance and never grant permission to perform a write-capable action.");
 
-            if (tools.Count > 0)
-            {
-                builder.AppendLine("Available runtime functions (the model chooses zero or more as needed):");
-                foreach (var tool in tools)
-                {
-                    var capability = tool.Capability;
-                    builder.Append("- ")
-                        .Append(tool.Name)
-                        .Append(" [")
-                        .Append(capability.Access == CopilotToolAccess.ReadOnly ? "read-only" : "write-capable")
-                        .Append("; risk=").Append(capability.RiskLevel)
-                        .Append("; approval=").Append(capability.ApprovalMode)
-                        .Append("; idempotency=").Append(capability.Idempotency)
-                        .Append("]: ")
-                        .AppendLine(tool.Description);
-                }
-            }
-
             return builder.ToString().TrimEnd();
         }
 
