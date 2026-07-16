@@ -6,6 +6,112 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotCapabilityCatalogTests
 {
     [Fact]
+    public void PublishSource_BoundsSingleSourceWithoutExhaustingUnboundedSequence()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var enumerated = 0;
+
+        IEnumerable<ICopilotTool> CreateUnboundedTools()
+        {
+            while (true)
+            {
+                var index = enumerated++;
+                yield return new CatalogTool("Tool" + index, "Bounded catalog tool.", "tool-" + index);
+            }
+        }
+
+        var error = Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:unbounded",
+            "Unbounded source",
+            CreateUnboundedTools()));
+
+        Assert.Contains(CopilotCapabilityCatalog.MaximumCapabilitiesPerSource.ToString(), error.Message, StringComparison.Ordinal);
+        Assert.Equal(CopilotCapabilityCatalog.MaximumCapabilitiesPerSource + 1, enumerated);
+        Assert.Empty(catalog.GetSnapshot().Capabilities);
+    }
+
+    [Fact]
+    public void PublishSource_BoundsTotalCapabilitiesWithoutChangingExistingSnapshot()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var sourceCount = CopilotCapabilityCatalog.MaximumCapabilities / CopilotCapabilityCatalog.MaximumCapabilitiesPerSource;
+        for (var sourceIndex = 0; sourceIndex < sourceCount; sourceIndex++)
+        {
+            catalog.PublishSource(
+                CopilotCapabilitySourceKind.Plugin,
+                "plugin:capacity-" + sourceIndex,
+                "Capacity source " + sourceIndex,
+                CreateCatalogTools("source-" + sourceIndex, CopilotCapabilityCatalog.MaximumCapabilitiesPerSource));
+        }
+        var before = catalog.GetSnapshot();
+
+        var error = Assert.Throws<InvalidOperationException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:overflow",
+            "Overflow source",
+            [new CatalogTool("Overflow", "Must not enter the catalog.", "overflow")]));
+        var after = catalog.GetSnapshot();
+
+        Assert.Contains(CopilotCapabilityCatalog.MaximumCapabilities.ToString(), error.Message, StringComparison.Ordinal);
+        Assert.Equal(CopilotCapabilityCatalog.MaximumCapabilities, before.Capabilities.Count);
+        Assert.Equal(before.Revision, after.Revision);
+        Assert.Equal(before.SourceCount, after.SourceCount);
+        Assert.Equal(before.Capabilities.Select(item => item.Id), after.Capabilities.Select(item => item.Id));
+
+        var replaced = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:capacity-0",
+            "Capacity source 0",
+            CreateCatalogTools("replacement", CopilotCapabilityCatalog.MaximumCapabilitiesPerSource));
+
+        Assert.Equal(CopilotCapabilityCatalog.MaximumCapabilities, replaced.Capabilities.Count);
+        Assert.Equal(before.Revision + 1, replaced.Revision);
+        Assert.DoesNotContain(replaced.Capabilities, item => item.Id.StartsWith("plugin:capacity-0:source-0-", StringComparison.Ordinal));
+        Assert.Equal(
+            CopilotCapabilityCatalog.MaximumCapabilitiesPerSource,
+            replaced.Capabilities.Count(item => item.Id.StartsWith("plugin:capacity-0:replacement-", StringComparison.Ordinal)));
+        Assert.Equal(CopilotCapabilityCatalog.MaximumKnownCapabilities, GetKnownCapabilityCount(catalog));
+    }
+
+    [Fact]
+    public void PublishSource_BoundsRetiredHistoryAndPreservesRecentRevision()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var first = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:rotating",
+            "Rotating source",
+            [new CatalogTool("Stable", "Stable capability version one.", "stable")]);
+        var firstRevision = Assert.Single(first.Capabilities).Revision;
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:rotating",
+            "Rotating source",
+            Array.Empty<ICopilotTool>());
+
+        var restored = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:rotating",
+            "Rotating source",
+            [new CatalogTool("Stable", "Stable capability version two.", "stable")]);
+        Assert.True(Assert.Single(restored.Capabilities).Revision > firstRevision);
+
+        for (var index = 0; index < CopilotCapabilityCatalog.MaximumKnownCapabilities + 32; index++)
+        {
+            catalog.PublishSource(
+                CopilotCapabilitySourceKind.Plugin,
+                "plugin:rotating",
+                "Rotating source",
+                [new CatalogTool("Rotating" + index, "Rotating capability.", "rotating-" + index)]);
+        }
+
+        var current = Assert.Single(catalog.GetSnapshot().Capabilities);
+        Assert.Equal(CopilotCapabilityCatalog.MaximumKnownCapabilities, GetKnownCapabilityCount(catalog));
+        Assert.True(HasKnownCapability(catalog, current.Id));
+    }
+
+    [Fact]
     public void PublishSource_PreservesStableIdsAndRevisionsUntilMetadataChanges()
     {
         var now = new DateTimeOffset(2026, 7, 13, 12, 0, 0, TimeSpan.Zero);
@@ -262,6 +368,32 @@ public sealed class CopilotCapabilityCatalogTests
                 CompletedAtUtc = DateTimeOffset.UtcNow,
             },
         };
+    }
+
+    private static ICopilotTool[] CreateCatalogTools(string prefix, int count)
+    {
+        return Enumerable.Range(0, count)
+            .Select(index => (ICopilotTool)new CatalogTool(
+                prefix + "-tool-" + index,
+                "Bounded catalog tool.",
+                prefix + "-tool-" + index))
+            .ToArray();
+    }
+
+    private static int GetKnownCapabilityCount(CopilotCapabilityCatalog catalog)
+    {
+        var field = typeof(CopilotCapabilityCatalog).GetField(
+            "_knownCapabilities",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsAssignableFrom<System.Collections.ICollection>(field.GetValue(catalog)).Count;
+    }
+
+    private static bool HasKnownCapability(CopilotCapabilityCatalog catalog, string capabilityId)
+    {
+        var field = typeof(CopilotCapabilityCatalog).GetField(
+            "_knownCapabilities",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsAssignableFrom<System.Collections.IDictionary>(field.GetValue(catalog)).Contains(capabilityId);
     }
 
     private sealed class CatalogTool(string name, string description, string catalogKey) : ICopilotTool, ICopilotCapabilityCatalogIdentity

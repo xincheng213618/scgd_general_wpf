@@ -83,6 +83,10 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotCapabilityCatalog
     {
+        public const int MaximumCapabilitiesPerSource = 256;
+        public const int MaximumCapabilities = 2_048;
+        public const int MaximumKnownCapabilities = MaximumCapabilities;
+
         private const int MaximumSources = 64;
         private const int MaximumSourceIdLength = 96;
         private const int MaximumSourceNameLength = 120;
@@ -117,7 +121,17 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(normalizedSourceName))
                 throw new ArgumentException("A capability source must have a non-empty display name.", nameof(sourceName));
 
-            var candidates = (tools ?? throw new ArgumentNullException(nameof(tools)))
+            var sourceTools = (tools ?? throw new ArgumentNullException(nameof(tools)))
+                .Take(MaximumCapabilitiesPerSource + 1)
+                .ToArray();
+            if (sourceTools.Length > MaximumCapabilitiesPerSource)
+            {
+                throw new ArgumentException(
+                    $"A capability source may publish at most {MaximumCapabilitiesPerSource} capabilities.",
+                    nameof(tools));
+            }
+
+            var candidates = sourceTools
                 .Select(tool => CreateCandidate(sourceKind, normalizedSourceId, normalizedSourceName, tool))
                 .OrderBy(candidate => candidate.Id, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -136,6 +150,14 @@ namespace ColorVision.Copilot
                     return CreateSnapshotLocked();
                 if (previousSource == null && candidates.Length > 0 && _sources.Count >= MaximumSources)
                     throw new InvalidOperationException($"The capability catalog reached its {MaximumSources}-source limit.");
+                var prospectiveCapabilityCount = _sources.Values.Sum(source => source.Capabilities.Count)
+                    - (previousSource?.Capabilities.Count ?? 0)
+                    + candidates.Length;
+                if (prospectiveCapabilityCount > MaximumCapabilities)
+                {
+                    throw new InvalidOperationException(
+                        $"The capability catalog reached its {MaximumCapabilities}-capability limit.");
+                }
 
                 var previousRevision = _revision;
                 if (candidates.Length == 0)
@@ -147,6 +169,7 @@ namespace ColorVision.Copilot
                     var records = candidates.ToDictionary(candidate => candidate.Id, candidate => PublishCandidate(candidate), StringComparer.OrdinalIgnoreCase);
                     _sources[normalizedSourceId] = new SourceState(sourceKind, normalizedSourceName, records);
                 }
+                TrimKnownCapabilitiesLocked();
 
                 _revision++;
                 _updatedAtUtc = _utcNow();
@@ -182,6 +205,7 @@ namespace ColorVision.Copilot
                 var previousRevision = _revision;
                 foreach (var sourceId in removed)
                     _sources.Remove(sourceId);
+                TrimKnownCapabilitiesLocked();
                 _revision++;
                 _updatedAtUtc = _utcNow();
                 snapshot = CreateSnapshotLocked();
@@ -261,7 +285,7 @@ namespace ColorVision.Copilot
                 EvidenceMode = candidate.Capability.EvidenceMode,
                 InputSchemaFingerprint = candidate.SchemaFingerprint,
             };
-            _knownCapabilities[candidate.Id] = new KnownCapability(candidate.Signature, revision);
+            _knownCapabilities[candidate.Id] = new KnownCapability(candidate.Signature, revision, _revision + 1);
             return new CapabilityRecord(entry, candidate.Signature);
         }
 
@@ -344,6 +368,24 @@ namespace ColorVision.Copilot
                 SourceCount = _sources.Count,
                 Capabilities = entries,
             };
+        }
+
+        private void TrimKnownCapabilitiesLocked()
+        {
+            var activeCapabilityIds = _sources.Values
+                .SelectMany(source => source.Capabilities.Keys)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            while (_knownCapabilities.Count > MaximumKnownCapabilities)
+            {
+                var oldestRetired = _knownCapabilities
+                    .Where(pair => !activeCapabilityIds.Contains(pair.Key))
+                    .OrderBy(pair => pair.Value.LastSeenSequence)
+                    .ThenBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault();
+                if (string.IsNullOrEmpty(oldestRetired.Key))
+                    throw new InvalidOperationException("The capability history limit cannot be satisfied without removing an active capability.");
+                _knownCapabilities.Remove(oldestRetired.Key);
+            }
         }
 
         private void PublishChanged(CopilotCapabilityCatalogChangedEventArgs? change)
@@ -432,7 +474,7 @@ namespace ColorVision.Copilot
 
         private sealed record CapabilityRecord(CopilotCapabilityCatalogEntry Entry, string Signature);
 
-        private sealed record KnownCapability(string Signature, long Revision);
+        private sealed record KnownCapability(string Signature, long Revision, long LastSeenSequence);
 
         private sealed record SourceState(
             CopilotCapabilitySourceKind SourceKind,
