@@ -54,6 +54,7 @@ namespace ColorVision.Copilot
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CancellationTokenSource? _compactConversationCts;
+        private CancellationTokenSource? _webPageAttachmentCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -516,7 +517,7 @@ namespace ColorVision.Copilot
             ? Properties.Resources.CopilotSelectHistoryOrNew
             : Properties.Resources.CopilotConfigureModelFirst;
 
-        public string PrimaryActionGlyph => _isCompactingConversation ? "■" : IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
+        public string PrimaryActionGlyph => HasExclusiveLocalOperation ? "■" : IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
 
         public string PrimaryActionToolTip
         {
@@ -524,6 +525,8 @@ namespace ColorVision.Copilot
             {
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
+                if (_webPageAttachmentCts != null)
+                    return "停止读取网页附件";
                 if (IsViewingQueuedRun)
                     return "取消这个排队任务";
                 if (IsViewingActiveRun)
@@ -2205,6 +2208,11 @@ namespace ColorVision.Copilot
                 _compactConversationCts?.Cancel();
                 return;
             }
+            if (_webPageAttachmentCts != null)
+            {
+                _webPageAttachmentCts.Cancel();
+                return;
+            }
             if (IsViewingQueuedRun || IsViewingActiveRun)
             {
                 CancelCurrentReply(discardAgentCheckpoint: !CanPauseAgentRun);
@@ -2356,16 +2364,18 @@ namespace ColorVision.Copilot
         private bool CanScheduleComposerRequest(CopilotAgentMode mode)
         {
             return Volatile.Read(ref _disposeState) == 0
-                && !_isCompactingConversation
+                && !HasExclusiveLocalOperation
                 && EvaluateComposerRequestAdmission(mode).IsAllowed;
         }
 
         private bool CanScheduleConversationRequest(string? conversationId, CopilotAgentMode mode)
         {
             return Volatile.Read(ref _disposeState) == 0
-                && !_isCompactingConversation
+                && !HasExclusiveLocalOperation
                 && _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
         }
+
+        private bool HasExclusiveLocalOperation => _isCompactingConversation || _webPageAttachmentCts != null;
 
         private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
             _taskHost.EvaluateRequestAdmission(SelectedConversation?.Id, mode);
@@ -2450,6 +2460,11 @@ namespace ColorVision.Copilot
             if (_isCompactingConversation)
             {
                 _compactConversationCts?.Cancel();
+                return;
+            }
+            if (_webPageAttachmentCts != null)
+            {
+                _webPageAttachmentCts.Cancel();
                 return;
             }
             CancelCurrentReply(discardAgentCheckpoint: true);
@@ -3135,10 +3150,17 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            using var cancellation = new CancellationTokenSource();
+            _webPageAttachmentCts = cancellation;
+            IsBusy = true;
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                var webPage = await LoadWebPageContentAsync(url, CancellationToken.None);
+                var webPage = await LoadWebPageContentAsync(url, cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                    return;
+
                 var attachment = CopilotAttachmentItem.CreateWebPage(url, webPage.Title, BuildStoredWebPageContent(webPage));
 
                 var existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.WebPage && string.Equals(item.Source, url, StringComparison.OrdinalIgnoreCase));
@@ -3156,6 +3178,18 @@ namespace ColorVision.Copilot
 
                 UpdateAttachmentsState(conversation);
             }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "Failed to fetch web page: the request timed out.",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
             catch (Exception ex)
             {
                 MessageBox.Show(
@@ -3168,6 +3202,9 @@ namespace ColorVision.Copilot
             finally
             {
                 Mouse.OverrideCursor = null;
+                if (ReferenceEquals(_webPageAttachmentCts, cancellation))
+                    _webPageAttachmentCts = null;
+                IsBusy = _taskHost.IsActive;
             }
         }
 
@@ -4059,6 +4096,7 @@ namespace ColorVision.Copilot
             _pendingActionFeedbackCts?.Cancel();
             _pendingActionFeedbackCts = null;
             _compactConversationCts?.Cancel();
+            _webPageAttachmentCts?.Cancel();
             _stateSaveScheduler.Dispose();
             GC.SuppressFinalize(this);
         }
