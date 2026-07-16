@@ -260,6 +260,7 @@ namespace ColorVision.Copilot
             return toolName switch
             {
                 "GetRecentLog" => 0.7,
+                "RunWorkspaceValidation" => 0.7,
                 "FetchUrl" => 0.12,
                 "ReadLocalFile" or "ReadAttachedFile" => 0.2,
                 _ => 0.25,

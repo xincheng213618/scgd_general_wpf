@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotWorkspaceValidationService
     {
         internal const string ValidationFailedFailureCode = "workspace_validation_failed";
+        internal const string ValidationTimedOutFailureCode = "workspace_validation_timed_out";
 
         private static readonly HashSet<string> AllowedTargetExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -146,9 +147,16 @@ namespace ColorVision.Copilot
 
             if (processResult.TimedOut)
             {
-                return Failure(CopilotToolFailureKind.Transient,
-                    $"Workspace {task} exceeded its {timeoutSeconds}-second timeout.",
-                    BuildContent(task, targetPath, configuration, platform, processResult));
+                return new CopilotToolResult
+                {
+                    ToolName = "RunWorkspaceValidation",
+                    Success = false,
+                    Summary = $"Workspace {task} exceeded its {timeoutSeconds}-second timeout.",
+                    Content = BuildContent(task, targetPath, configuration, platform, processResult),
+                    ErrorMessage = $"dotnet {task} did not finish within {timeoutSeconds} seconds; inspect the captured validation output.",
+                    FailureKind = CopilotToolFailureKind.Transient,
+                    FailureCode = ValidationTimedOutFailureCode,
+                };
             }
 
             var passed = processResult.ExitCode == 0;
