@@ -143,6 +143,24 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        public static bool TryResolveExistingFileWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(path, roots, File.Exists, "file", out fullPath, out errorMessage);
+        }
+
+        public static bool TryResolveExistingDirectoryWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(path, roots, Directory.Exists, "directory", out fullPath, out errorMessage);
+        }
+
         public static string GetDisplayPath(string rootPath, string fullPath)
         {
             try
@@ -255,6 +273,108 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+        }
+
+        private static bool TryResolveExistingPathWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            Func<string, bool> exists,
+            string pathKind,
+            out string fullPath,
+            out string errorMessage)
+        {
+            fullPath = string.Empty;
+            errorMessage = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                errorMessage = $"The {pathKind} path is empty.";
+                return false;
+            }
+
+            var searchRoots = NormalizeSearchRoots(roots);
+            if (searchRoots.Count == 0)
+            {
+                errorMessage = $"No workspace root is available to resolve the {pathKind} path.";
+                return false;
+            }
+
+            var requestedPath = path.Trim();
+            if (Path.IsPathRooted(requestedPath) && !Path.IsPathFullyQualified(requestedPath))
+            {
+                errorMessage = $"The {pathKind} path must be workspace-relative or fully qualified: {requestedPath}";
+                return false;
+            }
+
+            if (Path.IsPathFullyQualified(requestedPath))
+            {
+                try
+                {
+                    var candidate = Path.GetFullPath(requestedPath);
+                    if (!IsPathWithinRoots(candidate, searchRoots))
+                    {
+                        errorMessage = $"The {pathKind} path is outside the allowed workspace roots: {candidate}";
+                        return false;
+                    }
+
+                    if (!exists(candidate))
+                    {
+                        errorMessage = $"The {pathKind} does not exist: {candidate}";
+                        return false;
+                    }
+
+                    fullPath = candidate;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Invalid {pathKind} path: {ex.Message}";
+                    return false;
+                }
+            }
+
+            var matches = new List<string>();
+            var escapedWorkspace = false;
+            foreach (var root in searchRoots)
+            {
+                string candidate;
+                try
+                {
+                    candidate = Path.GetFullPath(requestedPath, root);
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Invalid {pathKind} path: {ex.Message}";
+                    return false;
+                }
+
+                if (!IsPathWithinRoots(candidate, [root]))
+                {
+                    escapedWorkspace = true;
+                    continue;
+                }
+
+                if (exists(candidate))
+                    matches.Add(candidate);
+            }
+
+            var distinctMatches = matches.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (distinctMatches.Length == 1)
+            {
+                fullPath = distinctMatches[0];
+                return true;
+            }
+
+            if (distinctMatches.Length > 1)
+            {
+                errorMessage = $"The workspace-relative {pathKind} path is ambiguous across multiple roots: {requestedPath}";
+                return false;
+            }
+
+            errorMessage = escapedWorkspace
+                ? $"The workspace-relative {pathKind} path escapes the allowed workspace roots: {requestedPath}"
+                : $"The {pathKind} does not exist in the allowed workspace roots: {requestedPath}";
+            return false;
         }
 
         private static string NormalizeToExistingDirectory(string? path)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,20 +32,52 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var allowedFiles = new List<string>(request.ReadableLocalFilePaths);
-            if (!string.IsNullOrWhiteSpace(toolInput?.Path)
-                && CopilotWorkspaceSearchSupport.IsPathWithinRoots(toolInput.Path, request.SearchRootPaths))
+            var selectedPath = toolInput?.Path;
+            if (!string.IsNullOrWhiteSpace(selectedPath)
+                && !IsExplicitlyAllowed(selectedPath, allowedFiles))
             {
-                allowedFiles.Add(toolInput.Path);
+                if (!CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                    selectedPath,
+                    request.SearchRootPaths,
+                    out var resolvedPath,
+                    out var pathError))
+                {
+                    return new CopilotCapabilityResult
+                    {
+                        Success = false,
+                        Summary = "The requested local file could not be resolved within the current workspace.",
+                        ErrorMessage = pathError,
+                    }.ToToolResult(Name);
+                }
+
+                selectedPath = resolvedPath;
+                allowedFiles.Add(resolvedPath);
             }
 
             var result = await CopilotReadLocalFileCapability.ReadAsync(
                 allowedFiles.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-                toolInput?.Path,
+                selectedPath,
                 request.PreferBatchReadLocalFiles,
                 toolInput?.StartLine,
                 toolInput?.EndLine,
                 cancellationToken);
             return result.ToToolResult(Name);
+        }
+
+        private static bool IsExplicitlyAllowed(string path, IEnumerable<string> allowedPaths)
+        {
+            if (!Path.IsPathFullyQualified(path))
+                return false;
+
+            try
+            {
+                var fullPath = Path.GetFullPath(path);
+                return allowedPaths.Any(allowedPath => string.Equals(Path.GetFullPath(allowedPath), fullPath, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
