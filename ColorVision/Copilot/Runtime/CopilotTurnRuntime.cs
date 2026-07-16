@@ -49,27 +49,37 @@ namespace ColorVision.Copilot
             var prompt = request.UserText.Trim();
             var requestContent = request.ExistingRequestContent;
             var attachmentContextCaptured = request.ChatAttachmentContextCaptured;
-            var imageUnderstanding = CopilotImageUnderstandingResult.Empty;
             var rebuildRequestContext = request.RefreshExternalContext || string.IsNullOrWhiteSpace(requestContent);
-            if (rebuildRequestContext)
-            {
-                requestContent = await _conversationRequestBuilder.BuildUserRequestContentAsync(
+            var captureAttachmentContext = rebuildRequestContext
+                || request.HostContext.Attachments.Count > 0 && !attachmentContextCaptured;
+            var requestContentTask = rebuildRequestContext
+                ? _conversationRequestBuilder.BuildUserRequestContentAsync(
                     prompt,
                     request.HostContext.LiveContext,
-                    cancellationToken).ConfigureAwait(false);
-                imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(
+                    cancellationToken)
+                : Task.FromResult(requestContent);
+            var imageUnderstandingTask = rebuildRequestContext
+                ? _imageUnderstandingService.AnalyzeAsync(
                     request.Profile,
                     prompt,
                     request.HostContext.Attachments,
-                    cancellationToken).ConfigureAwait(false);
-                requestContent = InsertImageUnderstandingContext(requestContent, prompt, imageUnderstanding);
-            }
-
-            if (rebuildRequestContext || (request.HostContext.Attachments.Count > 0 && !attachmentContextCaptured))
-            {
-                var attachmentContext = await CopilotConversationRequestBuilder.BuildAttachmentContextBlockAsync(
+                    cancellationToken)
+                : Task.FromResult(CopilotImageUnderstandingResult.Empty);
+            var attachmentContextTask = captureAttachmentContext
+                ? CopilotConversationRequestBuilder.BuildAttachmentContextBlockAsync(
                     request.HostContext.Attachments,
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
+                    cancellationToken: cancellationToken)
+                : Task.FromResult(string.Empty);
+
+            await Task.WhenAll(requestContentTask, imageUnderstandingTask, attachmentContextTask).ConfigureAwait(false);
+            requestContent = await requestContentTask.ConfigureAwait(false);
+            var imageUnderstanding = await imageUnderstandingTask.ConfigureAwait(false);
+            if (rebuildRequestContext)
+                requestContent = InsertImageUnderstandingContext(requestContent, prompt, imageUnderstanding);
+
+            if (captureAttachmentContext)
+            {
+                var attachmentContext = await attachmentContextTask.ConfigureAwait(false);
                 requestContent = InsertRequestContextAfterPrompt(requestContent, prompt, attachmentContext);
                 attachmentContextCaptured = request.HostContext.Attachments.Count > 0;
             }
@@ -100,15 +110,19 @@ namespace ColorVision.Copilot
             ICopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            var imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(
+            var requestPlan = CopilotAgentRequestFactory.Prepare(request.UserText, request.Mode, request.HostContext);
+            var imageUnderstandingTask = _imageUnderstandingService.AnalyzeAsync(
                 request.Profile,
                 request.UserText,
                 request.HostContext.Attachments,
-                cancellationToken).ConfigureAwait(false);
-            var requestPlan = CopilotAgentRequestFactory.Prepare(request.UserText, request.Mode, request.HostContext);
-            IReadOnlyList<CopilotContextItem> contextItems = await _contextRegistry.CaptureAsync(
+                cancellationToken);
+            var contextItemsTask = _contextRegistry.CaptureAsync(
                 requestPlan.ContextRequest,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken);
+
+            await Task.WhenAll(imageUnderstandingTask, contextItemsTask).ConfigureAwait(false);
+            var imageUnderstanding = await imageUnderstandingTask.ConfigureAwait(false);
+            IReadOnlyList<CopilotContextItem> contextItems = await contextItemsTask.ConfigureAwait(false);
             contextItems = MergeCurrentLiveContextSummary(contextItems, request.HostContext.LiveContext);
             contextItems = AppendImageUnderstandingContext(contextItems, imageUnderstanding);
             var agentRequest = CopilotAgentRequestFactory.Create(requestPlan, new CopilotAgentRequestBuildInput
