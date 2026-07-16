@@ -191,10 +191,34 @@ namespace ColorVision.Copilot
             set
             {
                 if (SetProperty(ref _requestMode, value))
+                {
                     OnPropertyChanged(nameof(ResponseInterruptionText));
+                    OnPropertyChanged(nameof(RetryActionLabel));
+                    OnPropertyChanged(nameof(RetryActionToolTip));
+                    OnPropertyChanged(nameof(RefreshActionToolTip));
+                    OnPropertyChanged(nameof(ShowsRefreshAction));
+                }
             }
         }
         private CopilotAgentMode _requestMode = CopilotAgentMode.Chat;
+
+        [JsonIgnore]
+        public string RetryActionLabel => RequestMode == CopilotAgentMode.Chat
+            ? Properties.Resources.CopilotRetry
+            : "重新运行";
+
+        [JsonIgnore]
+        public string RetryActionToolTip => RequestMode == CopilotAgentMode.Chat
+            ? Properties.Resources.CopilotRegenerateAnswer
+            : "重新执行本轮 Agent，并重新读取图片、文件、工作区和工具状态；受保护写操作仍需再次审批。";
+
+        [JsonIgnore]
+        public string RefreshActionToolTip => RequestMode == CopilotAgentMode.Chat
+            ? Properties.Resources.CopilotRefreshWebContext
+            : string.Empty;
+
+        [JsonIgnore]
+        public bool ShowsRefreshAction => RequestMode == CopilotAgentMode.Chat;
 
         public bool IsResponsePending
         {
@@ -1572,9 +1596,19 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var lastUserRequestMode = CopilotAgentMode.Chat;
             foreach (var message in Messages)
             {
                 changed |= message.EnsureValid();
+                if (message.IsUser)
+                {
+                    lastUserRequestMode = message.RequestMode;
+                }
+                else if (message.RequestMode != lastUserRequestMode)
+                {
+                    message.RequestMode = lastUserRequestMode;
+                    changed = true;
+                }
             }
 
             foreach (var attachment in Attachments)

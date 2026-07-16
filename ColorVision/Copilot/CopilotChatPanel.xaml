@@ -1091,10 +1091,10 @@
                                                             ToolTip="编辑这条请求并替换最新回复" />
                                                     <Button Margin="0"
                                                             Style="{StaticResource UserMessageActionButtonStyle}"
-                                                            Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="重新发送"
-                                                            ToolTip="重新发送这条请求并替换最新回复" />
+                                                    Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="{Binding RetryActionLabel}"
+                                                    ToolTip="{Binding RetryActionToolTip}" />
                                                 </StackPanel>
                                             </DockPanel>
                                         </StackPanel>
@@ -1179,9 +1179,9 @@
                                                         Padding="10,3"
                                                         Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="{x:Static properties:Resources.CopilotRetry}"
+                                                        Content="{Binding RetryActionLabel}"
                                                         Style="{StaticResource MessageActionButtonStyle}"
-                                                        ToolTip="{x:Static properties:Resources.CopilotRegenerateAnswer}" />
+                                                        ToolTip="{Binding RetryActionToolTip}" />
                                                 <TextBlock VerticalAlignment="Center"
                                                            FontSize="11"
                                                            Foreground="#E6A23C"
@@ -1338,14 +1338,15 @@
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="{x:Static properties:Resources.CopilotRetry}"
-                                                    ToolTip="{x:Static properties:Resources.CopilotRegenerateAnswer}" />
+                                                    Content="{Binding RetryActionLabel}"
+                                                    ToolTip="{Binding RetryActionToolTip}" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Margin="0"
                                                     Command="{Binding DataContext.RefreshMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
                                                     Content="{x:Static properties:Resources.Refresh}"
-                                                    ToolTip="{x:Static properties:Resources.CopilotRefreshWebContext}" />
+                                                    ToolTip="{Binding RefreshActionToolTip}"
+                                                    Visibility="{Binding ShowsRefreshAction, Converter={StaticResource bool2VisibilityConverter}}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>

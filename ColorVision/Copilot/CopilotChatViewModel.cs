@@ -1397,7 +1397,7 @@ namespace ColorVision.Copilot
                 return await RunChatTurnAsync(requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext, cancellationToken);
             }
 
-            return await RunAgentTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext, cancellationToken);
+            return await RunAgentTurnAsync(hostedRun, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, cancellationToken);
         }
 
         private async Task<CopilotTokenUsage> RunChatTurnAsync(
@@ -1463,21 +1463,8 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshExternalContext,
             CancellationToken cancellationToken)
         {
-            if (!refreshExternalContext && !string.IsNullOrWhiteSpace(userMessage.RequestContent))
-            {
-                assistantMessage.MarkThinkingStarted();
-                assistantMessage.IsExecutionInProgress = true;
-                assistantMessage.IsExecutionExpanded = true;
-
-                var history = CopilotConversationRequestBuilder.BuildVisibleHistory(turnSnapshot.ConversationHistory, ResolveConversationHistoryLimits(requestProfile)).ToList();
-                history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
-
-                return await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
-            }
-
             var imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(
                 requestProfile,
                 userMessage.Content,
