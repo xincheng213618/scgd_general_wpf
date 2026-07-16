@@ -109,6 +109,19 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             }
         }
 
+        public void NavigateTo(int lineNumber, int columnNumber = 1)
+        {
+            if (textEditor.Document == null || textEditor.Document.LineCount == 0)
+                return;
+
+            var targetLineNumber = Math.Clamp(lineNumber, 1, textEditor.Document.LineCount);
+            var targetLine = textEditor.Document.GetLineByNumber(targetLineNumber);
+            var targetColumn = Math.Clamp(columnNumber, 1, targetLine.Length + 1);
+            textEditor.TextArea.Caret.Offset = targetLine.Offset + targetColumn - 1;
+            textEditor.ScrollToLine(targetLineNumber);
+            textEditor.Focus();
+        }
+
 
         string currentFileName;
 

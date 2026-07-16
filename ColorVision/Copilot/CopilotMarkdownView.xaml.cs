@@ -805,24 +805,38 @@ namespace ColorVision.Copilot
 
         private static void AddLinkInline(InlineCollection inlines, string linkText, string linkTarget)
         {
-            if (!TryCreateSafeWebUri(linkTarget, out var uri))
+            if (TryCreateSafeWebUri(linkTarget, out var uri))
             {
-                var fallback = new Run(linkText);
-                ToolTipService.SetToolTip(fallback, "仅支持打开 HTTP/HTTPS 链接");
-                inlines.Add(fallback);
+                var webHyperlink = new Hyperlink(new Run(linkText))
+                {
+                    Cursor = Cursors.Hand,
+                    NavigateUri = uri,
+                    ToolTip = uri.AbsoluteUri,
+                };
+                webHyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
+                AutomationProperties.SetName(webHyperlink, $"打开链接：{linkText}");
+                webHyperlink.RequestNavigate += Hyperlink_RequestNavigate;
+                inlines.Add(webHyperlink);
+                return;
+            }
+            if (CopilotLocalFileLinkNavigator.TryResolve(linkTarget, out var fileTarget))
+            {
+                var fileHyperlink = new Hyperlink(new Run(linkText))
+                {
+                    Cursor = Cursors.Hand,
+                    Tag = fileTarget,
+                    ToolTip = CopilotLocalFileLinkNavigator.BuildToolTip(fileTarget),
+                };
+                fileHyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
+                AutomationProperties.SetName(fileHyperlink, $"打开工作区文件：{linkText}");
+                fileHyperlink.Click += LocalFileHyperlink_Click;
+                inlines.Add(fileHyperlink);
                 return;
             }
 
-            var hyperlink = new Hyperlink(new Run(linkText))
-            {
-                Cursor = Cursors.Hand,
-                NavigateUri = uri,
-                ToolTip = uri.AbsoluteUri,
-            };
-            hyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
-            AutomationProperties.SetName(hyperlink, $"打开链接：{linkText}");
-            hyperlink.RequestNavigate += Hyperlink_RequestNavigate;
-            inlines.Add(hyperlink);
+            var fallback = new Run(linkText);
+            ToolTipService.SetToolTip(fallback, "仅支持 HTTP/HTTPS 或当前工作区内的文件链接");
+            inlines.Add(fallback);
         }
 
         private static bool TryCreateSafeWebUri(string? value, out Uri uri)
@@ -841,6 +855,16 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private static void LocalFileHyperlink_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (sender is not Hyperlink { Tag: CopilotLocalFileLinkTarget target } hyperlink)
+                return;
+
+            if (!CopilotLocalFileLinkNavigator.TryOpen(target, out var errorMessage))
+                hyperlink.ToolTip = "无法打开文件：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+        }
+
         private static void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
             e.Handled = true;
@@ -857,6 +881,7 @@ namespace ColorVision.Copilot
                     hyperlink.ToolTip = "无法打开链接：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
             }
         }
+
 
         private static void AddMathAwareText(InlineCollection inlines, string text)
         {
