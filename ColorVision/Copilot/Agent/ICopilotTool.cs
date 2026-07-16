@@ -119,4 +119,11 @@ namespace ColorVision.Copilot
     {
         CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput);
     }
+
+    public interface ICopilotFrameworkContextualApprovalPresentation : ICopilotFrameworkApprovalPresentation
+    {
+        CopilotToolApprovalPresentation CreateApprovalPresentation(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput);
+    }
 }

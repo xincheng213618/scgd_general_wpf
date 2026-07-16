@@ -99,20 +99,25 @@ namespace ColorVision.Copilot
 
         public CopilotFrameworkApprovalHandle RequestApproval(
             ICopilotTool tool,
+            CopilotAgentRequest request,
             CopilotAgentToolInput input,
             string callId,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(tool);
+            ArgumentNullException.ThrowIfNull(request);
             cancellationToken.ThrowIfCancellationRequested();
 
             var completion = new TaskCompletionSource<CopilotFrameworkApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
             var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(input);
-            var presentation = tool is ICopilotFrameworkApprovalPresentation presenter
-                ? presenter.CreateApprovalPresentation(input)
-                : new CopilotToolApprovalPresentation(
+            var presentation = tool switch
+            {
+                ICopilotFrameworkContextualApprovalPresentation contextualPresenter => contextualPresenter.CreateApprovalPresentation(request, input),
+                ICopilotFrameworkApprovalPresentation presenter => presenter.CreateApprovalPresentation(input),
+                _ => new CopilotToolApprovalPresentation(
                     $"Approve {tool.Name}",
-                    $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}.");
+                    $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}."),
+            };
             ConfirmableAction? action = null;
             EventHandler<ConfirmableActionChangedEventArgs>? statusChanged = null;
             statusChanged = (_, eventArgs) =>

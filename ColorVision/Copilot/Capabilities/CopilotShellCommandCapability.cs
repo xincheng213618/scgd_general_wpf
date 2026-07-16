@@ -64,43 +64,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             input ??= CopilotAgentToolInput.Empty;
-            if (!TryGetString(input, "command", out var commandText) || string.IsNullOrWhiteSpace(commandText))
-                return Failure(CopilotToolFailureKind.Validation, "The shell command is missing.", "command is required.");
+            if (!TryResolveExecution(request, input, out var execution, out var validationFailure))
+                return validationFailure!;
 
-            commandText = commandText.Trim();
-            if (commandText.Length > MaximumCommandCharacters || commandText.Contains('\0'))
-            {
-                return Failure(CopilotToolFailureKind.Validation,
-                    "The shell command is not valid.",
-                    $"command must contain 1 through {MaximumCommandCharacters} characters and no NUL characters.");
-            }
-            if (!TryGetOptionalString(input, "shell", "auto", out var requestedShell)
-                || !TryParseShell(requestedShell, out var shell))
-            {
-                return Failure(CopilotToolFailureKind.Validation,
-                    "The requested shell is not supported.",
-                    "shell must be auto, powershell, or cmd.");
-            }
-            shell = ResolveShell(shell, request.PreferredShell);
-            if (!TryGetOptionalInt(input, "timeoutSeconds", 60, out var timeoutSeconds)
-                || timeoutSeconds is < 5 or > 600)
-            {
-                return Failure(CopilotToolFailureKind.Validation,
-                    "The shell command timeout is outside the allowed range.",
-                    "timeoutSeconds must be an integer from 5 through 600.");
-            }
-            if (!TryResolveWorkingDirectory(request, input, out var workingDirectory, out var workingDirectoryError))
-            {
-                return Failure(CopilotToolFailureKind.Validation,
-                    "The shell working directory is not available.",
-                    workingDirectoryError);
-            }
-
-            var executablePath = _executablePathProvider(shell);
+            var executablePath = _executablePathProvider(execution.Shell);
             if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
             {
                 return Failure(CopilotToolFailureKind.NotFound,
-                    $"{GetShellLabel(shell)} could not be located.",
+                    $"{GetShellLabel(execution.Shell)} could not be located.",
                     "The selected Windows shell executable is not installed in a trusted system location.");
             }
 
@@ -108,11 +79,11 @@ namespace ColorVision.Copilot
             try
             {
                 processResult = await _runner.RunAsync(new CopilotShellProcessCommand(
-                    shell,
+                    execution.Shell,
                     Path.GetFullPath(executablePath),
-                    BuildArguments(shell, commandText),
-                    workingDirectory,
-                    TimeSpan.FromSeconds(timeoutSeconds)), cancellationToken);
+                    BuildArguments(execution.Shell, execution.CommandText),
+                    execution.WorkingDirectory,
+                    TimeSpan.FromSeconds(execution.TimeoutSeconds)), cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -128,8 +99,8 @@ namespace ColorVision.Copilot
             if (processResult.TimedOut)
             {
                 return Failure(CopilotToolFailureKind.Transient,
-                    $"The {GetShellLabel(shell)} command exceeded its {timeoutSeconds}-second timeout.",
-                    BuildContent(shell, workingDirectory, processResult));
+                    $"The {GetShellLabel(execution.Shell)} command exceeded its {execution.TimeoutSeconds}-second timeout.",
+                    BuildContent(execution.Shell, execution.WorkingDirectory, processResult));
             }
 
             return new CopilotToolResult
@@ -137,10 +108,29 @@ namespace ColorVision.Copilot
                 ToolName = "RunShellCommand",
                 Success = true,
                 Summary = processResult.ExitCode == 0
-                    ? $"{GetShellLabel(shell)} command completed successfully."
-                    : $"{GetShellLabel(shell)} command completed with exit code {processResult.ExitCode}.",
-                Content = BuildContent(shell, workingDirectory, processResult),
+                    ? $"{GetShellLabel(execution.Shell)} command completed successfully."
+                    : $"{GetShellLabel(execution.Shell)} command completed with exit code {processResult.ExitCode}.",
+                Content = BuildContent(execution.Shell, execution.WorkingDirectory, processResult),
             };
+        }
+
+        internal static CopilotToolApprovalPresentation CreateApprovalPresentation(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            input ??= CopilotAgentToolInput.Empty;
+            if (!TryResolveExecution(request, input, out var execution, out var validationFailure))
+            {
+                return new CopilotToolApprovalPresentation(
+                    "Shell command cannot be approved",
+                    validationFailure?.ErrorMessage ?? "The shell execution context could not be resolved.");
+            }
+
+            var shellLabel = GetShellLabel(execution.Shell);
+            return new CopilotToolApprovalPresentation(
+                $"Run {shellLabel} command",
+                $"Shell: {shellLabel}\nWorking directory: {execution.WorkingDirectory}\nTimeout: {execution.TimeoutSeconds} seconds\nCommand:\n{execution.CommandText}");
         }
 
         internal static CopilotShellKind ResolveShell(CopilotShellKind requested, CopilotShellKind preferred)
@@ -204,7 +194,10 @@ namespace ColorVision.Copilot
             {
                 try
                 {
-                    workingDirectory = Path.GetFullPath(requestedDirectory.Trim());
+                    var normalizedDirectory = requestedDirectory.Trim();
+                    workingDirectory = Path.IsPathFullyQualified(normalizedDirectory)
+                        ? Path.GetFullPath(normalizedDirectory)
+                        : Path.GetFullPath(normalizedDirectory, ResolveDefaultWorkingDirectory(request));
                 }
                 catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
                 {
@@ -221,6 +214,57 @@ namespace ColorVision.Copilot
             }
 
             workingDirectory = ResolveDefaultWorkingDirectory(request);
+            return true;
+        }
+
+        private static bool TryResolveExecution(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            out CopilotShellExecution execution,
+            out CopilotToolResult? failure)
+        {
+            execution = default;
+            failure = null;
+            if (!TryGetString(input, "command", out var commandText) || string.IsNullOrWhiteSpace(commandText))
+            {
+                failure = Failure(CopilotToolFailureKind.Validation, "The shell command is missing.", "command is required.");
+                return false;
+            }
+
+            commandText = commandText.Trim();
+            if (commandText.Length > MaximumCommandCharacters || commandText.Contains('\0'))
+            {
+                failure = Failure(CopilotToolFailureKind.Validation,
+                    "The shell command is not valid.",
+                    $"command must contain 1 through {MaximumCommandCharacters} characters and no NUL characters.");
+                return false;
+            }
+            if (!TryGetOptionalString(input, "shell", "auto", out var requestedShell)
+                || !TryParseShell(requestedShell, out var shell))
+            {
+                failure = Failure(CopilotToolFailureKind.Validation,
+                    "The requested shell is not supported.",
+                    "shell must be auto, powershell, or cmd.");
+                return false;
+            }
+            shell = ResolveShell(shell, request.PreferredShell);
+            if (!TryGetOptionalInt(input, "timeoutSeconds", 60, out var timeoutSeconds)
+                || timeoutSeconds is < 5 or > 600)
+            {
+                failure = Failure(CopilotToolFailureKind.Validation,
+                    "The shell command timeout is outside the allowed range.",
+                    "timeoutSeconds must be an integer from 5 through 600.");
+                return false;
+            }
+            if (!TryResolveWorkingDirectory(request, input, out var workingDirectory, out var workingDirectoryError))
+            {
+                failure = Failure(CopilotToolFailureKind.Validation,
+                    "The shell working directory is not available.",
+                    workingDirectoryError);
+                return false;
+            }
+
+            execution = new CopilotShellExecution(commandText, shell, workingDirectory, timeoutSeconds);
             return true;
         }
 
@@ -332,6 +376,12 @@ namespace ColorVision.Copilot
                 ErrorMessage = error,
             };
         }
+
+        private readonly record struct CopilotShellExecution(
+            string CommandText,
+            CopilotShellKind Shell,
+            string WorkingDirectory,
+            int TimeoutSeconds);
     }
 
     public sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner

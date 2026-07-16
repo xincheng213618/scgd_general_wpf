@@ -531,7 +531,7 @@ namespace ColorVision.Copilot
                             continue;
                         }
 
-                        var handle = _approvalCoordinator.RequestApproval(reservation.Tool, reservation.ToolInput, reservation.CallId, cancellationToken);
+                        var handle = _approvalCoordinator.RequestApproval(reservation.Tool, request, reservation.ToolInput, reservation.CallId, cancellationToken);
                         bridge.PublishAwaitingApproval(reservation, handle.Action);
                         emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
 

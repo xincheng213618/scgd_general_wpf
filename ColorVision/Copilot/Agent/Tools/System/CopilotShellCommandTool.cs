@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotShellCommandTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
+    public sealed class CopilotShellCommandTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkContextualApprovalPresentation, ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -16,7 +16,7 @@ namespace ColorVision.Copilot
                 {
                     ["command"] = new { type = "string", minLength = 1, maxLength = CopilotShellCommandService.MaximumCommandCharacters, description = "Complete non-interactive command text." },
                     ["shell"] = new { type = "string", @enum = new[] { "auto", "powershell", "cmd" }, description = "Shell to use. auto follows the configured default." },
-                    ["workingDirectory"] = new { type = "string", description = "Optional existing working directory. Defaults to the active workspace or application directory." },
+                    ["workingDirectory"] = new { type = "string", description = "Optional existing absolute directory or path relative to the active workspace. Defaults to the active workspace or application directory." },
                     ["timeoutSeconds"] = new { type = "integer", minimum = 5, maximum = 600, description = "Process timeout in seconds. Defaults to 60." },
                 },
                 ["required"] = new[] { "command" },
@@ -81,6 +81,11 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation(
                 $"Run {shellLabel} command",
                 $"Shell: {shellLabel}\nWorking directory: {workingDirectory}\nCommand:\n{command}");
+        }
+
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
+        {
+            return CopilotShellCommandService.CreateApprovalPresentation(request, toolInput);
         }
 
         private static string ReadString(CopilotAgentToolInput input, string name, string fallback)
