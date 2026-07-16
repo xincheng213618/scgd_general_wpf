@@ -29,25 +29,12 @@ namespace ColorVision.Copilot
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
             Attachments = (attachments ?? Array.Empty<CopilotAttachmentItem>())
                 .Where(attachment => attachment != null)
-                .Select(CloneAttachment)
+                .Select(attachment => attachment.CreateSnapshot())
                 .ToArray();
             LiveContext = CloneLiveContext(liveContext);
             ConversationHistory = conversationHistory == null
                 ? CopilotConversationHistorySnapshot.Empty
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
-        }
-
-        private static CopilotAttachmentItem CloneAttachment(CopilotAttachmentItem source)
-        {
-            return new CopilotAttachmentItem
-            {
-                Id = source.Id,
-                Type = source.Type,
-                Title = source.Title,
-                Value = source.Value,
-                Source = source.Source,
-                CreatedAt = source.CreatedAt,
-            };
         }
 
         private static CopilotLiveContext? CloneLiveContext(CopilotLiveContext? source)

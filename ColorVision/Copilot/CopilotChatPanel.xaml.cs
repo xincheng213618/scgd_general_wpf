@@ -352,6 +352,19 @@ namespace ColorVision.Copilot
             });
         }
 
+        private void EditMessageButton_Click(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (DataContext is not CopilotChatViewModel { IsEditingMessage: true })
+                    return;
+
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                MovePromptCaretToEnd();
+            });
+        }
+
         private void MovePromptCaretToEnd()
         {
             PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();

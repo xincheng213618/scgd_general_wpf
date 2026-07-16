@@ -58,6 +58,8 @@ namespace ColorVision.Copilot
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
         private string _localCommandResultText = string.Empty;
+        private string _editingConversationId = string.Empty;
+        private string _editingUserMessageId = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
         private bool _isInspectingGitDiff;
@@ -145,6 +147,8 @@ namespace ColorVision.Copilot
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => HasCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => message != null);
+            EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
+            CancelMessageEditCommand = new RelayCommand(_ => CancelMessageEdit(), _ => IsEditingMessage);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: false), "重新生成回复"), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: true), "刷新网页后重新生成"), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
@@ -347,6 +351,10 @@ namespace ColorVision.Copilot
 
         public ICommand CopyMessageCommand { get; }
 
+        public ICommand EditMessageCommand { get; }
+
+        public ICommand CancelMessageEditCommand { get; }
+
         public ICommand RetryMessageCommand { get; }
 
         public ICommand RefreshMessageCommand { get; }
@@ -406,7 +414,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
+        public bool HasLocalCommandResult => !IsEditingMessage && !string.IsNullOrWhiteSpace(LocalCommandResultText);
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -575,7 +583,14 @@ namespace ColorVision.Copilot
         }
         private string _inputText = string.Empty;
 
-        public string InputPlaceholder => IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
+        public string InputPlaceholder => IsEditingMessage
+            ? "修改后按 Enter 重新发送"
+            : IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
+
+        public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
+            && !string.IsNullOrWhiteSpace(_editingUserMessageId);
+
+        public string EditingMessageStatusText => "正在编辑上一条请求；发送后将替换原回复";
 
         public bool IsInputEmpty => string.IsNullOrWhiteSpace(InputText);
 
@@ -583,6 +598,9 @@ namespace ColorVision.Copilot
         {
             get
             {
+                if (IsEditingMessage)
+                    return Array.Empty<CopilotLocalCommand>();
+
                 var input = (InputText ?? string.Empty).Trim();
                 if (input.Length == 0 || input[0] is not '/' and not '$')
                     return Array.Empty<CopilotLocalCommand>();
@@ -1065,7 +1083,7 @@ namespace ColorVision.Copilot
             var prompt = (InputText ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
-            if (TryExecuteLocalCommand(prompt))
+            if (!IsEditingMessage && TryExecuteLocalCommand(prompt))
                 return;
 
             var requestMode = ResolveComposerRequestMode();
@@ -1082,7 +1100,20 @@ namespace ColorVision.Copilot
             var conversation = EnsureConversation();
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation);
+            var isReplacingTurn = TryResolvePendingMessageEdit(
+                conversation,
+                out var replacedUserIndex,
+                out var replacedUserMessage,
+                out var replacedAssistantMessage);
+            if (IsEditingMessage && !isReplacingTurn)
+            {
+                CancelMessageEdit();
+                return;
+            }
+
+            var turnSnapshot = isReplacingTurn
+                ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
+                : CaptureHostedTurnSnapshot(conversation);
             var recoveryRequest = ConsumePendingAgentRecoveryRequest();
             requestMode = ConsumeRequestModeOverride();
 
@@ -1094,9 +1125,22 @@ namespace ColorVision.Copilot
                 AttachmentSnapshotCaptured = true,
             };
             var assistantMessage = CreatePendingAssistantMessage(requestProfile);
+            var previousCheckpoint = conversation.AgentSessionCheckpoint;
 
-            Messages.Add(userMessage);
-            Messages.Add(assistantMessage);
+            if (isReplacingTurn)
+            {
+                if (replacedAssistantMessage != null)
+                    conversation.Messages.Remove(replacedAssistantMessage);
+                conversation.Messages.Remove(replacedUserMessage);
+                conversation.Messages.Insert(replacedUserIndex, userMessage);
+                conversation.Messages.Insert(replacedUserIndex + 1, assistantMessage);
+                conversation.AgentSessionCheckpoint = null;
+            }
+            else
+            {
+                conversation.Messages.Add(userMessage);
+                conversation.Messages.Add(assistantMessage);
+            }
             UpdateConversationMetadata(conversation, touch: true);
             PersistState();
 
@@ -1109,6 +1153,13 @@ namespace ColorVision.Copilot
             {
                 conversation.Messages.Remove(assistantMessage);
                 conversation.Messages.Remove(userMessage);
+                if (isReplacingTurn)
+                {
+                    conversation.Messages.Insert(replacedUserIndex, replacedUserMessage);
+                    if (replacedAssistantMessage != null)
+                        conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
+                    conversation.AgentSessionCheckpoint = previousCheckpoint;
+                }
                 _pendingAgentRecoveryRequest = recoveryRequest;
                 _pendingRequestModeOverride = requestMode == CopilotAgentMode.Auto ? null : requestMode;
                 UpdateConversationMetadata(conversation, touch: true);
@@ -1118,6 +1169,8 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
+            if (isReplacingTurn)
+                SetMessageEditState(string.Empty, string.Empty);
             ConsumeComposerAttachments(conversation);
             InputText = string.Empty;
             await AwaitHostedRunCompletionAsync(hostedRun);
@@ -1852,11 +1905,12 @@ namespace ColorVision.Copilot
 
         private CopilotAgentHostContextSnapshot CaptureHostedTurnSnapshot(
             CopilotConversationRecord conversation,
-            CopilotChatMessage? stopBeforeMessage = null)
+            CopilotChatMessage? stopBeforeMessage = null,
+            IEnumerable<CopilotAttachmentItem>? attachmentOverride = null)
         {
-            var attachments = stopBeforeMessage?.AttachmentSnapshotCaptured == true
+            var attachments = attachmentOverride ?? (stopBeforeMessage?.AttachmentSnapshotCaptured == true
                 ? stopBeforeMessage.Attachments
-                : conversation.Attachments;
+                : conversation.Attachments);
             return CaptureHostedTurnSnapshot(
                 attachments,
                 CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, stopBeforeMessage));
@@ -1959,6 +2013,8 @@ namespace ColorVision.Copilot
         {
             if (IsBusy && !IsAgentRequestActive)
                 CancelCurrentReply(discardAgentCheckpoint: true);
+            if (IsEditingMessage)
+                CancelMessageEdit();
             ClearPendingRequestModeOverride();
 
             if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
@@ -2031,7 +2087,7 @@ namespace ColorVision.Copilot
 
         private bool CanContinueAgentTasks(CopilotChatMessage? message)
         {
-            if (!CanScheduleComposerRequest(CopilotAgentMode.Auto) || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
+            if (IsEditingMessage || !CanScheduleComposerRequest(CopilotAgentMode.Auto) || message == null || message.IsUser || !message.HasRecoverableAgentTasks)
                 return false;
             if (SelectedConversation?.AgentSessionCheckpoint == null || SelectedProfile?.IsConfigured != true)
                 return false;
@@ -2186,6 +2242,9 @@ namespace ColorVision.Copilot
             var normalizedPrompt = (prompt ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(normalizedPrompt))
                 return new CopilotPromptQueueResult(false, false);
+
+            if (IsEditingMessage)
+                CancelMessageEdit();
 
             if (startNewConversation || SelectedConversation == null)
             {
@@ -2367,6 +2426,9 @@ namespace ColorVision.Copilot
                 }
                 return;
             }
+
+            if (IsEditingMessage)
+                CancelMessageEdit();
 
             if (_selectedConversation != null)
                 _selectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
@@ -2860,9 +2922,97 @@ namespace ColorVision.Copilot
             }
         }
 
+        private bool CanEditMessage(CopilotChatMessage? message)
+        {
+            return !IsBusy
+                && message?.IsUser == true
+                && TryResolveLatestTurn(message, out _, out _, out _);
+        }
+
+        private void BeginEditMessage(CopilotChatMessage? message)
+        {
+            if (!CanEditMessage(message)
+                || !TryResolveLatestTurn(message, out var conversation, out var userMessage, out _))
+            {
+                return;
+            }
+
+            if (string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal)
+                && string.Equals(_editingUserMessageId, userMessage.Id, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!IsInputEmpty || conversation.Attachments.Count > 0)
+            {
+                var replaceDraft = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "当前输入内容和待发送附件将被替换，是否继续编辑上一条请求？",
+                    "ColorVision",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (replaceDraft != MessageBoxResult.Yes)
+                    return;
+            }
+
+            var messageAttachments = (userMessage.AttachmentSnapshotCaptured
+                    ? userMessage.Attachments
+                    : conversation.Attachments)
+                .Select(attachment => attachment.CreateSnapshot())
+                .ToArray();
+            conversation.Attachments.Clear();
+            foreach (var attachment in messageAttachments)
+                conversation.Attachments.Add(attachment);
+
+            _pendingAgentRecoveryRequest = null;
+            DismissLocalCommandResult();
+            SetMessageEditState(conversation.Id, userMessage.Id);
+            SetPendingRequestModeOverride(userMessage.RequestMode);
+            InputText = userMessage.Content;
+            UpdateAttachmentsState(conversation);
+        }
+
+        private void CancelMessageEdit()
+        {
+            if (!IsEditingMessage)
+                return;
+
+            var conversation = Conversations.FirstOrDefault(candidate => string.Equals(candidate.Id, _editingConversationId, StringComparison.Ordinal));
+            SetMessageEditState(string.Empty, string.Empty);
+            _pendingAgentRecoveryRequest = null;
+            ClearPendingRequestModeOverride();
+            InputText = string.Empty;
+
+            if (conversation == null || !ReferenceEquals(conversation, SelectedConversation) || conversation.Attachments.Count == 0)
+                return;
+
+            conversation.Attachments.Clear();
+            UpdateAttachmentsState(conversation);
+        }
+
+        private void SetMessageEditState(string conversationId, string userMessageId)
+        {
+            var normalizedConversationId = (conversationId ?? string.Empty).Trim();
+            var normalizedUserMessageId = (userMessageId ?? string.Empty).Trim();
+            if (string.Equals(_editingConversationId, normalizedConversationId, StringComparison.Ordinal)
+                && string.Equals(_editingUserMessageId, normalizedUserMessageId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _editingConversationId = normalizedConversationId;
+            _editingUserMessageId = normalizedUserMessageId;
+            OnPropertyChanged(nameof(IsEditingMessage));
+            OnPropertyChanged(nameof(InputPlaceholder));
+            OnPropertyChanged(nameof(LocalCommandSuggestions));
+            OnPropertyChanged(nameof(HasLocalCommandSuggestions));
+            OnPropertyChanged(nameof(HasLocalCommandResult));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
         private bool CanRegenerateMessage(CopilotChatMessage? message)
         {
-            if (IsBusy || message == null || SelectedConversation == null || SelectedProfile == null || !SelectedProfile.IsConfigured)
+            if (IsBusy || IsEditingMessage || message == null || SelectedConversation == null || SelectedProfile == null || !SelectedProfile.IsConfigured)
                 return false;
 
             return TryResolveLatestTurn(message, out var conversation, out _, out var assistantMessage)
@@ -2988,6 +3138,36 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private bool TryResolvePendingMessageEdit(
+            CopilotConversationRecord conversation,
+            out int userIndex,
+            out CopilotChatMessage userMessage,
+            out CopilotChatMessage? assistantMessage)
+        {
+            userIndex = -1;
+            userMessage = null!;
+            assistantMessage = null;
+            if (!IsEditingMessage
+                || !string.Equals(_editingConversationId, conversation.Id, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var candidate = conversation.Messages.FirstOrDefault(message =>
+                message.IsUser && string.Equals(message.Id, _editingUserMessageId, StringComparison.Ordinal));
+            if (candidate == null
+                || !TryResolveLatestTurn(candidate, out var resolvedConversation, out userMessage, out assistantMessage)
+                || !ReferenceEquals(resolvedConversation, conversation))
+            {
+                userMessage = null!;
+                assistantMessage = null;
+                return false;
+            }
+
+            userIndex = conversation.Messages.IndexOf(userMessage);
+            return userIndex >= 0;
+        }
+
         private static int FindPreviousUserMessageIndex(ObservableCollection<CopilotChatMessage> messages, int startIndex)
         {
             for (var index = startIndex; index >= 0; index--)
@@ -3045,7 +3225,12 @@ namespace ColorVision.Copilot
             if (!SelectedConversation.Attachments.Remove(attachment))
                 return;
 
-            TryDeleteManagedAttachmentFile(attachment);
+            if (!SelectedConversation.Messages
+                .SelectMany(message => message.Attachments)
+                .Any(candidate => string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                TryDeleteManagedAttachmentFile(attachment);
+            }
 
             UpdateAttachmentsState(SelectedConversation);
         }

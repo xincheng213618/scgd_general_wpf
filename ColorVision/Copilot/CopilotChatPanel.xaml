@@ -1074,6 +1074,12 @@
                                                             CommandParameter="{Binding}"
                                                             Content="{x:Static properties:Resources.Copy}"
                                                             ToolTip="{x:Static properties:Resources.CopilotCopyMessage}" />
+                                                    <Button Style="{StaticResource UserMessageActionButtonStyle}"
+                                                            Command="{Binding DataContext.EditMessageCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Click="EditMessageButton_Click"
+                                                            Content="编辑"
+                                                            ToolTip="编辑这条请求并替换最新回复" />
                                                     <Button Margin="0"
                                                             Style="{StaticResource UserMessageActionButtonStyle}"
                                                             Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
@@ -1377,6 +1383,32 @@
                                        Foreground="{DynamicResource GlobalTextBrush}"
                                        Text="松开以附加文件" />
                         </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="0"
+                            Margin="0,0,0,8"
+                            Padding="10,7"
+                            Background="{DynamicResource GlobalBorderBrush}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Visibility="{Binding IsEditingMessage, Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel LastChildFill="True">
+                            <Button DockPanel.Dock="Right"
+                                    Width="22"
+                                    Height="22"
+                                    Margin="8,0,0,0"
+                                    Padding="0"
+                                    Style="{StaticResource AttachmentCloseButtonStyle}"
+                                    Command="{Binding CancelMessageEditCommand}"
+                                    Content="×"
+                                    ToolTip="取消编辑" />
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Text="{Binding EditingMessageStatusText}"
+                                       TextWrapping="Wrap" />
+                        </DockPanel>
                     </Border>
 
                     <Border Grid.Row="0"

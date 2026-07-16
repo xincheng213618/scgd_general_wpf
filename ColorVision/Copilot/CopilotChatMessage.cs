@@ -1818,6 +1818,19 @@ namespace ColorVision.Copilot
             return changed;
         }
 
+        internal CopilotAttachmentItem CreateSnapshot()
+        {
+            return new CopilotAttachmentItem
+            {
+                Id = Id,
+                Type = Type,
+                Title = Title,
+                Value = Value,
+                Source = Source,
+                CreatedAt = CreatedAt,
+            };
+        }
+
         public static CopilotAttachmentItem CreateFile(string filePath)
         {
             return new CopilotAttachmentItem
