@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using WpfMath.Controls;
 using WpfMath.Parsers;
@@ -27,7 +29,7 @@ namespace ColorVision.Copilot
         private static readonly Regex HeadingRegex = new(@"^(#{1,6})\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex UnorderedListRegex = new(@"^\s*[-+*]\s+(.+)$", RegexOptions.Compiled);
         private static readonly Regex OrderedListRegex = new(@"^\s*(\d+)[.)]\s+(.+)$", RegexOptions.Compiled);
-        private static readonly Regex InlineRegex = new(@"(\*\*[^*\r\n]+\*\*|`[^`\r\n]+`|\*[^*\r\n]+\*|\[[^\]\r\n]+\]\([^)]+\))", RegexOptions.Compiled);
+        private static readonly Regex InlineRegex = new(@"(\*\*[^*\r\n]+\*\*|`[^`\r\n]+`|\*[^*\r\n]+\*|\[[^\]\r\n]+\]\((?:[^()\r\n]|\([^()\r\n]*\))+\)|<https?://[^<>\s]+>)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex ThematicBreakRegex = new(@"^\s{0,3}((\*\s*){3,}|(-\s*){3,}|(_\s*){3,})$", RegexOptions.Compiled);
 
         private readonly DispatcherTimer _renderTimer;
@@ -752,13 +754,13 @@ namespace ColorVision.Copilot
                     AddMathAwareText(span.Inlines, token[1..^1]);
                     inlines.Add(span);
                 }
+                else if (TryParseLinkToken(token, out var linkText, out var linkTarget))
+                {
+                    AddLinkInline(inlines, linkText, linkTarget);
+                }
                 else
                 {
-                    var closingBracket = token.IndexOf(']');
-                    var linkText = closingBracket > 1 ? token[1..closingBracket] : token;
-                    var linkRun = new Run(linkText) { TextDecorations = TextDecorations.Underline };
-                    linkRun.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
-                    inlines.Add(linkRun);
+                    AddMathAwareText(inlines, token);
                 }
 
                 currentIndex = match.Index + match.Length;
@@ -766,6 +768,94 @@ namespace ColorVision.Copilot
 
             if (currentIndex < text.Length)
                 AddMathAwareText(inlines, text[currentIndex..]);
+        }
+
+        private static bool TryParseLinkToken(string token, out string linkText, out string linkTarget)
+        {
+            linkText = string.Empty;
+            linkTarget = string.Empty;
+            if (token.StartsWith('<') && token.EndsWith('>'))
+            {
+                linkTarget = token[1..^1].Trim();
+                linkText = linkTarget;
+                return linkTarget.Length > 0;
+            }
+
+            if (!token.StartsWith('[') || !token.EndsWith(')'))
+                return false;
+
+            var separatorIndex = token.IndexOf("](", StringComparison.Ordinal);
+            if (separatorIndex <= 1)
+                return false;
+
+            linkText = token[1..separatorIndex];
+            var targetAndTitle = token[(separatorIndex + 2)..^1].Trim();
+            if (targetAndTitle.StartsWith('<'))
+            {
+                var closingAngleBracket = targetAndTitle.IndexOf('>');
+                linkTarget = closingAngleBracket > 1 ? targetAndTitle[1..closingAngleBracket] : string.Empty;
+            }
+            else
+            {
+                linkTarget = targetAndTitle.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .FirstOrDefault() ?? string.Empty;
+            }
+            return linkTarget.Length > 0;
+        }
+
+        private static void AddLinkInline(InlineCollection inlines, string linkText, string linkTarget)
+        {
+            if (!TryCreateSafeWebUri(linkTarget, out var uri))
+            {
+                var fallback = new Run(linkText);
+                ToolTipService.SetToolTip(fallback, "仅支持打开 HTTP/HTTPS 链接");
+                inlines.Add(fallback);
+                return;
+            }
+
+            var hyperlink = new Hyperlink(new Run(linkText))
+            {
+                Cursor = Cursors.Hand,
+                NavigateUri = uri,
+                ToolTip = uri.AbsoluteUri,
+            };
+            hyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
+            AutomationProperties.SetName(hyperlink, $"打开链接：{linkText}");
+            hyperlink.RequestNavigate += Hyperlink_RequestNavigate;
+            inlines.Add(hyperlink);
+        }
+
+        private static bool TryCreateSafeWebUri(string? value, out Uri uri)
+        {
+            uri = null!;
+            var candidate = (value ?? string.Empty).Trim();
+            if (candidate.Length == 0
+                || candidate.Length > 4096
+                || !Uri.TryCreate(candidate, UriKind.Absolute, out var parsedUri)
+                || (parsedUri.Scheme != Uri.UriSchemeHttp && parsedUri.Scheme != Uri.UriSchemeHttps))
+            {
+                return false;
+            }
+
+            uri = parsedUri;
+            return true;
+        }
+
+        private static void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            e.Handled = true;
+            if (!TryCreateSafeWebUri(e.Uri?.AbsoluteUri, out var uri))
+                return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                if (sender is Hyperlink hyperlink)
+                    hyperlink.ToolTip = "无法打开链接：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+            }
         }
 
         private static void AddMathAwareText(InlineCollection inlines, string text)
