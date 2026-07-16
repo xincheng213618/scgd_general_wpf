@@ -26,6 +26,7 @@ namespace ColorVision.Copilot
     {
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
+        private const int MaximumComposerAttachments = 32;
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
         private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -1255,6 +1256,8 @@ namespace ColorVision.Copilot
 
             var requestProfile = SelectedProfile.Clone();
             if (!TryValidatePromptBudget(prompt, requestMode, requestProfile))
+                return;
+            if (!TryValidateComposerAttachments(Attachments))
                 return;
 
             var conversation = EnsureConversation();
@@ -2501,6 +2504,60 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        private bool TryValidateComposerAttachments(IEnumerable<CopilotAttachmentItem> attachments)
+        {
+            var attachmentSnapshot = attachments.Where(attachment => attachment != null).ToArray();
+            if (attachmentSnapshot.Length > MaximumComposerAttachments)
+            {
+                LocalCommandResultTitle = "附件过多";
+                LocalCommandResultText = $"当前请求包含 {attachmentSnapshot.Length:N0} 个附件，最多支持 {MaximumComposerAttachments:N0} 个。请移除多余附件后重试。";
+                return false;
+            }
+
+            var imageCount = attachmentSnapshot.Count(attachment => attachment.Type == CopilotAttachmentType.Image);
+            if (imageCount > CopilotImagePayloadLoader.MaximumImages)
+            {
+                LocalCommandResultTitle = "图片过多";
+                LocalCommandResultText = $"当前请求包含 {imageCount:N0} 张图片，模型输入一次最多支持 {CopilotImagePayloadLoader.MaximumImages:N0} 张。请移除多余图片后重试。";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryEnsureAttachmentCapacity(CopilotConversationRecord conversation, CopilotAttachmentType attachmentType)
+        {
+            if (attachmentType == CopilotAttachmentType.Image
+                && conversation.Attachments.Count(attachment => attachment.Type == CopilotAttachmentType.Image) >= CopilotImagePayloadLoader.MaximumImages)
+            {
+                LocalCommandResultTitle = "图片已达到上限";
+                LocalCommandResultText = $"每条请求最多附加 {CopilotImagePayloadLoader.MaximumImages:N0} 张图片。请先移除一张图片再继续添加。";
+                return false;
+            }
+
+            if (conversation.Attachments.Count >= MaximumComposerAttachments)
+            {
+                LocalCommandResultTitle = "附件已达到上限";
+                LocalCommandResultText = $"每条请求最多附加 {MaximumComposerAttachments:N0} 个文件、图片、网页或上下文。请先移除一个附件再继续添加。";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ReportFileAttachmentLimits(
+            CopilotConversationRecord conversation,
+            int addedCount,
+            bool attachmentLimitReached,
+            bool imageLimitReached)
+        {
+            if (!attachmentLimitReached && !imageLimitReached)
+                return;
+
+            LocalCommandResultTitle = addedCount > 0 ? "部分文件未添加" : "附件已达到上限";
+            LocalCommandResultText = $"本次已添加 {addedCount:N0} 个文件。每条请求最多支持 {MaximumComposerAttachments:N0} 个附件，其中图片最多 {CopilotImagePayloadLoader.MaximumImages:N0} 张；超出上限的文件未添加。当前共有 {conversation.Attachments.Count:N0} 个附件。";
+        }
+
         public CopilotPromptQueueResult QueueExternalPrompt(
             string prompt,
             bool startNewConversation = true,
@@ -2539,12 +2596,17 @@ namespace ColorVision.Copilot
             var conversation = EnsureConversation();
             if (contextAttachmentItems != null && contextAttachmentItems.Count > 0)
             {
-                AttachExternalContextSnapshot(
-                    conversation,
-                    contextAttachmentTitle,
-                    contextAttachmentSourceId,
-                    contextAttachmentItems);
+                if (!AttachExternalContextSnapshot(
+                        conversation,
+                        contextAttachmentTitle,
+                        contextAttachmentSourceId,
+                        contextAttachmentItems))
+                {
+                    return new CopilotPromptQueueResult(false, false);
+                }
             }
+            if (sendNow && !TryValidateComposerAttachments(conversation.Attachments))
+                return new CopilotPromptQueueResult(false, false);
 
             SetPendingRequestModeOverride(mode);
             InputText = normalizedPrompt;
@@ -3281,20 +3343,34 @@ namespace ColorVision.Copilot
 
             conversation ??= EnsureConversation();
             var addedCount = 0;
+            var attachmentLimitReached = false;
+            var imageLimitReached = false;
             foreach (var filePath in filePaths)
             {
                 if (conversation.Attachments.Any(item => (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
                     && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))
                     continue;
+                if (conversation.Attachments.Count >= MaximumComposerAttachments)
+                {
+                    attachmentLimitReached = true;
+                    break;
+                }
 
-                conversation.Attachments.Add(CopilotImagePayloadLoader.IsSupportedImageFileName(filePath)
-                    ? CopilotAttachmentItem.CreateImage(filePath)
-                    : CopilotAttachmentItem.CreateFile(filePath));
+                var isImage = CopilotImagePayloadLoader.IsSupportedImageFileName(filePath);
+                if (isImage
+                    && conversation.Attachments.Count(item => item.Type == CopilotAttachmentType.Image) >= CopilotImagePayloadLoader.MaximumImages)
+                {
+                    imageLimitReached = true;
+                    continue;
+                }
+
+                conversation.Attachments.Add(isImage ? CopilotAttachmentItem.CreateImage(filePath) : CopilotAttachmentItem.CreateFile(filePath));
                 addedCount++;
             }
 
             if (addedCount > 0)
                 UpdateAttachmentsState(conversation);
+            ReportFileAttachmentLimits(conversation, addedCount, attachmentLimitReached, imageLimitReached);
             return addedCount;
         }
 
@@ -3313,6 +3389,9 @@ namespace ColorVision.Copilot
         private void AddContextAttachment()
         {
             var conversation = EnsureConversation();
+            if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Context))
+                return;
+
             var window = new CopilotTextInputWindow("Attach Context", "Enter the context to attach to this chat", string.Empty, isMultiline: true)
             {
                 Owner = Application.Current.GetActiveWindow(),
@@ -3333,7 +3412,7 @@ namespace ColorVision.Copilot
                 return;
 
             var conversation = EnsureConversation();
-            AttachExternalContextSnapshot(
+            _ = AttachExternalContextSnapshot(
                 conversation,
                 string.IsNullOrWhiteSpace(liveContext.AttachmentTitle) ? liveContext.Title : liveContext.AttachmentTitle,
                 liveContext.SourceId,
@@ -3364,6 +3443,10 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.WebPage && string.Equals(item.Source, url, StringComparison.OrdinalIgnoreCase));
+            if (existingAttachment == null && !TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.WebPage))
+                return;
+
             var cancellation = BeginAuxiliaryOperation();
             _webPageAttachmentCts = cancellation;
             IsBusy = true;
@@ -3377,7 +3460,6 @@ namespace ColorVision.Copilot
 
                 var attachment = CopilotAttachmentItem.CreateWebPage(url, webPage.Title, BuildStoredWebPageContent(webPage));
 
-                var existingAttachment = conversation.Attachments.FirstOrDefault(item => item.Type == CopilotAttachmentType.WebPage && string.Equals(item.Source, url, StringComparison.OrdinalIgnoreCase));
                 if (existingAttachment != null)
                 {
                     existingAttachment.Title = attachment.Title;
@@ -3387,6 +3469,9 @@ namespace ColorVision.Copilot
                 }
                 else
                 {
+                    if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.WebPage))
+                        return;
+
                     conversation.Attachments.Add(attachment);
                 }
 
@@ -3476,6 +3561,8 @@ namespace ColorVision.Copilot
                     return false;
 
                 var conversation = EnsureConversation();
+                if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Image))
+                    return false;
                 var imagePath = SaveClipboardImage(image, CancellationToken.None);
                 return AddClipboardImageAttachment(conversation, imagePath);
             }
@@ -3494,6 +3581,9 @@ namespace ColorVision.Copilot
         private async Task<bool> SaveClipboardImageAttachmentAsync(BitmapSource image)
         {
             var conversation = EnsureConversation();
+            if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Image))
+                return false;
+
             var cancellation = BeginAuxiliaryOperation();
             Task<string>? saveTask = null;
             _fileAttachmentCts = cancellation;
@@ -3578,6 +3668,12 @@ namespace ColorVision.Copilot
 
         private bool AddClipboardImageAttachment(CopilotConversationRecord conversation, string imagePath)
         {
+            if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Image))
+            {
+                CopilotChatStateStore.TryDeleteManagedAttachmentFile(_stateStore.AttachmentDirectoryPath, imagePath);
+                return false;
+            }
+
             var title = $"Pasted Image {DateTime.Now:HH:mm:ss}";
             conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(imagePath, title));
             UpdateAttachmentsState(conversation);
@@ -3790,10 +3886,13 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            if (!TryValidateComposerAttachments(turnSnapshot.Attachments))
+                return;
+
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             conversation.AgentSessionCheckpoint = null;
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
             PersistState();
 
             var hostedRun = _taskHost.Start(
@@ -4516,7 +4615,7 @@ namespace ColorVision.Copilot
             UpdateAttachmentsState(conversation);
         }
 
-        private void AttachExternalContextSnapshot(
+        private bool AttachExternalContextSnapshot(
             CopilotConversationRecord conversation,
             string? attachmentTitle,
             string? attachmentSourceId,
@@ -4524,7 +4623,7 @@ namespace ColorVision.Copilot
         {
             var content = CopilotConversationRequestBuilder.BuildContextAttachmentContent(contextItems);
             if (string.IsNullOrWhiteSpace(content))
-                return;
+                return true;
 
             var normalizedTitle = string.IsNullOrWhiteSpace(attachmentTitle)
                 ? contextItems.FirstOrDefault(item => !string.IsNullOrWhiteSpace(item.Title))?.Title ?? "Attached Context"
@@ -4542,9 +4641,9 @@ namespace ColorVision.Copilot
                     && string.Equals(item.Title, normalizedTitle, StringComparison.Ordinal));
             }
 
-            var attachment = CopilotAttachmentItem.CreateContext(content, normalizedTitle, attachmentSourceId);
             if (existingAttachment != null)
             {
+                var attachment = CopilotAttachmentItem.CreateContext(content, normalizedTitle, attachmentSourceId);
                 existingAttachment.Title = attachment.Title;
                 existingAttachment.Value = attachment.Value;
                 existingAttachment.Source = attachment.Source;
@@ -4552,10 +4651,14 @@ namespace ColorVision.Copilot
             }
             else
             {
-                conversation.Attachments.Add(attachment);
+                if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Context))
+                    return false;
+
+                conversation.Attachments.Add(CopilotAttachmentItem.CreateContext(content, normalizedTitle, attachmentSourceId));
             }
 
             UpdateAttachmentsState(conversation);
+            return true;
         }
 
         private static string BuildStoredWebPageContent(CopilotFetchedWebPageContent page) =>
