@@ -17,6 +17,8 @@ namespace ColorVision.Copilot
     {
         private const int MaximumProviderErrorResponseBytes = 256 * 1024;
         private const int MaximumNonStreamingResponseBytes = 4 * 1024 * 1024;
+        private const int MaximumStreamingResponseBytes = 8 * 1024 * 1024;
+        private const int MaximumStreamingLineCharacters = 1024 * 1024;
         private const string ProviderStatusCodeDataKey = "ColorVision.Copilot.ProviderStatusCode";
         private static readonly HttpClient SharedHttpClient = CreateHttpClient();
         private readonly HttpClient _httpClient;
@@ -340,7 +342,12 @@ namespace ColorVision.Copilot
             }, response);
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var reader = new StreamReader(stream);
+            using var reader = new CopilotBoundedTextLineReader(
+                stream,
+                Encoding.UTF8,
+                MaximumStreamingResponseBytes,
+                MaximumStreamingLineCharacters,
+                "Provider event stream");
             var usage = CopilotTokenUsage.Empty;
             var receivedDisplayableText = false;
 

@@ -1295,6 +1295,23 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task ChatService_ParsesCarriageReturnDelimitedEventStream()
+    {
+        const string responseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"done\"}}]}\r\rdata: [DONE]\r";
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => CreateEventStreamResponse(responseBody)));
+        var service = new CopilotChatService(httpClient);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            deltas.Add,
+            CancellationToken.None);
+
+        Assert.Equal("done", string.Concat(deltas.Select(delta => delta.Content)));
+    }
+
+    [Fact]
     public async Task ChatService_RetriesTransientStatusBeforeFirstResponseDelta()
     {
         const string successBody = """
@@ -1446,6 +1463,63 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             CancellationToken.None));
 
         Assert.Contains("no displayable text", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChatService_RejectsStreamingLineLargerThanLimit()
+    {
+        var responseBody = "data: " + new string('x', 1024 * 1024 + 1) + "\n";
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => CreateEventStreamResponse(responseBody)));
+        var service = new CopilotChatService(httpClient);
+        var deltas = new List<CopilotStreamDelta>();
+
+        var error = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            deltas.Add,
+            CancellationToken.None));
+
+        Assert.Empty(deltas);
+        Assert.Contains("Provider event stream line", error.Message, StringComparison.Ordinal);
+        Assert.Contains("character limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChatService_RejectsStreamingResponseLargerThanTotalLimit()
+    {
+        var ignoredLine = ":" + new string('x', 512 * 1024) + "\n";
+        var responseBody = string.Concat(Enumerable.Repeat(ignoredLine, 17));
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => CreateEventStreamResponse(responseBody)));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            _ => { },
+            CancellationToken.None));
+
+        Assert.Contains("Provider event stream", error.Message, StringComparison.Ordinal);
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChatService_CancelsWhileWaitingForStreamingLineCompletion()
+    {
+        const string partialLine = "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}";
+        using var httpClient = new HttpClient(new StaticResponseHandler(() =>
+        {
+            var content = new StreamContent(new BlockingAfterPrefixStream(Encoding.UTF8.GetBytes(partialLine)));
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+        }));
+        var service = new CopilotChatService(httpClient);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            _ => { },
+            cancellation.Token));
     }
 
     [Fact]
@@ -5934,6 +6008,63 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    private sealed class BlockingAfterPrefixStream(byte[] prefix) : Stream
+    {
+        private int _readCount;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => prefix.Length;
+
+        public override long Position
+        {
+            get => 0;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (Interlocked.Increment(ref _readCount) > 1)
+                throw new InvalidOperationException("Use the asynchronous read path for this test stream.");
+
+            var length = Math.Min(count, prefix.Length);
+            prefix.AsSpan(0, length).CopyTo(buffer.AsSpan(offset, length));
+            return length;
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _readCount) == 1)
+            {
+                var length = Math.Min(buffer.Length, prefix.Length);
+                prefix.AsMemory(0, length).CopyTo(buffer);
+                return ValueTask.FromResult(length);
+            }
+
+            return new ValueTask<int>(WaitForCancellationAsync(cancellationToken));
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        private static async Task<int> WaitForCancellationAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return 0;
+        }
     }
 
     private sealed class CapturingResponseHandler(Func<HttpResponseMessage> responseFactory) : HttpMessageHandler
