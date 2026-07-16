@@ -2638,7 +2638,6 @@ namespace ColorVision.Copilot
 
         private void AddFileAttachment()
         {
-            var conversation = EnsureConversation();
             var dialog = new OpenFileDialog
             {
                 Multiselect = true,
@@ -2649,15 +2648,50 @@ namespace ColorVision.Copilot
             if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
                 return;
 
-            foreach (var fileName in dialog.FileNames.Where(fileName => !string.IsNullOrWhiteSpace(fileName)))
+            AddFileAttachments(dialog.FileNames);
+        }
+
+        public int AddFileAttachments(IEnumerable<string>? filePaths)
+        {
+            if (IsBusy || filePaths == null)
+                return 0;
+
+            var normalizedPaths = filePaths
+                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
+                .Select(TryNormalizeFilePath)
+                .Where(filePath => filePath != null && File.Exists(filePath))
+                .Cast<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (normalizedPaths.Length == 0)
+                return 0;
+
+            var conversation = EnsureConversation();
+            var addedCount = 0;
+            foreach (var filePath in normalizedPaths)
             {
-                if (conversation.Attachments.Any(item => item.Type == CopilotAttachmentType.File && string.Equals(item.Value, fileName, StringComparison.OrdinalIgnoreCase)))
+                if (conversation.Attachments.Any(item => item.Type == CopilotAttachmentType.File && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                conversation.Attachments.Add(CopilotAttachmentItem.CreateFile(fileName));
+                conversation.Attachments.Add(CopilotAttachmentItem.CreateFile(filePath));
+                addedCount++;
             }
 
-            UpdateAttachmentsState(conversation);
+            if (addedCount > 0)
+                UpdateAttachmentsState(conversation);
+            return addedCount;
+        }
+
+        private static string? TryNormalizeFilePath(string filePath)
+        {
+            try
+            {
+                return Path.GetFullPath(filePath.Trim());
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or System.Security.SecurityException)
+            {
+                return null;
+            }
         }
 
         private void AddContextAttachment()

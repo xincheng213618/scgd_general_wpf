@@ -268,12 +268,12 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style x:Key="UserMessageMetaTextStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Opacity" Value="0.72" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Opacity" Value="0.5" />
         </Style>
         <Style x:Key="UserMessageActionButtonStyle" TargetType="Button" BasedOn="{StaticResource MessageActionButtonStyle}">
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Opacity" Value="0.72" />
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="Opacity" Value="0.68" />
         </Style>
         <Style x:Key="CopilotSurfaceBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
@@ -1026,6 +1026,28 @@
                                         <StackPanel>
                                             <TextBox Style="{StaticResource UserMessageTextBoxStyle}"
                                                      Text="{Binding Content, Mode=OneWay}" />
+                                            <DockPanel Margin="0,5,0,0" LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="10"
+                                                           Style="{StaticResource UserMessageMetaTextStyle}"
+                                                           Text="{Binding TimeLabel}" />
+                                                <StackPanel DockPanel.Dock="Right"
+                                                            HorizontalAlignment="Right"
+                                                            Orientation="Horizontal">
+                                                    <Button Style="{StaticResource UserMessageActionButtonStyle}"
+                                                            Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="{x:Static properties:Resources.Copy}"
+                                                            ToolTip="{x:Static properties:Resources.CopilotCopyMessage}" />
+                                                    <Button Margin="0"
+                                                            Style="{StaticResource UserMessageActionButtonStyle}"
+                                                            Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="重新发送"
+                                                            ToolTip="重新发送这条请求并替换最新回复" />
+                                                </StackPanel>
+                                            </DockPanel>
                                         </StackPanel>
                                     </Border>
 
@@ -1281,9 +1303,13 @@
 
             <Border Grid.Row="2"
                     x:Name="ComposerShellBorder"
+                    AllowDrop="True"
                     MaxWidth="880"
                     Margin="24,0,24,14"
                     Padding="10,5,8,5"
+                    PreviewDragLeave="ComposerShellBorder_PreviewDragLeave"
+                    PreviewDragOver="ComposerShellBorder_PreviewDragOver"
+                    PreviewDrop="ComposerShellBorder_PreviewDrop"
                     Style="{StaticResource ComposerShellBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -1294,6 +1320,30 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+
+                    <Border x:Name="FileDropOverlay"
+                            Grid.RowSpan="6"
+                            Panel.ZIndex="20"
+                            Background="{DynamicResource GlobalBackground}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="2"
+                            CornerRadius="7"
+                            IsHitTestVisible="False"
+                            Opacity="0.94"
+                            Visibility="Collapsed">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="22"
+                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Text="&#xE898;" />
+                            <TextBlock Margin="0,7,0,0"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Text="松开以附加文件" />
+                        </StackPanel>
+                    </Border>
 
                     <Border Grid.Row="0"
                             Margin="0,0,0,8"

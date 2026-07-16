@@ -4,6 +4,8 @@ using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -368,6 +370,57 @@ namespace ColorVision.Copilot
                 return;
 
             e.CancelCommand();
+        }
+
+        private void ComposerShellBorder_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            var canAttach = DataContext is CopilotChatViewModel { IsBusy: false }
+                && TryGetDroppedFiles(e.Data, out _);
+            FileDropOverlay.Visibility = canAttach ? Visibility.Visible : Visibility.Collapsed;
+            e.Effects = canAttach ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void ComposerShellBorder_PreviewDragLeave(object sender, DragEventArgs e)
+        {
+            FileDropOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void ComposerShellBorder_PreviewDrop(object sender, DragEventArgs e)
+        {
+            FileDropOverlay.Visibility = Visibility.Collapsed;
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+
+            if (DataContext is not CopilotChatViewModel { IsBusy: false } viewModel
+                || !TryGetDroppedFiles(e.Data, out var filePaths)
+                || viewModel.AddFileAttachments(filePaths) == 0)
+            {
+                return;
+            }
+
+            e.Effects = DragDropEffects.Copy;
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                MovePromptCaretToEnd();
+            });
+        }
+
+        private static bool TryGetDroppedFiles(IDataObject data, out string[] filePaths)
+        {
+            filePaths = Array.Empty<string>();
+            if (!data.GetDataPresent(DataFormats.FileDrop)
+                || data.GetData(DataFormats.FileDrop) is not string[] droppedPaths)
+            {
+                return false;
+            }
+
+            filePaths = droppedPaths
+                .Where(filePath => !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                .ToArray();
+            return filePaths.Length > 0;
         }
 
         private bool IsNearBottom()
