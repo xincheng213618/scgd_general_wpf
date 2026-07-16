@@ -161,8 +161,8 @@ namespace ColorVision.Copilot
             get => _content;
             set
             {
-                SetProperty(ref _content, value ?? string.Empty);
-                OnResponseTimelineChanged();
+                if (SetProperty(ref _content, value ?? string.Empty))
+                    OnResponseTimelineChanged();
             }
         }
         private string _content = string.Empty;
@@ -877,6 +877,13 @@ namespace ColorVision.Copilot
             BeginResponseTimeline();
             var contentStart = _content.Length;
             var lastEvent = ResponseTimelineEvents.LastOrDefault();
+            var visibleMarkdownItem = _visibleResponseTimelineItems.LastOrDefault();
+            if (lastEvent?.Kind != CopilotResponseTimelineEventKind.Markdown
+                || lastEvent.ContentStart + lastEvent.ContentLength != contentStart
+                || visibleMarkdownItem?.IsMarkdown != true)
+            {
+                visibleMarkdownItem = null;
+            }
             if (lastEvent?.Kind == CopilotResponseTimelineEventKind.Markdown
                 && lastEvent.ContentStart + lastEvent.ContentLength == contentStart)
             {
@@ -889,7 +896,10 @@ namespace ColorVision.Copilot
 
             _content += text;
             OnPropertyChanged(nameof(Content));
-            OnResponseTimelineChanged();
+            if (visibleMarkdownItem != null)
+                visibleMarkdownItem.AppendMarkdown(text);
+            else
+                OnResponseTimelineChanged();
         }
 
         public void ResetResponseTimelineText()

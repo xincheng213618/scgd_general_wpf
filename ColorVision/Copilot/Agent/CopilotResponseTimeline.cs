@@ -120,5 +120,13 @@ namespace ColorVision.Copilot
             Markdown = source.Markdown;
             ToolGroup = source.ToolGroup;
         }
+
+        internal void AppendMarkdown(string text)
+        {
+            if (!IsMarkdown)
+                throw new InvalidOperationException("Only Markdown timeline items can append streamed text.");
+            if (!string.IsNullOrEmpty(text))
+                Markdown += text;
+        }
     }
 }

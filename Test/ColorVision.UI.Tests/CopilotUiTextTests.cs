@@ -383,6 +383,26 @@ public sealed class CopilotUiTextTests
     }
 
     [Fact]
+    public void ResponseTimeline_StreamingTailDoesNotRebuildCompletedToolGroups()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        message.BeginResponseTimeline();
+        message.UpsertAgentTrace(CreateCompletedTrace("system-1", "InspectWindowsSystem", 25));
+        message.RecordResponseTimelineTool("system-1");
+        message.AppendResponseTimelineText("第一段");
+        var toolItem = message.VisibleResponseTimelineItems[0];
+        var toolGroup = toolItem.ToolGroup;
+        var markdownItem = message.VisibleResponseTimelineItems[1];
+
+        message.AppendResponseTimelineText("继续输出");
+
+        Assert.Same(toolItem, message.VisibleResponseTimelineItems[0]);
+        Assert.Same(toolGroup, message.VisibleResponseTimelineItems[0].ToolGroup);
+        Assert.Same(markdownItem, message.VisibleResponseTimelineItems[1]);
+        Assert.Equal("第一段继续输出", markdownItem.Markdown);
+    }
+
+    [Fact]
     public void ResponseTimeline_InvalidPersistedOffsetsFallBackToLegacyLayout()
     {
         var message = new CopilotChatMessage(CopilotChatRole.Assistant, "answer")
