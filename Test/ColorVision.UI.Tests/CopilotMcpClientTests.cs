@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using ModelContextProtocol.Protocol;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -44,6 +45,104 @@ public sealed class CopilotMcpClientTests
         {
             listener.Stop();
         }
+    }
+
+    [Fact]
+    public async Task BoundedDiscoveryStopsBeforeFollowingUnlimitedPagination()
+    {
+        var calls = 0;
+        var discovery = await DiscoverBoundedToolsAsync(
+            (request, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(new ListToolsResult
+                {
+                    Tools = request.Cursor == null
+                        ? [CreateRemoteTool("one"), CreateRemoteTool("two")]
+                        : [CreateRemoteTool("three"), CreateRemoteTool("four")],
+                    NextCursor = "page-" + calls,
+                });
+            },
+            maximumToolDefinitions: 3,
+            maximumPages: 10);
+
+        Assert.True(discovery.Truncated);
+        Assert.Equal(2, discovery.PageCount);
+        Assert.Equal(4, discovery.DiscoveredToolCount);
+        Assert.Equal(new[] { "one", "two", "three" }, discovery.Tools.Select(tool => tool.Name));
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task BoundedDiscoveryRejectsRepeatedPaginationCursor()
+    {
+        var calls = 0;
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            DiscoverBoundedToolsAsync(
+                (_, _) =>
+                {
+                    calls++;
+                    return ValueTask.FromResult(new ListToolsResult
+                    {
+                        Tools = [CreateRemoteTool("tool-" + calls)],
+                        NextCursor = "same-cursor",
+                    });
+                },
+                maximumToolDefinitions: 10,
+                maximumPages: 10));
+
+        Assert.Contains("repeated", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task BoundedDiscoveryPreservesOpaquePaginationCursor()
+    {
+        const string opaqueCursor = "  opaque/cursor==  ";
+        string? observedCursor = null;
+        var calls = 0;
+        var discovery = await DiscoverBoundedToolsAsync(
+            (request, _) =>
+            {
+                calls++;
+                if (calls == 2)
+                    observedCursor = request.Cursor;
+                return ValueTask.FromResult(new ListToolsResult
+                {
+                    Tools = [CreateRemoteTool("tool-" + calls)],
+                    NextCursor = calls == 1 ? opaqueCursor : null,
+                });
+            },
+            maximumToolDefinitions: 10,
+            maximumPages: 10);
+
+        Assert.False(discovery.Truncated);
+        Assert.Equal(opaqueCursor, observedCursor);
+        Assert.Equal(2, discovery.PageCount);
+    }
+
+    [Fact]
+    public async Task BoundedDiscoveryStopsAtPageLimit()
+    {
+        var calls = 0;
+        var discovery = await DiscoverBoundedToolsAsync(
+            (_, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(new ListToolsResult
+                {
+                    Tools = [CreateRemoteTool("tool-" + calls)],
+                    NextCursor = "page-" + calls,
+                });
+            },
+            maximumToolDefinitions: 10,
+            maximumPages: 2);
+
+        Assert.True(discovery.Truncated);
+        Assert.Equal(2, discovery.PageCount);
+        Assert.Equal(2, discovery.DiscoveredToolCount);
+        Assert.Equal(2, calls);
     }
 
     [Fact]
@@ -202,4 +301,39 @@ public sealed class CopilotMcpClientTests
         Assert.DoesNotContain("secret-value", presentation.Description, StringComparison.Ordinal);
         Assert.DoesNotContain("multi word password", presentation.Description, StringComparison.Ordinal);
     }
+
+    private static Tool CreateRemoteTool(string name) => new()
+    {
+        Name = name,
+        Description = "Test tool.",
+        InputSchema = JsonSerializer.SerializeToElement(new { type = "object" }),
+    };
+
+    private static async Task<BoundedDiscoveryResult> DiscoverBoundedToolsAsync(
+        Func<ListToolsRequestParams, CancellationToken, ValueTask<ListToolsResult>> listPageAsync,
+        int maximumToolDefinitions,
+        int maximumPages)
+    {
+        var paginatorType = typeof(CopilotAgentRequest).Assembly.GetType(
+            "ColorVision.Copilot.CopilotMcpToolDiscoveryPaginator",
+            throwOnError: true)!;
+        var method = paginatorType.GetMethod("DiscoverAsync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+        var operation = Assert.IsAssignableFrom<Task>(method.Invoke(
+            null,
+            [listPageAsync, maximumToolDefinitions, maximumPages, CancellationToken.None]));
+        await operation;
+        var result = operation.GetType().GetProperty("Result")!.GetValue(operation)!;
+        var resultType = result.GetType();
+        return new BoundedDiscoveryResult(
+            Assert.IsAssignableFrom<IReadOnlyList<Tool>>(resultType.GetProperty("Tools")!.GetValue(result)),
+            Assert.IsType<int>(resultType.GetProperty("DiscoveredToolCount")!.GetValue(result)),
+            Assert.IsType<int>(resultType.GetProperty("PageCount")!.GetValue(result)),
+            Assert.IsType<bool>(resultType.GetProperty("Truncated")!.GetValue(result)));
+    }
+
+    private sealed record BoundedDiscoveryResult(
+        IReadOnlyList<Tool> Tools,
+        int DiscoveredToolCount,
+        int PageCount,
+        bool Truncated);
 }

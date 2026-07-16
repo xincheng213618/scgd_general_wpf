@@ -54,7 +54,6 @@ namespace ColorVision.Copilot
     {
         private const int MaximumToolsPerServer = 32;
         private const int MaximumToolsPerRequest = 64;
-        private const int MaximumCachedToolDefinitionsPerServer = 512;
         private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
 
         public CopilotMcpToolProvider()
@@ -143,9 +142,11 @@ namespace ColorVision.Copilot
                     }
                     else
                     {
-                        var discoveredTools = await client.ListToolsAsync(cancellationToken: connectionTimeout.Token);
-                        discoveredToolCount = discoveredTools.Count;
-                        remoteTools = discoveredTools.Take(MaximumCachedToolDefinitionsPerServer).ToArray();
+                        var discovery = await CopilotMcpToolDiscoveryPaginator.DiscoverAsync(
+                            (requestParams, token) => client.ListToolsAsync(requestParams, token),
+                            cancellationToken: connectionTimeout.Token);
+                        discoveredToolCount = discovery.DiscoveredToolCount;
+                        remoteTools = discovery.Tools.Select(tool => new McpClientTool(client, tool)).ToArray();
                         cacheUpdate = _discoveryCache.Store(
                             server,
                             token,
@@ -153,6 +154,12 @@ namespace ColorVision.Copilot
                             discoveredToolCount,
                             out var refreshedDiscovery);
                         capabilityRevision = refreshedDiscovery.Revision;
+                        if (discovery.Truncated)
+                        {
+                            diagnostics.Add(
+                                $"MCP client {server.Name} stopped live discovery after {discovery.PageCount} page(s) and "
+                                + $"{remoteTools.Length} cached tool definition(s) within the safety limits.");
+                        }
                     }
                     var remaining = MaximumToolsPerRequest - tools.Count;
                     var allowedTools = remoteTools
@@ -248,6 +255,72 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(value))
                 throw new InvalidOperationException($"token environment variable '{server.BearerTokenEnvironmentVariable}' is not set");
             return value.Trim();
+        }
+    }
+
+    internal sealed record CopilotMcpToolDiscoveryBatch(
+        IReadOnlyList<Tool> Tools,
+        int DiscoveredToolCount,
+        int PageCount,
+        bool Truncated);
+
+    internal static class CopilotMcpToolDiscoveryPaginator
+    {
+        public const int MaximumToolDefinitions = 512;
+        public const int MaximumPages = 32;
+
+        public static async Task<CopilotMcpToolDiscoveryBatch> DiscoverAsync(
+            Func<ListToolsRequestParams, CancellationToken, ValueTask<ListToolsResult>> listPageAsync,
+            int maximumToolDefinitions = MaximumToolDefinitions,
+            int maximumPages = MaximumPages,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(listPageAsync);
+            if (maximumToolDefinitions < 1)
+                throw new ArgumentOutOfRangeException(nameof(maximumToolDefinitions));
+            if (maximumPages < 1)
+                throw new ArgumentOutOfRangeException(nameof(maximumPages));
+
+            var tools = new List<Tool>(Math.Min(maximumToolDefinitions, 64));
+            var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+            var discoveredToolCount = 0;
+            var pageCount = 0;
+            string? cursor = null;
+            while (pageCount < maximumPages && tools.Count < maximumToolDefinitions)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var page = await listPageAsync(new ListToolsRequestParams { Cursor = cursor }, cancellationToken);
+                pageCount++;
+                var pageTools = page?.Tools ?? Array.Empty<Tool>();
+                discoveredToolCount = discoveredToolCount > int.MaxValue - pageTools.Count
+                    ? int.MaxValue
+                    : discoveredToolCount + pageTools.Count;
+                foreach (var tool in pageTools)
+                {
+                    if (tools.Count >= maximumToolDefinitions)
+                        break;
+                    if (tool != null)
+                        tools.Add(tool);
+                }
+
+                var nextCursor = page?.NextCursor;
+                if (string.IsNullOrWhiteSpace(nextCursor))
+                {
+                    return new CopilotMcpToolDiscoveryBatch(
+                        tools,
+                        discoveredToolCount,
+                        pageCount,
+                        Truncated: discoveredToolCount > tools.Count);
+                }
+
+                if (tools.Count >= maximumToolDefinitions)
+                    return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, Truncated: true);
+                if (!seenCursors.Add(nextCursor))
+                    throw new InvalidOperationException("External MCP server repeated a tools/list pagination cursor.");
+                cursor = nextCursor;
+            }
+
+            return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, Truncated: true);
         }
     }
 
