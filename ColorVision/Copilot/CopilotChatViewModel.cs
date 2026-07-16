@@ -1068,6 +1068,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            var summaryMaximumWeight = ResolveConversationHistoryLimits(profile).MaximumContentCharacters;
             var compactProfile = profile.Clone();
             compactProfile.UseSystemPromptOverride(CompactSystemPrompt);
             compactProfile.MaxTokens = Math.Min(compactProfile.MaxTokens, CompactSummaryOutputTokens);
@@ -1075,6 +1076,9 @@ namespace ColorVision.Copilot
 
             var compactRequest = BuildCompactRequest(focusInstructions);
             var historyLimits = ResolveConversationHistoryLimits(compactProfile);
+            compactProfile.MaxTokens = Math.Min(
+                compactProfile.MaxTokens,
+                ResolveCompactSummaryOutputTokens(summaryMaximumWeight));
             CopilotConversationCompactionPlan compactionPlan;
             try
             {
@@ -1100,7 +1104,7 @@ namespace ColorVision.Copilot
                 cancellation.Token.ThrowIfCancellationRequested();
                 if (reply.IsIncomplete)
                     throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
-                var summary = NormalizeCompactSummary(reply.Content, historyLimits.MaximumContentCharacters);
+                var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
                 if (summary.Length == 0)
                     throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
                 if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
@@ -1168,12 +1172,25 @@ namespace ColorVision.Copilot
         {
             var normalized = (summary ?? string.Empty).Trim();
             if (normalized.Length > CopilotConversationCompaction.MaximumSummaryCharacters)
-                normalized = normalized[..CopilotConversationCompaction.MaximumSummaryCharacters].TrimEnd();
-            if (CopilotTokenEstimator.EstimateTextWeight(normalized) <= maximumWeight)
-                return normalized;
+            {
+                throw new InvalidOperationException(
+                    $"模型返回的压缩摘要超过 {CopilotConversationCompaction.MaximumSummaryCharacters:N0} 字符安全上限，未应用结果。请缩小聚焦范围后重试。");
+            }
+            if (CopilotTokenEstimator.EstimateTextWeight(normalized) > maximumWeight)
+            {
+                throw new InvalidOperationException(
+                    "模型返回的压缩摘要超过当前会话可安全保留的单条历史预算，未应用结果。请缩小聚焦范围后重试。");
+            }
 
-            var retainedLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(normalized, Math.Max(1, maximumWeight));
-            return normalized[..retainedLength].TrimEnd();
+            return normalized;
+        }
+
+        private static int ResolveCompactSummaryOutputTokens(int maximumWeight)
+        {
+            return Math.Clamp(
+                maximumWeight / CopilotTokenEstimator.AsciiCharactersPerToken,
+                32,
+                CompactSummaryOutputTokens);
         }
 
         private static string BuildIncompleteCompactionMessage(CopilotCompletedReplyResult reply)
