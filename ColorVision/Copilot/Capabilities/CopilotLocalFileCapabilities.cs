@@ -88,6 +88,7 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             var successCount = 0;
             var errors = new List<string>();
+            var successfullyReadPaths = new List<string>();
             CopilotLocalFileReadResult? lastSuccess = null;
 
             foreach (var path in paths)
@@ -126,6 +127,7 @@ namespace ColorVision.Copilot
 
                     builder.AppendLine(result.Content);
                     successCount++;
+                    successfullyReadPaths.Add(result.FullPath);
                     lastSuccess = result;
                 }
                 else
@@ -145,6 +147,8 @@ namespace ColorVision.Copilot
                     : $"Failed to read any local files from {paths.Length} paths.",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
+                AttemptedLocalFilePaths = paths,
+                SuccessfullyReadLocalFilePaths = successfullyReadPaths,
             };
         }
 

@@ -119,6 +119,8 @@ namespace ColorVision.Copilot
                 ErrorMessage = result.ErrorMessage,
                 FailureKind = result.FailureKind,
                 SuggestedReadableLocalFilePaths = result.SuggestedReadableLocalFilePaths,
+                AttemptedLocalFilePaths = result.AttemptedLocalFilePaths,
+                SuccessfullyReadLocalFilePaths = result.SuccessfullyReadLocalFilePaths,
             };
         }
 

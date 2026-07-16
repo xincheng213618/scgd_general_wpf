@@ -17,6 +17,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> AttemptedLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
+
         public CopilotToolResult ToToolResult(string toolName)
         {
             return new CopilotToolResult
@@ -28,6 +32,8 @@ namespace ColorVision.Copilot
                 ErrorMessage = ErrorMessage,
                 FailureKind = FailureKind,
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
+                AttemptedLocalFilePaths = AttemptedLocalFilePaths,
+                SuccessfullyReadLocalFilePaths = SuccessfullyReadLocalFilePaths,
             };
         }
     }
