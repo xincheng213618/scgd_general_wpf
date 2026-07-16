@@ -61,6 +61,7 @@ namespace ColorVision.Copilot
     {
         private const int MaxFilesToScan = 5000;
         private const int MaxMatches = 40;
+        private const int MaxExplicitPatternCharacters = 256;
 
         private static readonly Regex QuotedPatternRegex = new("[`\"\\u201C](?<term>[^`\"\\u201D\r\n]{2,100})[`\"\\u201D]", RegexOptions.Compiled);
         private static readonly Regex IdentifierRegex = new(@"(?<term>[A-Za-z_][A-Za-z0-9_\.]{2,80})", RegexOptions.Compiled);
@@ -133,7 +134,11 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Patterns = patterns,
                     Summary = "Missing searchable roots or keywords.",
-                    ErrorMessage = "No search root is available, or no text-search keyword could be extracted from the message.",
+                    ErrorMessage = searchRoots.Count == 0
+                        ? "No search root is available."
+                        : !string.IsNullOrWhiteSpace(query)
+                            ? $"The explicit text query must be a single-line literal of at most {MaxExplicitPatternCharacters} characters."
+                            : "No text-search keyword could be extracted from the message.",
                 };
             }
 
@@ -220,10 +225,17 @@ namespace ColorVision.Copilot
         public static IReadOnlyList<string> ResolvePatterns(string? query, string? fallbackText)
         {
             if (!string.IsNullOrWhiteSpace(query))
-                return ExtractPatterns(query);
+            {
+                var literal = query.Trim();
+                return literal.Length <= MaxExplicitPatternCharacters && !ContainsLineBreak(literal)
+                    ? [literal]
+                    : Array.Empty<string>();
+            }
 
             return ExtractPatterns(fallbackText);
         }
+
+        private static bool ContainsLineBreak(string value) => value.Contains('\r') || value.Contains('\n');
 
         private static IReadOnlyList<string> ExtractPatterns(string? text)
         {

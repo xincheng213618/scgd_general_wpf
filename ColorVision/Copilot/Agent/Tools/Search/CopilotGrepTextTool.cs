@@ -12,7 +12,7 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
         {
-            new CopilotToolParameter { Name = "query", Description = "Keyword, identifier, or exact text pattern to find.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "query", Description = "Single-line literal text to find, including spaces and punctuation; not a regex or natural-language instruction.", Type = CopilotToolParameterType.Text, Required = true },
             new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
         });
 

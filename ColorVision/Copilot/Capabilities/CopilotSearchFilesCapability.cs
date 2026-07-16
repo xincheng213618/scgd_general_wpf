@@ -57,6 +57,7 @@ namespace ColorVision.Copilot
     {
         private const int MaxFilesToScan = 20000;
         private const int MaxResults = 15;
+        private const int MaxExplicitQueryCharacters = 256;
 
         private static readonly string[] FileSearchKeywords =
         {
@@ -112,7 +113,11 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Terms = terms,
                     Summary = "Missing searchable roots or file-name keywords.",
-                    ErrorMessage = "No search root is available, or no file-name keyword could be extracted from the message.",
+                    ErrorMessage = searchRoots.Count == 0
+                        ? "No search root is available."
+                        : !string.IsNullOrWhiteSpace(query)
+                            ? $"The explicit file query must be a single-line literal of at most {MaxExplicitQueryCharacters} characters."
+                            : "No file-name keyword could be extracted from the message.",
                 };
             }
 
@@ -192,10 +197,17 @@ namespace ColorVision.Copilot
         public static IReadOnlyList<string> ResolveSearchTerms(string? query, string? fallbackText, bool allowPlainSearchTerms)
         {
             if (!string.IsNullOrWhiteSpace(query))
-                return ExtractSearchTerms(query, allowPlainSearchTerms);
+            {
+                var literal = query.Trim().Replace('\\', '/');
+                return literal.Length <= MaxExplicitQueryCharacters && !ContainsLineBreak(literal)
+                    ? [literal]
+                    : Array.Empty<string>();
+            }
 
             return ExtractSearchTerms(fallbackText, allowPlainSearchTerms: false);
         }
+
+        private static bool ContainsLineBreak(string value) => value.Contains('\r') || value.Contains('\n');
 
         private static bool HasFileSearchIntent(string text)
         {

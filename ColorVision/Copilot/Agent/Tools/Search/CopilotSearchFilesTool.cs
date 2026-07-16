@@ -12,7 +12,7 @@ namespace ColorVision.Copilot
 
         public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
         {
-            new CopilotToolParameter { Name = "query", Description = "File name or path fragment to locate.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "query", Description = "Literal file name or workspace-relative path fragment to locate; not a natural-language instruction or glob.", Type = CopilotToolParameterType.Text, Required = true },
             new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
         });
 
