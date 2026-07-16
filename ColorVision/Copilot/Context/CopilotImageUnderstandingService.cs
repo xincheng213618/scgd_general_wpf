@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
             return payloads;
         }
 
-        private static Task<byte[]> LoadImageBytesAsync(
+        internal static Task<byte[]> LoadImageBytesAsync(
             string? filePath,
             string label,
             CancellationToken cancellationToken)

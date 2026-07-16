@@ -6,8 +6,12 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -1781,8 +1785,12 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAttachmentItem : ViewModelBase
     {
+        private const int PreviewDecodePixelWidth = 256;
+        private const int MaximumConcurrentPreviewLoads = 2;
         public const int MaximumStoredTextCharacters = 12_000;
         private const string StoredTextTruncationMarker = "\n...<attachment truncated>";
+        private static readonly SemaphoreSlim PreviewLoadSlots = new(MaximumConcurrentPreviewLoads, MaximumConcurrentPreviewLoads);
+        private readonly object _previewSync = new();
 
         public string Id
         {
@@ -1887,32 +1895,100 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (Type != CopilotAttachmentType.Image || string.IsNullOrWhiteSpace(Value) || !File.Exists(Value))
-                    return null;
-
-                if (_previewImage != null && string.Equals(_previewImagePath, Value, StringComparison.OrdinalIgnoreCase))
-                    return _previewImage;
-
-                try
+                string imagePath;
+                int generation;
+                lock (_previewSync)
                 {
-                    using var stream = new FileStream(Value, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    var image = new BitmapImage();
-                    image.BeginInit();
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                    image.StreamSource = stream;
-                    image.EndInit();
-                    image.Freeze();
+                    if (Type != CopilotAttachmentType.Image || string.IsNullOrWhiteSpace(Value))
+                        return null;
 
-                    _previewImage = image;
-                    _previewImagePath = Value;
-                    return _previewImage;
+                    imagePath = Value;
+                    if (string.Equals(_previewImagePath, imagePath, StringComparison.OrdinalIgnoreCase))
+                        return _previewImage;
+                    if (string.Equals(_previewLoadingPath, imagePath, StringComparison.OrdinalIgnoreCase))
+                        return null;
+
+                    _previewLoadingPath = imagePath;
+                    generation = ++_previewGeneration;
                 }
-                catch
-                {
-                    return null;
-                }
+
+                _ = LoadPreviewImageAsync(imagePath, generation);
+                return null;
             }
+        }
+
+        private async Task LoadPreviewImageAsync(string imagePath, int generation)
+        {
+            ImageSource? previewImage = null;
+            var enteredLoadSlot = false;
+            try
+            {
+                await PreviewLoadSlots.WaitAsync().ConfigureAwait(false);
+                enteredLoadSlot = true;
+                var bytes = await CopilotImagePayloadLoader.LoadImageBytesAsync(
+                    imagePath,
+                    Path.GetFileName(imagePath),
+                    CancellationToken.None).ConfigureAwait(false);
+                using var stream = new MemoryStream(bytes, writable: false);
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                image.DecodePixelWidth = PreviewDecodePixelWidth;
+                image.StreamSource = stream;
+                image.EndInit();
+                image.Freeze();
+                previewImage = image;
+            }
+            catch
+            {
+            }
+            finally
+            {
+                if (enteredLoadSlot)
+                    PreviewLoadSlots.Release();
+            }
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
+                {
+                    ApplyPreviewImage(imagePath, generation, previewImage);
+                    return;
+                }
+                if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                    return;
+
+                var operation = dispatcher.InvokeAsync(
+                    () => ApplyPreviewImage(imagePath, generation, previewImage),
+                    DispatcherPriority.Background);
+                await operation.Task.ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+
+        private void ApplyPreviewImage(string imagePath, int generation, ImageSource? previewImage)
+        {
+            lock (_previewSync)
+            {
+                if (generation != _previewGeneration
+                    || Type != CopilotAttachmentType.Image
+                    || !string.Equals(Value, imagePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                _previewImage = previewImage;
+                _previewImagePath = imagePath;
+                _previewLoadingPath = string.Empty;
+            }
+
+            OnPropertyChanged(nameof(PreviewImage));
+            OnPropertyChanged(nameof(HasPreviewImage));
+            OnPropertyChanged(nameof(ImageFallbackText));
         }
 
         [JsonIgnore]
@@ -1933,6 +2009,10 @@ namespace ColorVision.Copilot
         private ImageSource? _previewImage;
 
         private string _previewImagePath = string.Empty;
+
+        private string _previewLoadingPath = string.Empty;
+
+        private int _previewGeneration;
 
         public bool EnsureValid()
         {
@@ -2042,8 +2122,13 @@ namespace ColorVision.Copilot
 
         private void ResetPreviewImage()
         {
-            _previewImage = null;
-            _previewImagePath = string.Empty;
+            lock (_previewSync)
+            {
+                _previewGeneration++;
+                _previewImage = null;
+                _previewImagePath = string.Empty;
+                _previewLoadingPath = string.Empty;
+            }
             OnPropertyChanged(nameof(PreviewImage));
             OnPropertyChanged(nameof(HasPreviewImage));
             OnPropertyChanged(nameof(ImageFallbackText));
