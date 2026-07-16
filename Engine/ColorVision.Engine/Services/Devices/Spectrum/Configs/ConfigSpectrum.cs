@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
     {
         CMvSpectra = 0,
         LightModule = 1,
+        Gaolitong = 2,
     }
 
     public class SpectrumCalibrationGroup : ViewModelBase
