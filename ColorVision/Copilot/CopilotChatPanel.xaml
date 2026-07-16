@@ -2307,6 +2307,7 @@
                                          BorderThickness="0"
                                          FontSize="11"
                                          Foreground="{DynamicResource GlobalTextBrush}"
+                                         MaxLength="256"
                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="搜索会话 (Ctrl+F)" />
                             </Grid>

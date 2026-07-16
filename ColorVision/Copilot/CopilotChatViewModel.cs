@@ -28,6 +28,9 @@ namespace ColorVision.Copilot
         private const int CompactSummaryOutputTokens = 4096;
         private const int MaximumGeneratedConversationTitleCharacters = 48;
         private const int MaximumComposerAttachments = 32;
+        private const int MaximumConversationSearchCharacters = 256;
+        private const int MaximumConversationSearchTerms = 8;
+        private static readonly TimeSpan ConversationSearchDebounceDelay = TimeSpan.FromMilliseconds(180);
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
         private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -54,6 +57,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly HashSet<CancellationTokenSource> _auxiliaryOperationCancellations = new();
+        private readonly DispatcherTimer _conversationSearchDebounceTimer;
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CancellationTokenSource? _compactConversationCts;
@@ -112,6 +116,11 @@ namespace ColorVision.Copilot
                 SaveStateSnapshotAsync,
                 onError: ReportStatePersistenceError,
                 onSaved: ReportStatePersistenceSuccess);
+            _conversationSearchDebounceTimer = new DispatcherTimer
+            {
+                Interval = ConversationSearchDebounceDelay,
+            };
+            _conversationSearchDebounceTimer.Tick += ConversationSearchDebounceTimer_Tick;
             _currentLiveContext = CopilotLiveContextRegistry.Current;
             _activeDocumentPath = TryGetActiveDocumentPath();
 
@@ -447,12 +456,13 @@ namespace ColorVision.Copilot
             get => _conversationSearchText;
             set
             {
-                if (!SetProperty(ref _conversationSearchText, value ?? string.Empty))
+                var normalizedValue = NormalizeConversationSearchText(value);
+                if (!SetProperty(ref _conversationSearchText, normalizedValue))
                     return;
 
                 OnPropertyChanged(nameof(IsConversationSearchEmpty));
                 OnPropertyChanged(nameof(HasConversationSearchQuery));
-                RefreshFilteredConversations();
+                ScheduleConversationSearchRefresh();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -2938,8 +2948,11 @@ namespace ColorVision.Copilot
 
         private void RefreshFilteredConversations()
         {
+            _conversationSearchDebounceTimer.Stop();
             var terms = (ConversationSearchText ?? string.Empty)
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Take(MaximumConversationSearchTerms)
+                .ToArray();
             var matches = terms.Length == 0
                 ? Conversations.ToArray()
                 : Conversations.Where(conversation => MatchesConversationSearch(conversation, terms)).ToArray();
@@ -2952,6 +2965,20 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(SelectedConversation));
         }
 
+        private void ScheduleConversationSearchRefresh()
+        {
+            _conversationSearchDebounceTimer.Stop();
+            if (IsConversationSearchEmpty)
+            {
+                RefreshFilteredConversations();
+                return;
+            }
+
+            _conversationSearchDebounceTimer.Start();
+        }
+
+        private void ConversationSearchDebounceTimer_Tick(object? sender, EventArgs e) => RefreshFilteredConversations();
+
         private static bool MatchesConversationSearch(CopilotConversationRecord conversation, IReadOnlyList<string> terms)
         {
             return terms.All(term =>
@@ -2959,13 +2986,41 @@ namespace ColorVision.Copilot
                 || ContainsSearchTerm(conversation.PreviewText, term)
                 || ContainsSearchTerm(conversation.DraftText, term)
                 || ContainsSearchTerm(conversation.ProfileDisplayName, term)
-                || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)));
+                || conversation.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))
+                || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)
+                    || message.Attachments.Any(attachment => MatchesAttachmentSearch(attachment, term))));
+        }
+
+        private static bool MatchesAttachmentSearch(CopilotAttachmentItem? attachment, string term)
+        {
+            return attachment != null
+                && (ContainsSearchTerm(attachment.Title, term)
+                    || ContainsSearchTerm(attachment.DisplayLabel, term)
+                    || ContainsSearchTerm(attachment.Source, term)
+                    || ((attachment.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
+                        && ContainsSearchTerm(attachment.Value, term)));
         }
 
         private static bool ContainsSearchTerm(string? text, string term)
         {
             return !string.IsNullOrWhiteSpace(text)
                 && text.Contains(term, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeConversationSearchText(string? value)
+        {
+            var normalized = value ?? string.Empty;
+            if (normalized.Length <= MaximumConversationSearchCharacters)
+                return normalized;
+
+            var retainedLength = MaximumConversationSearchCharacters;
+            if (char.IsHighSurrogate(normalized[retainedLength - 1])
+                && char.IsLowSurrogate(normalized[retainedLength]))
+            {
+                retainedLength--;
+            }
+
+            return normalized[..retainedLength];
         }
 
         private void RefreshAgentTasks()
@@ -4755,6 +4810,8 @@ namespace ColorVision.Copilot
             if (_selectedProfile != null)
                 _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
 
+            _conversationSearchDebounceTimer.Stop();
+            _conversationSearchDebounceTimer.Tick -= ConversationSearchDebounceTimer_Tick;
             _pendingActionExpiryTimer.Stop();
             _pendingActionFeedbackCts?.Cancel();
             _pendingActionFeedbackCts = null;
