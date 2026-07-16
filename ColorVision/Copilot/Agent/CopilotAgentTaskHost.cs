@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -137,6 +138,21 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool TryRequestShutdown()
+        {
+            while (true)
+            {
+                var state = State;
+                if (state is CopilotHostedRunState.CancelRequested or CopilotHostedRunState.Completed)
+                    return false;
+                if (Interlocked.CompareExchange(ref _state, (int)CopilotHostedRunState.CancelRequested, (int)state) == (int)state)
+                    break;
+            }
+
+            CancelExecutionToken();
+            return true;
+        }
+
         private void CancelExecutionToken()
         {
             try
@@ -185,6 +201,7 @@ namespace ColorVision.Copilot
         private readonly object _gate = new();
         private readonly LinkedList<HostedRunWorkItem> _queuedWorkItems = new();
         private HostedRunWorkItem? _activeWorkItem;
+        private bool _isShutdown;
 
         public CopilotAgentTaskHost(int maxQueuedRuns = DefaultMaxQueuedRuns)
         {
@@ -209,6 +226,15 @@ namespace ColorVision.Copilot
 
         public bool IsActive => ActiveRun != null;
 
+        public bool IsShutdown
+        {
+            get
+            {
+                lock (_gate)
+                    return _isShutdown;
+            }
+        }
+
         public int MaxQueuedRuns { get; }
 
         public int QueuedCount
@@ -225,7 +251,7 @@ namespace ColorVision.Copilot
             get
             {
                 lock (_gate)
-                    return _activeWorkItem == null || _queuedWorkItems.Count < MaxQueuedRuns;
+                    return !_isShutdown && (_activeWorkItem == null || _queuedWorkItems.Count < MaxQueuedRuns);
             }
         }
 
@@ -255,6 +281,8 @@ namespace ColorVision.Copilot
             HostedRunWorkItem workItem;
             lock (_gate)
             {
+                if (_isShutdown)
+                    throw new InvalidOperationException("The Copilot task host is shutting down and cannot start new runs.");
                 if (_activeWorkItem != null)
                     throw new InvalidOperationException("Another Copilot run is already active.");
 
@@ -282,7 +310,8 @@ namespace ColorVision.Copilot
             var startsImmediately = false;
             lock (_gate)
             {
-                if (ContainsConversationNoLock(normalizedConversationId)
+                if (_isShutdown
+                    || ContainsConversationNoLock(normalizedConversationId)
                     || _activeWorkItem != null && _queuedWorkItems.Count >= MaxQueuedRuns)
                 {
                     run = null;
@@ -307,6 +336,42 @@ namespace ColorVision.Copilot
             else
                 Publish(CopilotAgentTaskHostChangeKind.Queued, run);
             return true;
+        }
+
+        public int Shutdown()
+        {
+            CopilotHostedAgentRun? activeRun;
+            CopilotHostedAgentRun[] queuedRuns;
+            lock (_gate)
+            {
+                if (_isShutdown)
+                    return 0;
+
+                _isShutdown = true;
+                activeRun = _activeWorkItem?.Run;
+                queuedRuns = _queuedWorkItems.Select(workItem => workItem.Run).ToArray();
+                _queuedWorkItems.Clear();
+            }
+
+            var cancellationCount = 0;
+            if (activeRun?.TryRequestShutdown() == true)
+            {
+                cancellationCount++;
+                Publish(CopilotAgentTaskHostChangeKind.ControlRequested, activeRun);
+            }
+
+            foreach (var queuedRun in queuedRuns)
+            {
+                if (!queuedRun.TryRequestShutdown())
+                    continue;
+
+                cancellationCount++;
+                Publish(CopilotAgentTaskHostChangeKind.ControlRequested, queuedRun);
+                queuedRun.Complete(error: null);
+                Publish(CopilotAgentTaskHostChangeKind.Completed, queuedRun);
+            }
+
+            return cancellationCount;
         }
 
         public bool MarkCheckpointReady(string runId)

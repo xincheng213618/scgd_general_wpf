@@ -1384,7 +1384,8 @@ namespace ColorVision.Copilot
             IsBusy = _taskHost.IsActive;
             if (e.Kind == CopilotAgentTaskHostChangeKind.ControlRequested
                 && e.Run.HasStarted
-                && e.Run.State == CopilotHostedRunState.CancelRequested)
+                && e.Run.State == CopilotHostedRunState.CancelRequested
+                && e.Run.RunControl?.Intent == CopilotAgentControlIntent.Cancel)
             {
                 var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, e.Run.ConversationId, StringComparison.Ordinal));
                 if (conversation?.AgentSessionCheckpoint != null)
@@ -3334,6 +3335,7 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            _taskHost.Shutdown();
             _stateSaveScheduler.Dispose();
             PublishSelectedTaskEventJournal();
             try

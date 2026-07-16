@@ -224,6 +224,57 @@ public sealed class CopilotAgentTaskHostTests
     }
 
     [Fact]
+    public async Task Host_ShutdownCancelsActiveAndQueuedRunsWithoutDiscardingCheckpointIntent()
+    {
+        var host = new CopilotAgentTaskHost(maxQueuedRuns: 2);
+        var queuedExecutionCount = 0;
+        var active = host.Start(
+            "conversation-1",
+            CopilotAgentMode.Auto,
+            run => Task.Delay(Timeout.InfiniteTimeSpan, run.CancellationToken));
+        Assert.True(host.MarkCheckpointReady(active.Id));
+        Assert.True(host.TrySchedule(
+            "conversation-2",
+            CopilotAgentMode.Auto,
+            _ =>
+            {
+                queuedExecutionCount++;
+                return Task.CompletedTask;
+            },
+            out var second));
+        Assert.True(host.TrySchedule(
+            "conversation-3",
+            CopilotAgentMode.Diagnose,
+            _ =>
+            {
+                queuedExecutionCount++;
+                return Task.CompletedTask;
+            },
+            out var third));
+
+        Assert.Equal(3, host.Shutdown());
+
+        Assert.True(host.IsShutdown);
+        Assert.False(host.CanSchedule);
+        Assert.Equal(0, host.QueuedCount);
+        Assert.True(active.IsCheckpointReady);
+        Assert.Equal(CopilotAgentControlIntent.None, active.RunControl?.Intent);
+        Assert.Equal(CopilotAgentControlIntent.None, second!.RunControl?.Intent);
+        Assert.Equal(CopilotAgentControlIntent.None, third!.RunControl?.Intent);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => active.Completion.WaitAsync(TimeSpan.FromSeconds(5)));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => second.Completion);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => third.Completion);
+        Assert.Equal(0, queuedExecutionCount);
+        Assert.False(second.HasStarted);
+        Assert.False(third.HasStarted);
+        Assert.False(host.IsActive);
+        Assert.Equal(0, host.Shutdown());
+        Assert.False(host.TrySchedule("conversation-4", CopilotAgentMode.Auto, _ => Task.CompletedTask, out var rejected));
+        Assert.Null(rejected);
+        Assert.Throws<InvalidOperationException>(() => host.Start("conversation-5", CopilotAgentMode.Chat, _ => Task.CompletedTask));
+    }
+
+    [Fact]
     public async Task Host_CancelsPromotedRunBeforeExecutionEntryWithoutInvokingOperation()
     {
         var host = new CopilotAgentTaskHost(maxQueuedRuns: 2);
