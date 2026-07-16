@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
+        private readonly HashSet<CancellationTokenSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CancellationTokenSource? _compactConversationCts;
@@ -959,13 +960,17 @@ namespace ColorVision.Copilot
             }
 
             _isInspectingGitDiff = true;
+            var cancellation = BeginAuxiliaryOperation();
             ShowLocalCommandResult(command, "正在读取本地 Git 变更…不会调用模型，也不会修改文件。");
             try
             {
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
                 var searchRoots = CopilotAgentRequestFactory.BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
-                var result = await _localGitDiffService.ExecuteAsync(searchRoots, scope, CancellationToken.None);
+                var result = await _localGitDiffService.ExecuteAsync(searchRoots, scope, cancellation.Token);
                 ShowLocalCommandResult(command, result.Report);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -973,6 +978,7 @@ namespace ColorVision.Copilot
             }
             finally
             {
+                CompleteAuxiliaryOperation(cancellation);
                 _isInspectingGitDiff = false;
             }
         }
@@ -1849,10 +1855,18 @@ namespace ColorVision.Copilot
             }
             else if (action.ExecuteOnApproval)
             {
-                var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, CancellationToken.None);
-                SetPendingActionFeedback(executionResult.Success
-                    ? $"{action.ActionId}: approved and executed."
-                    : $"{action.ActionId}: {executionResult.Text}");
+                var cancellation = BeginAuxiliaryOperation();
+                try
+                {
+                    var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, cancellation.Token);
+                    SetPendingActionFeedback(executionResult.Success
+                        ? $"{action.ActionId}: approved and executed."
+                        : $"{action.ActionId}: {executionResult.Text}");
+                }
+                finally
+                {
+                    CompleteAuxiliaryOperation(cancellation);
+                }
             }
             else
             {
@@ -2210,7 +2224,7 @@ namespace ColorVision.Copilot
             }
             if (_webPageAttachmentCts != null)
             {
-                _webPageAttachmentCts.Cancel();
+                TryCancelCancellationSource(_webPageAttachmentCts);
                 return;
             }
             if (IsViewingQueuedRun || IsViewingActiveRun)
@@ -2464,7 +2478,7 @@ namespace ColorVision.Copilot
             }
             if (_webPageAttachmentCts != null)
             {
-                _webPageAttachmentCts.Cancel();
+                TryCancelCancellationSource(_webPageAttachmentCts);
                 return;
             }
             CancelCurrentReply(discardAgentCheckpoint: true);
@@ -2912,7 +2926,7 @@ namespace ColorVision.Copilot
             if (!_conversationTitleGenerations.Remove(conversationId, out var generation))
                 return;
 
-            generation.Cancel();
+            TryCancelCancellationSource(generation);
         }
 
         private void CancelAllConversationTitleGenerations()
@@ -2920,7 +2934,43 @@ namespace ColorVision.Copilot
             var generations = _conversationTitleGenerations.Values.ToArray();
             _conversationTitleGenerations.Clear();
             foreach (var generation in generations)
-                generation.Cancel();
+                TryCancelCancellationSource(generation);
+        }
+
+        private CancellationTokenSource BeginAuxiliaryOperation()
+        {
+            var cancellation = new CancellationTokenSource();
+            _auxiliaryOperationCancellations.Add(cancellation);
+            return cancellation;
+        }
+
+        private void CompleteAuxiliaryOperation(CancellationTokenSource cancellation)
+        {
+            _auxiliaryOperationCancellations.Remove(cancellation);
+            cancellation.Dispose();
+        }
+
+        private void CancelAllAuxiliaryOperations()
+        {
+            var cancellations = _auxiliaryOperationCancellations.ToArray();
+            _auxiliaryOperationCancellations.Clear();
+            foreach (var cancellation in cancellations)
+                TryCancelCancellationSource(cancellation);
+        }
+
+        private static void TryCancelCancellationSource(CancellationTokenSource cancellation)
+        {
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (AggregateException ex)
+            {
+                Trace.TraceWarning($"Copilot auxiliary operation cancellation callback failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}");
+            }
         }
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
@@ -3150,7 +3200,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            using var cancellation = new CancellationTokenSource();
+            var cancellation = BeginAuxiliaryOperation();
             _webPageAttachmentCts = cancellation;
             IsBusy = true;
             try
@@ -3204,6 +3254,7 @@ namespace ColorVision.Copilot
                 Mouse.OverrideCursor = null;
                 if (ReferenceEquals(_webPageAttachmentCts, cancellation))
                     _webPageAttachmentCts = null;
+                CompleteAuxiliaryOperation(cancellation);
                 IsBusy = _taskHost.IsActive;
             }
         }
@@ -4075,6 +4126,7 @@ namespace ColorVision.Copilot
                 return;
 
             CancelAllConversationTitleGenerations();
+            CancelAllAuxiliaryOperations();
             if (Application.Current != null)
                 Application.Current.Exit -= Application_Exit;
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
@@ -4096,7 +4148,6 @@ namespace ColorVision.Copilot
             _pendingActionFeedbackCts?.Cancel();
             _pendingActionFeedbackCts = null;
             _compactConversationCts?.Cancel();
-            _webPageAttachmentCts?.Cancel();
             _stateSaveScheduler.Dispose();
             GC.SuppressFinalize(this);
         }
