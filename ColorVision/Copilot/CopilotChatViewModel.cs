@@ -1551,11 +1551,7 @@ namespace ColorVision.Copilot
                 _config.AgentDefaults,
                 _config.ExternalMcpServers);
             var eventSink = new CopilotTurnEventSink(
-                preparedRequest =>
-                {
-                    userMessage.RequestContent = preparedRequest.Content;
-                    userMessage.ChatAttachmentContextCaptured = preparedRequest.ChatAttachmentContextCaptured;
-                },
+                preparedRequest => ApplyPreparedTurnRequestOnUiThread(userMessage, preparedRequest),
                 delta => deltaBuffer?.Enqueue(delta),
                 retry => ApplyProviderRetryOnUiThread(assistantMessage, retry),
                 agentEvent => eventBuffer?.Enqueue(agentEvent));
@@ -2203,6 +2199,17 @@ namespace ColorVision.Copilot
             }
 
             ApplyProviderRetry(assistantMessage, retry);
+        }
+
+        private static void ApplyPreparedTurnRequestOnUiThread(
+            CopilotChatMessage userMessage,
+            CopilotPreparedTurnRequest preparedRequest)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                userMessage.RequestContent = preparedRequest.Content;
+                userMessage.ChatAttachmentContextCaptured = preparedRequest.ChatAttachmentContextCaptured;
+            });
         }
 
         private void ApplyProviderRetry(CopilotChatMessage assistantMessage, CopilotProviderRetryInfo retry)
