@@ -50,6 +50,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
+        private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CancellationTokenSource? _compactConversationCts;
@@ -2797,10 +2798,13 @@ namespace ColorVision.Copilot
 
         private void QueueConversationTitleGeneration(CopilotConversationRecord conversation, CopilotProfileConfig requestProfile)
         {
-            if (!ShouldGenerateConversationTitle(conversation))
+            if (Volatile.Read(ref _disposeState) == 1 || !ShouldGenerateConversationTitle(conversation))
                 return;
 
-            _ = GenerateConversationTitleAsync(conversation, requestProfile.Clone());
+            CancelConversationTitleGeneration(conversation.Id);
+            var generation = new CancellationTokenSource();
+            _conversationTitleGenerations[conversation.Id] = generation;
+            _ = GenerateConversationTitleAsync(conversation, requestProfile.Clone(), generation);
         }
 
         private static bool ShouldGenerateConversationTitle(CopilotConversationRecord conversation)
@@ -2813,14 +2817,18 @@ namespace ColorVision.Copilot
             return userMessageCount == 1 && assistantMessageCount == 1;
         }
 
-        private async Task GenerateConversationTitleAsync(CopilotConversationRecord conversation, CopilotProfileConfig requestProfile)
+        private async Task GenerateConversationTitleAsync(
+            CopilotConversationRecord conversation,
+            CopilotProfileConfig requestProfile,
+            CancellationTokenSource generation)
         {
-            var titlePrompt = BuildConversationTitlePrompt(conversation);
-            if (string.IsNullOrWhiteSpace(titlePrompt))
-                return;
-
             try
             {
+                var titlePrompt = BuildConversationTitlePrompt(conversation);
+                if (string.IsNullOrWhiteSpace(titlePrompt))
+                    return;
+
+                var cancellationToken = generation.Token;
                 requestProfile.UseSystemPromptOverride("You are a conversation title generator. Generate a short, natural English title for the given conversation. Return only the title itself, with no explanation.");
                 requestProfile.MaxTokens = Math.Min(requestProfile.MaxTokens, 32);
                 requestProfile.Temperature = 0.2;
@@ -2837,25 +2845,63 @@ namespace ColorVision.Copilot
                         if (delta.HasContent)
                             titleBuilder.Append(delta.Content);
                     },
-                    CancellationToken.None);
+                    cancellationToken);
 
                 var generatedTitle = NormalizeGeneratedTitle(titleBuilder.ToString());
-                if (string.IsNullOrWhiteSpace(generatedTitle) || Application.Current == null)
+                if (string.IsNullOrWhiteSpace(generatedTitle) || cancellationToken.IsCancellationRequested || Application.Current == null)
                     return;
 
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    if (!Conversations.Contains(conversation) || conversation.HasCustomTitle)
+                    if (cancellationToken.IsCancellationRequested
+                        || !IsCurrentConversationTitleGeneration(conversation.Id, generation)
+                        || !Conversations.Contains(conversation)
+                        || conversation.HasCustomTitle)
+                    {
                         return;
+                    }
 
                     conversation.SetGeneratedTitle(generatedTitle);
                     RefreshFilteredConversations();
                     PersistState();
                 });
             }
+            catch (OperationCanceledException) when (generation.IsCancellationRequested)
+            {
+            }
             catch
             {
             }
+            finally
+            {
+                CompleteConversationTitleGeneration(conversation.Id, generation);
+            }
+        }
+
+        private bool IsCurrentConversationTitleGeneration(string conversationId, CancellationTokenSource generation) =>
+            _conversationTitleGenerations.TryGetValue(conversationId, out var current) && ReferenceEquals(current, generation);
+
+        private void CompleteConversationTitleGeneration(string conversationId, CancellationTokenSource generation)
+        {
+            if (IsCurrentConversationTitleGeneration(conversationId, generation))
+                _conversationTitleGenerations.Remove(conversationId);
+            generation.Dispose();
+        }
+
+        private void CancelConversationTitleGeneration(string conversationId)
+        {
+            if (!_conversationTitleGenerations.Remove(conversationId, out var generation))
+                return;
+
+            generation.Cancel();
+        }
+
+        private void CancelAllConversationTitleGenerations()
+        {
+            var generations = _conversationTitleGenerations.Values.ToArray();
+            _conversationTitleGenerations.Clear();
+            foreach (var generation in generations)
+                generation.Cancel();
         }
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
@@ -2878,6 +2924,7 @@ namespace ColorVision.Copilot
             if (window.ShowDialog() != true || string.IsNullOrWhiteSpace(window.ResultText))
                 return;
 
+            CancelConversationTitleGeneration(conversation.Id);
             conversation.SetCustomTitle(window.ResultText);
             RefreshFilteredConversations();
             PersistState();
@@ -2934,6 +2981,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            CancelConversationTitleGeneration(conversation.Id);
             var managedAttachments = conversation.EnumerateReferencedAttachments().ToArray();
             if (string.Equals(conversation.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
                 ClearAgentRunNotice();
@@ -3985,6 +4033,7 @@ namespace ColorVision.Copilot
             if (Interlocked.Exchange(ref _disposeState, 1) == 1)
                 return;
 
+            CancelAllConversationTitleGenerations();
             if (Application.Current != null)
                 Application.Current.Exit -= Application_Exit;
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
