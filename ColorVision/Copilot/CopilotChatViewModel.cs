@@ -1299,12 +1299,24 @@ namespace ColorVision.Copilot
             });
 
             CopilotAgentRunResult result;
+            var dispatcher = Application.Current?.Dispatcher;
+            var streamContext = dispatcher == null
+                ? SynchronizationContext.Current
+                : new DispatcherSynchronizationContext(dispatcher);
+            var eventBuffer = new CopilotAgentEventBuffer(
+                streamContext,
+                events => ApplyAgentEvents(hostedRun, conversation, assistantMessage, events),
+                isOnTargetThread: dispatcher == null ? null : dispatcher.CheckAccess);
             try
             {
-                result = await _agentRuntime.RunAsync(
-                    agentRequest,
-                    agentEvent => ApplyAgentEventOnUiThread(hostedRun, conversation, assistantMessage, agentEvent),
-                    cancellationToken);
+                try
+                {
+                    result = await _agentRuntime.RunAsync(agentRequest, eventBuffer.Enqueue, cancellationToken);
+                }
+                finally
+                {
+                    await eventBuffer.CompleteAsync();
+                }
             }
             catch (OperationCanceledException) when (hostedRun.RunControl?.Intent == CopilotAgentControlIntent.Pause && sessionCheckpoint != null)
             {
@@ -1847,22 +1859,6 @@ namespace ColorVision.Copilot
                 conversationHistory);
         }
 
-        private void ApplyAgentEventOnUiThread(
-            CopilotHostedAgentRun hostedRun,
-            CopilotConversationRecord conversation,
-            CopilotChatMessage assistantMessage,
-            CopilotAgentEvent agentEvent)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher != null && !dispatcher.CheckAccess())
-            {
-                dispatcher.Invoke(() => ApplyAgentEvent(hostedRun, conversation, assistantMessage, agentEvent));
-                return;
-            }
-
-            ApplyAgentEvent(hostedRun, conversation, assistantMessage, agentEvent);
-        }
-
         private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)
         {
             foreach (var delta in deltas)
@@ -1891,40 +1887,57 @@ namespace ColorVision.Copilot
                 PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
         }
 
-        private void ApplyAgentEvent(
+        private void ApplyAgentEvents(
             CopilotHostedAgentRun hostedRun,
             CopilotConversationRecord conversation,
             CopilotChatMessage assistantMessage,
-            CopilotAgentEvent agentEvent)
+            IReadOnlyList<CopilotAgentEvent> agentEvents)
         {
-            if (agentEvent.Type == CopilotAgentEventType.CheckpointReady)
+            var persistState = false;
+            var persistImmediately = false;
+            var refreshAgentTasks = false;
+            try
             {
-                _taskHost.MarkCheckpointReady(hostedRun.Id);
-                return;
-            }
-
-            if (agentEvent.Type == CopilotAgentEventType.CheckpointUpdated)
-            {
-                if (hostedRun.State == CopilotHostedRunState.CancelRequested
-                    || agentEvent.SessionCheckpoint?.IsStructurallyValid() != true
-                    || agentEvent.TaskLedger == null)
+                foreach (var agentEvent in agentEvents)
                 {
-                    return;
+                    if (agentEvent.Type == CopilotAgentEventType.CheckpointReady)
+                    {
+                        _taskHost.MarkCheckpointReady(hostedRun.Id);
+                        continue;
+                    }
+
+                    if (agentEvent.Type == CopilotAgentEventType.CheckpointUpdated)
+                    {
+                        if (hostedRun.State == CopilotHostedRunState.CancelRequested
+                            || agentEvent.SessionCheckpoint?.IsStructurallyValid() != true
+                            || agentEvent.TaskLedger == null)
+                        {
+                            continue;
+                        }
+
+                        conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
+                        assistantMessage.AgentTaskLedger = agentEvent.TaskLedger;
+                        persistState = true;
+                        persistImmediately = true;
+                        refreshAgentTasks |= ReferenceEquals(conversation, SelectedConversation);
+                        continue;
+                    }
+
+                    var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, agentEvent);
+                    if (!presentationResult.IsHandled || presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.None)
+                        continue;
+
+                    persistState = true;
+                    persistImmediately |= presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate;
                 }
-
-                conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
-                assistantMessage.AgentTaskLedger = agentEvent.TaskLedger;
-                PersistState(immediate: true);
-                if (ReferenceEquals(conversation, SelectedConversation))
-                    RefreshAgentTasks();
-                return;
             }
-
-            var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, agentEvent);
-            if (!presentationResult.IsHandled || presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.None)
-                return;
-
-            PersistState(immediate: presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+            finally
+            {
+                if (persistState)
+                    PersistState(immediate: persistImmediately);
+                if (refreshAgentTasks)
+                    RefreshAgentTasks();
+            }
         }
 
         private void StartNewChat()

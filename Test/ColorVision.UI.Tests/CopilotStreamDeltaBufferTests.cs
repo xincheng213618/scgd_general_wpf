@@ -90,7 +90,92 @@ public sealed class CopilotStreamDeltaBufferTests
         Assert.Equal("apply failed", error.InnerException?.Message);
     }
 
+    [Fact]
+    public async Task AgentBuffer_PostsFromTargetAndPreservesNonStreamingEventOrder()
+    {
+        var context = new QueuedSynchronizationContext();
+        var batches = new List<IReadOnlyList<CopilotAgentEvent>>();
+        var buffer = new CopilotAgentEventBuffer(
+            context,
+            batch => batches.Add(batch),
+            isOnTargetThread: () => context.IsExecuting);
+        var checkpointReady = CopilotAgentEvent.CheckpointReady();
+        var toolStarted = CopilotAgentEvent.ToolStarted(new CopilotToolExecutionInfo
+        {
+            CallId = "call-1",
+            ToolName = "InspectWindowsSystem",
+            State = CopilotToolExecutionState.Running,
+        });
+
+        context.Execute(() =>
+        {
+            buffer.Enqueue(CopilotAgentEvent.Status("start"));
+            buffer.Enqueue(CopilotAgentEvent.ReasoningDelta("reason-1"));
+            buffer.Enqueue(CopilotAgentEvent.ReasoningDelta("reason-2"));
+            buffer.Enqueue(checkpointReady);
+            buffer.Enqueue(toolStarted);
+            buffer.Enqueue(CopilotAgentEvent.AnswerDelta("answer-1"));
+            buffer.Enqueue(CopilotAgentEvent.AnswerDelta("answer-2"));
+            buffer.Enqueue(CopilotAgentEvent.Completed());
+        });
+
+        Assert.Empty(batches);
+        context.Drain();
+        var batch = Assert.Single(batches);
+        Assert.Collection(
+            batch,
+            agentEvent => Assert.Equal(CopilotAgentEventType.Status, agentEvent.Type),
+            agentEvent =>
+            {
+                Assert.Equal(CopilotAgentEventType.ReasoningDelta, agentEvent.Type);
+                Assert.Equal("reason-1reason-2", agentEvent.Text);
+            },
+            agentEvent => Assert.Same(checkpointReady, agentEvent),
+            agentEvent => Assert.Same(toolStarted, agentEvent),
+            agentEvent =>
+            {
+                Assert.Equal(CopilotAgentEventType.AnswerDelta, agentEvent.Type);
+                Assert.Equal("answer-1answer-2", agentEvent.Text);
+            },
+            agentEvent => Assert.Equal(CopilotAgentEventType.Completed, agentEvent.Type));
+        await CompleteAsync(buffer, context);
+    }
+
+    [Fact]
+    public async Task AgentBuffer_AppliesBackpressureWithoutMergingControlEvents()
+    {
+        var context = new QueuedSynchronizationContext();
+        var applied = new List<CopilotAgentEvent>();
+        var buffer = new CopilotAgentEventBuffer(
+            context,
+            batch => applied.AddRange(batch),
+            maximumPendingCharacters: 1024,
+            maximumPendingEvents: 2,
+            isOnTargetThread: () => context.IsExecuting);
+
+        await Task.Run(() =>
+        {
+            buffer.Enqueue(CopilotAgentEvent.CheckpointReady());
+            buffer.Enqueue(CopilotAgentEvent.Completed());
+        });
+
+        Assert.Collection(
+            applied,
+            agentEvent => Assert.Equal(CopilotAgentEventType.CheckpointReady, agentEvent.Type),
+            agentEvent => Assert.Equal(CopilotAgentEventType.Completed, agentEvent.Type));
+        await CompleteAsync(buffer, context);
+        context.Drain();
+        Assert.Equal(2, applied.Count);
+    }
+
     private static async Task CompleteAsync(CopilotStreamDeltaBuffer buffer, QueuedSynchronizationContext context)
+    {
+        var completion = buffer.CompleteAsync();
+        context.Drain();
+        await completion;
+    }
+
+    private static async Task CompleteAsync(CopilotAgentEventBuffer buffer, QueuedSynchronizationContext context)
     {
         var completion = buffer.CompleteAsync();
         context.Drain();
@@ -108,6 +193,22 @@ public sealed class CopilotStreamDeltaBufferTests
         public override void Post(SendOrPostCallback d, object? state) => _callbacks.Enqueue((d, state));
 
         public override void Send(SendOrPostCallback d, object? state) => d(state);
+
+        public void Execute(Action action)
+        {
+            var previous = Current;
+            SetSynchronizationContext(this);
+            IsExecuting = true;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                IsExecuting = false;
+                SetSynchronizationContext(previous);
+            }
+        }
 
         public void Drain()
         {

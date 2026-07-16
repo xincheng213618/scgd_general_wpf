@@ -11,17 +11,7 @@ namespace ColorVision.Copilot
         public const int DefaultMaximumPendingCharacters = 64 * 1024;
         public const int DefaultMaximumPendingSegments = 64;
 
-        private readonly Action<IReadOnlyList<CopilotStreamDelta>> _applyBatch;
-        private readonly Func<bool> _isOnTargetThread;
-        private readonly SynchronizationContext? _targetContext;
-        private readonly int _maximumPendingCharacters;
-        private readonly int _maximumPendingSegments;
-        private readonly object _syncRoot = new();
-        private readonly List<PendingSegment> _pending = new();
-        private Exception? _failure;
-        private int _pendingCharacters;
-        private bool _completed;
-        private bool _flushScheduled;
+        private readonly CopilotUiBatchBuffer<CopilotStreamDelta> _buffer;
 
         public CopilotStreamDeltaBuffer(
             SynchronizationContext? targetContext,
@@ -30,159 +20,54 @@ namespace ColorVision.Copilot
             int maximumPendingSegments = DefaultMaximumPendingSegments,
             Func<bool>? isOnTargetThread = null)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingCharacters, 1);
-            ArgumentOutOfRangeException.ThrowIfLessThan(maximumPendingSegments, 1);
-
-            _targetContext = targetContext;
-            var targetThreadId = Environment.CurrentManagedThreadId;
-            _isOnTargetThread = isOnTargetThread ?? (() => Environment.CurrentManagedThreadId == targetThreadId);
-            _applyBatch = applyBatch ?? throw new ArgumentNullException(nameof(applyBatch));
-            _maximumPendingCharacters = maximumPendingCharacters;
-            _maximumPendingSegments = maximumPendingSegments;
+            _buffer = new CopilotUiBatchBuffer<CopilotStreamDelta>(
+                targetContext,
+                applyBatch,
+                new PendingDeltaBatch(),
+                maximumPendingCharacters,
+                maximumPendingSegments,
+                postOnTargetThread: false,
+                isOnTargetThread);
         }
 
         public void Enqueue(CopilotStreamDelta delta)
         {
-            if (!delta.HasAny)
-                return;
-
-            if (_targetContext == null || IsOnTargetThread())
-            {
-                FlushPending(captureFailure: false);
-                ThrowIfUnavailable();
-                _applyBatch([delta]);
-                return;
-            }
-
-            var shouldPost = false;
-            var requiresBackpressure = false;
-            lock (_syncRoot)
-            {
-                ThrowIfUnavailableNoLock();
-                AppendNoLock(delta);
-                if (!_flushScheduled)
-                {
-                    _flushScheduled = true;
-                    shouldPost = true;
-                }
-
-                requiresBackpressure = _pendingCharacters >= _maximumPendingCharacters
-                    || _pending.Count >= _maximumPendingSegments;
-            }
-
-            if (shouldPost)
-                _targetContext.Post(static state => ((CopilotStreamDeltaBuffer)state!).FlushPending(captureFailure: true), this);
-            if (requiresBackpressure)
-            {
-                _targetContext.Send(static state => ((CopilotStreamDeltaBuffer)state!).FlushPending(captureFailure: true), this);
-                ThrowIfUnavailable();
-            }
+            if (delta.HasAny)
+                _buffer.Enqueue(delta);
         }
 
-        public Task CompleteAsync()
+        public Task CompleteAsync() => _buffer.CompleteAsync();
+
+        private sealed class PendingDeltaBatch : ICopilotPendingBatch<CopilotStreamDelta>
         {
-            lock (_syncRoot)
-                _completed = true;
+            private readonly List<PendingSegment> _segments = new();
 
-            if (_targetContext == null || IsOnTargetThread())
-            {
-                FlushPending(captureFailure: false);
-                ThrowIfFailed();
-                return Task.CompletedTask;
-            }
+            public int Count => _segments.Count;
 
-            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _targetContext.Post(static state =>
+            public int Size { get; private set; }
+
+            public void Add(CopilotStreamDelta delta)
             {
-                var request = (FlushRequest)state!;
-                try
+                Size += (delta.ReasoningContent?.Length ?? 0) + (delta.Content?.Length ?? 0);
+                if (_segments.Count > 0 && _segments[^1].CanAppend(delta))
                 {
-                    request.Owner.FlushPending(captureFailure: false);
-                    request.Owner.ThrowIfFailed();
-                    request.Completion.TrySetResult();
-                }
-                catch (Exception exception)
-                {
-                    request.Completion.TrySetException(exception);
-                }
-            }, new FlushRequest(this, completion));
-            return completion.Task;
-        }
-
-        private bool IsOnTargetThread() => _isOnTargetThread();
-
-        private void AppendNoLock(CopilotStreamDelta delta)
-        {
-            _pendingCharacters += (delta.ReasoningContent?.Length ?? 0) + (delta.Content?.Length ?? 0);
-            if (_pending.Count > 0 && _pending[^1].HasSameShape(delta))
-            {
-                _pending[^1].Append(delta);
-                return;
-            }
-
-            _pending.Add(new PendingSegment(delta));
-        }
-
-        private void FlushPending(bool captureFailure)
-        {
-            CopilotStreamDelta[] batch;
-            lock (_syncRoot)
-            {
-                if (_pending.Count == 0)
-                {
-                    _flushScheduled = false;
+                    _segments[^1].Append(delta);
                     return;
                 }
 
-                batch = new CopilotStreamDelta[_pending.Count];
-                for (var index = 0; index < _pending.Count; index++)
-                    batch[index] = _pending[index].ToDelta();
-                _pending.Clear();
-                _pendingCharacters = 0;
-                _flushScheduled = false;
+                _segments.Add(new PendingSegment(delta));
             }
 
-            if (!captureFailure)
+            public IReadOnlyList<CopilotStreamDelta> Drain()
             {
-                _applyBatch(batch);
-                return;
-            }
-
-            try
-            {
-                _applyBatch(batch);
-            }
-            catch (Exception exception)
-            {
-                lock (_syncRoot)
-                    _failure ??= exception;
+                var batch = new CopilotStreamDelta[_segments.Count];
+                for (var index = 0; index < _segments.Count; index++)
+                    batch[index] = _segments[index].ToDelta();
+                _segments.Clear();
+                Size = 0;
+                return batch;
             }
         }
-
-        private void ThrowIfUnavailable()
-        {
-            lock (_syncRoot)
-                ThrowIfUnavailableNoLock();
-        }
-
-        private void ThrowIfFailed()
-        {
-            lock (_syncRoot)
-            {
-                if (_failure != null)
-                    throw new InvalidOperationException("Applying streamed Copilot output failed.", _failure);
-            }
-        }
-
-        private void ThrowIfUnavailableNoLock()
-        {
-            if (_failure != null)
-                throw new InvalidOperationException("Applying streamed Copilot output failed.", _failure);
-            if (_completed)
-                throw new InvalidOperationException("The streamed Copilot output buffer is already complete.");
-        }
-
-        private sealed record FlushRequest(CopilotStreamDeltaBuffer Owner, TaskCompletionSource Completion);
 
         private sealed class PendingSegment
         {
@@ -208,7 +93,7 @@ namespace ColorVision.Copilot
                     _content.Append(delta.Content);
             }
 
-            public bool HasSameShape(CopilotStreamDelta delta) =>
+            public bool CanAppend(CopilotStreamDelta delta) =>
                 HasReasoning != HasContent
                 && HasReasoning == delta.HasReasoning
                 && HasContent == delta.HasContent;
