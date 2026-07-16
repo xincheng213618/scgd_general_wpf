@@ -35,9 +35,17 @@ namespace ColorVision.Copilot
                 assistantMessage.AgentStopReason = CopilotAgentStopReason.Paused;
             }
 
+            if (assistantMessage.RequestMode == CopilotAgentMode.Chat
+                && !string.IsNullOrWhiteSpace(assistantMessage.Content))
+            {
+                assistantMessage.MarkResponseInterrupted("回答已停止；已保留现有内容，但回答可能不完整。");
+            }
+
             CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, controlIntent == CopilotAgentControlIntent.Pause
                 ? "Agent 任务已暂停；可从最近一次可用 checkpoint 继续。"
-                : "The current reply was cancelled.");
+                : assistantMessage.RequestMode == CopilotAgentMode.Chat
+                    ? "当前回答已停止。"
+                    : "Agent 任务已取消；本轮新 checkpoint 已丢弃。");
             conversation.ClearLastUsage();
         }
 
@@ -59,7 +67,7 @@ namespace ColorVision.Copilot
             }
             else
             {
-                CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"Request failed: {normalizedError}");
+                CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"请求失败：{normalizedError}");
             }
             conversation.ClearLastUsage();
         }

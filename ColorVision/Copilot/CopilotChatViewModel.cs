@@ -1364,7 +1364,7 @@ namespace ColorVision.Copilot
                 await PersistStateAndFlushAsync();
                 QueueConversationTitleGeneration(conversation, requestProfile);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
             {
                 var controlIntent = hostedRun.RunControl?.Intent ?? CopilotAgentControlIntent.None;
                 CopilotHostedTurnCompletion.CompleteCancellation(conversation, assistantMessage, controlIntent);
