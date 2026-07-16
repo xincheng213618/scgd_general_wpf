@@ -12,7 +12,7 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotPanelService : ICopilotService
     {
-        private static CopilotPanelService? _instance;
+        private static readonly Lazy<CopilotPanelService> Instance = new(() => new CopilotPanelService());
 
         private CopilotChatPanel? _panel;
         private CopilotChatViewModel? _viewModel;
@@ -24,7 +24,7 @@ namespace ColorVision.Copilot
             CopilotServiceRegistry.Register(this);
         }
 
-        public static CopilotPanelService GetInstance() => _instance ??= new CopilotPanelService();
+        public static CopilotPanelService GetInstance() => Instance.Value;
 
         public bool CanShowPanel => WorkspaceManager.LayoutManager != null;
 
@@ -47,31 +47,45 @@ namespace ColorVision.Copilot
 
         public bool CanAskFromException => CanShowPanel && IsConfigured;
 
-        public CopilotChatViewModel GetOrCreateViewModel() => _viewModel ??= new CopilotChatViewModel();
+        public CopilotChatViewModel GetOrCreateViewModel()
+        {
+            return CopilotUiDispatcher.Invoke(
+                () => _viewModel ??= new CopilotChatViewModel(),
+                fallback: null) ?? throw new InvalidOperationException("The Copilot UI is shutting down.");
+        }
 
         public CopilotChatPanel GetOrCreatePanel()
         {
-            if (_panel != null)
-                return _panel;
-
-            _panel = new CopilotChatPanel
+            return CopilotUiDispatcher.Invoke(() =>
             {
-                DataContext = GetOrCreateViewModel(),
-            };
-            return _panel;
+                if (_panel != null)
+                    return _panel;
+
+                _panel = new CopilotChatPanel
+                {
+                    DataContext = GetOrCreateViewModel(),
+                };
+                return _panel;
+            }, fallback: null) ?? throw new InvalidOperationException("The Copilot UI is shutting down.");
         }
 
         public void ShowPanel()
         {
-            WorkspaceManager.LayoutManager?.ShowPanel(PanelId);
+            CopilotUiDispatcher.Invoke(() => WorkspaceManager.LayoutManager?.ShowPanel(PanelId));
         }
 
         public bool Ask(CopilotPromptRequest request)
         {
+            return CopilotUiDispatcher.Invoke(() => AskOnUiThread(request), fallback: false);
+        }
+
+        private bool AskOnUiThread(CopilotPromptRequest request)
+        {
             if (request == null || !CanShowPanel)
                 return false;
 
-            var attachContextSnapshot = request.AttachContextSnapshot && request.ContextItems.Count > 0;
+            var contextItems = request.ContextItems ?? Array.Empty<CopilotContextItem>();
+            var attachContextSnapshot = request.AttachContextSnapshot && contextItems.Count > 0;
             var prompt = attachContextSnapshot
                 ? (request.Prompt ?? string.Empty).Trim()
                 : BuildPromptContent(request);
@@ -88,11 +102,18 @@ namespace ColorVision.Copilot
                 MapPromptMode(request.Mode),
                 attachContextSnapshot ? request.ContextAttachmentTitle : null,
                 attachContextSnapshot ? request.ContextAttachmentSourceId : null,
-                attachContextSnapshot ? request.ContextItems : null);
+                attachContextSnapshot ? contextItems : null);
             return queueResult.Accepted;
         }
 
         public CopilotPromptDispatchResult DispatchExceptionPrompt(string prompt)
+        {
+            return CopilotUiDispatcher.Invoke(
+                () => DispatchExceptionPromptOnUiThread(prompt),
+                new CopilotPromptDispatchResult(false, false, "The main AI panel is shutting down."));
+        }
+
+        private CopilotPromptDispatchResult DispatchExceptionPromptOnUiThread(string prompt)
         {
             if (string.IsNullOrWhiteSpace(prompt))
                 return new CopilotPromptDispatchResult(false, false, "No exception content is available to send.");
