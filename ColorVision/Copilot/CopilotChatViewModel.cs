@@ -55,6 +55,7 @@ namespace ColorVision.Copilot
         private readonly DispatcherTimer _pendingActionExpiryTimer;
         private CancellationTokenSource? _pendingActionFeedbackCts;
         private CancellationTokenSource? _compactConversationCts;
+        private CancellationTokenSource? _fileAttachmentCts;
         private CancellationTokenSource? _webPageAttachmentCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
@@ -161,7 +162,7 @@ namespace ColorVision.Copilot
             CancelCommand = new RelayCommand(_ => CancelActiveRun(), _ => IsBusy);
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings(), _ => !IsBusy);
-            AddFileAttachmentCommand = new RelayCommand(_ => AddFileAttachment(), _ => !IsBusy);
+            AddFileAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddFileAttachmentAsync, "附加文件"), _ => !IsBusy);
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddWebPageAttachmentAsync, "附加网页"), _ => !IsBusy);
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
@@ -526,6 +527,8 @@ namespace ColorVision.Copilot
             {
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
+                if (_fileAttachmentCts != null)
+                    return "停止读取文件附件";
                 if (_webPageAttachmentCts != null)
                     return "停止读取网页附件";
                 if (IsViewingQueuedRun)
@@ -2232,6 +2235,11 @@ namespace ColorVision.Copilot
                 _compactConversationCts?.Cancel();
                 return;
             }
+            if (_fileAttachmentCts != null)
+            {
+                TryCancelCancellationSource(_fileAttachmentCts);
+                return;
+            }
             if (_webPageAttachmentCts != null)
             {
                 TryCancelCancellationSource(_webPageAttachmentCts);
@@ -2399,7 +2407,9 @@ namespace ColorVision.Copilot
                 && _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
         }
 
-        private bool HasExclusiveLocalOperation => _isCompactingConversation || _webPageAttachmentCts != null;
+        private bool HasExclusiveLocalOperation => _isCompactingConversation
+            || _fileAttachmentCts != null
+            || _webPageAttachmentCts != null;
 
         private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
             _taskHost.EvaluateRequestAdmission(SelectedConversation?.Id, mode);
@@ -2484,6 +2494,11 @@ namespace ColorVision.Copilot
             if (_isCompactingConversation)
             {
                 _compactConversationCts?.Cancel();
+                return;
+            }
+            if (_fileAttachmentCts != null)
+            {
+                TryCancelCancellationSource(_fileAttachmentCts);
                 return;
             }
             if (_webPageAttachmentCts != null)
@@ -3095,7 +3110,7 @@ namespace ColorVision.Copilot
             PersistState();
         }
 
-        private void AddFileAttachment()
+        private async Task AddFileAttachmentAsync()
         {
             var dialog = new OpenFileDialog
             {
@@ -3107,7 +3122,7 @@ namespace ColorVision.Copilot
             if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
                 return;
 
-            AddFileAttachments(dialog.FileNames);
+            await AddFileAttachmentsAsync(dialog.FileNames);
         }
 
         public int AddFileAttachments(IEnumerable<string>? filePaths)
@@ -3115,19 +3130,91 @@ namespace ColorVision.Copilot
             if (IsBusy || filePaths == null)
                 return 0;
 
-            var normalizedPaths = filePaths
-                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
-                .Select(TryNormalizeFilePath)
-                .Where(filePath => filePath != null && File.Exists(filePath))
-                .Cast<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            var normalizedPaths = NormalizeFilePaths(filePaths);
+            return AddResolvedFileAttachments(FilterExistingFilePaths(normalizedPaths, CancellationToken.None));
+        }
+
+        internal async Task<int> AddFileAttachmentsAsync(IEnumerable<string>? filePaths)
+        {
+            if (IsBusy || filePaths == null)
+                return 0;
+
+            var normalizedPaths = NormalizeFilePaths(filePaths);
             if (normalizedPaths.Length == 0)
                 return 0;
 
             var conversation = EnsureConversation();
-            var addedCount = 0;
+            var cancellation = BeginAuxiliaryOperation();
+            _fileAttachmentCts = cancellation;
+            IsBusy = true;
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var resolveTask = Task.Run(
+                    () => FilterExistingFilePaths(normalizedPaths, cancellation.Token),
+                    CancellationToken.None);
+                var existingPaths = await resolveTask.WaitAsync(cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                    return 0;
+
+                return AddResolvedFileAttachments(existingPaths, conversation);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                LocalCommandResultTitle = "附加文件 · 失败";
+                LocalCommandResultText = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                return 0;
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                if (ReferenceEquals(_fileAttachmentCts, cancellation))
+                    _fileAttachmentCts = null;
+                CompleteAuxiliaryOperation(cancellation);
+                IsBusy = _taskHost.IsActive;
+            }
+        }
+
+        private static string[] NormalizeFilePaths(IEnumerable<string> filePaths)
+        {
+            return filePaths
+                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
+                .Select(TryNormalizeFilePath)
+                .Where(filePath => filePath != null)
+                .Cast<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static string[] FilterExistingFilePaths(
+            IEnumerable<string> normalizedPaths,
+            CancellationToken cancellationToken)
+        {
+            var existingPaths = new List<string>();
             foreach (var filePath in normalizedPaths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (File.Exists(filePath))
+                    existingPaths.Add(filePath);
+            }
+            return existingPaths.ToArray();
+        }
+
+        private int AddResolvedFileAttachments(
+            IReadOnlyList<string> filePaths,
+            CopilotConversationRecord? conversation = null)
+        {
+            if (filePaths.Count == 0)
+                return 0;
+
+            conversation ??= EnsureConversation();
+            var addedCount = 0;
+            foreach (var filePath in filePaths)
             {
                 if (conversation.Attachments.Any(item => (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
                     && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))

@@ -504,20 +504,22 @@ namespace ColorVision.Copilot
             FileDropOverlay.Visibility = Visibility.Collapsed;
         }
 
-        private void ComposerShellBorder_PreviewDrop(object sender, DragEventArgs e)
+        private async void ComposerShellBorder_PreviewDrop(object sender, DragEventArgs e)
         {
             FileDropOverlay.Visibility = Visibility.Collapsed;
             e.Effects = DragDropEffects.None;
             e.Handled = true;
 
             if (DataContext is not CopilotChatViewModel { IsBusy: false } viewModel
-                || !TryGetDroppedFiles(e.Data, out var filePaths)
-                || viewModel.AddFileAttachments(filePaths) == 0)
+                || !TryGetDroppedFiles(e.Data, out var filePaths))
             {
                 return;
             }
 
             e.Effects = DragDropEffects.Copy;
+            if (await viewModel.AddFileAttachmentsAsync(filePaths) == 0)
+                return;
+
             FocusPromptInput();
         }
 
@@ -531,7 +533,7 @@ namespace ColorVision.Copilot
             }
 
             filePaths = droppedPaths
-                .Where(filePath => !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
                 .ToArray();
             return filePaths.Length > 0;
         }
