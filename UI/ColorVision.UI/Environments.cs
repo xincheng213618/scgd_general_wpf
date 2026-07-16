@@ -47,10 +47,6 @@ namespace ColorVision.UI
 
         public static string DirApplicationSnapshots => Path.Combine(DirSnapshots, "Application");
 
-        public static string DirUpdateState => Path.Combine(DirAppData, "UpdateState");
-
-        public static string DirUpdateBackup => Path.Combine(DirAppData, "UpdateBackup");
-
         private static string? GetLogFilePath()
         {
             var hierarchy = (Hierarchy)LogManager.GetRepository();

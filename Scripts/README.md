@@ -15,6 +15,10 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 
 `build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
 
+The main application and ServiceHost inherit the same `VersionPrefix` from `Directory.Build.props`; a normal release has only this one core version source. Every incremental package carries the complete `ServiceHost/` runtime so ZIP deployments can install the service into an empty ProgramData directory.
+
+For manifest-based packages, `manifest.id` is the marketplace/package/install identity and `dllpath` identifies the primary assembly. The project name, assembly name, and plugin ID do not need to match.
+
 ## Upload environment
 
 Use environment variables for remote uploads:
@@ -46,7 +50,6 @@ Do not put real credentials in docs or checked-in command examples.
 | `package_project.bat` | Repo project wrapper around `package_cvxp.py --build` |
 | `generate_shared_files.py` | Generate `shared_files.json` from a host output directory |
 | `build_spectrum.py` | Spectrum-specific build path |
-| `backend_client.py` | Shared upload/auth/preflight helper |
-| `file_manager.py` | Legacy upload/path helper |
+| `backend_client.py` | Shared upload/auth/preflight client |
 
 If a file is not present in `Scripts/`, do not document it as an active entry point.

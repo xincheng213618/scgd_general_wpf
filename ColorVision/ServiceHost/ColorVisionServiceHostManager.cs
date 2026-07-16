@@ -23,8 +23,6 @@ namespace ColorVision.ServiceHost
 
     public sealed class ServiceHostStatus
     {
-        private static readonly Version MinimumSecureSelfUpdateVersion = new(1, 4, 10, 5);
-
         public ServiceHostInstallState State { get; init; }
 
         public string RawOutput { get; init; } = string.Empty;
@@ -51,8 +49,7 @@ namespace ColorVision.ServiceHost
 
         public bool CanSelfUpdate => State == ServiceHostInstallState.Running
             && NeedsUpdate
-            && RunningVersion != null
-            && RunningVersion.CompareTo(MinimumSecureSelfUpdateVersion) >= 0;
+            && RunningVersion != null;
 
         public string DisplayText => State switch
         {
@@ -268,7 +265,7 @@ namespace ColorVision.ServiceHost
             }
         }
 
-        private static string CreateInstallScript()
+        internal static string CreateInstallScript()
         {
             return string.Join(Environment.NewLine, new[]
             {
@@ -279,6 +276,11 @@ namespace ColorVision.ServiceHost
                 $"$source = {PsQuote(ServiceHostProtocol.PackageDirectory)}",
                 $"$destination = {PsQuote(ServiceHostProtocol.InstallDirectory)}",
                 $"$executableName = {PsQuote(ServiceHostProtocol.ExecutableName)}",
+                "$logPath = Join-Path $destination 'install.log'",
+                "function Write-Step([string]$message) { try { Add-Content -LiteralPath $logPath -Value (\"[$(Get-Date -Format o)] $message\") -Encoding UTF8 -ErrorAction Stop } catch {} }",
+                "New-Item -ItemType Directory -Force -Path $destination | Out-Null",
+                "try {",
+                "Write-Step \"Service host installation started. Source=$source Destination=$destination\"",
                 "$sourceExe = Join-Path $source $executableName",
                 "if (-not (Test-Path -LiteralPath $sourceExe)) { throw \"Service host executable was not found: $sourceExe\" }",
                 "$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
@@ -286,9 +288,6 @@ namespace ColorVision.ServiceHost
                 "    Stop-Service -Name $serviceName -Force -ErrorAction Stop",
                 "    $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20))",
                 "}",
-                "New-Item -ItemType Directory -Force -Path $destination | Out-Null",
-                "& icacls $destination /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' | Out-Null",
-                "if ($LASTEXITCODE -ne 0) { throw \"Failed to set service host directory ACL: $LASTEXITCODE\" }",
                 "Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force",
                 "$exe = Join-Path $destination $executableName",
                 "$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
@@ -302,8 +301,13 @@ namespace ColorVision.ServiceHost
                 "if ($LASTEXITCODE -ne 0) { throw \"Failed to set service description: $LASTEXITCODE\" }",
                 "& sc.exe start $serviceName",
                 "if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1056) { throw \"Failed to start service: $LASTEXITCODE\" }",
+                "Write-Step \"Service host installation completed. Executable=$exe\"",
                 "Write-Output \"Service host installed to: $exe\"",
                 "Write-Output \"Service start type: Automatic\"",
+                "} catch {",
+                "    Write-Step (\"Service host installation failed: \" + $_.Exception.Message)",
+                "    throw",
+                "}",
                 string.Empty,
             });
         }

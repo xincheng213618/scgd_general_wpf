@@ -1456,15 +1456,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 联合更新包下载不完整，请稍后重试。 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewCombinedPackageIncomplete {
-            get {
-                return ResourceManager.GetString("UpdatePreviewCombinedPackageIncomplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 发现 {0} 个可用更新，可按需选择后立即安装。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewDialogSummaryDefault {
@@ -1564,15 +1555,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 创建备份 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewIncrementalBackupOption {
-            get {
-                return ResourceManager.GetString("UpdatePreviewIncrementalBackupOption", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 稍后 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewLaterButtonText {
@@ -1668,15 +1650,6 @@ namespace ColorVision.Properties {
         public static string UpdatePreviewScanningTitle {
             get {
                 return ResourceManager.GetString("UpdatePreviewScanningTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新前会自动创建备份，完成后可能需要重启应用 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewSelectionBackupAndRestart {
-            get {
-                return ResourceManager.GetString("UpdatePreviewSelectionBackupAndRestart", resourceCulture);
             }
         }
         

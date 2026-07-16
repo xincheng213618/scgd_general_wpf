@@ -310,9 +310,6 @@
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>Нет плагинов для обновления.</value>
   </data>
-  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
-    <value>Пакеты комбинированного обновления загружены не полностью. Повторите попытку позже.</value>
-  </data>
   <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
     <value>Приложение и плагины уже обновлены.</value>
   </data>
@@ -334,17 +331,11 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Резервные копии программы</value>
   </data>
-  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>Создать резервную копию</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Включает обязательные обновления</value>
   </data>
   <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
     <value>После завершения обновления приложение будет перезапущено</value>
-  </data>
-  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
-    <value>Перед обновлением автоматически создаётся резервная копия, а после завершения может потребоваться перезапуск</value>
   </data>
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>Требование к хосту: {0}</value>

@@ -310,9 +310,6 @@
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>Aucun plugin ne peut être mis à jour.</value>
   </data>
-  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
-    <value>Les paquets de mise à jour combinés sont incomplets. Veuillez réessayer plus tard.</value>
-  </data>
   <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
     <value>L'application et les plugins sont déjà à jour.</value>
   </data>
@@ -334,17 +331,11 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Sauvegardes du programme</value>
   </data>
-  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>Créer une sauvegarde</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Inclut des mises à jour requises</value>
   </data>
   <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
     <value>L'application redémarrera une fois la mise à jour terminée</value>
-  </data>
-  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
-    <value>Une sauvegarde sera créée automatiquement avant la mise à jour et un redémarrage pourra être nécessaire ensuite</value>
   </data>
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>Exigence hôte : {0}</value>

@@ -1834,24 +1834,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 上次更新未完成，且自动恢复失败，请手动重新安装或检查备份目录。 的本地化字符串。
-        /// </summary>
-        public static string UpdateRecovery_Failed {
-            get {
-                return ResourceManager.GetString("UpdateRecovery_Failed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 上次更新未完成，已恢复到更新前版本。 的本地化字符串。
-        /// </summary>
-        public static string UpdateRecovery_Restored {
-            get {
-                return ResourceManager.GetString("UpdateRecovery_Restored", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 跟随系统 的本地化字符串。
         /// </summary>
         public static string UseSystem {

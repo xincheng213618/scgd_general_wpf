@@ -7,6 +7,7 @@ namespace ColorVisionServiceHost;
 
 internal sealed class ServiceHostCommandHandler
 {
+    private const int SelfUpdateResponseFlushDelayMilliseconds = 750;
     private readonly ServiceHostBrokerTicketService _tickets = new();
     private static readonly Dictionary<string, string> MaintenanceTaskScripts = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -81,6 +82,7 @@ internal sealed class ServiceHostCommandHandler
                 "status" => ServiceHostResponse.FromObject(request.RequestId, true, "running", BuildStatus(_startedAt)),
                 "write-demo-marker" => WriteDemoMarker(request.RequestId),
                 "self-update" => SelfUpdate(request),
+                "prepare-application-update" => PrepareApplicationUpdateAccess(request, context),
                 "run-maintenance-task" => RunMaintenanceTask(request, GetRequiredDataValue(request, "taskId")),
                 "register-file-associations" => RunMaintenanceTask(request, "register-file-associations"),
                 "firewall-allow-application" => FirewallCommandService.AllowApplication(request),
@@ -151,24 +153,95 @@ internal sealed class ServiceHostCommandHandler
         return ServiceHostResponse.FromObject(requestId, true, "demo marker written", new { filePath });
     }
 
+    private static ServiceHostResponse PrepareApplicationUpdateAccess(ServiceHostRequest request, ServiceHostRequestContext context)
+    {
+        string[] arguments = BuildApplicationUpdateAccessArguments(context);
+        ProcessResult result = RunProcess("icacls.exe", arguments, timeoutMilliseconds: 120000);
+        bool success = result.ExitCode == 0;
+        string applicationDirectory = arguments[0];
+
+        ServiceHostLog.Write($"Application update access {(success ? "prepared" : "failed")}. Directory={applicationDirectory}; UserSid={context.UserSid}; ExitCode={result.ExitCode}");
+        if (!success)
+        {
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"application update access failed: {result.ExitCode}", new
+            {
+                applicationDirectory,
+                context.UserSid,
+                result,
+            });
+        }
+
+        string serviceHostPackageDirectory = GetOptionalDataValue(request, "serviceHostPackageDirectory", string.Empty);
+        if (string.IsNullOrWhiteSpace(serviceHostPackageDirectory))
+        {
+            return ServiceHostResponse.FromObject(request.RequestId, true, "application update access prepared", new
+            {
+                applicationDirectory,
+                context.UserSid,
+                result,
+            });
+        }
+
+        ServiceHostResponse selfUpdate = ScheduleSelfUpdate(request.RequestId, serviceHostPackageDirectory);
+        if (!selfUpdate.Success)
+            return ServiceHostResponse.FromObject(request.RequestId, false, $"application update access prepared but service host update failed: {selfUpdate.Message}", selfUpdate.Data);
+
+        return ServiceHostResponse.FromObject(request.RequestId, true, "application update prepared", new
+        {
+            applicationDirectory,
+            context.UserSid,
+            result,
+            serviceHostUpdate = selfUpdate.Data,
+        });
+    }
+
+    internal static string[] BuildApplicationUpdateAccessArguments(ServiceHostRequestContext context)
+    {
+        string processPath = Path.GetFullPath(context.ProcessPath);
+        if (!File.Exists(processPath)
+            || !string.Equals(Path.GetFileName(processPath), "ColorVision.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The update access target must be the calling ColorVision application.");
+        }
+
+        string applicationDirectory = Path.GetDirectoryName(processPath)
+            ?? throw new InvalidOperationException("Unable to resolve the ColorVision application directory.");
+        SecurityIdentifier userSid = new(context.UserSid);
+
+        return
+        [
+            applicationDirectory,
+            "/grant:r",
+            $"*{userSid.Value}:(OI)(CI)M",
+            "/T",
+            "/C",
+            "/Q",
+        ];
+    }
+
     private static ServiceHostResponse SelfUpdate(ServiceHostRequest request)
     {
-        string packageDirectory = Path.GetFullPath(GetRequiredDataValue(request, "packageDirectory"));
+        return ScheduleSelfUpdate(request.RequestId, GetRequiredDataValue(request, "packageDirectory"));
+    }
+
+    private static ServiceHostResponse ScheduleSelfUpdate(string requestId, string packageDirectory)
+    {
+        packageDirectory = Path.GetFullPath(packageDirectory);
         string sourceExe = Path.Combine(packageDirectory, ServiceHostConstants.ExecutableName);
         if (!File.Exists(sourceExe))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Service host package executable was not found: {sourceExe}");
+            return ServiceHostResponse.FromObject(requestId, false, $"Service host package executable was not found: {sourceExe}");
 
         if (!LooksLikeServiceHostExecutable(sourceExe))
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Executable does not look like ColorVisionServiceHost: {sourceExe}");
+            return ServiceHostResponse.FromObject(requestId, false, $"Executable does not look like ColorVisionServiceHost: {sourceExe}");
 
         string? currentExe = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(currentExe) || !File.Exists(currentExe))
-            return ServiceHostResponse.FromObject(request.RequestId, false, "Unable to resolve current service host executable.");
+            return ServiceHostResponse.FromObject(requestId, false, "Unable to resolve current service host executable.");
 
         Version? sourceVersion = GetExecutableVersion(sourceExe);
         Version? currentVersion = GetExecutableVersion(currentExe);
         if (sourceVersion != null && currentVersion != null && sourceVersion < currentVersion)
-            return ServiceHostResponse.FromObject(request.RequestId, false, $"Refusing to downgrade service host: {currentVersion} -> {sourceVersion}");
+            return ServiceHostResponse.FromObject(requestId, false, $"Refusing to downgrade service host: {currentVersion} -> {sourceVersion}");
 
         string updateDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -177,31 +250,99 @@ internal sealed class ServiceHostCommandHandler
             "Updates");
         Directory.CreateDirectory(updateDirectory);
 
+        string stagedPackageDirectory;
+        try
+        {
+            stagedPackageDirectory = StageServiceHostPackage(packageDirectory, updateDirectory);
+        }
+        catch (Exception ex)
+        {
+            return ServiceHostResponse.FromObject(requestId, false, $"Failed to stage service host package: {ex.Message}");
+        }
+
         string scriptPath = Path.Combine(updateDirectory, $"self-update-{Guid.NewGuid():N}.ps1");
         string logPath = Path.Combine(updateDirectory, "self-update.log");
-        string script = CreateSelfUpdateScript(packageDirectory, ServiceHostProtocolCompatibleInstallDirectory(), scriptPath, logPath);
-        File.WriteAllText(scriptPath, script, System.Text.Encoding.UTF8);
-
-        ProcessStartInfo startInfo = new()
+        try
         {
-            FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {QuoteForCommandLine(scriptPath)}",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = updateDirectory,
-        };
-        Process.Start(startInfo)?.Dispose();
+            string script = CreateSelfUpdateScript(stagedPackageDirectory, GetInstallDirectory(), scriptPath, logPath);
+            File.WriteAllText(scriptPath, script, System.Text.Encoding.UTF8);
 
-        ServiceHostLog.Write($"Self update scheduled. Source={packageDirectory}, Script={scriptPath}");
-        return ServiceHostResponse.FromObject(request.RequestId, true, "self update scheduled", new
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File {QuoteForCommandLine(scriptPath)}",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = updateDirectory,
+            };
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Failed to start the service host update helper.");
+        }
+        catch (Exception ex)
+        {
+            TryDeleteDirectory(stagedPackageDirectory);
+            try
+            {
+                File.Delete(scriptPath);
+            }
+            catch
+            {
+            }
+            return ServiceHostResponse.FromObject(requestId, false, $"Failed to schedule service host update: {ex.Message}");
+        }
+
+        ServiceHostLog.Write($"Self update scheduled. Source={packageDirectory}, Staged={stagedPackageDirectory}, Script={scriptPath}");
+        return ServiceHostResponse.FromObject(requestId, true, "self update scheduled", new
         {
             packageDirectory,
-            installedDirectory = ServiceHostProtocolCompatibleInstallDirectory(),
+            stagedPackageDirectory,
+            installedDirectory = GetInstallDirectory(),
             sourceVersion = sourceVersion?.ToString(),
             currentVersion = currentVersion?.ToString(),
             scriptPath,
             logPath,
         });
+    }
+
+    internal static string StageServiceHostPackage(string packageDirectory, string updateDirectory)
+    {
+        string sourceDirectory = Path.GetFullPath(packageDirectory);
+        if (!Directory.Exists(sourceDirectory))
+            throw new DirectoryNotFoundException($"Service host package directory was not found: {sourceDirectory}");
+
+        string[] directories = Directory.GetDirectories(sourceDirectory, "*", SearchOption.AllDirectories);
+        string[] files = Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories);
+        string stagedDirectory = Path.Combine(Path.GetFullPath(updateDirectory), "Packages", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(stagedDirectory);
+        try
+        {
+            foreach (string directory in directories)
+                Directory.CreateDirectory(Path.Combine(stagedDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+            foreach (string file in files)
+            {
+                string destination = Path.Combine(stagedDirectory, Path.GetRelativePath(sourceDirectory, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                File.Copy(file, destination, overwrite: true);
+            }
+            return stagedDirectory;
+        }
+        catch
+        {
+            TryDeleteDirectory(stagedDirectory);
+            throw;
+        }
+    }
+
+    private static void TryDeleteDirectory(string directory)
+    {
+        try
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+        catch
+        {
+        }
     }
 
     private static ServiceHostResponse RunMaintenanceTask(ServiceHostRequest request, string taskId)
@@ -840,7 +981,7 @@ internal sealed class ServiceHostCommandHandler
         return value.Replace("`", "``", StringComparison.Ordinal);
     }
 
-    private static string CreateSelfUpdateScript(string packageDirectory, string installDirectory, string scriptPath, string logPath)
+    internal static string CreateSelfUpdateScript(string packageDirectory, string installDirectory, string scriptPath, string logPath)
     {
         return string.Join(Environment.NewLine, new[]
         {
@@ -857,6 +998,8 @@ internal sealed class ServiceHostCommandHandler
             "    $line = \"$(Get-Date -Format o) $message\"",
             "    Add-Content -LiteralPath $logPath -Value $line",
             "}",
+            "$exitCode = 0",
+            $"Start-Sleep -Milliseconds {SelfUpdateResponseFlushDelayMilliseconds}",
             "try {",
             "    Write-Step \"Self update started. Source=$source Destination=$destination\"",
             "    $sourceExe = Join-Path $source $executableName",
@@ -869,7 +1012,7 @@ internal sealed class ServiceHostCommandHandler
             "    }",
             "    New-Item -ItemType Directory -Force -Path $destination | Out-Null",
             "    Write-Step \"Copying service host files\"",
-            "    Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force",
+            "    Get-ChildItem -LiteralPath $source -Force | Copy-Item -Destination $destination -Recurse -Force",
             "    $exe = Join-Path $destination $executableName",
             "    if (-not (Test-Path -LiteralPath $exe)) { throw \"Updated service host executable was not found: $exe\" }",
             "    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
@@ -885,17 +1028,19 @@ internal sealed class ServiceHostCommandHandler
             "    Start-Service -Name $serviceName -ErrorAction Stop",
             "    (Get-Service -Name $serviceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))",
             "    Write-Step \"Self update completed.\"",
-            "    Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",
-            "    exit 0",
             "} catch {",
             "    Write-Step (\"Self update failed: \" + $_.Exception.Message)",
-            "    exit 1",
+            "    $exitCode = 1",
+            "} finally {",
+            "    Remove-Item -LiteralPath $source -Recurse -Force -ErrorAction SilentlyContinue",
+            "    Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",
             "}",
+            "exit $exitCode",
             string.Empty,
         });
     }
 
-    private static string ServiceHostProtocolCompatibleInstallDirectory()
+    private static string GetInstallDirectory()
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -957,7 +1102,7 @@ internal sealed class ServiceHostCommandHandler
         }
         catch
         {
-            return true;
+            return false;
         }
     }
 
@@ -1398,11 +1543,13 @@ internal sealed class ServiceHostCommandHandler
         }
     }
 
-    private static bool RequiresBrokerTicket(string command)
+    internal static bool RequiresBrokerTicket(string command)
     {
         return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
             && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
-            && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase);
+            && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase)
+            && !command.Equals("self-update", StringComparison.OrdinalIgnoreCase)
+            && !command.Equals("prepare-application-update", StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed record ProcessResult(string FileName, string Arguments, int ExitCode, string Output, string Error);

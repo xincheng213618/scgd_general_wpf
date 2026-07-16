@@ -2,7 +2,6 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
-using ColorVision.ServiceHost;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
@@ -38,10 +37,13 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
+        private bool _isSessionEnding;
+
         public App()
         {
             Startup += Application_Startup;
             Exit += Application_Exit;
+            SessionEnding += (_, _) => _isSessionEnding = true;
             #if(DEBUG == false)
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
@@ -224,7 +226,6 @@ namespace ColorVision
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
-                ScheduleServiceHostStartupCheck(wizardWindow, DispatcherPriority.Send);
             }
             else 
             {
@@ -232,11 +233,6 @@ namespace ColorVision
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }
-        }
-
-        private static void ScheduleServiceHostStartupCheck(Window owner, DispatcherPriority priority)
-        {
-            _ = owner.Dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(owner).ConfigureAwait(true), priority);
         }
 
         /// <summary>
@@ -250,6 +246,8 @@ namespace ColorVision
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
+            if (!_isSessionEnding)
+                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
             //Environment.Exit(0);
         }
     }

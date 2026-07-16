@@ -316,7 +316,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             return await StartDownloadAsync(request, showFailureDialog, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<IReadOnlyList<string>> EnsurePackagesAvailableAsync(IEnumerable<MarketplacePackageRequest> requests, bool showFailureDialog = false, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<string>> EnsurePackagesAvailableAsync(IEnumerable<MarketplacePackageRequest> requests, bool showFailureDialog = false, bool showDownloadWindow = true, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             List<MarketplacePackageRequest> distinctRequests = requests
@@ -349,7 +349,8 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             if (missingRequests.Count > 0)
             {
-                _ui.ShowDownloadWindow();
+                if (showDownloadWindow)
+                    _ui.ShowDownloadWindow();
                 Task<string?>[] downloadTasks = missingRequests
                     .Select(item => StartDownloadAsync(item, showFailureDialog, cancellationToken))
                     .ToArray();

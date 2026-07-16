@@ -1,6 +1,5 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.ServiceHost;
 using ColorVision.UI.Shell;
 using ColorVision.UI.LogImp;
 using Dm.util;
@@ -434,7 +433,6 @@ namespace ColorVision
         {
             try
             {
-                Window? serviceHostPromptOwner = null;
                 var parser = ArgumentParser.GetInstance();
                 parser.AddArgument("feature", false, "e");
                 parser.Parse();
@@ -468,16 +466,13 @@ namespace ColorVision
                         log.Info($"Feature '{feature}' not found, starting configured main window.");
                         Window mainWindow = CreatePrimaryMainWindow();
                         mainWindow.Show();
-                        serviceHostPromptOwner = mainWindow;
                     }
                 }
                 else
                 {
                     Window mainWindow = CreatePrimaryMainWindow();
                     mainWindow.Show();
-                    serviceHostPromptOwner = mainWindow;
                 }
-                ScheduleServiceHostStartupCheck(serviceHostPromptOwner);
                 Close();
             }
             catch (Exception ex)
@@ -492,18 +487,6 @@ namespace ColorVision
             return MainWindowConfig.Instance.UseIntegratedMainWindowChrome
                 ? new IntegratedMainWindow()
                 : new MainWindow();
-        }
-
-        private static void ScheduleServiceHostStartupCheck(Window? owner)
-        {
-            Dispatcher dispatcher = Application.Current.Dispatcher;
-            _ = dispatcher.BeginInvoke(async () =>
-            {
-                Window? promptOwner = owner?.IsVisible == true
-                    ? owner
-                    : Application.Current.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive) ?? Application.Current.MainWindow;
-                await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(promptOwner).ConfigureAwait(true);
-            }, DispatcherPriority.ApplicationIdle);
         }
 
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)

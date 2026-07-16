@@ -315,7 +315,7 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @ctx.require_upload_auth
     def legacy_upload(filepath):
         """
-        Backward-compatible upload endpoint matching old file_manager.py pattern:
+        Path-based upload endpoint used by the repository publishing client:
         PUT http://host:9998/upload/ColorVision/Plugins/{PluginId}/{filename}
         """
         try:

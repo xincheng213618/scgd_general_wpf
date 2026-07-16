@@ -481,8 +481,6 @@
   <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>本次接近歷史平均值。</value></data>
   <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>本次比歷史平均快 {0}。</value></data>
   <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>本次比歷史平均慢 {0}。</value></data>
-  <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
-  <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
   <data name="SearchEngine" xml:space="preserve">
     <value>搜索引擎</value>
   </data>

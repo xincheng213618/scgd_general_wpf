@@ -1,10 +1,69 @@
 using ColorVisionServiceHost;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.IO;
+using System.IO.Pipes;
+using System.Text;
+using ServiceHostClient = ColorVision.UI.ServiceHost.ColorVisionServiceHostClient;
 
 namespace ColorVision.UI.Tests
 {
     public sealed class ServiceHostBrokerTicketTests
     {
+        [Theory]
+        [InlineData("self-update")]
+        [InlineData("prepare-application-update")]
+        public void UpdateOnlyCommandsUseDirectCallerAndPayloadValidation(string command)
+        {
+            Assert.False(ServiceHostClient.RequiresBrokerTicket(command));
+            Assert.False(ServiceHostCommandHandler.RequiresBrokerTicket(command));
+        }
+
+        [Theory]
+        [InlineData("service-install")]
+        [InlineData("service-restart")]
+        [InlineData("firewall-allow-application")]
+        public void OtherPrivilegedCommandsStillRequireBrokerTicket(string command)
+        {
+            Assert.True(ServiceHostClient.RequiresBrokerTicket(command));
+            Assert.True(ServiceHostCommandHandler.RequiresBrokerTicket(command));
+        }
+
+        [Fact]
+        public async Task PrepareApplicationUpdateSendsPackageInSingleDirectRequest()
+        {
+            string pipeName = $"ColorVisionServiceHostTest-{Guid.NewGuid():N}";
+            ColorVision.UI.ServiceHost.ServiceHostRequest? capturedRequest = null;
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            Task serverTask = Task.Run(async () =>
+            {
+                await server.WaitForConnectionAsync();
+                using StreamReader reader = new(server, Encoding.UTF8, false, leaveOpen: true);
+                using StreamWriter writer = new(server, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+                string requestJson = await reader.ReadLineAsync() ?? throw new InvalidOperationException("Missing request.");
+                capturedRequest = JsonConvert.DeserializeObject<ColorVision.UI.ServiceHost.ServiceHostRequest>(requestJson);
+                string responseJson = JsonConvert.SerializeObject(new ColorVision.UI.ServiceHost.ServiceHostResponse
+                {
+                    RequestId = capturedRequest?.RequestId ?? string.Empty,
+                    Success = true,
+                    Message = "application update prepared",
+                }, ColorVision.UI.ServiceHost.ServiceHostProtocol.JsonSettings);
+                await writer.WriteLineAsync(responseJson);
+            });
+
+            ServiceHostClient client = new(pipeName);
+            ColorVision.UI.ServiceHost.ServiceHostResponse response = await client.PrepareApplicationUpdateAsync(
+                @"D:\Update Stage\ServiceHost",
+                TimeSpan.FromSeconds(5));
+            await serverTask;
+
+            Assert.True(response.Success);
+            Assert.NotNull(capturedRequest);
+            Assert.Equal("prepare-application-update", capturedRequest.Command);
+            Assert.Null(capturedRequest.BrokerTicket);
+            Assert.Equal(@"D:\Update Stage\ServiceHost", capturedRequest.Data?["serviceHostPackageDirectory"]?.ToString());
+        }
+
         [Fact]
         public void BrokerTicketIsBoundToCommandCallerAndOperationAndIsSingleUse()
         {

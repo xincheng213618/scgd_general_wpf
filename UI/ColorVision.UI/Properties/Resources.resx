@@ -654,12 +654,6 @@
   <data name="TimedOp_SlowerThanAverage" xml:space="preserve">
     <value>本次比历史平均慢 {0}。</value>
   </data>
-  <data name="UpdateRecovery_Restored" xml:space="preserve">
-    <value>上次更新未完成，已恢复到更新前版本。</value>
-  </data>
-  <data name="UpdateRecovery_Failed" xml:space="preserve">
-    <value>上次更新未完成，且自动恢复失败，请手动重新安装或检查备份目录。</value>
-  </data>
   <data name="ListEditor_ListCount" xml:space="preserve">
     <value>[列表: {0} 项]</value>
   </data>

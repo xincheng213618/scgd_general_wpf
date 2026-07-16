@@ -20,7 +20,10 @@ import tempfile
 import zipfile
 from pathlib import PurePosixPath
 
-from file_manager import FileManager
+try:
+    from .backend_client import upload_file_to_folder
+except ImportError:
+    from backend_client import upload_file_to_folder
 
 
 ALLOWED_RUNTIME_PREFIXES = (
@@ -36,8 +39,6 @@ PROJECT_NAME = "Spectrum"
 PROJECT_DIR = os.path.join(REPO_ROOT, "Plugins", PROJECT_NAME)
 PROJECT_PATH = os.path.join(PROJECT_DIR, f"{PROJECT_NAME}.csproj")
 BUILD_DIR = os.path.join(REPO_ROOT, "Release", PROJECT_NAME)
-
-FILE_MANAGER = FileManager()
 
 # cvxp 需要额外打入的文件名
 _CVXP_EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
@@ -234,7 +235,7 @@ def build_cvxp(src_dir: str, ref_dir: str, cvxp_path: str) -> bool:
 # ── 上传 ──────────────────────────────────────────────────────────
 def upload_file_http(file_path: str, folder: str) -> bool:
     """通过 HTTP PUT 上传文件到服务器。"""
-    return FILE_MANAGER.upload_file(file_path, folder)
+    return upload_file_to_folder(file_path, folder)
 
 
 def upload_latest_release(version: str, folder: str) -> bool:

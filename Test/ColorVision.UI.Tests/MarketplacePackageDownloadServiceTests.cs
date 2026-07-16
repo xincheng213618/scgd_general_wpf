@@ -299,6 +299,25 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task EnsurePackagesAvailableAsync_CanPrefetchWithoutShowingDownloadWindow()
+        {
+            var client = new FakeMarketplacePackageClient();
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            IReadOnlyList<string> paths = await service.EnsurePackagesAvailableAsync(
+                new[] { CreateRequest("PluginA", "1.0.0") },
+                showFailureDialog: false,
+                showDownloadWindow: false);
+
+            Assert.Single(paths);
+            Assert.Single(downloader.Invocations);
+            Assert.Equal(0, ui.ShowDownloadWindowCalls);
+        }
+
+        [Fact]
         public async Task EnsurePackageAvailableAsync_CancelsPendingDownload()
         {
             var client = new FakeMarketplacePackageClient();

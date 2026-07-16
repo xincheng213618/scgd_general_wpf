@@ -310,9 +310,6 @@
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>No plugins can be updated.</value>
   </data>
-  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
-    <value>The combined update packages are incomplete. Please try again later.</value>
-  </data>
   <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
     <value>The application and plugins are already up to date.</value>
   </data>
@@ -334,17 +331,11 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Program backups</value>
   </data>
-  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>Create backup</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>
   </data>
   <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
     <value>The application will restart after the update completes</value>
-  </data>
-  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
-    <value>A backup will be created automatically before updating, and a restart may be required afterward</value>
   </data>
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>Host requirement: {0}</value>

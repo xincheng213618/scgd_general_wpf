@@ -481,8 +481,6 @@
   <data name="TimedOp_CloseToAverage" xml:space="preserve"><value>Cette durée est proche de la moyenne historique.</value></data>
   <data name="TimedOp_FasterThanAverage" xml:space="preserve"><value>{0} plus rapide que la moyenne historique.</value></data>
   <data name="TimedOp_SlowerThanAverage" xml:space="preserve"><value>{0} plus lente que la moyenne historique.</value></data>
-  <data name="UpdateRecovery_Restored" xml:space="preserve"><value>Previous update was incomplete. System has been restored to the pre-update version.</value></data>
-  <data name="UpdateRecovery_Failed" xml:space="preserve"><value>Previous update was incomplete and automatic recovery failed. Please reinstall manually or check the backup directory.</value></data>
   <data name="SearchEngine" xml:space="preserve">
     <value>Search Engine</value>
   </data>

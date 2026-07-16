@@ -60,6 +60,25 @@ Plugins/
     └── Sources/ 或 *.cs/*.xaml
 ```
 
+## 插件包格式
+
+`.cvxp` 本质上是 ZIP。安装器同时接受下面两种结构，并统一安装到 `Plugins/<manifest.id>/`：
+
+```text
+# 官方打包器生成的结构
+MyPlugin/
+├── manifest.json
+└── MyPlugin.dll
+
+# 第三方手工打包也可使用的结构
+manifest.json
+MyPlugin.dll
+```
+
+包内只能有一个位于根目录或第一层目录的 `manifest.json`。`manifest.id` 必须是单个目录名，不能包含 `..`、斜杠或绝对路径；`dllpath` 指向插件目录内的主 DLL。项目名、程序集名和插件 ID 可以不同：市场发布与安装目录使用 `manifest.id`，主程序集使用 `dllpath`。
+
+没有 `manifest.json` 的旧包仍按原目录结构安装，但不推荐第三方插件继续使用这种兼容格式。
+
 ## 开发建议
 
 ### 平台内开发

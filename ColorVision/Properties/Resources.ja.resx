@@ -310,9 +310,6 @@
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>更新可能なプラグインはありません。</value>
   </data>
-  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
-    <value>統合更新パッケージのダウンロードが不完全です。後でもう一度お試しください。</value>
-  </data>
   <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
     <value>アプリとプラグインはすでに最新です。</value>
   </data>
@@ -334,17 +331,11 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>プログラムバックアップ</value>
   </data>
-  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>バックアップを作成</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>必須更新を含む</value>
   </data>
   <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
     <value>更新完了後にアプリが再起動します</value>
-  </data>
-  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
-    <value>更新前に自動でバックアップが作成され、完了後に再起動が必要になる場合があります</value>
   </data>
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>ホスト要件: {0}</value>

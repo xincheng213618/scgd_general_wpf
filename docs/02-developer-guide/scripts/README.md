@@ -17,7 +17,7 @@
 
 ## 正式发布
 
-发布前先提升仓库根目录 `Directory.Build.props` 的版本号，然后只运行：
+主程序和 ServiceHost 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 运行时，确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装。发布前只提升这个版本号，然后运行：
 
 ```powershell
 Scripts\release.bat
@@ -34,6 +34,8 @@ Scripts\release.bat
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
 插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json`；若声明 `copilot_agents`，还会检查角色 ID、工具名、作用域、只读能力、模式、预算、重复项，以及单插件最多 16 个角色和 8,000 个常驻名称/说明字符的上限。需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。
+
+存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。
 
 ## 上传配置
 
@@ -59,7 +61,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `package_project.bat` | 是 | 仓库内项目包打包快捷入口 |
 | `clear-bin.ps1`、`clear-artifacts.ps1` | 是 | 清理本地构建产物 |
 | `build.py`、`build_update.py` | 否 | `release.bat` 内部构建、上传和增量更新步骤 |
-| `backend_client.py`、`file_manager.py` | 否 | 上传认证、预检、流式上传和路径辅助 |
+| `backend_client.py` | 否 | 统一处理上传认证、预检、重试、流式上传和路径编码 |
 | `generate_shared_files.py` | 偶尔 | 生成宿主共享文件清单 |
 | `build_spectrum.py` | 特殊 | Spectrum 插件专用构建入口 |
 

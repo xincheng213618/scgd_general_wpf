@@ -33,6 +33,7 @@ MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_COPILOT_AGENT_ROLES = 16
 MAX_COPILOT_AGENT_METADATA_CHARACTERS = 8_000
 PLUGIN_ID_PATTERN = re.compile(r"^[a-z][a-z0-9._-]{1,63}$")
+PACKAGE_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
 ROLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]{1,47}$")
 TOOL_NAME_PATTERN = re.compile(r"^Delegate[A-Z][A-Za-z0-9]{1,55}$")
 WORKSPACE_CAPABILITIES = {"searchfiles", "greptext", "readlocalfile", "listdirectory"}
@@ -43,6 +44,8 @@ AGENT_MODES = {"auto", "explain", "web", "code", "diagnose", "chat"}
 @dataclass(frozen=True)
 class CopilotAgentManifestSummary:
     manifest_present: bool
+    plugin_id: str = ""
+    dll_path: str = ""
     role_count: int = 0
     metadata_characters: int = 0
 
@@ -103,17 +106,27 @@ def validate_plugin_manifest(manifest_path: Path) -> CopilotAgentManifestSummary
         raise _manifest_error(manifest_path, "$", f"invalid UTF-8 JSON: {exc}") from exc
 
     _require_manifest(isinstance(manifest, dict), manifest_path, "$", "must be a JSON object")
-    if "copilot_agents" not in manifest:
-        return CopilotAgentManifestSummary(True)
+    manifest_fields = {str(key).lower(): value for key, value in manifest.items()}
+    plugin_id = _read_string(manifest_fields, "id", manifest_path, "id", required=True, maximum=64)
+    _require_manifest(PACKAGE_ID_PATTERN.fullmatch(plugin_id) is not None, manifest_path, "id", "must be a single 1-64 character directory name using ASCII letters, digits, '.', '_' or '-'")
 
-    roles = manifest["copilot_agents"]
+    dll_path = _read_string(manifest_fields, "dllpath", manifest_path, "dllpath", required=False, maximum=260)
+    if dll_path:
+        normalized_dll_path = PurePosixPath(dll_path.replace("\\", "/"))
+        _require_manifest(not normalized_dll_path.is_absolute() and ".." not in normalized_dll_path.parts and ":" not in dll_path, manifest_path, "dllpath", "must stay inside the plugin directory")
+        _require_manifest(normalized_dll_path.suffix.lower() == ".dll", manifest_path, "dllpath", "must point to a .dll file")
+        dll_path = normalized_dll_path.as_posix()
+
+    if "copilot_agents" not in manifest_fields:
+        return CopilotAgentManifestSummary(True, plugin_id, dll_path)
+
+    roles = manifest_fields["copilot_agents"]
     _require_manifest(isinstance(roles, list), manifest_path, "copilot_agents", "must be an array")
     _require_manifest(len(roles) <= MAX_COPILOT_AGENT_ROLES, manifest_path, "copilot_agents", f"must contain at most {MAX_COPILOT_AGENT_ROLES} roles")
     if not roles:
-        return CopilotAgentManifestSummary(True)
+        return CopilotAgentManifestSummary(True, plugin_id, dll_path)
 
-    plugin_id = manifest.get("id", "")
-    _require_manifest(isinstance(plugin_id, str) and PLUGIN_ID_PATTERN.fullmatch(plugin_id.strip()) is not None, manifest_path, "id", "must contain 2-64 lowercase ASCII letters, digits, '.', '_' or '-'")
+    _require_manifest(PLUGIN_ID_PATTERN.fullmatch(plugin_id.lower()) is not None, manifest_path, "id", "must contain 2-64 ASCII letters, digits, '.', '_' or '-'")
 
     role_ids: set[str] = set()
     tool_names: set[str] = set()
@@ -165,7 +178,7 @@ def validate_plugin_manifest(manifest_path: Path) -> CopilotAgentManifestSummary
         metadata_characters += len(tool_name) + len(display_name) + len(description)
 
     _require_manifest(metadata_characters <= MAX_COPILOT_AGENT_METADATA_CHARACTERS, manifest_path, "copilot_agents", f"role names and descriptions must not exceed {MAX_COPILOT_AGENT_METADATA_CHARACTERS:,} characters in total")
-    return CopilotAgentManifestSummary(True, len(roles), metadata_characters)
+    return CopilotAgentManifestSummary(True, plugin_id, dll_path, len(roles), metadata_characters)
 
 
 def get_requests_module():
@@ -440,10 +453,20 @@ def find_extra_files(plugin_root: Path) -> list[Path]:
     return extra_files
 
 
-def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], output_file: Path, project_name: str) -> tuple[Path, int]:
+def resolve_primary_dll_path(src_dir: Path, project_name: str, manifest_summary: CopilotAgentManifestSummary) -> Path:
+    relative_path = manifest_summary.dll_path or f"{project_name}.dll"
+    candidate = (src_dir / Path(relative_path)).resolve()
+    try:
+        candidate.relative_to(src_dir.resolve())
+    except ValueError as exc:
+        raise ValueError(f"Plugin DLL must stay inside the output directory: {relative_path}") from exc
+    return candidate
+
+
+def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], output_file: Path, package_id: str) -> tuple[Path, int, int]:
     with tempfile.TemporaryDirectory(prefix="package_cvxp_") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
-        project_path = temp_dir / project_name
+        project_path = temp_dir / package_id
         project_path.mkdir(parents=True, exist_ok=True)
 
         stripped_files: list[str] = []
@@ -530,7 +553,8 @@ def main() -> None:
         raise FileNotFoundError(f"Plugin output directory not found: {src_dir}")
 
     project_name = infer_project_name(src_dir, project_file, args.plugin_name)
-    dll_path = src_dir / f"{project_name}.dll"
+    package_id = manifest_summary.plugin_id or project_name
+    dll_path = resolve_primary_dll_path(src_dir, project_name, manifest_summary)
     if not dll_path.is_file():
         raise FileNotFoundError(f"Plugin DLL not found: {dll_path}")
 
@@ -539,18 +563,20 @@ def main() -> None:
         raise RuntimeError(f"Cannot read version from: {dll_path}")
 
     shared_files = load_shared_files_manifest(shared_files_path)
-    output_file = output_dir / f"{project_name}-{version}.cvxp"
-    output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, project_name)
+    output_file = output_dir / f"{package_id}-{version}.cvxp"
+    output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, package_id)
 
     print(f"Source directory: {src_dir}")
     print(f"Plugin root: {plugin_root}")
+    print(f"Package ID: {package_id}")
+    print(f"Primary DLL: {dll_path}")
     print(f"Shared files manifest: {shared_files_path}")
     print(f"Shared file count: {len(shared_files)}")
     print(f"Stripped file count: {stripped_count}")
     print(f"Skipped runtime file count: {skipped_runtime_count}")
     print(f"Packaged: {output_file}")
 
-    plugin_folder = f"Plugins/{project_name}"
+    plugin_folder = f"Plugins/{package_id}"
     try:
         if not upload_file(output_file, plugin_folder, args.upload_url, args.username, args.password):
             raise RuntimeError("Package upload failed.")
