@@ -155,7 +155,7 @@ namespace ColorVision.Copilot
             AddWebPageAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddWebPageAttachmentAsync, "附加网页"), _ => !IsBusy);
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => HasCurrentLiveContext);
-            CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => message != null);
+            CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
             CancelMessageEditCommand = new RelayCommand(_ => CancelMessageEdit(), _ => IsEditingMessage);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: false), "重新生成回复"), CanRegenerateMessage);
@@ -3320,40 +3320,7 @@ namespace ColorVision.Copilot
 
         private static string BuildMessageClipboardText(CopilotChatMessage message)
         {
-            var content = (message.Content ?? string.Empty).Trim();
-            var execution = (message.ExecutionContent ?? string.Empty).Trim();
-            var reasoning = (message.ReasoningContent ?? string.Empty).Trim();
-
-            if (message.IsUser || string.IsNullOrWhiteSpace(execution) && string.IsNullOrWhiteSpace(reasoning))
-                return content;
-
-            var sections = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(execution))
-            {
-                sections.Add("Execution:");
-                sections.Add(execution);
-            }
-
-            if (!string.IsNullOrWhiteSpace(reasoning))
-            {
-                if (sections.Count > 0)
-                    sections.Add(string.Empty);
-
-                sections.Add("Reasoning:");
-                sections.Add(reasoning);
-            }
-
-            if (!string.IsNullOrWhiteSpace(content))
-            {
-                if (sections.Count > 0)
-                    sections.Add(string.Empty);
-
-                sections.Add("Answer:");
-                sections.Add(content);
-            }
-
-            return string.Join(Environment.NewLine, sections);
+            return (message.Content ?? string.Empty).Trim();
         }
 
         private void OpenAttachment(CopilotAttachmentItem? attachment)

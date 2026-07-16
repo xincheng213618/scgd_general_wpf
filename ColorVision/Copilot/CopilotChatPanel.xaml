@@ -1311,13 +1311,22 @@
 
                                         <StackPanel x:Name="AssistantActionsPanel"
                                                     Margin="0,10,0,0"
-                                                    Orientation="Horizontal"
-                                                    Visibility="Collapsed">
+                                                    Orientation="Horizontal">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsResponsePending}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.CopyMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
                                                     Content="{x:Static properties:Resources.Copy}"
-                                                    ToolTip="{x:Static properties:Resources.CopilotCopyMessage}" />
+                                                    ToolTip="复制回答（不包含执行轨迹和推理）" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"

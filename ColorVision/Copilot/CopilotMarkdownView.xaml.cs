@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using WpfMath.Controls;
@@ -133,6 +134,7 @@ namespace ColorVision.Copilot
             var codeBuilder = new StringBuilder();
             var displayMathBuilder = new StringBuilder();
             var inCodeBlock = false;
+            var codeLanguage = string.Empty;
             var displayMathOpening = string.Empty;
             var displayMathClosing = string.Empty;
 
@@ -150,7 +152,7 @@ namespace ColorVision.Copilot
                 if (codeBuilder.Length == 0)
                     return;
 
-                AddCodeBlock(codeBuilder.ToString().TrimEnd());
+                AddCodeBlock(codeBuilder.ToString().TrimEnd('\r', '\n'), codeLanguage);
                 codeBuilder.Clear();
             }
 
@@ -180,11 +182,19 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal))
+                var trimmedStart = line.TrimStart();
+                if (trimmedStart.StartsWith("```", StringComparison.Ordinal))
                 {
                     FlushParagraph();
                     if (inCodeBlock)
+                    {
                         FlushCodeBlock();
+                        codeLanguage = string.Empty;
+                    }
+                    else
+                    {
+                        codeLanguage = NormalizeCodeLanguage(trimmedStart[3..]);
+                    }
 
                     inCodeBlock = !inCodeBlock;
                     continue;
@@ -322,16 +332,113 @@ namespace ColorVision.Copilot
             CurrentDocument.Blocks.Add(block);
         }
 
-        private void AddCodeBlock(string code)
+        private void AddCodeBlock(string code, string language)
         {
-            var block = CreateParagraph(12, FontWeights.Normal, new Thickness(0, 2, 0, 10));
-            block.FontFamily = new FontFamily("Consolas");
-            block.BorderThickness = new Thickness(1);
-            block.Padding = new Thickness(10, 8, 10, 8);
-            block.SetResourceReference(Block.BackgroundProperty, "ButtonBackground");
-            block.SetResourceReference(Block.BorderBrushProperty, "ButtonBorderBrush");
-            block.Inlines.Add(new Run(code));
+            var header = new DockPanel
+            {
+                LastChildFill = true,
+                Margin = new Thickness(10, 5, 7, 4),
+            };
+            var copyButton = new Button
+            {
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Content = "复制",
+                Cursor = Cursors.Hand,
+                FontSize = 11,
+                Padding = new Thickness(6, 2, 6, 2),
+                Tag = code,
+                ToolTip = "复制代码",
+            };
+            copyButton.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+            AutomationProperties.SetName(copyButton, "复制代码");
+            copyButton.Click += CopyCodeButton_Click;
+            DockPanel.SetDock(copyButton, Dock.Right);
+            header.Children.Add(copyButton);
+
+            var languageLabel = new TextBlock
+            {
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 10,
+                Opacity = 0.58,
+                Text = string.IsNullOrWhiteSpace(language) ? "代码" : language,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            languageLabel.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            header.Children.Add(languageLabel);
+
+            var lineCount = Math.Max(1, code.Count(character => character == '\n') + 1);
+            var codeTextBox = new TextBox
+            {
+                AcceptsReturn = true,
+                AcceptsTab = true,
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 12,
+                Height = Math.Min(420, Math.Max(38, lineCount * 18 + 16)),
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                IsReadOnly = true,
+                Padding = new Thickness(10, 6, 10, 8),
+                Text = code,
+                TextWrapping = TextWrapping.NoWrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            };
+            codeTextBox.SetResourceReference(Control.ForegroundProperty, "GlobalTextBrush");
+            AutomationProperties.SetName(codeTextBox, "代码内容");
+
+            var content = new Grid();
+            content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            content.Children.Add(header);
+            Grid.SetRow(codeTextBox, 1);
+            content.Children.Add(codeTextBox);
+
+            var border = new Border
+            {
+                BorderThickness = new Thickness(1),
+                Child = content,
+                CornerRadius = new CornerRadius(5),
+            };
+            border.SetResourceReference(Border.BackgroundProperty, "ButtonBackground");
+            border.SetResourceReference(Border.BorderBrushProperty, "ButtonBorderBrush");
+
+            var block = new BlockUIContainer(border)
+            {
+                Margin = new Thickness(0, 2, 0, 10),
+            };
             CurrentDocument.Blocks.Add(block);
+        }
+
+        private static string NormalizeCodeLanguage(string? fenceInfo)
+        {
+            var language = (fenceInfo ?? string.Empty).Trim();
+            if (language.Length == 0)
+                return string.Empty;
+
+            language = language.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)[0]
+                .Trim('{', '}', '.');
+            return language.Length <= 32 ? language : language[..32];
+        }
+
+        private static void CopyCodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button { Tag: string code } button || string.IsNullOrEmpty(code))
+                return;
+
+            try
+            {
+                Clipboard.SetText(code);
+                button.Content = "已复制";
+                button.ToolTip = "代码已复制到剪贴板";
+            }
+            catch (Exception ex)
+            {
+                button.Content = "复制失败";
+                button.ToolTip = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+            }
         }
 
         private void AddTable(CopilotMarkdownTableModel model)
