@@ -19,10 +19,10 @@ namespace ColorVision.Copilot
         private const int MinimumContentCharacters = 256;
         private const int MaxPreservedSections = 24;
         private static readonly Regex WebPageSectionRegex = new(
-            @"(?m)^(?=\[Web Page (?:Fetched|Fetch Failed)\])",
+            @"(?m)^(?=\[Web Fetch Scope\]|\[Web Page (?:Fetched|Fetch Failed)\])",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex WebSearchSectionRegex = new(
-            @"(?m)^(?=\[Web Search Results\]|\[Web Page (?:Fetched|Fetch Failed)\])",
+            @"(?m)^(?=\[Web Search Results\]|\[Web Fetch Scope\]|\[Web Page (?:Fetched|Fetch Failed)\])",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex FileSectionRegex = new(
             @"(?m)^(?=\[File\]\s)",
