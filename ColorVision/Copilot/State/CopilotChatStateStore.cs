@@ -44,6 +44,16 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotChatStateSnapshot
+    {
+        internal JObject Document { get; }
+
+        internal CopilotChatStateSnapshot(JObject document)
+        {
+            Document = document ?? throw new ArgumentNullException(nameof(document));
+        }
+    }
+
     public interface ICopilotChatStateStore
     {
         string AttachmentDirectoryPath { get; }
@@ -51,6 +61,10 @@ namespace ColorVision.Copilot
         CopilotChatState Load();
 
         void Save(CopilotChatState state);
+
+        CopilotChatStateSnapshot CaptureSnapshot(CopilotChatState state);
+
+        string Serialize(CopilotChatStateSnapshot snapshot);
 
         string Serialize(CopilotChatState state);
 
@@ -171,9 +185,21 @@ namespace ColorVision.Copilot
 
         public string Serialize(CopilotChatState state)
         {
+            return Serialize(CaptureSnapshot(state));
+        }
+
+        public CopilotChatStateSnapshot CaptureSnapshot(CopilotChatState state)
+        {
             ArgumentNullException.ThrowIfNull(state);
             state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
-            var serializedState = JsonConvert.SerializeObject(state, SerializerSettings);
+            var serializer = JsonSerializer.Create(SerializerSettings);
+            return new CopilotChatStateSnapshot(JObject.FromObject(state, serializer));
+        }
+
+        public string Serialize(CopilotChatStateSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            var serializedState = snapshot.Document.ToString(Formatting.None);
             ValidateSerializedStateSize(serializedState);
             return serializedState;
         }

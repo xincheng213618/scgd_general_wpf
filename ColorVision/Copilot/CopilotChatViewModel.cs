@@ -4813,20 +4813,21 @@ namespace ColorVision.Copilot
         private async Task SaveStateSnapshotAsync(CancellationToken cancellationToken)
         {
             var dispatcher = Application.Current?.Dispatcher;
-            string serializedState;
+            CopilotChatStateSnapshot snapshot;
             if (dispatcher == null || dispatcher.CheckAccess())
             {
-                serializedState = _stateStore.Serialize(_state);
+                snapshot = _stateStore.CaptureSnapshot(_state);
             }
             else
             {
                 var captureOperation = dispatcher.InvokeAsync(
-                    () => _stateStore.Serialize(_state),
+                    () => _stateStore.CaptureSnapshot(_state),
                     DispatcherPriority.Background,
                     cancellationToken);
-                serializedState = await captureOperation.Task.ConfigureAwait(false);
+                snapshot = await captureOperation.Task.ConfigureAwait(false);
             }
 
+            var serializedState = await Task.Run(() => _stateStore.Serialize(snapshot), cancellationToken).ConfigureAwait(false);
             await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
         }
 
