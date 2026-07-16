@@ -472,7 +472,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        public bool HasLocalCommandResult => !IsEditingMessage && !string.IsNullOrWhiteSpace(LocalCommandResultText);
+        public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -642,6 +642,8 @@ namespace ColorVision.Copilot
                 }
             }
         }
+
+        public int ComposerMaximumCharacters => CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
 
         public bool IsNavigatingPromptHistory => _promptHistoryNavigator.IsActive;
 
@@ -1236,6 +1238,8 @@ namespace ColorVision.Copilot
             var prompt = (InputText ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
+            if (!TryValidateComposerCharacterLimit(prompt))
+                return;
             if (!IsEditingMessage && TryExecuteLocalCommand(prompt))
                 return;
 
@@ -1250,6 +1254,9 @@ namespace ColorVision.Copilot
             }
 
             var requestProfile = SelectedProfile.Clone();
+            if (!TryValidatePromptBudget(prompt, requestMode, requestProfile))
+                return;
+
             var conversation = EnsureConversation();
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
@@ -2277,6 +2284,12 @@ namespace ColorVision.Copilot
             var activeRun = ActiveHostedRun;
             if (!CanSteerCurrentRun || activeRun == null || string.IsNullOrWhiteSpace(steeringMessage))
                 return;
+            if (SelectedProfile == null
+                || !TryValidateComposerCharacterLimit(steeringMessage)
+                || !TryValidatePromptBudget(steeringMessage, activeRun.Mode, SelectedProfile))
+            {
+                return;
+            }
             if (!_agentRuntime.TryEnqueueSteeringMessage(steeringMessage))
                 return;
 
@@ -2442,6 +2455,52 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
         }
 
+        private bool TryValidateComposerCharacterLimit(string prompt)
+        {
+            if (prompt.Length <= ComposerMaximumCharacters)
+                return true;
+
+            LocalCommandResultTitle = "输入过长";
+            LocalCommandResultText = $"当前输入包含 {prompt.Length:N0} 个字符，编辑器上限为 {ComposerMaximumCharacters:N0} 个字符。请拆分请求，或把大段内容作为文件附件添加。";
+            return false;
+        }
+
+        private bool TryValidatePromptBudget(string prompt, CopilotAgentMode mode, CopilotProfileConfig profile)
+        {
+            long maximumWeight;
+            int maximumTokens;
+            if (mode == CopilotAgentMode.Chat)
+            {
+                var historyLimits = ResolveConversationHistoryLimits(profile);
+                maximumWeight = historyLimits.MaximumContentCharacters;
+                maximumTokens = CopilotTokenEstimator.WeightToTokenEstimate(maximumWeight);
+            }
+            else
+            {
+                var contextWindowTokens = Math.Clamp(
+                    _config.AgentDefaults.ContextWindowTokens,
+                    CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                    CopilotAgentTokenBudget.MaximumContextWindowTokens);
+                var outputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
+                var inputBudgetTokens = Math.Max(1, contextWindowTokens - outputTokens);
+                var requestBudgetTokens = Math.Clamp(
+                    _config.AgentDefaults.RequestTokenBudget,
+                    CopilotAgentRunBudget.MinimumRequestTokenBudget,
+                    CopilotAgentRunBudget.MaximumRequestTokenBudget);
+                maximumTokens = Math.Min(inputBudgetTokens, requestBudgetTokens);
+                maximumWeight = (long)maximumTokens * CopilotTokenEstimator.AsciiCharactersPerToken;
+            }
+
+            var estimatedWeight = CopilotTokenEstimator.EstimateTextWeight(prompt);
+            if (estimatedWeight <= maximumWeight)
+                return true;
+
+            var estimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(estimatedWeight);
+            LocalCommandResultTitle = "输入过长";
+            LocalCommandResultText = $"当前请求预计约 {estimatedTokens:N0} Token，当前模式为单条用户请求预留约 {maximumTokens:N0} Token。请缩短或拆分请求；只有在模型实际支持时，才调高上下文或请求 Token 预算。";
+            return false;
+        }
+
         public CopilotPromptQueueResult QueueExternalPrompt(
             string prompt,
             bool startNewConversation = true,
@@ -2453,6 +2512,8 @@ namespace ColorVision.Copilot
         {
             var normalizedPrompt = (prompt ?? string.Empty).Trim();
             if (Volatile.Read(ref _disposeState) == 1 || string.IsNullOrWhiteSpace(normalizedPrompt))
+                return new CopilotPromptQueueResult(false, false);
+            if (!TryValidateComposerCharacterLimit(normalizedPrompt))
                 return new CopilotPromptQueueResult(false, false);
 
             if (IsEditingMessage)

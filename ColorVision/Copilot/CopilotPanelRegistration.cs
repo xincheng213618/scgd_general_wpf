@@ -130,6 +130,13 @@ namespace ColorVision.Copilot
             var queueResult = viewModel.QueueExternalPrompt(prompt, startNewConversation: true, sendNow: true, mode: CopilotAgentMode.Diagnose);
             if (queueResult.WasSent)
                 return new CopilotPromptDispatchResult(true, true, "Sent to the main AI panel.");
+            if (!queueResult.Accepted)
+            {
+                var rejectionMessage = string.IsNullOrWhiteSpace(viewModel.LocalCommandResultText)
+                    ? "The exception diagnosis request was rejected."
+                    : viewModel.LocalCommandResultText;
+                return new CopilotPromptDispatchResult(false, false, rejectionMessage);
+            }
 
             return new CopilotPromptDispatchResult(queueResult.Accepted, false, viewModel.IsBusy
                 ? "AI is busy. The exception context was placed in the input box."
