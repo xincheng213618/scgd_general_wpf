@@ -452,6 +452,31 @@ public sealed class CopilotToolExecutorTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_KeepsExclusiveLeaseUntilCancelledToolActuallyStops()
+    {
+        var cancelledWrite = new CancellationIgnoringTool("CancelledWrite", "shared-write", TimeSpan.FromSeconds(5));
+        var nextWrite = new BlockingTool("NextWrite", "shared-write", CopilotToolAccess.Write);
+        var executor = new CopilotToolExecutor();
+        using var cancellation = new CancellationTokenSource();
+        var cancelledTask = executor.ExecuteAsync(CreateInvocation(cancelledWrite), _ => { }, cancellation.Token);
+        await cancelledWrite.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledTask);
+        var nextTask = executor.ExecuteAsync(CreateInvocation(nextWrite), _ => { }, CancellationToken.None);
+        await Task.Delay(75);
+        Assert.False(nextWrite.Started.Task.IsCompleted);
+
+        cancelledWrite.Release();
+        await nextWrite.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        nextWrite.Release();
+        var nextOutcome = await nextTask;
+
+        Assert.Equal(CopilotToolExecutionState.Completed, nextOutcome.Execution.State);
+        Assert.True(nextOutcome.Execution.QueueDurationMs > 0);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_CancelsQueuedReadWithoutInvokingTool()
     {
         var write = new BlockingTool("Write", "write", CopilotToolAccess.Write);
@@ -730,7 +755,7 @@ public sealed class CopilotToolExecutorTests : IDisposable
         {
             Started.TrySetResult();
             await _release.Task;
-            return new CopilotToolResult { ToolName = Name, Success = true, Summary = "Completed after timeout." };
+            return new CopilotToolResult { ToolName = Name, Success = true, Summary = "Completed after delayed release." };
         }
 
         public void Release() => _release.TrySetResult();

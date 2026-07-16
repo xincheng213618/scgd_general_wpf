@@ -273,6 +273,8 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException)
                 {
+                    executionLeaseGuard.HoldUntilCompleted(executionTask);
+                    ObserveLateFault(executionTask);
                     var outcome = CreateOutcome(
                         invocation,
                         CopilotToolExecutionState.Cancelled,
