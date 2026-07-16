@@ -132,6 +132,14 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (DataContext is CopilotChatViewModel historyViewModel
+                && historyViewModel.CancelPromptHistoryNavigation())
+            {
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
             if (DataContext is CopilotChatViewModel editViewModel
                 && editViewModel.CancelMessageEditCommand.CanExecute(null))
             {
@@ -411,6 +419,17 @@ namespace ColorVision.Copilot
 
         private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (Keyboard.Modifiers == ModifierKeys.None
+                && e.Key is Key.Up or Key.Down
+                && DataContext is CopilotChatViewModel historyViewModel
+                && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
+                && historyViewModel.TryNavigatePromptHistory(previous: e.Key == Key.Up))
+            {
+                MovePromptCaretToEnd();
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 if (DataContext is CopilotChatViewModel pasteViewModel && pasteViewModel.TryPasteClipboardImageAttachment())

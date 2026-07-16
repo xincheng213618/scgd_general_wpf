@@ -1765,6 +1765,7 @@
                                  PreviewKeyDown="PromptTextBox_PreviewKeyDown"
                                  Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap"
+                                 ToolTip="输入为空时按 ↑/↓ 浏览本会话的请求历史"
                                  VerticalContentAlignment="Top"
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>

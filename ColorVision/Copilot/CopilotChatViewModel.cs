@@ -41,6 +41,7 @@ namespace ColorVision.Copilot
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotLocalGitDiffService _localGitDiffService;
+        private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
@@ -70,6 +71,7 @@ namespace ColorVision.Copilot
         private string _conversationSearchText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
+        private bool _isApplyingPromptHistory;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
         private int _disposeState;
@@ -591,6 +593,8 @@ namespace ColorVision.Copilot
                 var normalizedValue = value ?? string.Empty;
                 if (SetProperty(ref _inputText, normalizedValue))
                 {
+                    if (!_isApplyingPromptHistory)
+                        _promptHistoryNavigator.Reset();
                     UpdateSelectedConversationDraft(normalizedValue);
                     OnPropertyChanged(nameof(IsInputEmpty));
                     OnPropertyChanged(nameof(LocalCommandSuggestions));
@@ -601,6 +605,43 @@ namespace ColorVision.Copilot
                 }
             }
         }
+
+        public bool IsNavigatingPromptHistory => _promptHistoryNavigator.IsActive;
+
+        public bool TryNavigatePromptHistory(bool previous)
+        {
+            if (IsEditingMessage
+                || !_promptHistoryNavigator.TryNavigate(SelectedConversation, InputText, previous, out var text))
+            {
+                return false;
+            }
+
+            ApplyPromptHistoryText(text);
+            return true;
+        }
+
+        public bool CancelPromptHistoryNavigation()
+        {
+            if (!_promptHistoryNavigator.TryCancel(out var draft))
+                return false;
+
+            ApplyPromptHistoryText(draft);
+            return true;
+        }
+
+        private void ApplyPromptHistoryText(string text)
+        {
+            _isApplyingPromptHistory = true;
+            try
+            {
+                InputText = text;
+            }
+            finally
+            {
+                _isApplyingPromptHistory = false;
+            }
+        }
+
 
         public IReadOnlyList<CopilotReasoningOption> SelectedProfileReasoningOptions => CopilotReasoningCapabilities.GetOptions(SelectedProfile);
 
@@ -2518,6 +2559,7 @@ namespace ColorVision.Copilot
                 _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
 
             _selectedConversation = conversation;
+            _promptHistoryNavigator.Reset();
             DismissLocalCommandResult();
             if (_selectedConversation != null)
                 _selectedConversation.Attachments.CollectionChanged += Attachments_CollectionChanged;
