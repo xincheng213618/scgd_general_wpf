@@ -467,9 +467,17 @@ namespace ColorVision.Copilot
                     return CanPauseAgentRun ? "暂停并保存当前 Agent 任务" : Properties.Resources.CopilotStopGeneration;
                 if (IsBusy)
                 {
-                    return CanScheduleComposerRequest(ResolveComposerRequestMode())
-                        ? $"加入 Agent 队列（当前等待 {_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）"
-                        : $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）";
+                    var admission = EvaluateComposerRequestAdmission(ResolveComposerRequestMode());
+                    return admission.Reason switch
+                    {
+                        CopilotRequestAdmissionReason.Allowed => $"加入 Agent 队列（当前等待 {_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+                        CopilotRequestAdmissionReason.ActiveChatIsExclusive => "另一个普通对话正在生成；完成后才能发送新请求",
+                        CopilotRequestAdmissionReason.ChatCannotQueue => "普通对话不能排队；请等待当前 Agent 任务结束",
+                        CopilotRequestAdmissionReason.ConversationAlreadyScheduled => "此会话已有任务正在运行或排队",
+                        CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
+                        CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+                        _ => "当前没有可接收请求的会话",
+                    };
                 }
 
                 var action = Properties.Resources.CopilotSend;
@@ -2121,23 +2129,16 @@ namespace ColorVision.Copilot
 
         private bool CanScheduleComposerRequest(CopilotAgentMode mode)
         {
-            return CanScheduleConversationRequest(SelectedConversation?.Id, mode);
+            return EvaluateComposerRequestAdmission(mode).IsAllowed;
         }
 
         private bool CanScheduleConversationRequest(string? conversationId, CopilotAgentMode mode)
         {
-            if (string.IsNullOrWhiteSpace(conversationId))
-                return false;
-            if (!IsBusy)
-                return true;
-
-            var activeRun = ActiveHostedRun;
-            return activeRun?.IsAgent == true
-                && !string.Equals(activeRun.ConversationId, conversationId, StringComparison.Ordinal)
-                && _taskHost.FindRunByConversationId(conversationId) == null
-                && mode != CopilotAgentMode.Chat
-                && _taskHost.CanSchedule;
+            return _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
         }
+
+        private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
+            _taskHost.EvaluateRequestAdmission(SelectedConversation?.Id, mode);
 
         private CopilotAgentMode ConsumeRequestModeOverride()
         {
