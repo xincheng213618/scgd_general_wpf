@@ -69,6 +69,7 @@ namespace ColorVision.Copilot
         private string _localCommandResultText = string.Empty;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
+        private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
         private string _conversationSearchText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
@@ -1300,7 +1301,10 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             if (isReplacingTurn)
+            {
+                _composerDraftBeforeMessageEdit = null;
                 SetMessageEditState(string.Empty, string.Empty);
+            }
             ConsumeComposerAttachments(conversation);
             InputText = string.Empty;
             await AwaitHostedRunCompletionAsync(hostedRun);
@@ -3243,7 +3247,7 @@ namespace ColorVision.Copilot
             {
                 var replaceDraft = MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "当前输入内容和待发送附件将被替换，是否继续编辑上一条请求？",
+                    "编辑上一条请求会暂时替换当前草稿和待发送附件；取消编辑时会恢复。是否继续？",
                     "ColorVision",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
@@ -3251,6 +3255,10 @@ namespace ColorVision.Copilot
                     return;
             }
 
+            _composerDraftBeforeMessageEdit = new CopilotComposerDraftSnapshot(
+                conversation.Id,
+                InputText,
+                conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
                     : conversation.Attachments)
@@ -3274,15 +3282,29 @@ namespace ColorVision.Copilot
                 return;
 
             var conversation = Conversations.FirstOrDefault(candidate => string.Equals(candidate.Id, _editingConversationId, StringComparison.Ordinal));
+            var draftSnapshot = _composerDraftBeforeMessageEdit;
+            _composerDraftBeforeMessageEdit = null;
             SetMessageEditState(string.Empty, string.Empty);
             _pendingAgentRecoveryRequest = null;
             ClearPendingRequestModeOverride();
-            InputText = string.Empty;
 
-            if (conversation == null || !ReferenceEquals(conversation, SelectedConversation) || conversation.Attachments.Count == 0)
+            if (conversation == null || !ReferenceEquals(conversation, SelectedConversation))
+            {
+                InputText = string.Empty;
                 return;
+            }
 
             conversation.Attachments.Clear();
+            if (draftSnapshot != null && string.Equals(draftSnapshot.ConversationId, conversation.Id, StringComparison.Ordinal))
+            {
+                foreach (var attachment in draftSnapshot.Attachments)
+                    conversation.Attachments.Add(attachment.CreateSnapshot());
+                InputText = draftSnapshot.Text;
+            }
+            else
+            {
+                InputText = string.Empty;
+            }
             UpdateAttachmentsState(conversation);
         }
 
@@ -4154,6 +4176,11 @@ namespace ColorVision.Copilot
 
         private static Task<CopilotFetchedWebPageContent> LoadWebPageContentAsync(string url, CancellationToken cancellationToken) =>
             CopilotWebPageToolSupport.LoadWebPageContentAsync(url, cancellationToken);
+
+        private sealed record CopilotComposerDraftSnapshot(
+            string ConversationId,
+            string Text,
+            IReadOnlyList<CopilotAttachmentItem> Attachments);
 
     }
 }
