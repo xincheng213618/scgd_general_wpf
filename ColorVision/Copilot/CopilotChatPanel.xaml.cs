@@ -456,6 +456,18 @@ namespace ColorVision.Copilot
             UpdateResponsiveLayout();
         }
 
+        private void ConversationListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ConversationListBox.SelectedItem is not CopilotConversationRecord conversation
+                || DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.SelectConversationCommand.CanExecute(conversation))
+            {
+                return;
+            }
+
+            viewModel.SelectConversationCommand.Execute(conversation);
+        }
+
         private void UpdateResponsiveLayout()
         {
             var isCompact = ActualWidth > 0 && ActualWidth < CompactSidebarThreshold;

@@ -2130,6 +2130,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -2166,6 +2167,48 @@
                     </DockPanel>
 
                     <Border Grid.Row="1"
+                            Margin="8,0,8,8"
+                            Padding="8,5"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                       Opacity="0.42"
+                                       Text="&#xE721;" />
+                            <Grid Grid.Column="1" Margin="7,0,4,0">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           IsHitTestVisible="False"
+                                           Opacity="0.38"
+                                           Text="搜索会话"
+                                           Visibility="{Binding IsConversationSearchEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
+                                <TextBox Padding="0"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         FontSize="11"
+                                         Foreground="{DynamicResource GlobalTextBrush}"
+                                         Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                            </Grid>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource AttachmentCloseButtonStyle}"
+                                    Command="{Binding ClearConversationSearchCommand}"
+                                    Content="×"
+                                    ToolTip="清除搜索"
+                                    Visibility="{Binding HasConversationSearchQuery, Converter={StaticResource bool2VisibilityConverter}}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2"
                             Margin="8,0,8,8"
                             Padding="8,7"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2259,13 +2302,15 @@
                         </StackPanel>
                     </Border>
 
-                    <ListBox Grid.Row="2"
+                    <ListBox x:Name="ConversationListBox"
+                             Grid.Row="3"
                              Padding="0,0,0,10"
                              BorderThickness="0"
                              Background="Transparent"
                              ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
-                             ItemsSource="{Binding Conversations}"
-                             SelectedItem="{Binding SelectedConversation, Mode=TwoWay}"
+                             ItemsSource="{Binding FilteredConversations}"
+                             SelectedItem="{Binding SelectedConversation, Mode=OneWay}"
+                             SelectionChanged="ConversationListBox_SelectionChanged"
                              IsEnabled="{Binding CanSwitchConversation}">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotConversationRecord}">
@@ -2345,6 +2390,19 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+
+                    <TextBlock Grid.Row="3"
+                               Margin="16"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               IsHitTestVisible="False"
+                               Opacity="0.48"
+                               Text="没有匹配的会话"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding HasNoConversationSearchResults, Converter={StaticResource bool2VisibilityConverter}}" />
                 </Grid>
             </Border>
         </Grid>
