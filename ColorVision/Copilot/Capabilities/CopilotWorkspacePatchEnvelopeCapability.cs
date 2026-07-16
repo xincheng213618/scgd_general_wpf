@@ -35,18 +35,14 @@ namespace ColorVision.Copilot
                         Arguments = operation.Kind switch
                         {
                             WorkspacePatchOperation.Create => new Dictionary<string, object?> { ["content"] = operation.Content },
-                            WorkspacePatchOperation.Replace => new Dictionary<string, object?>
-                            {
-                                ["oldText"] = operation.OldText,
-                                ["newText"] = operation.NewText,
-                            },
                             _ => new Dictionary<string, object?>(),
                         },
                     };
                     var preview = operation.Kind switch
                     {
                         WorkspacePatchOperation.Create => await PreviewCreateOperationAsync(request, childInput, cancellationToken),
-                        WorkspacePatchOperation.Replace => await PreviewUpdateOperationAsync(request, childInput, cancellationToken),
+                        WorkspacePatchOperation.Replace => await PreviewUpdateOperationAsync(
+                            request, operation.Path, operation.Replacements, cancellationToken),
                         WorkspacePatchOperation.Delete => await PreviewDeleteAsync(request, childInput, cancellationToken),
                         _ => throw new InvalidOperationException("Unsupported workspace envelope operation."),
                     };
@@ -340,22 +336,20 @@ namespace ColorVision.Copilot
                             error = "An add operation requires complete file content.";
                             return false;
                         }
-                        parsed.Add(new WorkspaceEnvelopeOperation(WorkspacePatchOperation.Create, path, string.Empty, string.Empty, content));
+                        parsed.Add(new WorkspaceEnvelopeOperation(
+                            WorkspacePatchOperation.Create, path, Array.Empty<WorkspaceTextReplacement>(), content));
                         break;
                     case "update":
-                        if (HasUnknownProperties(item, "operation", "path", "oldText", "newText"))
+                        if (HasUnknownProperties(item, "operation", "path", "oldText", "newText", "replacements"))
                         {
-                            error = "An update operation accepts only operation, path, oldText, and newText fields.";
+                            error = "An update operation accepts only operation, path, legacy oldText/newText, or replacements fields.";
                             return false;
                         }
-                        if (!TryGetJsonString(item, "oldText", out var oldText)
-                            || !TryGetJsonString(item, "newText", out var newText)
-                            || oldText.Length == 0)
+                        if (!TryGetUpdateReplacements(item, out var replacements, out error))
                         {
-                            error = "An update operation requires non-empty oldText and string newText fields.";
                             return false;
                         }
-                        parsed.Add(new WorkspaceEnvelopeOperation(WorkspacePatchOperation.Replace, path, oldText, newText, string.Empty));
+                        parsed.Add(new WorkspaceEnvelopeOperation(WorkspacePatchOperation.Replace, path, replacements, string.Empty));
                         break;
                     case "delete":
                         if (HasUnknownProperties(item, "operation", "path"))
@@ -363,7 +357,8 @@ namespace ColorVision.Copilot
                             error = "A delete operation accepts only operation and path fields.";
                             return false;
                         }
-                        parsed.Add(new WorkspaceEnvelopeOperation(WorkspacePatchOperation.Delete, path, string.Empty, string.Empty, string.Empty));
+                        parsed.Add(new WorkspaceEnvelopeOperation(
+                            WorkspacePatchOperation.Delete, path, Array.Empty<WorkspaceTextReplacement>(), string.Empty));
                         break;
                     default:
                         error = $"Unsupported workspace envelope operation '{operationText}'. Use add, update, or delete.";
@@ -372,6 +367,68 @@ namespace ColorVision.Copilot
             }
 
             operations = parsed.ToArray();
+            return true;
+        }
+
+        private static bool TryGetUpdateReplacements(
+            JsonElement item,
+            out WorkspaceTextReplacement[] replacements,
+            out string error)
+        {
+            replacements = Array.Empty<WorkspaceTextReplacement>();
+            error = string.Empty;
+            var hasReplacementArray = item.TryGetProperty("replacements", out var replacementArray);
+            var hasOldText = item.TryGetProperty("oldText", out _);
+            var hasNewText = item.TryGetProperty("newText", out _);
+            if (hasReplacementArray && (hasOldText || hasNewText))
+            {
+                error = "An update operation must use either replacements or legacy oldText/newText, not both.";
+                return false;
+            }
+
+            if (!hasReplacementArray)
+            {
+                if (!TryGetJsonString(item, "oldText", out var oldText)
+                    || !TryGetJsonString(item, "newText", out var newText)
+                    || oldText.Length == 0)
+                {
+                    error = "An update operation requires replacements or non-empty legacy oldText with string newText.";
+                    return false;
+                }
+
+                replacements = [new WorkspaceTextReplacement(oldText, newText)];
+                return true;
+            }
+
+            if (replacementArray.ValueKind != JsonValueKind.Array)
+            {
+                error = "Update replacements must be an array.";
+                return false;
+            }
+            var items = replacementArray.EnumerateArray().ToArray();
+            if (items.Length is < 1 or > MaxReplacementsPerFile)
+            {
+                error = $"Update replacements must contain 1-{MaxReplacementsPerFile} items.";
+                return false;
+            }
+
+            var parsed = new List<WorkspaceTextReplacement>(items.Length);
+            for (var index = 0; index < items.Length; index++)
+            {
+                var replacement = items[index];
+                if (replacement.ValueKind != JsonValueKind.Object
+                    || HasUnknownProperties(replacement, "oldText", "newText")
+                    || !TryGetJsonString(replacement, "oldText", out var oldText)
+                    || !TryGetJsonString(replacement, "newText", out var newText)
+                    || oldText.Length == 0)
+                {
+                    error = $"Replacement {index + 1} must contain only non-empty string oldText and string newText fields.";
+                    return false;
+                }
+                parsed.Add(new WorkspaceTextReplacement(oldText, newText));
+            }
+
+            replacements = parsed.ToArray();
             return true;
         }
 
@@ -428,8 +485,7 @@ namespace ColorVision.Copilot
         private readonly record struct WorkspaceEnvelopeOperation(
             WorkspacePatchOperation Kind,
             string Path,
-            string OldText,
-            string NewText,
+            WorkspaceTextReplacement[] Replacements,
             string Content);
     }
 }

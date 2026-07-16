@@ -132,7 +132,11 @@ namespace ColorVision.Copilot
                 builder.AppendLine("Every file is revalidated before the first write. If a later write fails, completed writes are compensated.");
                 foreach (var record in records)
                 {
-                    builder.Append("- ").Append(record.Operation).Append(": ").AppendLine(record.FullPath);
+                    builder.Append("- ").Append(record.Operation).Append(": ").Append(record.FullPath);
+                    if (record.Operation == WorkspacePatchOperation.Replace)
+                        builder.Append(" (").Append(record.Replacements.Length)
+                            .Append(record.Replacements.Length == 1 ? " replacement)" : " replacements)");
+                    builder.AppendLine();
                     builder.Append("  SHA-256: ")
                         .Append(rollback ? record.AfterSha256 : record.BeforeSha256)
                         .Append(" -> ")
@@ -529,6 +533,8 @@ namespace ColorVision.Copilot
                 var record = records[index];
                 builder.AppendLine($"file_{index + 1}_operation: {record.Operation}");
                 builder.AppendLine($"file_{index + 1}_path: {record.FullPath}");
+                if (record.Operation == WorkspacePatchOperation.Replace)
+                    builder.AppendLine($"file_{index + 1}_replacement_count: {record.Replacements.Length}");
                 builder.AppendLine($"file_{index + 1}_before_sha256: {record.BeforeSha256}");
                 builder.AppendLine($"file_{index + 1}_after_sha256: {record.AfterSha256}");
             }

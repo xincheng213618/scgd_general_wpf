@@ -25,10 +25,28 @@ namespace ColorVision.Copilot
                             type = "object",
                             properties = new Dictionary<string, object?>
                             {
-                                ["operation"] = new { type = "string", @enum = new[] { "add", "update", "delete" }, description = "Add a new file, update one exact text region, or delete an existing text file." },
+                                ["operation"] = new { type = "string", @enum = new[] { "add", "update", "delete" }, description = "Add a new file, update one or more exact non-overlapping text regions, or delete an existing text file." },
                                 ["path"] = new { type = "string", description = "Workspace-relative path, or an absolute path inside the current writable workspace scope." },
-                                ["oldText"] = new { type = "string", description = "For update only: exact existing text that must match once." },
-                                ["newText"] = new { type = "string", description = "For update only: replacement text; may be empty." },
+                                ["replacements"] = new
+                                {
+                                    type = "array",
+                                    minItems = 1,
+                                    maxItems = 16,
+                                    description = "For update: ordered list of independent exact replacements, all matched against the same original file. Prefer this for multiple edits in one file.",
+                                    items = new
+                                    {
+                                        type = "object",
+                                        properties = new Dictionary<string, object?>
+                                        {
+                                            ["oldText"] = new { type = "string", minLength = 1, description = "Exact existing text that must match once." },
+                                            ["newText"] = new { type = "string", description = "Replacement text; may be empty." },
+                                        },
+                                        required = new[] { "oldText", "newText" },
+                                        additionalProperties = false,
+                                    },
+                                },
+                                ["oldText"] = new { type = "string", description = "Legacy single-replacement update input. Do not combine with replacements." },
+                                ["newText"] = new { type = "string", description = "Legacy single-replacement update input. Do not combine with replacements." },
                                 ["content"] = new { type = "string", description = "For add only: complete UTF-8 file content." },
                             },
                             required = new[] { "operation", "path" },

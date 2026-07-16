@@ -15,6 +15,8 @@ namespace ColorVision.Copilot
         private const int MaxEntries = 32;
         private const int MaxFileBytes = 1_000_000;
         private const int MaxReplacementCharacters = 20_000;
+        private const int MaxReplacementsPerFile = 16;
+        private const int MaxTotalReplacementCharacters = 100_000;
         private const int MaxNewFileCharacters = 200_000;
         private const int MaxPreviewCharacters = 8_000;
         private static readonly TimeSpan EntryLifetime = TimeSpan.FromMinutes(30);
@@ -24,26 +26,26 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotToolResult> PreviewUpdateOperationAsync(
             CopilotAgentRequest request,
-            CopilotAgentToolInput input,
+            string requestedPath,
+            IReadOnlyList<WorkspaceTextReplacement> requestedReplacements,
             CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(request);
-            input ??= CopilotAgentToolInput.Empty;
-            if (!TryGetTextArgument(input, "oldText", out var requestedOldText)
-                || !TryGetTextArgument(input, "newText", out var requestedNewText)
-                || string.IsNullOrWhiteSpace(input.Path))
+            if (requestedReplacements.Count is < 1 or > MaxReplacementsPerFile)
             {
                 return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
-                    "Workspace patch arguments are incomplete.", "path, oldText, and newText are required string arguments.");
+                    "The workspace patch replacement count is outside the allowed range.",
+                    $"Each updated file must contain 1-{MaxReplacementsPerFile} exact replacements.");
             }
-            if (requestedOldText.Length == 0 || requestedOldText.Length > MaxReplacementCharacters
-                || requestedNewText.Length > MaxReplacementCharacters)
+            if (requestedReplacements.Any(replacement => replacement.OldText.Length == 0
+                || replacement.OldText.Length > MaxReplacementCharacters
+                || replacement.NewText.Length > MaxReplacementCharacters)
+                || requestedReplacements.Sum(replacement => (long)replacement.OldText.Length + replacement.NewText.Length) > MaxTotalReplacementCharacters)
             {
                 return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
                     "Workspace patch text is outside the allowed size.",
-                    $"oldText must contain 1-{MaxReplacementCharacters} characters and newText at most {MaxReplacementCharacters} characters.");
+                    $"Each oldText must contain 1-{MaxReplacementCharacters} characters, each newText at most {MaxReplacementCharacters} characters, and their combined size at most {MaxTotalReplacementCharacters} characters per file.");
             }
-            if (!CopilotWorkspacePatchScope.TryResolve(request, input.Path, MaxFileBytes, out var fullPath, out var scopeError))
+            if (!CopilotWorkspacePatchScope.TryResolve(request, requestedPath, MaxFileBytes, out var fullPath, out var scopeError))
             {
                 return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Authorization,
                     "The target file is outside the current writable workspace scope.", scopeError);
@@ -71,25 +73,60 @@ namespace ColorVision.Copilot
             }
 
             var newline = DetectNewline(originalText);
-            var oldText = NormalizeNewlines(requestedOldText, newline);
-            var newText = NormalizeNewlines(requestedNewText, newline);
-            if (string.Equals(oldText, newText, StringComparison.Ordinal))
+            var replacements = requestedReplacements
+                .Select(replacement => new WorkspaceTextReplacement(
+                    NormalizeNewlines(replacement.OldText, newline),
+                    NormalizeNewlines(replacement.NewText, newline)))
+                .ToArray();
+            var unchangedReplacement = Array.FindIndex(replacements,
+                replacement => string.Equals(replacement.OldText, replacement.NewText, StringComparison.Ordinal));
+            if (unchangedReplacement >= 0)
             {
                 return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Validation,
-                    "The proposed replacement does not change the file.", "oldText and newText are identical after newline normalization.");
+                    "A proposed replacement does not change the file.",
+                    $"Replacement {unchangedReplacement + 1} has identical oldText and newText after newline normalization.");
             }
 
-            var occurrenceCount = CountOccurrences(originalText, oldText);
-            if (occurrenceCount != 1)
+            var matches = new List<WorkspaceTextReplacementMatch>(replacements.Length);
+            for (var index = 0; index < replacements.Length; index++)
             {
-                return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Conflict,
-                    occurrenceCount == 0 ? "The exact oldText was not found in the target file." : "The oldText is ambiguous in the target file.",
-                    occurrenceCount == 0
-                        ? "Read the current file and prepare a replacement that matches its exact text."
-                        : $"oldText matched {occurrenceCount} locations; include more surrounding text so exactly one location matches.");
+                var replacement = replacements[index];
+                var occurrenceCount = CountOccurrences(originalText, replacement.OldText);
+                if (occurrenceCount != 1)
+                {
+                    return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Conflict,
+                        occurrenceCount == 0
+                            ? $"The exact oldText for replacement {index + 1} was not found in the target file."
+                            : $"The oldText for replacement {index + 1} is ambiguous in the target file.",
+                        occurrenceCount == 0
+                            ? $"Replacement {index + 1} did not match. Read the current file and prepare replacements that match its exact text."
+                            : $"Replacement {index + 1} matched {occurrenceCount} locations; include more surrounding text so it matches exactly once.");
+                }
+
+                matches.Add(new WorkspaceTextReplacementMatch(
+                    originalText.IndexOf(replacement.OldText, StringComparison.Ordinal),
+                    replacement));
             }
 
-            var patchedText = originalText.Replace(oldText, newText, StringComparison.Ordinal);
+            var orderedMatches = matches.OrderBy(match => match.StartIndex).ToArray();
+            for (var index = 1; index < orderedMatches.Length; index++)
+            {
+                var previous = orderedMatches[index - 1];
+                var current = orderedMatches[index];
+                if (current.StartIndex < previous.StartIndex + previous.Replacement.OldText.Length)
+                {
+                    return Failure("PreviewWorkspacePatchEnvelope", CopilotToolFailureKind.Conflict,
+                        "The requested exact replacements overlap in the target file.",
+                        "Use independent non-overlapping oldText regions for each replacement.");
+                }
+            }
+
+            var patchedText = originalText;
+            foreach (var match in orderedMatches.Reverse())
+            {
+                patchedText = patchedText.Remove(match.StartIndex, match.Replacement.OldText.Length)
+                    .Insert(match.StartIndex, match.Replacement.NewText);
+            }
             var patchedBytes = EncodeText(patchedText, encodingInfo);
             var now = DateTimeOffset.UtcNow;
             var record = new WorkspacePatchRecord
@@ -101,8 +138,7 @@ namespace ColorVision.Copilot
                 PatchedBytes = patchedBytes,
                 BeforeSha256 = Hash(originalBytes),
                 AfterSha256 = Hash(patchedBytes),
-                OldText = oldText,
-                NewText = newText,
+                Replacements = replacements,
                 CreatedAtUtc = now,
                 ExpiresAtUtc = now.Add(EntryLifetime),
                 State = WorkspacePatchState.Previewed,
@@ -113,7 +149,7 @@ namespace ColorVision.Copilot
             {
                 ToolName = "PreviewWorkspacePatchEnvelope",
                 Success = true,
-                Summary = $"Prepared a conflict-checked workspace patch preview for {Path.GetFileName(fullPath)}.",
+                Summary = $"Prepared a conflict-checked workspace patch preview with {replacements.Length} replacement(s) for {Path.GetFileName(fullPath)}.",
                 Content = BuildPreviewContent(record),
             };
         }
@@ -688,24 +724,32 @@ namespace ColorVision.Copilot
             builder.AppendLine($"after_sha256: {record.AfterSha256}");
             builder.AppendLine($"expires_at_utc: {record.ExpiresAtUtc:O}");
             if (record.Operation == WorkspacePatchOperation.Replace)
-                builder.AppendLine("replacement_count: 1");
+                builder.AppendLine($"replacement_count: {record.Replacements.Length}");
             builder.AppendLine();
             if (record.Operation == WorkspacePatchOperation.Replace)
             {
-                builder.AppendLine("--- old text");
-                AppendPrefixedLines(builder, record.OldText, '-');
-                builder.AppendLine("+++ new text");
+                for (var index = 0; index < record.Replacements.Length; index++)
+                {
+                    if (record.Replacements.Length > 1)
+                        builder.AppendLine($"[Replacement {index + 1}]");
+                    builder.AppendLine("--- old text");
+                    AppendPrefixedLines(builder, record.Replacements[index].OldText, '-');
+                    builder.AppendLine("+++ new text");
+                    AppendPrefixedLines(builder, record.Replacements[index].NewText, '+');
+                    if (index < record.Replacements.Length - 1)
+                        builder.AppendLine();
+                }
             }
             else if (record.Operation == WorkspacePatchOperation.Create)
             {
                 builder.AppendLine("+++ new file");
+                AppendPrefixedLines(builder, record.NewText, '+');
             }
             else
             {
                 builder.AppendLine("--- deleted file");
+                AppendPrefixedLines(builder, record.OldText, '-');
             }
-            AppendPrefixedLines(builder, record.Operation == WorkspacePatchOperation.Delete ? record.OldText : record.NewText,
-                record.Operation == WorkspacePatchOperation.Delete ? '-' : '+');
             var content = builder.ToString().TrimEnd();
             return content.Length <= MaxPreviewCharacters
                 ? content
@@ -854,7 +898,7 @@ namespace ColorVision.Copilot
             while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
             {
                 count++;
-                index += value.Length;
+                index++;
             }
             return count;
         }
@@ -888,12 +932,17 @@ namespace ColorVision.Copilot
             public string AfterSha256 { get; init; } = string.Empty;
             public string OldText { get; init; } = string.Empty;
             public string NewText { get; init; } = string.Empty;
+            public WorkspaceTextReplacement[] Replacements { get; init; } = Array.Empty<WorkspaceTextReplacement>();
             public DateTimeOffset CreatedAtUtc { get; init; }
             public DateTimeOffset ExpiresAtUtc { get; init; }
             public string[] CreatedDirectories { get; set; } = Array.Empty<string>();
             public string ChangeSetId { get; set; } = string.Empty;
             public WorkspacePatchState State { get; set; }
         }
+
+        private readonly record struct WorkspaceTextReplacement(string OldText, string NewText);
+
+        private readonly record struct WorkspaceTextReplacementMatch(int StartIndex, WorkspaceTextReplacement Replacement);
 
         private enum WorkspacePatchOperation
         {
