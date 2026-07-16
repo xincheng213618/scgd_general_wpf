@@ -53,9 +53,16 @@ namespace ColorVision.Copilot
             _delayAsync = delayAsync ?? throw new ArgumentNullException(nameof(delayAsync));
         }
 
-        public async Task<CopilotChatReply> CompleteReplyAsync(
+        public Task<CopilotChatReply> CompleteReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
+            CancellationToken cancellationToken) =>
+            CompleteReplyAsync(config, messages, imageAttachments: null, cancellationToken);
+
+        internal async Task<CopilotChatReply> CompleteReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
             CancellationToken cancellationToken)
         {
             var reasoningBuilder = new StringBuilder();
@@ -72,7 +79,9 @@ namespace ColorVision.Copilot
                     if (delta.HasContent)
                         contentBuilder.Append(delta.Content);
                 },
-                cancellationToken).ConfigureAwait(false);
+                onRetry: null,
+                imageAttachments: imageAttachments,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return new CopilotChatReply(
                 new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
@@ -84,18 +93,28 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
             CancellationToken cancellationToken) =>
-            StreamReplyAsync(config, messages, onDelta, onRetry: null, cancellationToken);
+            StreamReplyAsync(config, messages, onDelta, onRetry: null, imageAttachments: null, cancellationToken);
 
         internal async Task<CopilotTokenUsage> StreamReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotProviderRetryInfo>? onRetry,
+            CancellationToken cancellationToken) =>
+            await StreamReplyAsync(config, messages, onDelta, onRetry, imageAttachments: null, cancellationToken).ConfigureAwait(false);
+
+        internal async Task<CopilotTokenUsage> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
+            IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(messages);
             ArgumentNullException.ThrowIfNull(onDelta);
+            var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
 
             for (var attempt = 1; ; attempt++)
             {
@@ -105,6 +124,7 @@ namespace ColorVision.Copilot
                     return await StreamReplyAttemptAsync(
                         config,
                         messages,
+                        imagePayloads,
                         delta =>
                         {
                             responseStarted = true;
@@ -123,10 +143,11 @@ namespace ColorVision.Copilot
         private async Task<CopilotTokenUsage> StreamReplyAttemptAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
+            IReadOnlyList<CopilotImagePayload> imagePayloads,
             Action<CopilotStreamDelta> onDelta,
             CancellationToken cancellationToken)
         {
-            using var request = CreateRequest(config, messages);
+            using var request = CreateRequest(config, messages, imagePayloads);
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
@@ -220,13 +241,19 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private static HttpRequestMessage CreateRequest(CopilotProfileConfig config, IReadOnlyList<CopilotRequestMessage> messages)
+        private static HttpRequestMessage CreateRequest(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            IReadOnlyList<CopilotImagePayload> imagePayloads)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(config));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             Dictionary<string, object?> payload;
+            var lastUserMessageIndex = FindLastUserMessageIndex(messages);
+            if (imagePayloads.Count > 0 && lastUserMessageIndex < 0)
+                throw new InvalidOperationException("Image input requires a user message.");
             if (config.ProviderType == CopilotProviderType.AnthropicCompatible)
             {
                 request.Headers.Add("x-api-key", config.ApiKey);
@@ -239,10 +266,12 @@ namespace ColorVision.Copilot
                     ["system"] = systemPrompt,
                     ["max_tokens"] = config.MaxTokens,
                     ["stream"] = true,
-                    ["messages"] = messages.Select(message => new
+                    ["messages"] = messages.Select((message, index) => new Dictionary<string, object?>
                     {
-                        role = message.Role,
-                        content = message.Content,
+                        ["role"] = message.Role,
+                        ["content"] = index == lastUserMessageIndex
+                            ? BuildAnthropicMessageContent(message.Content, imagePayloads)
+                            : message.Content,
                     }).ToArray(),
                 };
 
@@ -264,10 +293,12 @@ namespace ColorVision.Copilot
                     });
                 }
 
-                payloadMessages.AddRange(messages.Select(message => new
+                payloadMessages.AddRange(messages.Select((message, index) => new Dictionary<string, object?>
                 {
-                    role = message.Role,
-                    content = message.Content,
+                    ["role"] = message.Role,
+                    ["content"] = index == lastUserMessageIndex
+                        ? BuildOpenAiMessageContent(message.Content, imagePayloads)
+                        : message.Content,
                 }));
 
                 payload = new Dictionary<string, object?>
@@ -290,6 +321,64 @@ namespace ColorVision.Copilot
 
             request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             return request;
+        }
+
+        private static int FindLastUserMessageIndex(IReadOnlyList<CopilotRequestMessage> messages)
+        {
+            for (var index = messages.Count - 1; index >= 0; index--)
+            {
+                if (string.Equals(messages[index].Role, "user", StringComparison.OrdinalIgnoreCase))
+                    return index;
+            }
+
+            return -1;
+        }
+
+        private static object BuildAnthropicMessageContent(string? text, IReadOnlyList<CopilotImagePayload> images)
+        {
+            if (images.Count == 0)
+                return text ?? string.Empty;
+
+            var content = new List<object>();
+            if (!string.IsNullOrWhiteSpace(text))
+                content.Add(new { type = "text", text });
+            foreach (var image in images)
+            {
+                content.Add(new
+                {
+                    type = "image",
+                    source = new
+                    {
+                        type = "base64",
+                        media_type = image.MediaType,
+                        data = image.Base64Data,
+                    },
+                });
+            }
+            return content;
+        }
+
+        private static object BuildOpenAiMessageContent(string? text, IReadOnlyList<CopilotImagePayload> images)
+        {
+            if (images.Count == 0)
+                return text ?? string.Empty;
+
+            var content = new List<object>();
+            if (!string.IsNullOrWhiteSpace(text))
+                content.Add(new { type = "text", text });
+            foreach (var image in images)
+            {
+                content.Add(new
+                {
+                    type = "image_url",
+                    image_url = new
+                    {
+                        url = $"data:{image.MediaType};base64,{image.Base64Data}",
+                        detail = "auto",
+                    },
+                });
+            }
+            return content;
         }
 
         private static Uri BuildEndpoint(CopilotProfileConfig config)

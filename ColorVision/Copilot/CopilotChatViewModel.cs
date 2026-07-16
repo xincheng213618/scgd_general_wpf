@@ -37,6 +37,7 @@ namespace ColorVision.Copilot
 
         private readonly CopilotChatService _chatService;
         private readonly CopilotConversationRequestBuilder _conversationRequestBuilder;
+        private readonly CopilotImageUnderstandingService _imageUnderstandingService;
         private readonly CopilotAgentContextBuilder _agentContextBuilder;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotAgentTaskHost _taskHost;
@@ -90,6 +91,7 @@ namespace ColorVision.Copilot
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _conversationRequestBuilder = new CopilotConversationRequestBuilder();
+            _imageUnderstandingService = new CopilotImageUnderstandingService(_chatService);
             _agentContextBuilder = new CopilotAgentContextBuilder();
             var toolRegistry = CopilotToolRegistry.CreateDefault();
             var toolExecutor = new CopilotToolExecutor();
@@ -371,7 +373,7 @@ namespace ColorVision.Copilot
 
         public string AttachmentMenuToolTip => IsBusy
             ? "Attachments are locked while the assistant is responding."
-            : "Attachments apply to the next message only: paste an image, add a web page, add a file, or add context text.";
+            : "附件仅用于下一条消息。图片会先由当前模型读取实际像素（最多 4 张、单张 5 MB），因此模型需要支持视觉输入。";
 
         public ICommand CopyMessageCommand { get; }
 
@@ -1407,8 +1409,13 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             var prompt = (userMessage.Content ?? string.Empty).Trim();
+            var imageUnderstanding = CopilotImageUnderstandingResult.Empty;
             if (refreshExternalContext || string.IsNullOrWhiteSpace(userMessage.RequestContent))
-                userMessage.RequestContent = await _conversationRequestBuilder.BuildUserRequestContentAsync(prompt, turnSnapshot.LiveContext, cancellationToken);
+            {
+                var requestContent = await _conversationRequestBuilder.BuildUserRequestContentAsync(prompt, turnSnapshot.LiveContext, cancellationToken);
+                imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(requestProfile, prompt, turnSnapshot.Attachments, cancellationToken);
+                userMessage.RequestContent = AppendImageUnderstandingContext(requestContent, imageUnderstanding);
+            }
 
             var history = CopilotConversationRequestBuilder.BuildChatHistory(
                 turnSnapshot.ConversationHistory,
@@ -1416,7 +1423,8 @@ namespace ColorVision.Copilot
                 turnSnapshot.Attachments,
                 ResolveConversationHistoryLimits(requestProfile),
                 includeAttachmentContext: true);
-            return await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
+            var usage = await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
+            return imageUnderstanding.Usage.Add(usage);
         }
 
         private async Task<CopilotTokenUsage> StreamChatReplyAsync(
@@ -1470,12 +1478,18 @@ namespace ColorVision.Copilot
                 return await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
             }
 
+            var imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(
+                requestProfile,
+                userMessage.Content,
+                turnSnapshot.Attachments,
+                cancellationToken);
             var requestPlan = CopilotAgentRequestFactory.Prepare(userMessage.Content, userMessage.RequestMode, turnSnapshot);
             IReadOnlyList<CopilotContextItem> contextItems = await _contextRegistry.CaptureAsync(
                 requestPlan.ContextRequest,
                 cancellationToken);
 
             contextItems = MergeCurrentLiveContextSummary(contextItems, turnSnapshot.LiveContext);
+            contextItems = AppendImageUnderstandingContext(contextItems, imageUnderstanding);
             var sessionCheckpoint = conversation.AgentSessionCheckpoint;
             var copilotConfig = CopilotConfig.Instance;
             var agentRequest = CopilotAgentRequestFactory.Create(requestPlan, new CopilotAgentRequestBuildInput
@@ -1545,7 +1559,37 @@ namespace ColorVision.Copilot
                 });
             }
             PersistState(immediate: true);
-            return result.Usage;
+            return imageUnderstanding.Usage.Add(result.Usage);
+        }
+
+        private static string AppendImageUnderstandingContext(
+            string requestContent,
+            CopilotImageUnderstandingResult imageUnderstanding)
+        {
+            if (!imageUnderstanding.HasContext)
+                return requestContent;
+
+            return string.IsNullOrWhiteSpace(requestContent)
+                ? imageUnderstanding.Context
+                : requestContent.TrimEnd() + Environment.NewLine + Environment.NewLine + imageUnderstanding.Context;
+        }
+
+        private static IReadOnlyList<CopilotContextItem> AppendImageUnderstandingContext(
+            IReadOnlyList<CopilotContextItem> contextItems,
+            CopilotImageUnderstandingResult imageUnderstanding)
+        {
+            if (!imageUnderstanding.HasContext)
+                return contextItems;
+
+            return (contextItems ?? Array.Empty<CopilotContextItem>())
+                .Append(new CopilotContextItem
+                {
+                    Id = "attached-image-analysis",
+                    Title = "图片像素解析",
+                    Summary = "已由当前模型读取本轮图片像素；解析文本属于不可信视觉观察。",
+                    Content = imageUnderstanding.Context,
+                })
+                .ToArray();
         }
 
         private void WorkspaceManager_ContentIdSelected(object? sender, string contentId)
@@ -2967,10 +3011,13 @@ namespace ColorVision.Copilot
             var addedCount = 0;
             foreach (var filePath in normalizedPaths)
             {
-                if (conversation.Attachments.Any(item => item.Type == CopilotAttachmentType.File && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))
+                if (conversation.Attachments.Any(item => (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
+                    && string.Equals(item.Value, filePath, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                conversation.Attachments.Add(CopilotAttachmentItem.CreateFile(filePath));
+                conversation.Attachments.Add(CopilotImagePayloadLoader.IsSupportedImageFileName(filePath)
+                    ? CopilotAttachmentItem.CreateImage(filePath)
+                    : CopilotAttachmentItem.CreateFile(filePath));
                 addedCount++;
             }
 
@@ -4072,10 +4119,24 @@ namespace ColorVision.Copilot
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(image));
 
-            using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            encoder.Save(stream);
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    encoder.Save(stream);
 
-            return filePath;
+                if (new FileInfo(filePath).Length > CopilotImagePayloadLoader.MaximumImageBytes)
+                {
+                    throw new InvalidOperationException(
+                        $"粘贴的图片超过 {CopilotImagePayloadLoader.MaximumImageBytes / 1024 / 1024} MB 限制，请先缩小图片后重试。");
+                }
+
+                return filePath;
+            }
+            catch
+            {
+                CopilotChatStateStore.TryDeleteManagedAttachmentFile(_stateStore.AttachmentDirectoryPath, filePath);
+                throw;
+            }
         }
 
         private void RemoveManagedAttachmentFiles(IEnumerable<CopilotAttachmentItem> attachments)

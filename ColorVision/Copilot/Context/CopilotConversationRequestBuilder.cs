@@ -261,13 +261,12 @@ namespace ColorVision.Copilot
         private static string BuildImageAttachmentBlock(CopilotAttachmentItem attachment)
         {
             if (!File.Exists(attachment.Value))
-                return $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}\nThe local image attachment does not exist: {attachment.Value}\n";
+                return $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}\nThe image attachment does not exist and cannot be analyzed.\n";
 
             return string.Join(Environment.NewLine,
             [
                 $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}",
-                $"Local image path: {attachment.Value}",
-                "The current version shows image previews in the UI but does not automatically upload pixel content to the model.",
+                "The actual pixels were analyzed in a separate bounded model pass; its untrusted visual observation is included with this request.",
                 string.Empty,
             ]);
         }

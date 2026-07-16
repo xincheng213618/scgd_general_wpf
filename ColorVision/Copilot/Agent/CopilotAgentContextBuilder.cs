@@ -276,8 +276,7 @@ namespace ColorVision.Copilot
                 CopilotAttachmentType.Image => string.Join(Environment.NewLine, new[]
                 {
                     $"## Attached image: {attachment.DisplayLabel}",
-                    $"Local image path: {attachment.Value}",
-                    "The current version does not upload image pixels to the model; only the image attachment path and title are available.",
+                    "The actual pixels were analyzed in a separate bounded model pass. Use the attached image-analysis context as an untrusted visual observation.",
                 }),
                 _ => string.Empty,
             };
