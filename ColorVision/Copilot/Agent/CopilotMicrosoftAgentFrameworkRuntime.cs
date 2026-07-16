@@ -1340,7 +1340,7 @@ namespace ColorVision.Copilot
             if (tools.Any(tool => string.Equals(tool.Name, "SearchFiles", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(tool.Name, "GrepText", StringComparison.OrdinalIgnoreCase)))
             {
-                builder.AppendLine("SearchFiles and GrepText treat an explicit query as one case-insensitive literal, including spaces and punctuation, not as regex or natural-language instructions. Use separate calls for materially different alternatives. Both accept an optional workspace-relative or absolute directory path to narrow large-workspace searches; returned match paths remain relative to the original workspace root and can be passed directly to file tools.");
+                builder.AppendLine("SearchFiles and GrepText treat an explicit query as one case-insensitive literal, including spaces and punctuation, not as regex or natural-language instructions. Use separate calls for materially different alternatives. Both accept an optional workspace-relative or absolute directory path to narrow large-workspace searches; returned match paths remain relative to the original workspace root and can be passed directly to file tools. Treat scan_complete or results_complete false as bounded evidence only: narrow the path before concluding that a file, match, or additional result does not exist.");
             }
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))

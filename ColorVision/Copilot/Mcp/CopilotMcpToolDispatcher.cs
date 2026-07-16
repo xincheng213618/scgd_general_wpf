@@ -810,7 +810,10 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Query: {query}");
             builder.AppendLine($"Allowed roots: {roots.Count}");
             builder.AppendLine($"Scanned files: {result.ScannedFileCount}");
-            builder.AppendLine($"Matches: {result.Matches.Count}");
+            builder.AppendLine($"Matched files: {result.MatchedFileCount}");
+            builder.AppendLine($"Matches shown: {result.Matches.Count}");
+            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
             builder.AppendLine();
 
             foreach (var match in result.Matches.Take(MaxSearchResults))
@@ -838,7 +841,9 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Query: {query}");
             builder.AppendLine($"Allowed roots: {roots.Count}");
             builder.AppendLine($"Scanned text files: {result.ScannedTextFileCount}");
-            builder.AppendLine($"Matches: {result.Matches.Count}");
+            builder.AppendLine($"Matches shown: {result.Matches.Count}");
+            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
             builder.AppendLine();
             foreach (var match in result.Matches.Take(MaxGrepMatches))
                 builder.AppendLine($"- {match.DisplayPath}:{match.LineNumber}: {CopilotWorkspaceSearchSupport.TruncateLine(match.LineText, 220)}");

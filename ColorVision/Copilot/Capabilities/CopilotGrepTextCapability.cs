@@ -40,6 +40,12 @@ namespace ColorVision.Copilot
 
         public int ScannedTextFileCount { get; init; }
 
+        public bool ScanComplete { get; init; }
+
+        public bool ResultsComplete { get; init; }
+
+        public bool ResultsTruncated { get; init; }
+
         public IReadOnlyList<CopilotTextSearchMatch> Matches { get; init; } = Array.Empty<CopilotTextSearchMatch>();
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -145,12 +151,17 @@ namespace ColorVision.Copilot
             var scannedFiles = 0;
             var matches = new List<CopilotTextSearchMatch>();
             var matchedFilePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var scanComplete = true;
+            var resultsTruncated = false;
 
             foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: true, cancellationToken))
             {
-                scannedFiles++;
-                if (scannedFiles > MaxFilesToScan || matches.Count >= MaxMatches)
+                if (scannedFiles >= MaxFilesToScan)
+                {
+                    scanComplete = false;
                     break;
+                }
+                scannedFiles++;
 
                 try
                 {
@@ -163,6 +174,13 @@ namespace ColorVision.Copilot
                         if (!patterns.Any(pattern => line.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
                             continue;
 
+                        if (matches.Count >= MaxMatches)
+                        {
+                            resultsTruncated = true;
+                            scanComplete = false;
+                            break;
+                        }
+
                         matches.Add(new CopilotTextSearchMatch
                         {
                             RootPath = displayRootMap[entry.RootPath],
@@ -171,8 +189,6 @@ namespace ColorVision.Copilot
                             LineText = line,
                         });
                         matchedFilePaths.Add(entry.FullPath);
-                        if (matches.Count >= MaxMatches)
-                            break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -181,8 +197,22 @@ namespace ColorVision.Copilot
                 }
                 catch
                 {
+                    scanComplete = false;
                 }
+
+                if (resultsTruncated)
+                    break;
             }
+
+            var resultsComplete = scanComplete && !resultsTruncated;
+            var builder = new StringBuilder();
+            builder.AppendLine($"[Search Keywords] {string.Join(", ", patterns)}");
+            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
+            builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
+            builder.AppendLine($"[Matches Shown] {matches.Count}");
+            builder.AppendLine($"[Scan Complete] {scanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine();
 
             if (matches.Count == 0)
             {
@@ -192,17 +222,19 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Patterns = patterns,
                     ScannedTextFileCount = scannedFiles,
+                    ScanComplete = scanComplete,
+                    ResultsComplete = resultsComplete,
+                    ResultsTruncated = resultsTruncated,
                     Matches = matches,
-                    Summary = $"Scanned {scannedFiles} text files, but no keyword matches were found.",
-                    ErrorMessage = $"Search keywords: {string.Join(", ", patterns)}",
+                    Summary = scanComplete
+                        ? $"Scanned {scannedFiles} text files, but no keyword matches were found."
+                        : $"Scanned {scannedFiles} text files without a match, but the search scope was not fully inspected.",
+                    Content = builder.ToString().TrimEnd(),
+                    ErrorMessage = scanComplete
+                        ? $"Search keywords: {string.Join(", ", patterns)}"
+                        : "The text search was incomplete because a scan limit or unreadable file was encountered. Narrow the path before concluding that no matching text exists.",
                 };
             }
-
-            var builder = new StringBuilder();
-            builder.AppendLine($"[Search Keywords] {string.Join(", ", patterns)}");
-            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
-            builder.AppendLine($"[Scanned Text Files] {scannedFiles}");
-            builder.AppendLine();
 
             foreach (var match in matches)
                 builder.AppendLine(match.AgentLine);
@@ -213,8 +245,15 @@ namespace ColorVision.Copilot
                 SearchRoots = searchRoots,
                 Patterns = patterns,
                 ScannedTextFileCount = scannedFiles,
+                ScanComplete = scanComplete,
+                ResultsComplete = resultsComplete,
+                ResultsTruncated = resultsTruncated,
                 Matches = matches,
-                Summary = $"Scanned {scannedFiles} text files and found {matches.Count} matches.",
+                Summary = resultsComplete
+                    ? $"Scanned {scannedFiles} text files and found {matches.Count} matches."
+                    : resultsTruncated
+                        ? $"Found more than {MaxMatches} matches; showing the first {matches.Count}."
+                        : $"Found {matches.Count} matches after inspecting {scannedFiles} text files, but the search scope was not fully inspected.",
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = matchedFilePaths
                     .Take(3)

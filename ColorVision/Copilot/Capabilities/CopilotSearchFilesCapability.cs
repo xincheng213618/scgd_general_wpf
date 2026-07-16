@@ -36,6 +36,12 @@ namespace ColorVision.Copilot
 
         public int ScannedFileCount { get; init; }
 
+        public int MatchedFileCount { get; init; }
+
+        public bool ScanComplete { get; init; }
+
+        public bool ResultsComplete { get; init; }
+
         public IReadOnlyList<CopilotFileSearchMatch> Matches { get; init; } = Array.Empty<CopilotFileSearchMatch>();
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -123,12 +129,16 @@ namespace ColorVision.Copilot
 
             var scannedFiles = 0;
             var matches = new List<CopilotFileSearchMatch>();
+            var scanComplete = true;
 
             foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: false, cancellationToken))
             {
-                scannedFiles++;
-                if (scannedFiles > MaxFilesToScan)
+                if (scannedFiles >= MaxFilesToScan)
+                {
+                    scanComplete = false;
                     break;
+                }
+                scannedFiles++;
 
                 var displayEntry = new CopilotSearchFileEntry(displayRootMap[entry.RootPath], entry.FullPath);
                 var score = ScoreCandidate(displayEntry, terms);
@@ -148,6 +158,17 @@ namespace ColorVision.Copilot
                 .ThenBy(item => item.FullPath, StringComparer.OrdinalIgnoreCase)
                 .Take(MaxResults)
                 .ToArray();
+            var resultsComplete = scanComplete && matches.Count <= MaxResults;
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
+            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
+            builder.AppendLine($"[Scanned Files] {scannedFiles}");
+            builder.AppendLine($"[Matched Files] {matches.Count}");
+            builder.AppendLine($"[Results Shown] {topMatches.Length}");
+            builder.AppendLine($"[Scan Complete] {scanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine();
 
             if (topMatches.Length == 0)
             {
@@ -157,17 +178,19 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Terms = terms,
                     ScannedFileCount = scannedFiles,
+                    MatchedFileCount = matches.Count,
+                    ScanComplete = scanComplete,
+                    ResultsComplete = resultsComplete,
                     Matches = topMatches,
-                    Summary = $"Scanned {scannedFiles} files, but no candidate files were found.",
-                    ErrorMessage = $"Search terms: {string.Join(", ", terms)}",
+                    Summary = scanComplete
+                        ? $"Scanned {scannedFiles} files, but no candidate files were found."
+                        : $"Scanned the first {scannedFiles} files without a match, but the search scope was not exhausted.",
+                    Content = builder.ToString().TrimEnd(),
+                    ErrorMessage = scanComplete
+                        ? $"Search terms: {string.Join(", ", terms)}"
+                        : "The file scan limit was reached. Narrow the path before concluding that no matching file exists.",
                 };
             }
-
-            var builder = new StringBuilder();
-            builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
-            builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
-            builder.AppendLine($"[Scanned Files] {scannedFiles}");
-            builder.AppendLine();
 
             for (var index = 0; index < topMatches.Length; index++)
             {
@@ -182,8 +205,13 @@ namespace ColorVision.Copilot
                 SearchRoots = searchRoots,
                 Terms = terms,
                 ScannedFileCount = scannedFiles,
+                MatchedFileCount = matches.Count,
+                ScanComplete = scanComplete,
+                ResultsComplete = resultsComplete,
                 Matches = topMatches,
-                Summary = $"Scanned {scannedFiles} files and found {topMatches.Length} candidate files.",
+                Summary = resultsComplete
+                    ? $"Scanned {scannedFiles} files and found {topMatches.Length} candidate files."
+                    : $"Found {matches.Count}{(scanComplete ? string.Empty : "+")} candidate files in an incomplete search; showing {topMatches.Length}.",
                 Content = builder.ToString().TrimEnd(),
                 SuggestedReadableLocalFilePaths = topMatches
                     .Select(item => item.FullPath)
