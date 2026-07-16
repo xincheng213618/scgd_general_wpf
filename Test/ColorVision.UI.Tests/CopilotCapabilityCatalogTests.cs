@@ -1,10 +1,85 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class CopilotCapabilityCatalogTests
 {
+    [Fact]
+    public void PublishSource_RejectsOversizedEntryMetadataWithoutChangingSnapshot()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var before = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:metadata",
+            "Metadata source",
+            [new CatalogTool("Stable", "Stable capability.", "stable")]);
+        var invalidTools = new ICopilotTool[]
+        {
+            new CatalogMetadataTool(new string('n', CopilotCapabilityCatalog.MaximumToolNameLength + 1)),
+            new CatalogMetadataTool("Control\nName"),
+            new CatalogMetadataTool("OversizedDescription", description: new string('d', CopilotCapabilityCatalog.MaximumToolDescriptionInputLength + 1)),
+            new CatalogMetadataTool("OversizedKey", catalogKey: new string('k', CopilotCapabilityCatalog.MaximumCapabilityKeyLength + 1)),
+            new CatalogMetadataTool("OversizedVersion", versionFingerprint: new string('v', CopilotCapabilityCatalog.MaximumVersionFingerprintLength + 1)),
+        };
+
+        foreach (var invalidTool in invalidTools)
+        {
+            Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+                CopilotCapabilitySourceKind.Plugin,
+                "plugin:metadata",
+                "Metadata source",
+                [invalidTool]));
+            var after = catalog.GetSnapshot();
+            Assert.Equal(before.Revision, after.Revision);
+            Assert.Equal(before.Capabilities.Select(item => item.Id), after.Capabilities.Select(item => item.Id));
+        }
+
+        Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:metadata",
+            new string('s', CopilotCapabilityCatalog.MaximumSourceNameInputLength + 1),
+            [new CatalogTool("Replacement", "Replacement capability.", "replacement")]));
+        Assert.Equal(before.Revision, catalog.GetSnapshot().Revision);
+
+        var sanitized = catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:metadata",
+            "Metadata\0source",
+            [new CatalogMetadataTool("Sanitized", description: "First\0second\nthird", catalogKey: "sanitized")]);
+        var sanitizedEntry = Assert.Single(sanitized.Capabilities);
+        Assert.DoesNotContain(sanitizedEntry.SourceName, char.IsControl);
+        Assert.DoesNotContain(sanitizedEntry.Description, char.IsControl);
+    }
+
+    [Fact]
+    public void PublishSource_RejectsOversizedOrUnreadableInputSchema()
+    {
+        var oversizedSchema = CopilotToolInputSchema.FromJsonSchema(JsonSerializer.SerializeToElement(new
+        {
+            type = "object",
+            description = new string('s', CopilotCapabilityCatalog.MaximumInputSchemaCharacters),
+        }));
+        var catalog = new CopilotCapabilityCatalog();
+
+        var oversized = Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:oversized-schema",
+            "Oversized schema",
+            [new CatalogMetadataTool("OversizedSchema", inputSchema: () => oversizedSchema)]));
+        var unreadable = Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:unreadable-schema",
+            "Unreadable schema",
+            [new CatalogMetadataTool("UnreadableSchema", inputSchema: () => throw new InvalidOperationException("schema failure"))]));
+
+        Assert.Contains(CopilotCapabilityCatalog.MaximumInputSchemaCharacters.ToString(), oversized.Message, StringComparison.Ordinal);
+        Assert.Contains("readable input schema", unreadable.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.IsType<InvalidOperationException>(unreadable.InnerException);
+        Assert.Empty(catalog.GetSnapshot().Capabilities);
+    }
+
     [Fact]
     public void PublishSource_BoundsSingleSourceWithoutExhaustingUnboundedSequence()
     {
@@ -403,6 +478,42 @@ public sealed class CopilotCapabilityCatalogTests
         public string Description { get; } = description;
 
         public string CatalogCapabilityKey { get; } = catalogKey;
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Completed." });
+        }
+    }
+
+    private sealed class CatalogMetadataTool : ICopilotTool, ICopilotCapabilityCatalogIdentity, ICopilotCapabilityCatalogVersionIdentity
+    {
+        private readonly Func<CopilotToolInputSchema> _inputSchema;
+
+        public CatalogMetadataTool(
+            string name,
+            string description = "Catalog metadata test tool.",
+            string catalogKey = "metadata",
+            string versionFingerprint = "1",
+            Func<CopilotToolInputSchema>? inputSchema = null)
+        {
+            Name = name;
+            Description = description;
+            CatalogCapabilityKey = catalogKey;
+            CatalogVersionFingerprint = versionFingerprint;
+            _inputSchema = inputSchema ?? (() => CopilotToolInputSchema.Empty);
+        }
+
+        public string Name { get; }
+
+        public string Description { get; }
+
+        public string CatalogCapabilityKey { get; }
+
+        public string CatalogVersionFingerprint { get; }
+
+        public CopilotToolInputSchema InputSchema => _inputSchema();
 
         public bool CanHandle(CopilotAgentRequest request) => true;
 

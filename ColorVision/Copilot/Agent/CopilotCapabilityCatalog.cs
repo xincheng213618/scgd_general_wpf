@@ -86,6 +86,12 @@ namespace ColorVision.Copilot
         public const int MaximumCapabilitiesPerSource = 256;
         public const int MaximumCapabilities = 2_048;
         public const int MaximumKnownCapabilities = MaximumCapabilities;
+        public const int MaximumToolNameLength = 256;
+        public const int MaximumSourceNameInputLength = 1_024;
+        public const int MaximumToolDescriptionInputLength = 4_096;
+        public const int MaximumCapabilityKeyLength = 512;
+        public const int MaximumInputSchemaCharacters = 128 * 1_024;
+        public const int MaximumVersionFingerprintLength = 4_096;
 
         private const int MaximumSources = 64;
         private const int MaximumSourceIdLength = 96;
@@ -117,7 +123,14 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(sourceKind))
                 throw new ArgumentOutOfRangeException(nameof(sourceKind));
             var normalizedSourceId = NormalizeSourceId(sourceId);
-            var normalizedSourceName = Sanitize(sourceName, MaximumSourceNameLength);
+            var rawSourceName = sourceName ?? string.Empty;
+            if (rawSourceName.Length > MaximumSourceNameInputLength)
+            {
+                throw new ArgumentException(
+                    $"A capability source name cannot exceed {MaximumSourceNameInputLength} input characters.",
+                    nameof(sourceName));
+            }
+            var normalizedSourceName = Sanitize(rawSourceName, MaximumSourceNameLength);
             if (string.IsNullOrWhiteSpace(normalizedSourceName))
                 throw new ArgumentException("A capability source must have a non-empty display name.", nameof(sourceName));
 
@@ -296,24 +309,53 @@ namespace ColorVision.Copilot
             ICopilotTool tool)
         {
             ArgumentNullException.ThrowIfNull(tool);
-            if (string.IsNullOrWhiteSpace(tool.Name))
-                throw new ArgumentException("A catalog capability must have a non-empty name.", nameof(tool));
-            var capability = tool.Capability ?? throw new ArgumentException($"Capability '{tool.Name}' has no descriptor.", nameof(tool));
-            capability.Validate(tool.Name.Trim());
+            var rawName = tool.Name ?? string.Empty;
+            if (rawName.Length == 0 || rawName.Length > MaximumToolNameLength || string.IsNullOrWhiteSpace(rawName))
+            {
+                throw new ArgumentException(
+                    $"A catalog capability name must contain 1-{MaximumToolNameLength} characters.",
+                    nameof(tool));
+            }
+            var name = rawName.Trim();
+            if (name.Any(char.IsControl))
+                throw new ArgumentException("A catalog capability name cannot contain control characters.", nameof(tool));
+            var rawDescription = tool.Description ?? string.Empty;
+            if (rawDescription.Length > MaximumToolDescriptionInputLength)
+            {
+                throw new ArgumentException(
+                    $"Catalog capability '{name}' has a description longer than {MaximumToolDescriptionInputLength} characters.",
+                    nameof(tool));
+            }
+
+            var capability = tool.Capability ?? throw new ArgumentException($"Capability '{name}' has no descriptor.", nameof(tool));
+            capability.Validate(name);
             var capabilityKey = tool is ICopilotCapabilityCatalogIdentity identity
                 ? identity.CatalogCapabilityKey
-                : tool.Name;
+                : name;
+            if ((capabilityKey?.Length ?? 0) > MaximumCapabilityKeyLength)
+            {
+                throw new ArgumentException(
+                    $"Catalog capability '{name}' has an identity key longer than {MaximumCapabilityKeyLength} characters.",
+                    nameof(tool));
+            }
             var id = sourceId + ":" + NormalizeCapabilityKey(capabilityKey);
-            var description = Sanitize(tool.Description, MaximumDescriptionLength);
-            var schema = GetSchemaText(tool);
+            var description = Sanitize(rawDescription, MaximumDescriptionLength);
+            var schema = GetSchemaText(tool, name);
             var schemaFingerprint = CreateHash(schema)[..16].ToLowerInvariant();
-            var versionFingerprint = tool is ICopilotCapabilityCatalogVersionIdentity versionIdentity
-                ? versionIdentity.CatalogVersionFingerprint?.Trim() ?? string.Empty
+            var rawVersionFingerprint = tool is ICopilotCapabilityCatalogVersionIdentity versionIdentity
+                ? versionIdentity.CatalogVersionFingerprint ?? string.Empty
                 : string.Empty;
+            if (rawVersionFingerprint.Length > MaximumVersionFingerprintLength)
+            {
+                throw new ArgumentException(
+                    $"Catalog capability '{name}' has a version fingerprint longer than {MaximumVersionFingerprintLength} characters.",
+                    nameof(tool));
+            }
+            var versionFingerprint = rawVersionFingerprint.Trim();
             var signatureText = string.Join("\n", new[]
             {
                 id,
-                tool.Name.Trim(),
+                name,
                 description,
                 sourceKind.ToString(),
                 sourceName,
@@ -330,7 +372,7 @@ namespace ColorVision.Copilot
             });
             return new Candidate(
                 id,
-                tool.Name.Trim(),
+                name,
                 description,
                 sourceKind,
                 sourceId,
@@ -406,7 +448,10 @@ namespace ColorVision.Copilot
 
         private static string NormalizeSourceId(string sourceId)
         {
-            var normalized = sourceId?.Trim().ToLowerInvariant() ?? string.Empty;
+            var raw = sourceId ?? string.Empty;
+            if (raw.Length > MaximumSourceIdLength)
+                throw new ArgumentException($"A capability source id must contain 1-{MaximumSourceIdLength} characters.", nameof(sourceId));
+            var normalized = raw.Trim().ToLowerInvariant();
             if (normalized.Length == 0 || normalized.Length > MaximumSourceIdLength)
                 throw new ArgumentException($"A capability source id must contain 1-{MaximumSourceIdLength} characters.", nameof(sourceId));
             if (normalized.Any(character => !(character is >= 'a' and <= 'z' or >= '0' and <= '9' or ':' or '.' or '_' or '-')))
@@ -441,24 +486,44 @@ namespace ColorVision.Copilot
             return key.Length <= 96 ? key : key[..83] + "-" + CreateHash(source)[..12].ToLowerInvariant();
         }
 
-        private static string GetSchemaText(ICopilotTool tool)
+        private static string GetSchemaText(ICopilotTool tool, string toolName)
         {
+            string schema;
             try
             {
-                return tool.InputSchema.JsonSchema.GetRawText();
+                var inputSchema = tool.InputSchema
+                    ?? throw new InvalidOperationException("The tool returned a null input schema.");
+                schema = inputSchema.JsonSchema.GetRawText();
             }
-            catch
+            catch (Exception ex)
             {
-                return "{}";
+                throw new ArgumentException(
+                    $"Catalog capability '{toolName}' must expose a readable input schema.",
+                    nameof(tool),
+                    ex);
             }
+            if (schema.Length > MaximumInputSchemaCharacters)
+            {
+                throw new ArgumentException(
+                    $"Catalog capability '{toolName}' has an input schema longer than {MaximumInputSchemaCharacters} characters.",
+                    nameof(tool));
+            }
+            return schema;
         }
 
         private static string CreateHash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value ?? string.Empty)));
 
         private static string Sanitize(string? value, int maximumLength)
         {
-            var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
-            return text.Length <= maximumLength ? text : text[..maximumLength] + "...";
+            var text = (value ?? string.Empty).Trim();
+            var truncated = text.Length > maximumLength;
+            var length = Math.Min(text.Length, maximumLength);
+            var builder = new StringBuilder(length + (truncated ? 3 : 0));
+            for (var index = 0; index < length; index++)
+                builder.Append(char.IsControl(text[index]) ? ' ' : text[index]);
+            if (truncated)
+                builder.Append("...");
+            return builder.ToString();
         }
 
         private sealed record Candidate(
