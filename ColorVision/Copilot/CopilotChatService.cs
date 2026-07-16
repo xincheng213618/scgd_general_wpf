@@ -13,6 +13,27 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotChatFinishKind
+    {
+        Unspecified,
+        Complete,
+        LengthLimit,
+        ContentFiltered,
+        ToolRequested,
+        Other,
+    }
+
+    internal readonly record struct CopilotChatStreamResult(
+        CopilotTokenUsage Usage,
+        CopilotChatFinishKind FinishKind,
+        string FinishReason)
+    {
+        public bool IsIncomplete => FinishKind is CopilotChatFinishKind.LengthLimit
+            or CopilotChatFinishKind.ContentFiltered
+            or CopilotChatFinishKind.ToolRequested
+            or CopilotChatFinishKind.Other;
+    }
+
     public sealed class CopilotChatService
     {
         private const int MaximumProviderErrorResponseBytes = 256 * 1024;
@@ -126,15 +147,33 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken) =>
             StreamReplyAsync(config, messages, onDelta, onRetry: null, imageAttachments: null, cancellationToken);
 
-        internal async Task<CopilotTokenUsage> StreamReplyAsync(
+        internal Task<CopilotChatStreamResult> StreamReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
             Action<CopilotProviderRetryInfo>? onRetry,
             CancellationToken cancellationToken) =>
-            await StreamReplyAsync(config, messages, onDelta, onRetry, imageAttachments: null, cancellationToken).ConfigureAwait(false);
+            StreamReplyCoreAsync(config, messages, onDelta, onRetry, imageAttachments: null, cancellationToken);
 
         internal async Task<CopilotTokenUsage> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
+            IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
+            CancellationToken cancellationToken)
+        {
+            var result = await StreamReplyCoreAsync(
+                config,
+                messages,
+                onDelta,
+                onRetry,
+                imageAttachments,
+                cancellationToken).ConfigureAwait(false);
+            return result.Usage;
+        }
+
+        private async Task<CopilotChatStreamResult> StreamReplyCoreAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
@@ -174,7 +213,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task<CopilotTokenUsage> StreamReplyAttemptAsync(
+        private async Task<CopilotChatStreamResult> StreamReplyAttemptAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
@@ -223,7 +262,8 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
 
             onDelta(reply.Delta);
-            return reply.Usage;
+            var finishReason = ExtractProviderFinishReason(config.ProviderType, body);
+            return CreateStreamResult(reply.Usage, finishReason);
         }
 
         private bool TryCreateRetry(
@@ -454,7 +494,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static async Task<CopilotTokenUsage> ReadStreamingResponseAsync(
+        private static async Task<CopilotChatStreamResult> ReadStreamingResponseAsync(
             CopilotProfileConfig config,
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
@@ -477,6 +517,7 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             var receivedDisplayableText = false;
             var streamCompleted = false;
+            var finishReason = string.Empty;
 
             while (!streamCompleted)
             {
@@ -496,13 +537,25 @@ namespace ColorVision.Copilot
 
                 if (line is null)
                 {
-                    ProcessStreamingEventData(config, eventData, onDelta, ref usage, ref receivedDisplayableText);
+                    streamCompleted = ProcessStreamingEventData(
+                        config,
+                        eventData,
+                        onDelta,
+                        ref usage,
+                        ref receivedDisplayableText,
+                        ref finishReason);
                     break;
                 }
 
                 if (line.Length == 0)
                 {
-                    streamCompleted = ProcessStreamingEventData(config, eventData, onDelta, ref usage, ref receivedDisplayableText);
+                    streamCompleted = ProcessStreamingEventData(
+                        config,
+                        eventData,
+                        onDelta,
+                        ref usage,
+                        ref receivedDisplayableText,
+                        ref finishReason);
                     continue;
                 }
 
@@ -517,10 +570,13 @@ namespace ColorVision.Copilot
                 eventData.Append(data);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             if (!receivedDisplayableText)
                 throw new InvalidOperationException("The API stream completed successfully, but no displayable text was found.");
+            if (!streamCompleted && string.IsNullOrWhiteSpace(finishReason))
+                throw new IOException("The provider stream ended before a completion event or finish reason was received.");
 
-            return usage;
+            return CreateStreamResult(usage, finishReason);
         }
 
         private static bool ProcessStreamingEventData(
@@ -528,7 +584,8 @@ namespace ColorVision.Copilot
             StringBuilder eventData,
             Action<CopilotStreamDelta> onDelta,
             ref CopilotTokenUsage usage,
-            ref bool receivedDisplayableText)
+            ref bool receivedDisplayableText,
+            ref string finishReason)
         {
             if (eventData.Length == 0)
                 return false;
@@ -542,17 +599,170 @@ namespace ColorVision.Copilot
             if (TryParseStreamingError(payload, config.ApiKey, out var streamingError))
                 throw new InvalidOperationException(streamingError);
 
+            var terminalEvent = IsTerminalStreamingEvent(config.ProviderType, payload);
+            var reportedFinishReason = ExtractProviderFinishReason(config.ProviderType, payload);
+            if (!string.IsNullOrWhiteSpace(reportedFinishReason))
+                finishReason = reportedFinishReason;
+
             var reply = config.ProviderType == CopilotProviderType.AnthropicCompatible
                 ? ExtractAnthropicStreamingReply(payload)
                 : ExtractOpenAiStreamingReply(payload);
             if (reply.Usage.HasAny)
                 usage = usage.MergeProgress(reply.Usage);
             if (!reply.Delta.HasAny)
-                return false;
+                return terminalEvent;
 
             receivedDisplayableText = true;
             onDelta(reply.Delta);
+            return terminalEvent;
+        }
+
+        private static CopilotChatStreamResult CreateStreamResult(CopilotTokenUsage usage, string? finishReason)
+        {
+            var normalizedReason = NormalizeFinishReason(finishReason);
+            return new CopilotChatStreamResult(
+                usage,
+                ClassifyFinishReason(normalizedReason),
+                normalizedReason);
+        }
+
+        private static CopilotChatFinishKind ClassifyFinishReason(string finishReason)
+        {
+            if (string.IsNullOrWhiteSpace(finishReason))
+                return CopilotChatFinishKind.Unspecified;
+
+            var comparable = finishReason
+                .Replace('-', '_')
+                .Replace(' ', '_')
+                .ToLowerInvariant();
+            if (comparable is "stop" or "end_turn" or "stop_sequence" or "complete" or "completed" or "success")
+                return CopilotChatFinishKind.Complete;
+            if (comparable is "length" or "max_tokens" or "max_output_tokens" or "model_length"
+                || comparable.Contains("length_limit", StringComparison.Ordinal)
+                || comparable.Contains("token_limit", StringComparison.Ordinal))
+            {
+                return CopilotChatFinishKind.LengthLimit;
+            }
+            if (comparable is "content_filter" or "safety" or "blocked" or "refusal"
+                || comparable.Contains("filter", StringComparison.Ordinal))
+            {
+                return CopilotChatFinishKind.ContentFiltered;
+            }
+            if (comparable is "tool_calls" or "tool_use" or "function_call" or "pause_turn"
+                || comparable.Contains("tool_call", StringComparison.Ordinal))
+            {
+                return CopilotChatFinishKind.ToolRequested;
+            }
+            return CopilotChatFinishKind.Other;
+        }
+
+        private static string ExtractProviderFinishReason(CopilotProviderType providerType, string payload)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+                return string.Empty;
+
+            try
+            {
+                using var document = JsonDocument.Parse(payload);
+                var root = document.RootElement;
+                if (TryReadFinishReason(root, out var finishReason))
+                    return finishReason;
+
+                if (providerType == CopilotProviderType.OpenAICompatible
+                    && root.TryGetProperty("choices", out var choices)
+                    && choices.ValueKind == JsonValueKind.Array
+                    && choices.GetArrayLength() > 0
+                    && TryReadFinishReason(choices[0], out finishReason))
+                {
+                    return finishReason;
+                }
+
+                foreach (var propertyName in new[] { "delta", "message" })
+                {
+                    if (root.TryGetProperty(propertyName, out var nested)
+                        && TryReadFinishReason(nested, out finishReason))
+                    {
+                        return finishReason;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+            }
+
+            return string.Empty;
+        }
+
+        private static bool TryReadFinishReason(JsonElement element, out string finishReason)
+        {
+            finishReason = string.Empty;
+            if (element.ValueKind != JsonValueKind.Object)
+                return false;
+
+            foreach (var propertyName in new[] { "finish_reason", "stop_reason" })
+            {
+                if (element.TryGetProperty(propertyName, out var value)
+                    && value.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(value.GetString()))
+                {
+                    finishReason = value.GetString()!;
+                    return true;
+                }
+            }
+
+            if (element.TryGetProperty("finish_details", out var details)
+                && details.ValueKind == JsonValueKind.Object
+                && details.TryGetProperty("type", out var type)
+                && type.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(type.GetString()))
+            {
+                finishReason = type.GetString()!;
+                return true;
+            }
+
             return false;
+        }
+
+        private static bool IsTerminalStreamingEvent(CopilotProviderType providerType, string payload)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(payload);
+                var root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Object
+                    || !root.TryGetProperty("type", out var typeElement)
+                    || typeElement.ValueKind != JsonValueKind.String)
+                {
+                    return false;
+                }
+
+                var type = typeElement.GetString();
+                return providerType == CopilotProviderType.AnthropicCompatible
+                    ? string.Equals(type, "message_stop", StringComparison.OrdinalIgnoreCase)
+                    : string.Equals(type, "response.completed", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(type, "response.done", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
+        private static string NormalizeFinishReason(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var builder = new StringBuilder(Math.Min(value.Length, 64));
+            foreach (var character in value.Trim())
+            {
+                if (char.IsControl(character))
+                    continue;
+                builder.Append(character);
+                if (builder.Length == 64)
+                    break;
+            }
+            return builder.ToString().Trim();
         }
 
         private static bool TryParseStreamingError(string payload, string? apiKey, out string errorMessage)

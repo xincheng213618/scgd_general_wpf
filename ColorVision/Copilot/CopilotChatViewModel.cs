@@ -1548,9 +1548,10 @@ namespace ColorVision.Copilot
                 streamContext,
                 deltas => ApplyChatDeltas(assistantMessage, deltas),
                 isOnTargetThread: dispatcher == null ? null : dispatcher.CheckAccess);
+            CopilotChatStreamResult streamResult;
             try
             {
-                return await _chatService.StreamReplyAsync(
+                streamResult = await _chatService.StreamReplyAsync(
                     requestProfile,
                     history,
                     deltaBuffer.Enqueue,
@@ -1561,6 +1562,39 @@ namespace ColorVision.Copilot
             {
                 await deltaBuffer.CompleteAsync();
             }
+
+            if (streamResult.IsIncomplete)
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                    assistantMessage.MarkResponseInterrupted(BuildChatInterruptionDetail(streamResult)));
+            }
+            else
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    if (assistantMessage.IsResponseContentTruncated)
+                    {
+                        assistantMessage.MarkResponseInterrupted(
+                            "回答达到应用显示上限；已保留前面的内容，可缩小问题范围后重新生成。");
+                    }
+                });
+            }
+
+            return streamResult.Usage;
+        }
+
+        private static string BuildChatInterruptionDetail(CopilotChatStreamResult streamResult)
+        {
+            return streamResult.FinishKind switch
+            {
+                CopilotChatFinishKind.LengthLimit => "模型因输出长度上限提前结束；已保留现有内容，可发送“继续”补全或重新生成。",
+                CopilotChatFinishKind.ContentFiltered => "提供商的内容安全策略提前停止了回答；已保留允许返回的内容。",
+                CopilotChatFinishKind.ToolRequested => "模型改为请求工具，但普通 Chat 不执行工具；请改用 Agent 模式继续。",
+                CopilotChatFinishKind.Other => string.IsNullOrWhiteSpace(streamResult.FinishReason)
+                    ? "提供商提前结束了回答；已保留现有内容，但回答可能不完整。"
+                    : $"提供商以未识别的原因提前结束了回答（{streamResult.FinishReason}）；已保留现有内容。",
+                _ => string.Empty,
+            };
         }
 
         private async Task<CopilotTokenUsage> RunAgentTurnAsync(
