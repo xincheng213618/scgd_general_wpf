@@ -1781,6 +1781,9 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAttachmentItem : ViewModelBase
     {
+        public const int MaximumStoredTextCharacters = 12_000;
+        private const string StoredTextTruncationMarker = "\n...<attachment truncated>";
+
         public string Id
         {
             get => _id;
@@ -1952,6 +1955,15 @@ namespace ColorVision.Copilot
                 Value = string.Empty;
                 changed = true;
             }
+            else if (Type is CopilotAttachmentType.Context or CopilotAttachmentType.WebPage)
+            {
+                var normalizedValue = NormalizeStoredText(_value);
+                if (!string.Equals(normalizedValue, _value, StringComparison.Ordinal))
+                {
+                    Value = normalizedValue;
+                    changed = true;
+                }
+            }
 
             if (_title == null)
             {
@@ -1994,12 +2006,13 @@ namespace ColorVision.Copilot
 
         public static CopilotAttachmentItem CreateContext(string text, string? title = null, string? source = null)
         {
+            var normalizedText = NormalizeStoredText(text);
             return new CopilotAttachmentItem
             {
                 Type = CopilotAttachmentType.Context,
-                Title = string.IsNullOrWhiteSpace(title) ? BuildPreview(text, 18) : title,
+                Title = string.IsNullOrWhiteSpace(title) ? BuildPreview(normalizedText, 18) : title,
                 Source = source ?? string.Empty,
-                Value = text,
+                Value = normalizedText,
                 CreatedAt = DateTime.Now,
             };
         }
@@ -2022,7 +2035,7 @@ namespace ColorVision.Copilot
                 Type = CopilotAttachmentType.WebPage,
                 Title = title,
                 Source = url,
-                Value = content,
+                Value = NormalizeStoredText(content),
                 CreatedAt = DateTime.Now,
             };
         }
@@ -2043,6 +2056,31 @@ namespace ColorVision.Copilot
                 return normalized;
 
             return normalized[..maxLength] + "...";
+        }
+
+        internal static string NormalizeStoredText(string? value)
+        {
+            var source = value ?? string.Empty;
+            var start = 0;
+            while (start < source.Length && char.IsWhiteSpace(source[start]))
+                start++;
+            var end = source.Length;
+            while (end > start && char.IsWhiteSpace(source[end - 1]))
+                end--;
+
+            var length = end - start;
+            if (length <= MaximumStoredTextCharacters)
+                return length == 0 ? string.Empty : source.Substring(start, length);
+
+            var retainedLength = MaximumStoredTextCharacters - StoredTextTruncationMarker.Length;
+            if (retainedLength > 0
+                && start + retainedLength < end
+                && char.IsHighSurrogate(source[start + retainedLength - 1])
+                && char.IsLowSurrogate(source[start + retainedLength]))
+            {
+                retainedLength--;
+            }
+            return source.Substring(start, retainedLength).TrimEnd() + StoredTextTruncationMarker;
         }
 
         private static string TryGetHostLabel(string? value)
