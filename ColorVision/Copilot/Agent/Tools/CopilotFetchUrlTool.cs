@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
     public sealed class CopilotFetchUrlTool : ICopilotTool
     {
         private const int MaxResourcesPerRequest = 3;
+        private const int MaxReportedOmittedInputUrls = 8;
         private readonly Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> _pageLoader;
 
         public CopilotFetchUrlTool()
@@ -24,7 +25,7 @@ namespace ColorVision.Copilot
 
         public string Name => "FetchUrl";
 
-        public string Description => "Fetch up to three web resources per call, including readable page text and bounded same-origin structured resources, and report omitted inputs and partial failures explicitly.";
+        public string Description => "Fetch up to three web resources per call, including readable page text and bounded same-origin structured resources, and report exact omitted input URLs and partial failures explicitly.";
 
         public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
 
@@ -71,7 +72,8 @@ namespace ColorVision.Copilot
             var outcomes = requestedOutcomes.Concat(discoveredOutcomes).ToArray();
             var successCount = outcomes.Count(outcome => outcome.Page != null);
             var attemptedCount = outcomes.Length;
-            var omittedInputCount = Math.Max(0, resolvedUrls.Count - urls.Length);
+            var omittedInputUrls = resolvedUrls.Skip(urls.Length).ToArray();
+            var reportedOmittedInputUrls = omittedInputUrls.Take(MaxReportedOmittedInputUrls).ToArray();
             var errors = outcomes.Where(outcome => outcome.Page == null).Select(outcome => $"{outcome.Url}: {outcome.Error}").ToArray();
             var failureKinds = outcomes.Where(outcome => outcome.Page == null).Select(outcome => outcome.FailureKind).ToArray();
 
@@ -79,8 +81,12 @@ namespace ColorVision.Copilot
             builder.AppendLine("[Web Fetch Scope]");
             builder.AppendLine($"input_urls_total: {resolvedUrls.Count}");
             builder.AppendLine($"input_urls_attempted: {urls.Length}");
-            builder.AppendLine($"input_urls_omitted: {omittedInputCount}");
-            builder.AppendLine($"input_set_complete: {(omittedInputCount == 0).ToString().ToLowerInvariant()}");
+            builder.AppendLine($"input_urls_omitted: {omittedInputUrls.Length}");
+            builder.AppendLine($"input_set_complete: {(omittedInputUrls.Length == 0).ToString().ToLowerInvariant()}");
+            builder.AppendLine($"omitted_input_urls_listed: {reportedOmittedInputUrls.Length}");
+            builder.AppendLine($"omitted_input_list_complete: {(reportedOmittedInputUrls.Length == omittedInputUrls.Length).ToString().ToLowerInvariant()}");
+            foreach (var omittedInputUrl in reportedOmittedInputUrls)
+                builder.AppendLine($"omitted_input_url: {omittedInputUrl}");
             builder.AppendLine($"discovered_urls_attempted: {discoveredUrls.Length}");
             builder.AppendLine($"all_attempts_succeeded: {(successCount == attemptedCount).ToString().ToLowerInvariant()}");
             builder.AppendLine();
