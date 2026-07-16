@@ -1,6 +1,6 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace ColorVision.Copilot
 {
@@ -16,8 +16,12 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(throughAssistantMessage);
             var throughIndex = source.Messages.IndexOf(throughAssistantMessage);
-            if (throughIndex < 0 || throughAssistantMessage.IsUser || throughAssistantMessage.IsResponsePending)
+            if (throughIndex < 0
+                || throughAssistantMessage.IsUser
+                || throughAssistantMessage.IsThinkingInProgress)
+            {
                 throw new InvalidOperationException("A branch requires a completed assistant message from the source conversation.");
+            }
 
             var branch = new CopilotConversationRecord
             {
@@ -63,27 +67,17 @@ namespace ColorVision.Copilot
 
         private static CopilotChatMessage CloneMessage(CopilotChatMessage source, CopilotAgentMode lastUserMode)
         {
-            var attachments = new ObservableCollection<CopilotAttachmentItem>();
-            foreach (var sourceAttachment in source.Attachments)
-            {
-                var attachment = sourceAttachment.CreateSnapshot();
-                attachment.Id = Guid.NewGuid().ToString("N");
-                attachments.Add(attachment);
-            }
+            var serializedMessage = JsonConvert.SerializeObject(source, Formatting.None);
+            var clone = JsonConvert.DeserializeObject<CopilotChatMessage>(serializedMessage)
+                ?? throw new InvalidOperationException("The source message could not be copied into the conversation branch.");
 
-            return new CopilotChatMessage(source.Role, source.Content)
-            {
-                AssistantName = source.AssistantName,
-                Attachments = attachments,
-                AttachmentSnapshotCaptured = source.AttachmentSnapshotCaptured,
-                ChatAttachmentContextCaptured = source.ChatAttachmentContextCaptured,
-                CreatedAt = source.CreatedAt,
-                IsContentDisplayOnly = source.IsContentDisplayOnly,
-                RequestContent = source.RequestContent,
-                RequestMode = source.IsUser ? NormalizeRequestMode(source.RequestMode) : lastUserMode,
-                WasResponseInterrupted = source.WasResponseInterrupted,
-                ResponseInterruptionDetail = source.ResponseInterruptionDetail,
-            };
+            clone.Id = Guid.NewGuid().ToString("N");
+            clone.RequestMode = source.IsUser ? NormalizeRequestMode(source.RequestMode) : lastUserMode;
+            clone.RecoveryRequest = null;
+            foreach (var attachment in clone.Attachments)
+                attachment.Id = Guid.NewGuid().ToString("N");
+            clone.EnsureValid();
+            return clone;
         }
 
         private static CopilotAgentMode NormalizeRequestMode(CopilotAgentMode mode) =>

@@ -3936,7 +3936,7 @@ namespace ColorVision.Copilot
             return CanSwitchConversation
                 && !IsEditingMessage
                 && message?.IsUser == false
-                && !message.IsResponsePending
+                && !message.IsThinkingInProgress
                 && !string.IsNullOrWhiteSpace(message.Content)
                 && SelectedConversation?.Messages.Contains(message) == true;
         }
