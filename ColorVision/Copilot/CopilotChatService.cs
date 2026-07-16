@@ -114,6 +114,9 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(messages);
             ArgumentNullException.ThrowIfNull(onDelta);
+            var requestMessages = CopilotRequestMessageSequence.Normalize(messages);
+            if (requestMessages.Length == 0)
+                throw new InvalidOperationException("At least one non-empty user or assistant message is required.");
             var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
 
             for (var attempt = 1; ; attempt++)
@@ -123,7 +126,7 @@ namespace ColorVision.Copilot
                 {
                     return await StreamReplyAttemptAsync(
                         config,
-                        messages,
+                        requestMessages,
                         imagePayloads,
                         delta =>
                         {

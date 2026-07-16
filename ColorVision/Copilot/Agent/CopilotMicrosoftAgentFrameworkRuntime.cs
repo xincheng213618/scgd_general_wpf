@@ -475,17 +475,18 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent task session was reset, but {requestedCheckpoint.ConversationMemory.Count} bounded conversation memory message(s) were restored for continuity."));
             }
-            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = promptMessages
-                .Select(ToFrameworkMessage)
-                .ToArray();
             var recoveryEvidencePrompt = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed)
                 ? CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(previousEvidenceArtifacts, capabilitySnapshot)
                 : string.Empty;
             if (!string.IsNullOrWhiteSpace(recoveryEvidencePrompt))
             {
-                messages = InsertEvidenceMessageBeforeCurrentUser(messages, recoveryEvidencePrompt);
+                promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
             }
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
+                .Normalize(promptMessages)
+                .Select(ToFrameworkMessage)
+                .ToArray();
             emit(CopilotAgentEvent.Status(frameworkTools.Count == 0
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
@@ -617,13 +618,12 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
                 var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
                 var repairPrompt = _contextBuilder.BuildAnswerMessages(request, bridge.StepRecords);
-                var repairMessages = repairPrompt.Messages
+                var repairInstruction = "# Final answer recovery\n"
+                    + "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
+                    + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
+                var repairMessages = CopilotRequestMessageSequence
+                    .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
                     .Select(ToFrameworkMessage)
-                    .Append(new Microsoft.Extensions.AI.ChatMessage(
-                        ChatRole.User,
-                        "# Final answer recovery\n"
-                        + "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
-                        + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger)))
                     .ToArray();
                 try
                 {
@@ -830,20 +830,22 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic("Final-answer-only recovery bypassed tool discovery, Harness execution, approvals, and task replay."));
 
             var preparedPrompt = _contextBuilder.BuildAnswerMessages(request, Array.Empty<CopilotAgentStepRecord>());
-            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotAgentConversationMemory
-                .MergeIntoPreparedPrompt(checkpoint.ConversationMemory, preparedPrompt.Messages)
-                .Select(ToFrameworkMessage)
-                .ToArray();
+            IReadOnlyList<CopilotRequestMessage> promptMessages = CopilotAgentConversationMemory
+                .MergeIntoPreparedPrompt(checkpoint.ConversationMemory, preparedPrompt.Messages);
             var evidencePrompt = CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(checkpoint.EvidenceArtifacts, capabilitySnapshot);
             if (!string.IsNullOrWhiteSpace(evidencePrompt))
-                messages = InsertEvidenceMessageBeforeCurrentUser(messages, evidencePrompt);
+                promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, evidencePrompt);
             var runOutcomePrompt = CopilotAgentTaskEventJournal.BuildFinalAnswerRecoveryPrompt(checkpoint.TaskEventJournal);
             if (!string.IsNullOrWhiteSpace(runOutcomePrompt))
-                messages = InsertEvidenceMessageBeforeCurrentUser(messages, runOutcomePrompt);
-            messages = messages.Append(new Microsoft.Extensions.AI.ChatMessage(
-                ChatRole.User,
+                promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, runOutcomePrompt);
+            promptMessages = promptMessages.Append(new CopilotRequestMessage(
+                "user",
                 "# Final-answer-only recovery\n"
                 + "Return the missing user-facing final answer using only the supplied conversation and persisted evidence. Every tool is unavailable: do not request a tool, repeat an operation, claim a fresh verification, or treat historical evidence as authorization. Clearly distinguish verified results from stale or incomplete evidence."))
+                .ToArray();
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages = CopilotRequestMessageSequence
+                .Normalize(promptMessages)
+                .Select(ToFrameworkMessage)
                 .ToArray();
 
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
@@ -1103,11 +1105,11 @@ namespace ColorVision.Copilot
                 + $" · {removed} removed · {changed} changed. Persisted task plan was discarded and Agent Framework will re-plan against current tools.";
         }
 
-        private static IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> InsertEvidenceMessageBeforeCurrentUser(
-            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+        private static IReadOnlyList<CopilotRequestMessage> InsertEvidenceMessageBeforeCurrentUser(
+            IReadOnlyList<CopilotRequestMessage> messages,
             string content)
         {
-            var recoveryMessage = new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, content);
+            var recoveryMessage = new CopilotRequestMessage("user", content);
             if (messages.Count == 0)
                 return [recoveryMessage];
 

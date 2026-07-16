@@ -65,7 +65,9 @@ namespace ColorVision.Copilot
             for (var index = startIndex; index < endIndex; index++)
             {
                 var message = conversation.Messages[index];
-                var content = useModelContent ? message.ModelContent : message.Content;
+                var content = useModelContent
+                    ? message.ModelContent
+                    : message.IsContentDisplayOnly ? string.Empty : message.Content;
                 if (string.IsNullOrWhiteSpace(content))
                     continue;
 
