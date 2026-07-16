@@ -582,6 +582,20 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <DataTemplate x:Key="WorkspaceChangedFileTemplate">
+            <Button Margin="0,0,0,4"
+                    HorizontalAlignment="Left"
+                    Command="{Binding DataContext.OpenWorkspaceChangeFileCommand, Source={x:Reference Root}}"
+                    CommandParameter="{Binding}"
+                    Style="{StaticResource MessageActionButtonStyle}"
+                    ToolTip="{Binding FilePath}"
+                    ToolTipService.ShowOnDisabled="True">
+                <TextBlock MaxWidth="420"
+                           FontSize="11"
+                           Text="{Binding DisplayLabel}"
+                           TextTrimming="CharacterEllipsis" />
+            </Button>
+        </DataTemplate>
         <DataTemplate x:Key="AgentTraceEntryTemplate">
             <Expander Margin="0,1,0,4" Style="{StaticResource TraceExpanderStyle}">
                 <Expander.Header>
@@ -620,6 +634,10 @@
                                Opacity="0.58"
                                Text="{Binding ActivityDescription}"
                                TextWrapping="Wrap" />
+                    <ItemsControl Margin="0,0,0,2"
+                                  ItemTemplate="{StaticResource WorkspaceChangedFileTemplate}"
+                                  ItemsSource="{Binding WorkspaceChangedFiles}"
+                                  Visibility="{Binding HasWorkspaceChangedFiles, Converter={StaticResource bool2VisibilityConverter}}" />
                     <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
                              FontSize="10"
                              Opacity="0.42"
@@ -682,6 +700,10 @@
                                    Opacity="0.58"
                                    Text="{Binding FirstEntry.ActivityDescription}"
                                    TextWrapping="Wrap" />
+                        <ItemsControl Margin="0,0,0,2"
+                                      ItemTemplate="{StaticResource WorkspaceChangedFileTemplate}"
+                                      ItemsSource="{Binding FirstEntry.WorkspaceChangedFiles}"
+                                      Visibility="{Binding FirstEntry.HasWorkspaceChangedFiles, Converter={StaticResource bool2VisibilityConverter}}" />
                         <TextBox Style="{StaticResource ReadOnlyMessageTextBoxStyle}"
                                  FontSize="10"
                                  Opacity="0.42"

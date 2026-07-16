@@ -2,7 +2,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace ColorVision.Copilot
@@ -84,8 +86,16 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public DateTimeOffset? WorkspaceChangeSetExpiresAtUtc { get; private set; }
 
-        [JsonIgnore]
         public bool WorkspaceChangeSetRolledBack { get; private set; }
+
+        public List<CopilotWorkspaceChangeFile> WorkspaceChangedFiles { get; set; } = new();
+
+        public bool ShouldSerializeWorkspaceChangeSetRolledBack() => WorkspaceChangeSetRolledBack;
+
+        public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
+
+        [JsonIgnore]
+        public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
 
         [JsonIgnore]
         public bool CanRequestWorkspaceRollback => string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
@@ -229,6 +239,8 @@ namespace ColorVision.Copilot
             WorkspaceChangeSetRolledBack = true;
             OnPropertyChanged(nameof(WorkspaceChangeSetRolledBack));
             OnPropertyChanged(nameof(CanRequestWorkspaceRollback));
+            OnPropertyChanged(nameof(ActivityLabel));
+            OnPropertyChanged(nameof(ActivityDescription));
             return true;
         }
 
@@ -252,6 +264,27 @@ namespace ColorVision.Copilot
             var expiresAt = ReadMetadataValue(content, "expires_at_utc");
             if (DateTimeOffset.TryParse(expiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedExpiresAt))
                 WorkspaceChangeSetExpiresAtUtc = parsedExpiresAt;
+
+            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
+                || !int.TryParse(ReadMetadataValue(content, "file_count"), NumberStyles.None, CultureInfo.InvariantCulture, out var fileCount))
+            {
+                return;
+            }
+
+            WorkspaceChangedFiles.Clear();
+            for (var index = 1; index <= Math.Min(8, fileCount); index++)
+            {
+                var file = new CopilotWorkspaceChangeFile
+                {
+                    Operation = ReadMetadataValue(content, $"file_{index}_operation"),
+                    FilePath = ReadMetadataValue(content, $"file_{index}_path"),
+                };
+                if (file.EnsureValid(out _) && !WorkspaceChangedFiles.Exists(item =>
+                    string.Equals(item.FilePath, file.FilePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    WorkspaceChangedFiles.Add(file);
+                }
+            }
         }
 
         private static string ReadMetadataValue(string? content, string key)
@@ -274,6 +307,33 @@ namespace ColorVision.Copilot
         public bool EnsureValid(DateTimeOffset recoveredAtUtc)
         {
             var changed = false;
+            WorkspaceChangedFiles ??= new List<CopilotWorkspaceChangeFile>();
+            var seenWorkspacePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var index = 0; index < WorkspaceChangedFiles.Count; index++)
+            {
+                var file = WorkspaceChangedFiles[index];
+                if (file == null)
+                {
+                    WorkspaceChangedFiles.RemoveAt(index--);
+                    changed = true;
+                    continue;
+                }
+
+                var isValid = file.EnsureValid(out var fileChanged);
+                changed |= fileChanged;
+                if (!isValid || !seenWorkspacePaths.Add(file.FilePath) || index >= 8)
+                {
+                    WorkspaceChangedFiles.RemoveAt(index--);
+                    changed = true;
+                }
+            }
+            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
+                && (WorkspaceChangeSetRolledBack || WorkspaceChangedFiles.Count > 0))
+            {
+                WorkspaceChangeSetRolledBack = false;
+                WorkspaceChangedFiles.Clear();
+                changed = true;
+            }
             var originalSchemaVersion = SchemaVersion;
             var originalCallId = CallId;
             var originalRuntimeName = RuntimeName;
@@ -481,6 +541,13 @@ namespace ColorVision.Copilot
                 _ => ($"正在运行 {ToolName}", $"运行了 {ToolName}"),
             };
 
+            if (State == CopilotToolExecutionState.Completed
+                && WorkspaceChangeSetRolledBack
+                && string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal))
+            {
+                return completed + " · 已撤销";
+            }
+
             return State switch
             {
                 CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running => running,
@@ -542,7 +609,11 @@ namespace ColorVision.Copilot
                 "InspectGitDiff" => "Git 差异读取完成。",
                 "RunShellCommand" => "命令已执行。",
                 "PreviewWorkspacePatchEnvelope" => "文件修改预览已准备。",
-                "ApplyWorkspacePatchEnvelope" => "文件修改已完成。",
+                "ApplyWorkspacePatchEnvelope" => WorkspaceChangeSetRolledBack
+                    ? "这组文件修改已撤销。"
+                    : WorkspaceChangedFiles.Count > 0
+                        ? $"已完成 {WorkspaceChangedFiles.Count} 个文件的修改，可逐个打开核对。"
+                        : "文件修改已完成。",
                 "RollbackWorkspacePatchEnvelope" => "文件修改已回滚。",
                 "CreateFlow" => "流程已创建。",
                 "ApplyTemplatePatch" or "TemplatePatch" => "模板修改已完成。",
@@ -578,5 +649,55 @@ namespace ColorVision.Copilot
             CopilotToolExecutionState.AwaitingApproval => "Awaiting approval",
             _ => "Unknown",
         };
+    }
+
+    public sealed class CopilotWorkspaceChangeFile
+    {
+        private const int MaximumPathCharacters = 4096;
+
+        public string Operation { get; set; } = string.Empty;
+
+        public string FilePath { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public string DisplayLabel => $"{OperationLabel}  {GetFileName(FilePath)}";
+
+        [JsonIgnore]
+        public string OperationLabel => Operation switch
+        {
+            "Create" => "新建",
+            "Update" => "更新",
+            "Delete" => "删除",
+            _ => "修改",
+        };
+
+        internal bool EnsureValid(out bool changed)
+        {
+            var originalOperation = Operation;
+            var originalFilePath = FilePath;
+            Operation = (Operation ?? string.Empty).Trim() switch
+            {
+                "Create" => "Create",
+                "Update" => "Update",
+                "Delete" => "Delete",
+                _ => string.Empty,
+            };
+            FilePath = (FilePath ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+            changed = !string.Equals(originalOperation, Operation, StringComparison.Ordinal)
+                || !string.Equals(originalFilePath, FilePath, StringComparison.Ordinal);
+            return Operation.Length > 0 && FilePath.Length is > 0 and <= MaximumPathCharacters;
+        }
+
+        private static string GetFileName(string filePath)
+        {
+            try
+            {
+                return Path.GetFileName(filePath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+            {
+                return filePath;
+            }
+        }
     }
 }

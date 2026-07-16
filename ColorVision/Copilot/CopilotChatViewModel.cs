@@ -177,6 +177,7 @@ namespace ColorVision.Copilot
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: true), "刷新网页后重新生成"), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
             RequestWorkspaceRollbackCommand = new RelayCommand<CopilotAgentTraceEntry>(RequestWorkspaceRollback, CanRequestWorkspaceRollback);
+            OpenWorkspaceChangeFileCommand = new RelayCommand<CopilotWorkspaceChangeFile>(OpenWorkspaceChangeFile, CanOpenWorkspaceChangeFile);
             OpenAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(OpenAgentTask, task => task != null && CanSwitchConversation);
             ResumeAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(ResumeAgentTask, CanResumeAgentTask);
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
@@ -398,6 +399,8 @@ namespace ColorVision.Copilot
         public ICommand ContinueAgentTasksCommand { get; }
 
         public ICommand RequestWorkspaceRollbackCommand { get; }
+
+        public ICommand OpenWorkspaceChangeFileCommand { get; }
 
         public ICommand OpenAgentTaskCommand { get; }
 
@@ -2394,6 +2397,27 @@ namespace ColorVision.Copilot
 
             var prompt = $"撤销修改：请只回滚工作区变更集 {trace.WorkspaceChangeSetId}。必须调用 RollbackWorkspacePatchEnvelope，并使用这个精确的 changeSetId；不要改动其他文件。";
             RunUiOperation(() => SendAsync(prompt, CopilotAgentMode.Auto), "撤销文件修改");
+        }
+
+        private static bool CanOpenWorkspaceChangeFile(CopilotWorkspaceChangeFile? file)
+        {
+            return file != null && CopilotLocalFileLinkNavigator.TryResolve(file.FilePath, out _);
+        }
+
+        private void OpenWorkspaceChangeFile(CopilotWorkspaceChangeFile? file)
+        {
+            var errorMessage = string.Empty;
+            if (file != null
+                && CopilotLocalFileLinkNavigator.TryResolve(file.FilePath, out var target)
+                && CopilotLocalFileLinkNavigator.TryOpen(target, out errorMessage))
+            {
+                return;
+            }
+
+            LocalCommandResultTitle = "无法打开修改文件";
+            LocalCommandResultText = string.IsNullOrWhiteSpace(errorMessage)
+                ? "文件已不存在或不在当前工作区内。"
+                : CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
         }
 
         private void OpenAgentTask(CopilotAgentTaskSummary? task)
