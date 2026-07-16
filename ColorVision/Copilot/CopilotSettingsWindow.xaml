@@ -245,6 +245,10 @@
 
                                 <TextBlock Grid.Row="2" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotApiKey}" />
                                 <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="8" />
@@ -263,6 +267,14 @@
                                             Padding="6,2"
                                             Command="{Binding ToggleSelectedProfileApiKeyVisibilityCommand}"
                                             Content="{Binding SelectedProfileApiKeyVisibilityText}" />
+                                    <TextBlock Grid.Row="1"
+                                               Grid.ColumnSpan="3"
+                                               Margin="0,5,0,0"
+                                               FontSize="11"
+                                               Foreground="#E6A23C"
+                                               Text="The saved API key could not be decrypted for this Windows user. Enter it again to continue."
+                                               TextWrapping="Wrap"
+                                               Visibility="{Binding SelectedProfile.CredentialNeedsReentry, Converter={StaticResource BoolToVisibility}}" />
                                 </Grid>
 
                                 <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotModel}" />

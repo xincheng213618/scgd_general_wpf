@@ -37,6 +37,9 @@ namespace ColorVision.Copilot
 
             conversation.AgentSessionCheckpoint = updatedCheckpoint;
             assistantMessage.AgentStopReason = CopilotAgentStopReason.Interrupted;
+            assistantMessage.IsExecutionInProgress = false;
+            assistantMessage.IsReasoningInProgress = false;
+            assistantMessage.MarkThinkingCompleted();
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 const string interruptedMessage = "Agent 任务因应用退出而中断；最近的安全进度已经保存，可以继续。";

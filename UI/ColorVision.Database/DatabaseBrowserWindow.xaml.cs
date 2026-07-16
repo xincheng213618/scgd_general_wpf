@@ -1,5 +1,6 @@
 #pragma warning disable CA1863
 using ColorVision.Themes;
+using ColorVision.UI;
 using log4net;
 using ColorVision.Database.Properties;
 using System;
@@ -34,7 +35,9 @@ namespace ColorVision.Database
         private int _pageIndex = 1;
         private int _pageSize = 50;
         private int _totalCount;
+        private bool _hasLoadedPage;
         private bool _isDisposed;
+        private CopilotDynamicContextSession? _copilotContextSession;
 
         public DatabaseBrowserWindow()
         {
@@ -49,7 +52,23 @@ namespace ColorVision.Database
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.ApplyCaption();
+            try
+            {
+                _copilotContextSession = CopilotDatabaseContextHub.Shared.Register(
+                    CaptureCopilotDatabaseSnapshotAsync,
+                    typeof(DatabaseBrowserWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("注册数据库浏览器 Copilot 上下文失败，数据库浏览器将继续运行", ex);
+            }
             LoadProviders();
+        }
+
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -143,14 +162,24 @@ namespace ColorVision.Database
                 return;
 
             if (node.NodeType != DatabaseTreeNodeType.Table || node.Provider == null || node.Table == null)
+            {
+                ClearTableView(Properties.Resources.DB_SelectTable, Properties.Resources.DB_ExpandHint, Properties.Resources.DB_Ready);
                 return;
+            }
 
             _currentProvider = node.Provider;
             _currentTable = node.Table;
+            _currentColumns = Array.Empty<DatabaseColumnInfo>();
+            _currentDataTable = null;
+            _totalCount = 0;
+            _hasLoadedPage = false;
+            RowsDataGrid.ItemsSource = null;
+            PlaceholderText.Visibility = Visibility.Visible;
             _pageIndex = 1;
             _searchKeyword = SearchBox.Text?.Trim() ?? string.Empty;
             _sortColumn = null;
             _sortDirection = ListSortDirection.Descending;
+            PublishCopilotContext();
             await LoadCurrentTableAsync();
         }
 
@@ -210,6 +239,8 @@ namespace ColorVision.Database
             var sortColumn = _sortColumn;
             var sortDirection = _sortDirection;
 
+            _hasLoadedPage = false;
+            PublishCopilotContext();
             SetBusy(true, Properties.Resources.DB_Querying);
             var page = await Task.Run(() => provider.QueryPage(table, pageIndex, pageSize, keyword, sortColumn, sortDirection), token);
             token.ThrowIfCancellationRequested();
@@ -217,6 +248,7 @@ namespace ColorVision.Database
             _currentDataTable = page.Rows;
             _currentDataTable.AcceptChanges();
             _totalCount = page.TotalCount;
+            _hasLoadedPage = true;
             RowsDataGrid.ItemsSource = _currentDataTable.DefaultView;
             PlaceholderText.Visibility = _currentDataTable.Rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -225,6 +257,7 @@ namespace ColorVision.Database
             TableMetaText.Text = $"{_currentColumns.Count} 列" + (HasPrimaryKey ? "" : " / 无主键");
             RecordCountText.Text = string.Format(Properties.Resources.DB_RecordCount, _totalCount.ToString("N0"));
             StatusText.Text = Properties.Resources.DB_Ready;
+            PublishCopilotContext();
         }
 
         private void RowsDataGrid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -398,6 +431,7 @@ namespace ColorVision.Database
         {
             _currentDataTable?.RejectChanges();
             StatusText.Text = Properties.Resources.DB_Undone;
+            PublishCopilotContext();
         }
 
         private async void DeleteRow_Click(object sender, RoutedEventArgs e)
@@ -545,8 +579,10 @@ namespace ColorVision.Database
             }
             catch (Exception ex)
             {
+                _hasLoadedPage = false;
                 StatusText.Text = string.Format(Properties.Resources.DB_QueryFailed, GetBaseMessage(ex));
                 log.Error("查询数据库表失败", ex);
+                PublishCopilotContext();
             }
             finally
             {
@@ -600,6 +636,7 @@ namespace ColorVision.Database
             _currentColumns = Array.Empty<DatabaseColumnInfo>();
             _currentDataTable = null;
             _totalCount = 0;
+            _hasLoadedPage = false;
             RowsDataGrid.ItemsSource = null;
             PlaceholderText.Visibility = Visibility.Visible;
             TableTitleText.Text = title;
@@ -609,6 +646,89 @@ namespace ColorVision.Database
             StatusText.Text = status;
             UpdatePagination();
             UpdateWriteState();
+            PublishCopilotContext();
+        }
+
+        private async Task<CopilotDatabaseContextSnapshot?> CaptureCopilotDatabaseSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CaptureCopilotDatabaseSnapshot();
+                });
+            }
+
+            return CaptureCopilotDatabaseSnapshot();
+        }
+
+        private CopilotDatabaseContextSnapshot? CaptureCopilotDatabaseSnapshot()
+        {
+            if (_isDisposed)
+                return null;
+
+            var rows = _currentDataTable?.Rows.Cast<DataRow>().ToArray() ?? Array.Empty<DataRow>();
+            var connectionState = _currentProvider == null
+                ? "Browser open; no data source selected"
+                : _hasLoadedPage
+                    ? "Current page query succeeded"
+                    : _currentColumns.Count > 0
+                        ? "Schema query succeeded; page not loaded or refreshing"
+                        : "Data source selected; connection not yet confirmed by a page query";
+            return new CopilotDatabaseContextSnapshot
+            {
+                SourceId = CopilotDatabaseBrowserAgentExtension.SourceId,
+                ConnectionState = connectionState,
+                ProviderName = _currentProvider?.ProviderName ?? string.Empty,
+                DatabaseType = _currentProvider?.DatabaseType.ToString() ?? string.Empty,
+                DatabaseName = _currentTable?.DatabaseName ?? string.Empty,
+                TableName = _currentTable?.TableName ?? string.Empty,
+                TableComment = _currentTable?.Comment ?? string.Empty,
+                Engine = _currentTable?.Engine ?? string.Empty,
+                EstimatedRowCount = _currentTable?.RowCount,
+                HasLoadedPage = _hasLoadedPage,
+                QueryTotalCount = _totalCount,
+                LoadedRowCount = _hasLoadedPage ? _currentDataTable?.Rows.Count ?? 0 : 0,
+                PageIndex = _pageIndex,
+                PageSize = _pageSize,
+                TotalPages = TotalPages,
+                SortColumn = _sortColumn ?? string.Empty,
+                SortDirection = _sortDirection.ToString(),
+                HasSearchFilter = !string.IsNullOrWhiteSpace(_searchKeyword),
+                HasPrimaryKey = HasPrimaryKey,
+                CanWrite = CanWriteCurrentTable,
+                PendingAddedRows = rows.Count(row => row.RowState == DataRowState.Added),
+                PendingModifiedRows = rows.Count(row => row.RowState == DataRowState.Modified),
+                PendingDeletedRows = rows.Count(row => row.RowState == DataRowState.Deleted),
+                Columns = _currentColumns.Select(column => new CopilotDatabaseColumnContextSnapshot
+                {
+                    ColumnName = column.ColumnName,
+                    StoreType = column.StoreType,
+                    Comment = column.Comment,
+                    Ordinal = column.Ordinal,
+                    IsNullable = column.IsNullable,
+                    IsPrimaryKey = column.IsPrimaryKey,
+                    IsIdentity = column.IsIdentity,
+                    IsReadOnly = column.IsReadOnly,
+                }).ToArray(),
+            };
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_isDisposed || IsActive != true || _copilotContextSession?.IsCurrent != true)
+                return;
+
+            var snapshot = CaptureCopilotDatabaseSnapshot();
+            if (snapshot == null)
+                return;
+
+            var item = CopilotBusinessContextBuilder.BuildDatabaseContextItem(snapshot);
+            CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                CopilotDatabaseBrowserAgentExtension.SourceId,
+                item));
         }
 
         private static Dictionary<string, object?> BuildValues(DataRow row, IReadOnlyList<DatabaseColumnInfo> columns)
@@ -673,8 +793,13 @@ namespace ColorVision.Database
         {
             if (_isDisposed) return;
 
+            var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;
             _isDisposed = true;
             CancelCurrentLoad();
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrentCopilotSession)
+                CopilotLiveContextRegistry.Clear(CopilotDatabaseBrowserAgentExtension.SourceId);
             GC.SuppressFinalize(this);
         }
     }

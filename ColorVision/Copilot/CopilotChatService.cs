@@ -14,11 +14,15 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatService
     {
+        private const string ProviderStatusCodeDataKey = "ColorVision.Copilot.ProviderStatusCode";
         private static readonly HttpClient SharedHttpClient = new()
         {
             Timeout = TimeSpan.FromMinutes(5),
         };
         private readonly HttpClient _httpClient;
+        private readonly int _maximumAttempts;
+        private readonly Func<int, TimeSpan> _retryDelayFactory;
+        private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
 
         public CopilotChatService()
             : this(SharedHttpClient)
@@ -26,8 +30,25 @@ namespace ColorVision.Copilot
         }
 
         public CopilotChatService(HttpClient httpClient)
+            : this(
+                httpClient,
+                CopilotProviderRetryChatClient.DefaultMaximumAttempts,
+                CopilotProviderRetryChatClient.CreateDefaultDelay,
+                Task.Delay)
+        {
+        }
+
+        internal CopilotChatService(
+            HttpClient httpClient,
+            int maximumAttempts,
+            Func<int, TimeSpan> retryDelayFactory,
+            Func<TimeSpan, CancellationToken, Task> delayAsync)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumAttempts, 1);
+            _maximumAttempts = maximumAttempts;
+            _retryDelayFactory = retryDelayFactory ?? throw new ArgumentNullException(nameof(retryDelayFactory));
+            _delayAsync = delayAsync ?? throw new ArgumentNullException(nameof(delayAsync));
         }
 
         public async Task<CopilotChatReply> CompleteReplyAsync(
@@ -56,28 +77,67 @@ namespace ColorVision.Copilot
                 usage);
         }
 
-        public async Task<CopilotTokenUsage> StreamReplyAsync(
+        public Task<CopilotTokenUsage> StreamReplyAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             Action<CopilotStreamDelta> onDelta,
+            CancellationToken cancellationToken) =>
+            StreamReplyAsync(config, messages, onDelta, onRetry: null, cancellationToken);
+
+        internal async Task<CopilotTokenUsage> StreamReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            Action<CopilotProviderRetryInfo>? onRetry,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(messages);
             ArgumentNullException.ThrowIfNull(onDelta);
 
+            for (var attempt = 1; ; attempt++)
+            {
+                var responseStarted = false;
+                try
+                {
+                    return await StreamReplyAttemptAsync(
+                        config,
+                        messages,
+                        delta =>
+                        {
+                            responseStarted = true;
+                            onDelta(delta);
+                        },
+                        cancellationToken);
+                }
+                catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
+                {
+                    onRetry?.Invoke(retry);
+                    await _delayAsync(retry.Delay, cancellationToken);
+                }
+            }
+        }
+
+        private async Task<CopilotTokenUsage> StreamReplyAttemptAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            Action<CopilotStreamDelta> onDelta,
+            CancellationToken cancellationToken)
+        {
             using var request = CreateRequest(config, messages);
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                throw new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode));
+                var providerException = new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode, config.ApiKey));
+                providerException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                throw providerException;
             }
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
-                return await ReadStreamingResponseAsync(config.ProviderType, response, onDelta, cancellationToken);
+                return await ReadStreamingResponseAsync(config, response, onDelta, cancellationToken);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
@@ -86,6 +146,57 @@ namespace ColorVision.Copilot
 
             onDelta(reply.Delta);
             return reply.Usage;
+        }
+
+        private bool TryCreateRetry(
+            Exception exception,
+            int failedAttempt,
+            bool responseStarted,
+            CancellationToken cancellationToken,
+            out CopilotProviderRetryInfo retry)
+        {
+            retry = null!;
+            if (responseStarted || failedAttempt >= _maximumAttempts || cancellationToken.IsCancellationRequested)
+                return false;
+
+            string failureKind;
+            int? statusCode;
+            if (TryGetProviderStatusCode(exception, out var providerStatusCode))
+            {
+                statusCode = providerStatusCode;
+                failureKind = "HTTP " + statusCode.Value;
+                if (!CopilotProviderRetryChatClient.IsTransientStatusCode(statusCode.Value))
+                    return false;
+            }
+            else if (!CopilotProviderRetryChatClient.TryClassifyTransientFailure(
+                exception,
+                cancellationToken,
+                out failureKind,
+                out statusCode))
+            {
+                return false;
+            }
+
+            retry = new CopilotProviderRetryInfo(
+                failedAttempt,
+                failedAttempt + 1,
+                _maximumAttempts,
+                _retryDelayFactory(failedAttempt),
+                failureKind,
+                statusCode);
+            return true;
+        }
+
+        private static bool TryGetProviderStatusCode(Exception exception, out int statusCode)
+        {
+            if (exception.Data[ProviderStatusCodeDataKey] is int value && value > 0)
+            {
+                statusCode = value;
+                return true;
+            }
+
+            statusCode = 0;
+            return false;
         }
 
         private static HttpRequestMessage CreateRequest(CopilotProfileConfig config, IReadOnlyList<CopilotRequestMessage> messages)
@@ -187,7 +298,7 @@ namespace ColorVision.Copilot
         }
 
         private static async Task<CopilotTokenUsage> ReadStreamingResponseAsync(
-            CopilotProviderType providerType,
+            CopilotProfileConfig config,
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
             CancellationToken cancellationToken)
@@ -201,6 +312,7 @@ namespace ColorVision.Copilot
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var reader = new StreamReader(stream);
             var usage = CopilotTokenUsage.Empty;
+            var receivedDisplayableText = false;
 
             while (true)
             {
@@ -231,7 +343,10 @@ namespace ColorVision.Copilot
                 if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
                     break;
 
-                var reply = providerType == CopilotProviderType.AnthropicCompatible
+                if (TryParseStreamingError(payload, config.ApiKey, out var streamingError))
+                    throw new InvalidOperationException(streamingError);
+
+                var reply = config.ProviderType == CopilotProviderType.AnthropicCompatible
                     ? ExtractAnthropicStreamingReply(payload)
                     : ExtractOpenAiStreamingReply(payload);
 
@@ -239,10 +354,35 @@ namespace ColorVision.Copilot
                     usage = usage.MergeProgress(reply.Usage);
 
                 if (reply.Delta.HasAny)
+                {
+                    receivedDisplayableText = true;
                     onDelta(reply.Delta);
+                }
             }
 
+            if (!receivedDisplayableText)
+                throw new InvalidOperationException("The API stream completed successfully, but no displayable text was found.");
+
             return usage;
+        }
+
+        private static bool TryParseStreamingError(string payload, string? apiKey, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            try
+            {
+                using var document = JsonDocument.Parse(payload);
+                var root = document.RootElement;
+                if (!TryExtractProviderErrorDetail(root, out var detail))
+                    return false;
+
+                errorMessage = CopilotUserFacingErrorFormatter.Sanitize($"Provider stream error: {detail}", apiKey);
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
         }
 
         private static CopilotChatReply ExtractOpenAiStreamingReply(string payload)
@@ -591,8 +731,9 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private static string ParseErrorMessage(string errorBody, int statusCode)
+        private static string ParseErrorMessage(string errorBody, int statusCode, string? apiKey)
         {
+            string? detail = null;
             if (!string.IsNullOrWhiteSpace(errorBody))
             {
                 try
@@ -600,26 +741,46 @@ namespace ColorVision.Copilot
                     using var document = JsonDocument.Parse(errorBody);
                     var root = document.RootElement;
 
-                    if (root.TryGetProperty("error", out var error))
+                    if (TryExtractProviderErrorDetail(root, out var providerDetail))
+                        detail = providerDetail;
+                    else if (root.ValueKind == JsonValueKind.Object
+                        && root.TryGetProperty("message", out var topLevelMessage)
+                        && topLevelMessage.ValueKind == JsonValueKind.String)
                     {
-                        if (error.ValueKind == JsonValueKind.String)
-                            return $"{statusCode}: {error.GetString()}";
-
-                        if (error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
-                            return $"{statusCode}: {message.GetString()}";
+                        detail = topLevelMessage.GetString();
                     }
-
-                    if (root.TryGetProperty("message", out var topLevelMessage) && topLevelMessage.ValueKind == JsonValueKind.String)
-                        return $"{statusCode}: {topLevelMessage.GetString()}";
                 }
                 catch (JsonException)
                 {
                 }
 
-                return $"{statusCode}: {errorBody.Trim()}";
+                detail ??= errorBody;
             }
 
-            return $"Request failed, HTTP {statusCode}";
+            var messageText = string.IsNullOrWhiteSpace(detail)
+                ? $"Request failed, HTTP {statusCode}"
+                : $"{statusCode}: {detail}";
+            return CopilotUserFacingErrorFormatter.Sanitize(messageText, apiKey);
         }
+
+        private static bool TryExtractProviderErrorDetail(JsonElement root, out string detail)
+        {
+            detail = string.Empty;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("error", out var error))
+                return false;
+
+            if (error.ValueKind == JsonValueKind.String)
+                detail = error.GetString() ?? string.Empty;
+            else if (error.ValueKind == JsonValueKind.Object)
+            {
+                if (error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
+                    detail = message.GetString() ?? string.Empty;
+                else if (error.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String)
+                    detail = type.GetString() ?? string.Empty;
+            }
+
+            return !string.IsNullOrWhiteSpace(detail);
+        }
+
     }
 }

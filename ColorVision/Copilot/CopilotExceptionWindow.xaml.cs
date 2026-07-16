@@ -80,7 +80,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                _viewModel.DispatchStatus = $"Copy failed: {ex.Message}";
+                _viewModel.DispatchStatus = $"Copy failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
             }
         }
 
@@ -93,7 +93,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                _viewModel.DispatchStatus = $"Send to AI failed: {ex.Message}";
+                _viewModel.DispatchStatus = $"Send to AI failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
             }
         }
 

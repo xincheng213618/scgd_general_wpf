@@ -121,6 +121,10 @@ namespace ColorVision.UI
             IDisPlayControls = new ObservableCollection<IDisPlayControl>();
         }
 
+        public event EventHandler? SelectedControlChanged;
+
+        public IDisPlayControl? SelectedControl => _selectedControl;
+
         public StackPanel StackPanel { get; set; } = null!;
 
         public void Init(Window window, StackPanel stackPanel)
@@ -158,6 +162,8 @@ namespace ColorVision.UI
 
         public void SelectControl(IDisPlayControl disPlayControl)
         {
+            ArgumentNullException.ThrowIfNull(disPlayControl);
+            bool selectionChanged = !ReferenceEquals(_selectedControl, disPlayControl);
             if (_selectedControl != null && !ReferenceEquals(_selectedControl, disPlayControl))
                 _selectedControl.IsSelected = false;
 
@@ -171,6 +177,9 @@ namespace ColorVision.UI
             int index = IDisPlayControls.IndexOf(disPlayControl);
             if (index >= 0)
                 DisPlayManagerConfig.Instance.LastSelectIndex = index;
+
+            if (selectionChanged)
+                SelectedControlChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private static void EnsureConfigCollections()

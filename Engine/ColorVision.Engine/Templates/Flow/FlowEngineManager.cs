@@ -77,11 +77,21 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
         private string _copilotNodeCatalogSignature = string.Empty;
         private IReadOnlyList<CopilotFlowNodeTypeContextSnapshot> _copilotNodeCatalog = Array.Empty<CopilotFlowNodeTypeContextSnapshot>();
+        private IDisposable? _copilotAgentExtensionRegistration;
 
         private static FlowEngineManager _instance;
         private static readonly object _locker = new();
         public static FlowEngineManager? Current { get { lock (_locker) { return _instance; } } }
-        public static FlowEngineManager GetInstance() { lock (_locker) { return _instance ??= new FlowEngineManager(); } }
+        public static FlowEngineManager GetInstance()
+        {
+            lock (_locker)
+            {
+                if (_instance == null)
+                    _instance = new FlowEngineManager();
+                _instance.EnsureCopilotAgentExtensionRegistered();
+                return _instance;
+            }
+        }
 
         public FlowControl FlowControl { get; set; }
 
@@ -189,13 +199,13 @@ namespace ColorVision.Engine.Templates.Flow
             var nodes = BuildNodeSnapshots();
             var edges = BuildEdgeSnapshots();
             var batch = Batch;
-            var recentRunMessage = View?.logTextBox?.Text ?? string.Empty;
+            var recentRunMessage = TakeRecentFlowMessageTail(View?.logTextBox?.Text, 6000);
             var failureEvidence = ExtractRecentFlowFailureEvidence(recentRunMessage);
             var focusedNodes = nodes.Where(node => node.IsSelected || node.IsActive).ToArray();
 
             return new CopilotFlowContextSnapshot
             {
-                SourceId = "flow-engine-manager",
+                SourceId = CopilotFlowAgentExtension.SourceId,
                 Revision = ComputeFlowRevision(flowParam?.Id.ToString(), flowParam?.Name, View?.STNodeEditorMain?.Nodes.Cast<STNode>() ?? Enumerable.Empty<STNode>(), edges),
                 FlowName = flowParam?.Name ?? string.Empty,
                 TemplateName = flowParam?.Name ?? string.Empty,
@@ -220,6 +230,41 @@ namespace ColorVision.Engine.Templates.Flow
         {
             var snapshot = CaptureCopilotFlowSnapshot();
             return CopilotBusinessContextBundle.FromItem(snapshot.SourceId, CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot));
+        }
+
+        public void PublishCopilotContext()
+        {
+            try
+            {
+                var snapshot = CaptureCopilotFlowSnapshot();
+                if (!CopilotFlowContextProvider.HasMeaningfulSnapshot(snapshot))
+                    return;
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    snapshot.SourceId,
+                    CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot)));
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Could not publish the active Flow context to Copilot: {ex.Message}");
+            }
+        }
+
+        private void EnsureCopilotAgentExtensionRegistered()
+        {
+            if (_copilotAgentExtensionRegistration != null)
+                return;
+
+            try
+            {
+                _copilotAgentExtensionRegistration = CopilotFlowAgentExtension.Register(
+                    CopilotAgentExtensionRegistry.Shared,
+                    CopilotFlowContextProvider.Create(this),
+                    GetType().Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Could not register the Flow Engine Copilot Agent extension.", ex);
+            }
         }
 
         public CopilotFlowNodeCatalogSnapshot CaptureCopilotFlowNodeCatalog(string? query, int maxResults)
@@ -761,6 +806,14 @@ namespace ColorVision.Engine.Templates.Flow
                 .ToArray();
 
             return lines;
+        }
+
+        private static string TakeRecentFlowMessageTail(string? message, int maxChars)
+        {
+            var text = message ?? string.Empty;
+            if (text.Length <= maxChars)
+                return text;
+            return $"...<earlier flow messages omitted; kept the last {maxChars} characters.>{Environment.NewLine}" + text[^maxChars..];
         }
 
         private static IReadOnlyList<CopilotContextProperty> BuildNodeParameterSummary(STNode node)

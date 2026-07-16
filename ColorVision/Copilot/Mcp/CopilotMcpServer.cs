@@ -106,14 +106,14 @@ namespace ColorVision.Copilot.Mcp
             catch (SocketException ex)
             {
                 IsRunning = false;
-                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {ex.Message}";
+                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
                 Log.Error(LastStatusMessage, ex);
                 StopNoLock(LastStatusMessage);
             }
             catch (Exception ex)
             {
                 IsRunning = false;
-                LastStatusMessage = $"ColorVision MCP server failed to start: {ex.Message}";
+                LastStatusMessage = $"ColorVision MCP server failed to start: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
                 Log.Error(LastStatusMessage, ex);
                 StopNoLock(LastStatusMessage);
             }
@@ -151,7 +151,9 @@ namespace ColorVision.Copilot.Mcp
                         return;
 
                     client = await _listener.AcceptTcpClientAsync(cancellationToken);
-                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), cancellationToken);
+                    // Always enter the handler so its using scope disposes the accepted socket.
+                    // Passing an already-cancelled token to Task.Run can skip the delegate entirely.
+                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), CancellationToken.None);
                 }
                 catch (OperationCanceledException)
                 {

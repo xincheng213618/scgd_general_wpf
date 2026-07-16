@@ -334,6 +334,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent += nodeEndEvent;
                 }
                 View.STNodeEditorHelper.AddNodeContext();
+                FlowEngineManager.PublishCopilotContext();
             }
             catch (Exception ex)
             {

@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
 
             var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var argumentsSummary = CopilotToolExecutionAuditLogger.CreateArgumentSummary(tool, input);
+            var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(input);
             var presentation = tool is ICopilotFrameworkApprovalPresentation presenter
                 ? presenter.CreateApprovalPresentation(input)
                 : new CopilotToolApprovalPresentation(
@@ -56,6 +56,7 @@ namespace ColorVision.Copilot
                         break;
                     case ConfirmableActionStatus.Rejected:
                     case ConfirmableActionStatus.Expired:
+                    case ConfirmableActionStatus.Cancelled:
                         completion.TrySetResult(false);
                         break;
                 }
@@ -66,7 +67,7 @@ namespace ColorVision.Copilot
             {
                 var currentAction = action;
                 if (currentAction?.Status == ConfirmableActionStatus.Pending)
-                    _confirmationStore.Reject(currentAction.ActionId, out _);
+                    _confirmationStore.Cancel(currentAction.ActionId, out _, "The approval request was cancelled with the Agent run.");
                 completion.TrySetCanceled(cancellationToken);
             });
 
@@ -104,8 +105,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(handle);
             if (handle.Action.Status == ConfirmableActionStatus.Pending)
-                _confirmationStore.Reject(handle.Action.ActionId, out _);
+                _confirmationStore.Cancel(handle.Action.ActionId, out _, "The approval request was cancelled with the Agent run.");
         }
+
+        public void Cancel(string actionId, string reason) => _confirmationStore.Cancel(actionId, out _, reason);
+
+        public bool Begin(string actionId) => _confirmationStore.BeginAgentFrameworkAction(actionId);
+
+        public void Complete(string actionId, CopilotToolResult result) => _confirmationStore.CompleteAgentFrameworkAction(actionId, result);
 
         private async Task<bool> AwaitDecisionAsync(
             ConfirmableAction action,

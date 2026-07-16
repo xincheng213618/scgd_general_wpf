@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,26 +67,27 @@ namespace ColorVision.Copilot
             }
             catch (JsonException ex)
             {
-                return new CopilotLocalGitDiffResult(false, "Git 返回了无法解析的本地快照：" + CopilotMcpAuditLogger.RedactText(ex.Message));
+                return new CopilotLocalGitDiffResult(false, "Git 返回了无法解析的本地快照：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
             }
             catch (InvalidOperationException ex)
             {
-                return new CopilotLocalGitDiffResult(false, CopilotMcpAuditLogger.RedactText(ex.Message));
+                return new CopilotLocalGitDiffResult(false, CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
             }
         }
 
         private static CopilotLocalGitDiffResult Failure(CopilotToolResult result)
         {
             var detail = string.IsNullOrWhiteSpace(result.ErrorMessage) ? result.Summary : result.Summary + "\n" + result.ErrorMessage;
-            return new CopilotLocalGitDiffResult(false, CopilotMcpAuditLogger.RedactText(detail).Trim());
+            return new CopilotLocalGitDiffResult(false, CopilotUserFacingErrorFormatter.Sanitize(detail));
         }
 
         private static JsonDocument ParseResultJson(string content)
         {
-            var markerIndex = (content ?? string.Empty).IndexOf(ResultJsonMarker, StringComparison.Ordinal);
+            var normalizedContent = content ?? string.Empty;
+            var markerIndex = normalizedContent.IndexOf(ResultJsonMarker, StringComparison.Ordinal);
             if (markerIndex < 0)
                 throw new InvalidOperationException("Git 检查没有返回结构化结果。");
-            return JsonDocument.Parse(content[(markerIndex + ResultJsonMarker.Length)..]);
+            return JsonDocument.Parse(normalizedContent[(markerIndex + ResultJsonMarker.Length)..]);
         }
 
         private static string FormatReport(JsonElement status, JsonElement diff)

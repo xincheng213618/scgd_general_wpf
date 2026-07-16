@@ -161,6 +161,26 @@ namespace ColorVision.Copilot
             var startedAt = _utcNow();
             var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
             var stopwatch = Stopwatch.StartNew();
+            if (invocation.Tool.Capability.RequiresNativeApproval)
+            {
+                var approvalError = invocation.Tool is not ICopilotFrameworkApprovedTool
+                    ? $"{invocation.Tool.Name} requires native approval but has no approved execution path."
+                    : !invocation.FrameworkApprovalGranted
+                        ? $"{invocation.Tool.Name} requires approval for this exact call before it can execute."
+                        : string.Empty;
+                if (!string.IsNullOrEmpty(approvalError))
+                {
+                    var denied = CreateOutcome(
+                        invocation,
+                        CopilotToolExecutionState.Denied,
+                        startedAt,
+                        timeout,
+                        stopwatch,
+                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution was denied.", approvalError, CopilotToolFailureKind.Authorization));
+                    return await PublishOutcomeAsync(denied, onEvent);
+                }
+            }
+
             var hookContext = new CopilotToolExecutionHookContext
             {
                 Invocation = invocation,
@@ -204,7 +224,7 @@ namespace ColorVision.Copilot
 
             queueStopwatch.Stop();
             var queueDurationMs = queueStopwatch.ElapsedMilliseconds;
-            using (executionLease)
+            using (var executionLeaseGuard = new DeferredExecutionLease(executionLease))
             {
                 onEvent(CopilotAgentEvent.ToolStarted(CreateExecutionInfo(invocation, CopilotToolExecutionState.Running, startedAt, null, 0, timeout, queueDurationMs: queueDurationMs)));
 
@@ -225,6 +245,7 @@ namespace ColorVision.Copilot
                 catch (TimeoutException)
                 {
                     linkedCancellation.Cancel();
+                    executionLeaseGuard.HoldUntilCompleted(executionTask);
                     ObserveLateFault(executionTask);
                     var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
                     var outcome = CreateOutcome(
@@ -482,6 +503,46 @@ namespace ColorVision.Copilot
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
+        }
+
+        private sealed class DeferredExecutionLease : IDisposable
+        {
+            private IDisposable? _lease;
+
+            public DeferredExecutionLease(IDisposable lease)
+            {
+                _lease = lease ?? throw new ArgumentNullException(nameof(lease));
+            }
+
+            public void HoldUntilCompleted(Task? executionTask)
+            {
+                if (executionTask == null || executionTask.IsCompleted)
+                    return;
+
+                var lease = Interlocked.Exchange(ref _lease, null);
+                if (lease != null)
+                    _ = ReleaseAfterCompletionAsync(executionTask, lease);
+            }
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _lease, null)?.Dispose();
+            }
+
+            private static async Task ReleaseAfterCompletionAsync(Task executionTask, IDisposable lease)
+            {
+                try
+                {
+                    await executionTask.ConfigureAwait(false);
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    lease.Dispose();
+                }
+            }
         }
     }
 

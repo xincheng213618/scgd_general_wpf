@@ -156,7 +156,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotSettingsViewModel : ViewModelBase
+    public sealed class CopilotSettingsViewModel : ViewModelBase, IDisposable
     {
         private static readonly HttpClient McpHttpClient = new()
         {
@@ -268,9 +268,11 @@ namespace ColorVision.Copilot
             });
 
         private readonly CopilotChatService _chatService = new();
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
         private bool _isApplyingPreset;
         private bool _isReadyForUserChanges;
         private bool _isSavingSettings;
+        private bool _disposed;
         private string _activeProfileId = string.Empty;
 
         public CopilotSettingsViewModel()
@@ -330,12 +332,12 @@ namespace ColorVision.Copilot
             ToggleMcpBearerTokenVisibilityCommand = new RelayCommand(_ => IsMcpBearerTokenVisible = !IsMcpBearerTokenVisible);
             CopyCodexMcpConfigCommand = new RelayCommand(_ => CopyCodexMcpConfig());
             CopyMcpTokenEnvironmentCommand = new RelayCommand(_ => CopyMcpTokenEnvironmentCommandToClipboard());
-            TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
+            TestMcpConnectionCommand = new RelayCommand(_ => RunUiOperation(TestMcpConnectionAsync, "测试 MCP 连接"));
             RefreshMcpDiagnosticsCommand = new RelayCommand(_ => RefreshMcpDiagnostics());
             RefreshAgentSkillDiagnosticsCommand = new RelayCommand(_ => RefreshAgentSkillDiagnostics());
-            RefreshExternalMcpClientsCommand = new RelayCommand(_ => _ = RefreshExternalMcpClientsAsync(), _ => !IsRefreshingExternalMcpClients);
+            RefreshExternalMcpClientsCommand = new RelayCommand(_ => RunUiOperation(RefreshExternalMcpClientsAsync, "刷新外部 MCP"), _ => !IsRefreshingExternalMcpClients);
             CopyMcpDiagnosticsCommand = new RelayCommand(_ => CopyMcpDiagnostics());
-            TestSelectedProfileCommand = new RelayCommand(_ => _ = TestSelectedProfileConnectionAsync(), _ => CanTestSelectedProfile);
+            TestSelectedProfileCommand = new RelayCommand(_ => RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接"), _ => CanTestSelectedProfile);
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
             ToggleNewProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsNewProfileApiKeyVisible = !IsNewProfileApiKeyVisible);
             ToggleSelectedProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsSelectedProfileApiKeyVisible = !IsSelectedProfileApiKeyVisible);
@@ -743,7 +745,7 @@ namespace ColorVision.Copilot
         }
         private bool _isTestingMcpConnection;
 
-        public bool CanTestMcpConnection => !IsTestingMcpConnection && IsMcpPortValid;
+        public bool CanTestMcpConnection => !_disposed && !IsTestingMcpConnection && IsMcpPortValid;
 
         public string SelectedProfileConnectionTestText
         {
@@ -766,7 +768,7 @@ namespace ColorVision.Copilot
         }
         private bool _isTestingSelectedProfileConnection;
 
-        public bool CanTestSelectedProfile => SelectedProfile?.IsConfigured == true && !IsTestingSelectedProfileConnection;
+        public bool CanTestSelectedProfile => !_disposed && SelectedProfile?.IsConfigured == true && !IsTestingSelectedProfileConnection;
 
         public bool IsSelectedProfileActiveInChat => SelectedProfile != null
             && string.Equals(SelectedProfile.Id, _activeProfileId, StringComparison.Ordinal);
@@ -1050,6 +1052,8 @@ namespace ColorVision.Copilot
         }
         private bool _hasAppliedChanges;
 
+        public string ActiveProfileId => _activeProfileId;
+
         public string NewProfileCredentialStatusText
         {
             get
@@ -1226,13 +1230,7 @@ namespace ColorVision.Copilot
                 CopilotMcpServer.Instance.ApplyConfig();
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
-
-                var stateStore = CopilotChatStateStore.Instance;
-                var state = stateStore.Load();
-                state.ActiveProfileId = SelectedProfile?.Id ?? state.ActiveProfileId;
-                state.EnsureInitialized(config);
-                _activeProfileId = state.ActiveProfileId;
-                stateStore.Save(state);
+                _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
             }
             finally
             {
@@ -1408,7 +1406,7 @@ namespace ColorVision.Copilot
 
         private async Task TestSelectedProfileConnectionAsync()
         {
-            if (IsTestingSelectedProfileConnection)
+            if (_disposed || IsTestingSelectedProfileConnection)
                 return;
 
             var sourceProfile = SelectedProfile;
@@ -1438,7 +1436,8 @@ namespace ColorVision.Copilot
             SetSettingsNotice($"Testing {profile.DisplayLabel}...");
             try
             {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+                timeout.CancelAfter(TimeSpan.FromSeconds(30));
                 await _chatService.StreamReplyAsync(
                     profile,
                     ModelConnectionTestMessages,
@@ -1447,6 +1446,9 @@ namespace ColorVision.Copilot
 
                 SelectedProfileConnectionTestText = "Connected. The model returned a response.";
                 SetSettingsNotice($"Model test succeeded for {profile.DisplayLabel}.");
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (OperationCanceledException)
             {
@@ -1540,7 +1542,7 @@ namespace ColorVision.Copilot
 
         public async Task TestMcpConnectionAsync()
         {
-            if (IsTestingMcpConnection)
+            if (_disposed || IsTestingMcpConnection)
                 return;
 
             if (!ApplyMcpPortText(updateNotice: true))
@@ -1582,7 +1584,10 @@ namespace ColorVision.Copilot
                 });
                 request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                using var response = await McpHttpClient.SendAsync(request, CancellationToken.None);
+                using var response = await McpHttpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    _lifetimeCancellation.Token);
                 if (!response.IsSuccessStatusCode)
                 {
                     McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
@@ -1592,7 +1597,7 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                var body = await response.Content.ReadAsStringAsync();
+                var body = await response.Content.ReadAsStringAsync(_lifetimeCancellation.Token);
                 using var document = JsonDocument.Parse(body);
                 var root = document.RootElement;
                 if (root.TryGetProperty("error", out var errorElement))
@@ -1618,6 +1623,9 @@ namespace ColorVision.Copilot
                 SetSettingsNotice("MCP connection test succeeded.");
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (Exception ex)
             {
@@ -1674,6 +1682,17 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private void RunUiOperation(Func<Task> operation, string operationName)
+        {
+            if (_disposed)
+                return;
+
+            CopilotUiTaskObserver.Run(
+                operation,
+                operationName,
+                message => SetSettingsNotice($"{operationName}失败：{message}"));
+        }
+
         private bool ValidateExternalMcpServers(bool updateNotice)
         {
             if (CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
@@ -1717,7 +1736,7 @@ namespace ColorVision.Copilot
 
         private async Task RefreshExternalMcpClientsAsync()
         {
-            if (IsRefreshingExternalMcpClients)
+            if (_disposed || IsRefreshingExternalMcpClients)
                 return;
             if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
             {
@@ -1742,13 +1761,16 @@ namespace ColorVision.Copilot
                 {
                     ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
                     ForceExternalMcpToolRefresh = true,
-                }, CancellationToken.None);
+                }, _lifetimeCancellation.Token);
 
                 RefreshExternalMcpClientsStatus(servers);
                 var connectedCount = servers.Count(server =>
                     CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
                     && health.State == CopilotMcpClientHealthState.Connected);
                 SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (Exception ex)
             {
@@ -1760,6 +1782,25 @@ namespace ColorVision.Copilot
             {
                 IsRefreshingExternalMcpClients = false;
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            try
+            {
+                _lifetimeCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            _lifetimeCancellation.Dispose();
+            OnPropertyChanged(nameof(CanTestMcpConnection));
+            OnPropertyChanged(nameof(CanTestSelectedProfile));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private string BuildCodexMcpConfigSnippet()

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using ColorVision.UI;
 using Microsoft.Extensions.AI;
+using NewtonsoftJsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace ColorVision.UI.Tests;
 
@@ -14,6 +15,196 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotCoreRuntimeTests : IDisposable
 {
     private readonly string _tempRoot = Path.Combine(Path.GetTempPath(), "ColorVision-Copilot-" + Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public void StateProfileReconciler_AppliesSettingsSelectionWithoutReplacingLiveConversationState()
+    {
+        var firstProfile = CreateProfile();
+        var secondProfile = CreateProfile();
+        var conversation = CopilotConversationRecord.CreateEmpty(firstProfile.Id, firstProfile.DisplayLabel);
+        var message = new CopilotChatMessage(CopilotChatRole.User, "Keep this live object.");
+        conversation.Messages.Add(message);
+        var conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = firstProfile.Id,
+            Conversations = conversations,
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([firstProfile, secondProfile]),
+        };
+
+        var selected = CopilotChatStateProfileReconciler.Apply(state, config, secondProfile.Id);
+
+        Assert.Same(secondProfile, selected);
+        Assert.Equal(secondProfile.Id, state.ActiveProfileId);
+        Assert.Same(conversations, state.Conversations);
+        Assert.Same(conversation, Assert.Single(state.Conversations));
+        Assert.Same(message, Assert.Single(conversation.Messages));
+    }
+
+    [Fact]
+    public void StateProfileReconciler_RemapsRemovedProfileWithoutReplacingConversation()
+    {
+        var removedProfile = CreateProfile();
+        var remainingProfile = CreateProfile();
+        var conversation = CopilotConversationRecord.CreateEmpty(removedProfile.Id, removedProfile.DisplayLabel);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = removedProfile.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([remainingProfile]),
+        };
+
+        var selected = CopilotChatStateProfileReconciler.Apply(state, config, removedProfile.Id);
+
+        Assert.Same(remainingProfile, selected);
+        Assert.Equal(remainingProfile.Id, state.ActiveProfileId);
+        Assert.Same(conversation, Assert.Single(state.Conversations));
+        Assert.Equal(remainingProfile.Id, conversation.ProfileId);
+        Assert.Equal(remainingProfile.DisplayLabel, conversation.ProfileDisplayName);
+    }
+
+    [Fact]
+    public async Task StateSaveScheduler_CoalescesBurstAndFlushesImmediately()
+    {
+        var saveCount = 0;
+        using var scheduler = new CopilotChatStateSaveScheduler(
+            _ =>
+            {
+                Interlocked.Increment(ref saveCount);
+                return Task.CompletedTask;
+            },
+            TimeSpan.FromSeconds(30));
+
+        for (var index = 0; index < 20; index++)
+            scheduler.RequestSave();
+
+        await scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(1, Volatile.Read(ref saveCount));
+    }
+
+    [Fact]
+    public async Task StateSaveScheduler_ContainsFailureAndContinuesProcessing()
+    {
+        var saveCount = 0;
+        var errorCount = 0;
+        using var scheduler = new CopilotChatStateSaveScheduler(
+            _ =>
+            {
+                if (Interlocked.Increment(ref saveCount) == 1)
+                    throw new IOException("Simulated persistence failure.");
+
+                return Task.CompletedTask;
+            },
+            TimeSpan.Zero,
+            _ => Interlocked.Increment(ref errorCount));
+
+        scheduler.RequestSave(immediate: true);
+        await scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        scheduler.RequestSave(immediate: true);
+        await scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(3, Volatile.Read(ref saveCount));
+        Assert.Equal(1, Volatile.Read(ref errorCount));
+    }
+
+    [Fact]
+    public async Task StateSaveScheduler_BoundsRetriesForPersistentFailure()
+    {
+        var saveCount = 0;
+        var errorCount = 0;
+        using var scheduler = new CopilotChatStateSaveScheduler(
+            _ =>
+            {
+                Interlocked.Increment(ref saveCount);
+                throw new IOException("Persistent simulated persistence failure.");
+            },
+            TimeSpan.Zero,
+            _ => Interlocked.Increment(ref errorCount));
+
+        scheduler.RequestSave(immediate: true);
+        var error = await Assert.ThrowsAsync<IOException>(() => scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2)));
+
+        Assert.Equal("Persistent simulated persistence failure.", error.Message);
+        Assert.Equal(2, Volatile.Read(ref saveCount));
+        Assert.Equal(2, Volatile.Read(ref errorCount));
+    }
+
+    [Fact]
+    public async Task StateSaveScheduler_ExplicitFlushRetriesFailedVersionAndReportsRecovery()
+    {
+        var saveCount = 0;
+        var errorCount = 0;
+        var savedCount = 0;
+        using var scheduler = new CopilotChatStateSaveScheduler(
+            _ =>
+            {
+                if (Interlocked.Increment(ref saveCount) <= 2)
+                    throw new IOException("Temporary persistence outage.");
+
+                return Task.CompletedTask;
+            },
+            TimeSpan.Zero,
+            _ => Interlocked.Increment(ref errorCount),
+            () => Interlocked.Increment(ref savedCount));
+
+        scheduler.RequestSave(immediate: true);
+        await Assert.ThrowsAsync<IOException>(() => scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2)));
+
+        await scheduler.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(3, Volatile.Read(ref saveCount));
+        Assert.Equal(2, Volatile.Read(ref errorCount));
+        Assert.Equal(1, Volatile.Read(ref savedCount));
+    }
+
+    [Fact]
+    public async Task StateSaveScheduler_SerializesWritesRequestedDuringActiveSave()
+    {
+        var firstSaveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var saveCount = 0;
+        var activeSaveCount = 0;
+        var maxActiveSaveCount = 0;
+        using var scheduler = new CopilotChatStateSaveScheduler(
+            async _ =>
+            {
+                var currentActiveCount = Interlocked.Increment(ref activeSaveCount);
+                if (currentActiveCount > Volatile.Read(ref maxActiveSaveCount))
+                    Interlocked.Exchange(ref maxActiveSaveCount, currentActiveCount);
+                try
+                {
+                    if (Interlocked.Increment(ref saveCount) == 1)
+                    {
+                        firstSaveStarted.TrySetResult();
+                        await releaseFirstSave.Task;
+                    }
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeSaveCount);
+                }
+            },
+            TimeSpan.Zero);
+
+        scheduler.RequestSave(immediate: true);
+        await firstSaveStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        scheduler.RequestSave(immediate: true);
+        var flushTask = scheduler.FlushAsync();
+        releaseFirstSave.TrySetResult();
+        await flushTask.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(2, Volatile.Read(ref saveCount));
+        Assert.Equal(1, Volatile.Read(ref maxActiveSaveCount));
+    }
 
     [Fact]
     public void StateStore_UsesBackupWhenPrimaryStateIsCorrupt()
@@ -32,6 +223,169 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Single(recovered.Conversations);
         Assert.Equal(CopilotChatState.CurrentSchemaVersion, recovered.SchemaVersion);
         Assert.True(File.Exists(store.BackupStateFilePath));
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+    }
+
+    [Fact]
+    public void StateStore_UsesBackupWhenPrimaryStateEnvelopeIsIncomplete()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+        File.WriteAllText(store.StateFilePath, "{}", Encoding.UTF8);
+
+        var recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Single(recovered.Conversations);
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+    }
+
+    [Fact]
+    public void StateStore_UsesBackupWhenPrimaryStateContainsInvalidCollectionItems()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+        var document = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(store.StateFilePath));
+        var conversations = Assert.IsType<Newtonsoft.Json.Linq.JArray>(document[nameof(CopilotChatState.Conversations)]);
+        var conversation = Assert.IsType<Newtonsoft.Json.Linq.JObject>(Assert.Single(conversations));
+        conversation[nameof(CopilotConversationRecord.Messages)] = new Newtonsoft.Json.Linq.JArray(Newtonsoft.Json.Linq.JValue.CreateNull());
+        File.WriteAllText(store.StateFilePath, document.ToString(), Encoding.UTF8);
+
+        var recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+    }
+
+    [Fact]
+    public void StateStore_RejectsFutureSchemaButAcceptsLegacyStateWithoutSchemaField()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "legacy-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        var legacyDocument = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(store.StateFilePath));
+        legacyDocument.Remove(nameof(CopilotChatState.SchemaVersion));
+        File.WriteAllText(store.StateFilePath, legacyDocument.ToString(), Encoding.UTF8);
+
+        var legacy = store.Load();
+
+        Assert.Equal("legacy-profile", legacy.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Primary, store.LastLoadStatus.Source);
+
+        legacy.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
+        legacy.ActiveProfileId = "backup-profile";
+        store.Save(legacy);
+        legacy.ActiveProfileId = "current-profile";
+        store.Save(legacy);
+        var futureDocument = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(store.StateFilePath));
+        futureDocument[nameof(CopilotChatState.SchemaVersion)] = CopilotChatState.CurrentSchemaVersion + 1;
+        File.WriteAllText(store.StateFilePath, futureDocument.ToString(), Encoding.UTF8);
+
+        var recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+    }
+
+    [Fact]
+    public void StateStore_UsesBackupWhenPrimaryStateIsMissing()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+        File.Delete(store.StateFilePath);
+
+        var recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Single(recovered.Conversations);
+    }
+
+    [Fact]
+    public void StateStore_PreservesGoodBackupWhenHealingCorruptPrimaryState()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+        File.WriteAllText(store.StateFilePath, "{ corrupt primary", Encoding.UTF8);
+
+        var recovered = store.Load();
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        recovered.ActiveProfileId = "healed-profile";
+        store.Save(recovered);
+        Assert.Equal("healed-profile", store.Load().ActiveProfileId);
+
+        File.WriteAllText(store.StateFilePath, "{ corrupt again", Encoding.UTF8);
+        Assert.Equal("backup-profile", store.Load().ActiveProfileId);
+    }
+
+    [Fact]
+    public async Task StateStore_RejectsInvalidDetachedSnapshotWithoutReplacingRecoveryFiles()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.SaveSerializedAsync("{ invalid snapshot"));
+        Assert.Equal("current-profile", store.Load().ActiveProfileId);
+        Assert.False(File.Exists(store.TemporaryStateFilePath));
+
+        File.WriteAllText(store.StateFilePath, "{ corrupt primary", Encoding.UTF8);
+        Assert.Equal("backup-profile", store.Load().ActiveProfileId);
+    }
+
+    [Fact]
+    public void StateStore_RecoversNewerValidTemporarySnapshotAfterInterruptedReplace()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "stable-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        File.SetLastWriteTimeUtc(store.StateFilePath, DateTime.UtcNow.AddMinutes(-1));
+
+        state.ActiveProfileId = "temporary-profile";
+        File.WriteAllText(store.TemporaryStateFilePath, store.Serialize(state), new UTF8Encoding(false));
+
+        var recovered = store.Load();
+
+        Assert.Equal("temporary-profile", recovered.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Temporary, store.LastLoadStatus.Source);
+        Assert.Equal("temporary-profile", store.Load().ActiveProfileId);
+        Assert.False(File.Exists(store.TemporaryStateFilePath));
+        Assert.Equal("stable-profile", NewtonsoftJsonConvert.DeserializeObject<CopilotChatState>(File.ReadAllText(store.BackupStateFilePath))!.ActiveProfileId);
+    }
+
+    [Fact]
+    public async Task StateStore_SaveSerializedAsyncPersistsDetachedSnapshot()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "captured-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        var serializedState = store.Serialize(state);
+        state.ActiveProfileId = "later-profile";
+
+        await store.SaveSerializedAsync(serializedState);
+        var recovered = store.Load();
+
+        Assert.Equal("captured-profile", recovered.ActiveProfileId);
     }
 
     [Fact]
@@ -54,6 +408,80 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(1, deleted);
         Assert.True(File.Exists(referencedPath));
         Assert.False(File.Exists(orphanPath));
+    }
+
+    [Fact]
+    public void StateStore_UnrecoverableStateProtectsManagedAttachmentsAcrossRestart()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        store.Save(state);
+        var preservedPath = Path.Combine(store.AttachmentDirectoryPath, "preserve.png");
+        File.WriteAllText(preservedPath, "preserve");
+        File.WriteAllText(store.StateFilePath, "{ corrupt primary", Encoding.UTF8);
+        File.WriteAllText(store.BackupStateFilePath, "{ corrupt backup", Encoding.UTF8);
+
+        var recovered = store.Load();
+
+        Assert.Equal(CopilotChatStateLoadSource.Unrecoverable, store.LastLoadStatus.Source);
+        Assert.True(store.IsManagedAttachmentCleanupProtected);
+        Assert.Equal(0, store.CleanupOrphanedAttachments(recovered));
+        Assert.True(File.Exists(preservedPath));
+
+        store.Save(recovered);
+        var restartedStore = new CopilotChatStateStore(_tempRoot);
+        var restartedState = restartedStore.Load();
+        Assert.Equal(CopilotChatStateLoadSource.Primary, restartedStore.LastLoadStatus.Source);
+        Assert.True(restartedStore.IsManagedAttachmentCleanupProtected);
+        Assert.Equal(0, restartedStore.CleanupOrphanedAttachments(restartedState));
+        Assert.True(File.Exists(preservedPath));
+
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(preservedPath, "preserved"));
+        restartedState.Conversations.Add(conversation);
+        Assert.Equal(0, restartedStore.CleanupOrphanedAttachments(restartedState));
+        Assert.False(restartedStore.IsManagedAttachmentCleanupProtected);
+        Assert.True(File.Exists(preservedPath));
+
+        conversation.Attachments.Clear();
+        Assert.Equal(1, restartedStore.CleanupOrphanedAttachments(restartedState));
+        Assert.False(File.Exists(preservedPath));
+    }
+
+    [Fact]
+    public void StateStore_AttachmentsWithoutStateEnableRecoveryProtection()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        Directory.CreateDirectory(store.AttachmentDirectoryPath);
+        var preservedPath = Path.Combine(store.AttachmentDirectoryPath, "preserve.png");
+        File.WriteAllText(preservedPath, "preserve");
+
+        var recovered = store.Load();
+
+        Assert.Equal(CopilotChatStateLoadSource.Unrecoverable, store.LastLoadStatus.Source);
+        Assert.True(store.IsManagedAttachmentCleanupProtected);
+        Assert.Equal(0, store.CleanupOrphanedAttachments(recovered));
+        Assert.True(File.Exists(preservedPath));
+    }
+
+    [Fact]
+    public void ManagedAttachmentDelete_RejectsSiblingDirectoryWithMatchingPrefix()
+    {
+        var attachmentRoot = Path.Combine(_tempRoot, "Attachments");
+        var siblingRoot = Path.Combine(_tempRoot, "Attachments-Backup");
+        Directory.CreateDirectory(attachmentRoot);
+        Directory.CreateDirectory(siblingRoot);
+        var managedFile = Path.Combine(attachmentRoot, "managed.png");
+        var siblingFile = Path.Combine(siblingRoot, "keep.png");
+        File.WriteAllText(managedFile, "managed");
+        File.WriteAllText(siblingFile, "keep");
+
+        Assert.False(CopilotChatStateStore.TryDeleteManagedAttachmentFile(attachmentRoot, siblingFile));
+        Assert.True(File.Exists(siblingFile));
+        Assert.True(CopilotChatStateStore.TryDeleteManagedAttachmentFile(attachmentRoot, managedFile));
+        Assert.False(File.Exists(managedFile));
     }
 
     [Fact]
@@ -218,6 +646,145 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             CopilotCapabilityCatalog.Shared.GetSnapshot());
         Assert.True(recovery.IsAvailable);
         Assert.Equal(CopilotAgentRecoveryMode.Resume, recovery.Request!.Mode);
+    }
+
+    [Fact]
+    public void InterruptedAgentRun_PreservesPersistedPartialStreamingAnswer()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{\"state\":{}}",
+            taskEventJournal: journal.Snapshot());
+        Assert.NotNull(checkpoint);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+            AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items = [new CopilotAgentTaskItem { Id = 1, Title = "Continue safely", IsComplete = false }],
+            },
+        };
+        assistantMessage.BeginResponseTimeline();
+        CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, CopilotAgentEvent.AnswerDelta("Partial answer before exit."));
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(assistantMessage);
+        conversation.AgentSessionCheckpoint = checkpoint;
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+
+        Assert.True(state.EnsureInitialized(config));
+
+        Assert.Equal(CopilotAgentStopReason.Interrupted, assistantMessage.AgentStopReason);
+        Assert.Equal("Partial answer before exit.", assistantMessage.Content);
+        Assert.Equal("Partial answer before exit.", Assert.Single(assistantMessage.VisibleResponseTimelineItems).Markdown);
+        Assert.False(assistantMessage.IsThinkingInProgress);
+    }
+
+    [Fact]
+    public void InterruptedChatRun_RoundTripPreservesPartialAnswerAndMarksInterruption()
+    {
+        var profile = CreateProfile();
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Chat,
+        };
+        assistantMessage.MarkThinkingStarted();
+        CopilotAssistantMessagePresenter.ApplyStreamDelta(assistantMessage, new CopilotStreamDelta(string.Empty, "Partial chat answer before exit."));
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Explain this."));
+        conversation.Messages.Add(assistantMessage);
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+        var store = new CopilotChatStateStore(_tempRoot);
+        store.Save(state);
+
+        var recovered = store.Load();
+        var recoveredMessage = recovered.Conversations[0].Messages[1];
+        Assert.True(recoveredMessage.IsResponsePending);
+
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+        Assert.True(recovered.EnsureInitialized(config));
+
+        Assert.False(recoveredMessage.IsResponsePending);
+        Assert.False(recoveredMessage.IsThinkingInProgress);
+        Assert.True(recoveredMessage.WasResponseInterrupted);
+        Assert.True(recoveredMessage.HasResponseInterruption);
+        Assert.Equal("Partial chat answer before exit.", recoveredMessage.Content);
+        Assert.Equal(CopilotAgentStopReason.None, recoveredMessage.AgentStopReason);
+        Assert.False(recoveredMessage.HasAgentTaskState);
+        Assert.False(recovered.EnsureInitialized(config));
+    }
+
+    [Fact]
+    public void InterruptedEmptyChatRunGetsRetryableFallbackInsteadOfBlankMessage()
+    {
+        var profile = CreateProfile();
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Chat,
+        };
+        assistantMessage.MarkThinkingStarted();
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(assistantMessage);
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+
+        Assert.True(state.EnsureInitialized(config));
+
+        Assert.True(assistantMessage.WasResponseInterrupted);
+        Assert.Contains("可以重试", assistantMessage.Content, StringComparison.Ordinal);
+        Assert.False(assistantMessage.IsThinkingInProgress);
+    }
+
+    [Fact]
+    public void CompletedChatRunRoundTripIsNotMarkedInterrupted()
+    {
+        var profile = CreateProfile();
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "Completed answer.")
+        {
+            RequestMode = CopilotAgentMode.Chat,
+        };
+        assistantMessage.MarkThinkingStarted();
+        assistantMessage.MarkThinkingCompleted();
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.Messages.Add(assistantMessage);
+        var state = new CopilotChatState
+        {
+            ActiveProfileId = profile.Id,
+            ActiveConversationId = conversation.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>([conversation]),
+        };
+        var store = new CopilotChatStateStore(_tempRoot);
+        store.Save(state);
+
+        var recovered = store.Load();
+        var recoveredMessage = recovered.Conversations[0].Messages[0];
+        var config = new CopilotConfig { Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>([profile]) };
+        recovered.EnsureInitialized(config);
+
+        Assert.False(recoveredMessage.IsResponsePending);
+        Assert.False(recoveredMessage.WasResponseInterrupted);
+        Assert.False(recoveredMessage.HasResponseInterruption);
+        Assert.Equal("Completed answer.", recoveredMessage.Content);
     }
 
     [Fact]
@@ -728,6 +1295,127 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task ChatService_RetriesTransientStatusBeforeFirstResponseDelta()
+    {
+        const string successBody = """
+            data: {"choices":[{"delta":{"content":"recovered"}}]}
+
+            data: [DONE]
+
+            """;
+        using var handler = new SequentialResponseHandler(callNumber => callNumber == 1
+            ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            {
+                Content = new StringContent("{\"error\":{\"message\":\"temporarily unavailable\"}}", Encoding.UTF8, "application/json"),
+            }
+            : CreateEventStreamResponse(successBody));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            deltas.Add,
+            CancellationToken.None);
+
+        Assert.Equal(2, handler.CallCount);
+        Assert.Equal("recovered", string.Concat(deltas.Select(delta => delta.Content)));
+    }
+
+    [Fact]
+    public async Task ChatService_DoesNotRetryProviderInterruptionAfterFirstResponseDelta()
+    {
+        const string partialBody = """
+            data: {"choices":[{"delta":{"content":"partial"}}]}
+
+            """;
+        using var handler = new SequentialResponseHandler(_ => CreateFaultingEventStreamResponse(partialBody));
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await Assert.ThrowsAsync<IOException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            deltas.Add,
+            CancellationToken.None));
+
+        Assert.Equal(1, handler.CallCount);
+        Assert.Equal("partial", string.Concat(deltas.Select(delta => delta.Content)));
+    }
+
+    [Fact]
+    public async Task ChatService_CancelsRetryDelayWithoutStartingAnotherAttempt()
+    {
+        using var handler = new SequentialResponseHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+        {
+            Content = new StringContent("temporarily unavailable", Encoding.UTF8, "text/plain"),
+        });
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            _ => { },
+            cts.Token));
+
+        Assert.Equal(1, handler.CallCount);
+    }
+
+    [Fact]
+    public async Task ChatService_ReportsStreamingProviderErrorWithoutLeakingRequestSecret()
+    {
+        var profile = CreateProfile();
+        profile.ApiKey = "stream-provider-secret";
+        var errorPayload = JsonSerializer.Serialize(new
+        {
+            type = "error",
+            error = new
+            {
+                type = "authentication_error",
+                message = $"invalid credential {profile.ApiKey} token=labelled-stream-secret",
+            },
+        });
+        var responseBody = $"data: {errorPayload}\n\n";
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => CreateEventStreamResponse(responseBody)));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+            profile,
+            new[] { new CopilotRequestMessage("user", "test") },
+            _ => { },
+            CancellationToken.None));
+
+        Assert.Contains("Provider stream error: invalid credential", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(profile.ApiKey, error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("labelled-stream-secret", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ChatService_RejectsStreamingResponseWithoutDisplayableText()
+    {
+        const string responseBody = """
+            data: {"choices":[],"usage":{"prompt_tokens":3,"completion_tokens":0,"total_tokens":3}}
+
+            data: [DONE]
+
+            """;
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => CreateEventStreamResponse(responseBody)));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            _ => { },
+            CancellationToken.None));
+
+        Assert.Contains("no displayable text", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ChatService_SendsDeepSeekAnthropicHighReasoningParameters()
     {
         var profile = CreateProfile();
@@ -831,9 +1519,35 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     [Fact]
     public async Task ChatService_ReportsProviderErrorWithoutLeakingRequestSecret()
     {
+        var profile = CreateProfile();
+        profile.ApiKey = "unlabelled-provider-secret";
+        var providerMessage = $"invalid model\r\nEchoed credential: {profile.ApiKey}; token=labelled-secret; " + new string('x', 1_000);
+        var errorBody = JsonSerializer.Serialize(new { error = new { message = providerMessage } });
         using var httpClient = new HttpClient(new StaticResponseHandler(() => new HttpResponseMessage(HttpStatusCode.BadRequest)
         {
-            Content = new StringContent("{\"error\":{\"message\":\"invalid model\"}}", Encoding.UTF8, "application/json"),
+            Content = new StringContent(errorBody, Encoding.UTF8, "application/json"),
+        }));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CompleteReplyAsync(
+            profile,
+            new[] { new CopilotRequestMessage("user", "test") },
+            CancellationToken.None));
+
+        Assert.Contains("400: invalid model", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(profile.ApiKey, error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("labelled-secret", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain('\r', error.Message);
+        Assert.DoesNotContain('\n', error.Message);
+        Assert.True(error.Message.Length <= CopilotUserFacingErrorFormatter.MaximumMessageLength);
+    }
+
+    [Fact]
+    public async Task ChatService_PreservesTopLevelProviderErrorMessage()
+    {
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent("{\"message\":\"rate limit reached\"}", Encoding.UTF8, "application/json"),
         }));
         var service = new CopilotChatService(httpClient);
 
@@ -842,8 +1556,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             new[] { new CopilotRequestMessage("user", "test") },
             CancellationToken.None));
 
-        Assert.Contains("400: invalid model", error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("secret-key", error.Message, StringComparison.Ordinal);
+        Assert.Equal("429: rate limit reached", error.Message);
     }
 
     [Fact]
@@ -2530,8 +3243,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             && item.Text.Contains("budget exhausted", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta
             && item.Text.Contains("bounded token budget", StringComparison.OrdinalIgnoreCase));
-        Assert.Single(events.Where(item => item.Type == CopilotAgentEventType.AnswerDelta
-            && item.Text.Contains("bounded token budget", StringComparison.OrdinalIgnoreCase)));
+        Assert.Single(events, item => item.Type == CopilotAgentEventType.AnswerDelta
+            && item.Text.Contains("bounded token budget", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -3393,7 +4106,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         firstCancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstRun);
-        Assert.Equal(ConfirmableActionStatus.Rejected, abandonedAction.Status);
+        Assert.Equal(ConfirmableActionStatus.Cancelled, abandonedAction.Status);
         Assert.False(CopilotMcpConfirmationStore.Instance.Approve(abandonedAction.ActionId, out _));
         Assert.Equal(0, tool.ApprovedExecutionCount);
 
@@ -3945,6 +4658,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal("call-1", result.StepRecords[0].Execution.CallId);
         Assert.Equal(action.ActionId, result.StepRecords[0].Execution.ApprovalActionId);
         Assert.Equal(CopilotToolExecutionState.Completed, result.StepRecords[0].Execution.State);
+        Assert.Equal(ConfirmableActionStatus.Executed, action.Status);
+        Assert.True(action.ExecutionSucceeded);
+        Assert.NotNull(action.CompletedAt);
         Assert.Contains(events, item => item.Type == CopilotAgentEventType.AnswerDelta && item.Text == "harness answer");
     }
 
@@ -4003,7 +4719,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
 
-        Assert.Equal(ConfirmableActionStatus.Rejected, action.Status);
+        Assert.Equal(ConfirmableActionStatus.Cancelled, action.Status);
         Assert.Equal(0, tool.ApprovedExecutionCount);
         Assert.False(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
     }
@@ -5033,6 +5749,16 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         };
     }
 
+    private static HttpResponseMessage CreateFaultingEventStreamResponse(string content)
+    {
+        var responseContent = new StreamContent(new FaultAfterFirstReadStream(Encoding.UTF8.GetBytes(content)));
+        responseContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = responseContent,
+        };
+    }
+
     private static HttpResponseMessage CreateJsonResponse(string content)
     {
         return new HttpResponseMessage(HttpStatusCode.OK)
@@ -5048,6 +5774,69 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(responseFactory());
         }
+    }
+
+    private sealed class SequentialResponseHandler(Func<int, HttpResponseMessage> responseFactory) : HttpMessageHandler
+    {
+        private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(responseFactory(Interlocked.Increment(ref _callCount)));
+        }
+    }
+
+    private sealed class FaultAfterFirstReadStream(byte[] content) : Stream
+    {
+        private int _readCount;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => content.Length;
+
+        public override long Position
+        {
+            get => 0;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (Interlocked.Increment(ref _readCount) > 1)
+                throw new IOException("The provider stream was interrupted.");
+
+            var length = Math.Min(count, content.Length);
+            content.AsSpan(0, length).CopyTo(buffer.AsSpan(offset, length));
+            return length;
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (Interlocked.Increment(ref _readCount) > 1)
+                return ValueTask.FromException<int>(new IOException("The provider stream was interrupted."));
+
+            var length = Math.Min(buffer.Length, content.Length);
+            content.AsMemory(0, length).CopyTo(buffer);
+            return ValueTask.FromResult(length);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     private sealed class CapturingResponseHandler(Func<HttpResponseMessage> responseFactory) : HttpMessageHandler
@@ -5221,7 +6010,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
                 _allEntered.TrySetResult();
             try
             {
-                await _allEntered.Task.WaitAsync(TimeSpan.FromMilliseconds(500), cancellationToken);
+                await _allEntered.Task.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
             }
             catch (TimeoutException)
             {

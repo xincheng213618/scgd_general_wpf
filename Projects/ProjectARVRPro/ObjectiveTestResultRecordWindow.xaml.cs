@@ -1,7 +1,10 @@
 using ColorVision.Solution.Editor.AvalonEditor;
+using ColorVision.UI;
+using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using ProjectARVRPro.LegacyARVR;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -10,13 +13,19 @@ namespace ProjectARVRPro
 {
     public partial class ObjectiveTestResultRecordWindow : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(ObjectiveTestResultRecordWindow));
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private int _copilotPublishQueued;
+
         public ObservableCollection<ObjectiveTestResultRecord> Records { get; } = new();
 
         public ObjectiveTestResultRecordWindow()
         {
             InitializeComponent();
             RecordDataGrid.ItemsSource = Records;
+            Records.CollectionChanged += Records_CollectionChanged;
             LoadRecords();
+            RegisterCopilotContext();
         }
 
         private ObjectiveTestResultRecord? SelectedRecord => RecordDataGrid.SelectedItem as ObjectiveTestResultRecord;
@@ -38,6 +47,91 @@ namespace ProjectARVRPro
             foreach (var record in ViewResultManager.GetInstance().QueryObjectiveTestResultRecords(SnTextBox.Text, count))
             {
                 Records.Add(record);
+            }
+        }
+
+        private void RegisterCopilotContext()
+        {
+            try
+            {
+                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
+                    CaptureCopilotSnapshotAsync,
+                    typeof(ObjectiveTestResultRecordWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not register the ARVRPro objective-result history Copilot context; the history window will continue to operate.", ex);
+            }
+        }
+
+        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CaptureCopilotSnapshot();
+                });
+            }
+
+            return CaptureCopilotSnapshot();
+        }
+
+        private CopilotProjectResultContextSnapshot CaptureCopilotSnapshot()
+        {
+            return ProjectARVRCopilotSnapshotFactory.CreateForObjectiveResultRecords(
+                "ARVRPro objective test result history",
+                Records,
+                SelectedRecord);
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void RecordDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            QueueCopilotContextPublish();
+        }
+
+        private void Records_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            QueueCopilotContextPublish();
+        }
+
+        private void QueueCopilotContextPublish()
+        {
+            if (Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Interlocked.Exchange(ref _copilotPublishQueued, 0);
+                PublishCopilotContext();
+            }));
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_copilotContextSession?.IsCurrent != true || !IsActive)
+                return;
+
+            try
+            {
+                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(CaptureCopilotSnapshot());
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    ProjectARVRCopilotAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not publish the active ARVRPro objective-result history context to Copilot: {ex.Message}");
             }
         }
 
@@ -131,6 +225,17 @@ namespace ProjectARVRPro
                 fileName = fileName.Replace(c, '_');
             }
             return fileName;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            Records.CollectionChanged -= Records_CollectionChanged;
+            var wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
+            base.OnClosed(e);
         }
     }
 }

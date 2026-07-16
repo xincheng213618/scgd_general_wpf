@@ -43,6 +43,8 @@ namespace ColorVision.Engine.Services
     /// </summary>
     public partial class WindowService : Window
     {
+        private string? _copilotContextSourceId;
+
         public WindowService()
         {
             InitializeComponent();
@@ -61,10 +63,46 @@ namespace ColorVision.Engine.Services
         {
             StackPanelShow.Children.Clear();
             if (TreeView1.SelectedItem is DeviceService baseObject)
+            {
                 StackPanelShow.Children.Add(baseObject.GetDeviceInfo());
+                PublishCopilotDeviceContext(baseObject);
+            }
+            else
+            {
+                ClearCopilotDeviceContext();
+            }
 
             if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            ClearCopilotDeviceContext();
+            ServiceManager.GetInstance().PublishCurrentCopilotDisplayContext();
+            base.OnClosed(e);
+        }
+
+        private void PublishCopilotDeviceContext(DeviceService device)
+        {
+            try
+            {
+                var bundle = device.CaptureCopilotContext();
+                CopilotBusinessContextCoordinator.Publish(bundle);
+                _copilotContextSourceId = bundle.SourceId;
+            }
+            catch
+            {
+                ClearCopilotDeviceContext();
+            }
+        }
+
+        private void ClearCopilotDeviceContext()
+        {
+            var sourceId = _copilotContextSourceId;
+            _copilotContextSourceId = null;
+            if (!string.IsNullOrWhiteSpace(sourceId))
+                CopilotLiveContextRegistry.Clear(sourceId);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

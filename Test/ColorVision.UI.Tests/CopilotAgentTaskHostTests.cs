@@ -18,11 +18,16 @@ public sealed class CopilotAgentTaskHostTests
 
         Assert.Same(run, host.ActiveRun);
         Assert.StartsWith("run:", run.Id);
+        Assert.False(run.CanRequestPause);
+        Assert.True(run.CanRequestCancel);
         Assert.False(host.MarkCheckpointReady("run:stale"));
         Assert.False(host.RequestCancel("run:stale"));
         Assert.False(host.RequestPause(run.Id));
         Assert.True(host.MarkCheckpointReady(run.Id));
+        Assert.True(run.CanRequestPause);
         Assert.True(host.RequestPause(run.Id));
+        Assert.False(run.CanRequestPause);
+        Assert.True(run.CanRequestCancel);
         Assert.True(run.CancellationToken.IsCancellationRequested);
         Assert.Equal(CopilotAgentControlIntent.Pause, run.RunControl?.Intent);
 
@@ -31,6 +36,8 @@ public sealed class CopilotAgentTaskHostTests
 
         Assert.False(host.IsActive);
         Assert.Equal(CopilotHostedRunState.Completed, run.State);
+        Assert.False(run.CanRequestPause);
+        Assert.False(run.CanRequestCancel);
         Assert.Equal(
             new[]
             {
@@ -55,11 +62,32 @@ public sealed class CopilotAgentTaskHostTests
         Assert.True(host.RequestCancel(run.Id));
         Assert.Equal(CopilotAgentControlIntent.Cancel, run.RunControl?.Intent);
         Assert.Equal(CopilotHostedRunState.CancelRequested, run.State);
+        Assert.False(run.CanRequestPause);
+        Assert.False(run.CanRequestCancel);
 
         release.TrySetResult(null);
         await run.Completion;
 
         Assert.False(host.IsActive);
+    }
+
+    [Fact]
+    public async Task Host_ContainsThrowingCancellationCallbackAndStillPublishesControlChange()
+    {
+        var host = new CopilotAgentTaskHost();
+        var release = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var changes = new List<CopilotAgentTaskHostChangeKind>();
+        host.Changed += (_, args) => changes.Add(args.Kind);
+        var run = host.Start("conversation-1", CopilotAgentMode.Auto, _ => release.Task);
+        using var registration = run.CancellationToken.Register(() => throw new InvalidOperationException("callback failure"));
+
+        Assert.True(host.RequestCancel(run.Id));
+
+        Assert.True(run.CancellationToken.IsCancellationRequested);
+        Assert.Equal(CopilotHostedRunState.CancelRequested, run.State);
+        Assert.Contains(CopilotAgentTaskHostChangeKind.ControlRequested, changes);
+        release.TrySetResult(null);
+        await run.Completion;
     }
 
     [Fact]
@@ -120,6 +148,23 @@ public sealed class CopilotAgentTaskHostTests
         Assert.True(third.HasStarted);
         Assert.False(host.IsActive);
         Assert.Equal(0, host.QueuedCount);
+    }
+
+    [Fact]
+    public async Task Host_RejectsDuplicateConversationAcrossActiveAndQueuedRuns()
+    {
+        var host = new CopilotAgentTaskHost(maxQueuedRuns: 2);
+        var releaseActive = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var active = host.Start("conversation-1", CopilotAgentMode.Auto, _ => releaseActive.Task);
+
+        Assert.False(host.TrySchedule("conversation-1", CopilotAgentMode.Auto, _ => Task.CompletedTask, out var duplicateActive));
+        Assert.Null(duplicateActive);
+        Assert.True(host.TrySchedule("conversation-2", CopilotAgentMode.Auto, _ => Task.CompletedTask, out var queued));
+        Assert.False(host.TrySchedule("conversation-2", CopilotAgentMode.Diagnose, _ => Task.CompletedTask, out var duplicateQueued));
+        Assert.Null(duplicateQueued);
+
+        releaseActive.TrySetResult(null);
+        await Task.WhenAll(active.Completion, queued!.Completion).WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     [Fact]

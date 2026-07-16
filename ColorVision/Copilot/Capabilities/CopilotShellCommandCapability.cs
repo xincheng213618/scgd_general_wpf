@@ -337,8 +337,6 @@ namespace ColorVision.Copilot
     public sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
     {
         private const int MaxStreamCharacters = 65_536;
-        private static readonly TimeSpan ProcessTreeExitTimeout = TimeSpan.FromSeconds(5);
-
         public async Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(command);
@@ -378,11 +376,15 @@ namespace ColorVision.Copilot
             using var processJob = CopilotWindowsProcessJob.TryAssign(process);
             process.StandardInput.Close();
 
-            var stdoutTask = ReadBoundedAsync(process.StandardOutput, MaxStreamCharacters);
-            var stderrTask = ReadBoundedAsync(process.StandardError, MaxStreamCharacters);
+            using var outputReadSource = new CancellationTokenSource();
+            var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
+                process.StandardOutput, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
+            var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
+                process.StandardError, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;
+            var cancelledByCaller = false;
             try
             {
                 await process.WaitForExitAsync(timeoutSource.Token);
@@ -390,21 +392,20 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 timedOut = true;
-                await TerminateProcessTreeAsync(process, processJob);
             }
             catch (OperationCanceledException)
             {
-                await TerminateProcessTreeAsync(process, processJob);
-                throw;
+                cancelledByCaller = true;
             }
 
             // A successful root-shell exit must not leave approved background descendants alive.
             // Terminating the job before draining output also closes inherited pipe handles.
-            await TerminateProcessTreeAsync(process, processJob);
-
-            var standardOutput = await stdoutTask;
-            var standardError = await stderrTask;
+            await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
+            var (standardOutput, standardError) = await CopilotProcessExecutionSupport.DrainOutputAsync(
+                stdoutTask, stderrTask, outputReadSource, process.StandardOutput, process.StandardError);
             stopwatch.Stop();
+            if (cancelledByCaller)
+                throw new OperationCanceledException(cancellationToken);
             return new CopilotShellProcessResult(
                 timedOut ? -1 : process.ExitCode,
                 timedOut,
@@ -414,16 +415,6 @@ namespace ColorVision.Copilot
             {
                 ProcessTreeContained = processJob != null,
             };
-        }
-
-        private static async Task TerminateProcessTreeAsync(Process process, CopilotWindowsProcessJob? processJob)
-        {
-            processJob?.TryTerminate();
-            TryKillProcessTree(process);
-            if (!process.HasExited)
-                await process.WaitForExitAsync(CancellationToken.None);
-            if (processJob != null)
-                await processJob.TryWaitForExitAsync(ProcessTreeExitTimeout);
         }
 
         private static Encoding GetStreamEncoding(CopilotShellKind shell)
@@ -445,47 +436,5 @@ namespace ColorVision.Copilot
         [DllImport("kernel32.dll")]
         private static extern uint GetOEMCP();
 
-        private static async Task<string> ReadBoundedAsync(StreamReader reader, int maxCharacters)
-        {
-            const int headCharacters = 16_384;
-            var head = new StringBuilder(headCharacters);
-            var tail = new StringBuilder(maxCharacters - headCharacters);
-            var buffer = new char[4_096];
-            while (true)
-            {
-                var count = await reader.ReadAsync(buffer);
-                if (count == 0)
-                    break;
-                var offset = 0;
-                if (head.Length < headCharacters)
-                {
-                    var headCount = Math.Min(count, headCharacters - head.Length);
-                    head.Append(buffer, 0, headCount);
-                    offset = headCount;
-                }
-                if (offset < count)
-                {
-                    tail.Append(buffer, offset, count - offset);
-                    var maximumTail = maxCharacters - headCharacters;
-                    if (tail.Length > maximumTail)
-                        tail.Remove(0, tail.Length - maximumTail);
-                }
-            }
-            if (tail.Length == 0)
-                return head.ToString();
-            return head.Append("\n...<shell output truncated>...\n").Append(tail).ToString();
-        }
-
-        private static void TryKillProcessTree(Process process)
-        {
-            try
-            {
-                if (!process.HasExited)
-                    process.Kill(entireProcessTree: true);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-            {
-            }
-        }
     }
 }

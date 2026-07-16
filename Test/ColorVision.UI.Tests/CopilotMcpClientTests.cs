@@ -1,11 +1,51 @@
 #pragma warning disable CA1707
 using ColorVision.Copilot;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
 public sealed class CopilotMcpClientTests
 {
+    [Fact]
+    public async Task DiscoveryPropagatesCallerCancellationFromHangingServer()
+    {
+        var providerType = typeof(CopilotAgentRequest).Assembly.GetType(
+            "ColorVision.Copilot.CopilotMcpToolProvider",
+            throwOnError: true)!;
+        var provider = Assert.IsAssignableFrom<ICopilotExternalToolProvider>(Activator.CreateInstance(providerType, nonPublic: true));
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            var endpoint = (IPEndPoint)listener.LocalEndpoint;
+            using var cancellation = new CancellationTokenSource();
+            var discovery = provider.DiscoverAsync(new CopilotAgentRequest
+            {
+                ExternalMcpServers =
+                [
+                    new CopilotMcpClientServerConfig
+                    {
+                        Name = "hanging-test",
+                        Endpoint = $"http://127.0.0.1:{endpoint.Port}/mcp",
+                        ConnectionTimeoutSeconds = 30,
+                    },
+                ],
+            }, cancellation.Token);
+            using var acceptTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var client = await listener.AcceptTcpClientAsync(acceptTimeout.Token);
+
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => discovery.WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
     [Fact]
     public void ConfigurationText_ParsesSafeHttpEndpointsAndAccessPolicies()
     {
@@ -132,5 +172,34 @@ public sealed class CopilotMcpClientTests
         Assert.Equal(CopilotToolConcurrencyMode.Exclusive, protectedWrite.EffectiveConcurrencyMode);
         Assert.Equal(CopilotToolAuditArgumentMode.NamesOnly, protectedWrite.AuditArgumentMode);
         Assert.Equal(TimeSpan.FromSeconds(18), protectedWrite.EffectiveExecutionTimeout);
+    }
+
+    [Fact]
+    public void ApprovalPresentation_ShowsMcpIdentityAndRedactedArgumentValues()
+    {
+        var input = new CopilotAgentToolInput
+        {
+            Arguments = new Dictionary<string, object?>
+            {
+                ["target"] = "flow-42",
+                ["options"] = new Dictionary<string, object?>
+                {
+                    ["retry"] = 2,
+                    ["api_token"] = "secret-value",
+                    ["pwd"] = "multi word password",
+                },
+            },
+        };
+
+        var presentation = CopilotMcpClientApprovalPresentation.Create("production", "apply_flow", input);
+
+        Assert.Contains("production/apply_flow", presentation.Title, StringComparison.Ordinal);
+        Assert.Contains("External MCP server 'production'", presentation.Description, StringComparison.Ordinal);
+        Assert.Contains("\"target\":\"flow-42\"", presentation.Description, StringComparison.Ordinal);
+        Assert.Contains("\"retry\":2", presentation.Description, StringComparison.Ordinal);
+        Assert.Contains("\"api_token\":\"<redacted>\"", presentation.Description, StringComparison.Ordinal);
+        Assert.Contains("\"pwd\":\"<redacted>\"", presentation.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-value", presentation.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain("multi word password", presentation.Description, StringComparison.Ordinal);
     }
 }

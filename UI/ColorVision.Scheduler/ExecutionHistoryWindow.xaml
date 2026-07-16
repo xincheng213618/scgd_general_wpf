@@ -44,7 +44,7 @@
         </Border>
 
         <!-- 历史记录列表 -->
-        <ListView x:Name="ListViewHistory" Grid.Row="2" Background="Transparent" Margin="0,0,0,5">
+        <ListView x:Name="ListViewHistory" Grid.Row="2" Background="Transparent" Margin="0,0,0,5" SelectionChanged="ListViewHistory_SelectionChanged">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

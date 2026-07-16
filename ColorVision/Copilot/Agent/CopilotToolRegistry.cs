@@ -8,13 +8,22 @@ namespace ColorVision.Copilot
     {
         private readonly IReadOnlyList<ICopilotTool> _tools;
         private readonly CopilotSubagentRoleRegistry? _subagentRoleRegistry;
+        private readonly CopilotAgentExtensionBridge? _extensionBridge;
 
         public CopilotToolRegistry(IEnumerable<ICopilotTool> tools)
-            : this(tools, null)
+            : this(tools, null, null)
         {
         }
 
-        private CopilotToolRegistry(IEnumerable<ICopilotTool> tools, CopilotSubagentRoleRegistry? subagentRoleRegistry)
+        public CopilotToolRegistry(IEnumerable<ICopilotTool> tools, CopilotAgentExtensionBridge extensionBridge)
+            : this(tools, null, extensionBridge ?? throw new ArgumentNullException(nameof(extensionBridge)))
+        {
+        }
+
+        private CopilotToolRegistry(
+            IEnumerable<ICopilotTool> tools,
+            CopilotSubagentRoleRegistry? subagentRoleRegistry,
+            CopilotAgentExtensionBridge? extensionBridge)
         {
             var registeredTools = tools?.ToArray() ?? Array.Empty<ICopilotTool>();
             if (registeredTools.Any(tool => tool == null))
@@ -29,6 +38,12 @@ namespace ColorVision.Copilot
                 var capability = tool.Capability
                     ?? throw new ArgumentException($"Copilot tool '{tool.Name}' has no capability descriptor.", nameof(tools));
                 capability.Validate(tool.Name.Trim());
+                if (capability.RequiresNativeApproval && tool is not ICopilotFrameworkApprovedTool)
+                {
+                    throw new ArgumentException(
+                        $"Copilot tool '{tool.Name}' requires native approval but does not provide an approved execution path.",
+                        nameof(tools));
+                }
             }
 
             var duplicateName = registeredTools
@@ -39,6 +54,7 @@ namespace ColorVision.Copilot
 
             _tools = registeredTools;
             _subagentRoleRegistry = subagentRoleRegistry;
+            _extensionBridge = extensionBridge;
         }
 
         public IReadOnlyList<ICopilotTool> Tools => GetCurrentTools();
@@ -72,7 +88,10 @@ namespace ColorVision.Copilot
 
         public static CopilotToolRegistry CreateDefault(CopilotSubagentRoleRegistry? subagentRoleRegistry = null)
         {
-            return new CopilotToolRegistry(CreateCoreDefaultTools(), subagentRoleRegistry ?? CopilotSubagentRoleRegistry.Shared);
+            return new CopilotToolRegistry(
+                CreateCoreDefaultTools(),
+                subagentRoleRegistry ?? CopilotSubagentRoleRegistry.Shared,
+                CopilotAgentExtensionBridge.Shared);
         }
 
         internal static ICopilotTool[] CreateDefaultTools()
@@ -89,7 +108,7 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static ICopilotTool[] CreateCoreDefaultTools()
+        internal static ICopilotTool[] CreateCoreDefaultTools()
         {
             var workspacePatchStore = new CopilotWorkspacePatchStore();
             return new ICopilotTool[]
@@ -130,11 +149,21 @@ namespace ColorVision.Copilot
             };
         }
 
-        private IReadOnlyList<ICopilotTool> GetCurrentTools()
+        private ICopilotTool[] GetCurrentTools()
         {
-            if (_subagentRoleRegistry == null)
-                return _tools;
-            return _tools.Concat(CreateDelegateTools(_subagentRoleRegistry.GetSnapshot().Roles)).ToArray();
+            IEnumerable<ICopilotTool> currentTools = _tools;
+            if (_extensionBridge != null)
+                currentTools = currentTools.Concat(_extensionBridge.GetSnapshot().Tools);
+            if (_subagentRoleRegistry != null)
+                currentTools = currentTools.Concat(CreateDelegateTools(_subagentRoleRegistry.GetSnapshot().Roles));
+
+            var tools = currentTools.ToArray();
+            var duplicateName = tools
+                .GroupBy(tool => tool.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => group.Count() > 1)?.Key;
+            if (!string.IsNullOrWhiteSpace(duplicateName))
+                throw new InvalidOperationException($"The active Copilot tool surface contains duplicate tool name '{duplicateName}'.");
+            return tools;
         }
 
         private static IEnumerable<ICopilotTool> CreateDelegateTools(IEnumerable<CopilotSubagentRoleDescriptor> roles)

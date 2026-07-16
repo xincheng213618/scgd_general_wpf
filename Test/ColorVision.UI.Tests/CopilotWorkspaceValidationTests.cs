@@ -1,7 +1,10 @@
 using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -120,6 +123,70 @@ public sealed class CopilotWorkspaceValidationTests : IDisposable
     }
 
     [Fact]
+    public async Task RealRunnerTerminatesBackgroundChildWhenValidationRootCompletes()
+    {
+        var result = await RunPowerShellAsync(BuildBackgroundChildCommand(), TimeSpan.FromSeconds(10), CancellationToken.None);
+        var processId = ReadChildProcessId(result.StandardOutput);
+
+        try
+        {
+            Assert.False(result.TimedOut);
+            Assert.Equal(0, result.ExitCode);
+            Assert.True(await WaitForProcessExitAsync(processId), $"Background validation child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
+    public async Task RealRunnerTimeoutTerminatesEntireValidationProcessJob()
+    {
+        var result = await RunPowerShellAsync(
+            BuildBackgroundChildCommand("Start-Sleep -Seconds 30"),
+            TimeSpan.FromSeconds(2),
+            CancellationToken.None);
+        var processId = ReadChildProcessId(result.StandardOutput);
+
+        try
+        {
+            Assert.True(result.TimedOut);
+            Assert.Equal(-1, result.ExitCode);
+            Assert.True(await WaitForProcessExitAsync(processId), $"Timed-out validation child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
+    public async Task RealRunnerCancellationTerminatesEntireValidationProcessJob()
+    {
+        var processIdFile = Path.Combine(_root, "cancelled-validation-child.pid");
+        var escapedProcessIdFile = processIdFile.Replace("'", "''", StringComparison.Ordinal);
+        var command = BuildBackgroundChildCommand(
+            $"Set-Content -LiteralPath '{escapedProcessIdFile}' -Value $child.Id -Encoding ASCII; Start-Sleep -Seconds 30");
+        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RunPowerShellAsync(
+            command,
+            TimeSpan.FromSeconds(10),
+            cancellationSource.Token));
+
+        var processId = await ReadProcessIdFileAsync(processIdFile);
+        try
+        {
+            Assert.True(await WaitForProcessExitAsync(processId), $"Cancelled validation child process {processId} was left running.");
+        }
+        finally
+        {
+            TryKillProcess(processId);
+        }
+    }
+
+    [Fact]
     public void RegistryExposesValidationForExplicitValidationAndWorkspaceWritesOnly()
     {
         var registry = CopilotToolRegistry.CreateDefault();
@@ -132,6 +199,19 @@ public sealed class CopilotWorkspaceValidationTests : IDisposable
 
     public void Dispose()
     {
+        for (var attempt = 0; attempt < 100 && Directory.Exists(_root); attempt++)
+        {
+            try
+            {
+                Directory.Delete(_root, recursive: true);
+                return;
+            }
+            catch (Exception ex) when (attempt < 99 && ex is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(50);
+            }
+        }
+
         if (Directory.Exists(_root))
             Directory.Delete(_root, recursive: true);
     }
@@ -175,6 +255,89 @@ public sealed class CopilotWorkspaceValidationTests : IDisposable
         var path = Path.Combine(_root, relativePath);
         File.WriteAllText(path, content);
         return path;
+    }
+
+    private Task<CopilotWorkspaceValidationProcessResult> RunPowerShellAsync(
+        string command,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var executable = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            "System32",
+            "WindowsPowerShell",
+            "v1.0",
+            "powershell.exe");
+        return new CopilotWorkspaceValidationProcessRunner().RunAsync(
+            new CopilotWorkspaceValidationCommand(
+                executable,
+                ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+                _root,
+                timeout),
+            cancellationToken);
+    }
+
+    private static string BuildBackgroundChildCommand(string? continuation = null)
+    {
+        return "Start-Sleep -Milliseconds 200; "
+            + "$child = Start-Process -FilePath $env:ComSpec -ArgumentList '/d /s /c ping 127.0.0.1 -n 31 > nul' -WindowStyle Hidden -PassThru; "
+            + "Write-Output ('CV_CHILD_PID=' + $child.Id); "
+            + (continuation ?? string.Empty);
+    }
+
+    private static int ReadChildProcessId(string output)
+    {
+        const string prefix = "CV_CHILD_PID=";
+        var line = output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .First(item => item.StartsWith(prefix, StringComparison.Ordinal));
+        return int.Parse(line[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture);
+    }
+
+    private static async Task<int> ReadProcessIdFileAsync(string path)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            if (File.Exists(path))
+            {
+                var text = await File.ReadAllTextAsync(path);
+                if (int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var processId))
+                    return processId;
+            }
+            await Task.Delay(50);
+        }
+        throw new InvalidOperationException("The cancelled validation process did not publish its child process ID.");
+    }
+
+    private static async Task<bool> WaitForProcessExitAsync(int processId)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                if (process.HasExited)
+                    return true;
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+            await Task.Delay(50);
+        }
+        return false;
+    }
+
+    private static void TryKillProcess(int processId)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+        }
     }
 
     private sealed class RecordingRunner(CopilotWorkspaceValidationProcessResult result) : ICopilotWorkspaceValidationRunner

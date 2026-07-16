@@ -1,5 +1,7 @@
 using ColorVision.Themes;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
 using System.Runtime.InteropServices;
@@ -27,7 +29,8 @@ namespace ColorVision.Copilot
         private const uint KeyEventKeyUp = 0x0002;
 
         private CopilotChatViewModel? _attachedViewModel;
-        private INotifyCollectionChanged? _attachedMessages;
+        private ObservableCollection<CopilotChatMessage>? _attachedMessages;
+        private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
         private bool _isThemeSubscriptionActive;
@@ -52,6 +55,7 @@ namespace ColorVision.Copilot
             }
 
             SchedulePromptCaretBrushRefresh(ThemeManager.Current.CurrentUITheme);
+            AttachViewModel(DataContext as CopilotChatViewModel);
             UpdateResponsiveLayout();
         }
 
@@ -109,6 +113,14 @@ namespace ColorVision.Copilot
         {
             if (viewModel == null)
                 return;
+            if (ReferenceEquals(_attachedViewModel, viewModel))
+            {
+                if (!ReferenceEquals(_attachedMessages, viewModel.Messages))
+                    ResetMessageSubscriptions(viewModel.Messages);
+                return;
+            }
+
+            DetachViewModel(_attachedViewModel);
 
             _attachedViewModel = viewModel;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -118,12 +130,13 @@ namespace ColorVision.Copilot
 
         private void DetachViewModel(CopilotChatViewModel? viewModel)
         {
-            if (viewModel == null)
+            if (_attachedViewModel == null
+                || viewModel != null && !ReferenceEquals(_attachedViewModel, viewModel))
                 return;
 
-            viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            _attachedViewModel = null;
+            _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
+            _attachedViewModel = null;
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -146,54 +159,46 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ResetMessageSubscriptions(INotifyCollectionChanged? messages)
+        private void ResetMessageSubscriptions(ObservableCollection<CopilotChatMessage>? messages)
         {
             if (_attachedMessages != null)
                 _attachedMessages.CollectionChanged -= Messages_CollectionChanged;
 
-            if (_attachedViewModel != null)
-            {
-                foreach (var message in _attachedViewModel.Messages)
-                {
-                    message.PropertyChanged -= Message_PropertyChanged;
-                }
-            }
+            foreach (var message in _attachedMessageItems)
+                message.PropertyChanged -= Message_PropertyChanged;
+            _attachedMessageItems.Clear();
 
             _attachedMessages = messages;
             if (_attachedMessages != null)
                 _attachedMessages.CollectionChanged += Messages_CollectionChanged;
 
-            if (_attachedViewModel == null)
-                return;
-
-            foreach (var message in _attachedViewModel.Messages)
-            {
-                message.PropertyChanged += Message_PropertyChanged;
-            }
+            SynchronizeMessageSubscriptions();
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.NewItems != null)
-            {
-                foreach (var item in e.NewItems)
-                {
-                    if (item is CopilotChatMessage message)
-                        message.PropertyChanged += Message_PropertyChanged;
-                }
-            }
-
-            if (e.OldItems != null)
-            {
-                foreach (var item in e.OldItems)
-                {
-                    if (item is CopilotChatMessage message)
-                        message.PropertyChanged -= Message_PropertyChanged;
-                }
-            }
-
+            SynchronizeMessageSubscriptions();
             ScrollToBottom();
             UpdateEmptyStateVisibility();
+        }
+
+        private void SynchronizeMessageSubscriptions()
+        {
+            var currentMessages = _attachedMessages == null
+                ? new HashSet<CopilotChatMessage>()
+                : new HashSet<CopilotChatMessage>(_attachedMessages);
+            foreach (var message in _attachedMessageItems)
+            {
+                if (!currentMessages.Contains(message))
+                    message.PropertyChanged -= Message_PropertyChanged;
+            }
+
+            _attachedMessageItems.RemoveWhere(message => !currentMessages.Contains(message));
+            foreach (var message in currentMessages)
+            {
+                if (_attachedMessageItems.Add(message))
+                    message.PropertyChanged += Message_PropertyChanged;
+            }
         }
 
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -282,10 +287,23 @@ namespace ColorVision.Copilot
             ProfileSelectorPopup.IsOpen = false;
         }
 
-        private async void VoiceInputButton_Click(object sender, RoutedEventArgs e)
+        private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
             PromptTextBox.Focus();
             Keyboard.Focus(PromptTextBox);
+            CopilotUiTaskObserver.Run(
+                ActivateVoiceInputAsync,
+                "启动 Windows 语音输入",
+                message => MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "无法启动语音输入：" + message,
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning));
+        }
+
+        private static async Task ActivateVoiceInputAsync()
+        {
             await Task.Delay(80);
             SendWindowsVoiceTypingShortcut();
         }

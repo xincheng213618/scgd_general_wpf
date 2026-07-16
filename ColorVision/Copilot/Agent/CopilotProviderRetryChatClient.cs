@@ -19,7 +19,16 @@ namespace ColorVision.Copilot
         int MaximumAttempts,
         TimeSpan Delay,
         string FailureKind,
-        int? StatusCode);
+        int? StatusCode)
+    {
+        public string ToDiagnosticText()
+        {
+            var delay = Delay.TotalSeconds >= 1
+                ? $"{Delay.TotalSeconds:0.#}s"
+                : $"{Math.Max(0, Delay.TotalMilliseconds):0}ms";
+            return $"Provider request retry {NextAttempt}/{MaximumAttempts} · {FailureKind} before the first response update · waiting {delay}; no content or tool call was replayed.";
+        }
+    }
 
     internal sealed class CopilotProviderRetryChatClient : DelegatingChatClient
     {
@@ -176,7 +185,7 @@ namespace ColorVision.Copilot
                 statusCode);
         }
 
-        private static bool TryClassifyTransientFailure(
+        internal static bool TryClassifyTransientFailure(
             Exception exception,
             CancellationToken cancellationToken,
             out string failureKind,
@@ -236,10 +245,10 @@ namespace ColorVision.Copilot
                 yield return current;
         }
 
-        private static bool IsTransientStatusCode(int statusCode)
+        internal static bool IsTransientStatusCode(int statusCode)
             => statusCode is (int)HttpStatusCode.RequestTimeout or 429 || statusCode >= 500 && statusCode <= 599;
 
-        private static TimeSpan CreateDefaultDelay(int failedAttempt)
+        internal static TimeSpan CreateDefaultDelay(int failedAttempt)
             => TimeSpan.FromMilliseconds(Math.Min(2_000, 250 * Math.Pow(2, Math.Max(0, failedAttempt - 1))));
     }
 }

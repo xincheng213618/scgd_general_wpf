@@ -75,14 +75,30 @@ namespace ColorVision.Copilot
             get => _apiKey;
             set
             {
-                if (SetProperty(ref _apiKey, NormalizeText(value)))
+                var normalized = NormalizeText(value);
+                if (SetProperty(ref _apiKey, normalized))
                 {
+                    if (!string.IsNullOrWhiteSpace(normalized) && !CopilotCredentialProtector.IsProtected(normalized))
+                        CredentialNeedsReentry = false;
                     OnPropertyChanged(nameof(IsConfigured));
                     OnConfigurationStateChanged();
                 }
             }
         }
         private string _apiKey = string.Empty;
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public bool CredentialNeedsReentry
+        {
+            get => _credentialNeedsReentry;
+            internal set
+            {
+                if (SetProperty(ref _credentialNeedsReentry, value))
+                    OnConfigurationStateChanged();
+            }
+        }
+        private bool _credentialNeedsReentry;
 
         [DisplayName("Base URL")]
         [Description("For example, https://api.openai.com/v1 or https://api.deepseek.com/anthropic")]
@@ -318,7 +334,7 @@ namespace ColorVision.Copilot
         {
             var missing = new List<string>(3);
             if (string.IsNullOrWhiteSpace(ApiKey))
-                missing.Add("API key");
+                missing.Add(CredentialNeedsReentry ? "API key (re-entry required)" : "API key");
 
             if (string.IsNullOrWhiteSpace(BaseUrl))
                 missing.Add("endpoint");

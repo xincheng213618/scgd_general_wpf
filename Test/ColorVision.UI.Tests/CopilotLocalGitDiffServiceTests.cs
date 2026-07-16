@@ -101,6 +101,24 @@ public sealed class CopilotLocalGitDiffServiceTests
         Assert.Equal(0, diffCalls);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_ReportsMissingStructuredResultWhenToolContentIsNull()
+    {
+        var service = new CopilotLocalGitDiffService(
+            (_, _, _) => Task.FromResult(Success("InspectGitWorkingTree", """{"repository_root":"C:\\repo","entries":[]}""")),
+            (_, _, _) => Task.FromResult(new CopilotToolResult
+            {
+                ToolName = "InspectGitDiff",
+                Success = true,
+                Content = null!,
+            }));
+
+        var result = await service.ExecuteAsync(["C:\\repo"], "both", CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Contains("没有返回结构化结果", result.Report, StringComparison.Ordinal);
+    }
+
     private static CopilotToolResult Success(string toolName, string json)
     {
         return new CopilotToolResult

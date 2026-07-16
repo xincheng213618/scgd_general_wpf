@@ -1,13 +1,35 @@
+#pragma warning disable CA1001 // The semaphore lifetime matches the process-wide singleton and short-lived test stores.
 using ColorVision.UI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    public enum CopilotChatStateLoadSource
+    {
+        NotAttempted,
+        Fresh,
+        Primary,
+        Temporary,
+        Backup,
+        Unrecoverable,
+    }
+
+    public readonly record struct CopilotChatStateLoadStatus(CopilotChatStateLoadSource Source)
+    {
+        public bool IsRecovery => Source is CopilotChatStateLoadSource.Temporary or CopilotChatStateLoadSource.Backup;
+
+        public bool IsUnrecoverable => Source == CopilotChatStateLoadSource.Unrecoverable;
+    }
+
     public interface ICopilotChatStateStore
     {
         string AttachmentDirectoryPath { get; }
@@ -16,17 +38,23 @@ namespace ColorVision.Copilot
 
         void Save(CopilotChatState state);
 
+        string Serialize(CopilotChatState state);
+
+        Task SaveSerializedAsync(string serializedState, CancellationToken cancellationToken = default);
+
         int CleanupOrphanedAttachments(CopilotChatState state);
     }
 
     public sealed class CopilotChatStateStore : ICopilotChatStateStore
     {
+        private const long MaximumStateFileBytes = 64L * 1024 * 1024;
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
         private static readonly JsonSerializerSettings SerializerSettings = new()
         {
             Formatting = Formatting.Indented,
             NullValueHandling = NullValueHandling.Ignore,
         };
+        private readonly SemaphoreSlim _fileGate = new(1, 1);
 
         public static CopilotChatStateStore Instance => _instance.Value;
 
@@ -38,7 +66,15 @@ namespace ColorVision.Copilot
 
         public string BackupStateFilePath { get; }
 
+        public string TemporaryStateFilePath { get; }
+
+        public string AttachmentProtectionMarkerPath { get; }
+
         public string AttachmentDirectoryPath { get; }
+
+        public CopilotChatStateLoadStatus LastLoadStatus { get; private set; } = new(CopilotChatStateLoadSource.NotAttempted);
+
+        public bool IsManagedAttachmentCleanupProtected => File.Exists(AttachmentProtectionMarkerPath);
 
         private CopilotChatStateStore()
             : this(Path.Combine(Environments.DirLocalAppData, "Copilot"))
@@ -54,43 +90,173 @@ namespace ColorVision.Copilot
             StateDirectoryPath = Path.Combine(RootDirectoryPath, "State");
             StateFilePath = Path.Combine(StateDirectoryPath, "chat-state.json");
             BackupStateFilePath = StateFilePath + ".bak";
+            TemporaryStateFilePath = StateFilePath + ".tmp";
+            AttachmentProtectionMarkerPath = Path.Combine(StateDirectoryPath, "attachments-recovery.protected");
             AttachmentDirectoryPath = Path.Combine(StateDirectoryPath, "Attachments");
         }
 
         public CopilotChatState Load()
         {
-            EnsureDirectory();
+            _fileGate.Wait();
+            try
+            {
+                EnsureDirectory();
+                var hadStateCandidate = File.Exists(StateFilePath)
+                    || File.Exists(BackupStateFilePath)
+                    || File.Exists(TemporaryStateFilePath);
 
-            if (!File.Exists(StateFilePath))
+                if (TryRecoverTemporaryState(out var temporaryState))
+                {
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Temporary);
+                    return temporaryState;
+                }
+
+                if (TryLoad(StateFilePath, out var state))
+                {
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Primary);
+                    return state;
+                }
+
+                if (TryLoad(BackupStateFilePath, out state))
+                {
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
+                    return state;
+                }
+
+                if (hadStateCandidate || EnumerateManagedAttachmentFiles(AttachmentDirectoryPath).Length > 0)
+                {
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Unrecoverable);
+                    ProtectManagedAttachments();
+                }
+                else
+                {
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Fresh);
+                }
                 return new CopilotChatState();
-
-            if (TryLoad(StateFilePath, out var state))
-                return state;
-
-            return TryLoad(BackupStateFilePath, out state) ? state : new CopilotChatState();
+            }
+            finally
+            {
+                _fileGate.Release();
+            }
         }
 
         public void Save(CopilotChatState state)
         {
-            ArgumentNullException.ThrowIfNull(state);
-
-            EnsureDirectory();
-            state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
-            var json = JsonConvert.SerializeObject(state, SerializerSettings);
-            var tempFilePath = StateFilePath + ".tmp";
-
+            var serializedState = Serialize(state);
+            _fileGate.Wait();
             try
             {
-                File.WriteAllText(tempFilePath, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-                if (File.Exists(StateFilePath))
-                    File.Copy(StateFilePath, BackupStateFilePath, overwrite: true);
-
-                File.Move(tempFilePath, StateFilePath, overwrite: true);
+                WriteSerializedState(serializedState);
             }
             finally
             {
-                if (File.Exists(tempFilePath))
-                    File.Delete(tempFilePath);
+                _fileGate.Release();
+            }
+        }
+
+        public string Serialize(CopilotChatState state)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
+            return JsonConvert.SerializeObject(state, SerializerSettings);
+        }
+
+        public async Task SaveSerializedAsync(string serializedState, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(serializedState);
+
+            await _fileGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                EnsureDirectory();
+
+                try
+                {
+                    await File.WriteAllTextAsync(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ValidateStateFile(TemporaryStateFilePath);
+                    ReplaceStateFile(TemporaryStateFilePath);
+                }
+                finally
+                {
+                    TryDeleteFile(TemporaryStateFilePath);
+                }
+            }
+            finally
+            {
+                _fileGate.Release();
+            }
+        }
+
+        private void WriteSerializedState(string serializedState)
+        {
+            EnsureDirectory();
+
+            try
+            {
+                File.WriteAllText(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                ValidateStateFile(TemporaryStateFilePath);
+                ReplaceStateFile(TemporaryStateFilePath);
+            }
+            finally
+            {
+                TryDeleteFile(TemporaryStateFilePath);
+            }
+        }
+
+        private bool TryRecoverTemporaryState(out CopilotChatState state)
+        {
+            if (!TryLoad(TemporaryStateFilePath, out state))
+            {
+                TryDeleteFile(TemporaryStateFilePath);
+                return false;
+            }
+
+            var currentIsValid = TryLoad(StateFilePath, out _);
+            if (currentIsValid
+                && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
+            {
+                TryDeleteFile(TemporaryStateFilePath);
+                return false;
+            }
+
+            try
+            {
+                ReplaceStateFile(TemporaryStateFilePath);
+            }
+            catch
+            {
+                // The validated snapshot is still safe to use for this process even if disk promotion fails.
+            }
+            return true;
+        }
+
+        private void ReplaceStateFile(string tempFilePath)
+        {
+            if (TryLoad(StateFilePath, out _))
+            {
+                File.Replace(tempFilePath, StateFilePath, BackupStateFilePath, ignoreMetadataErrors: true);
+                return;
+            }
+
+            File.Move(tempFilePath, StateFilePath, overwrite: true);
+        }
+
+        private static void ValidateStateFile(string filePath)
+        {
+            if (!TryLoad(filePath, out _))
+                throw new InvalidDataException("Copilot state serialization did not produce a valid state document.");
+        }
+
+        private static void TryDeleteFile(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            catch
+            {
             }
         }
 
@@ -111,7 +277,7 @@ namespace ColorVision.Copilot
                 try
                 {
                     var fullPath = Path.GetFullPath(attachment.Value);
-                    if (IsUnderRoot(fullPath, attachmentRoot))
+                    if (IsPathUnderRoot(fullPath, attachmentRoot))
                         referencedPaths.Add(fullPath);
                 }
                 catch
@@ -119,8 +285,20 @@ namespace ColorVision.Copilot
                 }
             }
 
+            var managedFiles = EnumerateManagedAttachmentFiles(attachmentRoot);
+            if (IsManagedAttachmentCleanupProtected || LastLoadStatus.IsUnrecoverable)
+            {
+                if (managedFiles.Any(filePath => !referencedPaths.Contains(Path.GetFullPath(filePath))))
+                {
+                    Trace.TraceWarning("Copilot orphan attachment cleanup skipped because recovery protection is active.");
+                    return 0;
+                }
+
+                TryDeleteFile(AttachmentProtectionMarkerPath);
+            }
+
             var deletedCount = 0;
-            foreach (var filePath in Directory.EnumerateFiles(attachmentRoot, "*", SearchOption.AllDirectories))
+            foreach (var filePath in managedFiles)
             {
                 if (referencedPaths.Contains(Path.GetFullPath(filePath)))
                     continue;
@@ -136,6 +314,61 @@ namespace ColorVision.Copilot
             }
 
             return deletedCount;
+        }
+
+        private void ProtectManagedAttachments()
+        {
+            try
+            {
+                File.WriteAllText(
+                    AttachmentProtectionMarkerPath,
+                    $"Copilot state recovery protection created at {DateTimeOffset.UtcNow:O}.{Environment.NewLine}"
+                    + "Unreferenced managed attachments must not be deleted until their state can be recovered or they are explicitly reattached.",
+                    new UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not create attachment recovery protection: {ex.Message}");
+            }
+        }
+
+        private static string[] EnumerateManagedAttachmentFiles(string attachmentRoot)
+        {
+            try
+            {
+                return Directory.GetFiles(attachmentRoot, "*", new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.ReparsePoint,
+                });
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not enumerate managed attachments: {ex.Message}");
+                return [];
+            }
+        }
+
+        public static bool TryDeleteManagedAttachmentFile(string attachmentDirectoryPath, string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(attachmentDirectoryPath) || string.IsNullOrWhiteSpace(filePath))
+                return false;
+
+            try
+            {
+                var attachmentRoot = Path.GetFullPath(attachmentDirectoryPath);
+                var candidatePath = Path.GetFullPath(filePath);
+                if (!IsPathUnderRoot(candidatePath, attachmentRoot) || !File.Exists(candidatePath))
+                    return false;
+
+                File.Delete(candidatePath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void EnsureDirectory()
@@ -155,8 +388,18 @@ namespace ColorVision.Copilot
 
             try
             {
+                if (new FileInfo(filePath).Length > MaximumStateFileBytes)
+                    return false;
+
                 var json = File.ReadAllText(filePath);
-                state = JsonConvert.DeserializeObject<CopilotChatState>(json, SerializerSettings) ?? new CopilotChatState();
+                if (!HasTrustedDocumentShape(json))
+                    return false;
+
+                var deserializedState = JsonConvert.DeserializeObject<CopilotChatState>(json, SerializerSettings);
+                if (deserializedState == null)
+                    return false;
+
+                state = deserializedState;
                 state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
                 return true;
             }
@@ -166,7 +409,47 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool IsUnderRoot(string path, string root)
+        private static bool HasTrustedDocumentShape(string json)
+        {
+            if (JToken.Parse(json) is not JObject document)
+                return false;
+
+            var schemaToken = document.GetValue(nameof(CopilotChatState.SchemaVersion), StringComparison.OrdinalIgnoreCase);
+            if (schemaToken != null)
+            {
+                if (schemaToken.Type != JTokenType.Integer)
+                    return false;
+
+                var schemaVersion = schemaToken.Value<int>();
+                if (schemaVersion < 1 || schemaVersion > CopilotChatState.CurrentSchemaVersion)
+                    return false;
+            }
+
+            if (!IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveConversationId), StringComparison.OrdinalIgnoreCase))
+                || !IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveProfileId), StringComparison.OrdinalIgnoreCase))
+                || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)
+            {
+                return false;
+            }
+
+            foreach (var conversationToken in conversations)
+            {
+                if (conversationToken is not JObject conversation
+                    || conversation.GetValue(nameof(CopilotConversationRecord.Messages), StringComparison.OrdinalIgnoreCase) is not JArray messages
+                    || conversation.GetValue(nameof(CopilotConversationRecord.Attachments), StringComparison.OrdinalIgnoreCase) is not JArray attachments
+                    || messages.Any(item => item is not JObject)
+                    || attachments.Any(item => item is not JObject))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsStringOrNull(JToken? token) => token?.Type is JTokenType.String or JTokenType.Null;
+
+        private static bool IsPathUnderRoot(string path, string root)
         {
             var relativePath = Path.GetRelativePath(root, path);
             return !relativePath.Equals("..", StringComparison.Ordinal)

@@ -76,6 +76,10 @@ namespace ColorVision.Copilot
         public int RegisteredCapabilities { get; init; }
 
         public int EnabledExternalMcpServers { get; init; }
+
+        public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> AgentExtensions { get; init; } = Array.Empty<CopilotAgentExtensionSourceSnapshot>();
+
+        public IReadOnlyList<CopilotAgentExtensionIssue> AgentExtensionIssues { get; init; } = Array.Empty<CopilotAgentExtensionIssue>();
     }
 
     public static class CopilotContextDiagnostics
@@ -181,6 +185,7 @@ namespace ColorVision.Copilot
             builder.Append("外部 MCP：")
                 .Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .AppendLine(" 个启用服务；仅在 Agent 请求中发现工具");
+            AppendAgentExtensionDetails(builder, snapshot.AgentExtensions, snapshot.AgentExtensionIssues);
             AppendOptimizationSuggestions(builder, snapshot);
             return builder.ToString().TrimEnd();
         }
@@ -202,6 +207,77 @@ namespace ColorVision.Copilot
                     builder.Append(" · 已截断");
                 builder.AppendLine();
             }
+        }
+
+        private static void AppendAgentExtensionDetails(
+            StringBuilder builder,
+            IReadOnlyList<CopilotAgentExtensionSourceSnapshot> extensions,
+            IReadOnlyList<CopilotAgentExtensionIssue> issues)
+        {
+            extensions ??= Array.Empty<CopilotAgentExtensionSourceSnapshot>();
+            issues ??= Array.Empty<CopilotAgentExtensionIssue>();
+            builder.Append("业务模块扩展：")
+                .Append(FormatCount(extensions.Count))
+                .Append(" 个来源 / 上下文提供者 ")
+                .Append(FormatCount(extensions.Sum(extension => extension.ContextProviderCount)))
+                .Append(" / 工具 ")
+                .Append(FormatCount(extensions.Sum(extension => extension.ActiveToolCount)))
+                .Append('/')
+                .Append(FormatCount(extensions.Sum(extension => extension.DeclaredToolCount)))
+                .AppendLine(" 个已激活/声明");
+
+            foreach (var extension in extensions.Take(12))
+            {
+                builder.Append("  - ")
+                    .Append(FormatInlineDiagnosticText(extension.SourceName, "Unnamed extension", 120));
+                if (!string.IsNullOrWhiteSpace(extension.SourceVersion))
+                    builder.Append(" · v").Append(FormatInlineDiagnosticText(extension.SourceVersion, string.Empty, 64));
+                builder.Append(" · context ")
+                    .Append(FormatCount(extension.ContextProviderCount))
+                    .Append(" · tools ")
+                    .Append(FormatCount(extension.ActiveToolCount))
+                    .Append('/')
+                    .Append(FormatCount(extension.DeclaredToolCount))
+                    .AppendLine();
+            }
+            if (extensions.Count > 12)
+                builder.Append("  - ...另有 ").Append(FormatCount(extensions.Count - 12)).AppendLine(" 个来源未展开");
+
+            foreach (var issue in issues.Take(8))
+            {
+                var source = FormatInlineDiagnosticText(issue.SourceId, "unknown", 120);
+                var message = FormatInlineDiagnosticText(issue.Message, "No details provided.", 240);
+                builder.Append("  ! ").Append(source).Append(": ").AppendLine(message);
+            }
+            if (issues.Count > 8)
+                builder.Append("  ! ...另有 ").Append(FormatCount(issues.Count - 8)).AppendLine(" 个问题未展开");
+        }
+
+        private static string FormatInlineDiagnosticText(string? value, string fallback, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return fallback;
+
+            var sanitized = new StringBuilder(Math.Min(value.Length, maxLength));
+            var pendingSpace = false;
+            foreach (var character in value.Trim())
+            {
+                if (char.IsWhiteSpace(character) || char.IsControl(character))
+                {
+                    pendingSpace = sanitized.Length > 0;
+                    continue;
+                }
+
+                if (pendingSpace)
+                    sanitized.Append(' ');
+                sanitized.Append(character);
+                pendingSpace = false;
+            }
+
+            var result = sanitized.ToString();
+            if (result.Length <= maxLength)
+                return result;
+            return maxLength <= 3 ? result[..maxLength] : result[..(maxLength - 3)] + "...";
         }
 
         private static void AppendOptimizationSuggestions(StringBuilder builder, CopilotContextDiagnosticSnapshot snapshot)

@@ -16,7 +16,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.ClientModel;
 
 namespace ColorVision.Copilot
@@ -129,6 +128,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(onEvent);
 
+            var emitEvent = CreateEventEmitter(onEvent);
             var runBudget = CopilotAgentRunBudget.Resolve(request);
             var stopwatch = Stopwatch.StartNew();
             using var timeBudgetCancellation = new CancellationTokenSource(runBudget.TotalDuration);
@@ -137,7 +137,7 @@ namespace ColorVision.Copilot
             {
                 return await RunCoreAsync(
                     request,
-                    onEvent,
+                    emitEvent,
                     runBudget,
                     stopwatch,
                     timeBudgetCancellation,
@@ -147,8 +147,8 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (timeBudgetCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
                 var budgetSnapshot = runBudget.CreateSnapshot(new CopilotAgentBudgetSnapshot(), stopwatch.Elapsed, 0, timeBudgetExhausted: true);
-                onEvent(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; the run stopped before a checkpoint could be finalized."));
-                onEvent(CopilotAgentEvent.Completed());
+                emitEvent(CopilotAgentEvent.RuntimeDiagnostic($"Agent total-time budget exhausted after {FormatDuration(stopwatch.Elapsed)}; the run stopped before a checkpoint could be finalized."));
+                emitEvent(CopilotAgentEvent.Completed());
                 return new CopilotAgentRunResult
                 {
                     Budget = budgetSnapshot,
@@ -252,6 +252,7 @@ namespace ColorVision.Copilot
                 availableTools,
                 runBudget.MaxToolCalls,
                 _toolExecutor,
+                _approvalCoordinator,
                 emit,
                 delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun));
             var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
@@ -296,7 +297,7 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(FormatProviderRetryDiagnostic(retry))));
+                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
             using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(retryChatClient, bridge.RecordUnknownToolCall);
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
@@ -413,7 +414,7 @@ namespace ColorVision.Copilot
                 {
                     sessionResumeFailed = true;
                     taskEventJournalBuilder.RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind.Invalid);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({ex.Message})."));
+                    emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be resumed; starting a fresh session ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
                     session = await agent.CreateSessionAsync(cancellationToken);
                 }
             }
@@ -597,6 +598,13 @@ namespace ColorVision.Copilot
                         "模型连接在 Agent 已取得进展后中断。当前任务状态和工具结果正在保存，可安全恢复，不会自动重放工具。"));
                 }
             }
+            catch
+            {
+                bridge.CancelOutstandingApprovals();
+                throw;
+            }
+
+            bridge.CancelOutstandingApprovals();
 
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
@@ -755,7 +763,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent evidence checkpoint could not be updated ({ex.Message})."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent evidence checkpoint could not be updated ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
             }
             taskEventJournalBuilder.RecordStop(stopReason);
             var taskEventJournal = taskEventJournalBuilder.Snapshot();
@@ -789,7 +797,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be saved ({ex.Message})."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be saved ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
             }
             emit(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
@@ -847,7 +855,7 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
             using var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(FormatProviderRetryDiagnostic(retry))));
+                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
 
             var usage = CopilotTokenUsage.Empty;
             var finalAnswer = string.Empty;
@@ -1115,14 +1123,6 @@ namespace ColorVision.Copilot
             return sanitized.Length <= 60 ? sanitized : sanitized[..57] + "...";
         }
 
-        private static string FormatProviderRetryDiagnostic(CopilotProviderRetryInfo retry)
-        {
-            var delay = retry.Delay.TotalSeconds >= 1
-                ? $"{retry.Delay.TotalSeconds:0.#}s"
-                : $"{Math.Max(0, retry.Delay.TotalMilliseconds):0}ms";
-            return $"Provider request retry {retry.NextAttempt}/{retry.MaximumAttempts} · {retry.FailureKind} before the first response update · waiting {delay}; no content or tool call was replayed.";
-        }
-
         private static string FormatDuration(TimeSpan duration)
         {
             if (duration.TotalSeconds < 1)
@@ -1233,20 +1233,11 @@ namespace ColorVision.Copilot
 
         private static Action<CopilotAgentEvent> CreateEventEmitter(Action<CopilotAgentEvent> onEvent)
         {
-            var dispatcher = Application.Current?.Dispatcher;
             var syncRoot = new object();
             return agentEvent =>
             {
                 lock (syncRoot)
-                {
-                    if (dispatcher != null && !dispatcher.CheckAccess())
-                    {
-                        dispatcher.Invoke(() => onEvent(agentEvent));
-                        return;
-                    }
-
                     onEvent(agentEvent);
-                }
             };
         }
 
@@ -1565,6 +1556,7 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentRequest _request;
             private readonly IReadOnlyDictionary<string, ICopilotTool> _tools;
             private readonly CopilotToolExecutor _toolExecutor;
+            private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly List<CopilotAgentStepRecord> _stepRecords = new();
             private readonly Dictionary<string, ToolAttemptState> _attemptsBySignature = new(StringComparer.OrdinalIgnoreCase);
@@ -1581,6 +1573,7 @@ namespace ColorVision.Copilot
                 IReadOnlyList<ICopilotTool> tools,
                 int maxToolCalls,
                 CopilotToolExecutor toolExecutor,
+                CopilotFrameworkApprovalCoordinator approvalCoordinator,
                 Action<CopilotAgentEvent> emit,
                 Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null)
             {
@@ -1588,6 +1581,7 @@ namespace ColorVision.Copilot
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
                 _maxToolCalls = Math.Max(1, maxToolCalls);
                 _toolExecutor = toolExecutor;
+                _approvalCoordinator = approvalCoordinator;
                 _emit = emit;
                 _recordDelegatedRunUsage = recordDelegatedRunUsage;
             }
@@ -1717,6 +1711,23 @@ namespace ColorVision.Copilot
             {
                 lock (_syncRoot)
                     _approvedCalls[reservation.Signature] = reservation;
+            }
+
+            public void CancelOutstandingApprovals()
+            {
+                FrameworkApprovalReservation[] outstanding;
+                lock (_syncRoot)
+                {
+                    outstanding = _approvedCalls.Values.ToArray();
+                    _approvedCalls.Clear();
+                }
+
+                foreach (var reservation in outstanding)
+                {
+                    _approvalCoordinator.Cancel(
+                        reservation.ApprovalActionId,
+                        "The approved action was not executed before the Agent run ended.");
+                }
             }
 
             public void Reject(FrameworkApprovalReservation reservation, string reason)
@@ -2034,7 +2045,27 @@ namespace ColorVision.Copilot
                         ToolCall = CreateToolCall(tool, toolInput),
                     }
                     : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
-                var outcome = await _toolExecutor.ExecuteAsync(invocation, _emit, cancellationToken);
+                if (approvalReservation != null && !_approvalCoordinator.Begin(approvalReservation.ApprovalActionId))
+                    throw new InvalidOperationException("The approved Agent Framework action is no longer executable.");
+
+                CopilotToolExecutionOutcome outcome;
+                try
+                {
+                    outcome = await _toolExecutor.ExecuteAsync(invocation, _emit, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    if (approvalReservation != null)
+                    {
+                        _approvalCoordinator.Cancel(
+                            approvalReservation.ApprovalActionId,
+                            "The approved Agent Framework action was cancelled before completion.");
+                    }
+                    throw;
+                }
+
+                if (approvalReservation != null)
+                    _approvalCoordinator.Complete(approvalReservation.ApprovalActionId, outcome.Result);
 
                 lock (_syncRoot)
                 {
@@ -2114,7 +2145,7 @@ namespace ColorVision.Copilot
 
             private static bool RequiresNativeApproval(ICopilotTool tool)
             {
-                return tool.Capability.RequiresNativeApproval && tool is ICopilotFrameworkApprovedTool;
+                return tool.Capability.RequiresNativeApproval;
             }
 
             private static string ToFunctionName(string toolName)

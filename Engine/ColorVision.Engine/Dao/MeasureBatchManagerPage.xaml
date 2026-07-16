@@ -8,7 +8,7 @@
              xmlns:batch="clr-namespace:ColorVision.Engine.Batch"
              d:DataContext="{d:DesignInstance local:MeasureBatchManager}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.IntegratedQuery}"  d:DesignHeight="450" Background="{DynamicResource SecondaryRegionBrush}" d:DesignWidth="1000" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.IntegratedQuery}"  d:DesignHeight="450" Background="{DynamicResource SecondaryRegionBrush}" d:DesignWidth="1000" Loaded="Page_Loaded" Unloaded="Page_Unloaded" Initialized="UserControl_Initialized">
     <Page.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />

@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
@@ -14,7 +13,7 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -77,6 +76,14 @@ namespace ColorVision.Copilot
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
             DisabledPluginSubagentRoles ??= new ObservableCollection<string>();
+            for (var index = Profiles.Count - 1; index >= 0; index--)
+            {
+                if (Profiles[index] != null)
+                    continue;
+
+                Profiles.RemoveAt(index);
+                changed = true;
+            }
             if (AgentDefaults == null)
             {
                 AgentDefaults = new CopilotAgentDefaultsConfig();
@@ -164,26 +171,40 @@ namespace ColorVision.Copilot
 
         public void Encryption()
         {
-            foreach (var profile in Profiles)
-            {
-                if (!string.IsNullOrWhiteSpace(profile.ApiKey))
-                    profile.ApiKey = Cryptography.AESEncrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
-            }
+            Profiles ??= new ObservableCollection<CopilotProfileConfig>();
+            var profiles = Profiles
+                .Where(profile => profile != null)
+                .ToArray();
+            var protectedProfileKeys = profiles
+                .Select(profile => CopilotCredentialProtector.Protect(profile.ApiKey))
+                .ToArray();
+            var protectedMcpBearerToken = CopilotCredentialProtector.Protect(McpBearerToken);
 
-            if (!string.IsNullOrWhiteSpace(McpBearerToken))
-                McpBearerToken = Cryptography.AESEncrypt(McpBearerToken, ConfigAESKey, ConfigAESVector);
+            for (var index = 0; index < profiles.Length; index++)
+                profiles[index].ApiKey = protectedProfileKeys[index];
+            McpBearerToken = protectedMcpBearerToken;
         }
 
         public void Decrypt()
         {
-            foreach (var profile in Profiles)
+            Profiles ??= new ObservableCollection<CopilotProfileConfig>();
+            foreach (var profile in Profiles.Where(profile => profile != null))
             {
-                if (!string.IsNullOrWhiteSpace(profile.ApiKey))
-                    profile.ApiKey = Cryptography.AESDecrypt(profile.ApiKey, ConfigAESKey, ConfigAESVector);
+                if (CopilotCredentialProtector.TryUnprotect(profile.ApiKey, out var apiKey, out _))
+                {
+                    profile.ApiKey = apiKey;
+                    profile.CredentialNeedsReentry = false;
+                }
+                else
+                {
+                    profile.ApiKey = string.Empty;
+                    profile.CredentialNeedsReentry = true;
+                }
             }
 
-            if (!string.IsNullOrWhiteSpace(McpBearerToken))
-                McpBearerToken = Cryptography.AESDecrypt(McpBearerToken, ConfigAESKey, ConfigAESVector);
+            McpBearerToken = CopilotCredentialProtector.TryUnprotect(McpBearerToken, out var bearerToken, out _)
+                ? bearerToken
+                : string.Empty;
         }
     }
 }

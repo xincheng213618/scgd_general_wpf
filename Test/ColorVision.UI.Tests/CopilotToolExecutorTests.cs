@@ -93,6 +93,42 @@ public sealed class CopilotToolExecutorTests : IDisposable
     }
 
     [Fact]
+    public void ToolRegistry_RejectsProtectedToolWithoutApprovedExecutionPath()
+    {
+        var tool = new CapabilityOnlyTool(CopilotToolCapabilityDescriptor.ProtectedWrite(CopilotToolIdempotency.NonIdempotent));
+
+        var error = Assert.Throws<ArgumentException>(() => new CopilotToolRegistry([tool]));
+
+        Assert.Contains("approved execution path", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DefaultToolRegistry_ProvidesApprovedExecutionPathForEveryProtectedTool()
+    {
+        var protectedTools = CopilotToolRegistry.CreateDefault().Tools
+            .Where(tool => tool.Capability.RequiresNativeApproval)
+            .ToArray();
+
+        Assert.NotEmpty(protectedTools);
+        Assert.All(protectedTools, tool => Assert.IsAssignableFrom<ICopilotFrameworkApprovedTool>(tool));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DeniesProtectedToolWithoutExactCallApproval()
+    {
+        var tool = new FrameworkProtectedTool();
+        var executor = new CopilotToolExecutor();
+
+        var denied = await executor.ExecuteAsync(CreateInvocation(tool), _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotToolExecutionState.Denied, denied.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Authorization, denied.Execution.FailureKind);
+        Assert.Contains("exact call", denied.Result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, tool.UnapprovedExecutionCount);
+        Assert.Equal(0, tool.ApprovedExecutionCount);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ConvertsTimeoutToFailedObservation()
     {
         var tool = new RecordingTool("SlowTool", TimeSpan.FromMilliseconds(20), waitForCancellation: true);
@@ -229,7 +265,7 @@ public sealed class CopilotToolExecutorTests : IDisposable
             Assert.Equal(action.ActionId, outcome.Execution.ApprovalActionId);
             Assert.Equal(outcome.Execution.CallId, action.AgentCallId);
             Assert.Equal(CopilotToolRiskLevel.High, outcome.Execution.RiskLevel);
-            Assert.Equal(CopilotToolApprovalMode.Always, outcome.Execution.ApprovalMode);
+            Assert.Equal(CopilotToolApprovalMode.Conditional, outcome.Execution.ApprovalMode);
             Assert.Equal(CopilotToolIdempotency.NonIdempotent, outcome.Execution.Idempotency);
 
             var executed = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, CancellationToken.None);
@@ -243,6 +279,64 @@ public sealed class CopilotToolExecutorTests : IDisposable
         {
             CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= OnStatusChanged;
         }
+    }
+
+    [Fact]
+    public async Task ConfirmationStore_CancellationCreatesTerminalNonRetryableAction()
+    {
+        var executionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var action = CopilotMcpConfirmationStore.Instance.Create(
+            "Cancel protected action",
+            "Exercise cancellation after approval.",
+            "confirmation-required",
+            "CancelProtectedAction",
+            "resource=test",
+            async cancellationToken =>
+            {
+                executionStarted.TrySetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return CopilotMcpToolCallResult.Ok("unexpected");
+            },
+            executeOnApproval: true);
+        using var cancellation = new CancellationTokenSource();
+
+        var executionTask = CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, cancellation.Token);
+        await executionStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => executionTask);
+        Assert.Equal(ConfirmableActionStatus.Cancelled, action.Status);
+        Assert.False(action.ExecutionSucceeded);
+        Assert.NotNull(action.CompletedAt);
+        Assert.Contains("cancelled", action.ExecutionResultText, StringComparison.OrdinalIgnoreCase);
+        var retry = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
+            action.ActionId,
+            action.ToolName,
+            action.ArgumentsSummary,
+            CancellationToken.None);
+        Assert.False(retry.Success);
+        Assert.Equal("action_cancelled", retry.ErrorCode);
+        Assert.DoesNotContain(CopilotMcpAuditLogger.GetRecentEntries(20), CopilotMcpAuditLogger.IsRealFailureEntry);
+    }
+
+    [Fact]
+    public async Task ConfirmationStore_ExpiresApprovedActionWithoutExecutionRequest()
+    {
+        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(30);
+        var action = CopilotMcpConfirmationStore.Instance.Create(
+            "Expire approved action",
+            "Exercise approved action expiry.",
+            "confirmation-required",
+            "ExpireApprovedAction",
+            "resource=test",
+            _ => Task.FromResult(CopilotMcpToolCallResult.Ok("unexpected")));
+
+        Assert.True(CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _));
+        await Task.Delay(80);
+        CopilotMcpConfirmationStore.Instance.ExpireStaleActions();
+
+        Assert.Equal(ConfirmableActionStatus.Expired, action.Status);
+        Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
     }
 
     [Fact]
@@ -331,6 +425,30 @@ public sealed class CopilotToolExecutorTests : IDisposable
         var outcomes = await Task.WhenAll(firstReadTask, writeTask, secondReadTask);
         Assert.Equal(CopilotToolConcurrencyMode.Exclusive, outcomes[1].Execution.ConcurrencyMode);
         Assert.Equal(CopilotToolConcurrencyMode.SharedRead, outcomes[2].Execution.ConcurrencyMode);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_KeepsExclusiveLeaseUntilTimedOutToolActuallyStops()
+    {
+        var lateWrite = new CancellationIgnoringTool("LateWrite", "shared-write", TimeSpan.FromMilliseconds(20));
+        var nextWrite = new BlockingTool("NextWrite", "shared-write", CopilotToolAccess.Write);
+        var executor = new CopilotToolExecutor();
+
+        var timedOut = await executor.ExecuteAsync(CreateInvocation(lateWrite), _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotToolExecutionState.TimedOut, timedOut.Execution.State);
+        Assert.True(lateWrite.Started.Task.IsCompleted);
+        var nextTask = executor.ExecuteAsync(CreateInvocation(nextWrite), _ => { }, CancellationToken.None);
+        await Task.Delay(75);
+        Assert.False(nextWrite.Started.Task.IsCompleted);
+
+        lateWrite.Release();
+        await nextWrite.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        nextWrite.Release();
+        var nextOutcome = await nextTask;
+
+        Assert.Equal(CopilotToolExecutionState.Completed, nextOutcome.Execution.State);
+        Assert.True(nextOutcome.Execution.QueueDurationMs > 0);
     }
 
     [Fact]
@@ -505,6 +623,33 @@ public sealed class CopilotToolExecutorTests : IDisposable
         }
     }
 
+    private sealed class FrameworkProtectedTool : ICopilotFrameworkApprovedTool
+    {
+        public string Name => "FrameworkProtected";
+
+        public string Description => "Exercises the fail-closed framework approval boundary.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(CopilotToolIdempotency.NonIdempotent);
+
+        public int UnapprovedExecutionCount { get; private set; }
+
+        public int ApprovedExecutionCount { get; private set; }
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            UnapprovedExecutionCount++;
+            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Unapproved execution." });
+        }
+
+        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            ApprovedExecutionCount++;
+            return Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true, Summary = "Approved execution." });
+        }
+    }
+
     private sealed class TrackedTool(string name, ConcurrencyTracker tracker) : ICopilotTool
     {
         public string Name { get; } = name;
@@ -554,6 +699,38 @@ public sealed class CopilotToolExecutorTests : IDisposable
             Started.TrySetResult();
             await _release.Task.WaitAsync(cancellationToken);
             return new CopilotToolResult { ToolName = Name, Success = true, Summary = "Completed." };
+        }
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class CancellationIgnoringTool(string name, string concurrencyKey, TimeSpan executionTimeout) : ICopilotTool
+    {
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string Name { get; } = name;
+
+        public string Description => "Ignores cancellation until explicitly released by the test.";
+
+        public CopilotToolAccess Access => CopilotToolAccess.Write;
+
+        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Conditional;
+
+        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
+
+        public TimeSpan ExecutionTimeout { get; } = executionTimeout;
+
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput) => concurrencyKey;
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        {
+            Started.TrySetResult();
+            await _release.Task;
+            return new CopilotToolResult { ToolName = Name, Success = true, Summary = "Completed after timeout." };
         }
 
         public void Release() => _release.TrySetResult();
@@ -610,7 +787,7 @@ public sealed class CopilotToolExecutorTests : IDisposable
 
         public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.High;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Always;
+        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Conditional;
 
         public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
 

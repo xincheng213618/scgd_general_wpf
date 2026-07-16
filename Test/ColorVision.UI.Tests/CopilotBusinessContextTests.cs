@@ -419,6 +419,31 @@ public class CopilotBusinessContextTests
             AgentTimeoutSeconds = 7_200,
             RegisteredCapabilities = 24,
             EnabledExternalMcpServers = 1,
+            AgentExtensions =
+            [
+                new CopilotAgentExtensionSourceSnapshot
+                {
+                    SourceId = "flow-engine-manager",
+                    SourceName = "Flow\r\nEngine",
+                    SourceVersion = "1.4.2.3\tstable",
+                    ContextProviderCount = 1,
+                },
+                new CopilotAgentExtensionSourceSnapshot
+                {
+                    SourceId = "plugin:test",
+                    SourceName = "Test module",
+                    DeclaredToolCount = 2,
+                    ActiveToolCount = 1,
+                },
+            ],
+            AgentExtensionIssues =
+            [
+                new CopilotAgentExtensionIssue
+                {
+                    SourceId = "plugin:test",
+                    Message = "One tool conflicts with an active tool name.\r\nRetry after unloading the old module.",
+                },
+            ],
         });
 
         Assert.Contains("项目指令：2 个文档", report, StringComparison.Ordinal);
@@ -433,6 +458,10 @@ public class CopilotBusinessContextTests
         Assert.Contains("上下文 2% / 硬上限 8,000", report, StringComparison.Ordinal);
         Assert.Contains("能力目录：24 个已注册能力", report, StringComparison.Ordinal);
         Assert.Contains("外部 MCP：1 个启用服务", report, StringComparison.Ordinal);
+        Assert.Contains("业务模块扩展：2 个来源 / 上下文提供者 1 / 工具 1/2 个已激活/声明", report, StringComparison.Ordinal);
+        Assert.Contains("Flow Engine · v1.4.2.3 stable · context 1 · tools 0/0", report, StringComparison.Ordinal);
+        Assert.Contains("plugin:test: One tool conflicts with an active tool name. Retry after unloading the old module.", report, StringComparison.Ordinal);
+        Assert.DoesNotContain("Flow\r\nEngine", report, StringComparison.Ordinal);
         Assert.Contains("1 个项目指令文档已截断", report, StringComparison.Ordinal);
         Assert.Contains("更靠近目标代码的 AGENTS.md", report, StringComparison.Ordinal);
     }
@@ -922,25 +951,64 @@ public class CopilotBusinessContextTests
     {
         var item = CopilotBusinessContextBuilder.BuildDeviceContextItem(new CopilotDeviceContextSnapshot
         {
-            ServiceName = "Camera01",
-            ServiceCode = "CAM01",
+            ServiceName = "Camera01 token=name-secret",
+            ServiceCode = "CAM01 password=code-secret",
             ServiceType = "Camera",
             IsAlive = "在线",
             ConfigProperties = new[]
             {
                 new CopilotContextProperty { Name = "ServiceToken", Value = "token-123" },
+                new CopilotContextProperty { Name = "序列号", Value = "serial-456" },
+                new CopilotContextProperty { Name = "IsNet", Value = "true" },
                 new CopilotContextProperty { Name = "Exposure", Value = "12.5" },
             },
-            RecentLogSummary = "Recent log read successfully",
-            RecentLogContent = "2026 token=token-123 password=abc normal-line",
+            Title = "Device token=title-secret",
+            RecentLogSummary = "Recent log read successfully secret=summary-secret",
+            RecentLogContent = "2026 token=token-123 password=abc 密码：中文密码 normal-line",
         });
 
         Assert.Contains("Camera01", item.Content);
         Assert.Contains("Exposure", item.Content);
         Assert.Contains("12.5", item.Content);
+        Assert.Contains("IsNet: true", item.Content, StringComparison.Ordinal);
         Assert.Contains("<redacted>", item.Content);
         Assert.DoesNotContain("token-123", item.Content);
+        Assert.DoesNotContain("name-secret", item.Content);
+        Assert.DoesNotContain("code-secret", item.Content);
+        Assert.DoesNotContain("title-secret", item.Title);
+        Assert.DoesNotContain("summary-secret", item.Content);
+        Assert.DoesNotContain("serial-456", item.Content);
+        Assert.DoesNotContain("中文密码", item.Content);
         Assert.DoesNotContain("password=abc", item.Content);
+    }
+
+    [Fact]
+    public void BusinessContextBuilder_DeviceFleetContainsOnlyBoundedHealthFacts()
+    {
+        var devices = Enumerable.Range(1, 75).Select(index => new CopilotDeviceHealthContextSnapshot
+        {
+            ServiceName = index == 1 ? "Camera token=fleet-secret" : $"Device {index}",
+            ServiceCode = $"D{index:00}",
+            ServiceType = "Camera",
+            IsAlive = index % 2 == 0,
+            OperationalStatus = index == 1 ? "Unauthorized" : "Free",
+            LastAliveTime = "2026-07-16T10:00:00Z",
+        }).ToArray();
+        var item = CopilotBusinessContextBuilder.BuildDeviceFleetContextItem(new CopilotDeviceFleetContextSnapshot
+        {
+            TotalDevices = devices.Length,
+            OnlineDevices = devices.Count(device => device.IsAlive),
+            OfflineDevices = devices.Count(device => !device.IsAlive),
+            Devices = devices,
+        });
+
+        Assert.Contains("Registered devices: 75", item.Content, StringComparison.Ordinal);
+        Assert.Contains("state Unauthorized", item.Content, StringComparison.Ordinal);
+        Assert.Contains("Device 60", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("Device 61", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("fleet-secret", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("Configuration summary:", item.Content, StringComparison.Ordinal);
+        Assert.Contains("devices 75", item.Summary, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -986,6 +1054,35 @@ public class CopilotBusinessContextTests
         Assert.Contains("Algorithm Node", item.Content);
         Assert.Contains("MaxTime=5000", item.Content);
         Assert.Contains("nodes 1", item.Summary);
+    }
+
+    [Fact]
+    public void BusinessContextBuilder_MasksSecretsAcrossFlowLogsAndNodeMetadata()
+    {
+        var item = CopilotBusinessContextBuilder.BuildFlowContextItem(new CopilotFlowContextSnapshot
+        {
+            FlowName = "Flow_A",
+            RecentRunMessage = "camera token=flow-secret password=flow-password",
+            FailureEvidence = ["request api_key=flow-key failed"],
+            Nodes =
+            [
+                new CopilotFlowNodeContextSnapshot
+                {
+                    Title = "Camera",
+                    Mark = "secret=node-secret",
+                    Inputs = ["password=input-secret"],
+                    Outputs = ["token=output-secret"],
+                },
+            ],
+        });
+
+        Assert.Contains("<redacted>", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("flow-secret", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("flow-password", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("flow-key", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("node-secret", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("input-secret", item.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("output-secret", item.Content, StringComparison.Ordinal);
     }
 
     private sealed class TemporaryDirectory : IDisposable

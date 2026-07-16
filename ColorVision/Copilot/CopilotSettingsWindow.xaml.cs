@@ -1,3 +1,4 @@
+using System;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,6 +23,8 @@ namespace ColorVision.Copilot
         }
 
         public bool HasAppliedChanges => ViewModel.HasAppliedChanges;
+
+        public string ActiveProfileId => ViewModel.ActiveProfileId;
 
         private CopilotSettingsViewModel ViewModel => (CopilotSettingsViewModel)DataContext;
 
@@ -52,6 +55,13 @@ namespace ColorVision.Copilot
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (DataContext is CopilotSettingsViewModel viewModel)
+                viewModel.Dispose();
+            base.OnClosed(e);
         }
     }
 

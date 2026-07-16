@@ -374,12 +374,17 @@ namespace ColorVision.Copilot
             var stopwatch = Stopwatch.StartNew();
             if (!process.Start())
                 throw new InvalidOperationException("The dotnet validation process did not start.");
+            using var processJob = CopilotWindowsProcessJob.TryAssign(process);
 
-            var stdoutTask = ReadBoundedAsync(process.StandardOutput, MaxStreamCharacters);
-            var stderrTask = ReadBoundedAsync(process.StandardError, MaxStreamCharacters);
+            using var outputReadSource = new CancellationTokenSource();
+            var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
+                process.StandardOutput, MaxStreamCharacters, 8_192, "\n...<validation output truncated>...\n", outputReadSource.Token);
+            var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
+                process.StandardError, MaxStreamCharacters, 8_192, "\n...<validation output truncated>...\n", outputReadSource.Token);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;
+            var cancelledByCaller = false;
             try
             {
                 await process.WaitForExitAsync(timeoutSource.Token);
@@ -387,18 +392,20 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
                 timedOut = true;
-                TryKillProcessTree(process);
-                await process.WaitForExitAsync(CancellationToken.None);
             }
             catch (OperationCanceledException)
             {
-                TryKillProcessTree(process);
-                throw;
+                cancelledByCaller = true;
             }
 
-            var standardOutput = await stdoutTask;
-            var standardError = await stderrTask;
+            // dotnet may launch compiler/test-host descendants. Keep those processes inside
+            // the same bounded lifecycle as the approved validation command.
+            await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
+            var (standardOutput, standardError) = await CopilotProcessExecutionSupport.DrainOutputAsync(
+                stdoutTask, stderrTask, outputReadSource, process.StandardOutput, process.StandardError);
             stopwatch.Stop();
+            if (cancelledByCaller)
+                throw new OperationCanceledException(cancellationToken);
             return new CopilotWorkspaceValidationProcessResult(
                 timedOut ? -1 : process.ExitCode,
                 timedOut,
@@ -407,47 +414,5 @@ namespace ColorVision.Copilot
                 stopwatch.Elapsed);
         }
 
-        private static async Task<string> ReadBoundedAsync(StreamReader reader, int maxCharacters)
-        {
-            const int headCharacters = 8_192;
-            var head = new StringBuilder(headCharacters);
-            var tail = new StringBuilder(maxCharacters - headCharacters);
-            var buffer = new char[4_096];
-            while (true)
-            {
-                var count = await reader.ReadAsync(buffer);
-                if (count == 0)
-                    break;
-                var offset = 0;
-                if (head.Length < headCharacters)
-                {
-                    var headCount = Math.Min(count, headCharacters - head.Length);
-                    head.Append(buffer, 0, headCount);
-                    offset = headCount;
-                }
-                if (offset < count)
-                {
-                    tail.Append(buffer, offset, count - offset);
-                    var maximumTail = maxCharacters - headCharacters;
-                    if (tail.Length > maximumTail)
-                        tail.Remove(0, tail.Length - maximumTail);
-                }
-            }
-            if (tail.Length == 0)
-                return head.ToString();
-            return head.Append("\n...<validation output truncated>...\n").Append(tail).ToString();
-        }
-
-        private static void TryKillProcessTree(Process process)
-        {
-            try
-            {
-                if (!process.HasExited)
-                    process.Kill(entireProcessTree: true);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-            {
-            }
-        }
     }
 }

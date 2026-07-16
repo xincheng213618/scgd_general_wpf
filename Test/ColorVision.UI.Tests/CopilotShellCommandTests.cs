@@ -186,6 +186,33 @@ public sealed class CopilotShellCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task RealRunnerMarksOnlyActuallyTruncatedOutput()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var executable = Path.Combine(windows, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+        var runner = new CopilotShellProcessRunner();
+
+        var retained = await runner.RunAsync(new CopilotShellProcessCommand(
+            CopilotShellKind.PowerShell,
+            executable,
+            ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "[Console]::Out.Write(('A' * 20000))"],
+            _root,
+            TimeSpan.FromSeconds(10)), CancellationToken.None);
+        var truncated = await runner.RunAsync(new CopilotShellProcessCommand(
+            CopilotShellKind.PowerShell,
+            executable,
+            ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "[Console]::Out.Write(('B' * 100000))"],
+            _root,
+            TimeSpan.FromSeconds(10)), CancellationToken.None);
+
+        Assert.Equal(20_000, retained.StandardOutput.Length);
+        Assert.DoesNotContain("<shell output truncated>", retained.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("<shell output truncated>", truncated.StandardOutput, StringComparison.Ordinal);
+        Assert.StartsWith(new string('B', 16_384), truncated.StandardOutput, StringComparison.Ordinal);
+        Assert.EndsWith(new string('B', 49_152), truncated.StandardOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RealRunnerTerminatesBackgroundChildWhenRootShellCompletes()
     {
         var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);

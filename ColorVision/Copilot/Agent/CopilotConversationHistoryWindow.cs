@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ColorVision.Copilot
 {
-    internal readonly record struct CopilotConversationHistorySelection(
+    public readonly record struct CopilotConversationHistorySelection(
         CopilotRequestMessage[] Messages,
         int SourceMessageCount,
         int SourceCharacters,
@@ -13,7 +13,7 @@ namespace ColorVision.Copilot
         public bool WasReduced => Messages.Length < SourceMessageCount || RetainedCharacters < SourceCharacters;
     }
 
-    internal readonly record struct CopilotConversationHistoryLimits(
+    public readonly record struct CopilotConversationHistoryLimits(
         int MaximumMessages,
         int MaximumCharacters,
         int MaximumContentCharacters);

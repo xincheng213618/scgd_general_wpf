@@ -15,6 +15,7 @@ namespace ColorVision.Copilot.Mcp
         Approved,
         Rejected,
         Expired,
+        Cancelled,
         Executing,
         Executed,
     }
@@ -340,6 +341,41 @@ namespace ColorVision.Copilot.Mcp
             return true;
         }
 
+        public bool Cancel(string actionId, out string message, string? resultText = null)
+        {
+            var action = Find(actionId);
+            if (action == null)
+            {
+                message = "The action id was not found.";
+                return false;
+            }
+
+            lock (_syncRoot)
+            {
+                var canCancelFrameworkExecution = action.ResumesAgentOnApproval && action.Status == ConfirmableActionStatus.Executing;
+                if (action.Status != ConfirmableActionStatus.Pending
+                    && action.Status != ConfirmableActionStatus.Approved
+                    && !canCancelFrameworkExecution)
+                {
+                    message = $"The action is {action.StatusLabel}.";
+                    return false;
+                }
+
+                action.ExecutionSucceeded = false;
+                action.ExecutionResultText = Sanitize(string.IsNullOrWhiteSpace(resultText)
+                    ? "The action was cancelled before execution completed."
+                    : resultText);
+                action.CompletedAt = DateTimeOffset.UtcNow;
+                action.Status = ConfirmableActionStatus.Cancelled;
+            }
+
+            CopilotMcpAuditLogger.ActionCancelled(action);
+            RaiseActionStatusChanged(action);
+            RaiseActionsChanged();
+            message = "The action was cancelled.";
+            return true;
+        }
+
         public async Task<CopilotMcpToolCallResult> ExecuteApprovedAsync(string actionId, string toolName, string argumentsSummary, CancellationToken cancellationToken)
         {
             var action = Find(actionId);
@@ -367,6 +403,9 @@ namespace ColorVision.Copilot.Mcp
                 if (action.Status == ConfirmableActionStatus.Rejected)
                     return CopilotMcpToolCallResult.Fail("action_rejected", $"The action was rejected in ColorVision: action_id={action.ActionId}.");
 
+                if (action.Status == ConfirmableActionStatus.Cancelled)
+                    return CopilotMcpToolCallResult.Fail("action_cancelled", $"The action was cancelled in ColorVision: action_id={action.ActionId}.");
+
                 if (action.Status == ConfirmableActionStatus.Executed || action.Status == ConfirmableActionStatus.Executing)
                     return CopilotMcpToolCallResult.Fail("action_already_executed", $"The action has already been executed: action_id={action.ActionId}.");
 
@@ -388,9 +427,13 @@ namespace ColorVision.Copilot.Mcp
             {
                 lock (_syncRoot)
                 {
-                    action.Status = ConfirmableActionStatus.Approved;
+                    action.ExecutionSucceeded = false;
+                    action.ExecutionResultText = "The approved action execution was cancelled before completion.";
+                    action.CompletedAt = DateTimeOffset.UtcNow;
+                    action.Status = ConfirmableActionStatus.Cancelled;
                 }
 
+                CopilotMcpAuditLogger.ActionCancelled(action);
                 RaiseActionStatusChanged(action);
                 RaiseActionsChanged();
                 throw;
@@ -429,6 +472,51 @@ namespace ColorVision.Copilot.Mcp
             return await ExecuteApprovedAsync(action.ActionId, action.ToolName, action.ArgumentsSummary, cancellationToken);
         }
 
+        internal bool BeginAgentFrameworkAction(string actionId)
+        {
+            var action = Find(actionId);
+            if (action == null)
+                return false;
+
+            lock (_syncRoot)
+            {
+                if (!action.ResumesAgentOnApproval || action.Status != ConfirmableActionStatus.Approved)
+                    return false;
+
+                action.Status = ConfirmableActionStatus.Executing;
+            }
+
+            RaiseActionStatusChanged(action);
+            RaiseActionsChanged();
+            return true;
+        }
+
+        internal bool CompleteAgentFrameworkAction(string actionId, CopilotToolResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            var action = Find(actionId);
+            if (action == null)
+                return false;
+
+            lock (_syncRoot)
+            {
+                if (!action.ResumesAgentOnApproval || action.Status != ConfirmableActionStatus.Executing)
+                    return false;
+
+                action.ExecutionSucceeded = result.Success;
+                action.ExecutionResultText = Sanitize(result.Success
+                    ? FirstNonEmpty(result.Summary, result.Content, "The approved Agent Framework action completed.")
+                    : FirstNonEmpty(result.ErrorMessage, result.Summary, "The approved Agent Framework action failed."));
+                action.CompletedAt = DateTimeOffset.UtcNow;
+                action.Status = ConfirmableActionStatus.Executed;
+            }
+
+            CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : action.ExecutionResultText);
+            RaiseActionStatusChanged(action);
+            RaiseActionsChanged();
+            return true;
+        }
+
         public void ExpireStaleActions()
         {
             List<ConfirmableAction> expired;
@@ -436,7 +524,9 @@ namespace ColorVision.Copilot.Mcp
             {
                 var now = DateTimeOffset.UtcNow;
                 expired = _actions
-                    .Where(action => action.Status == ConfirmableActionStatus.Pending && action.ExpiresAt <= now)
+                    .Where(action => (action.Status == ConfirmableActionStatus.Pending
+                            || action.Status == ConfirmableActionStatus.Approved && !action.ResumesAgentOnApproval)
+                        && action.ExpiresAt <= now)
                     .ToList();
 
                 foreach (var action in expired)
@@ -511,6 +601,9 @@ namespace ColorVision.Copilot.Mcp
             var text = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
             return text.Length <= 1000 ? text : text[..1000] + "...";
         }
+
+        private static string FirstNonEmpty(params string?[] values) =>
+            values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
 
         private void RaiseActionsChanged()
         {

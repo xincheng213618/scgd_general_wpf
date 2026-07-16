@@ -32,7 +32,7 @@
             </StackPanel>
         </DockPanel>
 
-        <ListView x:Name="ListViewTask" Grid.Row="2" Background="Transparent" Margin="5,0,5,5" Padding="2" SelectionMode="Extended">
+        <ListView x:Name="ListViewTask" Grid.Row="2" Background="Transparent" Margin="5,0,5,5" Padding="2" SelectionMode="Extended" SelectionChanged="ListViewTask_SelectionChanged">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

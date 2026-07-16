@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -314,13 +317,130 @@ public sealed class CopilotMcpTests : IDisposable
 
         Assert.NotEqual(token, config.McpBearerToken);
         Assert.NotEqual(apiKey, config.Profiles[0].ApiKey);
+        Assert.StartsWith("dpapi:v1:", config.McpBearerToken, StringComparison.Ordinal);
+        Assert.StartsWith("dpapi:v1:", config.Profiles[0].ApiKey, StringComparison.Ordinal);
         Assert.DoesNotContain(token, config.McpBearerToken, StringComparison.Ordinal);
         Assert.DoesNotContain(apiKey, config.Profiles[0].ApiKey, StringComparison.Ordinal);
+        var persistedJson = Newtonsoft.Json.JsonConvert.SerializeObject(config);
+        Assert.DoesNotContain(token, persistedJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(apiKey, persistedJson, StringComparison.Ordinal);
 
         config.Decrypt();
 
         Assert.Equal(token, config.McpBearerToken);
         Assert.Equal(apiKey, config.Profiles[0].ApiKey);
+    }
+
+    [Fact]
+    public void ConfigHandlerSaveWritesProtectedCredentialsAndRestoresLivePlaintext()
+    {
+        const string token = "handler-mcp-secret";
+        const string apiKey = "handler-api-secret";
+        var config = new CopilotConfig { McpBearerToken = token };
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            ApiKey = apiKey,
+            BaseUrl = "https://example.invalid/v1",
+            Model = "test-model",
+        });
+        var configFilePath = Path.Combine(_tempRoot, "protected-config.json");
+        var handler = new ColorVision.UI.ConfigHandler { IsAutoSave = false };
+        handler.Configs[typeof(CopilotConfig)] = config;
+
+        handler.SaveConfigs(configFilePath);
+
+        var persistedJson = File.ReadAllText(configFilePath);
+        Assert.DoesNotContain(token, persistedJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(apiKey, persistedJson, StringComparison.Ordinal);
+        Assert.Contains("dpapi:v1:", persistedJson, StringComparison.Ordinal);
+        Assert.Equal(token, config.McpBearerToken);
+        Assert.Equal(apiKey, config.Profiles[0].ApiKey);
+    }
+
+    [Fact]
+    public void CredentialEncryption_DecryptsLegacyAesAndReencryptsWithCurrentUserProtection()
+    {
+        const string token = "legacy-mcp-token";
+        const string apiKey = "legacy-api-secret";
+        var config = new CopilotConfig
+        {
+            McpBearerToken = ColorVision.Common.Utilities.Cryptography.AESEncrypt(
+                token,
+                CopilotConfig.ConfigAESKey,
+                CopilotConfig.ConfigAESVector),
+        };
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            ApiKey = ColorVision.Common.Utilities.Cryptography.AESEncrypt(
+                apiKey,
+                CopilotConfig.ConfigAESKey,
+                CopilotConfig.ConfigAESVector),
+            BaseUrl = "https://example.invalid/v1",
+            Model = "test-model",
+        });
+
+        config.Decrypt();
+
+        Assert.Equal(token, config.McpBearerToken);
+        Assert.Equal(apiKey, config.Profiles[0].ApiKey);
+        Assert.False(config.Profiles[0].CredentialNeedsReentry);
+
+        config.Encryption();
+
+        Assert.StartsWith("dpapi:v1:", config.McpBearerToken, StringComparison.Ordinal);
+        Assert.StartsWith("dpapi:v1:", config.Profiles[0].ApiKey, StringComparison.Ordinal);
+
+        config.Decrypt();
+        Assert.Equal(token, config.McpBearerToken);
+        Assert.Equal(apiKey, config.Profiles[0].ApiKey);
+    }
+
+    [Fact]
+    public void CredentialDecryptionFailureIsIsolatedAndRequiresOnlyAffectedProfileReentry()
+    {
+        const string validApiKey = "valid-api-secret";
+        var validConfig = new CopilotConfig { McpBearerToken = "valid-mcp-token" };
+        validConfig.Profiles.Add(new CopilotProfileConfig
+        {
+            ApiKey = validApiKey,
+            BaseUrl = "https://valid.example.invalid/v1",
+            Model = "valid-model",
+        });
+        validConfig.Encryption();
+        var protectedValidApiKey = validConfig.Profiles[0].ApiKey;
+
+        var config = new CopilotConfig { McpBearerToken = "dpapi:v1:not-valid-base64" };
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            Name = "Broken profile",
+            ApiKey = "dpapi:v1:not-valid-base64",
+            BaseUrl = "https://broken.example.invalid/v1",
+            Model = "broken-model",
+        });
+        config.Profiles.Add(new CopilotProfileConfig
+        {
+            Name = "Valid profile",
+            ApiKey = protectedValidApiKey,
+            BaseUrl = "https://valid.example.invalid/v1",
+            Model = "valid-model",
+        });
+
+        config.Decrypt();
+
+        Assert.Equal(string.Empty, config.Profiles[0].ApiKey);
+        Assert.True(config.Profiles[0].CredentialNeedsReentry);
+        Assert.Contains("re-entry required", config.Profiles[0].ConfigurationStatusToolTip, StringComparison.Ordinal);
+        Assert.Equal(validApiKey, config.Profiles[1].ApiKey);
+        Assert.False(config.Profiles[1].CredentialNeedsReentry);
+        Assert.Equal(string.Empty, config.McpBearerToken);
+
+        Assert.True(config.EnsureInitialized());
+        Assert.Equal(64, config.McpBearerToken.Length);
+        Assert.All(config.McpBearerToken, character => Assert.True(Uri.IsHexDigit(character)));
+
+        config.Profiles[0].ApiKey = "replacement-api-key";
+        Assert.False(config.Profiles[0].CredentialNeedsReentry);
+        Assert.True(config.Profiles[0].IsConfigured);
     }
 
     [Fact]
@@ -375,6 +495,72 @@ public sealed class CopilotMcpTests : IDisposable
         Assert.Equal(
             "[Environment]::SetEnvironmentVariable(\"COLORVISION_MCP_TOKEN\", \"settings-token\", \"User\")",
             viewModel.McpTokenEnvironmentCommandText);
+    }
+
+    [Fact]
+    public async Task SettingsViewModelDisposeCancelsPendingMcpConnectionTest()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            var endpoint = (IPEndPoint)listener.LocalEndpoint;
+            using var viewModel = new CopilotSettingsViewModel
+            {
+                McpPort = endpoint.Port,
+                McpBearerToken = "settings-lifetime-token",
+            };
+            var testTask = viewModel.TestMcpConnectionAsync();
+            using var acceptTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var client = await listener.AcceptTcpClientAsync(acceptTimeout.Token);
+
+            viewModel.Dispose();
+            await testTask.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.False(viewModel.IsTestingMcpConnection);
+            Assert.False(viewModel.CanTestMcpConnection);
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
+    [Fact]
+    public async Task McpServerStopClosesPartialClientAndRestartsSamePort()
+    {
+        var server = CopilotMcpServer.Instance;
+        var port = ReserveLoopbackPort();
+        var settings = new CopilotMcpRuntimeSettings
+        {
+            Enabled = true,
+            Host = "127.0.0.1",
+            Port = port,
+            BearerToken = Token,
+        };
+        try
+        {
+            server.ApplySettings(settings);
+            Assert.True(server.IsRunning, server.LastStatusMessage);
+            using var client = new TcpClient();
+            using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await client.ConnectAsync(IPAddress.Loopback, port, connectTimeout.Token);
+            var stream = client.GetStream();
+            var partialRequest = Encoding.ASCII.GetBytes(
+                "POST /mcp HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100\r\n\r\n{");
+            await stream.WriteAsync(partialRequest, connectTimeout.Token);
+
+            server.Stop();
+
+            Assert.True(await WaitForConnectionCloseAsync(stream), "Stopping the MCP server left a partial client connection open.");
+            server.ApplySettings(settings);
+            Assert.True(server.IsRunning, server.LastStatusMessage);
+        }
+        finally
+        {
+            server.Stop();
+            server.ApplyConfig();
+        }
     }
 
     [Fact]
@@ -1752,6 +1938,38 @@ public sealed class CopilotMcpTests : IDisposable
             .GetProperty("contents")[0]
             .GetProperty("text")
             .GetString() ?? string.Empty;
+    }
+
+    private static int ReserveLoopbackPort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
+    private static async Task<bool> WaitForConnectionCloseAsync(NetworkStream stream)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try
+        {
+            var buffer = new byte[1];
+            return await stream.ReadAsync(buffer, timeout.Token) == 0;
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException)
+        {
+            return true;
+        }
     }
 
     public void Dispose()

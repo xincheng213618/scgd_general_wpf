@@ -119,6 +119,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(IsUser));
                     OnPropertyChanged(nameof(Header));
+                    OnPropertyChanged(nameof(HasResponseInterruption));
                 }
             }
         }
@@ -176,9 +177,51 @@ namespace ColorVision.Copilot
         public CopilotAgentMode RequestMode
         {
             get => _requestMode;
-            set => SetProperty(ref _requestMode, value);
+            set
+            {
+                if (SetProperty(ref _requestMode, value))
+                    OnPropertyChanged(nameof(ResponseInterruptionText));
+            }
         }
         private CopilotAgentMode _requestMode = CopilotAgentMode.Chat;
+
+        public bool IsResponsePending
+        {
+            get => _isResponsePending;
+            set
+            {
+                if (SetProperty(ref _isResponsePending, value))
+                {
+                    OnPropertyChanged(nameof(IsThinkingInProgress));
+                    OnPropertyChanged(nameof(HasThinkingTrace));
+                    OnPropertyChanged(nameof(ThinkingHeader));
+                    OnPropertyChanged(nameof(ThinkingSummaryToolTip));
+                }
+            }
+        }
+        private bool _isResponsePending;
+
+        public bool WasResponseInterrupted
+        {
+            get => _wasResponseInterrupted;
+            set
+            {
+                if (SetProperty(ref _wasResponseInterrupted, value))
+                {
+                    OnPropertyChanged(nameof(HasResponseInterruption));
+                    OnPropertyChanged(nameof(ResponseInterruptionText));
+                }
+            }
+        }
+        private bool _wasResponseInterrupted;
+
+        [JsonIgnore]
+        public bool HasResponseInterruption => !IsUser && WasResponseInterrupted;
+
+        [JsonIgnore]
+        public string ResponseInterruptionText => RequestMode == CopilotAgentMode.Chat
+            ? "应用退出时该回答仍在生成；已保留现有内容，但回答可能不完整。"
+            : "应用退出时该回答仍在生成，且没有可安全恢复的 Agent checkpoint；已保留现有内容。";
 
         [JsonIgnore]
         public string ModelContent => string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
@@ -508,7 +551,7 @@ namespace ColorVision.Copilot
         private DateTime _thinkingCompletedAt;
 
         [JsonIgnore]
-        public bool IsThinkingInProgress => _isProcessingInProgress || IsExecutionInProgress || IsReasoningInProgress;
+        public bool IsThinkingInProgress => _isProcessingInProgress || IsResponsePending || IsExecutionInProgress || IsReasoningInProgress;
 
         private bool _isProcessingInProgress;
 
@@ -576,6 +619,8 @@ namespace ColorVision.Copilot
         public void MarkThinkingStarted()
         {
             _isProcessingInProgress = true;
+            IsResponsePending = true;
+            WasResponseInterrupted = false;
 
             if (ThinkingStartedAt == default)
                 ThinkingStartedAt = DateTime.Now;
@@ -594,6 +639,7 @@ namespace ColorVision.Copilot
         public void MarkThinkingCompleted()
         {
             _isProcessingInProgress = false;
+            IsResponsePending = false;
 
             if (ThinkingStartedAt == default)
                 ThinkingStartedAt = CreatedAt == default ? DateTime.Now : CreatedAt;
@@ -727,13 +773,27 @@ namespace ColorVision.Copilot
                 changed |= !string.Equals(previousExecutionContent, ExecutionContent, StringComparison.Ordinal);
             }
 
-            if (IsExecutionInProgress || IsReasoningInProgress)
+            var wasResponsePending = IsResponsePending;
+            if (wasResponsePending || IsExecutionInProgress || IsReasoningInProgress)
             {
                 IsExecutionInProgress = false;
                 IsReasoningInProgress = false;
+                IsResponsePending = false;
                 _isProcessingInProgress = false;
                 if (ThinkingCompletedAt == default)
                     ThinkingCompletedAt = DateTime.Now;
+                if (wasResponsePending && !IsUser)
+                {
+                    WasResponseInterrupted = true;
+                    if (string.IsNullOrWhiteSpace(Content))
+                    {
+                        const string interruptedMessage = "回答因应用退出而中断，未收到可显示内容；可以重试本轮请求。";
+                        if (UsesResponseTimeline)
+                            AppendResponseTimelineText(interruptedMessage);
+                        else
+                            Content = interruptedMessage;
+                    }
+                }
                 changed = true;
             }
 
@@ -1392,8 +1452,32 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
-            Messages ??= new ObservableCollection<CopilotChatMessage>();
-            Attachments ??= new ObservableCollection<CopilotAttachmentItem>();
+            if (Messages == null)
+            {
+                Messages = new ObservableCollection<CopilotChatMessage>();
+                changed = true;
+            }
+            if (Attachments == null)
+            {
+                Attachments = new ObservableCollection<CopilotAttachmentItem>();
+                changed = true;
+            }
+            for (var index = Messages.Count - 1; index >= 0; index--)
+            {
+                if (Messages[index] != null)
+                    continue;
+
+                Messages.RemoveAt(index);
+                changed = true;
+            }
+            for (var index = Attachments.Count - 1; index >= 0; index--)
+            {
+                if (Attachments[index] != null)
+                    continue;
+
+                Attachments.RemoveAt(index);
+                changed = true;
+            }
             if (AgentSessionCheckpoint != null && !AgentSessionCheckpoint.IsStructurallyValid())
             {
                 AgentSessionCheckpoint = null;

@@ -13,6 +13,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="CopilotStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+        <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter" />
         <SolidColorBrush x:Key="CopilotExecutionFailureBrush" Color="#DB3340" />
         <SolidColorBrush x:Key="CopilotControlBrush" Color="#6EA8FF" />
         <SolidColorBrush x:Key="CopilotControlSurfaceBrush" Color="#226EA8FF" />
@@ -737,6 +738,20 @@
                                 Content="{Binding AgentRunNoticeText}"
                                 ToolTip="打开或查看 Agent 任务状态"
                                 Visibility="{Binding HasAgentRunNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <TextBlock Margin="0,3,0,0"
+                                   FontSize="10"
+                                   Foreground="{StaticResource CopilotControlWarningBrush}"
+                                   Text="{Binding StateRecoveryNoticeText}"
+                                   TextWrapping="Wrap"
+                                   ToolTip="{Binding StateRecoveryNoticeToolTip}"
+                                   Visibility="{Binding HasStateRecoveryNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <TextBlock Margin="0,3,0,0"
+                                   FontSize="10"
+                                   Foreground="{StaticResource CopilotControlWarningBrush}"
+                                   Text="{Binding StatePersistenceNoticeText}"
+                                   TextWrapping="Wrap"
+                                   ToolTip="{Binding StatePersistenceNoticeToolTip}"
+                                   Visibility="{Binding HasStatePersistenceNotice, Converter={StaticResource bool2VisibilityConverter}}" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="1"
@@ -1079,6 +1094,30 @@
 
                                         <local:CopilotMarkdownView Markdown="{Binding Content, Mode=OneWay}"
                                                                    Visibility="{Binding HasLegacyResponseLayout, Converter={StaticResource bool2VisibilityConverter}}" />
+
+                                        <Border Margin="0,8,0,0"
+                                                Padding="10,7"
+                                                Background="{DynamicResource GlobalBorderBrush}"
+                                                BorderBrush="#E6A23C"
+                                                BorderThickness="1"
+                                                CornerRadius="7"
+                                                Visibility="{Binding HasResponseInterruption, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <DockPanel LastChildFill="True">
+                                                <Button DockPanel.Dock="Right"
+                                                        Margin="10,0,0,0"
+                                                        Padding="10,3"
+                                                        Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="{x:Static properties:Resources.CopilotRetry}"
+                                                        Style="{StaticResource MessageActionButtonStyle}"
+                                                        ToolTip="{x:Static properties:Resources.CopilotRegenerateAnswer}" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="11"
+                                                           Foreground="#E6A23C"
+                                                           Text="{Binding ResponseInterruptionText}"
+                                                           TextWrapping="Wrap" />
+                                            </DockPanel>
+                                        </Border>
 
                                         <StackPanel Margin="0,8,0,0"
                                                     Visibility="{Binding HasLegacyThinkingTrace, Converter={StaticResource bool2VisibilityConverter}}">

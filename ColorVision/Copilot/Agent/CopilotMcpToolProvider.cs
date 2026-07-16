@@ -202,7 +202,11 @@ namespace ColorVision.Copilot
                         break;
                     }
                 }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (OperationCanceledException)
                 {
                     CopilotMcpClientHealthRegistry.RecordUnavailable(server, "Connection timed out.");
                     diagnostics.Add($"MCP client {server.Name} was unavailable · connection timed out.");
@@ -247,7 +251,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotCapabilityCatalogIdentity
+    internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotCapabilityCatalogIdentity
     {
         private const int MaximumResultLength = 65_536;
         private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
@@ -320,6 +324,9 @@ namespace ColorVision.Copilot
         public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
             => InvokeRemoteAsync(toolInput, cancellationToken);
 
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
+            => CopilotMcpClientApprovalPresentation.Create(_server.Name, _remoteTool.ProtocolTool.Name, toolInput);
+
         private async Task<CopilotToolResult> InvokeRemoteAsync(CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
             var result = await _remoteTool.CallAsync(toolInput.Arguments, cancellationToken: cancellationToken);
@@ -369,6 +376,22 @@ namespace ColorVision.Copilot
             if (normalized.Length > 800)
                 normalized = normalized[..800] + "...";
             return $"External MCP tool from configured server '{serverName}'. {normalized}".TrimEnd();
+        }
+    }
+
+    public static class CopilotMcpClientApprovalPresentation
+    {
+        public static CopilotToolApprovalPresentation Create(string serverName, string remoteToolName, CopilotAgentToolInput toolInput)
+        {
+            if (string.IsNullOrWhiteSpace(serverName))
+                throw new ArgumentException("MCP server name is required for approval.", nameof(serverName));
+            if (string.IsNullOrWhiteSpace(remoteToolName))
+                throw new ArgumentException("MCP tool name is required for approval.", nameof(remoteToolName));
+
+            var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(toolInput);
+            return new CopilotToolApprovalPresentation(
+                $"Approve MCP action: {serverName}/{remoteToolName}",
+                $"External MCP server '{serverName}' wants to run tool '{remoteToolName}'. Review the redacted argument values before approving: {argumentsSummary}");
         }
     }
 
