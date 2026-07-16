@@ -2159,6 +2159,21 @@
                                        Text="&#xE710;" />
                         </Button>
 
+                        <Button Width="28"
+                                Height="28"
+                                Margin="0,0,4,0"
+                                Style="{StaticResource CopilotIconButtonStyle}"
+                                Command="{Binding ExportConversationCommand}"
+                                CommandParameter="{Binding SelectedConversation}"
+                                DockPanel.Dock="Right"
+                                ToolTip="导出当前会话为 Markdown">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Text="&#xE74E;" />
+                        </Button>
+
                         <TextBlock VerticalAlignment="Center"
                                    FontSize="14"
                                    FontWeight="SemiBold"
@@ -2325,6 +2340,9 @@
                                                       CommandParameter="{Binding}" />
                                             <MenuItem Header="{Binding PinMenuText}"
                                                       Command="{Binding DataContext.TogglePinConversationCommand, Source={x:Reference Root}}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="导出 Markdown"
+                                                      Command="{Binding DataContext.ExportConversationCommand, Source={x:Reference Root}}"
                                                       CommandParameter="{Binding}" />
                                             <Separator />
                                             <MenuItem Header="{x:Static properties:Resources.Delete}"

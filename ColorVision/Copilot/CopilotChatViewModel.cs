@@ -169,6 +169,7 @@ namespace ColorVision.Copilot
             OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
+            ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(ExportConversation, CopilotConversationMarkdownExporter.CanExport);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
@@ -391,6 +392,8 @@ namespace ColorVision.Copilot
         public ICommand RemoveAttachmentCommand { get; }
 
         public ICommand RenameConversationCommand { get; }
+
+        public ICommand ExportConversationCommand { get; }
 
         public ICommand DeleteConversationCommand { get; }
 
@@ -2733,6 +2736,42 @@ namespace ColorVision.Copilot
             conversation.SetCustomTitle(window.ResultText);
             RefreshFilteredConversations();
             PersistState();
+        }
+
+        private void ExportConversation(CopilotConversationRecord? conversation)
+        {
+            if (!CopilotConversationMarkdownExporter.CanExport(conversation))
+                return;
+
+            var dialog = new SaveFileDialog
+            {
+                AddExtension = true,
+                CheckPathExists = true,
+                DefaultExt = ".md",
+                FileName = CopilotConversationMarkdownExporter.BuildFileName(conversation!),
+                Filter = "Markdown 文档|*.md|文本文件|*.txt|所有文件|*.*",
+                OverwritePrompt = true,
+                Title = "导出 Copilot 会话",
+            };
+
+            if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
+                return;
+
+            try
+            {
+                File.WriteAllText(dialog.FileName, CopilotConversationMarkdownExporter.BuildMarkdown(conversation!), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                LocalCommandResultTitle = "会话已导出";
+                LocalCommandResultText = dialog.FileName;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法导出会话：{ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void DeleteConversation(CopilotConversationRecord? conversation)
