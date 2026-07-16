@@ -8,12 +8,13 @@ namespace ColorVision.Copilot
     {
         public string Name => "SearchFiles";
 
-        public string Description => "Find candidate files in the current workspace by file name or path fragment, optionally limited to one workspace directory.";
+        public string Description => "Find one stable bounded page of candidate files by file name or path fragment, optionally limited to one workspace directory, with a continuation cursor when more matches remain.";
 
         public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
         {
             new CopilotToolParameter { Name = "query", Description = "Literal file name or workspace-relative path fragment to locate; not a natural-language instruction or glob.", Type = CopilotToolParameterType.Text, Required = true },
             new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
+            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding SearchFiles page for the same query and path. Never invent or modify it.", Type = CopilotToolParameterType.Text },
         });
 
         public bool IsAvailable(CopilotAgentRequest request)
@@ -47,6 +48,7 @@ namespace ColorVision.Copilot
                 toolInput?.Query,
                 request.UserText,
                 allowPlainSearchTerms: false,
+                toolInput?.Cursor,
                 cancellationToken);
             return Task.FromResult(result.ToCapabilityResult().ToToolResult(Name));
         }
