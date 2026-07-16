@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -158,7 +159,11 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotSettingsViewModel : ViewModelBase, IDisposable
     {
-        private static readonly HttpClient McpHttpClient = new()
+        private const int MaximumMcpStatusResponseBytes = 512 * 1024;
+        private static readonly HttpClient McpHttpClient = new(new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+        })
         {
             Timeout = TimeSpan.FromSeconds(5),
         };
@@ -1597,7 +1602,11 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                var body = await response.Content.ReadAsStringAsync(_lifetimeCancellation.Token);
+                var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                    response.Content,
+                    MaximumMcpStatusResponseBytes,
+                    "MCP status response",
+                    _lifetimeCancellation.Token);
                 using var document = JsonDocument.Parse(body);
                 var root = document.RootElement;
                 if (root.TryGetProperty("error", out var errorElement))

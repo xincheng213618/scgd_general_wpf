@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotHttpContentSizeLimitException : InvalidOperationException
+    {
+        public CopilotHttpContentSizeLimitException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public static class CopilotBoundedHttpContentReader
     {
         private const int BufferSize = 8192;
@@ -80,9 +88,9 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static InvalidOperationException CreateSizeLimitException(string label, int maximumBytes)
+        private static CopilotHttpContentSizeLimitException CreateSizeLimitException(string label, int maximumBytes)
         {
-            return new InvalidOperationException($"{label} exceeded the size limit ({maximumBytes / 1024} KB).");
+            return new CopilotHttpContentSizeLimitException($"{label} exceeded the size limit ({maximumBytes / 1024} KB).");
         }
     }
 }

@@ -1560,6 +1560,70 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task ChatService_DecodesDeclaredCharsetForNonStreamingResponse()
+    {
+        var responseContent = new ByteArrayContent(Encoding.Latin1.GetBytes("{\"choices\":[{\"message\":{\"content\":\"café\"}}]}"));
+        responseContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json")
+        {
+            CharSet = "iso-8859-1",
+        };
+        using var httpClient = new HttpClient(new StaticResponseHandler(() => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = responseContent,
+        }));
+        var service = new CopilotChatService(httpClient);
+
+        var reply = await service.CompleteReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            CancellationToken.None);
+
+        Assert.Equal("café", reply.Delta.Content);
+    }
+
+    [Fact]
+    public async Task ChatService_RejectsOversizedNonStreamingResponse()
+    {
+        var oversizedBody = Encoding.UTF8.GetBytes(new string('x', 4 * 1024 * 1024 + 1));
+        using var httpClient = new HttpClient(new StaticResponseHandler(() =>
+        {
+            var content = new ByteArrayContent(oversizedBody);
+            content.Headers.ContentLength = 1;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+        }));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.CompleteReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            CancellationToken.None));
+
+        Assert.Contains("Non-streaming provider response", error.Message, StringComparison.Ordinal);
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChatService_RejectsOversizedProviderErrorResponseWithStatusCode()
+    {
+        var oversizedBody = Encoding.UTF8.GetBytes(new string('x', 256 * 1024 + 1));
+        using var httpClient = new HttpClient(new StaticResponseHandler(() =>
+        {
+            var content = new ByteArrayContent(oversizedBody);
+            content.Headers.ContentLength = 1;
+            return new HttpResponseMessage(HttpStatusCode.BadRequest) { Content = content };
+        }));
+        var service = new CopilotChatService(httpClient);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CompleteReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            CancellationToken.None));
+
+        Assert.StartsWith("400: Provider error response", error.Message, StringComparison.Ordinal);
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ChatService_PropagatesRequestCancellation()
     {
         using var httpClient = new HttpClient(new DelayedResponseHandler());

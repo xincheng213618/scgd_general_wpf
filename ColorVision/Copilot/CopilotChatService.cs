@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -14,11 +15,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatService
     {
+        private const int MaximumProviderErrorResponseBytes = 256 * 1024;
+        private const int MaximumNonStreamingResponseBytes = 4 * 1024 * 1024;
         private const string ProviderStatusCodeDataKey = "ColorVision.Copilot.ProviderStatusCode";
-        private static readonly HttpClient SharedHttpClient = new()
-        {
-            Timeout = TimeSpan.FromMinutes(5),
-        };
+        private static readonly HttpClient SharedHttpClient = CreateHttpClient();
         private readonly HttpClient _httpClient;
         private readonly int _maximumAttempts;
         private readonly Func<int, TimeSpan> _retryDelayFactory;
@@ -129,7 +129,22 @@ namespace ColorVision.Copilot
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                string errorBody;
+                try
+                {
+                    errorBody = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                        response.Content,
+                        MaximumProviderErrorResponseBytes,
+                        "Provider error response",
+                        cancellationToken);
+                }
+                catch (CopilotHttpContentSizeLimitException exception)
+                {
+                    var oversizedResponseException = new InvalidOperationException($"{(int)response.StatusCode}: {exception.Message}", exception);
+                    oversizedResponseException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                    throw oversizedResponseException;
+                }
+
                 var providerException = new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode, config.ApiKey));
                 providerException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
                 throw providerException;
@@ -139,7 +154,11 @@ namespace ColorVision.Copilot
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
                 return await ReadStreamingResponseAsync(config, response, onDelta, cancellationToken);
 
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                response.Content,
+                MaximumNonStreamingResponseBytes,
+                "Non-streaming provider response",
+                cancellationToken);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
                 throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
@@ -295,6 +314,17 @@ namespace ColorVision.Copilot
                 return new Uri(baseUrl + "/chat/completions", UriKind.Absolute);
 
             return new Uri(baseUrl + "/v1/chat/completions", UriKind.Absolute);
+        }
+
+        private static HttpClient CreateHttpClient()
+        {
+            return new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            })
+            {
+                Timeout = TimeSpan.FromMinutes(5),
+            };
         }
 
         private static async Task<CopilotTokenUsage> ReadStreamingResponseAsync(
