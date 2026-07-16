@@ -1337,6 +1337,11 @@ namespace ColorVision.Copilot
             builder.AppendLine("Fetched pages may expose bounded same-origin page links and structured data resources. For site-exploration requests, follow only one or two links directly relevant to the user's goal; never crawl every discovered page.");
             builder.AppendLine("Avoid identical calls. Do not stop immediately after a successful tool call; use its observation to decide whether another tool is needed, then answer naturally.");
             builder.AppendLine("Repeat an identical tool call only when its structured result says retry_allowed: true. A retry is a new bounded attempt; protected tools require a fresh approval.");
+            if (tools.Any(tool => string.Equals(tool.Name, "SearchFiles", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(tool.Name, "GrepText", StringComparison.OrdinalIgnoreCase)))
+            {
+                builder.AppendLine("SearchFiles and GrepText accept an optional workspace-relative or absolute directory path. Use it to narrow large-workspace searches when the relevant area is known; returned match paths remain relative to the original workspace root and can be passed directly to file tools.");
+            }
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))
             {

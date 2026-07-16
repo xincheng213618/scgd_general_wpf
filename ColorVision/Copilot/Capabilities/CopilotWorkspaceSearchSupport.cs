@@ -176,6 +176,30 @@ namespace ColorVision.Copilot
             return TryResolveExistingPathWithinRoots(path, roots, Directory.Exists, "directory", out fullPath, out errorMessage);
         }
 
+        public static bool TryResolveDirectoryScope(
+            string? path,
+            IEnumerable<string>? roots,
+            out IReadOnlyList<string> scopedRoots,
+            out string errorMessage)
+        {
+            var normalizedRoots = NormalizeSearchRoots(roots);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                scopedRoots = normalizedRoots;
+                errorMessage = normalizedRoots.Count == 0 ? "No searchable workspace root is available." : string.Empty;
+                return normalizedRoots.Count > 0;
+            }
+
+            if (TryResolveExistingDirectoryWithinRoots(path, normalizedRoots, out var directoryPath, out errorMessage))
+            {
+                scopedRoots = [directoryPath];
+                return true;
+            }
+
+            scopedRoots = Array.Empty<string>();
+            return false;
+        }
+
         public static string GetDisplayPath(string rootPath, string fullPath)
         {
             try

@@ -79,7 +79,30 @@ namespace ColorVision.Copilot
             bool allowPlainSearchTerms,
             CancellationToken cancellationToken)
         {
+            return SearchWithinScope(
+                searchRootPaths,
+                searchRootPaths,
+                query,
+                fallbackText,
+                allowPlainSearchTerms,
+                cancellationToken);
+        }
+
+        public static CopilotFileSearchResult SearchWithinScope(
+            IEnumerable<string> searchRootPaths,
+            IEnumerable<string> displayRootPaths,
+            string? query,
+            string? fallbackText,
+            bool allowPlainSearchTerms,
+            CancellationToken cancellationToken)
+        {
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
+            var displayRootMap = searchRoots.ToDictionary(
+                root => root,
+                root => displayRoots.FirstOrDefault(displayRoot =>
+                    CopilotWorkspaceSearchSupport.IsPathWithinRoots(root, [displayRoot])) ?? root,
+                StringComparer.OrdinalIgnoreCase);
             var terms = ResolveSearchTerms(query, fallbackText, allowPlainSearchTerms);
             if (searchRoots.Count == 0 || terms.Count == 0)
             {
@@ -102,13 +125,14 @@ namespace ColorVision.Copilot
                 if (scannedFiles > MaxFilesToScan)
                     break;
 
-                var score = ScoreCandidate(entry, terms);
+                var displayEntry = new CopilotSearchFileEntry(displayRootMap[entry.RootPath], entry.FullPath);
+                var score = ScoreCandidate(displayEntry, terms);
                 if (score > 0)
                 {
                     matches.Add(new CopilotFileSearchMatch
                     {
                         Score = score,
-                        RootPath = entry.RootPath,
+                        RootPath = displayEntry.RootPath,
                         FullPath = entry.FullPath,
                     });
                 }

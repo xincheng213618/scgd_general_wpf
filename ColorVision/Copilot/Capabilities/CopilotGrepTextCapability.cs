@@ -102,7 +102,28 @@ namespace ColorVision.Copilot
             string? fallbackText,
             CancellationToken cancellationToken)
         {
+            return SearchWithinScope(
+                searchRootPaths,
+                searchRootPaths,
+                query,
+                fallbackText,
+                cancellationToken);
+        }
+
+        public static CopilotTextSearchResult SearchWithinScope(
+            IEnumerable<string> searchRootPaths,
+            IEnumerable<string> displayRootPaths,
+            string? query,
+            string? fallbackText,
+            CancellationToken cancellationToken)
+        {
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
+            var displayRootMap = searchRoots.ToDictionary(
+                root => root,
+                root => displayRoots.FirstOrDefault(displayRoot =>
+                    CopilotWorkspaceSearchSupport.IsPathWithinRoots(root, [displayRoot])) ?? root,
+                StringComparer.OrdinalIgnoreCase);
             var patterns = ResolvePatterns(query, fallbackText);
             if (searchRoots.Count == 0 || patterns.Count == 0)
             {
@@ -139,7 +160,7 @@ namespace ColorVision.Copilot
 
                         matches.Add(new CopilotTextSearchMatch
                         {
-                            RootPath = entry.RootPath,
+                            RootPath = displayRootMap[entry.RootPath],
                             FullPath = entry.FullPath,
                             LineNumber = lineNumber,
                             LineText = line,

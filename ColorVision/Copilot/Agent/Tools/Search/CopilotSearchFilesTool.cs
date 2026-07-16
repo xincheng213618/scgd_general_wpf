@@ -8,9 +8,13 @@ namespace ColorVision.Copilot
     {
         public string Name => "SearchFiles";
 
-        public string Description => "Find candidate files in the current solution by file name or path fragment.";
+        public string Description => "Find candidate files in the current workspace by file name or path fragment, optionally limited to one workspace directory.";
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("File name or path fragment to locate.", required: true);
+        public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
+        {
+            new CopilotToolParameter { Name = "query", Description = "File name or path fragment to locate.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
+        });
 
         public bool IsAvailable(CopilotAgentRequest request)
         {
@@ -26,7 +30,19 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var result = CopilotSearchFilesCapability.Search(
+            if (!CopilotWorkspaceSearchSupport.TryResolveDirectoryScope(
+                toolInput?.Path, request.SearchRootPaths, out var searchRoots, out var scopeError))
+            {
+                return Task.FromResult(new CopilotCapabilityResult
+                {
+                    Success = false,
+                    Summary = "The requested file-search directory could not be resolved within the current workspace.",
+                    ErrorMessage = scopeError,
+                }.ToToolResult(Name));
+            }
+
+            var result = CopilotSearchFilesCapability.SearchWithinScope(
+                searchRoots,
                 request.SearchRootPaths,
                 toolInput?.Query,
                 request.UserText,
