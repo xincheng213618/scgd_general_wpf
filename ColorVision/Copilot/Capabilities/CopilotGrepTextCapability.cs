@@ -149,6 +149,10 @@ namespace ColorVision.Copilot
                             break;
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch
                 {
                 }

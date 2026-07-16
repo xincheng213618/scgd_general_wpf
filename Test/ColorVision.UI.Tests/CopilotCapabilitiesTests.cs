@@ -2,6 +2,8 @@
 using ColorVision.Copilot;
 using System;
 using System.IO;
+using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -74,6 +76,42 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public void GrepText_SkipsOversizedTextFiles()
+    {
+        var filePath = Path.Combine(_tempRoot, "oversized.log");
+        File.WriteAllText(filePath, new string('x', 9 * 1024 * 1024) + "UNIQUE_MATCH_TERM");
+
+        var result = CopilotGrepTextCapability.Search(
+            new[] { _tempRoot },
+            "UNIQUE_MATCH_TERM",
+            fallbackText: null,
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(0, result.ScannedTextFileCount);
+        Assert.Empty(result.Matches);
+    }
+
+    [Fact]
+    public void GrepText_PropagatesCancellationDuringFileScan()
+    {
+        var filePath = Path.Combine(_tempRoot, "many-lines.log");
+        using (var writer = new StreamWriter(filePath))
+        {
+            for (var index = 0; index < 100_000; index++)
+                writer.WriteLine("a searchable line without the requested value");
+        }
+
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+
+        Assert.Throws<OperationCanceledException>(() => CopilotGrepTextCapability.Search(
+            new[] { _tempRoot },
+            "NEVER_MATCH_THIS_TERM",
+            fallbackText: null,
+            cancellation.Token));
+    }
+
+    [Fact]
     public void GrepText_WithChineseQuestion_FindsRelevantChineseTerms()
     {
         var filePath = Path.Combine(_tempRoot, "Calibration.md");
@@ -110,6 +148,55 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         Assert.Equal("OpenCV camera calibration", hit.Title);
         Assert.Equal("https://example.com/opencv-camera-calibration", hit.Url);
         Assert.Contains("distortion coefficients", hit.Snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_DecodesDeclaredCharset()
+    {
+        using var content = new ByteArrayContent(Encoding.Latin1.GetBytes("café déjà vu"));
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain")
+        {
+            CharSet = "iso-8859-1",
+        };
+
+        var result = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+            content,
+            maximumBytes: 1024,
+            contentLabel: "Test response",
+            CancellationToken.None);
+
+        Assert.Equal("café déjà vu", result);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_RejectsBodyLargerThanDeclaredLimit()
+    {
+        using var content = new ByteArrayContent(new byte[1025]);
+        content.Headers.ContentLength = 1;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                content,
+                maximumBytes: 1024,
+                contentLabel: "Test response",
+                CancellationToken.None));
+
+        Assert.Contains("size limit", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_PropagatesCancellationBeforeRead()
+    {
+        using var content = new ByteArrayContent(Encoding.UTF8.GetBytes("content"));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                content,
+                maximumBytes: 1024,
+                contentLabel: "Test response",
+                cancellation.Token));
     }
 
     [Fact]
@@ -610,6 +697,58 @@ public sealed class CopilotCapabilitiesTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadLocalFile_BoundsLargeSingleLineWithoutReadingItIntoResult()
+    {
+        var filePath = Path.Combine(_tempRoot, "large-single-line.txt");
+        await File.WriteAllTextAsync(
+            filePath,
+            new string('x', CopilotLocalFileToolSupport.MaxReadCharacters + 5_000) + "TAIL_SHOULD_NOT_BE_INCLUDED");
+
+        var result = await CopilotReadLocalFileCapability.ReadAsync(
+            new[] { filePath },
+            filePath,
+            preferBatchReadAll: false,
+            startLine: null,
+            endLine: null,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Contains("content truncated", result.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("TAIL_SHOULD_NOT_BE_INCLUDED", result.Content, StringComparison.Ordinal);
+        Assert.True(result.Content.Length < CopilotLocalFileToolSupport.MaxReadCharacters + 500);
+    }
+
+    [Fact]
+    public async Task ReadAttachedFile_BoundsLargeSingleLineAndRejectsBinaryContent()
+    {
+        var textFilePath = Path.Combine(_tempRoot, "attached-large.txt");
+        var binaryFilePath = Path.Combine(_tempRoot, "attached-binary.dat");
+        await File.WriteAllTextAsync(
+            textFilePath,
+            new string('a', CopilotLocalFileToolSupport.MaxReadCharacters + 2_000) + "ATTACHMENT_TAIL");
+        await File.WriteAllBytesAsync(binaryFilePath, new byte[] { 1, 0, 2, 3 });
+
+        var tool = new CopilotReadAttachedFileTool();
+        var result = await tool.ExecuteAsync(
+            new CopilotAgentRequest
+            {
+                Mode = CopilotAgentMode.Auto,
+                Attachments =
+                [
+                    CopilotAttachmentItem.CreateFile(textFilePath),
+                    CopilotAttachmentItem.CreateFile(binaryFilePath),
+                ],
+            },
+            CopilotAgentToolInput.Empty,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Contains("content truncated", result.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("ATTACHMENT_TAIL", result.Content, StringComparison.Ordinal);
+        Assert.Contains("does not appear to be a directly readable text file", result.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ReadLocalFile_RejectsSelectedPathOutsideAllowedList()
     {
         var allowedPath = Path.Combine(_tempRoot, "allowed.txt");
@@ -646,6 +785,20 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         Assert.Contains("[File] README.md", result.Content, StringComparison.Ordinal);
         Assert.Contains(textFilePath, result.SuggestedReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
         Assert.DoesNotContain(binaryFilePath, result.SuggestedReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ListDirectory_BoundsDisplayedAndSuggestedFiles()
+    {
+        for (var index = 0; index < 100; index++)
+            File.WriteAllText(Path.Combine(_tempRoot, $"file-{index:D3}.txt"), index.ToString());
+
+        var result = CopilotListDirectoryCapability.List(new[] { _tempRoot }, _tempRoot, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Contains("[Files] 60+", result.Content, StringComparison.Ordinal);
+        Assert.Contains("directory content truncated", result.Content, StringComparison.Ordinal);
+        Assert.Equal(10, result.SuggestedReadableLocalFilePaths.Count);
     }
 
     [Fact]

@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
                 };
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             var builder = new StringBuilder();
             var successCount = 0;
             var errors = new List<string>();
@@ -145,6 +147,15 @@ namespace ColorVision.Copilot
     public static class CopilotListDirectoryCapability
     {
         private const int MaxListedEntries = 60;
+        private const int MaxSuggestedReadableFiles = 10;
+
+        private static readonly EnumerationOptions ListEnumerationOptions = new()
+        {
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = false,
+            ReturnSpecialDirectories = false,
+        };
 
         public static CopilotCapabilityResult List(
             IEnumerable<string> readableLocalDirectoryPaths,
@@ -194,16 +205,20 @@ namespace ColorVision.Copilot
                 };
             }
 
-            string[] subDirectories;
-            string[] files;
+            BoundedDirectoryEntries subDirectories;
+            BoundedDirectoryEntries files;
             try
             {
-                subDirectories = Directory.EnumerateDirectories(directoryPath)
-                    .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-                files = Directory.EnumerateFiles(directoryPath)
-                    .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
+                subDirectories = EnumerateBounded(
+                    () => Directory.EnumerateDirectories(directoryPath, "*", ListEnumerationOptions),
+                    cancellationToken);
+                files = EnumerateBounded(
+                    () => Directory.EnumerateFiles(directoryPath, "*", ListEnumerationOptions),
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -215,16 +230,14 @@ namespace ColorVision.Copilot
                 };
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-
             var builder = new StringBuilder();
             builder.AppendLine($"[Directory] {directoryPath}");
-            builder.AppendLine($"[Subdirectories] {subDirectories.Length}");
-            builder.AppendLine($"[Files] {files.Length}");
+            builder.AppendLine($"[Subdirectories] {FormatEntryCount(subDirectories)}");
+            builder.AppendLine($"[Files] {FormatEntryCount(files)}");
             builder.AppendLine();
 
             var listedCount = 0;
-            foreach (var subDirectory in subDirectories)
+            foreach (var subDirectory in subDirectories.Paths)
             {
                 if (listedCount >= MaxListedEntries)
                     break;
@@ -234,7 +247,7 @@ namespace ColorVision.Copilot
                 listedCount++;
             }
 
-            foreach (var file in files)
+            foreach (var file in files.Paths)
             {
                 if (listedCount >= MaxListedEntries)
                     break;
@@ -244,7 +257,7 @@ namespace ColorVision.Copilot
                 listedCount++;
             }
 
-            if (subDirectories.Length + files.Length > listedCount)
+            if (subDirectories.HasMore || files.HasMore || subDirectories.Paths.Count + files.Paths.Count > listedCount)
             {
                 builder.AppendLine();
                 builder.AppendLine($"...<directory content truncated; showing the first {listedCount} entries.>");
@@ -253,13 +266,44 @@ namespace ColorVision.Copilot
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"Listed {GetDirectoryLabel(directoryPath)} with {subDirectories.Length} subdirectories and {files.Length} files.",
+                Summary = $"Listed {GetDirectoryLabel(directoryPath)} with {FormatEntryCount(subDirectories)} subdirectories and {FormatEntryCount(files)} files.",
                 Content = builder.ToString().TrimEnd(),
-                SuggestedReadableLocalFilePaths = files
+                SuggestedReadableLocalFilePaths = files.Paths
                     .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
+                    .Take(MaxSuggestedReadableFiles)
                     .ToArray(),
             };
         }
+
+        private static BoundedDirectoryEntries EnumerateBounded(
+            Func<IEnumerable<string>> createEntries,
+            CancellationToken cancellationToken)
+        {
+            var paths = new List<string>(MaxListedEntries + 1);
+            using var enumerator = createEntries().GetEnumerator();
+            while (paths.Count <= MaxListedEntries)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!enumerator.MoveNext())
+                    break;
+
+                paths.Add(enumerator.Current);
+            }
+
+            var hasMore = paths.Count > MaxListedEntries;
+            return new BoundedDirectoryEntries(
+                paths.Take(MaxListedEntries)
+                    .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                hasMore);
+        }
+
+        private static string FormatEntryCount(BoundedDirectoryEntries entries)
+        {
+            return entries.HasMore ? $"{entries.Paths.Count}+" : entries.Paths.Count.ToString();
+        }
+
+        private readonly record struct BoundedDirectoryEntries(IReadOnlyList<string> Paths, bool HasMore);
 
         private static string GetDirectoryLabel(string directoryPath)
         {

@@ -19,7 +19,7 @@ namespace ColorVision.Copilot
 
         public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsRecentLogs(request);
 
-        public Task<CopilotToolResult> ExecuteAsync(
+        public async Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
@@ -27,8 +27,13 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var query = (toolInput?.Query ?? string.Empty).Trim();
-            var result = CopilotRecentLogCapability.Capture(query, CopilotRecentLogMode.RecentLines, MaxLogLines, MaxLogChars);
-            return Task.FromResult(result.ToToolResult(Name));
+            var result = await CopilotRecentLogCapability.CaptureAsync(
+                query,
+                CopilotRecentLogMode.RecentLines,
+                MaxLogLines,
+                MaxLogChars,
+                cancellationToken);
+            return result.ToToolResult(Name);
         }
     }
 }

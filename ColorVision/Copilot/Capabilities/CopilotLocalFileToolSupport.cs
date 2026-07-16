@@ -122,47 +122,18 @@ namespace ColorVision.Copilot
                 }
 
                 stream.Position = 0;
-                using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
                 var normalizedStartLine = Math.Max(1, startLine ?? 1);
                 var normalizedEndLine = endLine.HasValue
                     ? Math.Max(normalizedStartLine, endLine.Value)
                     : int.MaxValue;
-                var wasTruncated = false;
-                var builder = new System.Text.StringBuilder();
-                var currentLine = 0;
-                var actualStartLine = 0;
-                var actualEndLine = 0;
+                using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+                var range = await ReadBoundedRangeAsync(
+                    reader,
+                    normalizedStartLine,
+                    normalizedEndLine,
+                    cancellationToken);
 
-                while (!reader.EndOfStream)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var line = await reader.ReadLineAsync() ?? string.Empty;
-                    currentLine++;
-
-                    if (currentLine < normalizedStartLine)
-                        continue;
-
-                    if (currentLine > normalizedEndLine)
-                        break;
-
-                    actualStartLine = actualStartLine == 0 ? currentLine : actualStartLine;
-                    actualEndLine = currentLine;
-
-                    var lineWithBreak = line + Environment.NewLine;
-                    if (builder.Length + lineWithBreak.Length > MaxReadCharacters)
-                    {
-                        var remaining = Math.Max(0, MaxReadCharacters - builder.Length);
-                        if (remaining > 0)
-                            builder.Append(lineWithBreak[..Math.Min(remaining, lineWithBreak.Length)]);
-
-                        wasTruncated = true;
-                        break;
-                    }
-
-                    builder.Append(lineWithBreak);
-                }
-
-                if (actualStartLine == 0 && currentLine < normalizedStartLine)
+                if (range.ActualStartLine == 0 && range.TotalLineCount < normalizedStartLine)
                 {
                     return new CopilotLocalFileReadResult(
                         fullPath,
@@ -174,9 +145,9 @@ namespace ColorVision.Copilot
                         0);
                 }
 
-                var content = builder.ToString().TrimEnd();
+                var content = range.Content.TrimEnd();
 
-                if (wasTruncated)
+                if (range.WasTruncated)
                 {
                     content += Environment.NewLine + $"...<content truncated; kept the first {MaxReadCharacters} characters.>";
                 }
@@ -184,11 +155,11 @@ namespace ColorVision.Copilot
                 return new CopilotLocalFileReadResult(
                     fullPath,
                     true,
-                    wasTruncated,
+                    range.WasTruncated,
                     content.TrimEnd(),
                     string.Empty,
-                    actualStartLine,
-                    actualEndLine);
+                    range.ActualStartLine,
+                    range.ActualEndLine);
             }
             catch (OperationCanceledException)
             {
@@ -206,6 +177,76 @@ namespace ColorVision.Copilot
                     0);
             }
         }
+
+        private static async Task<BoundedTextRange> ReadBoundedRangeAsync(
+            StreamReader reader,
+            int startLine,
+            int endLine,
+            CancellationToken cancellationToken)
+        {
+            var builder = new System.Text.StringBuilder(MaxReadCharacters);
+            var buffer = new char[4096];
+            var currentLine = 1;
+            var totalLineCount = 0;
+            var actualStartLine = 0;
+            var actualEndLine = 0;
+            var hasCharactersSinceLastLineFeed = false;
+            var wasTruncated = false;
+            var reachedRequestedEnd = false;
+
+            while (!wasTruncated && !reachedRequestedEnd)
+            {
+                var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
+                if (read == 0)
+                    break;
+
+                for (var index = 0; index < read; index++)
+                {
+                    var character = buffer[index];
+                    hasCharactersSinceLastLineFeed = true;
+                    if (currentLine >= startLine && currentLine <= endLine)
+                    {
+                        actualStartLine = actualStartLine == 0 ? currentLine : actualStartLine;
+                        actualEndLine = currentLine;
+                        if (builder.Length >= MaxReadCharacters)
+                        {
+                            wasTruncated = true;
+                            break;
+                        }
+                        builder.Append(character);
+                    }
+
+                    if (character != '\n')
+                        continue;
+
+                    totalLineCount = currentLine;
+                    hasCharactersSinceLastLineFeed = false;
+                    currentLine++;
+                    if (currentLine > endLine)
+                    {
+                        reachedRequestedEnd = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!reachedRequestedEnd && !wasTruncated && hasCharactersSinceLastLineFeed)
+                totalLineCount = currentLine;
+
+            return new BoundedTextRange(
+                builder.ToString(),
+                wasTruncated,
+                actualStartLine,
+                actualEndLine,
+                totalLineCount);
+        }
+
+        private readonly record struct BoundedTextRange(
+            string Content,
+            bool WasTruncated,
+            int ActualStartLine,
+            int ActualEndLine,
+            int TotalLineCount);
 
         private static void AddMatches(List<string> results, MatchCollection matches)
         {

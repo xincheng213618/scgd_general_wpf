@@ -551,27 +551,11 @@ namespace ColorVision.Copilot
 
         private static async Task<string> ReadWebPageContentAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var buffer = new MemoryStream();
-            var chunk = new byte[8192];
-            var totalBytes = 0;
-
-            while (true)
-            {
-                var bytesRead = await stream.ReadAsync(chunk.AsMemory(0, chunk.Length), cancellationToken);
-                if (bytesRead <= 0)
-                    break;
-
-                totalBytes += bytesRead;
-                if (totalBytes > MaxWebPageDownloadBytes)
-                    throw new InvalidOperationException($"Web page content exceeded the size limit ({MaxWebPageDownloadBytes / 1024} KB).");
-
-                await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
-            }
-
-            buffer.Position = 0;
-            using var reader = new StreamReader(buffer, Encoding.UTF8, true);
-            return await reader.ReadToEndAsync(cancellationToken);
+            return await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                response.Content,
+                MaxWebPageDownloadBytes,
+                "Web page content",
+                cancellationToken);
         }
 
         private static HttpClient CreateHttpClient()
@@ -579,6 +563,7 @@ namespace ColorVision.Copilot
             var client = new HttpClient(new HttpClientHandler
             {
                 AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
             })
             {
                 Timeout = TimeSpan.FromSeconds(20),

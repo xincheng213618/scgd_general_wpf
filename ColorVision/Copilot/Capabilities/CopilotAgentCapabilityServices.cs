@@ -75,6 +75,22 @@ namespace ColorVision.Copilot
         public static CopilotCapabilityResult Capture(string? query, CopilotRecentLogMode mode, int maxLines, int maxChars)
         {
             var snapshot = CopilotRecentLogSupport.Capture(query, mode, maxLines, maxChars);
+            return ToCapabilityResult(snapshot);
+        }
+
+        public static async Task<CopilotCapabilityResult> CaptureAsync(
+            string? query,
+            CopilotRecentLogMode mode,
+            int maxLines,
+            int maxChars,
+            CancellationToken cancellationToken)
+        {
+            var snapshot = await CopilotRecentLogSupport.CaptureAsync(query, mode, maxLines, maxChars, cancellationToken);
+            return ToCapabilityResult(snapshot);
+        }
+
+        private static CopilotCapabilityResult ToCapabilityResult(CopilotRecentLogSnapshot snapshot)
+        {
             if (!snapshot.Success)
             {
                 return new CopilotCapabilityResult

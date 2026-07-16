@@ -208,7 +208,7 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
 
-        public Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult> RecentLogProvider { get; init; } = CopilotRecentLogCapability.Capture;
+        public Func<string?, CopilotRecentLogMode, int, int, CancellationToken, Task<CopilotCapabilityResult>> RecentLogProvider { get; init; } = CopilotRecentLogCapability.CaptureAsync;
 
         public Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyTemplatePatchHandler { get; init; } = ApplyTemplatePatchToActiveEditorAsync;
 
