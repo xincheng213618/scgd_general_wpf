@@ -60,6 +60,33 @@ namespace ColorVision.Copilot
             var attachmentContext = includeAttachmentContext
                 ? BuildAttachmentContextBlock(attachments, limits.MaximumContentCharacters)
                 : string.Empty;
+            return SelectChatHistory(history, attachmentContext, limits);
+        }
+
+        public static async Task<IReadOnlyList<CopilotRequestMessage>> BuildChatHistoryAsync(
+            CopilotConversationHistorySnapshot historySnapshot,
+            string? currentUserModelContent,
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            CopilotConversationHistoryLimits limits,
+            bool includeAttachmentContext,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(historySnapshot);
+            cancellationToken.ThrowIfCancellationRequested();
+            var history = historySnapshot.ModelMessages
+                .Append(new CopilotRequestMessage("user", (currentUserModelContent ?? string.Empty).Trim()))
+                .ToArray();
+            var attachmentContext = includeAttachmentContext
+                ? await BuildAttachmentContextBlockAsync(attachments, limits.MaximumContentCharacters, cancellationToken).ConfigureAwait(false)
+                : string.Empty;
+            return SelectChatHistory(history, attachmentContext, limits);
+        }
+
+        private static IReadOnlyList<CopilotRequestMessage> SelectChatHistory(
+            IReadOnlyList<CopilotRequestMessage> history,
+            string attachmentContext,
+            CopilotConversationHistoryLimits limits)
+        {
             if (string.IsNullOrWhiteSpace(attachmentContext))
                 return CopilotConversationHistoryWindow.Select(history, limits);
 
@@ -114,6 +141,34 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotAttachmentItem>? attachments,
             int maximumWeight = AttachmentContentLimit * CopilotTokenEstimator.AsciiCharactersPerToken)
         {
+            return BuildAttachmentContextBlockCoreAsync(
+                    attachments,
+                    maximumWeight,
+                    static (attachment, _) => new ValueTask<string>(BuildAttachmentBlock(attachment)),
+                    CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+        }
+
+        public static Task<string> BuildAttachmentContextBlockAsync(
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            int maximumWeight = AttachmentContentLimit * CopilotTokenEstimator.AsciiCharactersPerToken,
+            CancellationToken cancellationToken = default)
+        {
+            return BuildAttachmentContextBlockCoreAsync(
+                attachments,
+                maximumWeight,
+                BuildAttachmentBlockAsync,
+                cancellationToken);
+        }
+
+        private static async Task<string> BuildAttachmentContextBlockCoreAsync(
+            IEnumerable<CopilotAttachmentItem>? attachments,
+            int maximumWeight,
+            Func<CopilotAttachmentItem, CancellationToken, ValueTask<string>> buildAttachmentBlockAsync,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             var builder = new StringBuilder();
             const string truncationMarker = "\n...<attachment context truncated>";
             var truncationMarkerWeight = CopilotTokenEstimator.EstimateTextWeight(truncationMarker);
@@ -124,6 +179,7 @@ namespace ColorVision.Copilot
             var wasTruncated = false;
             foreach (var attachment in attachments ?? Array.Empty<CopilotAttachmentItem>())
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (attachment == null)
                     continue;
                 if (!hasAttachments)
@@ -138,13 +194,8 @@ namespace ColorVision.Copilot
                     }
                 }
 
-                var block = attachment.Type switch
-                {
-                    CopilotAttachmentType.File => BuildFileAttachmentBlock(attachment),
-                    CopilotAttachmentType.Image => BuildImageAttachmentBlock(attachment),
-                    CopilotAttachmentType.WebPage => BuildWebPageAttachmentBlock(attachment),
-                    _ => BuildContextAttachmentBlock(attachment),
-                };
+                var block = await buildAttachmentBlockAsync(attachment, cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!TryAppendWithinWeight(builder, block + Environment.NewLine, ref remainingWeight))
                 {
                     wasTruncated = true;
@@ -290,6 +341,65 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static async ValueTask<string> BuildAttachmentBlockAsync(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken)
+        {
+            return attachment.Type switch
+            {
+                CopilotAttachmentType.File => await BuildFileAttachmentBlockAsync(attachment, cancellationToken).ConfigureAwait(false),
+                CopilotAttachmentType.Image => BuildImageAttachmentBlock(attachment),
+                CopilotAttachmentType.WebPage => BuildWebPageAttachmentBlock(attachment),
+                _ => BuildContextAttachmentBlock(attachment),
+            };
+        }
+
+        private static string BuildAttachmentBlock(CopilotAttachmentItem attachment)
+        {
+            return attachment.Type switch
+            {
+                CopilotAttachmentType.File => BuildFileAttachmentBlock(attachment),
+                CopilotAttachmentType.Image => BuildImageAttachmentBlock(attachment),
+                CopilotAttachmentType.WebPage => BuildWebPageAttachmentBlock(attachment),
+                _ => BuildContextAttachmentBlock(attachment),
+            };
+        }
+
+        private static Task<string> BuildFileAttachmentBlockAsync(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // Opening a file can block before asynchronous reads begin, especially for UNC paths.
+            return Task.Run(() => BuildFileAttachmentBlockCoreAsync(attachment, cancellationToken), cancellationToken);
+        }
+
+        private static async Task<string> BuildFileAttachmentBlockCoreAsync(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!File.Exists(attachment.Value))
+                    return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
+
+                var (content, wasTruncated) = await ReadBoundedTextFileAsync(attachment.Value, cancellationToken).ConfigureAwait(false);
+                if (wasTruncated)
+                    content += "\n...<truncated>";
+                var fence = ResolveCodeFence(attachment.Value);
+                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nRead failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}\n";
+            }
+        }
+
         private static string BuildImageAttachmentBlock(CopilotAttachmentItem attachment)
         {
             if (!File.Exists(attachment.Value))
@@ -416,6 +526,36 @@ namespace ColorVision.Copilot
 
             wasTruncated = totalRead > AttachmentContentLimit || reader.Peek() >= 0;
             return new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
+        }
+
+        private static async Task<(string Content, bool WasTruncated)> ReadBoundedTextFileAsync(
+            string filePath,
+            CancellationToken cancellationToken)
+        {
+            using var stream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite,
+                bufferSize: 4096,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+            var buffer = new char[AttachmentContentLimit + 1];
+            var totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                var read = await reader.ReadBlockAsync(
+                        buffer.AsMemory(totalRead, buffer.Length - totalRead),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (read == 0)
+                    break;
+                totalRead += read;
+            }
+
+            return (
+                new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit)),
+                totalRead > AttachmentContentLimit);
         }
 
         private static string ResolveCodeFence(string filePath)

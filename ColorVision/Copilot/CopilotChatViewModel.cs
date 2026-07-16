@@ -1440,12 +1440,13 @@ namespace ColorVision.Copilot
                 userMessage.RequestContent = AppendImageUnderstandingContext(requestContent, imageUnderstanding);
             }
 
-            var history = CopilotConversationRequestBuilder.BuildChatHistory(
+            var history = await CopilotConversationRequestBuilder.BuildChatHistoryAsync(
                 turnSnapshot.ConversationHistory,
                 userMessage.RequestContent,
                 turnSnapshot.Attachments,
                 ResolveConversationHistoryLimits(requestProfile),
-                includeAttachmentContext: true);
+                includeAttachmentContext: true,
+                cancellationToken);
             var usage = await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
             return imageUnderstanding.Usage.Add(usage);
         }
