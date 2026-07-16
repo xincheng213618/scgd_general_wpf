@@ -437,10 +437,12 @@ namespace ColorVision.Copilot
                 MaximumStreamingResponseBytes,
                 MaximumStreamingLineCharacters,
                 "Provider event stream");
+            var eventData = new StringBuilder();
             var usage = CopilotTokenUsage.Empty;
             var receivedDisplayableText = false;
+            var streamCompleted = false;
 
-            while (true)
+            while (!streamCompleted)
             {
                 string? line;
                 try
@@ -457,39 +459,64 @@ namespace ColorVision.Copilot
                 }
 
                 if (line is null)
+                {
+                    ProcessStreamingEventData(config, eventData, onDelta, ref usage, ref receivedDisplayableText);
                     break;
+                }
+
+                if (line.Length == 0)
+                {
+                    streamCompleted = ProcessStreamingEventData(config, eventData, onDelta, ref usage, ref receivedDisplayableText);
+                    continue;
+                }
 
                 if (!line.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var payload = line[5..].Trim();
-                if (string.IsNullOrWhiteSpace(payload))
-                    continue;
-
-                if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
-                    break;
-
-                if (TryParseStreamingError(payload, config.ApiKey, out var streamingError))
-                    throw new InvalidOperationException(streamingError);
-
-                var reply = config.ProviderType == CopilotProviderType.AnthropicCompatible
-                    ? ExtractAnthropicStreamingReply(payload)
-                    : ExtractOpenAiStreamingReply(payload);
-
-                if (reply.Usage.HasAny)
-                    usage = usage.MergeProgress(reply.Usage);
-
-                if (reply.Delta.HasAny)
-                {
-                    receivedDisplayableText = true;
-                    onDelta(reply.Delta);
-                }
+                var data = line[5..];
+                if (data.StartsWith(' '))
+                    data = data[1..];
+                if (eventData.Length > 0)
+                    eventData.Append('\n');
+                eventData.Append(data);
             }
 
             if (!receivedDisplayableText)
                 throw new InvalidOperationException("The API stream completed successfully, but no displayable text was found.");
 
             return usage;
+        }
+
+        private static bool ProcessStreamingEventData(
+            CopilotProfileConfig config,
+            StringBuilder eventData,
+            Action<CopilotStreamDelta> onDelta,
+            ref CopilotTokenUsage usage,
+            ref bool receivedDisplayableText)
+        {
+            if (eventData.Length == 0)
+                return false;
+
+            var payload = eventData.ToString().Trim();
+            eventData.Clear();
+            if (payload.Length == 0)
+                return false;
+            if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (TryParseStreamingError(payload, config.ApiKey, out var streamingError))
+                throw new InvalidOperationException(streamingError);
+
+            var reply = config.ProviderType == CopilotProviderType.AnthropicCompatible
+                ? ExtractAnthropicStreamingReply(payload)
+                : ExtractOpenAiStreamingReply(payload);
+            if (reply.Usage.HasAny)
+                usage = usage.MergeProgress(reply.Usage);
+            if (!reply.Delta.HasAny)
+                return false;
+
+            receivedDisplayableText = true;
+            onDelta(reply.Delta);
+            return false;
         }
 
         private static bool TryParseStreamingError(string payload, string? apiKey, out string errorMessage)
