@@ -116,13 +116,20 @@ namespace ColorVision.Copilot.Mcp
             arguments_summary = ArgumentsSummary,
         }, ConfirmActionPayloadJsonOptions);
 
-        internal Func<CancellationToken, Task<CopilotMcpToolCallResult>> Executor { get; init; } = _ => Task.FromResult(CopilotMcpToolCallResult.Fail("action_executor_missing", "No executor is attached to this action."));
+        internal Func<CancellationToken, Task<CopilotMcpToolCallResult>> Executor { get; set; } = MissingExecutorAsync;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        internal void ReleaseExecutor() => Executor = MissingExecutorAsync;
+
+        private static Task<CopilotMcpToolCallResult> MissingExecutorAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(CopilotMcpToolCallResult.Fail("action_executor_missing", "No executor is attached to this action."));
         }
     }
 
@@ -138,10 +145,15 @@ namespace ColorVision.Copilot.Mcp
 
     public sealed class CopilotMcpConfirmationStore
     {
+        public const int MaximumActiveActions = 64;
+        public const int MaximumRetainedActions = 256;
+
         private static readonly Lazy<CopilotMcpConfirmationStore> LazyInstance = new(() => new CopilotMcpConfirmationStore());
         private static readonly TimeSpan DefaultLifetime = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan MaximumLifetime = TimeSpan.FromMinutes(30);
         private readonly object _syncRoot = new();
         private readonly List<ConfirmableAction> _actions = new();
+        private TimeSpan _actionLifetime = DefaultLifetime;
 
         private CopilotMcpConfirmationStore()
         {
@@ -153,7 +165,26 @@ namespace ColorVision.Copilot.Mcp
 
         public event EventHandler<ConfirmableActionChangedEventArgs>? ActionStatusChanged;
 
-        public TimeSpan ActionLifetime { get; set; } = DefaultLifetime;
+        public TimeSpan ActionLifetime
+        {
+            get
+            {
+                lock (_syncRoot)
+                    return _actionLifetime;
+            }
+            set
+            {
+                if (value <= TimeSpan.Zero || value > MaximumLifetime)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(value),
+                        $"Confirmation action lifetime must be greater than zero and no longer than {MaximumLifetime.TotalMinutes:0} minutes.");
+                }
+
+                lock (_syncRoot)
+                    _actionLifetime = value;
+            }
+        }
 
         public int PendingCount => GetPendingActions().Count;
 
@@ -215,7 +246,9 @@ namespace ColorVision.Copilot.Mcp
         {
             ArgumentNullException.ThrowIfNull(executor);
 
+            ExpireStaleActions();
             var now = DateTimeOffset.UtcNow;
+            var lifetime = ActionLifetime;
             var action = new ConfirmableAction
             {
                 ActionId = CreateActionId(),
@@ -228,7 +261,7 @@ namespace ColorVision.Copilot.Mcp
                 ResumesAgentOnApproval = resumesAgentOnApproval,
                 AgentCallId = Sanitize(agentCallId),
                 CreatedAt = now,
-                ExpiresAt = now.Add(ActionLifetime),
+                ExpiresAt = now.Add(lifetime),
                 Executor = executor,
             };
 
@@ -236,6 +269,12 @@ namespace ColorVision.Copilot.Mcp
 
             lock (_syncRoot)
             {
+                PruneTerminalActionsNoLock();
+                if (_actions.Count(IsActive) >= MaximumActiveActions)
+                {
+                    throw new InvalidOperationException(
+                        $"ColorVision Copilot already has {MaximumActiveActions} active confirmation actions. Resolve or cancel an existing action before creating another.");
+                }
                 _actions.Add(action);
             }
 
@@ -332,6 +371,8 @@ namespace ColorVision.Copilot.Mcp
                 }
 
                 action.Status = ConfirmableActionStatus.Rejected;
+                action.CompletedAt = DateTimeOffset.UtcNow;
+                action.ReleaseExecutor();
             }
 
             CopilotMcpAuditLogger.ActionRejected(action);
@@ -367,6 +408,7 @@ namespace ColorVision.Copilot.Mcp
                     : resultText);
                 action.CompletedAt = DateTimeOffset.UtcNow;
                 action.Status = ConfirmableActionStatus.Cancelled;
+                action.ReleaseExecutor();
             }
 
             CopilotMcpAuditLogger.ActionCancelled(action);
@@ -431,6 +473,7 @@ namespace ColorVision.Copilot.Mcp
                     action.ExecutionResultText = "The approved action execution was cancelled before completion.";
                     action.CompletedAt = DateTimeOffset.UtcNow;
                     action.Status = ConfirmableActionStatus.Cancelled;
+                    action.ReleaseExecutor();
                 }
 
                 CopilotMcpAuditLogger.ActionCancelled(action);
@@ -449,6 +492,7 @@ namespace ColorVision.Copilot.Mcp
                 action.ExecutionResultText = Sanitize(result.Text);
                 action.CompletedAt = DateTimeOffset.UtcNow;
                 action.Status = ConfirmableActionStatus.Executed;
+                action.ReleaseExecutor();
             }
 
             CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : result.Text);
@@ -478,12 +522,30 @@ namespace ColorVision.Copilot.Mcp
             if (action == null)
                 return false;
 
+            var expired = false;
             lock (_syncRoot)
             {
-                if (!action.ResumesAgentOnApproval || action.Status != ConfirmableActionStatus.Approved)
+                if ((action.Status == ConfirmableActionStatus.Pending || action.Status == ConfirmableActionStatus.Approved)
+                    && action.ExpiresAt <= DateTimeOffset.UtcNow)
+                {
+                    action.Status = ConfirmableActionStatus.Expired;
+                    action.CompletedAt = DateTimeOffset.UtcNow;
+                    action.ReleaseExecutor();
+                    expired = true;
+                }
+                else if (!action.ResumesAgentOnApproval || action.Status != ConfirmableActionStatus.Approved)
+                {
                     return false;
+                }
 
-                action.Status = ConfirmableActionStatus.Executing;
+                if (!expired)
+                    action.Status = ConfirmableActionStatus.Executing;
+            }
+
+            if (expired)
+            {
+                PublishExpired(action);
+                return false;
             }
 
             RaiseActionStatusChanged(action);
@@ -509,6 +571,7 @@ namespace ColorVision.Copilot.Mcp
                     : FirstNonEmpty(result.ErrorMessage, result.Summary, "The approved Agent Framework action failed."));
                 action.CompletedAt = DateTimeOffset.UtcNow;
                 action.Status = ConfirmableActionStatus.Executed;
+                action.ReleaseExecutor();
             }
 
             CopilotMcpAuditLogger.ActionExecuted(action, result.Success, result.Success ? "OK" : action.ExecutionResultText);
@@ -525,19 +588,20 @@ namespace ColorVision.Copilot.Mcp
                 var now = DateTimeOffset.UtcNow;
                 expired = _actions
                     .Where(action => (action.Status == ConfirmableActionStatus.Pending
-                            || action.Status == ConfirmableActionStatus.Approved && !action.ResumesAgentOnApproval)
+                            || action.Status == ConfirmableActionStatus.Approved)
                         && action.ExpiresAt <= now)
                     .ToList();
 
                 foreach (var action in expired)
+                {
                     action.Status = ConfirmableActionStatus.Expired;
+                    action.CompletedAt = now;
+                    action.ReleaseExecutor();
+                }
             }
 
             foreach (var action in expired)
-            {
-                CopilotMcpAuditLogger.ActionExpired(action);
-                RaiseActionStatusChanged(action);
-            }
+                PublishExpired(action, raiseActionsChanged: false);
 
             if (expired.Count > 0)
                 RaiseActionsChanged();
@@ -548,7 +612,7 @@ namespace ColorVision.Copilot.Mcp
             lock (_syncRoot)
             {
                 _actions.Clear();
-                ActionLifetime = DefaultLifetime;
+                _actionLifetime = DefaultLifetime;
             }
 
             RaiseActionsChanged();
@@ -567,26 +631,57 @@ namespace ColorVision.Copilot.Mcp
 
         private bool ExpireIfNeeded(ConfirmableAction action)
         {
-            if (action.ExpiresAt > DateTimeOffset.UtcNow)
-                return false;
-
             var changed = false;
             lock (_syncRoot)
             {
-                if (action.Status == ConfirmableActionStatus.Pending || action.Status == ConfirmableActionStatus.Approved)
+                if (action.Status == ConfirmableActionStatus.Expired)
+                    return true;
+                if ((action.Status == ConfirmableActionStatus.Pending || action.Status == ConfirmableActionStatus.Approved)
+                    && action.ExpiresAt <= DateTimeOffset.UtcNow)
                 {
                     action.Status = ConfirmableActionStatus.Expired;
+                    action.CompletedAt = DateTimeOffset.UtcNow;
+                    action.ReleaseExecutor();
                     changed = true;
                 }
             }
 
             if (!changed)
-                return action.Status == ConfirmableActionStatus.Expired;
+                return false;
 
+            PublishExpired(action);
+            return true;
+        }
+
+        private void PruneTerminalActionsNoLock()
+        {
+            var removeCount = Math.Max(0, _actions.Count - MaximumRetainedActions + 1);
+            if (removeCount == 0)
+                return;
+
+            var removable = _actions
+                .Where(action => !IsActive(action))
+                .OrderBy(action => action.CompletedAt ?? action.ExpiresAt)
+                .ThenBy(action => action.CreatedAt)
+                .Take(removeCount)
+                .ToArray();
+            foreach (var action in removable)
+                _actions.Remove(action);
+        }
+
+        private static bool IsActive(ConfirmableAction action)
+        {
+            return action.Status is ConfirmableActionStatus.Pending
+                or ConfirmableActionStatus.Approved
+                or ConfirmableActionStatus.Executing;
+        }
+
+        private void PublishExpired(ConfirmableAction action, bool raiseActionsChanged = true)
+        {
             CopilotMcpAuditLogger.ActionExpired(action);
             RaiseActionStatusChanged(action);
-            RaiseActionsChanged();
-            return true;
+            if (raiseActionsChanged)
+                RaiseActionsChanged();
         }
 
         private static string CreateActionId()

@@ -411,6 +411,75 @@ public sealed class CopilotToolExecutorTests : IDisposable
         Assert.Empty(CopilotMcpConfirmationStore.Instance.GetPendingActions());
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1_800_001)]
+    public void ConfirmationStore_RejectsInvalidActionLifetime(int lifetimeMilliseconds)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(lifetimeMilliseconds));
+    }
+
+    [Fact]
+    public void ConfirmationStore_BoundsActiveActionsAndRecoversAfterTerminalDecision()
+    {
+        var store = CopilotMcpConfirmationStore.Instance;
+        var actions = Enumerable.Range(0, CopilotMcpConfirmationStore.MaximumActiveActions)
+            .Select(index => CreatePendingAction("active-" + index))
+            .ToArray();
+
+        var error = Assert.Throws<InvalidOperationException>(() => CreatePendingAction("overflow"));
+
+        Assert.Contains("active confirmation actions", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(CopilotMcpConfirmationStore.MaximumActiveActions, store.PendingCount);
+        Assert.True(store.Reject(actions[0].ActionId, out _));
+        var replacement = CreatePendingAction("replacement");
+        Assert.True(replacement.IsPending);
+        Assert.Equal(CopilotMcpConfirmationStore.MaximumActiveActions, store.PendingCount);
+    }
+
+    [Fact]
+    public void ConfirmationStore_PrunesOldTerminalActionsAndReleasesExecutors()
+    {
+        var store = CopilotMcpConfirmationStore.Instance;
+        var capturedState = new object();
+        var first = CreatePendingAction("first", _ =>
+        {
+            GC.KeepAlive(capturedState);
+            return Task.FromResult(CopilotMcpToolCallResult.Ok("first"));
+        });
+        Assert.NotNull(GetActionExecutor(first).Target);
+        Assert.True(store.Reject(first.ActionId, out _));
+        Assert.Null(GetActionExecutor(first).Target);
+
+        ConfirmableAction latest = first;
+        for (var index = 0; index < CopilotMcpConfirmationStore.MaximumRetainedActions + 32; index++)
+        {
+            latest = CreatePendingAction("terminal-" + index);
+            Assert.True(store.Reject(latest.ActionId, out _));
+        }
+
+        Assert.InRange(GetRetainedActionCount(store), 1, CopilotMcpConfirmationStore.MaximumRetainedActions);
+        Assert.False(store.Approve(first.ActionId, out var removedMessage));
+        Assert.Contains("not found", removedMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.False(store.Approve(latest.ActionId, out var latestMessage));
+        Assert.Contains("Rejected", latestMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ConfirmationStore_ExpiresApprovedFrameworkActionBeforeExecutionBegins()
+    {
+        var store = CopilotMcpConfirmationStore.Instance;
+        store.ActionLifetime = TimeSpan.FromMilliseconds(20);
+        var action = CreateFrameworkApproval(store, "framework-expiry");
+        Assert.True(store.Approve(action.ActionId, out _));
+        await Task.Delay(50);
+
+        Assert.False(BeginFrameworkAction(store, action.ActionId));
+        Assert.Equal(ConfirmableActionStatus.Expired, action.Status);
+        Assert.NotNull(action.CompletedAt);
+    }
+
     [Fact]
     public async Task ExecuteAsync_DeniesHighRiskWriteToolWithoutApprovalPolicy()
     {
@@ -576,6 +645,59 @@ public sealed class CopilotToolExecutorTests : IDisposable
     {
         CopilotToolExecutionAuditLogger.ClearForTests();
         CopilotMcpConfirmationStore.Instance.ClearForTests();
+    }
+
+    private static ConfirmableAction CreatePendingAction(
+        string suffix,
+        Func<CancellationToken, Task<CopilotMcpToolCallResult>>? executor = null)
+    {
+        return CopilotMcpConfirmationStore.Instance.Create(
+            "Confirm " + suffix,
+            "Confirmation capacity test " + suffix,
+            "confirmation-required",
+            "test_" + suffix,
+            "value=" + suffix,
+            executor ?? (_ => Task.FromResult(CopilotMcpToolCallResult.Ok("completed"))));
+    }
+
+    private static Delegate GetActionExecutor(ConfirmableAction action)
+    {
+        var property = typeof(ConfirmableAction).GetProperty(
+            "Executor",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsAssignableFrom<Delegate>(property.GetValue(action));
+    }
+
+    private static int GetRetainedActionCount(CopilotMcpConfirmationStore store)
+    {
+        var field = typeof(CopilotMcpConfirmationStore).GetField(
+            "_actions",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsAssignableFrom<System.Collections.ICollection>(field.GetValue(store)).Count;
+    }
+
+    private static ConfirmableAction CreateFrameworkApproval(CopilotMcpConfirmationStore store, string callId)
+    {
+        var method = typeof(CopilotMcpConfirmationStore).GetMethod(
+            "CreateAgentFrameworkApproval",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsType<ConfirmableAction>(method.Invoke(store,
+        [
+            "Confirm framework action",
+            "Framework action expiry test.",
+            "FrameworkTool",
+            "value=test",
+            callId,
+            new Action<ConfirmableAction>(_ => { }),
+        ]));
+    }
+
+    private static bool BeginFrameworkAction(CopilotMcpConfirmationStore store, string actionId)
+    {
+        var method = typeof(CopilotMcpConfirmationStore).GetMethod(
+            "BeginAgentFrameworkAction",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        return Assert.IsType<bool>(method.Invoke(store, [actionId]));
     }
 
     private static CopilotToolInvocation CreateInvocation(

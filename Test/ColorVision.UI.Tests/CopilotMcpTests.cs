@@ -1273,8 +1273,9 @@ public sealed class CopilotMcpTests : IDisposable
     [Fact]
     public async Task ApplyTemplatePatch_ExpiredAction_DoesNotSave()
     {
-        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(-1);
+        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(20);
         var fixture = await CreatePendingTemplatePatchAsync();
+        await Task.Delay(50);
 
         var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
         {
@@ -1715,8 +1716,9 @@ public sealed class CopilotMcpTests : IDisposable
     [Fact]
     public async Task ConfirmAction_ExpiredAction_DoesNotExecute()
     {
-        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(-1);
+        CopilotMcpConfirmationStore.Instance.ActionLifetime = TimeSpan.FromMilliseconds(20);
         var fixture = await CreatePendingMenuActionAsync();
+        await Task.Delay(50);
 
         var confirmResult = ReadToolResult(await CallToolAsync(fixture.Handler, "confirm_action", new
         {
