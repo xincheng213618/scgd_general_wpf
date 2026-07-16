@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
                             properties = new Dictionary<string, object?>
                             {
                                 ["operation"] = new { type = "string", @enum = new[] { "add", "update", "delete" }, description = "Add a new file, update one exact text region, or delete an existing text file." },
-                                ["path"] = new { type = "string", description = "Absolute path inside the current writable workspace scope." },
+                                ["path"] = new { type = "string", description = "Workspace-relative path, or an absolute path inside the current writable workspace scope." },
                                 ["oldText"] = new { type = "string", description = "For update only: exact existing text that must match once." },
                                 ["newText"] = new { type = "string", description = "For update only: replacement text; may be empty." },
                                 ["content"] = new { type = "string", description = "For add only: complete UTF-8 file content." },

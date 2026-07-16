@@ -15,7 +15,7 @@ namespace ColorVision.Copilot
                 ["properties"] = new Dictionary<string, object?>
                 {
                     ["task"] = new { type = "string", @enum = new[] { "build", "test" }, description = "Whitelisted validation task." },
-                    ["path"] = new { type = "string", description = "Absolute path to a workspace solution or project file." },
+                    ["path"] = new { type = "string", description = "Workspace-relative path, or an absolute path to a solution or project file inside the writable workspace." },
                     ["configuration"] = new { type = "string", @enum = new[] { "Debug", "Release" }, description = "Build configuration. Defaults to Debug." },
                     ["timeoutSeconds"] = new { type = "integer", minimum = 10, maximum = 600, description = "Process timeout in seconds. Defaults to 300." },
                 },

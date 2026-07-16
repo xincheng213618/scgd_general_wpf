@@ -162,18 +162,11 @@ namespace ColorVision.Copilot
             targetPath = string.Empty;
             workspaceRoot = string.Empty;
             error = string.Empty;
-            try
+            var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths);
+            if (!CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                requestedPath, writableRoots, out targetPath, out var resolutionError))
             {
-                targetPath = Path.GetFullPath(requestedPath);
-            }
-            catch (Exception ex)
-            {
-                error = "Invalid validation target path: " + ex.Message;
-                return false;
-            }
-            if (!File.Exists(targetPath))
-            {
-                error = "The validation target does not exist: " + targetPath;
+                error = "The validation target could not be resolved: " + resolutionError;
                 return false;
             }
             if (!AllowedTargetExtensions.Contains(Path.GetExtension(targetPath)))
@@ -185,8 +178,7 @@ namespace ColorVision.Copilot
             try
             {
                 var resolvedTarget = targetPath;
-                workspaceRoot = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths)
-                    .FirstOrDefault(root => IsWithinRoot(resolvedTarget, root)) ?? string.Empty;
+                workspaceRoot = writableRoots.FirstOrDefault(root => IsWithinRoot(resolvedTarget, root)) ?? string.Empty;
                 if (workspaceRoot.Length == 0)
                 {
                     error = "Validation targets must be inside the current writable workspace root.";

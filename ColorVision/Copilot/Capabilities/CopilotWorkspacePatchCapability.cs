@@ -140,7 +140,7 @@ namespace ColorVision.Copilot
             }
             if (!CopilotWorkspacePatchScope.TryResolveNewFile(request, input.Path, out var fullPath, out _, out var scopeError))
             {
-                var failureKind = File.Exists(SafeFullPath(input.Path)) || Directory.Exists(SafeFullPath(input.Path))
+                var failureKind = File.Exists(fullPath) || Directory.Exists(fullPath)
                     ? CopilotToolFailureKind.Conflict
                     : CopilotToolFailureKind.Authorization;
                 return Task.FromResult(Failure("PreviewWorkspacePatchEnvelope", failureKind,
@@ -934,15 +934,9 @@ namespace ColorVision.Copilot
             fullPath = string.Empty;
             writableRoot = string.Empty;
             error = string.Empty;
-            try
-            {
-                fullPath = Path.GetFullPath(requestedPath);
-            }
-            catch (Exception ex)
-            {
-                error = "Invalid target path: " + ex.Message;
+            var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths);
+            if (!TryResolveNewFilePath(requestedPath, writableRoots, out fullPath, out writableRoot, out error))
                 return false;
-            }
             if (File.Exists(fullPath) || Directory.Exists(fullPath))
             {
                 error = "The requested path already exists: " + fullPath;
@@ -956,14 +950,6 @@ namespace ColorVision.Copilot
 
             try
             {
-                var resolvedPath = fullPath;
-                writableRoot = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths)
-                    .FirstOrDefault(root => IsWithinRoot(resolvedPath, root)) ?? string.Empty;
-                if (writableRoot.Length == 0)
-                {
-                    error = "New files may be created only inside an existing writable workspace root: " + fullPath;
-                    return false;
-                }
                 if (!HasSafeNewPathSegments(writableRoot, fullPath, out error))
                     return false;
                 if ((File.GetAttributes(writableRoot) & FileAttributes.ReparsePoint) != 0)
@@ -1014,15 +1000,9 @@ namespace ColorVision.Copilot
         {
             fullPath = string.Empty;
             error = string.Empty;
-            try
-            {
-                fullPath = Path.GetFullPath(requestedPath);
-            }
-            catch (Exception ex)
-            {
-                error = "Invalid target path: " + ex.Message;
+            var writableRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths);
+            if (!TryResolveExistingFilePath(requestedPath, writableRoots, out fullPath, out error))
                 return false;
-            }
             if (!File.Exists(fullPath))
             {
                 error = "The target file does not exist: " + fullPath;
@@ -1047,8 +1027,7 @@ namespace ColorVision.Copilot
                     .Where(path => path.Length > 0)
                     .ToArray();
                 var isExactFile = exactFiles.Contains(resolvedPath, StringComparer.OrdinalIgnoreCase);
-                var roots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(request.WritableLocalRootPaths);
-                var containingRoot = roots.FirstOrDefault(root => IsWithinRoot(resolvedPath, root));
+                var containingRoot = writableRoots.FirstOrDefault(root => IsWithinRoot(resolvedPath, root));
                 if (!isExactFile && string.IsNullOrWhiteSpace(containingRoot))
                 {
                     error = "The target file is neither explicitly writable nor inside a writable workspace root: " + resolvedPath;
@@ -1072,6 +1051,109 @@ namespace ColorVision.Copilot
                 error = "The target file could not be validated safely: " + ex.Message;
                 return false;
             }
+        }
+
+        private static bool TryResolveExistingFilePath(
+            string requestedPath,
+            IReadOnlyList<string> writableRoots,
+            out string fullPath,
+            out string error)
+        {
+            fullPath = string.Empty;
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(requestedPath))
+            {
+                error = "The target path is empty.";
+                return false;
+            }
+
+            var path = requestedPath.Trim();
+            if (Path.IsPathRooted(path) && !Path.IsPathFullyQualified(path))
+            {
+                error = "The target path must be workspace-relative or fully qualified: " + path;
+                return false;
+            }
+            if (!Path.IsPathFullyQualified(path))
+            {
+                if (CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                    path, writableRoots, out fullPath, out var resolutionError))
+                {
+                    return true;
+                }
+
+                error = resolutionError;
+                return false;
+            }
+
+            try
+            {
+                fullPath = Path.GetFullPath(path);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = "Invalid target path: " + ex.Message;
+                return false;
+            }
+        }
+
+        private static bool TryResolveNewFilePath(
+            string requestedPath,
+            IReadOnlyList<string> writableRoots,
+            out string fullPath,
+            out string writableRoot,
+            out string error)
+        {
+            fullPath = string.Empty;
+            writableRoot = string.Empty;
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(requestedPath))
+            {
+                error = "The target path is empty.";
+                return false;
+            }
+
+            var path = requestedPath.Trim();
+            if (Path.IsPathRooted(path) && !Path.IsPathFullyQualified(path))
+            {
+                error = "The target path must be workspace-relative or fully qualified: " + path;
+                return false;
+            }
+
+            try
+            {
+                if (Path.IsPathFullyQualified(path))
+                {
+                    fullPath = Path.GetFullPath(path);
+                    var resolvedPath = fullPath;
+                    writableRoot = writableRoots.FirstOrDefault(root => IsWithinRoot(resolvedPath, root)) ?? string.Empty;
+                }
+                else
+                {
+                    if (writableRoots.Count != 1)
+                    {
+                        error = writableRoots.Count == 0
+                            ? "No writable workspace root is available for the new file."
+                            : "A relative new-file path is ambiguous across multiple writable workspace roots; use a fully qualified path.";
+                        return false;
+                    }
+
+                    writableRoot = writableRoots[0];
+                    fullPath = Path.GetFullPath(path, writableRoot);
+                }
+            }
+            catch (Exception ex)
+            {
+                error = "Invalid target path: " + ex.Message;
+                return false;
+            }
+
+            if (writableRoot.Length == 0 || !IsWithinRoot(fullPath, writableRoot))
+            {
+                error = "New files may be created only inside an existing writable workspace root: " + fullPath;
+                return false;
+            }
+            return true;
         }
 
         private static string NormalizePath(string path)
