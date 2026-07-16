@@ -176,6 +176,7 @@ namespace ColorVision.Copilot
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: false), "重新生成回复"), CanRegenerateMessage);
             RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: true), "刷新网页后重新生成"), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
+            RequestWorkspaceRollbackCommand = new RelayCommand<CopilotAgentTraceEntry>(RequestWorkspaceRollback, CanRequestWorkspaceRollback);
             OpenAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(OpenAgentTask, task => task != null && CanSwitchConversation);
             ResumeAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(ResumeAgentTask, CanResumeAgentTask);
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
@@ -395,6 +396,8 @@ namespace ColorVision.Copilot
         public ICommand RefreshMessageCommand { get; }
 
         public ICommand ContinueAgentTasksCommand { get; }
+
+        public ICommand RequestWorkspaceRollbackCommand { get; }
 
         public ICommand OpenAgentTaskCommand { get; }
 
@@ -1235,17 +1238,20 @@ namespace ColorVision.Copilot
                 }));
         }
 
-        private async Task SendAsync()
+        private Task SendAsync() => SendAsync(null, null);
+
+        private async Task SendAsync(string? directPrompt, CopilotAgentMode? directMode)
         {
-            var prompt = (InputText ?? string.Empty).Trim();
+            var isDirectSubmission = directPrompt != null;
+            var prompt = (directPrompt ?? InputText ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
             if (!TryValidateComposerCharacterLimit(prompt))
                 return;
-            if (!IsEditingMessage && TryExecuteLocalCommand(prompt))
+            if (!isDirectSubmission && !IsEditingMessage && TryExecuteLocalCommand(prompt))
                 return;
 
-            var requestMode = ResolveComposerRequestMode();
+            var requestMode = directMode ?? ResolveComposerRequestMode();
             if (!CanScheduleComposerRequest(requestMode))
                 return;
 
@@ -1258,18 +1264,24 @@ namespace ColorVision.Copilot
             var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
             if (!TryValidatePromptBudget(prompt, requestMode, requestProfile))
                 return;
-            if (!TryValidateComposerAttachments(Attachments))
+            var requestAttachments = isDirectSubmission
+                ? Array.Empty<CopilotAttachmentItem>()
+                : Attachments.ToArray();
+            if (!TryValidateComposerAttachments(requestAttachments))
                 return;
 
             var conversation = EnsureConversation();
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            var isReplacingTurn = TryResolvePendingMessageEdit(
+            var replacedUserIndex = -1;
+            CopilotChatMessage replacedUserMessage = null!;
+            CopilotChatMessage? replacedAssistantMessage = null;
+            var isReplacingTurn = !isDirectSubmission && TryResolvePendingMessageEdit(
                 conversation,
-                out var replacedUserIndex,
-                out var replacedUserMessage,
-                out var replacedAssistantMessage);
-            if (IsEditingMessage && !isReplacingTurn)
+                out replacedUserIndex,
+                out replacedUserMessage,
+                out replacedAssistantMessage);
+            if (!isDirectSubmission && IsEditingMessage && !isReplacingTurn)
             {
                 CancelMessageEdit();
                 return;
@@ -1277,9 +1289,10 @@ namespace ColorVision.Copilot
 
             var turnSnapshot = isReplacingTurn
                 ? CaptureHostedTurnSnapshot(conversation, replacedUserMessage, conversation.Attachments)
-                : CaptureHostedTurnSnapshot(conversation);
-            var recoveryRequest = ConsumePendingAgentRecoveryRequest();
-            requestMode = ConsumeRequestModeOverride();
+                : CaptureHostedTurnSnapshot(conversation, attachmentOverride: requestAttachments);
+            var recoveryRequest = isDirectSubmission ? null : ConsumePendingAgentRecoveryRequest();
+            if (!isDirectSubmission)
+                requestMode = ConsumeRequestModeOverride();
 
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, prompt)
             {
@@ -1324,22 +1337,29 @@ namespace ColorVision.Copilot
                         conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
                     conversation.AgentSessionCheckpoint = previousCheckpoint;
                 }
-                _pendingAgentRecoveryRequest = recoveryRequest;
-                _pendingRequestModeOverride = requestMode == CopilotAgentMode.Auto ? null : requestMode;
+                if (!isDirectSubmission)
+                {
+                    _pendingAgentRecoveryRequest = recoveryRequest;
+                    _pendingRequestModeOverride = requestMode == CopilotAgentMode.Auto ? null : requestMode;
+                }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
-                OnComposerRequestModeChanged();
+                if (!isDirectSubmission)
+                    OnComposerRequestModeChanged();
                 return;
             }
 
             DismissLocalCommandResult();
-            if (isReplacingTurn)
+            if (!isDirectSubmission && isReplacingTurn)
             {
                 _composerDraftBeforeMessageEdit = null;
                 SetMessageEditState(string.Empty, string.Empty);
             }
-            ConsumeComposerAttachments(conversation);
-            InputText = string.Empty;
+            if (!isDirectSubmission)
+            {
+                ConsumeComposerAttachments(conversation);
+                InputText = string.Empty;
+            }
             await AwaitHostedRunCompletionAsync(hostedRun);
             if (!hostedRun.HasStarted)
                 FinalizeCancelledQueuedRun(conversation, assistantMessage);
@@ -2198,6 +2218,16 @@ namespace ColorVision.Copilot
                     }
 
                     var presentationResult = CopilotAssistantMessagePresenter.ApplyAgentEvent(assistantMessage, agentEvent);
+                    if (agentEvent.Type == CopilotAgentEventType.ToolResult
+                        && agentEvent.ToolResult?.Success == true
+                        && agentEvent.ToolExecution != null
+                        && string.Equals(agentEvent.ToolExecution.ToolName, "RollbackWorkspacePatchEnvelope", StringComparison.Ordinal))
+                    {
+                        var rollbackTrace = assistantMessage.AgentTraceEntries.FirstOrDefault(trace =>
+                            string.Equals(trace.CallId, agentEvent.ToolExecution.CallId, StringComparison.Ordinal));
+                        if (rollbackTrace?.IsCompletedWorkspaceRollback == true)
+                            persistState |= conversation.MarkWorkspaceChangeSetRolledBack(rollbackTrace.WorkspaceChangeSetId);
+                    }
                     if (!presentationResult.IsHandled || presentationResult.PersistenceMode == CopilotAgentEventPersistenceMode.None)
                         continue;
 
@@ -2341,6 +2371,29 @@ namespace ColorVision.Copilot
             SetPendingRequestModeOverride(CopilotAgentMode.Auto);
             InputText = decision.UserMessage;
             RunUiOperation(SendAsync, "继续 Agent 任务");
+        }
+
+        private bool CanRequestWorkspaceRollback(CopilotAgentTraceEntry? trace)
+        {
+            return trace?.CanRequestWorkspaceRollback == true
+                && !IsBusy
+                && !IsEditingMessage
+                && SelectedConversation != null
+                && SelectedProfile?.IsConfigured == true
+                && CanScheduleComposerRequest(CopilotAgentMode.Auto);
+        }
+
+        private void RequestWorkspaceRollback(CopilotAgentTraceEntry? trace)
+        {
+            if (trace?.CanRequestWorkspaceRollback != true)
+            {
+                LocalCommandResultTitle = "无法撤销文件修改";
+                LocalCommandResultText = "这次修改的安全回滚记录已经失效、已被使用，或应用已重新启动。";
+                return;
+            }
+
+            var prompt = $"撤销修改：请只回滚工作区变更集 {trace.WorkspaceChangeSetId}。必须调用 RollbackWorkspacePatchEnvelope，并使用这个精确的 changeSetId；不要改动其他文件。";
+            RunUiOperation(() => SendAsync(prompt, CopilotAgentMode.Auto), "撤销文件修改");
         }
 
         private void OpenAgentTask(CopilotAgentTaskSummary? task)

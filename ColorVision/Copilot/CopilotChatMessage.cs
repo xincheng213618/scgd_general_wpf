@@ -1714,6 +1714,22 @@ namespace ColorVision.Copilot
             UpdatedAt = DateTime.Now;
         }
 
+        internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)
+        {
+            if (string.IsNullOrWhiteSpace(changeSetId))
+                return false;
+
+            var changed = false;
+            foreach (var trace in Messages
+                .SelectMany(message => message.AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+                .Where(trace => trace != null))
+            {
+                changed |= trace.MarkWorkspaceChangeSetRolledBack(changeSetId);
+            }
+
+            return changed;
+        }
+
         public void SetLastUsage(CopilotTokenUsage usage)
         {
             LastUsageInputTokens = usage.InputTokens;

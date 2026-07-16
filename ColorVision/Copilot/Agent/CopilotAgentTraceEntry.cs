@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using Newtonsoft.Json;
 using System;
+using System.Globalization;
 using System.Text;
 
 namespace ColorVision.Copilot
@@ -76,6 +77,27 @@ namespace ColorVision.Copilot
         public int DelegatedToolCalls { get; set; }
 
         public long DelegatedQueueDurationMs { get; set; }
+
+        [JsonIgnore]
+        public string WorkspaceChangeSetId { get; private set; } = string.Empty;
+
+        [JsonIgnore]
+        public DateTimeOffset? WorkspaceChangeSetExpiresAtUtc { get; private set; }
+
+        [JsonIgnore]
+        public bool WorkspaceChangeSetRolledBack { get; private set; }
+
+        [JsonIgnore]
+        public bool CanRequestWorkspaceRollback => string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
+            && State == CopilotToolExecutionState.Completed
+            && !WorkspaceChangeSetRolledBack
+            && !string.IsNullOrWhiteSpace(WorkspaceChangeSetId)
+            && WorkspaceChangeSetExpiresAtUtc > DateTimeOffset.UtcNow;
+
+        [JsonIgnore]
+        internal bool IsCompletedWorkspaceRollback => string.Equals(ToolName, "RollbackWorkspacePatchEnvelope", StringComparison.Ordinal)
+            && State == CopilotToolExecutionState.Completed
+            && !string.IsNullOrWhiteSpace(WorkspaceChangeSetId);
 
         [JsonIgnore]
         public bool IsFailure => State is CopilotToolExecutionState.Failed
@@ -190,9 +212,63 @@ namespace ColorVision.Copilot
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
                     entry.DelegatedQueueDurationMs = Math.Max(0, result.DelegatedRunUsage.QueueDurationMs);
                 }
+                entry.CaptureWorkspaceChangeSetMetadata(result.Content);
             }
 
             return entry;
+        }
+
+        internal bool MarkWorkspaceChangeSetRolledBack(string changeSetId)
+        {
+            if (WorkspaceChangeSetRolledBack
+                || !string.Equals(WorkspaceChangeSetId, changeSetId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            WorkspaceChangeSetRolledBack = true;
+            OnPropertyChanged(nameof(WorkspaceChangeSetRolledBack));
+            OnPropertyChanged(nameof(CanRequestWorkspaceRollback));
+            return true;
+        }
+
+        private void CaptureWorkspaceChangeSetMetadata(string? content)
+        {
+            if (!string.Equals(ToolName, "ApplyWorkspacePatchEnvelope", StringComparison.Ordinal)
+                && !string.Equals(ToolName, "RollbackWorkspacePatchEnvelope", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var changeSetId = ReadMetadataValue(content, "change_set_id");
+            const string changeSetPrefix = "workspace-change-set:";
+            if (!changeSetId.StartsWith(changeSetPrefix, StringComparison.Ordinal)
+                || !Guid.TryParseExact(changeSetId[changeSetPrefix.Length..], "N", out _))
+            {
+                return;
+            }
+
+            WorkspaceChangeSetId = changeSetId;
+            var expiresAt = ReadMetadataValue(content, "expires_at_utc");
+            if (DateTimeOffset.TryParse(expiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsedExpiresAt))
+                WorkspaceChangeSetExpiresAtUtc = parsedExpiresAt;
+        }
+
+        private static string ReadMetadataValue(string? content, string key)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return string.Empty;
+
+            foreach (var line in content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+            {
+                var separator = line.IndexOf(':');
+                if (separator <= 0 || !string.Equals(line[..separator].Trim(), key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return line[(separator + 1)..].Trim();
+            }
+
+            return string.Empty;
         }
 
         public bool EnsureValid(DateTimeOffset recoveredAtUtc)

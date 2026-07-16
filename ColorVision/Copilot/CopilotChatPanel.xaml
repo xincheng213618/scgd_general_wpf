@@ -624,6 +624,14 @@
                              FontSize="10"
                              Opacity="0.42"
                              Text="{Binding DiagnosticDetails, Mode=OneWay}" />
+                    <Button Margin="0,6,0,0"
+                            HorizontalAlignment="Left"
+                            Content="撤销这次修改"
+                            Command="{Binding DataContext.RequestWorkspaceRollbackCommand, Source={x:Reference Root}}"
+                            CommandParameter="{Binding}"
+                            Style="{StaticResource MessageActionButtonStyle}"
+                            ToolTip="请求 Agent 安全回滚这一整个文件变更集；执行前仍需再次批准。"
+                            Visibility="{Binding CanRequestWorkspaceRollback, Converter={StaticResource bool2VisibilityConverter}}" />
                 </StackPanel>
             </Expander>
             <DataTemplate.Triggers>
@@ -678,6 +686,14 @@
                                  FontSize="10"
                                  Opacity="0.42"
                                  Text="{Binding FirstEntry.DiagnosticDetails, Mode=OneWay}" />
+                        <Button Margin="0,6,0,0"
+                                HorizontalAlignment="Left"
+                                Content="撤销这次修改"
+                                Command="{Binding DataContext.RequestWorkspaceRollbackCommand, Source={x:Reference Root}}"
+                                CommandParameter="{Binding FirstEntry}"
+                                Style="{StaticResource MessageActionButtonStyle}"
+                                ToolTip="请求 Agent 安全回滚这一整个文件变更集；执行前仍需再次批准。"
+                                Visibility="{Binding FirstEntry.CanRequestWorkspaceRollback, Converter={StaticResource bool2VisibilityConverter}}" />
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding Entries}"
