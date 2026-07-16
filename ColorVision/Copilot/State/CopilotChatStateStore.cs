@@ -120,6 +120,7 @@ namespace ColorVision.Copilot
                 if (TryLoad(BackupStateFilePath, out state))
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
+                    TryRestorePrimaryState(state);
                     return state;
                 }
 
@@ -204,6 +205,18 @@ namespace ColorVision.Copilot
             finally
             {
                 TryDeleteFile(TemporaryStateFilePath);
+            }
+        }
+
+        private void TryRestorePrimaryState(CopilotChatState recoveredState)
+        {
+            try
+            {
+                WriteSerializedState(Serialize(recoveredState));
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot recovered state from backup but could not restore the primary state file: {ex.Message}");
             }
         }
 

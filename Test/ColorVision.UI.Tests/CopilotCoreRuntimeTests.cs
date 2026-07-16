@@ -224,6 +224,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         Assert.Equal(CopilotChatState.CurrentSchemaVersion, recovered.SchemaVersion);
         Assert.True(File.Exists(store.BackupStateFilePath));
         Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+
+        var restartedStore = new CopilotChatStateStore(_tempRoot);
+        var restarted = restartedStore.Load();
+        Assert.Single(restarted.Conversations);
+        Assert.Equal(CopilotChatStateLoadSource.Primary, restartedStore.LastLoadStatus.Source);
     }
 
     [Fact]
@@ -329,6 +334,25 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         Assert.Equal("backup-profile", recovered.ActiveProfileId);
         Assert.Single(recovered.Conversations);
+    }
+
+    [Fact]
+    public void StateStoreBackupRecoveryRemainsUsableWhenPrimaryRepairIsBlocked()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+
+        CopilotChatState recovered;
+        using (new FileStream(store.StateFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+        Assert.False(File.Exists(store.TemporaryStateFilePath));
     }
 
     [Fact]
