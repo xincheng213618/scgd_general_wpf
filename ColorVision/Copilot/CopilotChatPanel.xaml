@@ -1331,6 +1331,11 @@
                                                     Content="{x:Static properties:Resources.Copy}"
                                                     ToolTip="复制回答（不包含执行轨迹和推理）" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
+                                                    Command="{Binding DataContext.BranchConversationCommand, Source={x:Reference Root}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="分支"
+                                                    ToolTip="从此回答复制已发送上下文到新会话；不继承 Agent 运行状态" />
+                                            <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
                                                     Content="{x:Static properties:Resources.CopilotRetry}"

@@ -43,8 +43,20 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(conversations);
 
             var conversation = CopilotConversationRecord.CreateEmpty(profile?.Id ?? string.Empty, profile?.DisplayLabel ?? string.Empty);
-            conversations.Insert(GetUnpinnedInsertIndex(conversations), conversation);
+            Insert(conversations, conversation);
             return conversation;
+        }
+
+        public static void Insert(
+            ObservableCollection<CopilotConversationRecord> conversations,
+            CopilotConversationRecord conversation)
+        {
+            ArgumentNullException.ThrowIfNull(conversations);
+            ArgumentNullException.ThrowIfNull(conversation);
+            if (conversations.Contains(conversation))
+                return;
+
+            conversations.Insert(GetUnpinnedInsertIndex(conversations), conversation);
         }
 
         public static void MoveToPreferredIndex(

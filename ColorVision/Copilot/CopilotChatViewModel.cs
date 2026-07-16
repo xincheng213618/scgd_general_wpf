@@ -158,6 +158,7 @@ namespace ColorVision.Copilot
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => HasCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
+            BranchConversationCommand = new RelayCommand<CopilotChatMessage>(BranchConversation, CanBranchConversation);
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
             CancelMessageEditCommand = new RelayCommand(_ => CancelMessageEdit(), _ => IsEditingMessage);
             RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: false), "重新生成回复"), CanRegenerateMessage);
@@ -368,6 +369,8 @@ namespace ColorVision.Copilot
             : "Attachments apply to the next message only: paste an image, add a web page, add a file, or add context text.";
 
         public ICommand CopyMessageCommand { get; }
+
+        public ICommand BranchConversationCommand { get; }
 
         public ICommand EditMessageCommand { get; }
 
@@ -2854,12 +2857,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            RemoveManagedAttachmentFiles(conversation.EnumerateReferencedAttachments());
+            var managedAttachments = conversation.EnumerateReferencedAttachments().ToArray();
             if (string.Equals(conversation.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
                 ClearAgentRunNotice();
 
             var currentIndex = Conversations.IndexOf(conversation);
-            Conversations.Remove(conversation);
+            if (!Conversations.Remove(conversation))
+                return;
+
+            RemoveManagedAttachmentFiles(managedAttachments);
 
             if (Conversations.Count == 0)
             {
@@ -3108,6 +3114,39 @@ namespace ColorVision.Copilot
             return !IsBusy
                 && message?.IsUser == true
                 && TryResolveLatestTurn(message, out _, out _, out _);
+        }
+
+        private bool CanBranchConversation(CopilotChatMessage? message)
+        {
+            return CanSwitchConversation
+                && !IsEditingMessage
+                && message?.IsUser == false
+                && !message.IsResponsePending
+                && !string.IsNullOrWhiteSpace(message.Content)
+                && SelectedConversation?.Messages.Contains(message) == true;
+        }
+
+        private void BranchConversation(CopilotChatMessage? message)
+        {
+            if (!CanBranchConversation(message) || SelectedConversation == null)
+                return;
+
+            try
+            {
+                var branch = CopilotConversationBranchService.CreateBranch(SelectedConversation, message!);
+                CopilotConversationService.Insert(Conversations, branch);
+                SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
+                PersistState(immediate: true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法创建会话分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void BeginEditMessage(CopilotChatMessage? message)
@@ -3995,6 +4034,14 @@ namespace ColorVision.Copilot
         {
             if (!attachment.IsStoredImageFile || string.IsNullOrWhiteSpace(attachment.Value))
                 return;
+
+            if (Conversations
+                .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
+                .Any(candidate => candidate.IsStoredImageFile
+                    && string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
 
             CopilotChatStateStore.TryDeleteManagedAttachmentFile(_stateStore.AttachmentDirectoryPath, attachment.Value);
         }
