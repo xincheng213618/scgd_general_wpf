@@ -39,6 +39,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public bool RetryEligible { get; init; }
 
         public DateTimeOffset StartedAtUtc { get; init; }
@@ -82,6 +84,7 @@ namespace ColorVision.Copilot
                 ApprovalActionId = Sanitize(execution.ApprovalActionId),
                 State = execution.State,
                 FailureKind = execution.FailureKind,
+                FailureCode = outcome.Result.Success ? string.Empty : CopilotToolFailureCode.Normalize(outcome.Result.FailureCode),
                 RetryEligible = execution.RetryEligible,
                 StartedAtUtc = execution.StartedAtUtc,
                 CompletedAtUtc = execution.CompletedAtUtc,
@@ -98,7 +101,7 @@ namespace ColorVision.Copilot
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"Agent tool completed. CallId={entry.CallId} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"Agent tool completed. CallId={entry.CallId} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
         }
 
         public static IReadOnlyList<CopilotToolExecutionAuditEntry> GetRecentEntries(int maxEntries = 50)

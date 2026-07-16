@@ -49,6 +49,8 @@ namespace ColorVision.Copilot
 
         public string State { get; init; } = string.Empty;
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public string Summary { get; init; } = string.Empty;
 
         public bool IsStructurallyValid()
@@ -64,6 +66,7 @@ namespace ColorVision.Copilot
                 && (RelatedIds?.Distinct(StringComparer.Ordinal).Count() == RelatedIds?.Count)
                 && IsOptionalBounded(ToolName, CopilotAgentTaskEventJournal.MaxToolNameLength)
                 && IsOptionalBounded(State, CopilotAgentTaskEventJournal.MaxStateLength)
+                && string.Equals(FailureCode, CopilotToolFailureCode.Normalize(FailureCode), StringComparison.Ordinal)
                 && IsOptionalBounded(Summary, CopilotAgentTaskEventJournal.MaxSummaryLength);
         }
 
@@ -439,7 +442,8 @@ namespace ColorVision.Copilot
                     agentEvent.ToolResult?.Summary ?? agentEvent.Text,
                     execution.ToolName,
                     related,
-                    execution.CompletedAtUtc ?? (execution.StartedAtUtc == default ? null : execution.StartedAtUtc));
+                    execution.CompletedAtUtc ?? (execution.StartedAtUtc == default ? null : execution.StartedAtUtc),
+                    agentEvent.ToolResult?.Success == false ? agentEvent.ToolResult.FailureCode : string.Empty);
                 return;
             }
 
@@ -465,7 +469,8 @@ namespace ColorVision.Copilot
             string summary,
             string toolName = "",
             IEnumerable<string>? relatedIds = null,
-            DateTimeOffset? occurredAtUtc = null)
+            DateTimeOffset? occurredAtUtc = null,
+            string failureCode = "")
         {
             lock (_syncRoot)
             {
@@ -487,6 +492,7 @@ namespace ColorVision.Copilot
                         .ToArray(),
                     ToolName = SanitizeText(toolName, CopilotAgentTaskEventJournal.MaxToolNameLength, collapseWhitespace: true),
                     State = SanitizeText(state, CopilotAgentTaskEventJournal.MaxStateLength, collapseWhitespace: true),
+                    FailureCode = CopilotToolFailureCode.Normalize(failureCode),
                     Summary = SanitizeText(summary, CopilotAgentTaskEventJournal.MaxSummaryLength, collapseWhitespace: true),
                 };
                 if (!item.IsStructurallyValid())

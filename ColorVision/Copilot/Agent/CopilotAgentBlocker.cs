@@ -92,9 +92,12 @@ namespace ColorVision.Copilot
             if (permanentFailure == null)
                 return Array.Empty<CopilotAgentBlockerSnapshot>();
 
-            var failureCode = permanentFailure.Execution.FailureKind == CopilotToolFailureKind.None
-                ? "tool_failure"
-                : "tool_" + permanentFailure.Execution.FailureKind.ToString().ToLowerInvariant();
+            var specificFailureCode = CopilotToolFailureCode.Normalize(permanentFailure.Observation.FailureCode);
+            var failureCode = !string.IsNullOrWhiteSpace(specificFailureCode)
+                ? "tool_" + specificFailureCode
+                : permanentFailure.Execution.FailureKind == CopilotToolFailureKind.None
+                    ? "tool_failure"
+                    : "tool_" + permanentFailure.Execution.FailureKind.ToString().ToLowerInvariant();
             var summary = permanentFailure.Execution.FailureKind == CopilotToolFailureKind.Conflict
                 ? "The Agent repeated an identical tool call without producing new progress."
                 : "A required tool failed and the executor did not permit an automatic retry.";

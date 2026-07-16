@@ -136,6 +136,7 @@ namespace ColorVision.Copilot
                 Content = result.Content,
                 ErrorMessage = result.Success || waitingForApproval ? string.Empty : result.Content,
                 FailureKind = result.FailureKind,
+                FailureCode = result.Success || waitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
                 Approval = result.Approval,
             };
         }
@@ -215,6 +216,7 @@ namespace ColorVision.Copilot
                 Content = result.Content,
                 ErrorMessage = result.Success ? string.Empty : result.Content,
                 FailureKind = result.FailureKind,
+                FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
             };
         }
 

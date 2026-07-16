@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 6;
+        public const int CurrentSchemaVersion = 7;
         private const int MaxSummaryLength = 800;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -45,6 +45,8 @@ namespace ColorVision.Copilot
         public CopilotToolExecutionState State { get; set; } = CopilotToolExecutionState.Pending;
 
         public CopilotToolFailureKind FailureKind { get; set; }
+
+        public string FailureCode { get; set; } = string.Empty;
 
         public bool RetryEligible { get; set; }
 
@@ -93,6 +95,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeWorkspaceChangeSetRolledBack() => WorkspaceChangeSetRolledBack;
 
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
+
+        public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
 
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
@@ -186,8 +190,16 @@ namespace ColorVision.Copilot
                         builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
                 }
                 if (FailureKind != CopilotToolFailureKind.None)
-                    builder.AppendLine().Append("Failure: ").Append(FailureKind)
-                        .Append(" · Retry eligible: ").Append(RetryEligible ? "yes" : "no");
+                {
+                    builder.AppendLine().Append("Failure: ").Append(FailureKind);
+                    if (!string.IsNullOrWhiteSpace(FailureCode))
+                        builder.Append(" · Code: ").Append(FailureCode);
+                    builder.Append(" · Retry eligible: ").Append(RetryEligible ? "yes" : "no");
+                }
+                else if (!string.IsNullOrWhiteSpace(FailureCode))
+                {
+                    builder.AppendLine().Append("Failure code: ").Append(FailureCode);
+                }
                 if (!string.IsNullOrWhiteSpace(ApprovalActionId))
                     builder.AppendLine().Append("Approval action: ").Append(ApprovalActionId);
                 if (!string.IsNullOrWhiteSpace(ArgumentSummary) && ArgumentSummary != "(none)")
@@ -223,6 +235,7 @@ namespace ColorVision.Copilot
                 var summary = !string.IsNullOrWhiteSpace(result.Summary) ? result.Summary : result.Content;
                 entry.ResultSummary = Sanitize(summary);
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
+                entry.FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
                 if (result.DelegatedRunUsage != null)
                 {
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
@@ -355,6 +368,7 @@ namespace ColorVision.Copilot
             var originalConcurrencyKey = ConcurrencyKey;
             var originalResultSummary = ResultSummary;
             var originalErrorMessage = ErrorMessage;
+            var originalFailureCode = FailureCode;
             var originalDelegatedRoleId = DelegatedRoleId;
             var originalDelegatedRunId = DelegatedRunId;
             var originalDelegatedStopReason = DelegatedStopReason;
@@ -378,6 +392,9 @@ namespace ColorVision.Copilot
             ConcurrencyKey = SanitizeIdentifier(ConcurrencyKey);
             ResultSummary = Sanitize(ResultSummary);
             ErrorMessage = Sanitize(ErrorMessage);
+            FailureCode = State == CopilotToolExecutionState.Completed
+                ? string.Empty
+                : CopilotToolFailureCode.Normalize(FailureCode);
             DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
             DelegatedRequestTokenBudget = Math.Max(0, DelegatedRequestTokenBudget);
@@ -408,6 +425,7 @@ namespace ColorVision.Copilot
                 || !string.Equals(originalConcurrencyKey, ConcurrencyKey, StringComparison.Ordinal)
                 || !string.Equals(originalResultSummary, ResultSummary, StringComparison.Ordinal)
                 || !string.Equals(originalErrorMessage, ErrorMessage, StringComparison.Ordinal)
+                || !string.Equals(originalFailureCode, FailureCode, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRoleId, DelegatedRoleId, StringComparison.Ordinal)
                 || !string.Equals(originalDelegatedRunId, DelegatedRunId, StringComparison.Ordinal)
                 || originalDelegatedStopReason != DelegatedStopReason

@@ -143,6 +143,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -186,6 +188,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -201,6 +205,7 @@ namespace ColorVision.Copilot
                 Content = result?.Content ?? string.Empty,
                 ErrorMessage = result?.ErrorMessage ?? string.Empty,
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
+                FailureCode = result?.Success == false ? CopilotToolFailureCode.Normalize(result.FailureCode) : string.Empty,
                 Approval = result?.Approval,
                 SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
                 DelegatedRunUsage = result?.DelegatedRunUsage,

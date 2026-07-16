@@ -99,6 +99,9 @@ namespace ColorVision.Copilot
 
             if (execution.FailureKind != CopilotToolFailureKind.None)
                 payload["failure_kind"] = execution.FailureKind.ToString().ToLowerInvariant();
+            var failureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
+            if (!string.IsNullOrWhiteSpace(failureCode))
+                payload["failure_code"] = failureCode;
             if (result.Approval != null)
             {
                 payload["status"] = "awaiting_approval";

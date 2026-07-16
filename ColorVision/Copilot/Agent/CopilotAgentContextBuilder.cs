@@ -120,6 +120,11 @@ namespace ColorVision.Copilot
                     .Append("; summary: ")
                     .AppendLine(TruncateInlineText(observation.Summary, MaxObservationSummaryChars));
 
+                if (!observation.Success && observation.FailureKind != CopilotToolFailureKind.None)
+                    builder.Append("  Failure kind: ").AppendLine(observation.FailureKind.ToString().ToLowerInvariant());
+                if (!observation.Success && !string.IsNullOrWhiteSpace(observation.FailureCode))
+                    builder.Append("  Failure code: ").AppendLine(CopilotToolFailureCode.Normalize(observation.FailureCode));
+
                 if (observation.Approval != null)
                 {
                     builder.Append("  Approval action: ").Append(observation.Approval.ActionId)
