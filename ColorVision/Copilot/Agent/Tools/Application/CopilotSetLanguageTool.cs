@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -10,16 +9,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotSetLanguageTool : ICopilotFrameworkApprovedTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotSetLanguageTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotSetLanguageTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotSetLanguageTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "SetLanguage";
@@ -49,7 +48,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
         }
 
         public async Task<CopilotToolResult> ExecuteApprovedAsync(
@@ -57,13 +56,13 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            string callerSource,
+            CopilotApplicationCapabilityCaller caller,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -76,16 +75,16 @@ namespace ColorVision.Copilot
             {
                 ["language"] = JsonSerializer.SerializeToElement(sourceText),
             };
-            var result = await _dispatcher.CallAsync("set_language", arguments, cancellationToken, callerSource);
-            var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
+            var result = await _capabilityInvoker.InvokeAsync("set_language", arguments, caller, cancellationToken);
+            var isWaitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = result.Success || isWaitingForApproval,
                 Summary = isWaitingForApproval ? "Language change is waiting for explicit ColorVision approval." : result.Success ? "Language change completed." : "Language change failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
-                Approval = result.ToApprovalInfo(),
+                Content = result.Content,
+                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                Approval = result.Approval,
             };
         }
     }

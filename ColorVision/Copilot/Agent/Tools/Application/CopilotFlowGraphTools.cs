@@ -18,12 +18,12 @@ namespace ColorVision.Copilot
         });
 
         public CopilotInspectFlowGraphTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotInspectFlowGraphTool(CopilotMcpToolDispatcher dispatcher)
-            : base("InspectFlowGraph", "get_flow_graph", "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema, dispatcher)
+        public CopilotInspectFlowGraphTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
+            : base("InspectFlowGraph", "get_flow_graph", "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema, capabilityInvoker)
         {
         }
     }
@@ -37,12 +37,12 @@ namespace ColorVision.Copilot
         });
 
         public CopilotSearchFlowNodeCatalogTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotSearchFlowNodeCatalogTool(CopilotMcpToolDispatcher dispatcher)
-            : base("SearchFlowNodeCatalog", "get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", Schema, dispatcher)
+        public CopilotSearchFlowNodeCatalogTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
+            : base("SearchFlowNodeCatalog", "get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", Schema, capabilityInvoker)
         {
         }
     }
@@ -50,12 +50,12 @@ namespace ColorVision.Copilot
     public sealed class CopilotPreviewFlowPatchTool : CopilotFlowReadToolBase
     {
         public CopilotPreviewFlowPatchTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotPreviewFlowPatchTool(CopilotMcpToolDispatcher dispatcher)
-            : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value, dispatcher)
+        public CopilotPreviewFlowPatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
+            : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value, capabilityInvoker)
         {
         }
 
@@ -64,16 +64,16 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotApplyFlowPatchTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotApplyFlowPatchTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotApplyFlowPatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "ApplyFlowPatch";
@@ -100,12 +100,12 @@ namespace ColorVision.Copilot
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
         }
 
         public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
@@ -122,20 +122,20 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation("应用 Flow 图修改", $"操作：{operation}\n{detail}\n不会自动保存或运行流程。");
         }
 
-        private async Task<CopilotToolResult> ExecuteCoreAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, string callerSource, CancellationToken cancellationToken)
+        private async Task<CopilotToolResult> ExecuteCoreAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CopilotApplicationCapabilityCaller caller, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             var arguments = CopilotFlowReadToolBase.ToJsonArguments(toolInput);
-            var result = await _dispatcher.CallAsync("apply_flow_patch", arguments, cancellationToken, callerSource);
-            var waitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
+            var result = await _capabilityInvoker.InvokeAsync("apply_flow_patch", arguments, caller, cancellationToken);
+            var waitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = result.Success || waitingForApproval,
                 Summary = waitingForApproval ? "Flow patch is waiting for explicit approval." : result.Success ? "Flow patch applied." : "Flow patch failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || waitingForApproval ? string.Empty : result.Text,
-                Approval = result.ToApprovalInfo(),
+                Content = result.Content,
+                ErrorMessage = result.Success || waitingForApproval ? string.Empty : result.Content,
+                Approval = result.Approval,
             };
         }
 
@@ -166,7 +166,7 @@ namespace ColorVision.Copilot
 
     public abstract class CopilotFlowReadToolBase : ICopilotAgentDrivenTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
         private readonly string _mcpToolName;
 
         protected CopilotFlowReadToolBase(
@@ -174,13 +174,13 @@ namespace ColorVision.Copilot
             string mcpToolName,
             string description,
             CopilotToolInputSchema inputSchema,
-            CopilotMcpToolDispatcher dispatcher)
+            ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
             Name = name;
             _mcpToolName = mcpToolName;
             Description = description;
             InputSchema = inputSchema;
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name { get; }
@@ -201,14 +201,18 @@ namespace ColorVision.Copilot
         public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var result = await _dispatcher.CallAsync(_mcpToolName, ToJsonArguments(toolInput), cancellationToken, CopilotMcpToolDispatcher.InAppAgentCallerSource);
+            var result = await _capabilityInvoker.InvokeAsync(
+                _mcpToolName,
+                ToJsonArguments(toolInput),
+                CopilotApplicationCapabilityCaller.InAppAgent,
+                cancellationToken);
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = result.Success,
                 Summary = result.Success ? $"{Name} completed." : $"{Name} failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success ? string.Empty : result.Text,
+                Content = result.Content,
+                ErrorMessage = result.Success ? string.Empty : result.Content,
             };
         }
 

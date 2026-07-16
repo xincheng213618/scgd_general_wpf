@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -10,16 +9,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotExecuteMenuTool : ICopilotFrameworkApprovedTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotExecuteMenuTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotExecuteMenuTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotExecuteMenuTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "ExecuteMenu";
@@ -55,7 +54,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
         }
 
         public async Task<CopilotToolResult> ExecuteApprovedAsync(
@@ -63,13 +62,13 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            string callerSource,
+            CopilotApplicationCapabilityCaller caller,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -83,8 +82,8 @@ namespace ColorVision.Copilot
                 ["query"] = JsonSerializer.SerializeToElement(sourceText),
                 ["dry_run"] = JsonSerializer.SerializeToElement(false),
             };
-            var result = await _dispatcher.CallAsync("execute_menu", arguments, cancellationToken, callerSource);
-            var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
+            var result = await _capabilityInvoker.InvokeAsync("execute_menu", arguments, caller, cancellationToken);
+            var isWaitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {
                 ToolName = Name,
@@ -92,9 +91,9 @@ namespace ColorVision.Copilot
                 Summary = isWaitingForApproval
                     ? "Menu command is waiting for explicit ColorVision approval."
                     : result.Success ? "Menu command executed." : "Menu command execution failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
-                Approval = result.ToApprovalInfo(),
+                Content = result.Content,
+                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                Approval = result.Approval,
             };
         }
     }

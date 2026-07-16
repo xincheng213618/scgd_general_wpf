@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -11,16 +10,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotTemplatePatchTool : ICopilotTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotTemplatePatchTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotTemplatePatchTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotTemplatePatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "TemplatePatch";
@@ -79,7 +78,11 @@ namespace ColorVision.Copilot
                     ["template_identifier"] = JsonSerializer.SerializeToElement("active-template"),
                     ["proposed_changes"] = proposedChanges.Clone(),
                 };
-                var result = await _dispatcher.CallAsync("preview_template_patch", arguments, cancellationToken, CopilotMcpToolDispatcher.InAppAgentCallerSource);
+                var result = await _capabilityInvoker.InvokeAsync(
+                    "preview_template_patch",
+                    arguments,
+                    CopilotApplicationCapabilityCaller.InAppAgent,
+                    cancellationToken);
                 return ToToolResult(result, "Template patch preview created.", "Template patch preview failed.");
             }
             catch (JsonException ex)
@@ -88,15 +91,15 @@ namespace ColorVision.Copilot
             }
         }
 
-        private CopilotToolResult ToToolResult(CopilotMcpToolCallResult result, string successSummary, string failureSummary)
+        private CopilotToolResult ToToolResult(CopilotApplicationCapabilityCallResult result, string successSummary, string failureSummary)
         {
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = result.Success,
                 Summary = result.Success ? successSummary : failureSummary,
-                Content = result.Text,
-                ErrorMessage = result.Success ? string.Empty : result.Text,
+                Content = result.Content,
+                ErrorMessage = result.Success ? string.Empty : result.Content,
             };
         }
 

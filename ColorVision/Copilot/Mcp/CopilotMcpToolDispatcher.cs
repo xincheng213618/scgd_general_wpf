@@ -19,7 +19,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpToolDispatcher
+    public sealed class CopilotMcpToolDispatcher : ICopilotApplicationCapabilityInvoker
     {
         private const int MaxSearchResults = 30;
         private const int MaxGrepMatches = 40;
@@ -427,6 +427,37 @@ namespace ColorVision.Copilot.Mcp
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, ex.Message);
                 return CopilotMcpToolCallResult.Fail("internal_error", $"The MCP tool call failed: {ex.Message}");
             }
+        }
+
+        public async Task<CopilotApplicationCapabilityCallResult> InvokeAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotApplicationCapabilityCaller caller,
+            CancellationToken cancellationToken)
+        {
+            var callerSource = caller switch
+            {
+                CopilotApplicationCapabilityCaller.InAppAgent => InAppAgentCallerSource,
+                CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved => InAppAgentFrameworkApprovedCallerSource,
+                _ => throw new ArgumentOutOfRangeException(nameof(caller)),
+            };
+            var result = await CallAsync(capabilityName, arguments, cancellationToken, callerSource);
+            return new CopilotApplicationCapabilityCallResult
+            {
+                Success = result.Success,
+                Content = result.Text,
+                ErrorCode = result.ErrorCode,
+                Approval = result.RequiresApproval && !string.IsNullOrWhiteSpace(result.ApprovalActionId)
+                    ? new CopilotToolApprovalInfo
+                    {
+                        ActionId = result.ApprovalActionId,
+                        Title = result.ApprovalTitle,
+                        RiskLevel = result.ApprovalRiskLevel,
+                        ExpiresAtUtc = result.ApprovalExpiresAtUtc,
+                        ExecuteOnApproval = result.ExecuteOnApproval,
+                    }
+                    : null,
+            };
         }
 
         private CopilotMcpToolRouter CreateRouter()

@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -112,15 +111,15 @@ namespace ColorVision.Copilot
         internal static ICopilotTool[] CreateCoreDefaultTools()
         {
             var workspacePatchStore = new CopilotWorkspacePatchStore();
-            var applicationDispatcher = new CopilotMcpToolDispatcher();
+            var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
             return new ICopilotTool[]
             {
-                new CopilotCreateFlowTool(applicationDispatcher),
-                new CopilotExecuteMenuTool(applicationDispatcher),
+                new CopilotCreateFlowTool(applicationCapabilities),
+                new CopilotExecuteMenuTool(applicationCapabilities),
                 new CopilotSetThemeTool(),
-                new CopilotSetLanguageTool(applicationDispatcher),
-                new CopilotTemplatePatchTool(applicationDispatcher),
-                new CopilotApplyTemplatePatchTool(applicationDispatcher),
+                new CopilotSetLanguageTool(applicationCapabilities),
+                new CopilotTemplatePatchTool(applicationCapabilities),
+                new CopilotApplyTemplatePatchTool(applicationCapabilities),
                 new CopilotSearchDocsTool(),
                 new CopilotFetchUrlTool(),
                 new CopilotSearchFilesTool(),
@@ -130,10 +129,10 @@ namespace ColorVision.Copilot
                 new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
-                new CopilotInspectFlowGraphTool(applicationDispatcher),
-                new CopilotSearchFlowNodeCatalogTool(applicationDispatcher),
-                new CopilotPreviewFlowPatchTool(applicationDispatcher),
-                new CopilotApplyFlowPatchTool(applicationDispatcher),
+                new CopilotInspectFlowGraphTool(applicationCapabilities),
+                new CopilotSearchFlowNodeCatalogTool(applicationCapabilities),
+                new CopilotPreviewFlowPatchTool(applicationCapabilities),
+                new CopilotApplyFlowPatchTool(applicationCapabilities),
                 new CopilotQueryFlowExecutionStatsTool(),
                 new CopilotQueryDatabaseSqlTool(),
                 new CopilotExecuteDatabaseSqlTool(),
