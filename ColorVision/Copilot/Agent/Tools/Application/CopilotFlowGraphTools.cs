@@ -18,7 +18,12 @@ namespace ColorVision.Copilot
         });
 
         public CopilotInspectFlowGraphTool()
-            : base("InspectFlowGraph", "get_flow_graph", "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema)
+            : this(new CopilotMcpToolDispatcher())
+        {
+        }
+
+        public CopilotInspectFlowGraphTool(CopilotMcpToolDispatcher dispatcher)
+            : base("InspectFlowGraph", "get_flow_graph", "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema, dispatcher)
         {
         }
     }
@@ -32,7 +37,12 @@ namespace ColorVision.Copilot
         });
 
         public CopilotSearchFlowNodeCatalogTool()
-            : base("SearchFlowNodeCatalog", "get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", Schema)
+            : this(new CopilotMcpToolDispatcher())
+        {
+        }
+
+        public CopilotSearchFlowNodeCatalogTool(CopilotMcpToolDispatcher dispatcher)
+            : base("SearchFlowNodeCatalog", "get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", Schema, dispatcher)
         {
         }
     }
@@ -40,7 +50,12 @@ namespace ColorVision.Copilot
     public sealed class CopilotPreviewFlowPatchTool : CopilotFlowReadToolBase
     {
         public CopilotPreviewFlowPatchTool()
-            : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value)
+            : this(new CopilotMcpToolDispatcher())
+        {
+        }
+
+        public CopilotPreviewFlowPatchTool(CopilotMcpToolDispatcher dispatcher)
+            : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value, dispatcher)
         {
         }
 
@@ -49,7 +64,17 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher = new();
+        private readonly CopilotMcpToolDispatcher _dispatcher;
+
+        public CopilotApplyFlowPatchTool()
+            : this(new CopilotMcpToolDispatcher())
+        {
+        }
+
+        public CopilotApplyFlowPatchTool(CopilotMcpToolDispatcher dispatcher)
+        {
+            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        }
 
         public string Name => "ApplyFlowPatch";
 
@@ -141,15 +166,21 @@ namespace ColorVision.Copilot
 
     public abstract class CopilotFlowReadToolBase : ICopilotAgentDrivenTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher = new();
+        private readonly CopilotMcpToolDispatcher _dispatcher;
         private readonly string _mcpToolName;
 
-        protected CopilotFlowReadToolBase(string name, string mcpToolName, string description, CopilotToolInputSchema inputSchema)
+        protected CopilotFlowReadToolBase(
+            string name,
+            string mcpToolName,
+            string description,
+            CopilotToolInputSchema inputSchema,
+            CopilotMcpToolDispatcher dispatcher)
         {
             Name = name;
             _mcpToolName = mcpToolName;
             Description = description;
             InputSchema = inputSchema;
+            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
         public string Name { get; }

@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -111,14 +112,15 @@ namespace ColorVision.Copilot
         internal static ICopilotTool[] CreateCoreDefaultTools()
         {
             var workspacePatchStore = new CopilotWorkspacePatchStore();
+            var applicationDispatcher = new CopilotMcpToolDispatcher();
             return new ICopilotTool[]
             {
-                new CopilotCreateFlowTool(),
-                new CopilotExecuteMenuTool(),
+                new CopilotCreateFlowTool(applicationDispatcher),
+                new CopilotExecuteMenuTool(applicationDispatcher),
                 new CopilotSetThemeTool(),
-                new CopilotSetLanguageTool(),
-                new CopilotTemplatePatchTool(),
-                new CopilotApplyTemplatePatchTool(),
+                new CopilotSetLanguageTool(applicationDispatcher),
+                new CopilotTemplatePatchTool(applicationDispatcher),
+                new CopilotApplyTemplatePatchTool(applicationDispatcher),
                 new CopilotSearchDocsTool(),
                 new CopilotFetchUrlTool(),
                 new CopilotSearchFilesTool(),
@@ -128,10 +130,10 @@ namespace ColorVision.Copilot
                 new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
                 new CopilotGetRecentLogTool(),
-                new CopilotInspectFlowGraphTool(),
-                new CopilotSearchFlowNodeCatalogTool(),
-                new CopilotPreviewFlowPatchTool(),
-                new CopilotApplyFlowPatchTool(),
+                new CopilotInspectFlowGraphTool(applicationDispatcher),
+                new CopilotSearchFlowNodeCatalogTool(applicationDispatcher),
+                new CopilotPreviewFlowPatchTool(applicationDispatcher),
+                new CopilotApplyFlowPatchTool(applicationDispatcher),
                 new CopilotQueryFlowExecutionStatsTool(),
                 new CopilotQueryDatabaseSqlTool(),
                 new CopilotExecuteDatabaseSqlTool(),
