@@ -37,6 +37,8 @@ namespace ColorVision.Copilot
 
         public string Path { get; init; } = string.Empty;
 
+        public string Cursor { get; init; } = string.Empty;
+
         public int? StartLine { get; init; }
 
         public int? StartColumn { get; init; }

@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
                 arguments["query"] = input.Query.Trim();
             if (!string.IsNullOrWhiteSpace(input.Path) && !arguments.ContainsKey("path"))
                 arguments["path"] = input.Path.Trim();
+            if (!string.IsNullOrWhiteSpace(input.Cursor) && !arguments.ContainsKey("cursor"))
+                arguments["cursor"] = input.Cursor.Trim();
             if (input.StartLine.HasValue && !arguments.ContainsKey("startLine"))
                 arguments["startLine"] = input.StartLine.Value;
             if (input.StartColumn.HasValue && !arguments.ContainsKey("startColumn"))

@@ -1345,6 +1345,8 @@ namespace ColorVision.Copilot
             }
             if (tools.Any(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("Treat ReadLocalFile content_complete false as partial evidence. When omitted content matters, call ReadLocalFile again for the same path using both continuation_start_line and continuation_start_column exactly as returned. This cursor advances from the first omitted character, including inside a very long line; do not increment it or skip to the following line.");
+            if (tools.Any(tool => string.Equals(tool.Name, "ListDirectory", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("ListDirectory returns one stable bounded page. When entries_complete is false and next_cursor is present, call it again for the same path with that exact cursor if later entries matter. Never invent or alter the cursor. When scan_complete is false and no next_cursor remains, narrow the directory path before concluding that an entry does not exist.");
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))
             {
@@ -2280,6 +2282,7 @@ namespace ColorVision.Copilot
                     toolName?.Trim() ?? string.Empty,
                     toolInput.Query?.Trim() ?? string.Empty,
                     toolInput.Path?.Trim() ?? string.Empty,
+                    toolInput.Cursor?.Trim() ?? string.Empty,
                     toolInput.StartLine?.ToString() ?? string.Empty,
                     toolInput.StartColumn?.ToString() ?? string.Empty,
                     toolInput.EndLine?.ToString() ?? string.Empty,

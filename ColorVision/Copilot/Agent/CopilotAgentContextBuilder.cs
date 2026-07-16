@@ -470,7 +470,9 @@ namespace ColorVision.Copilot
                 if (string.IsNullOrWhiteSpace(directoryName))
                     directoryName = toolInput.Path;
 
-                return $" (target directory: {directoryName})";
+                return string.IsNullOrWhiteSpace(toolInput.Cursor)
+                    ? $" (target directory: {directoryName})"
+                    : $" (target directory: {directoryName}, continuation page)";
             }
 
             if (string.Equals(toolName, "FetchUrl", StringComparison.OrdinalIgnoreCase)

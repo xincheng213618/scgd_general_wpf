@@ -47,6 +47,15 @@ namespace ColorVision.Copilot
             return ReadTextFileAsync(path, null, null, null, cancellationToken);
         }
 
+        public static Task<CopilotLocalFileReadResult> ReadTextFileAsync(
+            string path,
+            int? startLine,
+            int? endLine,
+            CancellationToken cancellationToken)
+        {
+            return ReadTextFileAsync(path, startLine, startColumn: null, endLine, cancellationToken);
+        }
+
         public static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(
             string path,
             int? startLine,

@@ -11,9 +11,13 @@ namespace ColorVision.Copilot
     {
         public string Name => "ListDirectory";
 
-        public string Description => "List the contents of local directories allowed for the current round, including files and subdirectories.";
+        public string Description => "List one stable, bounded page of files and subdirectories from an allowed local directory, with an opaque continuation cursor when more entries remain.";
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Path("Allowed local directory path to list.");
+        public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
+        {
+            new CopilotToolParameter { Name = "path", Description = "Allowed local directory path to list.", Type = CopilotToolParameterType.Text, Required = true },
+            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it.", Type = CopilotToolParameterType.Text },
+        });
 
         public bool IsAvailable(CopilotAgentRequest request)
         {
@@ -61,6 +65,7 @@ namespace ColorVision.Copilot
             var result = CopilotListDirectoryCapability.List(
                 allowedDirectories.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
                 selectedPath,
+                toolInput?.Cursor,
                 cancellationToken);
             return Task.FromResult(result.ToToolResult(Name));
         }

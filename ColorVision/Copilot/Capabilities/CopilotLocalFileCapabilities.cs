@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +13,24 @@ namespace ColorVision.Copilot
     public static class CopilotReadLocalFileCapability
     {
         private const int DefaultMaxFilesPerRequest = 3;
+
+        public static Task<CopilotCapabilityResult> ReadAsync(
+            IEnumerable<string> readableLocalFilePaths,
+            string? selectedPath,
+            bool preferBatchReadAll,
+            int? startLine,
+            int? endLine,
+            CancellationToken cancellationToken)
+        {
+            return ReadAsync(
+                readableLocalFilePaths,
+                selectedPath,
+                preferBatchReadAll,
+                startLine,
+                startColumn: null,
+                endLine,
+                cancellationToken);
+        }
 
         public static async Task<CopilotCapabilityResult> ReadAsync(
             IEnumerable<string> readableLocalFilePaths,
@@ -161,6 +181,7 @@ namespace ColorVision.Copilot
     public static class CopilotListDirectoryCapability
     {
         private const int MaxListedEntries = 60;
+        private const int MaxScannedEntries = 20000;
         private const int MaxSuggestedReadableFiles = 10;
 
         private static readonly EnumerationOptions ListEnumerationOptions = new()
@@ -174,6 +195,15 @@ namespace ColorVision.Copilot
         public static CopilotCapabilityResult List(
             IEnumerable<string> readableLocalDirectoryPaths,
             string? selectedPath,
+            CancellationToken cancellationToken)
+        {
+            return List(readableLocalDirectoryPaths, selectedPath, cursor: null, cancellationToken);
+        }
+
+        public static CopilotCapabilityResult List(
+            IEnumerable<string> readableLocalDirectoryPaths,
+            string? selectedPath,
+            string? cursor,
             CancellationToken cancellationToken)
         {
             var allowedDirectories = (readableLocalDirectoryPaths ?? Array.Empty<string>())
@@ -219,16 +249,10 @@ namespace ColorVision.Copilot
                 };
             }
 
-            BoundedDirectoryEntries subDirectories;
-            BoundedDirectoryEntries files;
+            BoundedDirectoryEntries entries;
             try
             {
-                subDirectories = EnumerateBounded(
-                    () => Directory.EnumerateDirectories(directoryPath, "*", ListEnumerationOptions),
-                    cancellationToken);
-                files = EnumerateBounded(
-                    () => Directory.EnumerateFiles(directoryPath, "*", ListEnumerationOptions),
-                    cancellationToken);
+                entries = EnumerateBounded(directoryPath, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -244,80 +268,163 @@ namespace ColorVision.Copilot
                 };
             }
 
+            var revision = BuildDirectoryRevision(directoryPath, entries.Entries);
+            if (!TryResolveCursor(cursor, revision, entries.Entries.Count, out var offset, out var cursorError))
+            {
+                return new CopilotCapabilityResult
+                {
+                    Success = false,
+                    Summary = "The directory continuation cursor is invalid or stale.",
+                    ErrorMessage = cursorError,
+                };
+            }
+
+            var page = entries.Entries.Skip(offset).Take(MaxListedEntries).ToArray();
+            var nextOffset = offset + page.Length;
+            var hasMoreScannedEntries = nextOffset < entries.Entries.Count;
+            var nextCursor = hasMoreScannedEntries ? $"{revision}:{nextOffset.ToString(CultureInfo.InvariantCulture)}" : string.Empty;
+            var entriesComplete = entries.ScanComplete && !hasMoreScannedEntries;
+            var scannedDirectoryCount = entries.Entries.Count(entry => entry.IsDirectory);
+            var scannedFileCount = entries.Entries.Count - scannedDirectoryCount;
+
             var builder = new StringBuilder();
+            builder.AppendLine("[Directory Page]");
+            builder.AppendLine($"entries_scanned: {entries.Entries.Count}");
+            builder.AppendLine($"scan_complete: {entries.ScanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"page_offset: {offset}");
+            builder.AppendLine($"entries_returned: {page.Length}");
+            builder.AppendLine($"entries_complete: {entriesComplete.ToString().ToLowerInvariant()}");
+            if (!string.IsNullOrWhiteSpace(nextCursor))
+                builder.AppendLine($"next_cursor: {nextCursor}");
+            builder.AppendLine();
             builder.AppendLine($"[Directory] {directoryPath}");
-            builder.AppendLine($"[Subdirectories] {FormatEntryCount(subDirectories)}");
-            builder.AppendLine($"[Files] {FormatEntryCount(files)}");
+            builder.AppendLine($"[Subdirectories Scanned] {scannedDirectoryCount}");
+            builder.AppendLine($"[Files Scanned] {scannedFileCount}");
             builder.AppendLine();
 
-            var listedCount = 0;
-            foreach (var subDirectory in subDirectories.Paths)
+            foreach (var entry in page)
             {
-                if (listedCount >= MaxListedEntries)
-                    break;
-
-                builder.Append("[Directory] ")
-                    .AppendLine(Path.GetFileName(subDirectory));
-                listedCount++;
+                builder.Append(entry.IsDirectory ? "[Directory] " : "[File] ")
+                    .AppendLine(entry.Name);
             }
 
-            foreach (var file in files.Paths)
-            {
-                if (listedCount >= MaxListedEntries)
-                    break;
-
-                builder.Append("[File] ")
-                    .AppendLine(Path.GetFileName(file));
-                listedCount++;
-            }
-
-            if (subDirectories.HasMore || files.HasMore || subDirectories.Paths.Count + files.Paths.Count > listedCount)
+            if (!entriesComplete)
             {
                 builder.AppendLine();
-                builder.AppendLine($"...<directory content truncated; showing the first {listedCount} entries.>");
+                builder.AppendLine(!string.IsNullOrWhiteSpace(nextCursor)
+                    ? "...<more directory entries are available; call ListDirectory again with next_cursor.>"
+                    : $"...<directory scan stopped at the {MaxScannedEntries}-entry safety limit; narrow the path before drawing a complete conclusion.>");
             }
 
             return new CopilotCapabilityResult
             {
                 Success = true,
-                Summary = $"Listed {GetDirectoryLabel(directoryPath)} with {FormatEntryCount(subDirectories)} subdirectories and {FormatEntryCount(files)} files.",
+                Summary = entriesComplete
+                    ? $"Listed the complete {GetDirectoryLabel(directoryPath)} directory ({page.Length} entries on this page)."
+                    : !string.IsNullOrWhiteSpace(nextCursor)
+                        ? $"Listed {page.Length} entries from {GetDirectoryLabel(directoryPath)}; another stable page is available."
+                        : $"Listed {page.Length} entries from an incomplete bounded scan of {GetDirectoryLabel(directoryPath)}.",
                 Content = builder.ToString().TrimEnd(),
-                SuggestedReadableLocalFilePaths = files.Paths
-                    .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
+                SuggestedReadableLocalFilePaths = page
+                    .Where(entry => !entry.IsDirectory && CopilotWorkspaceSearchSupport.IsTextLikeFile(entry.FullPath))
+                    .Select(entry => entry.FullPath)
                     .Take(MaxSuggestedReadableFiles)
                     .ToArray(),
             };
         }
 
-        private static BoundedDirectoryEntries EnumerateBounded(
-            Func<IEnumerable<string>> createEntries,
-            CancellationToken cancellationToken)
+        private static BoundedDirectoryEntries EnumerateBounded(string directoryPath, CancellationToken cancellationToken)
         {
-            var paths = new List<string>(MaxListedEntries + 1);
-            using var enumerator = createEntries().GetEnumerator();
-            while (paths.Count <= MaxListedEntries)
+            var entries = new List<DirectoryEntry>(Math.Min(1024, MaxScannedEntries));
+            var scanComplete = AppendEntries(
+                () => Directory.EnumerateDirectories(directoryPath, "*", ListEnumerationOptions),
+                isDirectory: true,
+                entries,
+                cancellationToken);
+            if (scanComplete)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!enumerator.MoveNext())
-                    break;
-
-                paths.Add(enumerator.Current);
+                scanComplete = AppendEntries(
+                    () => Directory.EnumerateFiles(directoryPath, "*", ListEnumerationOptions),
+                    isDirectory: false,
+                    entries,
+                    cancellationToken);
             }
 
-            var hasMore = paths.Count > MaxListedEntries;
             return new BoundedDirectoryEntries(
-                paths.Take(MaxListedEntries)
-                    .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                entries
+                    .OrderByDescending(entry => entry.IsDirectory)
+                    .ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(entry => entry.FullPath, StringComparer.OrdinalIgnoreCase)
                     .ToArray(),
-                hasMore);
+                scanComplete);
         }
 
-        private static string FormatEntryCount(BoundedDirectoryEntries entries)
+        private static bool AppendEntries(
+            Func<IEnumerable<string>> createEntries,
+            bool isDirectory,
+            List<DirectoryEntry> entries,
+            CancellationToken cancellationToken)
         {
-            return entries.HasMore ? $"{entries.Paths.Count}+" : entries.Paths.Count.ToString();
+            using var enumerator = createEntries().GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (entries.Count >= MaxScannedEntries)
+                    return false;
+
+                entries.Add(new DirectoryEntry(enumerator.Current, isDirectory));
+            }
+
+            return true;
         }
 
-        private readonly record struct BoundedDirectoryEntries(IReadOnlyList<string> Paths, bool HasMore);
+        private static string BuildDirectoryRevision(string directoryPath, IReadOnlyList<DirectoryEntry> entries)
+        {
+            var builder = new StringBuilder(entries.Count * 24);
+            builder.Append(directoryPath.ToUpperInvariant()).Append('\n');
+            foreach (var entry in entries)
+            {
+                builder.Append(entry.IsDirectory ? 'D' : 'F')
+                    .Append('|')
+                    .Append(entry.Name.ToUpperInvariant())
+                    .Append('\n');
+            }
+
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))[..16].ToLowerInvariant();
+        }
+
+        private static bool TryResolveCursor(string? cursor, string revision, int entryCount, out int offset, out string error)
+        {
+            offset = 0;
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(cursor))
+                return true;
+
+            var parts = cursor.Trim().Split(':', 2, StringSplitOptions.None);
+            if (parts.Length != 2
+                || parts[0].Length != revision.Length
+                || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out offset)
+                || offset < 0
+                || offset > entryCount)
+            {
+                error = "The directory cursor format or offset is invalid. Restart the listing without a cursor.";
+                return false;
+            }
+            if (!string.Equals(parts[0], revision, StringComparison.OrdinalIgnoreCase))
+            {
+                error = "The directory changed after the previous page. Restart the listing without a cursor.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private readonly record struct DirectoryEntry(string FullPath, bool IsDirectory)
+        {
+            public string Name => Path.GetFileName(FullPath);
+        }
+
+        private readonly record struct BoundedDirectoryEntries(IReadOnlyList<DirectoryEntry> Entries, bool ScanComplete);
 
         private static string GetDirectoryLabel(string directoryPath)
         {

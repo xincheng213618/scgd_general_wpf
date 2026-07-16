@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
     {
         private const int MaximumSerializedArgumentsLength = 65_536;
         private static readonly StringComparer NameComparer = StringComparer.OrdinalIgnoreCase;
-        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "startLine", "startColumn", "endLine" }, NameComparer);
+        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "cursor", "startLine", "startColumn", "endLine" }, NameComparer);
 
         public static CopilotToolInputSchema Empty { get; } = new(Array.Empty<CopilotToolParameter>());
 
@@ -112,6 +112,7 @@ namespace ColorVision.Copilot
 
             if (!TryReadString(arguments, "query", out var query, out error)
                 || !TryReadString(arguments, "path", out var path, out error)
+                || !TryReadString(arguments, "cursor", out var cursor, out error)
                 || !TryReadPositiveInt(arguments, "startLine", out var startLine, out error)
                 || !TryReadPositiveInt(arguments, "startColumn", out var startColumn, out error)
                 || !TryReadPositiveInt(arguments, "endLine", out var endLine, out error))
@@ -138,6 +139,7 @@ namespace ColorVision.Copilot
                 Arguments = new Dictionary<string, object?>(arguments, NameComparer),
                 Query = query,
                 Path = path,
+                Cursor = cursor,
                 StartLine = startLine,
                 StartColumn = startColumn,
                 EndLine = endLine,
@@ -221,6 +223,7 @@ namespace ColorVision.Copilot
                 Arguments = copiedArguments,
                 Query = TryReadCompatibleString(copiedArguments, "query"),
                 Path = TryReadCompatibleString(copiedArguments, "path"),
+                Cursor = TryReadCompatibleString(copiedArguments, "cursor"),
                 StartLine = TryReadCompatibleInt(copiedArguments, "startLine"),
                 StartColumn = TryReadCompatibleInt(copiedArguments, "startColumn"),
                 EndLine = TryReadCompatibleInt(copiedArguments, "endLine"),

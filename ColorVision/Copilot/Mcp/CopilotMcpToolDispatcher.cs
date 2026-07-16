@@ -158,10 +158,11 @@ namespace ColorVision.Copilot.Mcp
                     ["start_column"] = IntegerProperty("1-based character column within start_line. Use the exact continuation cursor returned by a truncated read.", 1, int.MaxValue),
                     ["end_line"] = IntegerProperty("1-based end line.", 1, int.MaxValue),
                 }, "path"), "file", "read-only", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"start_column\": 1, \"end_line\": 40 }."),
-                Tool("list_allowed_directory", "List a directory only if it is under an allowed ColorVision workspace root. Optional argument: path.", Schema(new Dictionary<string, object>
+                Tool("list_allowed_directory", "List one stable bounded directory page only if it is under an allowed ColorVision workspace root. Optional arguments: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root. If omitted, allowed roots are listed."),
-                }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }."),
+                    ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it."),
+                }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }; pass its next_cursor unchanged to request another page."),
                 Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."),
                 Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."),
                 Tool("get_flow_graph", "Return the active ColorVision flow as a bounded structured graph with a revision, stable node ids, runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema(new Dictionary<string, object>
@@ -882,12 +883,16 @@ namespace ColorVision.Copilot.Mcp
         private CopilotMcpToolCallResult ListAllowedDirectory(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var path = GetString(arguments, "path");
+            var cursor = GetString(arguments, "cursor");
             var roots = GetAllowedRoots();
             if (roots.Count == 0)
                 return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
 
             if (string.IsNullOrWhiteSpace(path))
             {
+                if (!string.IsNullOrWhiteSpace(cursor))
+                    return CopilotMcpToolCallResult.Fail("missing_path", "A directory cursor requires the same non-empty path used for the preceding page.");
+
                 var rootBuilder = new StringBuilder();
                 rootBuilder.AppendLine("ColorVision allowed directory roots");
                 foreach (var root in roots)
@@ -901,7 +906,7 @@ namespace ColorVision.Copilot.Mcp
             if (!Directory.Exists(fullPath))
                 return CopilotMcpToolCallResult.Fail("directory_not_found", $"The directory does not exist: {fullPath}");
 
-            var result = CopilotListDirectoryCapability.List(new[] { fullPath }, fullPath, cancellationToken);
+            var result = CopilotListDirectoryCapability.List(new[] { fullPath }, fullPath, cursor, cancellationToken);
             return ToMcpResult(result, "list_failed");
         }
 
