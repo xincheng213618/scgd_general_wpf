@@ -297,6 +297,7 @@ namespace ColorVision.Copilot
         Status,
         RuntimeDiagnostic,
         ToolStarted,
+        ToolProgress,
         ToolResult,
         ReasoningDelta,
         AnswerDelta,
@@ -336,6 +337,17 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.ToolStarted,
                 Text = execution?.ToolName ?? string.Empty,
+                ToolExecution = execution,
+            };
+        }
+
+        public static CopilotAgentEvent ToolProgress(CopilotToolExecutionInfo execution, string text)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.ToolProgress,
+                Text = text ?? string.Empty,
                 ToolExecution = execution,
             };
         }

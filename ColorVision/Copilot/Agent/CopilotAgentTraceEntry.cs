@@ -133,7 +133,10 @@ namespace ColorVision.Copilot
         public string ActivityLabel => BuildActivityLabel();
 
         [JsonIgnore]
-        public string ActivityDurationLabel => CompletedAtUtc != null && DurationMs > 0 ? FormatDuration(DurationMs) : string.Empty;
+        public string ActivityDurationLabel => DurationMs > 0
+            && (CompletedAtUtc != null || State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
+                ? FormatDuration(DurationMs)
+                : string.Empty;
 
         [JsonIgnore]
         public string ActivityDescription
@@ -155,7 +158,8 @@ namespace ColorVision.Copilot
                 if (Attempt > 1 || RetryEligible)
                     builder.Append(" · Attempt ").Append(Attempt).Append('/').Append(MaxAttempts);
                 builder.Append("] ").Append(FormatDiagnosticState(State));
-                if (CompletedAtUtc != null && DurationMs > 0)
+                if (DurationMs > 0
+                    && (CompletedAtUtc != null || State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running))
                     builder.Append(" · ").Append(FormatDuration(DurationMs));
                 if (QueueDurationMs > 0)
                     builder.Append(" · queued ").Append(FormatDuration(QueueDurationMs));
@@ -200,6 +204,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(execution);
             return FromExecution(execution);
+        }
+
+        public static CopilotAgentTraceEntry FromProgress(CopilotToolExecutionInfo execution, string? progress)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            var entry = FromExecution(execution);
+            entry.ResultSummary = Sanitize(progress);
+            return entry;
         }
 
         public static CopilotAgentTraceEntry FromResult(CopilotToolExecutionInfo execution, CopilotToolResult? result)
@@ -587,7 +599,7 @@ namespace ColorVision.Copilot
         private string BuildFriendlySuccessSummary()
         {
             if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
-                return string.Empty;
+                return ResultSummary;
 
             return ToolName switch
             {

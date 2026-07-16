@@ -44,6 +44,9 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.ToolStarted:
                     ApplyToolStarted(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                case CopilotAgentEventType.ToolProgress:
+                    ApplyToolProgress(assistantMessage, agentEvent);
+                    return CopilotAgentEventPresentationResult.Handled();
                 case CopilotAgentEventType.ToolResult:
                     ApplyToolResult(assistantMessage, agentEvent);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
@@ -186,6 +189,15 @@ namespace ColorVision.Copilot
                 AppendExecutionTrace(assistantMessage, BuildToolTraceText(agentEvent));
             }
 
+            assistantMessage.IsExecutionInProgress = true;
+            assistantMessage.IsExecutionExpanded = true;
+        }
+
+        private static void ApplyToolProgress(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
+        {
+            assistantMessage.MarkThinkingStarted();
+            if (agentEvent.ToolExecution != null)
+                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromProgress(agentEvent.ToolExecution, agentEvent.Text));
             assistantMessage.IsExecutionInProgress = true;
             assistantMessage.IsExecutionExpanded = true;
         }
