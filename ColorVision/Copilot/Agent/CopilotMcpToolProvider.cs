@@ -3,6 +3,7 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -439,7 +440,9 @@ namespace ColorVision.Copilot
 
     internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotCapabilityCatalogIdentity
     {
+        private const int MaximumResultBlocks = 256;
         private const int MaximumResultLength = 65_536;
+        private const string ResultTruncationMarker = "...<MCP result truncated>";
         private readonly CopilotMcpClientServerConfig _server;
         private readonly McpClientTool _remoteTool;
 
@@ -532,21 +535,138 @@ namespace ColorVision.Copilot
 
         private static string BuildResultContent(CallToolResult result)
         {
-            var parts = result.Content
-                .OfType<TextContentBlock>()
-                .Select(block => block.Text?.Trim())
-                .Where(text => !string.IsNullOrWhiteSpace(text))
-                .Cast<string>()
-                .ToList();
-            if (result.StructuredContent.HasValue)
-                parts.Add(result.StructuredContent.Value.GetRawText());
-            if (parts.Count == 0 && result.Content.Count > 0)
-                parts.Add($"MCP returned {result.Content.Count} non-text content block(s).");
+            var builder = new StringBuilder();
+            var maximumPayloadLength = MaximumResultLength - Environment.NewLine.Length - ResultTruncationMarker.Length;
+            var wasTruncated = result.Content.Count > MaximumResultBlocks;
+            foreach (var block in result.Content.Take(MaximumResultBlocks))
+            {
+                if (block is not TextContentBlock textBlock)
+                    continue;
 
-            var content = string.Join(Environment.NewLine + Environment.NewLine, parts).Trim();
-            if (content.Length > MaximumResultLength)
-                content = content[..MaximumResultLength] + "...";
-            return content;
+                if (!TryAppendResultPart(builder, textBlock.Text, maximumPayloadLength))
+                {
+                    wasTruncated = true;
+                    break;
+                }
+            }
+
+            if (result.StructuredContent.HasValue)
+            {
+                if (!TryAppendStructuredResult(builder, result.StructuredContent.Value, maximumPayloadLength))
+                    wasTruncated = true;
+            }
+
+            if (builder.Length == 0 && result.Content.Count > 0)
+            {
+                if (!TryAppendResultPart(builder, $"MCP returned {result.Content.Count} non-text content block(s).", maximumPayloadLength))
+                    wasTruncated = true;
+            }
+
+            if (wasTruncated)
+            {
+                if (builder.Length > 0)
+                    builder.AppendLine();
+                builder.Append(ResultTruncationMarker);
+            }
+            return builder.ToString();
+        }
+
+        private static bool TryAppendStructuredResult(
+            StringBuilder builder,
+            JsonElement structuredContent,
+            int maximumLength)
+        {
+            var separatorLength = builder.Length == 0 ? 0 : Environment.NewLine.Length * 2;
+            var availableLength = maximumLength - builder.Length - separatorLength;
+            if (availableLength <= 0)
+                return false;
+
+            var content = SerializeStructuredContentBounded(structuredContent, availableLength, out var wasTruncated);
+            return TryAppendResultPart(builder, content, maximumLength) && !wasTruncated;
+        }
+
+        private static string SerializeStructuredContentBounded(
+            JsonElement structuredContent,
+            int maximumCharacters,
+            out bool wasTruncated)
+        {
+            using var output = new CopilotMcpResultWriteStream(checked(maximumCharacters * 4));
+            var writer = new Utf8JsonWriter(output);
+            wasTruncated = false;
+            try
+            {
+                structuredContent.WriteTo(writer);
+                writer.Flush();
+                writer.Dispose();
+            }
+            catch (CopilotMcpResultSizeLimitException)
+            {
+                wasTruncated = true;
+            }
+            return Encoding.UTF8.GetString(output.ToArray());
+        }
+
+        private static bool TryAppendResultPart(StringBuilder builder, string? value, int maximumLength)
+        {
+            if (string.IsNullOrEmpty(value))
+                return true;
+
+            var start = 0;
+            var end = value.Length;
+            while (start < end && char.IsWhiteSpace(value[start]))
+                start++;
+            while (end > start && char.IsWhiteSpace(value[end - 1]))
+                end--;
+            if (start == end)
+                return true;
+
+            var separatorLength = builder.Length == 0 ? 0 : Environment.NewLine.Length * 2;
+            var availableLength = maximumLength - builder.Length - separatorLength;
+            if (availableLength <= 0)
+                return false;
+
+            if (separatorLength > 0)
+                builder.AppendLine().AppendLine();
+
+            var valueLength = end - start;
+            if (valueLength <= availableLength)
+            {
+                builder.Append(value, start, valueLength);
+                return true;
+            }
+
+            var retainedLength = availableLength;
+            if (retainedLength > 0
+                && start + retainedLength < end
+                && char.IsHighSurrogate(value[start + retainedLength - 1])
+                && char.IsLowSurrogate(value[start + retainedLength]))
+            {
+                retainedLength--;
+            }
+            if (retainedLength > 0)
+                builder.Append(value, start, retainedLength);
+            return false;
+        }
+
+        private sealed class CopilotMcpResultSizeLimitException : IOException
+        {
+        }
+
+        private sealed class CopilotMcpResultWriteStream(int maximumBytes) : MemoryStream
+        {
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                if (count > maximumBytes - Length)
+                    throw new CopilotMcpResultSizeLimitException();
+                base.Write(buffer, offset, count);
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                if (buffer.Length > maximumBytes - Length)
+                    throw new CopilotMcpResultSizeLimitException();
+                base.Write(buffer);
+            }
         }
 
         private static string BuildDescription(string serverName, string? description)
