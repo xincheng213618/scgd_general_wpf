@@ -1324,6 +1324,39 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task ChatService_RetriesAfterOversizedTransientErrorResponse()
+    {
+        const string successBody = """
+            data: {"choices":[{"delta":{"content":"recovered"}}]}
+
+            data: [DONE]
+
+            """;
+        var oversizedBody = Encoding.UTF8.GetBytes(new string('x', 256 * 1024 + 1));
+        using var handler = new SequentialResponseHandler(callNumber =>
+        {
+            if (callNumber != 1)
+                return CreateEventStreamResponse(successBody);
+
+            var content = new ByteArrayContent(oversizedBody);
+            content.Headers.ContentLength = 1;
+            return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Content = content };
+        });
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotChatService(httpClient);
+        var deltas = new List<CopilotStreamDelta>();
+
+        await service.StreamReplyAsync(
+            CreateProfile(),
+            new[] { new CopilotRequestMessage("user", "test") },
+            deltas.Add,
+            CancellationToken.None);
+
+        Assert.Equal(2, handler.CallCount);
+        Assert.Equal("recovered", string.Concat(deltas.Select(delta => delta.Content)));
+    }
+
+    [Fact]
     public async Task ChatService_DoesNotRetryProviderInterruptionAfterFirstResponseDelta()
     {
         const string partialBody = """

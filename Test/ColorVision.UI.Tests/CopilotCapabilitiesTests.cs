@@ -174,7 +174,7 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         using var content = new ByteArrayContent(new byte[1025]);
         content.Headers.ContentLength = 1;
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
             CopilotBoundedHttpContentReader.ReadAsStringAsync(
                 content,
                 maximumBytes: 1024,
