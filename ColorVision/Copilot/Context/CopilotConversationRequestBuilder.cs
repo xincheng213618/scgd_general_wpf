@@ -67,10 +67,13 @@ namespace ColorVision.Copilot
                     maximumCharacters: limits.MaximumContentCharacters,
                     maximumContentCharacters: limits.MaximumContentCharacters)
                 .Single();
+            var attachmentWeight = (int)Math.Min(
+                int.MaxValue,
+                CopilotTokenEstimator.EstimateTextWeight(attachment.Content));
             var selected = CopilotConversationHistoryWindow.Select(
                     history,
                     Math.Max(1, limits.MaximumMessages - 1),
-                    Math.Max(1, limits.MaximumCharacters - attachment.Content.Length),
+                    Math.Max(1, limits.MaximumCharacters - attachmentWeight),
                     limits.MaximumContentCharacters)
                 .ToList();
             selected.Add(attachment);

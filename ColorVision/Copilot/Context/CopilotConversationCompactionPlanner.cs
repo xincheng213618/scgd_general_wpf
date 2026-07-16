@@ -24,7 +24,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(conversation);
             ArgumentException.ThrowIfNullOrWhiteSpace(compactRequest);
-            if (limits.MaximumMessages <= 1 || limits.MaximumCharacters <= compactRequest.Length)
+            var compactRequestWeight = CopilotTokenEstimator.EstimateTextWeight(compactRequest);
+            if (limits.MaximumMessages <= 1 || limits.MaximumCharacters <= compactRequestWeight)
                 throw new InvalidOperationException("当前模型没有足够的上下文空间来安全生成延续摘要。");
 
             var existingCompaction = ResolveExistingCompaction(conversation, out var startIndex);
@@ -36,15 +37,16 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("至少需要一轮尚未压缩的完整对话。");
 
             var sourceMessages = new List<CopilotRequestMessage>();
-            var remainingCharacters = limits.MaximumCharacters - compactRequest.Length;
+            var remainingWeight = limits.MaximumCharacters - compactRequestWeight;
             if (existingCompaction != null)
             {
                 var summaryMessage = CopilotConversationCompactionContext.CreateSummaryMessage(existingCompaction);
-                if (summaryMessage.Content.Length > remainingCharacters)
+                var summaryWeight = CopilotTokenEstimator.EstimateTextWeight(summaryMessage.Content);
+                if (summaryWeight > remainingWeight)
                     throw new InvalidOperationException("现有延续摘要已超过当前模型可安全处理的上下文空间。");
 
                 sourceMessages.Add(summaryMessage);
-                remainingCharacters -= summaryMessage.Content.Length;
+                remainingWeight -= summaryWeight;
             }
 
             var maximumNewMessageCount = pendingMessages.Length <= RecentMessagesToKeepVerbatim
@@ -62,11 +64,12 @@ namespace ColorVision.Copilot
             {
                 var message = pendingMessages[index];
                 var content = message.ModelContent.Trim();
-                if (content.Length > remainingCharacters)
+                var contentWeight = CopilotTokenEstimator.EstimateTextWeight(content);
+                if (contentWeight > remainingWeight)
                     break;
 
                 sourceMessages.Add(new CopilotRequestMessage(message.IsUser ? "user" : "assistant", content));
-                remainingCharacters -= content.Length;
+                remainingWeight -= contentWeight;
                 selectedCount++;
                 selectedCharacters = SaturatingAdd(selectedCharacters, content.Length);
 

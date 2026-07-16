@@ -1115,13 +1115,16 @@ namespace ColorVision.Copilot
             return builder.ToString().Trim();
         }
 
-        private static string NormalizeCompactSummary(string summary, int maximumCharacters)
+        private static string NormalizeCompactSummary(string summary, int maximumWeight)
         {
             var normalized = (summary ?? string.Empty).Trim();
-            var limit = Math.Clamp(maximumCharacters, 1, CopilotConversationCompaction.MaximumSummaryCharacters);
-            return normalized.Length <= limit
-                ? normalized
-                : normalized[..limit].TrimEnd();
+            if (normalized.Length > CopilotConversationCompaction.MaximumSummaryCharacters)
+                normalized = normalized[..CopilotConversationCompaction.MaximumSummaryCharacters].TrimEnd();
+            if (CopilotTokenEstimator.EstimateTextWeight(normalized) <= maximumWeight)
+                return normalized;
+
+            var retainedLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(normalized, Math.Max(1, maximumWeight));
+            return normalized[..retainedLength].TrimEnd();
         }
 
         private string BuildAgentSkillDiagnosticsReport()
@@ -1158,6 +1161,7 @@ namespace ColorVision.Copilot
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var agentDefaults = _config.AgentDefaults;
             var historyLimits = ResolveConversationHistoryLimits(SelectedProfile);
+            var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var compaction = SelectedConversation?.Compaction;
             return CopilotContextDiagnostics.Format(new CopilotContextDiagnosticSnapshot
             {
@@ -1168,9 +1172,14 @@ namespace ColorVision.Copilot
                 RetainedHistoryMessages = history.Messages.Length,
                 SourceHistoryCharacters = history.SourceCharacters,
                 RetainedHistoryCharacters = history.RetainedCharacters,
+                RetainedHistoryEstimatedTokens = history.Messages.Length == 0
+                    ? 0
+                    : CopilotTokenEstimator.WeightToTokenEstimate(retainedHistoryWeight),
                 HistoryMaximumMessages = historyLimits.MaximumMessages,
                 HistoryMaximumCharacters = historyLimits.MaximumCharacters,
                 HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,
+                HistoryMaximumEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumCharacters),
+                HistoryMaximumContentEstimatedTokens = CopilotTokenEstimator.WeightToTokenEstimate(historyLimits.MaximumContentCharacters),
                 HistoryContextWindowTokens = agentDefaults.ContextWindowTokens,
                 CompactedSourceMessages = compaction?.SourceMessageCount ?? 0,
                 CompactionSummaryCharacters = compaction?.Summary.Length ?? 0,

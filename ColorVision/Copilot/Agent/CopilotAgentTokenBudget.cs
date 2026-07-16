@@ -389,20 +389,9 @@ namespace ColorVision.Copilot
         }
 
         private static long EstimateTextWeight(string? value)
-        {
-            // Approximate ASCII-heavy prompts at four characters per token while treating
-            // CJK and other non-ASCII text as roughly one UTF-16 code unit per token.
-            long weight = 0;
-            foreach (var character in value ?? string.Empty)
-                weight += character <= 0x7f ? 1 : 4;
-            return weight;
-        }
+            => CopilotTokenEstimator.EstimateTextWeight(value);
 
         private static int WeightToTokenEstimate(long weight)
-        {
-            var normalized = Math.Max(1, weight);
-            var tokens = normalized / 4 + (normalized % 4 == 0 ? 0 : 1);
-            return (int)Math.Clamp(tokens, 1, int.MaxValue);
-        }
+            => CopilotTokenEstimator.WeightToTokenEstimate(weight);
     }
 }

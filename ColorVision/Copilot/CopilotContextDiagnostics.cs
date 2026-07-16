@@ -23,11 +23,17 @@ namespace ColorVision.Copilot
 
         public int RetainedHistoryCharacters { get; init; }
 
+        public int RetainedHistoryEstimatedTokens { get; init; }
+
         public int HistoryMaximumMessages { get; init; }
 
         public int HistoryMaximumCharacters { get; init; }
 
         public int HistoryMaximumContentCharacters { get; init; }
+
+        public int HistoryMaximumEstimatedTokens { get; init; }
+
+        public int HistoryMaximumContentEstimatedTokens { get; init; }
 
         public int HistoryContextWindowTokens { get; init; }
 
@@ -117,10 +123,10 @@ namespace ColorVision.Copilot
             builder.Append("历史预算：最多 ")
                 .Append(FormatCount(snapshot.HistoryMaximumMessages))
                 .Append(" 条 / ")
-                .Append(FormatCount(snapshot.HistoryMaximumCharacters))
-                .Append(" 字符 / 单条 ")
-                .Append(FormatCount(snapshot.HistoryMaximumContentCharacters))
-                .Append(" 字符（上下文 ")
+                .Append(FormatCount(snapshot.HistoryMaximumEstimatedTokens))
+                .Append(" Token / 单条 ")
+                .Append(FormatCount(snapshot.HistoryMaximumContentEstimatedTokens))
+                .Append(" Token（混合文本估算，上下文 ")
                 .Append(CopilotConversationHistoryWindow.HistoryContextPercent)
                 .Append("%，窗口 ")
                 .Append(FormatCount(snapshot.HistoryContextWindowTokens))
@@ -289,8 +295,8 @@ namespace ColorVision.Copilot
             {
                 suggestions.Add("对话历史已被窗口预算裁剪；长任务建议运行 /compact，并可在命令后写明需要保留的重点。");
             }
-            else if (snapshot.HistoryMaximumCharacters > 0
-                && (long)snapshot.RetainedHistoryCharacters * 100 / snapshot.HistoryMaximumCharacters >= HighHistoryPressurePercent)
+            else if (snapshot.HistoryMaximumEstimatedTokens > 0
+                && (long)snapshot.RetainedHistoryEstimatedTokens * 100 / snapshot.HistoryMaximumEstimatedTokens >= HighHistoryPressurePercent)
             {
                 suggestions.Add("对话历史已使用至少 75% 的历史预算；继续长任务前可运行 /compact，避免临近上限时丢失早期细节。");
             }

@@ -16,7 +16,11 @@ namespace ColorVision.Copilot
     public readonly record struct CopilotConversationHistoryLimits(
         int MaximumMessages,
         int MaximumCharacters,
-        int MaximumContentCharacters);
+        int MaximumContentCharacters)
+    {
+        // Character limits are ASCII-equivalent Token weight units for compatibility
+        // with the persisted/public shape; non-ASCII code units consume four units.
+    }
 
     internal static class CopilotConversationHistoryWindow
     {
@@ -24,7 +28,6 @@ namespace ColorVision.Copilot
         public const int MaximumMessageLimit = 512;
         public const int MaximumContentCharacterLimit = 262_144;
 
-        private const int EstimatedCharactersPerToken = 4;
         private const int MinimumMessages = 8;
         private const int TokensPerMessageSlot = 1_024;
         private const int MinimumContentCharacters = 8_000;
@@ -41,7 +44,7 @@ namespace ColorVision.Copilot
             var inputTokens = Math.Max(1, boundedContextTokens - boundedOutputTokens);
             var historyTokens = Math.Max(1, (long)inputTokens * HistoryContextPercent / 100);
             var maximumCharacters = (int)Math.Clamp(
-                historyTokens * EstimatedCharactersPerToken,
+                historyTokens * CopilotTokenEstimator.AsciiCharactersPerToken,
                 MinimumContentCharacters,
                 int.MaxValue);
             var maximumMessages = (int)Math.Clamp(
@@ -103,7 +106,7 @@ namespace ColorVision.Copilot
             var selected = SelectByMessageCount(source, maximumMessages)
                 .Select(message => new CopilotRequestMessage(message.Role, TruncateContent(message.Content, perMessageLimit)))
                 .ToList();
-            ReduceToCharacterBudget(selected, maximumCharacters);
+            ReduceToWeightBudget(selected, maximumCharacters);
 
             var messages = selected.ToArray();
             return new CopilotConversationHistorySelection(
@@ -138,17 +141,17 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static void ReduceToCharacterBudget(List<CopilotRequestMessage> messages, int maximumCharacters)
+        private static void ReduceToWeightBudget(List<CopilotRequestMessage> messages, int maximumWeight)
         {
-            while (SaturatingCharacterCount(messages) > maximumCharacters && TryRemoveOldestUnprotectedMessage(messages))
+            while (SaturatingContentWeight(messages) > maximumWeight && TryRemoveOldestUnprotectedMessage(messages))
             {
             }
 
-            if (SaturatingCharacterCount(messages) <= maximumCharacters)
+            if (SaturatingContentWeight(messages) <= maximumWeight)
                 return;
 
-            var perMessageBudget = Math.Max(1, maximumCharacters / messages.Count);
-            var remainder = Math.Max(0, maximumCharacters - perMessageBudget * messages.Count);
+            var perMessageBudget = Math.Max(1, maximumWeight / messages.Count);
+            var remainder = Math.Max(0, maximumWeight - perMessageBudget * messages.Count);
             for (var index = 0; index < messages.Count; index++)
             {
                 var budget = perMessageBudget + (index >= messages.Count - remainder ? 1 : 0);
@@ -225,28 +228,36 @@ namespace ColorVision.Copilot
             return messages.Skip(startIndex).ToArray();
         }
 
-        private static string TruncateContent(string value, int maximumCharacters)
+        private static string TruncateContent(string value, int maximumWeight)
         {
-            if (value.Length <= maximumCharacters)
+            if (CopilotTokenEstimator.EstimateTextWeight(value) <= maximumWeight)
                 return value;
-            if (maximumCharacters <= TruncationSuffix.Length)
-                return SafePrefix(value, maximumCharacters);
 
-            return SafePrefix(value, maximumCharacters - TruncationSuffix.Length).TrimEnd() + TruncationSuffix;
-        }
+            var suffixWeight = CopilotTokenEstimator.EstimateTextWeight(TruncationSuffix);
+            if (maximumWeight <= suffixWeight)
+                return value[..CopilotTokenEstimator.GetPrefixLengthWithinWeight(value, maximumWeight)];
 
-        private static string SafePrefix(string value, int length)
-        {
-            var retainedLength = Math.Clamp(length, 0, value.Length);
-            if (retainedLength > 0 && retainedLength < value.Length && char.IsHighSurrogate(value[retainedLength - 1]))
-                retainedLength--;
-            return value[..retainedLength];
+            var retainedLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(value, maximumWeight - suffixWeight);
+            return value[..retainedLength].TrimEnd() + TruncationSuffix;
         }
 
         private static int SaturatingCharacterCount(IEnumerable<CopilotRequestMessage> messages)
         {
             var count = messages.Sum(message => (long)message.Content.Length);
             return (int)Math.Min(int.MaxValue, count);
+        }
+
+        private static long SaturatingContentWeight(IEnumerable<CopilotRequestMessage> messages)
+        {
+            long weight = 0;
+            foreach (var message in messages)
+            {
+                var messageWeight = CopilotTokenEstimator.EstimateTextWeight(message.Content);
+                if (long.MaxValue - weight < messageWeight)
+                    return long.MaxValue;
+                weight += messageWeight;
+            }
+            return weight;
         }
     }
 }
