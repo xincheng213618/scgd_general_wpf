@@ -583,6 +583,101 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task McpServerRejectsClientsBeyondConcurrencyLimit()
+    {
+        var server = CopilotMcpServer.Instance;
+        var port = ReserveLoopbackPort();
+        var settings = new CopilotMcpRuntimeSettings
+        {
+            Enabled = true,
+            Host = "127.0.0.1",
+            Port = port,
+            BearerToken = Token,
+        };
+        var clients = new List<TcpClient>();
+        try
+        {
+            server.ApplySettings(settings);
+            Assert.True(server.IsRunning, server.LastStatusMessage);
+            var partialRequest = Encoding.ASCII.GetBytes(
+                "POST /mcp HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100\r\n\r\n{");
+            for (var index = 0; index < CopilotMcpServer.MaximumConcurrentClients; index++)
+            {
+                var client = new TcpClient();
+                clients.Add(client);
+                using var connectTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await client.ConnectAsync(IPAddress.Loopback, port, connectTimeout.Token);
+                await client.GetStream().WriteAsync(partialRequest, connectTimeout.Token);
+            }
+
+            Assert.True(
+                await WaitForActiveClientCountAsync(server, CopilotMcpServer.MaximumConcurrentClients),
+                "The MCP server did not account for all partial clients before the overflow connection was opened.");
+            using var overflowClient = new TcpClient();
+            using var overflowTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await overflowClient.ConnectAsync(IPAddress.Loopback, port, overflowTimeout.Token);
+
+            Assert.True(
+                await WaitForConnectionCloseAsync(overflowClient.GetStream()),
+                "The MCP server kept a connection open after its concurrent client capacity was exhausted.");
+        }
+        finally
+        {
+            foreach (var client in clients)
+                client.Dispose();
+            server.Stop();
+            await WaitForActiveClientCountAsync(server, 0);
+            server.ApplyConfig();
+        }
+    }
+
+    [Fact]
+    public async Task McpServerEnforcesHeaderAndLengthBoundariesOverTcp()
+    {
+        var server = CopilotMcpServer.Instance;
+        var port = ReserveLoopbackPort();
+        var settings = new CopilotMcpRuntimeSettings
+        {
+            Enabled = true,
+            Host = "127.0.0.1",
+            Port = port,
+            BearerToken = Token,
+        };
+        try
+        {
+            server.ApplySettings(settings);
+            Assert.True(server.IsRunning, server.LastStatusMessage);
+
+            var validResponse = await SendRawHttpRequestAsync(
+                port,
+                $"GET /mcp HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer {Token}\r\n\r\n");
+            var oversizedHeaderResponse = await SendRawHttpRequestAsync(
+                port,
+                "GET /mcp HTTP/1.1\r\nX-Oversized: " + new string('x', 64 * 1024) + "\r\n\r\n",
+                allowConnectionReset: true);
+            var negativeLengthResponse = await SendRawHttpRequestAsync(
+                port,
+                $"POST /mcp HTTP/1.1\r\nAuthorization: Bearer {Token}\r\nContent-Length: -1\r\n\r\n");
+            var ambiguousLengthResponse = await SendRawHttpRequestAsync(
+                port,
+                $"POST /mcp HTTP/1.1\r\nAuthorization: Bearer {Token}\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n");
+
+            Assert.StartsWith("HTTP/1.1 200 OK", validResponse, StringComparison.Ordinal);
+            Assert.True(
+                oversizedHeaderResponse.Length == 0 || oversizedHeaderResponse.StartsWith("HTTP/1.1 400 Bad Request", StringComparison.Ordinal),
+                $"Expected an immediate close or 400 response for an oversized header, but received: {oversizedHeaderResponse}");
+            Assert.StartsWith("HTTP/1.1 400 Bad Request", negativeLengthResponse, StringComparison.Ordinal);
+            Assert.StartsWith("HTTP/1.1 400 Bad Request", ambiguousLengthResponse, StringComparison.Ordinal);
+        }
+        finally
+        {
+            server.Stop();
+            await WaitForActiveClientCountAsync(server, 0);
+            server.ApplyConfig();
+        }
+    }
+
+    [Fact]
     public async Task SearchFiles_UsesAllowedWorkspaceRoot()
     {
         var filePath = Path.Combine(_tempRoot, "DeviceCamera.cs");
@@ -1993,6 +2088,55 @@ public sealed class CopilotMcpTests : IDisposable
         {
             return true;
         }
+    }
+
+    private static async Task<bool> WaitForActiveClientCountAsync(CopilotMcpServer server, int expectedCount)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (server.ActiveClientCount != expectedCount)
+                await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token);
+            return true;
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string> SendRawHttpRequestAsync(int port, string request, bool allowConnectionReset = false)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var client = new TcpClient();
+        using var response = new MemoryStream();
+        try
+        {
+            await client.ConnectAsync(IPAddress.Loopback, port, timeout.Token);
+            var stream = client.GetStream();
+            var requestBytes = Encoding.ASCII.GetBytes(request);
+            await stream.WriteAsync(requestBytes, timeout.Token);
+            client.Client.Shutdown(SocketShutdown.Send);
+
+            var buffer = new byte[4096];
+            while (true)
+            {
+                var read = await stream.ReadAsync(buffer, timeout.Token);
+                if (read == 0)
+                    break;
+                response.Write(buffer, 0, read);
+            }
+        }
+        catch (IOException ex) when (allowConnectionReset && ex.InnerException is SocketException socketException &&
+            socketException.SocketErrorCode is SocketError.ConnectionReset or SocketError.ConnectionAborted)
+        {
+        }
+        catch (SocketException ex) when (allowConnectionReset &&
+            ex.SocketErrorCode is SocketError.ConnectionReset or SocketError.ConnectionAborted)
+        {
+        }
+
+        return Encoding.UTF8.GetString(response.ToArray());
     }
 
     public void Dispose()
