@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotInspectGitWorkingTreeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
+    public sealed class CopilotInspectGitWorkingTreeTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkContextualApprovalPresentation, ICopilotAgentDrivenTool
     {
         private readonly CopilotGitWorkingTreeInspectionService _service;
 
@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
         };
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Path(
-            "Optional repository directory, file, or child directory inside a current request root. Omit to inspect the first current workspace root.",
+            "Optional workspace-relative or absolute repository directory, file, or child directory inside a current request root. Omit to inspect the first current workspace root.",
             required: false);
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
@@ -75,6 +75,16 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation(
                 "Inspect Git working tree",
                 $"Run the fixed Git status inspection for {target}. No command text is accepted and inherited Git repository selectors are cleared. Git may still evaluate repository-defined attributes or external filters while determining file status.");
+        }
+
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput)
+        {
+            var target = CopilotGitProcessSupport.ResolveApprovalTarget(request, toolInput.Path);
+            return new CopilotToolApprovalPresentation(
+                "Inspect Git working tree",
+                $"Run the fixed Git status inspection.\nSelected path: {target.SelectedPath}\nRepository root: {target.RepositoryRoot}\nNo command text is accepted and inherited Git repository selectors are cleared. Git may still evaluate repository-defined attributes or external filters while determining file status.");
         }
     }
 }

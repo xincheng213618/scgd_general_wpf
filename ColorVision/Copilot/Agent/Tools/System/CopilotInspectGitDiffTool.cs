@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotInspectGitDiffTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotAgentDrivenTool
+    public sealed class CopilotInspectGitDiffTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkContextualApprovalPresentation, ICopilotAgentDrivenTool
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -19,7 +19,7 @@ namespace ColorVision.Copilot
                     {
                         type = "string",
                         maxLength = 4096,
-                        description = "Optional repository directory, existing file, or child directory inside a current request root.",
+                        description = "Optional workspace-relative or absolute repository directory, existing file, or child directory inside a current request root.",
                     },
                     ["scope"] = new
                     {
@@ -97,6 +97,17 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation(
                 "Inspect Git diff",
                 $"Read the bounded {scope} Git diff for {target}. No command text or raw Git arguments are accepted, and inherited Git repository selectors are cleared. Git may still evaluate repository-defined attributes or filters while comparing worktree content.");
+        }
+
+        public CopilotToolApprovalPresentation CreateApprovalPresentation(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput)
+        {
+            var target = CopilotGitProcessSupport.ResolveApprovalTarget(request, toolInput.Path);
+            var scope = ReadString(toolInput, "scope", "unstaged");
+            return new CopilotToolApprovalPresentation(
+                "Inspect Git diff",
+                $"Read the bounded {scope} Git diff.\nSelected path: {target.SelectedPath}\nRepository root: {target.RepositoryRoot}\nNo command text or raw Git arguments are accepted, and inherited Git repository selectors are cleared. Git may still evaluate repository-defined attributes or filters while comparing worktree content.");
         }
 
         private static string ReadString(CopilotAgentToolInput input, string name, string fallback)

@@ -152,6 +152,21 @@ namespace ColorVision.Copilot
             return TryResolveExistingPathWithinRoots(path, roots, File.Exists, "file", out fullPath, out errorMessage);
         }
 
+        public static bool TryResolveExistingPathWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(
+                path,
+                roots,
+                candidate => File.Exists(candidate) || Directory.Exists(candidate),
+                "target",
+                out fullPath,
+                out errorMessage);
+        }
+
         public static bool TryResolveExistingDirectoryWithinRoots(
             string? path,
             IEnumerable<string>? roots,

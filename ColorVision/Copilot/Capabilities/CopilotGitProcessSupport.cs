@@ -46,16 +46,27 @@ namespace ColorVision.Copilot
             targetDirectory = string.Empty;
             containingRoot = string.Empty;
             error = string.Empty;
-            var candidate = string.IsNullOrWhiteSpace(requestedPath)
-                ? allowedRoots.Count == 0 ? string.Empty : allowedRoots[0]
-                : requestedPath.Trim();
-            try
+            if (allowedRoots.Count == 0)
             {
-                candidate = Path.GetFullPath(candidate);
+                error = "No current request root is available.";
+                return false;
             }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+
+            string candidate;
+            if (string.IsNullOrWhiteSpace(requestedPath))
             {
-                error = "The selected path is invalid.";
+                candidate = allowedRoots[0];
+            }
+            else if (requireExisting)
+            {
+                if (!CopilotWorkspaceSearchSupport.TryResolveExistingPathWithinRoots(
+                    requestedPath, allowedRoots, out candidate, out error))
+                {
+                    return false;
+                }
+            }
+            else if (!TryResolvePotentialPath(requestedPath, allowedRoots, out candidate, out error))
+            {
                 return false;
             }
 
@@ -100,6 +111,55 @@ namespace ColorVision.Copilot
 
             selectedPath = candidate;
             return true;
+        }
+
+        public static (string SelectedPath, string RepositoryRoot) ResolveApprovalTarget(
+            CopilotAgentRequest request,
+            string? requestedPath)
+        {
+            var roots = GetAllowedRoots(request);
+            if (TryResolveTargetPath(
+                requestedPath, roots, requireExisting: true, out var selectedPath, out var directory, out var root, out _))
+            {
+                var repositoryRoot = FindRepositoryRoot(directory, root);
+                return (selectedPath, string.IsNullOrWhiteSpace(repositoryRoot) ? "<not found>" : repositoryRoot);
+            }
+
+            return (string.IsNullOrWhiteSpace(requestedPath) ? "<current workspace root>" : requestedPath.Trim(), "<unresolved>");
+        }
+
+        private static bool TryResolvePotentialPath(
+            string requestedPath,
+            IReadOnlyList<string> allowedRoots,
+            out string candidate,
+            out string error)
+        {
+            candidate = string.Empty;
+            error = string.Empty;
+            var path = requestedPath.Trim();
+            if (Path.IsPathRooted(path) && !Path.IsPathFullyQualified(path))
+            {
+                error = "The selected path must be workspace-relative or fully qualified.";
+                return false;
+            }
+            if (!Path.IsPathFullyQualified(path) && allowedRoots.Count != 1)
+            {
+                error = "The workspace-relative selected path is ambiguous across multiple request roots.";
+                return false;
+            }
+
+            try
+            {
+                candidate = Path.IsPathFullyQualified(path)
+                    ? Path.GetFullPath(path)
+                    : Path.GetFullPath(path, allowedRoots[0]);
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                error = "The selected path is invalid.";
+                return false;
+            }
         }
 
         public static string FindRepositoryRoot(string startDirectory, string containingRoot)
