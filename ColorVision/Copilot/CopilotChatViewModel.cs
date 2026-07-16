@@ -1224,12 +1224,36 @@ namespace ColorVision.Copilot
                 turnSnapshot.Attachments,
                 ResolveConversationHistoryLimits(requestProfile),
                 includeAttachmentContext: true);
-            return await _chatService.StreamReplyAsync(
-                requestProfile,
-                history,
-                delta => ApplyChatDeltaOnUiThread(assistantMessage, delta),
-                retry => ApplyProviderRetryOnUiThread(assistantMessage, retry),
-                cancellationToken);
+            return await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
+        }
+
+        private async Task<CopilotTokenUsage> StreamChatReplyAsync(
+            CopilotProfileConfig requestProfile,
+            IReadOnlyList<CopilotRequestMessage> history,
+            CopilotChatMessage assistantMessage,
+            CancellationToken cancellationToken)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            var streamContext = dispatcher == null
+                ? SynchronizationContext.Current
+                : new DispatcherSynchronizationContext(dispatcher);
+            var deltaBuffer = new CopilotStreamDeltaBuffer(
+                streamContext,
+                deltas => ApplyChatDeltas(assistantMessage, deltas),
+                isOnTargetThread: dispatcher == null ? null : dispatcher.CheckAccess);
+            try
+            {
+                return await _chatService.StreamReplyAsync(
+                    requestProfile,
+                    history,
+                    deltaBuffer.Enqueue,
+                    retry => ApplyProviderRetryOnUiThread(assistantMessage, retry),
+                    cancellationToken);
+            }
+            finally
+            {
+                await deltaBuffer.CompleteAsync();
+            }
         }
 
         private async Task<CopilotTokenUsage> RunAgentTurnAsync(
@@ -1251,12 +1275,7 @@ namespace ColorVision.Copilot
                 var history = CopilotConversationRequestBuilder.BuildVisibleHistory(turnSnapshot.ConversationHistory, ResolveConversationHistoryLimits(requestProfile)).ToList();
                 history.Add(new CopilotRequestMessage("user", userMessage.RequestContent.Trim()));
 
-                return await _chatService.StreamReplyAsync(
-                    requestProfile,
-                    history,
-                    delta => ApplyChatDeltaOnUiThread(assistantMessage, delta),
-                    retry => ApplyProviderRetryOnUiThread(assistantMessage, retry),
-                    cancellationToken);
+                return await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
             }
 
             var requestPlan = CopilotAgentRequestFactory.Prepare(userMessage.Content, userMessage.RequestMode, turnSnapshot);
@@ -1844,24 +1863,10 @@ namespace ColorVision.Copilot
             ApplyAgentEvent(hostedRun, conversation, assistantMessage, agentEvent);
         }
 
-        private void ApplyChatDeltaOnUiThread(CopilotChatMessage assistantMessage, CopilotStreamDelta delta)
+        private void ApplyChatDeltas(CopilotChatMessage assistantMessage, IReadOnlyList<CopilotStreamDelta> deltas)
         {
-            if (!delta.HasAny)
-                return;
-
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher != null && !dispatcher.CheckAccess())
-            {
-                dispatcher.Invoke(() => ApplyChatDelta(assistantMessage, delta));
-                return;
-            }
-
-            ApplyChatDelta(assistantMessage, delta);
-        }
-
-        private void ApplyChatDelta(CopilotChatMessage assistantMessage, CopilotStreamDelta delta)
-        {
-            CopilotAssistantMessagePresenter.ApplyStreamDelta(assistantMessage, delta);
+            foreach (var delta in deltas)
+                CopilotAssistantMessagePresenter.ApplyStreamDelta(assistantMessage, delta);
             PersistState();
         }
 

@@ -72,7 +72,7 @@ namespace ColorVision.Copilot
                     if (delta.HasContent)
                         contentBuilder.Append(delta.Content);
                 },
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
             return new CopilotChatReply(
                 new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
@@ -110,12 +110,12 @@ namespace ColorVision.Copilot
                             responseStarted = true;
                             onDelta(delta);
                         },
-                        cancellationToken);
+                        cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
                 {
                     onRetry?.Invoke(retry);
-                    await _delayAsync(retry.Delay, cancellationToken);
+                    await _delayAsync(retry.Delay, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -127,7 +127,7 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             using var request = CreateRequest(config, messages);
-            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -138,7 +138,7 @@ namespace ColorVision.Copilot
                         response.Content,
                         MaximumProviderErrorResponseBytes,
                         "Provider error response",
-                        cancellationToken);
+                        cancellationToken).ConfigureAwait(false);
                 }
                 catch (CopilotHttpContentSizeLimitException exception)
                 {
@@ -154,13 +154,13 @@ namespace ColorVision.Copilot
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
-                return await ReadStreamingResponseAsync(config, response, onDelta, cancellationToken);
+                return await ReadStreamingResponseAsync(config, response, onDelta, cancellationToken).ConfigureAwait(false);
 
             var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
                 response.Content,
                 MaximumNonStreamingResponseBytes,
                 "Non-streaming provider response",
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
                 throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
@@ -341,7 +341,7 @@ namespace ColorVision.Copilot
                     message.Dispose();
             }, response);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             using var reader = new CopilotBoundedTextLineReader(
                 stream,
                 Encoding.UTF8,
@@ -356,7 +356,7 @@ namespace ColorVision.Copilot
                 string? line;
                 try
                 {
-                    line = await reader.ReadLineAsync(cancellationToken);
+                    line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
                 }
                 catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
                 {
