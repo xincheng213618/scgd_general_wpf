@@ -2394,7 +2394,7 @@
                                                        Foreground="{DynamicResource GlobalTextBrush}"
                                                        FontSize="11"
                                                        Opacity="0.72"
-                                                       Text="{Binding PreviewText}"
+                                                       Text="{Binding ConversationListPreviewText}"
                                                        TextTrimming="CharacterEllipsis" />
                                             <TextBlock DockPanel.Dock="Right"
                                                        Margin="8,0,0,0"

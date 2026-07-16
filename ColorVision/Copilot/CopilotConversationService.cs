@@ -8,12 +8,18 @@ namespace ColorVision.Copilot
     {
         public static bool IsReusableEmpty(CopilotConversationRecord? conversation)
         {
-            return conversation != null && conversation.Messages.Count == 0;
+            return conversation != null
+                && conversation.Messages.Count == 0
+                && conversation.Attachments.Count == 0
+                && !conversation.HasDraft;
         }
 
         public static bool IsHistory(CopilotConversationRecord? conversation)
         {
-            return conversation?.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)) == true;
+            return conversation != null
+                && (conversation.HasDraft
+                    || conversation.Attachments.Count > 0
+                    || conversation.Messages.Any(message => !string.IsNullOrWhiteSpace(message.Content)));
         }
 
         public static CopilotConversationRecord ResolveNewTarget(

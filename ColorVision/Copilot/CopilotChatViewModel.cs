@@ -588,8 +588,10 @@ namespace ColorVision.Copilot
             get => _inputText;
             set
             {
-                if (SetProperty(ref _inputText, value ?? string.Empty))
+                var normalizedValue = value ?? string.Empty;
+                if (SetProperty(ref _inputText, normalizedValue))
                 {
+                    UpdateSelectedConversationDraft(normalizedValue);
                     OnPropertyChanged(nameof(IsInputEmpty));
                     OnPropertyChanged(nameof(LocalCommandSuggestions));
                     OnPropertyChanged(nameof(HasLocalCommandSuggestions));
@@ -2418,7 +2420,7 @@ namespace ColorVision.Copilot
         private void RefreshCompactHistoryConversations()
         {
             var history = Conversations
-                .Where(CopilotConversationService.IsHistory)
+                .Where(conversation => !ReferenceEquals(conversation, SelectedConversation) && CopilotConversationService.IsHistory(conversation))
                 .Take(CompactHistoryLimit)
                 .ToArray();
 
@@ -2455,6 +2457,7 @@ namespace ColorVision.Copilot
             return terms.All(term =>
                 ContainsSearchTerm(conversation.Title, term)
                 || ContainsSearchTerm(conversation.PreviewText, term)
+                || ContainsSearchTerm(conversation.DraftText, term)
                 || ContainsSearchTerm(conversation.ProfileDisplayName, term)
                 || conversation.Messages.Any(message => ContainsSearchTerm(message.Content, term)));
         }
@@ -2479,13 +2482,14 @@ namespace ColorVision.Copilot
 
         private int CountHistoryConversations()
         {
-            return Conversations.Count(CopilotConversationService.IsHistory);
+            return Conversations.Count(conversation => !ReferenceEquals(conversation, SelectedConversation) && CopilotConversationService.IsHistory(conversation));
         }
 
         private void Attachments_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
+            RefreshCompactHistoryConversations();
             OnCurrentLiveContextStateChanged();
         }
 
@@ -2521,12 +2525,15 @@ namespace ColorVision.Copilot
             if (_selectedConversation != null)
                 _selectedConversation.Messages.CollectionChanged += Messages_CollectionChanged;
 
+            InputText = _selectedConversation?.DraftText ?? string.Empty;
+
             OnPropertyChanged(nameof(SelectedConversation));
             OnPropertyChanged(nameof(Messages));
             OnPropertyChanged(nameof(Attachments));
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
+            RefreshCompactHistoryConversations();
             NotifyHostedRunStateChanged();
             PublishSelectedTaskEventJournal();
 
@@ -2557,6 +2564,22 @@ namespace ColorVision.Copilot
 
             if (shouldPersist)
                 PersistState();
+        }
+
+        private void UpdateSelectedConversationDraft(string draftText)
+        {
+            var conversation = _selectedConversation;
+            if (conversation == null || string.Equals(conversation.DraftText, draftText, StringComparison.Ordinal))
+                return;
+
+            var hadDraft = conversation.HasDraft;
+            conversation.DraftText = draftText;
+            if (hadDraft != conversation.HasDraft)
+                RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
+
+            _stateSaveScheduler.RequestSave();
         }
 
         private void SelectProfile(CopilotProfileConfig? profile, bool syncConversation, bool persist)

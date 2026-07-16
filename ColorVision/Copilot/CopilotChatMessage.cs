@@ -1377,9 +1377,29 @@ namespace ColorVision.Copilot
         public string PreviewText
         {
             get => _previewText;
-            set => SetProperty(ref _previewText, value ?? string.Empty);
+            set
+            {
+                if (SetProperty(ref _previewText, value ?? string.Empty))
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+            }
         }
         private string _previewText = CopilotUiText.EmptyConversationPreview;
+
+        public string DraftText
+        {
+            get => _draftText;
+            set
+            {
+                if (SetProperty(ref _draftText, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(HasDraft));
+                    OnPropertyChanged(nameof(ConversationListPreviewText));
+                }
+            }
+        }
+        private string _draftText = string.Empty;
+
+        public bool ShouldSerializeDraftText() => HasDraft;
 
         public string ProfileId
         {
@@ -1446,6 +1466,12 @@ namespace ColorVision.Copilot
         public string UpdatedLabel => UpdatedAt.Date == DateTime.Today ? UpdatedAt.ToString("HH:mm") : UpdatedAt.ToString("M/d");
 
         [JsonIgnore]
+        public bool HasDraft => !string.IsNullOrWhiteSpace(DraftText);
+
+        [JsonIgnore]
+        public string ConversationListPreviewText => HasDraft ? $"草稿：{BuildPreview(DraftText, 42)}" : PreviewText;
+
+        [JsonIgnore]
         public string PinLabel => IsPinned ? CopilotUiText.PinnedLabel : string.Empty;
 
         [JsonIgnore]
@@ -1488,6 +1514,12 @@ namespace ColorVision.Copilot
             if (UpdatedAt == default)
             {
                 UpdatedAt = CreatedAt;
+                changed = true;
+            }
+
+            if (_draftText == null)
+            {
+                DraftText = string.Empty;
                 changed = true;
             }
 

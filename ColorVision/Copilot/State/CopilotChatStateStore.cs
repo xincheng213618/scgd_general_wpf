@@ -479,6 +479,7 @@ namespace ColorVision.Copilot
                 if (conversationToken is not JObject conversation
                     || conversation.GetValue(nameof(CopilotConversationRecord.Messages), StringComparison.OrdinalIgnoreCase) is not JArray messages
                     || conversation.GetValue(nameof(CopilotConversationRecord.Attachments), StringComparison.OrdinalIgnoreCase) is not JArray attachments
+                    || !IsOptionalString(conversation.GetValue(nameof(CopilotConversationRecord.DraftText), StringComparison.OrdinalIgnoreCase))
                     || messages.Any(item => item is not JObject)
                     || attachments.Any(item => item is not JObject))
                 {
@@ -490,6 +491,8 @@ namespace ColorVision.Copilot
         }
 
         private static bool IsStringOrNull(JToken? token) => token?.Type is JTokenType.String or JTokenType.Null;
+
+        private static bool IsOptionalString(JToken? token) => token == null || IsStringOrNull(token);
 
         private static bool IsPathUnderRoot(string path, string root)
         {
