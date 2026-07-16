@@ -254,14 +254,10 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException("Another Copilot run is already active.");
 
                 var run = new CopilotHostedAgentRun(conversationId.Trim(), mode);
-                if (!run.TryStart())
-                    throw new InvalidOperationException("The Copilot run could not enter the active state.");
-
                 workItem = new HostedRunWorkItem(run, operation);
                 _activeWorkItem = workItem;
             }
 
-            Publish(CopilotAgentTaskHostChangeKind.Started, workItem.Run);
             BeginExecution(workItem);
             return workItem.Run;
         }
@@ -292,8 +288,6 @@ namespace ColorVision.Copilot
                 workItem = new HostedRunWorkItem(run, operation);
                 if (_activeWorkItem == null)
                 {
-                    if (!run.TryStart())
-                        throw new InvalidOperationException("The Copilot run could not enter the active state.");
                     _activeWorkItem = workItem;
                     startsImmediately = true;
                 }
@@ -303,9 +297,10 @@ namespace ColorVision.Copilot
                 }
             }
 
-            Publish(startsImmediately ? CopilotAgentTaskHostChangeKind.Started : CopilotAgentTaskHostChangeKind.Queued, run);
             if (startsImmediately)
                 BeginExecution(workItem);
+            else
+                Publish(CopilotAgentTaskHostChangeKind.Queued, run);
             return true;
         }
 
@@ -444,6 +439,10 @@ namespace ColorVision.Copilot
             Exception? error = null;
             try
             {
+                if (!workItem.Run.TryStart())
+                    return;
+
+                Publish(CopilotAgentTaskHostChangeKind.Started, workItem.Run);
                 await workItem.Operation(workItem.Run);
             }
             catch (Exception ex)
@@ -462,9 +461,6 @@ namespace ColorVision.Copilot
                         {
                             var candidate = _queuedWorkItems.First.Value;
                             _queuedWorkItems.RemoveFirst();
-                            if (!candidate.Run.TryStart())
-                                continue;
-
                             _activeWorkItem = candidate;
                             nextWorkItem = candidate;
                             break;
@@ -475,10 +471,7 @@ namespace ColorVision.Copilot
                 workItem.Run.Complete(error);
                 Publish(CopilotAgentTaskHostChangeKind.Completed, workItem.Run);
                 if (nextWorkItem != null)
-                {
-                    Publish(CopilotAgentTaskHostChangeKind.Started, nextWorkItem.Run);
                     BeginExecution(nextWorkItem);
-                }
             }
         }
 

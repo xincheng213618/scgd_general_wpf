@@ -203,6 +203,47 @@ public sealed class CopilotAgentTaskHostTests
     }
 
     [Fact]
+    public async Task Host_CancelsPromotedRunBeforeExecutionEntryWithoutInvokingOperation()
+    {
+        var host = new CopilotAgentTaskHost(maxQueuedRuns: 2);
+        var releaseActive = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var changes = new List<(CopilotAgentTaskHostChangeKind Kind, string RunId)>();
+        var secondExecutionCount = 0;
+        var active = host.Start("conversation-1", CopilotAgentMode.Auto, _ => releaseActive.Task);
+        Assert.True(host.TrySchedule(
+            "conversation-2",
+            CopilotAgentMode.Auto,
+            _ =>
+            {
+                secondExecutionCount++;
+                return Task.CompletedTask;
+            },
+            out var second));
+        Assert.True(host.TrySchedule("conversation-3", CopilotAgentMode.Auto, _ => Task.CompletedTask, out var third));
+        Assert.NotNull(second);
+        Assert.NotNull(third);
+
+        host.Changed += (_, args) =>
+        {
+            changes.Add((args.Kind, args.Run.Id));
+            if (args.Kind == CopilotAgentTaskHostChangeKind.Completed && ReferenceEquals(args.Run, active))
+                Assert.True(host.RequestCancel(second.Id));
+        };
+
+        releaseActive.TrySetResult(null);
+        await Task.WhenAll(active.Completion, second.Completion, third.Completion).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(0, secondExecutionCount);
+        Assert.False(second.HasStarted);
+        Assert.Equal(CopilotAgentControlIntent.Cancel, second.RunControl?.Intent);
+        Assert.DoesNotContain(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.Started);
+        Assert.Contains(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.ControlRequested);
+        Assert.Contains(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.Completed);
+        Assert.True(third.HasStarted);
+        Assert.False(host.IsActive);
+    }
+
+    [Fact]
     public async Task Host_PromotesNextRunAfterQueuedOperationFails()
     {
         var host = new CopilotAgentTaskHost(maxQueuedRuns: 2);
