@@ -1,19 +1,31 @@
 using ColorVision.Themes;
+using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Copilot
 {
     public partial class CopilotTextInputWindow : Window
     {
-        public CopilotTextInputWindow(string title, string description, string initialText = "", bool isMultiline = false, bool isReadOnly = false)
+        private readonly int _maximumLength;
+
+        public CopilotTextInputWindow(
+            string title,
+            string description,
+            string initialText = "",
+            bool isMultiline = false,
+            bool isReadOnly = false,
+            int maximumLength = 0)
         {
             InitializeComponent();
             this.ApplyCaption();
 
+            _maximumLength = Math.Max(0, maximumLength);
             Title = title;
             DescriptionTextBlock.Text = description;
             InputTextBox.Text = initialText;
+            InputTextBox.MaxLength = _maximumLength;
             InputTextBox.AcceptsReturn = isMultiline;
             InputTextBox.IsReadOnly = isReadOnly;
             InputTextBox.MinHeight = isMultiline ? 140 : 38;
@@ -24,12 +36,25 @@ namespace ColorVision.Copilot
                 CancelButton.Visibility = Visibility.Collapsed;
                 OkButton.Content = "关闭";
             }
+            else if (_maximumLength > 0)
+            {
+                CharacterCountTextBlock.Visibility = Visibility.Visible;
+                InputTextBox.TextChanged += InputTextBox_TextChanged;
+                UpdateCharacterCount();
+            }
 
             Loaded += CopilotTextInputWindow_Loaded;
             PreviewKeyDown += CopilotTextInputWindow_PreviewKeyDown;
         }
 
         public string ResultText => InputTextBox.Text.Trim();
+
+        private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateCharacterCount();
+
+        private void UpdateCharacterCount()
+        {
+            CharacterCountTextBlock.Text = $"{InputTextBox.Text.Length:N0} / {_maximumLength:N0}";
+        }
 
         private void CopilotTextInputWindow_Loaded(object sender, RoutedEventArgs e)
         {

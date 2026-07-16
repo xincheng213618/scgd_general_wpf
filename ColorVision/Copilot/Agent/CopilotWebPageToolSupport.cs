@@ -37,6 +37,7 @@ namespace ColorVision.Copilot
         public const int MaxWebPageContentChars = 12000;
         public const int MaxWebPageRedirects = 5;
         public const int MaxDiscoveredPageLinks = 12;
+        public const int MaxWebPageUrlCharacters = 8192;
 
         private static readonly Regex HttpUrlRegex = new("https?://[^\\s\\\"'<>]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly char[] UrlTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
@@ -452,6 +453,8 @@ namespace ColorVision.Copilot
         private static Uri NormalizeAndValidateWebPageUri(string url)
         {
             var normalized = NormalizeWebPageUrl(url);
+            if (normalized.Length > MaxWebPageUrlCharacters)
+                throw new InvalidOperationException($"The web page URL exceeds the {MaxWebPageUrlCharacters:N0}-character limit.");
             if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri))
                 throw new InvalidOperationException("The web page URL is not valid.");
 

@@ -1451,6 +1451,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotConversationRecord : ViewModelBase
     {
+        internal const int MaximumTitleCharacters = 120;
+
         public string Id
         {
             get => _id;

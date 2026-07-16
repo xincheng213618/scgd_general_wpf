@@ -3138,7 +3138,11 @@ namespace ColorVision.Copilot
             if (conversation == null)
                 return;
 
-            var window = new CopilotTextInputWindow("Rename Chat", "Enter a new chat name", conversation.Title)
+            var window = new CopilotTextInputWindow(
+                "Rename Chat",
+                "Enter a new chat name",
+                conversation.Title,
+                maximumLength: CopilotConversationRecord.MaximumTitleCharacters)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -3392,7 +3396,12 @@ namespace ColorVision.Copilot
             if (!TryEnsureAttachmentCapacity(conversation, CopilotAttachmentType.Context))
                 return;
 
-            var window = new CopilotTextInputWindow("Attach Context", "Enter the context to attach to this chat", string.Empty, isMultiline: true)
+            var window = new CopilotTextInputWindow(
+                "Attach Context",
+                "Enter the context to attach to this chat",
+                string.Empty,
+                isMultiline: true,
+                maximumLength: CopilotAttachmentItem.MaximumStoredTextCharacters)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -3422,7 +3431,11 @@ namespace ColorVision.Copilot
         private async Task AddWebPageAttachmentAsync()
         {
             var conversation = EnsureConversation();
-            var window = new CopilotTextInputWindow("Attach Web Page", "Enter the web page URL to fetch and attach", "https://")
+            var window = new CopilotTextInputWindow(
+                "Attach Web Page",
+                "Enter the web page URL to fetch and attach",
+                "https://",
+                maximumLength: CopilotWebPageToolSupport.MaxWebPageUrlCharacters)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
