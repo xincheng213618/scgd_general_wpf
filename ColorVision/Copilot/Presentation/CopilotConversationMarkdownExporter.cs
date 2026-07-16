@@ -3,11 +3,35 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace ColorVision.Copilot
 {
     internal static class CopilotConversationMarkdownExporter
     {
+        internal sealed record AttachmentSnapshot(
+            CopilotAttachmentType Type,
+            string Title,
+            string Value,
+            string Source,
+            string DisplayLabel);
+
+        internal sealed record MessageSnapshot(
+            bool IsUser,
+            string Header,
+            DateTime CreatedAt,
+            string Content,
+            string ResponseInterruptionText,
+            IReadOnlyList<AttachmentSnapshot> Attachments);
+
+        internal sealed record Snapshot(
+            string Title,
+            DateTime ExportedAt,
+            DateTime CreatedAt,
+            DateTime UpdatedAt,
+            string ProfileName,
+            IReadOnlyList<MessageSnapshot> Messages);
+
         private static readonly HashSet<string> ReservedFileNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "CON", "PRN", "AUX", "NUL",
@@ -41,20 +65,59 @@ namespace ColorVision.Copilot
 
         public static string BuildMarkdown(CopilotConversationRecord conversation)
         {
+            return BuildMarkdown(Capture(conversation), CancellationToken.None);
+        }
+
+        public static Snapshot Capture(CopilotConversationRecord conversation)
+        {
             ArgumentNullException.ThrowIfNull(conversation);
 
+            var messages = conversation.Messages
+                .Where(IsExportableMessage)
+                .Select(message => new MessageSnapshot(
+                    message.IsUser,
+                    message.Header ?? string.Empty,
+                    message.CreatedAt,
+                    message.Content ?? string.Empty,
+                    message.HasResponseInterruption ? message.ResponseInterruptionText : string.Empty,
+                    message.Attachments
+                        .Where(attachment => attachment != null)
+                        .Select(attachment => new AttachmentSnapshot(
+                            attachment.Type,
+                            attachment.Title ?? string.Empty,
+                            attachment.Value ?? string.Empty,
+                            attachment.Source ?? string.Empty,
+                            attachment.DisplayLabel ?? string.Empty))
+                        .ToArray()))
+                .ToArray();
+
+            return new Snapshot(
+                conversation.Title ?? string.Empty,
+                DateTime.Now,
+                conversation.CreatedAt,
+                conversation.UpdatedAt,
+                ResolveProfileName(conversation),
+                messages);
+        }
+
+        public static string BuildMarkdown(Snapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            cancellationToken.ThrowIfCancellationRequested();
+
             var builder = new StringBuilder();
-            builder.Append("# ").AppendLine(EscapeMarkdownText(conversation.Title));
+            builder.Append("# ").AppendLine(EscapeMarkdownText(snapshot.Title));
             builder.AppendLine();
-            builder.Append("- 导出时间：").AppendLine(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            builder.Append("- 会话创建：").AppendLine(conversation.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
-            builder.Append("- 最近更新：").AppendLine(conversation.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
-            builder.Append("- 模型：").AppendLine(EscapeMarkdownText(ResolveProfileName(conversation)));
+            builder.Append("- 导出时间：").AppendLine(snapshot.ExportedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            builder.Append("- 会话创建：").AppendLine(snapshot.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            builder.Append("- 最近更新：").AppendLine(snapshot.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            builder.Append("- 模型：").AppendLine(EscapeMarkdownText(snapshot.ProfileName));
             builder.AppendLine();
             builder.AppendLine("> 仅导出对话中可见的正文和附件引用；内部推理、隐藏执行轨迹及未发送的输入不会写入此文件。");
 
-            foreach (var message in conversation.Messages.Where(IsExportableMessage))
+            foreach (var message in snapshot.Messages)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 builder.AppendLine();
                 var speaker = message.IsUser ? "用户" : string.IsNullOrWhiteSpace(message.Header) ? "AI" : message.Header;
                 builder.Append("## ").Append(EscapeMarkdownText(speaker)).Append(" · ").AppendLine(message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -66,19 +129,22 @@ namespace ColorVision.Copilot
                     builder.AppendLine();
                 }
 
-                if (message.HasResponseInterruption)
+                if (!string.IsNullOrWhiteSpace(message.ResponseInterruptionText))
                 {
                     builder.Append("> ⚠️ ").AppendLine(EscapeMarkdownText(message.ResponseInterruptionText));
                     builder.AppendLine();
                 }
 
-                if (!message.HasAttachments)
+                if (message.Attachments.Count == 0)
                     continue;
 
                 builder.AppendLine("### 附件");
                 builder.AppendLine();
                 foreach (var attachment in message.Attachments)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
                     AppendAttachment(builder, attachment);
+                }
             }
 
             return builder.ToString().TrimEnd() + Environment.NewLine;
@@ -99,7 +165,7 @@ namespace ColorVision.Copilot
             return "未记录";
         }
 
-        private static void AppendAttachment(StringBuilder builder, CopilotAttachmentItem attachment)
+        private static void AppendAttachment(StringBuilder builder, AttachmentSnapshot attachment)
         {
             var typeLabel = attachment.Type switch
             {
@@ -125,10 +191,12 @@ namespace ColorVision.Copilot
             builder.AppendLine();
         }
 
-        private static string ResolveAttachmentTitle(CopilotAttachmentItem attachment, string fallback)
+        private static string ResolveAttachmentTitle(AttachmentSnapshot attachment, string fallback)
         {
             if (!string.IsNullOrWhiteSpace(attachment.Title))
                 return attachment.Title;
+            if (!string.IsNullOrWhiteSpace(attachment.DisplayLabel))
+                return attachment.DisplayLabel;
             if ((attachment.Type == CopilotAttachmentType.File || attachment.Type == CopilotAttachmentType.Image)
                 && !string.IsNullOrWhiteSpace(attachment.Value))
             {

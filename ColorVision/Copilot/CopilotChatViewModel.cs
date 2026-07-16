@@ -84,6 +84,7 @@ namespace ColorVision.Copilot
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
         private bool _isApplyingPromptHistory;
+        private bool _isExportingConversation;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
         private bool _isRetryingStatePersistence;
@@ -198,7 +199,9 @@ namespace ColorVision.Copilot
             OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
-            ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(ExportConversation, CopilotConversationMarkdownExporter.CanExport);
+            ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(
+                conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),
+                CanExportConversation);
             RetryStatePersistenceCommand = new RelayCommand(_ => RunUiOperation(RetryStatePersistenceAsync, "重试保存会话"), _ => CanRetryStatePersistence());
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
@@ -3409,9 +3412,13 @@ namespace ColorVision.Copilot
             PersistState();
         }
 
-        private void ExportConversation(CopilotConversationRecord? conversation)
+        private bool CanExportConversation(CopilotConversationRecord? conversation) => !_isExportingConversation
+            && Volatile.Read(ref _disposeState) == 0
+            && CopilotConversationMarkdownExporter.CanExport(conversation);
+
+        private async Task ExportConversationAsync(CopilotConversationRecord? conversation)
         {
-            if (!CopilotConversationMarkdownExporter.CanExport(conversation))
+            if (!CanExportConversation(conversation))
                 return;
 
             var dialog = new SaveFileDialog
@@ -3428,20 +3435,60 @@ namespace ColorVision.Copilot
             if (dialog.ShowDialog(Application.Current.GetActiveWindow()) != true)
                 return;
 
+            var snapshot = CopilotConversationMarkdownExporter.Capture(conversation!);
+            var cancellation = BeginAuxiliaryOperation();
+            _isExportingConversation = true;
+            LocalCommandResultTitle = "正在导出会话";
+            LocalCommandResultText = dialog.FileName;
+            CommandManager.InvalidateRequerySuggested();
             try
             {
-                File.WriteAllText(dialog.FileName, CopilotConversationMarkdownExporter.BuildMarkdown(conversation!), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                var markdown = await Task.Run(
+                    () => CopilotConversationMarkdownExporter.BuildMarkdown(snapshot, cancellation.Token),
+                    cancellation.Token);
+                await WriteConversationExportAsync(dialog.FileName, markdown, cancellation.Token);
+                if (Volatile.Read(ref _disposeState) == 1)
+                    return;
+
                 LocalCommandResultTitle = "会话已导出";
                 LocalCommandResultText = dialog.FileName;
             }
-            catch (Exception ex)
+            finally
             {
-                MessageBox.Show(
-                    Application.Current.GetActiveWindow(),
-                    $"无法导出会话：{ex.Message}",
-                    "ColorVision",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                _isExportingConversation = false;
+                CompleteAuxiliaryOperation(cancellation);
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private static async Task WriteConversationExportAsync(string filePath, string content, CancellationToken cancellationToken)
+        {
+            var destinationPath = Path.GetFullPath(filePath);
+            var directoryPath = Path.GetDirectoryName(destinationPath);
+            if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
+                throw new DirectoryNotFoundException("导出目录不存在或已不可用。");
+
+            var temporaryPath = Path.Combine(directoryPath, $".copilot-export-{Guid.NewGuid():N}.tmp");
+            try
+            {
+                await File.WriteAllTextAsync(
+                    temporaryPath,
+                    content,
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                    cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(temporaryPath, destinationPath, overwrite: true);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                        File.Delete(temporaryPath);
+                }
+                catch
+                {
+                }
             }
         }
 
