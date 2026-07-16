@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
                     CreatedAtUtc = source.Compaction.CreatedAtUtc,
                     SourceCharacters = source.Compaction.SourceCharacters,
                     SourceMessageCount = source.Compaction.SourceMessageCount,
+                    StrategyVersion = source.Compaction.StrategyVersion,
                     Summary = source.Compaction.Summary,
                     ThroughMessageId = branchBoundaryId,
                 };

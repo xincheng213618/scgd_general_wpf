@@ -1781,6 +1781,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <Button x:Name="AttachMenuButton"
@@ -1830,9 +1831,23 @@
                             </DockPanel>
                         </Border>
 
+                        <Button Grid.Row="0"
+                                Grid.Column="2"
+                                Width="44"
+                                Height="28"
+                                Margin="4,0"
+                                HorizontalAlignment="Right"
+                                AutomationProperties.Name="压缩已裁剪的会话上下文"
+                                Command="{Binding CompactConversationCommand}"
+                                Content="压缩"
+                                FontSize="10"
+                                Style="{StaticResource CopilotIconButtonStyle}"
+                                ToolTip="{Binding ConversationContextCompactionToolTip}"
+                                Visibility="{Binding IsConversationContextReduced, Converter={StaticResource bool2VisibilityConverter}}" />
+
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"
-                              Grid.Column="2"
+                              Grid.Column="3"
                               MaxWidth="180"
                               Margin="4,0,4,0"
                               HorizontalAlignment="Right"
@@ -2106,7 +2121,7 @@
 
                         <StackPanel x:Name="ComposerActionStack"
                                     Grid.Row="0"
-                                    Grid.Column="3"
+                                    Grid.Column="4"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
                             <Button Width="28"

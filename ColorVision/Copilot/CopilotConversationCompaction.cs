@@ -6,7 +6,10 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotConversationCompaction
     {
+        public const int CurrentStrategyVersion = 1;
         public const int MaximumSummaryCharacters = 32_000;
+
+        public int StrategyVersion { get; set; }
 
         public string Summary { get; set; } = string.Empty;
 
@@ -20,7 +23,8 @@ namespace ColorVision.Copilot
 
         public bool IsStructurallyValid()
         {
-            return !string.IsNullOrWhiteSpace(Summary)
+            return StrategyVersion == CurrentStrategyVersion
+                && !string.IsNullOrWhiteSpace(Summary)
                 && Summary.Length <= MaximumSummaryCharacters
                 && !string.IsNullOrWhiteSpace(ThroughMessageId)
                 && CreatedAtUtc != default;
@@ -53,7 +57,7 @@ namespace ColorVision.Copilot
                 var boundaryIndex = FindMessageIndex(conversation, compaction.ThroughMessageId);
                 if (boundaryIndex >= 0 && boundaryIndex < endIndex)
                 {
-                    history.Add(new CopilotRequestMessage("user", SummaryPreamble + compaction.Summary));
+                    history.Add(CreateSummaryMessage(compaction));
                     startIndex = boundaryIndex + 1;
                 }
             }
@@ -69,6 +73,12 @@ namespace ColorVision.Copilot
             }
 
             return history;
+        }
+
+        internal static CopilotRequestMessage CreateSummaryMessage(CopilotConversationCompaction compaction)
+        {
+            ArgumentNullException.ThrowIfNull(compaction);
+            return new CopilotRequestMessage("user", SummaryPreamble + compaction.Summary);
         }
 
         public static int CountMessagesAfterBoundary(CopilotConversationRecord conversation)
