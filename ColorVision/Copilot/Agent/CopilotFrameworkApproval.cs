@@ -5,11 +5,82 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal enum CopilotFrameworkApprovalDecisionKind
+    {
+        Approved,
+        Rejected,
+        Expired,
+        Cancelled,
+        PolicyDenied,
+    }
+
+    internal sealed record CopilotFrameworkApprovalDecision
+    {
+        private CopilotFrameworkApprovalDecision(CopilotFrameworkApprovalDecisionKind kind, string reason)
+        {
+            Kind = kind;
+            Reason = reason;
+        }
+
+        public CopilotFrameworkApprovalDecisionKind Kind { get; }
+
+        public string Reason { get; }
+
+        public bool IsApproved => Kind == CopilotFrameworkApprovalDecisionKind.Approved;
+
+        public string FormatStatus(string toolName)
+        {
+            var name = string.IsNullOrWhiteSpace(toolName) ? "The protected tool" : toolName.Trim();
+            return Kind switch
+            {
+                CopilotFrameworkApprovalDecisionKind.Approved => $"{name} was approved. Agent Framework is resuming the same session.",
+                CopilotFrameworkApprovalDecisionKind.Rejected => $"{name} was rejected by the ColorVision user. Agent Framework will continue without executing it.",
+                CopilotFrameworkApprovalDecisionKind.Expired => $"{name} approval expired. Agent Framework will continue without executing it.",
+                CopilotFrameworkApprovalDecisionKind.Cancelled => $"{name} approval was cancelled. Agent Framework will continue without executing it.",
+                _ => $"{name} was denied by ColorVision policy. Agent Framework will continue without executing it.",
+            };
+        }
+
+        public string FormatToolSummary(string toolName)
+        {
+            var name = string.IsNullOrWhiteSpace(toolName) ? "The protected tool" : toolName.Trim();
+            return Kind switch
+            {
+                CopilotFrameworkApprovalDecisionKind.Rejected => $"{name} was rejected by the user.",
+                CopilotFrameworkApprovalDecisionKind.Expired => $"{name} approval expired.",
+                CopilotFrameworkApprovalDecisionKind.Cancelled => $"{name} approval was cancelled.",
+                CopilotFrameworkApprovalDecisionKind.PolicyDenied => $"{name} was denied by policy.",
+                _ => $"{name} was approved.",
+            };
+        }
+
+        public static CopilotFrameworkApprovalDecision FromStatus(ConfirmableActionStatus status)
+        {
+            return status switch
+            {
+                ConfirmableActionStatus.Approved => new(CopilotFrameworkApprovalDecisionKind.Approved, "Approved in ColorVision."),
+                ConfirmableActionStatus.Rejected => new(CopilotFrameworkApprovalDecisionKind.Rejected, "Rejected by the ColorVision user."),
+                ConfirmableActionStatus.Expired => new(CopilotFrameworkApprovalDecisionKind.Expired, "The ColorVision approval expired before a decision."),
+                ConfirmableActionStatus.Cancelled => new(CopilotFrameworkApprovalDecisionKind.Cancelled, "The ColorVision approval was cancelled before execution."),
+                _ => throw new ArgumentOutOfRangeException(nameof(status), status, "The confirmation action has no terminal approval decision."),
+            };
+        }
+
+        public static CopilotFrameworkApprovalDecision PolicyDenied(string reason)
+        {
+            var detail = string.IsNullOrWhiteSpace(reason) ? "The protected tool call did not satisfy the approval policy." : reason.Trim();
+            return new CopilotFrameworkApprovalDecision(
+                CopilotFrameworkApprovalDecisionKind.PolicyDenied,
+                "ColorVision policy denied this protected tool call: " + detail);
+        }
+    }
+
     internal sealed class CopilotFrameworkApprovalHandle
     {
         public ConfirmableAction Action { get; init; } = null!;
 
-        public Task<bool> Decision { get; init; } = Task.FromResult(false);
+        public Task<CopilotFrameworkApprovalDecision> Decision { get; init; } =
+            Task.FromResult(CopilotFrameworkApprovalDecision.PolicyDenied("The approval handle was not initialized."));
     }
 
     internal sealed class CopilotFrameworkApprovalCoordinator
@@ -35,7 +106,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(tool);
             cancellationToken.ThrowIfCancellationRequested();
 
-            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var completion = new TaskCompletionSource<CopilotFrameworkApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
             var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(input);
             var presentation = tool is ICopilotFrameworkApprovalPresentation presenter
                 ? presenter.CreateApprovalPresentation(input)
@@ -52,12 +123,10 @@ namespace ColorVision.Copilot
                 switch (eventArgs.Action.Status)
                 {
                     case ConfirmableActionStatus.Approved:
-                        completion.TrySetResult(true);
-                        break;
                     case ConfirmableActionStatus.Rejected:
                     case ConfirmableActionStatus.Expired:
                     case ConfirmableActionStatus.Cancelled:
-                        completion.TrySetResult(false);
+                        completion.TrySetResult(CopilotFrameworkApprovalDecision.FromStatus(eventArgs.Action.Status));
                         break;
                 }
             };
@@ -83,7 +152,7 @@ namespace ColorVision.Copilot
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    _confirmationStore.Reject(action.ActionId, out _);
+                    _confirmationStore.Cancel(action.ActionId, out _, "The approval request was cancelled with the Agent run.");
                     cancellationToken.ThrowIfCancellationRequested();
                 }
             }
@@ -114,9 +183,9 @@ namespace ColorVision.Copilot
 
         public void Complete(string actionId, CopilotToolResult result) => _confirmationStore.CompleteAgentFrameworkAction(actionId, result);
 
-        private async Task<bool> AwaitDecisionAsync(
+        private async Task<CopilotFrameworkApprovalDecision> AwaitDecisionAsync(
             ConfirmableAction action,
-            Task<bool> decision,
+            Task<CopilotFrameworkApprovalDecision> decision,
             EventHandler<ConfirmableActionChangedEventArgs> statusChanged,
             CancellationTokenRegistration cancellationRegistration,
             CancellationToken cancellationToken)

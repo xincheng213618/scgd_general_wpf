@@ -520,8 +520,9 @@ namespace ColorVision.Copilot
                     {
                         if (!bridge.TryBeginApproval(approvalRequest, out var reservation, out var error))
                         {
-                            emit(CopilotAgentEvent.Status($"Agent Framework approval request was rejected: {error}"));
-                            responses.Add(approvalRequest.CreateResponse(false, error));
+                            var policyDecision = CopilotFrameworkApprovalDecision.PolicyDenied(error);
+                            emit(CopilotAgentEvent.Status(policyDecision.FormatStatus("The protected tool call")));
+                            responses.Add(approvalRequest.CreateResponse(false, policyDecision.Reason));
                             continue;
                         }
 
@@ -529,27 +530,27 @@ namespace ColorVision.Copilot
                         bridge.PublishAwaitingApproval(reservation, handle.Action);
                         emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
 
-                        bool approved;
+                        CopilotFrameworkApprovalDecision decision;
                         try
                         {
-                            approved = await handle.Decision;
+                            decision = await handle.Decision;
+                            cancellationToken.ThrowIfCancellationRequested();
                         }
                         catch (OperationCanceledException)
                         {
                             _approvalCoordinator.Cancel(handle);
                             throw;
                         }
-                        if (approved)
+                        if (decision.IsApproved)
                         {
                             bridge.Approve(reservation);
-                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved. Agent Framework is resuming the same session."));
                         }
                         else
                         {
-                            bridge.Reject(reservation, "The user rejected or did not complete this protected action approval.");
-                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was not approved. Agent Framework will continue without executing it."));
+                            bridge.Reject(reservation, decision);
                         }
-                        if (approved)
+                        emit(CopilotAgentEvent.Status(decision.FormatStatus(reservation.Tool.Name)));
+                        if (decision.IsApproved)
                         {
                             taskEventJournalBuilder.RecordApprovalDecision(
                                 reservation.Tool.Name,
@@ -558,7 +559,7 @@ namespace ColorVision.Copilot
                                 approved: true);
                         }
 
-                        responses.Add(approvalRequest.CreateResponse(approved, approved ? "Approved in ColorVision." : "Rejected or expired in ColorVision."));
+                        responses.Add(approvalRequest.CreateResponse(decision.IsApproved, decision.Reason));
                     }
 
                     messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
@@ -1759,22 +1760,29 @@ namespace ColorVision.Copilot
                 }
             }
 
-            public void Reject(FrameworkApprovalReservation reservation, string reason)
+            public void Reject(FrameworkApprovalReservation reservation, CopilotFrameworkApprovalDecision decision)
             {
+                ArgumentNullException.ThrowIfNull(decision);
+                if (decision.IsApproved)
+                    throw new ArgumentException("An approved decision cannot be recorded as a rejected tool call.", nameof(decision));
+
+                var failureKind = decision.Kind == CopilotFrameworkApprovalDecisionKind.Cancelled
+                    ? CopilotToolFailureKind.Cancelled
+                    : CopilotToolFailureKind.Authorization;
                 var result = new CopilotToolResult
                 {
                     ToolName = reservation.Tool.Name,
                     Success = false,
-                    Summary = $"{reservation.Tool.Name} was not approved.",
-                    ErrorMessage = reason,
-                    FailureKind = CopilotToolFailureKind.Authorization,
+                    Summary = decision.FormatToolSummary(reservation.Tool.Name),
+                    ErrorMessage = decision.Reason,
+                    FailureKind = failureKind,
                 };
                 var execution = CreateApprovalExecutionInfo(
                     reservation,
                     CopilotToolExecutionState.Denied,
                     reservation.ApprovalActionId,
                     DateTimeOffset.UtcNow,
-                    CopilotToolFailureKind.Authorization);
+                    failureKind);
                 var invocation = CreateInvocation(reservation, frameworkApprovalGranted: false);
                 var outcome = new CopilotToolExecutionOutcome { Invocation = invocation, Result = result, Execution = execution };
                 CopilotToolExecutionAuditLogger.Record(outcome);
