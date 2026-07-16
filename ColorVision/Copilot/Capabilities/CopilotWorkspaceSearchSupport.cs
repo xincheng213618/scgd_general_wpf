@@ -10,6 +10,16 @@ namespace ColorVision.Copilot
 
     public static class CopilotWorkspaceSearchSupport
     {
+        private const long MaxTextSearchFileBytes = 8L * 1024 * 1024;
+
+        private static readonly EnumerationOptions SearchEnumerationOptions = new()
+        {
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = false,
+            ReturnSpecialDirectories = false,
+        };
+
         private static readonly HashSet<string> IgnoredDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
         {
             ".git",
@@ -167,20 +177,10 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var currentDirectory = pendingDirectories.Pop();
-                IEnumerable<string> subDirectories;
-                IEnumerable<string> files;
 
-                try
-                {
-                    subDirectories = Directory.EnumerateDirectories(currentDirectory);
-                    files = Directory.EnumerateFiles(currentDirectory);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                foreach (var subDirectory in subDirectories)
+                foreach (var subDirectory in EnumerateSafely(
+                    () => Directory.EnumerateDirectories(currentDirectory, "*", SearchEnumerationOptions),
+                    cancellationToken))
                 {
                     if (ShouldIgnoreDirectory(subDirectory))
                         continue;
@@ -188,15 +188,72 @@ namespace ColorVision.Copilot
                     pendingDirectories.Push(subDirectory);
                 }
 
-                foreach (var file in files)
+                foreach (var file in EnumerateSafely(
+                    () => Directory.EnumerateFiles(currentDirectory, "*", SearchEnumerationOptions),
+                    cancellationToken))
                 {
-                    if (IsReparsePoint(file))
-                        continue;
-                    if (textFilesOnly && !IsTextLikeFile(file))
+                    if (textFilesOnly && !IsSearchableTextFile(file))
                         continue;
 
                     yield return file;
                 }
+            }
+        }
+
+        private static IEnumerable<string> EnumerateSafely(
+            Func<IEnumerable<string>> createEntries,
+            CancellationToken cancellationToken)
+        {
+            IEnumerator<string>? enumerator;
+            try
+            {
+                enumerator = createEntries().GetEnumerator();
+            }
+            catch
+            {
+                yield break;
+            }
+
+            using (enumerator)
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    string current;
+                    try
+                    {
+                        if (!enumerator.MoveNext())
+                            yield break;
+
+                        current = enumerator.Current;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        yield break;
+                    }
+
+                    yield return current;
+                }
+            }
+        }
+
+        private static bool IsSearchableTextFile(string filePath)
+        {
+            if (!IsTextLikeFile(filePath))
+                return false;
+
+            try
+            {
+                return new FileInfo(filePath).Length <= MaxTextSearchFileBytes;
+            }
+            catch
+            {
+                return false;
             }
         }
 

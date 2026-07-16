@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -10,8 +9,6 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotReadAttachedFileTool : ICopilotTool
     {
-        private const int MaxFileContentChars = 20000;
-
         public string Name => "ReadAttachedFile";
 
         public string Description => "Read text file attachments from the current session.";
@@ -58,25 +55,21 @@ namespace ColorVision.Copilot
 
                 try
                 {
-                    if (!File.Exists(attachment.Value))
+                    var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(attachment.Value, cancellationToken);
+                    builder.AppendLine($"[File] {result.FullPath}");
+
+                    if (!result.Success)
                     {
-                        var missingMessage = $"File does not exist: {attachment.Value}";
-                        builder.AppendLine($"[File] {attachment.Value}");
-                        builder.AppendLine(missingMessage);
+                        builder.AppendLine(result.ErrorMessage);
                         builder.AppendLine();
-                        errors.Add(missingMessage);
+                        errors.Add($"{result.FullPath}: {result.ErrorMessage}");
                         continue;
                     }
 
-                    await using var stream = new FileStream(attachment.Value, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(stream, Encoding.UTF8, true);
-                    var content = await reader.ReadToEndAsync(cancellationToken);
+                    if (result.WasTruncated)
+                        builder.AppendLine("Note: The file content was long and was truncated before sending to the model.");
 
-                    if (content.Length > MaxFileContentChars)
-                        content = content[..MaxFileContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxFileContentChars} characters.>";
-
-                    builder.AppendLine($"[File] {attachment.Value}");
-                    builder.AppendLine(content.TrimEnd());
+                    builder.AppendLine(result.Content);
                     builder.AppendLine();
                     successCount++;
                 }
