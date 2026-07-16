@@ -39,6 +39,8 @@ namespace ColorVision.Copilot
 
         public int? StartLine { get; init; }
 
+        public int? StartColumn { get; init; }
+
         public int? EndLine { get; init; }
 
         public string GetStableArgumentsJson()

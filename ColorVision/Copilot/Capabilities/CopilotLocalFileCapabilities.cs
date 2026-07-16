@@ -17,6 +17,7 @@ namespace ColorVision.Copilot
             string? selectedPath,
             bool preferBatchReadAll,
             int? startLine,
+            int? startColumn,
             int? endLine,
             CancellationToken cancellationToken)
         {
@@ -78,6 +79,7 @@ namespace ColorVision.Copilot
                 var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(
                     path,
                     useSelectedRange ? startLine : null,
+                    useSelectedRange ? startColumn : null,
                     useSelectedRange ? endLine : null,
                     cancellationToken);
                 builder.AppendLine($"[File] {result.FullPath}");
@@ -86,6 +88,18 @@ namespace ColorVision.Copilot
                 {
                     if (result.StartLine > 0)
                         builder.AppendLine($"[Lines] {result.StartLine}-{result.EndLine}");
+
+                    builder.AppendLine("[Read Scope]");
+                    builder.AppendLine($"start_line: {result.StartLine}");
+                    builder.AppendLine($"start_column: {result.StartColumn}");
+                    builder.AppendLine($"end_line: {result.EndLine}");
+                    builder.AppendLine($"end_column: {result.EndColumn}");
+                    builder.AppendLine($"content_complete: {(!result.WasTruncated).ToString().ToLowerInvariant()}");
+                    if (result.WasTruncated)
+                    {
+                        builder.AppendLine($"continuation_start_line: {result.ContinuationStartLine}");
+                        builder.AppendLine($"continuation_start_column: {result.ContinuationStartColumn}");
+                    }
 
                     if (result.WasTruncated)
                         builder.AppendLine("Note: The file content was long and was truncated before sending to the model.");

@@ -138,6 +138,8 @@ namespace ColorVision.Copilot
                 parts.Add("path=" + input.Path.Trim());
             if (input.StartLine.HasValue)
                 parts.Add("startLine=" + input.StartLine.Value);
+            if (input.StartColumn.HasValue)
+                parts.Add("startColumn=" + input.StartColumn.Value);
             if (input.EndLine.HasValue)
                 parts.Add("endLine=" + input.EndLine.Value);
 
@@ -171,6 +173,8 @@ namespace ColorVision.Copilot
                 names.Add("path");
             if (input.StartLine.HasValue)
                 names.Add("startLine");
+            if (input.StartColumn.HasValue)
+                names.Add("startColumn");
             if (input.EndLine.HasValue)
                 names.Add("endLine");
             foreach (var name in input.Arguments.Keys.Where(name => !string.IsNullOrWhiteSpace(name)))
@@ -186,6 +190,7 @@ namespace ColorVision.Copilot
             return string.Equals(name, "query", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "path", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "startLine", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "startColumn", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "endLine", StringComparison.OrdinalIgnoreCase);
         }
 

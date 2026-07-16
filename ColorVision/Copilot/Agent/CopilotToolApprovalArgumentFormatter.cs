@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
                 arguments["path"] = input.Path.Trim();
             if (input.StartLine.HasValue && !arguments.ContainsKey("startLine"))
                 arguments["startLine"] = input.StartLine.Value;
+            if (input.StartColumn.HasValue && !arguments.ContainsKey("startColumn"))
+                arguments["startColumn"] = input.StartColumn.Value;
             if (input.EndLine.HasValue && !arguments.ContainsKey("endLine"))
                 arguments["endLine"] = input.EndLine.Value;
             if (arguments.Count == 0)

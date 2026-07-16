@@ -1343,6 +1343,8 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine("SearchFiles and GrepText treat an explicit query as one case-insensitive literal, including spaces and punctuation, not as regex or natural-language instructions. Use separate calls for materially different alternatives. Both accept an optional workspace-relative or absolute directory path to narrow large-workspace searches; returned match paths remain relative to the original workspace root and can be passed directly to file tools. Treat scan_complete or results_complete false as bounded evidence only: narrow the path before concluding that a file, match, or additional result does not exist.");
             }
+            if (tools.Any(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)))
+                builder.AppendLine("Treat ReadLocalFile content_complete false as partial evidence. When omitted content matters, call ReadLocalFile again for the same path using both continuation_start_line and continuation_start_column exactly as returned. This cursor advances from the first omitted character, including inside a very long line; do not increment it or skip to the following line.");
             builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
             if (tools.Any(tool => string.Equals(tool.Name, "PreviewWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)))
             {
@@ -2279,6 +2281,7 @@ namespace ColorVision.Copilot
                     toolInput.Query?.Trim() ?? string.Empty,
                     toolInput.Path?.Trim() ?? string.Empty,
                     toolInput.StartLine?.ToString() ?? string.Empty,
+                    toolInput.StartColumn?.ToString() ?? string.Empty,
                     toolInput.EndLine?.ToString() ?? string.Empty,
                     toolInput.GetStableArgumentsJson(),
                 });

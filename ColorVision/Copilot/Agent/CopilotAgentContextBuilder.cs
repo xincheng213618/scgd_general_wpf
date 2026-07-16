@@ -453,6 +453,8 @@ namespace ColorVision.Copilot
                 if (toolInput.StartLine.HasValue)
                 {
                     builder.Append(", lines: ").Append(toolInput.StartLine.Value);
+                    if (toolInput.StartColumn.HasValue)
+                        builder.Append(':').Append(toolInput.StartColumn.Value);
                     if (toolInput.EndLine.HasValue)
                         builder.Append('-').Append(toolInput.EndLine.Value);
                 }

@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
     {
         private const int MaximumSerializedArgumentsLength = 65_536;
         private static readonly StringComparer NameComparer = StringComparer.OrdinalIgnoreCase;
-        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "startLine", "endLine" }, NameComparer);
+        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "startLine", "startColumn", "endLine" }, NameComparer);
 
         public static CopilotToolInputSchema Empty { get; } = new(Array.Empty<CopilotToolParameter>());
 
@@ -80,6 +80,7 @@ namespace ColorVision.Copilot
             {
                 new CopilotToolParameter { Name = "path", Description = "Allowed local text file path. Omit only when the current request should read all selected files.", Type = CopilotToolParameterType.Text, Required = requirePath },
                 new CopilotToolParameter { Name = "startLine", Description = "Optional one-based first line to read.", Type = CopilotToolParameterType.WholeNumber },
+                new CopilotToolParameter { Name = "startColumn", Description = "Optional one-based character column within startLine. Use the exact continuation cursor returned by a truncated read.", Type = CopilotToolParameterType.WholeNumber },
                 new CopilotToolParameter { Name = "endLine", Description = "Optional one-based last line to read; must not precede startLine.", Type = CopilotToolParameterType.WholeNumber },
             });
         }
@@ -112,6 +113,7 @@ namespace ColorVision.Copilot
             if (!TryReadString(arguments, "query", out var query, out error)
                 || !TryReadString(arguments, "path", out var path, out error)
                 || !TryReadPositiveInt(arguments, "startLine", out var startLine, out error)
+                || !TryReadPositiveInt(arguments, "startColumn", out var startColumn, out error)
                 || !TryReadPositiveInt(arguments, "endLine", out var endLine, out error))
             {
                 input = CopilotAgentToolInput.Empty;
@@ -124,6 +126,12 @@ namespace ColorVision.Copilot
                 error = "Argument 'endLine' must be greater than or equal to 'startLine'.";
                 return false;
             }
+            if (startColumn.HasValue && !startLine.HasValue)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = "Argument 'startColumn' requires 'startLine'.";
+                return false;
+            }
 
             input = new CopilotAgentToolInput
             {
@@ -131,6 +139,7 @@ namespace ColorVision.Copilot
                 Query = query,
                 Path = path,
                 StartLine = startLine,
+                StartColumn = startColumn,
                 EndLine = endLine,
             };
             error = string.Empty;
@@ -213,6 +222,7 @@ namespace ColorVision.Copilot
                 Query = TryReadCompatibleString(copiedArguments, "query"),
                 Path = TryReadCompatibleString(copiedArguments, "path"),
                 StartLine = TryReadCompatibleInt(copiedArguments, "startLine"),
+                StartColumn = TryReadCompatibleInt(copiedArguments, "startColumn"),
                 EndLine = TryReadCompatibleInt(copiedArguments, "endLine"),
             };
             error = string.Empty;

@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "ReadLocalFile";
 
-        public string Description => "Read local text files allowed for the current round, with optional path and line-range focus.";
+        public string Description => "Read local text files allowed for the current round, with optional path and line-range focus, and report a safe line-and-column continuation cursor when content is truncated.";
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
 
@@ -59,6 +59,7 @@ namespace ColorVision.Copilot
                 selectedPath,
                 request.PreferBatchReadLocalFiles,
                 toolInput?.StartLine,
+                toolInput?.StartColumn,
                 toolInput?.EndLine,
                 cancellationToken);
             return result.ToToolResult(Name);

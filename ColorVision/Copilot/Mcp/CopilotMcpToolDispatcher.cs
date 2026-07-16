@@ -151,12 +151,13 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["query"] = StringProperty("Literal text to search for."),
                 }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\" }."),
-                Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, end_line.", Schema(new Dictionary<string, object>
+                Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root."),
                     ["start_line"] = IntegerProperty("1-based start line.", 1, int.MaxValue),
+                    ["start_column"] = IntegerProperty("1-based character column within start_line. Use the exact continuation cursor returned by a truncated read.", 1, int.MaxValue),
                     ["end_line"] = IntegerProperty("1-based end line.", 1, int.MaxValue),
-                }, "path"), "file", "read-only", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"end_line\": 40 }."),
+                }, "path"), "file", "read-only", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"start_column\": 1, \"end_line\": 40 }."),
                 Tool("list_allowed_directory", "List a directory only if it is under an allowed ColorVision workspace root. Optional argument: path.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root. If omitted, allowed roots are listed."),
@@ -869,8 +870,12 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Fail("unsupported_file_type", "The file extension is not in the ColorVision MCP text allow-list.");
 
             var startLine = GetInt(arguments, "start_line");
+            var startColumn = GetInt(arguments, "start_column");
             var endLine = GetInt(arguments, "end_line");
-            var result = await CopilotReadLocalFileCapability.ReadAsync(new[] { fullPath }, fullPath, false, startLine, endLine, cancellationToken);
+            if (startColumn.HasValue && !startLine.HasValue)
+                return CopilotMcpToolCallResult.Fail("invalid_range", "The start_column argument requires start_line.");
+
+            var result = await CopilotReadLocalFileCapability.ReadAsync(new[] { fullPath }, fullPath, false, startLine, startColumn, endLine, cancellationToken);
             return ToMcpResult(result, "read_failed");
         }
 
