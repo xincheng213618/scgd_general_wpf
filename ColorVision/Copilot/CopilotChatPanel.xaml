@@ -1835,6 +1835,11 @@
                                 ToolTip="{Binding AttachmentMenuToolTip}">
                             <Button.ContextMenu>
                                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="{Binding ActiveDocumentAttachmentMenuText}"
+                                              Command="{Binding AttachActiveDocumentCommand}"
+                                              ToolTip="将当前编辑文件作为本轮明确附件；普通 Chat 模式也能读取其正文。"
+                                              ToolTipService.ShowOnDisabled="True" />
+                                    <Separator />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />
                                     <Separator />

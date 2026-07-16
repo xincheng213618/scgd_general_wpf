@@ -113,6 +113,7 @@ namespace ColorVision.Copilot
                 onError: ReportStatePersistenceError,
                 onSaved: ReportStatePersistenceSuccess);
             _currentLiveContext = CopilotLiveContextRegistry.Current;
+            _activeDocumentPath = TryGetActiveDocumentPath();
 
             if (Application.Current != null)
             {
@@ -165,6 +166,7 @@ namespace ColorVision.Copilot
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings(), _ => !IsBusy);
             AddFileAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddFileAttachmentAsync, "附加文件"), _ => !IsBusy);
+            AttachActiveDocumentCommand = new RelayCommand(_ => AttachActiveDocument(), _ => CanAttachActiveDocument);
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddWebPageAttachmentAsync, "附加网页"), _ => !IsBusy);
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
@@ -372,6 +374,8 @@ namespace ColorVision.Copilot
 
         public ICommand AddFileAttachmentCommand { get; }
 
+        public ICommand AttachActiveDocumentCommand { get; }
+
         public ICommand AddContextAttachmentCommand { get; }
 
         public ICommand AddWebPageAttachmentCommand { get; }
@@ -460,6 +464,28 @@ namespace ColorVision.Copilot
         public bool HasNoConversationSearchResults => HasConversationSearchQuery && FilteredConversations.Count == 0;
 
         public bool HasAttachments => Attachments.Count > 0;
+
+        public bool HasActiveDocument => !string.IsNullOrWhiteSpace(_activeDocumentPath);
+
+        public bool IsActiveDocumentAttached => HasActiveDocument && Attachments.Any(item =>
+            (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
+            && string.Equals(item.Value, _activeDocumentPath, StringComparison.OrdinalIgnoreCase));
+
+        public bool CanAttachActiveDocument => !IsBusy && HasActiveDocument && !IsActiveDocumentAttached;
+
+        public string ActiveDocumentAttachmentMenuText
+        {
+            get
+            {
+                if (!HasActiveDocument)
+                    return "添加当前文件（当前没有打开的文件）";
+
+                var fileName = Path.GetFileName(_activeDocumentPath);
+                return IsActiveDocumentAttached
+                    ? $"当前文件已附加：{fileName}"
+                    : $"添加当前文件：{fileName}";
+            }
+        }
 
         public string LocalCommandResultTitle
         {
@@ -1642,7 +1668,55 @@ namespace ColorVision.Copilot
 
         private void WorkspaceManager_ContentIdSelected(object? sender, string contentId)
         {
-            _activeDocumentPath = contentId ?? string.Empty;
+            if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => WorkspaceManager_ContentIdSelected(sender, contentId)));
+                return;
+            }
+
+            var activeDocumentPath = NormalizeExistingFilePath(contentId);
+            if (string.Equals(_activeDocumentPath, activeDocumentPath, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _activeDocumentPath = activeDocumentPath;
+            OnActiveDocumentStateChanged();
+        }
+
+        private static string TryGetActiveDocumentPath()
+        {
+            try
+            {
+                return NormalizeExistingFilePath(WorkspaceManager.SelectedContentId);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string NormalizeExistingFilePath(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return string.Empty;
+
+            try
+            {
+                var fullPath = Path.GetFullPath(filePath.Trim());
+                return File.Exists(fullPath) ? fullPath : string.Empty;
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or System.Security.SecurityException)
+            {
+                return string.Empty;
+            }
+        }
+
+        private void OnActiveDocumentStateChanged()
+        {
+            OnPropertyChanged(nameof(HasActiveDocument));
+            OnPropertyChanged(nameof(IsActiveDocumentAttached));
+            OnPropertyChanged(nameof(CanAttachActiveDocument));
+            OnPropertyChanged(nameof(ActiveDocumentAttachmentMenuText));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void CopilotLiveContextRegistry_CurrentChanged(object? sender, EventArgs e)
@@ -2878,6 +2952,7 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
             RefreshCompactHistoryConversations();
             OnCurrentLiveContextStateChanged();
+            OnActiveDocumentStateChanged();
         }
 
         private void SelectConversation(CopilotConversationRecord? conversation, bool persist, string? preferredProfileId = null)
@@ -2949,6 +3024,7 @@ namespace ColorVision.Copilot
             InvalidateChatAttachmentTokenEstimate();
             RefreshComposerTokenEstimate();
             OnCurrentLiveContextStateChanged();
+            OnActiveDocumentStateChanged();
 
             if (shouldPersist)
                 PersistState();
@@ -3334,6 +3410,20 @@ namespace ColorVision.Copilot
                 return;
 
             await AddFileAttachmentsAsync(dialog.FileNames);
+        }
+
+        private void AttachActiveDocument()
+        {
+            var activeDocumentPath = _activeDocumentPath;
+            if (!CanAttachActiveDocument)
+                return;
+            if (AddFileAttachments([activeDocumentPath]) > 0 || File.Exists(activeDocumentPath))
+                return;
+
+            LocalCommandResultTitle = "无法附加当前文件";
+            LocalCommandResultText = "当前文件已关闭、已移动或不再可读取。";
+            _activeDocumentPath = TryGetActiveDocumentPath();
+            OnActiveDocumentStateChanged();
         }
 
         public int AddFileAttachments(IEnumerable<string>? filePaths)
@@ -4702,6 +4792,7 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
             PersistState();
             OnCurrentLiveContextStateChanged();
+            OnActiveDocumentStateChanged();
         }
 
         private void ConsumeComposerAttachments(CopilotConversationRecord conversation)
