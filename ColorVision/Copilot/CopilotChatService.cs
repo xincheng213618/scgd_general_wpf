@@ -34,6 +34,18 @@ namespace ColorVision.Copilot
             or CopilotChatFinishKind.Other;
     }
 
+    internal readonly record struct CopilotCompletedReplyResult(
+        CopilotChatReply Reply,
+        CopilotChatStreamResult StreamResult,
+        bool IsContentTruncated)
+    {
+        public bool IsIncomplete => IsContentTruncated || StreamResult.IsIncomplete;
+
+        public string Content => Reply.Content;
+
+        public CopilotTokenUsage Usage => Reply.Usage;
+    }
+
     public sealed class CopilotChatService
     {
         private const int MaximumProviderErrorResponseBytes = 256 * 1024;
@@ -74,13 +86,26 @@ namespace ColorVision.Copilot
             _delayAsync = delayAsync ?? throw new ArgumentNullException(nameof(delayAsync));
         }
 
-        public Task<CopilotChatReply> CompleteReplyAsync(
+        public async Task<CopilotChatReply> CompleteReplyAsync(
+            CopilotProfileConfig config,
+            IReadOnlyList<CopilotRequestMessage> messages,
+            CancellationToken cancellationToken)
+        {
+            var result = await CompleteReplyDetailedAsync(
+                config,
+                messages,
+                imageAttachments: null,
+                cancellationToken).ConfigureAwait(false);
+            return result.Reply;
+        }
+
+        internal Task<CopilotCompletedReplyResult> CompleteReplyDetailedAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             CancellationToken cancellationToken) =>
-            CompleteReplyAsync(config, messages, imageAttachments: null, cancellationToken);
+            CompleteReplyDetailedAsync(config, messages, imageAttachments: null, cancellationToken);
 
-        internal async Task<CopilotChatReply> CompleteReplyAsync(
+        internal async Task<CopilotCompletedReplyResult> CompleteReplyDetailedAsync(
             CopilotProfileConfig config,
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotAttachmentItem>? imageAttachments,
@@ -91,7 +116,7 @@ namespace ColorVision.Copilot
             var reasoningTruncated = false;
             var contentTruncated = false;
 
-            var usage = await StreamReplyAsync(
+            var streamResult = await StreamReplyCoreAsync(
                 config,
                 messages,
                 delta =>
@@ -118,9 +143,10 @@ namespace ColorVision.Copilot
                 imageAttachments: imageAttachments,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return new CopilotChatReply(
+            var reply = new CopilotChatReply(
                 new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
-                usage);
+                streamResult.Usage);
+            return new CopilotCompletedReplyResult(reply, streamResult, contentTruncated);
         }
 
         private static void AppendBoundedReplyText(

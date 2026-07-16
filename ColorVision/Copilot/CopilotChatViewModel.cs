@@ -1096,8 +1096,10 @@ namespace ColorVision.Copilot
             ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
             try
             {
-                var reply = await _chatService.CompleteReplyAsync(compactProfile, request, cancellation.Token);
+                var reply = await _chatService.CompleteReplyDetailedAsync(compactProfile, request, cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
+                if (reply.IsIncomplete)
+                    throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
                 var summary = NormalizeCompactSummary(reply.Content, historyLimits.MaximumContentCharacters);
                 if (summary.Length == 0)
                     throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
@@ -1172,6 +1174,20 @@ namespace ColorVision.Copilot
 
             var retainedLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(normalized, Math.Max(1, maximumWeight));
             return normalized[..retainedLength].TrimEnd();
+        }
+
+        private static string BuildIncompleteCompactionMessage(CopilotCompletedReplyResult reply)
+        {
+            if (reply.IsContentTruncated)
+                return "压缩摘要超过应用可安全保留的长度，未应用不完整结果；请缩小聚焦范围后重试。";
+
+            return reply.StreamResult.FinishKind switch
+            {
+                CopilotChatFinishKind.LengthLimit => "模型因输出长度上限提前结束，未应用不完整摘要；请缩小聚焦范围后重试。",
+                CopilotChatFinishKind.ContentFiltered => "提供商的内容安全策略提前停止了压缩，未应用不完整摘要。",
+                CopilotChatFinishKind.ToolRequested => "模型在压缩过程中请求了工具，未应用不完整摘要。",
+                _ => "提供商未正常完成压缩，未应用不完整摘要。",
+            };
         }
 
         private string BuildAgentSkillDiagnosticsReport()
@@ -1733,7 +1749,9 @@ namespace ColorVision.Copilot
                 {
                     Id = "attached-image-analysis",
                     Title = "图片像素解析",
-                    Summary = "已由当前模型读取本轮图片像素；解析文本属于不可信视觉观察。",
+                    Summary = imageUnderstanding.IsIncomplete
+                        ? "当前模型读取了本轮图片像素，但解析提前结束；仅可把保留文本作为不完整且不可信的视觉观察。"
+                        : "已由当前模型读取本轮图片像素；解析文本属于不可信视觉观察。",
                     Content = imageUnderstanding.Context,
                 })
                 .ToArray();
@@ -3310,7 +3328,7 @@ namespace ColorVision.Copilot
                 requestProfile.Temperature = 0.2;
 
                 var titleBuilder = new StringBuilder();
-                await _chatService.StreamReplyAsync(
+                var completion = await _chatService.StreamReplyAsync(
                     requestProfile,
                     new[]
                     {
@@ -3321,7 +3339,10 @@ namespace ColorVision.Copilot
                         if (delta.HasContent)
                             titleBuilder.Append(delta.Content);
                     },
+                    onRetry: null,
                     cancellationToken);
+                if (completion.IsIncomplete)
+                    return;
 
                 var generatedTitle = NormalizeGeneratedTitle(titleBuilder.ToString());
                 if (string.IsNullOrWhiteSpace(generatedTitle) || cancellationToken.IsCancellationRequested || Application.Current == null)
