@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -33,6 +34,8 @@ namespace ColorVision.Copilot
     internal sealed class CopilotProviderRetryChatClient : DelegatingChatClient
     {
         internal const int DefaultMaximumAttempts = 3;
+        private const string RetryAfterDataKey = "ColorVision.Copilot.ProviderRetryAfter";
+        private static readonly TimeSpan MaximumServerRetryDelay = TimeSpan.FromMinutes(2);
 
         private readonly int _maximumAttempts;
         private readonly Func<int, TimeSpan> _delayFactory;
@@ -180,9 +183,89 @@ namespace ColorVision.Copilot
                 failedAttempt,
                 failedAttempt + 1,
                 _maximumAttempts,
-                _delayFactory(failedAttempt),
+                ResolveRetryDelay(exception, _delayFactory(failedAttempt)),
                 failureKind,
                 statusCode);
+        }
+
+        internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(response);
+            ArgumentNullException.ThrowIfNull(exception);
+            if (!response.Headers.TryGetValues("Retry-After", out var values))
+                return;
+
+            var value = values.FirstOrDefault();
+            if (TryParseRetryAfter(value, DateTimeOffset.UtcNow, out var delay))
+                exception.Data[RetryAfterDataKey] = delay;
+        }
+
+        internal static TimeSpan ResolveRetryDelay(Exception exception, TimeSpan fallbackDelay)
+        {
+            var normalizedFallback = fallbackDelay < TimeSpan.Zero ? TimeSpan.Zero : fallbackDelay;
+            return TryGetRetryAfter(exception, out var retryAfter) && retryAfter > normalizedFallback
+                ? retryAfter
+                : normalizedFallback;
+        }
+
+        private static bool TryGetRetryAfter(Exception exception, out TimeSpan delay)
+        {
+            foreach (var candidate in EnumerateExceptionChain(exception))
+            {
+                if (candidate.Data[RetryAfterDataKey] is TimeSpan preservedDelay)
+                {
+                    delay = preservedDelay;
+                    return true;
+                }
+
+                if (candidate is not ClientResultException clientResultException)
+                    continue;
+
+                try
+                {
+                    var response = clientResultException.GetRawResponse();
+                    if (response?.Headers.TryGetValue("Retry-After", out var value) == true
+                        && TryParseRetryAfter(value, DateTimeOffset.UtcNow, out delay))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Header metadata is optional; fall back to the local retry schedule.
+                }
+            }
+
+            delay = TimeSpan.Zero;
+            return false;
+        }
+
+        private static bool TryParseRetryAfter(string? value, DateTimeOffset now, out TimeSpan delay)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+                && double.IsFinite(seconds)
+                && seconds >= 0)
+            {
+                delay = TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, seconds * 1000));
+                return true;
+            }
+
+            if (DateTimeOffset.TryParse(
+                normalized,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var retryAt))
+            {
+                var requestedDelay = retryAt - now;
+                delay = requestedDelay <= TimeSpan.Zero
+                    ? TimeSpan.Zero
+                    : TimeSpan.FromMilliseconds(Math.Min(MaximumServerRetryDelay.TotalMilliseconds, requestedDelay.TotalMilliseconds));
+                return true;
+            }
+
+            delay = TimeSpan.Zero;
+            return false;
         }
 
         internal static bool TryClassifyTransientFailure(

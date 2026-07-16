@@ -165,11 +165,13 @@ namespace ColorVision.Copilot
                 {
                     var oversizedResponseException = new InvalidOperationException($"{(int)response.StatusCode}: {exception.Message}", exception);
                     oversizedResponseException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                    CopilotProviderRetryChatClient.PreserveRetryAfter(response, oversizedResponseException);
                     throw oversizedResponseException;
                 }
 
                 var providerException = new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode, config.ApiKey));
                 providerException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                CopilotProviderRetryChatClient.PreserveRetryAfter(response, providerException);
                 throw providerException;
             }
 
@@ -223,7 +225,7 @@ namespace ColorVision.Copilot
                 failedAttempt,
                 failedAttempt + 1,
                 _maximumAttempts,
-                _retryDelayFactory(failedAttempt),
+                CopilotProviderRetryChatClient.ResolveRetryDelay(exception, _retryDelayFactory(failedAttempt)),
                 failureKind,
                 statusCode);
             return true;
