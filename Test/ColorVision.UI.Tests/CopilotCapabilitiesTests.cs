@@ -2,6 +2,8 @@
 using ColorVision.Copilot;
 using System;
 using System.IO;
+using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -146,6 +148,55 @@ public sealed class CopilotCapabilitiesTests : IDisposable
         Assert.Equal("OpenCV camera calibration", hit.Title);
         Assert.Equal("https://example.com/opencv-camera-calibration", hit.Url);
         Assert.Contains("distortion coefficients", hit.Snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_DecodesDeclaredCharset()
+    {
+        using var content = new ByteArrayContent(Encoding.Latin1.GetBytes("café déjà vu"));
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain")
+        {
+            CharSet = "iso-8859-1",
+        };
+
+        var result = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+            content,
+            maximumBytes: 1024,
+            contentLabel: "Test response",
+            CancellationToken.None);
+
+        Assert.Equal("café déjà vu", result);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_RejectsBodyLargerThanDeclaredLimit()
+    {
+        using var content = new ByteArrayContent(new byte[1025]);
+        content.Headers.ContentLength = 1;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                content,
+                maximumBytes: 1024,
+                contentLabel: "Test response",
+                CancellationToken.None));
+
+        Assert.Contains("size limit", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task BoundedHttpContentReader_PropagatesCancellationBeforeRead()
+    {
+        using var content = new ByteArrayContent(Encoding.UTF8.GetBytes("content"));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                content,
+                maximumBytes: 1024,
+                contentLabel: "Test response",
+                cancellation.Token));
     }
 
     [Fact]

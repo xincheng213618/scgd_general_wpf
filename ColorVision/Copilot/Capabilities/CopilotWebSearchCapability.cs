@@ -1,7 +1,6 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -332,32 +331,20 @@ namespace ColorVision.Copilot
 
         private static async Task<string> ReadSearchResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
-            if (response.Content.Headers.ContentLength > MaxSearchResponseBytes)
-                throw new InvalidOperationException($"Search response exceeded the size limit ({MaxSearchResponseBytes / 1024} KB).");
-
-            await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var buffer = new MemoryStream();
-            var chunk = new byte[8192];
-            var totalBytes = 0;
-            while (true)
-            {
-                var bytesRead = await source.ReadAsync(chunk.AsMemory(), cancellationToken);
-                if (bytesRead <= 0)
-                    break;
-                totalBytes += bytesRead;
-                if (totalBytes > MaxSearchResponseBytes)
-                    throw new InvalidOperationException($"Search response exceeded the size limit ({MaxSearchResponseBytes / 1024} KB).");
-                await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
-            }
-
-            buffer.Position = 0;
-            using var reader = new StreamReader(buffer, Encoding.UTF8, true);
-            return await reader.ReadToEndAsync(cancellationToken);
+            return await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                response.Content,
+                MaxSearchResponseBytes,
+                "Search response",
+                cancellationToken);
         }
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                MaxAutomaticRedirections = 5,
+            })
             {
                 Timeout = TimeSpan.FromSeconds(20),
             };
