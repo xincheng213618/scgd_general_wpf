@@ -343,7 +343,7 @@ namespace ColorVision.Copilot
 
         public string AttachmentMenuToolTip => IsBusy
             ? "Attachments are locked while the assistant is responding."
-            : "Attach input: paste an image, add a web page, add a file, or add context text.";
+            : "Attachments apply to the next message only: paste an image, add a web page, add a file, or add context text.";
 
         public ICommand CopyMessageCommand { get; }
 
@@ -1090,6 +1090,8 @@ namespace ColorVision.Copilot
             {
                 RequestMode = requestMode,
                 RecoveryRequest = recoveryRequest,
+                Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
+                AttachmentSnapshotCaptured = true,
             };
             var assistantMessage = CreatePendingAssistantMessage(requestProfile);
 
@@ -1116,6 +1118,7 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
+            ConsumeComposerAttachments(conversation);
             InputText = string.Empty;
             await AwaitHostedRunCompletionAsync(hostedRun);
             if (!hostedRun.HasStarted)
@@ -1851,8 +1854,11 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             CopilotChatMessage? stopBeforeMessage = null)
         {
+            var attachments = stopBeforeMessage?.AttachmentSnapshotCaptured == true
+                ? stopBeforeMessage.Attachments
+                : conversation.Attachments;
             return CaptureHostedTurnSnapshot(
-                conversation.Attachments,
+                attachments,
                 CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation, stopBeforeMessage));
         }
 
@@ -2605,7 +2611,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            RemoveManagedAttachmentFiles(conversation.Attachments);
+            RemoveManagedAttachmentFiles(conversation.EnumerateReferencedAttachments());
             if (string.Equals(conversation.Id, _agentRunNoticeConversationId, StringComparison.Ordinal))
                 ClearAgentRunNotice();
 
@@ -3484,6 +3490,15 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
             PersistState();
             OnCurrentLiveContextStateChanged();
+        }
+
+        private void ConsumeComposerAttachments(CopilotConversationRecord conversation)
+        {
+            if (conversation.Attachments.Count == 0)
+                return;
+
+            conversation.Attachments.Clear();
+            UpdateAttachmentsState(conversation);
         }
 
         private void AttachExternalContextSnapshot(

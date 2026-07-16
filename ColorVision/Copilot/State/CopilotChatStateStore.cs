@@ -285,7 +285,7 @@ namespace ColorVision.Copilot
             var referencedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var attachment in (state.Conversations ?? new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>())
                 .Where(conversation => conversation != null)
-                .SelectMany(conversation => conversation.Attachments))
+                .SelectMany(conversation => conversation.EnumerateReferencedAttachments()))
             {
                 if (string.IsNullOrWhiteSpace(attachment.Value))
                     continue;

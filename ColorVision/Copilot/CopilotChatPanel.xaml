@@ -1026,6 +1026,40 @@
                                         <StackPanel>
                                             <TextBox Style="{StaticResource UserMessageTextBoxStyle}"
                                                      Text="{Binding Content, Mode=OneWay}" />
+                                            <ItemsControl Margin="0,6,0,0"
+                                                          ItemsSource="{Binding Attachments}"
+                                                          Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type local:CopilotAttachmentItem}">
+                                                        <Border Margin="0,0,5,4"
+                                                                Padding="6,2"
+                                                                Background="{DynamicResource GlobalBorderBrush}"
+                                                                CornerRadius="4"
+                                                                ToolTip="{Binding TooltipText}">
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock VerticalAlignment="Center"
+                                                                           FontSize="9"
+                                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                                           Opacity="0.45"
+                                                                           Text="{Binding BadgeText}" />
+                                                                <TextBlock Margin="5,0,0,0"
+                                                                           MaxWidth="150"
+                                                                           VerticalAlignment="Center"
+                                                                           FontSize="10"
+                                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                                           Opacity="0.72"
+                                                                           Text="{Binding DisplayLabel}"
+                                                                           TextTrimming="CharacterEllipsis" />
+                                                            </DockPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                             <DockPanel Margin="0,5,0,0" LastChildFill="False">
                                                 <TextBlock DockPanel.Dock="Left"
                                                            VerticalAlignment="Center"
@@ -1453,6 +1487,11 @@
 
                     <StackPanel Grid.Row="2" Margin="0,0,0,10"
                                 Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock Margin="0,0,0,5"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Opacity="0.5"
+                                   Text="附件仅随下一条消息发送" />
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       MaxHeight="104"
                                       HorizontalScrollBarVisibility="Disabled"

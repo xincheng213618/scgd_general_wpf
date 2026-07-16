@@ -174,6 +174,17 @@ namespace ColorVision.Copilot
         }
         private string _requestContent = string.Empty;
 
+        public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
+
+        public bool AttachmentSnapshotCaptured { get; set; }
+
+        [JsonIgnore]
+        public bool HasAttachments => Attachments?.Count > 0;
+
+        public bool ShouldSerializeAttachments() => HasAttachments;
+
+        public bool ShouldSerializeAttachmentSnapshotCaptured() => AttachmentSnapshotCaptured;
+
         public CopilotAgentMode RequestMode
         {
             get => _requestMode;
@@ -689,6 +700,24 @@ namespace ColorVision.Copilot
             {
                 ExecutionContent = string.Empty;
                 changed = true;
+            }
+
+            if (Attachments == null)
+            {
+                Attachments = new ObservableCollection<CopilotAttachmentItem>();
+                changed = true;
+            }
+            for (var index = Attachments.Count - 1; index >= 0; index--)
+            {
+                if (Attachments[index] != null)
+                    continue;
+
+                Attachments.RemoveAt(index);
+                changed = true;
+            }
+            foreach (var attachment in Attachments)
+            {
+                changed |= attachment.EnsureValid();
             }
 
             if (AgentTraceEntries == null)
@@ -1510,6 +1539,18 @@ namespace ColorVision.Copilot
             }
 
             return changed;
+        }
+
+        internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments()
+        {
+            foreach (var attachment in Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
+                yield return attachment;
+
+            foreach (var message in Messages?.Where(message => message != null) ?? Enumerable.Empty<CopilotChatMessage>())
+            {
+                foreach (var attachment in message.Attachments?.Where(attachment => attachment != null) ?? Enumerable.Empty<CopilotAttachmentItem>())
+                    yield return attachment;
+            }
         }
 
         public void Touch()
