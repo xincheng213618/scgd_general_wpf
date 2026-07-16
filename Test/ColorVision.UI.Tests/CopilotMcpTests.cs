@@ -148,6 +148,25 @@ public sealed class CopilotMcpTests : IDisposable
     }
 
     [Fact]
+    public async Task GetRecentLog_ForwardsRequestCancellationToLogProvider()
+    {
+        var providerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = CreateHandler(recentLogProvider: async (_, _, _, _, cancellationToken) =>
+        {
+            providerStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new CopilotCapabilityResult { Success = true };
+        });
+        using var cancellation = new CancellationTokenSource();
+
+        var callTask = CallToolAsync(handler, "get_recent_log", new { max_lines = 20 }, cancellation.Token);
+        await providerStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => callTask);
+    }
+
+    [Fact]
     public async Task ResourcesExposeVersionedCopilotCapabilityCatalog()
     {
         var handler = CreateHandler();
@@ -1235,12 +1254,12 @@ public sealed class CopilotMcpTests : IDisposable
         };
         var handler = CreateHandler(
             liveContextProvider: () => liveContext,
-            recentLogProvider: (_, _, _, _) => new CopilotCapabilityResult
+            recentLogProvider: (_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
             {
                 Success = true,
                 Summary = "Recent log",
                 Content = "token=secret-token-value password=password-value apiKey=secret-value",
-            });
+            }));
 
         var result = ReadToolResult(await CallToolAsync(handler, "get_diagnostic_bundle", new { max_chars = maxChars }));
 
@@ -1279,12 +1298,12 @@ public sealed class CopilotMcpTests : IDisposable
         var handler = CreateHandler(
             flowSnapshotProvider: _ => Task.FromResult<CopilotFlowContextSnapshot?>(flowSnapshot),
             liveContextProvider: () => CreateTemplateLiveContext(currentJson),
-            recentLogProvider: (_, _, _, _) => new CopilotCapabilityResult
+            recentLogProvider: (_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
             {
                 Success = true,
                 Summary = "Recent log",
                 Content = "Camera timeout token=secret-token-value",
-            });
+            }));
 
         var result = ReadToolResult(await CallToolAsync(handler, "diagnose_flow_failure", new { node_name = "Camera", query = "timeout" }));
 
@@ -1811,7 +1830,7 @@ public sealed class CopilotMcpTests : IDisposable
         Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? previewFlowPatchHandler = null,
         Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyFlowPatchHandler = null,
         Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>>? applyTemplatePatchHandler = null,
-        Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult>? recentLogProvider = null)
+        Func<string?, CopilotRecentLogMode, int, int, CancellationToken, Task<CopilotCapabilityResult>>? recentLogProvider = null)
     {
         var environment = new CopilotMcpToolEnvironment
         {
@@ -1837,12 +1856,12 @@ public sealed class CopilotMcpTests : IDisposable
             PreviewFlowPatchHandler = previewFlowPatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("flow_unavailable", "No test Flow editor is available."))),
             ApplyFlowPatchHandler = applyFlowPatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("flow_unavailable", "No test Flow editor is available."))),
             ApplyTemplatePatchHandler = applyTemplatePatchHandler ?? ((_, _) => Task.FromResult(CopilotMcpToolCallResult.Fail("apply_template_patch_unavailable", "No test apply handler is available."))),
-            RecentLogProvider = recentLogProvider ?? ((_, _, _, _) => new CopilotCapabilityResult
+            RecentLogProvider = recentLogProvider ?? ((_, _, _, _, _) => Task.FromResult(new CopilotCapabilityResult
             {
                 Success = false,
                 Summary = "No test log is available.",
                 ErrorMessage = "No test log is available.",
-            }),
+            })),
         };
 
         var dispatcher = new CopilotMcpToolDispatcher(environment);
@@ -1854,7 +1873,11 @@ public sealed class CopilotMcpTests : IDisposable
         }, dispatcher);
     }
 
-    private static async Task<CopilotMcpHttpResponse> CallToolAsync(CopilotMcpRequestHandler handler, string toolName, object arguments)
+    private static async Task<CopilotMcpHttpResponse> CallToolAsync(
+        CopilotMcpRequestHandler handler,
+        string toolName,
+        object arguments,
+        CancellationToken cancellationToken = default)
     {
         var body = JsonSerializer.Serialize(new
         {
@@ -1868,7 +1891,7 @@ public sealed class CopilotMcpTests : IDisposable
             },
         });
 
-        return await handler.HandleAsync(CreatePostRequest(body, authorized: true), CancellationToken.None);
+        return await handler.HandleAsync(CreatePostRequest(body, authorized: true), cancellationToken);
     }
 
     private static async Task<CopilotMcpHttpResponse> ReadResourceAsync(CopilotMcpRequestHandler handler, string uri)

@@ -302,7 +302,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 LiveContextResourceUri => GetLiveContext(),
                 WorkspaceResourceUri => GetWorkspaceContext(),
-                LogsResourceUri => GetRecentLog(null),
+                LogsResourceUri => await GetRecentLogAsync(null, cancellationToken),
                 TemplateResourceUri => GetActiveTemplateContext(),
                 FlowResourceUri => await GetFlowSummaryAsync(cancellationToken),
                 AuditSummaryResourceUri => GetAuditSummary(null),
@@ -442,7 +442,7 @@ namespace ColorVision.Copilot.Mcp
                 .Register("get_diagnostic_bundle", (arguments, caller, token) => GetDiagnosticBundleAsync(arguments, caller, token))
                 .Register("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
                 .Register("get_workspace_context", (_, _, _) => Task.FromResult(GetWorkspaceContext()))
-                .Register("get_recent_log", (arguments, _, _) => Task.FromResult(GetRecentLog(arguments)))
+                .Register("get_recent_log", (arguments, _, token) => GetRecentLogAsync(arguments, token))
                 .Register("search_docs", (arguments, _, token) => SearchDocsAsync(arguments, token))
                 .Register("search_files", (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)))
                 .Register("grep_text", (arguments, _, token) => Task.FromResult(GrepText(arguments, token)))
@@ -644,7 +644,7 @@ namespace ColorVision.Copilot.Mcp
             var workspace = GetWorkspaceSnapshot();
             var liveContext = _environment.LiveContextProvider();
             var flowSnapshot = await _environment.FlowSnapshotProvider(cancellationToken);
-            var logResult = _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000);
+            var logResult = await _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000, cancellationToken);
             using var process = Process.GetCurrentProcess();
             var appDataDirectory = SafeInvoke(() => Environments.DirAppData) ?? string.Empty;
             var configDirectory = string.IsNullOrWhiteSpace(appDataDirectory) ? string.Empty : Path.Combine(appDataDirectory, "Config");
@@ -693,10 +693,10 @@ namespace ColorVision.Copilot.Mcp
         private async Task<CopilotMcpToolCallResult> GetDiagnosticBundleAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
         {
             var maxChars = Math.Clamp(GetInt(arguments, "max_chars") ?? DefaultDiagnosticBundleChars, 1000, MaxDiagnosticBundleChars);
-            var recentLog = GetRecentLog(new Dictionary<string, JsonElement>
+            var recentLog = await GetRecentLogAsync(new Dictionary<string, JsonElement>
             {
                 ["max_lines"] = JsonSerializer.SerializeToElement(120),
-            });
+            }, cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision MCP diagnostic bundle");
@@ -736,11 +736,18 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
 
-        private CopilotMcpToolCallResult GetRecentLog(IReadOnlyDictionary<string, JsonElement>? arguments)
+        private async Task<CopilotMcpToolCallResult> GetRecentLogAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             var maxLines = Math.Clamp(GetInt(arguments, "max_lines") ?? MaxLogLines, 1, 1000);
-            var result = _environment.RecentLogProvider(query, CopilotRecentLogMode.RecentLines, maxLines, MaxLogChars);
+            var result = await _environment.RecentLogProvider(
+                query,
+                CopilotRecentLogMode.RecentLines,
+                maxLines,
+                MaxLogChars,
+                cancellationToken);
             return ToMcpResult(result, "log_unavailable");
         }
 
@@ -1073,7 +1080,12 @@ namespace ColorVision.Copilot.Mcp
             var nodeQuery = FirstNonEmpty(GetString(arguments, "node_id"), GetString(arguments, "node_name"), GetString(arguments, "node"));
             var logQuery = FirstNonEmpty(GetString(arguments, "query"), GetString(arguments, "log_query"), "error");
             var maxLogLines = Math.Clamp(GetInt(arguments, "max_log_lines") ?? 120, 1, 300);
-            var logResult = _environment.RecentLogProvider(logQuery, CopilotRecentLogMode.RecentLines, maxLogLines, 12000);
+            var logResult = await _environment.RecentLogProvider(
+                logQuery,
+                CopilotRecentLogMode.RecentLines,
+                maxLogLines,
+                12000,
+                cancellationToken);
             var liveContext = _environment.LiveContextProvider();
             var templateJson = ExtractCurrentTemplateJson();
             var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
