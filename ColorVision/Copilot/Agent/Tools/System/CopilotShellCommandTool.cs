@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
 
         public string Name => "RunShellCommand";
 
-        public string Description => "Run one bounded, non-interactive Windows PowerShell or CMD command and return its real exit code, stdout, and stderr. Use it for custom system inspection, multi-target diagnostics, developer commands, and user-authorized machine operations. Prefer InspectWindowsSystem, InspectWindowsProcesses, InspectWindowsServices, or InspectTcpPort whenever a fixed diagnostic fully answers the request. Every invocation requires native approval.";
+        public string Description => "Run one bounded, non-interactive Windows PowerShell or CMD command and return its real exit code, stdout, and stderr. Nonzero exits and timeouts are terminal failed results with captured output. Use it for custom system inspection, multi-target diagnostics, developer commands, and user-authorized machine operations. Prefer InspectWindowsSystem, InspectWindowsProcesses, InspectWindowsServices, or InspectTcpPort whenever a fixed diagnostic fully answers the request. Every invocation requires native approval.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,

@@ -41,6 +41,9 @@ namespace ColorVision.Copilot
     public sealed class CopilotShellCommandService
     {
         public const int MaximumCommandCharacters = 16_384;
+        internal const string NonzeroExitFailureCode = "shell_nonzero_exit";
+        internal const string TimedOutFailureCode = "shell_timed_out";
+
         private readonly ICopilotShellProcessRunner _runner;
         private readonly Func<CopilotShellKind, string?> _executablePathProvider;
 
@@ -98,19 +101,32 @@ namespace ColorVision.Copilot
 
             if (processResult.TimedOut)
             {
-                return Failure(CopilotToolFailureKind.Transient,
-                    $"The {GetShellLabel(execution.Shell)} command exceeded its {execution.TimeoutSeconds}-second timeout.",
-                    BuildContent(execution.Shell, execution.WorkingDirectory, processResult));
+                return new CopilotToolResult
+                {
+                    ToolName = "RunShellCommand",
+                    Success = false,
+                    Summary = $"The {GetShellLabel(execution.Shell)} command exceeded its {execution.TimeoutSeconds}-second timeout.",
+                    Content = BuildContent(execution.Shell, execution.WorkingDirectory, processResult),
+                    ErrorMessage = $"The command did not finish within {execution.TimeoutSeconds} seconds; inspect the captured shell output.",
+                    FailureKind = CopilotToolFailureKind.Transient,
+                    FailureCode = TimedOutFailureCode,
+                };
             }
 
+            var succeeded = processResult.ExitCode == 0;
             return new CopilotToolResult
             {
                 ToolName = "RunShellCommand",
-                Success = true,
-                Summary = processResult.ExitCode == 0
+                Success = succeeded,
+                Summary = succeeded
                     ? $"{GetShellLabel(execution.Shell)} command completed successfully."
                     : $"{GetShellLabel(execution.Shell)} command completed with exit code {processResult.ExitCode}.",
                 Content = BuildContent(execution.Shell, execution.WorkingDirectory, processResult),
+                ErrorMessage = succeeded
+                    ? string.Empty
+                    : $"The command returned exit code {processResult.ExitCode}; inspect the captured shell output.",
+                FailureKind = succeeded ? CopilotToolFailureKind.None : CopilotToolFailureKind.Unspecified,
+                FailureCode = succeeded ? string.Empty : NonzeroExitFailureCode,
             };
         }
 
