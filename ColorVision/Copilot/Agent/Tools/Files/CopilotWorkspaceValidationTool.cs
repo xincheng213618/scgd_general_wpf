@@ -17,6 +17,7 @@ namespace ColorVision.Copilot
                     ["task"] = new { type = "string", @enum = new[] { "build", "test" }, description = "Whitelisted validation task." },
                     ["path"] = new { type = "string", description = "Workspace-relative path, or an absolute path to a solution or project file inside the writable workspace." },
                     ["configuration"] = new { type = "string", @enum = new[] { "Debug", "Release" }, description = "Build configuration. Defaults to Debug." },
+                    ["platform"] = new { type = "string", @enum = new[] { "x64", "x86", "AnyCPU", "ARM64" }, description = "Optional whitelisted MSBuild platform. Omit to use the project default." },
                     ["timeoutSeconds"] = new { type = "integer", minimum = 10, maximum = 600, description = "Process timeout in seconds. Defaults to 300." },
                 },
                 ["required"] = new[] { "task", "path" },
@@ -36,7 +37,7 @@ namespace ColorVision.Copilot
 
         public string Name => "RunWorkspaceValidation";
 
-        public string Description => "Run an approved, bounded dotnet build or dotnet test for a solution/project inside the current workspace. No shell or arbitrary arguments are accepted; nonzero exits are returned as validation evidence.";
+        public string Description => "Run an approved, bounded dotnet build or dotnet test for a solution/project inside the current workspace, with an optional whitelisted platform. No shell or arbitrary arguments are accepted; nonzero exits are returned as validation evidence.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,
@@ -81,10 +82,12 @@ namespace ColorVision.Copilot
         {
             var task = ReadString(toolInput, "task", "validation");
             var configuration = ReadString(toolInput, "configuration", "Debug");
+            var platform = ReadString(toolInput, "platform", string.Empty);
             var target = string.IsNullOrWhiteSpace(toolInput.Path) ? "<missing target>" : toolInput.Path;
+            var platformText = string.IsNullOrWhiteSpace(platform) ? "the project-default platform" : $"platform {platform}";
             return new CopilotToolApprovalPresentation(
                 $"Run dotnet {task}",
-                $"Run the whitelisted dotnet {task} task for {target} using {configuration}. Project build targets may execute repository-defined code; no shell or additional command-line arguments are allowed.");
+                $"Run the whitelisted dotnet {task} task for {target} using {configuration} and {platformText}. Project build targets may execute repository-defined code; no shell or additional command-line arguments are allowed.");
         }
 
         private static string ReadString(CopilotAgentToolInput input, string name, string fallback)

@@ -82,6 +82,13 @@ namespace ColorVision.Copilot
                     "The workspace validation configuration is not allowed.",
                     "configuration must be exactly 'Debug' or 'Release'.");
             }
+            if (!TryGetOptionalString(input, "platform", string.Empty, out var requestedPlatform)
+                || !TryNormalizePlatform(requestedPlatform, out var platform))
+            {
+                return Failure(CopilotToolFailureKind.Validation,
+                    "The workspace validation platform is not allowed.",
+                    "platform must be omitted or exactly one of 'x64', 'x86', 'AnyCPU', or 'ARM64'.");
+            }
             if (!TryGetOptionalInt(input, "timeoutSeconds", 300, out var timeoutSeconds)
                 || timeoutSeconds is < 10 or > 600)
             {
@@ -104,7 +111,7 @@ namespace ColorVision.Copilot
                     "Install the .NET SDK under the standard Program Files dotnet directory.");
             }
 
-            var arguments = new[]
+            var arguments = new List<string>
             {
                 task,
                 targetPath,
@@ -113,6 +120,8 @@ namespace ColorVision.Copilot
                 "--nologo",
                 "--verbosity:minimal",
             };
+            if (platform.Length > 0)
+                arguments.Add($"-p:Platform={platform}");
             CopilotWorkspaceValidationProcessResult processResult;
             try
             {
@@ -137,7 +146,7 @@ namespace ColorVision.Copilot
             {
                 return Failure(CopilotToolFailureKind.Transient,
                     $"Workspace {task} exceeded its {timeoutSeconds}-second timeout.",
-                    BuildContent(task, targetPath, configuration, processResult));
+                    BuildContent(task, targetPath, configuration, platform, processResult));
             }
 
             var passed = processResult.ExitCode == 0;
@@ -148,7 +157,7 @@ namespace ColorVision.Copilot
                 Summary = passed
                     ? $"Workspace {task} completed successfully."
                     : $"Workspace {task} completed with exit code {processResult.ExitCode}.",
-                Content = BuildContent(task, targetPath, configuration, processResult),
+                Content = BuildContent(task, targetPath, configuration, platform, processResult),
             };
         }
 
@@ -244,6 +253,7 @@ namespace ColorVision.Copilot
             string task,
             string targetPath,
             string configuration,
+            string platform,
             CopilotWorkspaceValidationProcessResult result)
         {
             var builder = new StringBuilder();
@@ -251,6 +261,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"task: {task}");
             builder.AppendLine($"target: {targetPath}");
             builder.AppendLine($"configuration: {configuration}");
+            builder.AppendLine($"platform: {(platform.Length == 0 ? "project_default" : platform)}");
             builder.AppendLine($"exit_code: {result.ExitCode}");
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "passed" : "failed")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
@@ -287,6 +298,20 @@ namespace ColorVision.Copilot
                 return true;
             }
             return TryGetString(input, name, out value);
+        }
+
+        private static bool TryNormalizePlatform(string value, out string platform)
+        {
+            platform = value switch
+            {
+                "" => string.Empty,
+                "x64" => "x64",
+                "x86" => "x86",
+                "AnyCPU" => "AnyCPU",
+                "ARM64" => "ARM64",
+                _ => string.Empty,
+            };
+            return value.Length == 0 || platform.Length > 0;
         }
 
         private static bool TryGetOptionalInt(CopilotAgentToolInput input, string name, int defaultValue, out int value)
