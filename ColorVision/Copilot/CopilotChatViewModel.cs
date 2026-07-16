@@ -4903,6 +4903,16 @@ namespace ColorVision.Copilot
         private void ReportStatePersistenceError(Exception exception)
         {
             System.Diagnostics.Trace.TraceError($"Copilot state persistence failed: {exception}");
+            if (exception is CopilotChatStateSizeLimitException sizeLimitException)
+            {
+                var actualMegabytes = sizeLimitException.ActualBytes / 1024d / 1024d;
+                var maximumMegabytes = sizeLimitException.MaximumBytes / 1024 / 1024;
+                var sizeTooltip = $"当前会话状态约 {actualMegabytes:F1} MB，保存上限为 {maximumMegabytes} MB。"
+                    + $"{Environment.NewLine}{Environment.NewLine}当前会话仍保留在内存中。请先导出需要保留的旧会话，再删除不再需要的会话，最后点击“重试保存”。";
+                UpdateStatePersistenceNotice("会话记录过大，暂时无法保存；请先导出并清理旧会话。", sizeTooltip);
+                return;
+            }
+
             var safeError = CopilotUserFacingErrorFormatter.Sanitize(exception.Message);
             var stateDirectory = _stateStore is CopilotChatStateStore stateStore
                 ? stateStore.StateDirectoryPath

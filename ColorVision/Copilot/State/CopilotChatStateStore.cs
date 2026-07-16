@@ -30,6 +30,20 @@ namespace ColorVision.Copilot
         public bool IsUnrecoverable => Source == CopilotChatStateLoadSource.Unrecoverable;
     }
 
+    public sealed class CopilotChatStateSizeLimitException : IOException
+    {
+        public long ActualBytes { get; }
+
+        public long MaximumBytes { get; }
+
+        public CopilotChatStateSizeLimitException(long actualBytes, long maximumBytes)
+            : base($"Copilot state snapshot exceeded the size limit ({actualBytes / 1024d / 1024d:F1} MB of {maximumBytes / 1024 / 1024} MB).")
+        {
+            ActualBytes = actualBytes;
+            MaximumBytes = maximumBytes;
+        }
+    }
+
     public interface ICopilotChatStateStore
     {
         string AttachmentDirectoryPath { get; }
@@ -51,7 +65,7 @@ namespace ColorVision.Copilot
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
         private static readonly JsonSerializerSettings SerializerSettings = new()
         {
-            Formatting = Formatting.Indented,
+            Formatting = Formatting.None,
             NullValueHandling = NullValueHandling.Ignore,
         };
         private readonly SemaphoreSlim _fileGate = new(1, 1);
@@ -444,14 +458,11 @@ namespace ColorVision.Copilot
 
         private static void ValidateSerializedStateSize(string serializedState)
         {
-            if (serializedState.Length <= MaximumStateFileBytes
-                && Encoding.UTF8.GetByteCount(serializedState) <= MaximumStateFileBytes)
-            {
+            var actualBytes = Encoding.UTF8.GetByteCount(serializedState);
+            if (actualBytes <= MaximumStateFileBytes)
                 return;
-            }
 
-            throw new InvalidDataException(
-                $"Copilot state snapshot exceeded the size limit ({MaximumStateFileBytes / 1024 / 1024} MB).");
+            throw new CopilotChatStateSizeLimitException(actualBytes, MaximumStateFileBytes);
         }
 
         private static bool HasTrustedDocumentShape(JObject document)
