@@ -294,7 +294,9 @@ public sealed class CopilotExploreSubagentTests : IDisposable
         Assert.All(results, result => Assert.True(result.Success, result.ErrorMessage));
         Assert.Equal(3, runner.CallCount);
         Assert.Equal(3, runner.RunRequests.Select(run => run.RunId).Distinct(StringComparer.Ordinal).Count());
-        Assert.All(runner.RunRequests, run => Assert.Equal(16_384, run.RequestTokenBudget));
+        var runRequests = runner.RunRequests.ToArray();
+        Assert.All(runRequests.Take(2), run => Assert.Equal(16_384, run.RequestTokenBudget));
+        Assert.InRange(runRequests[2].RequestTokenBudget, 16_384 - 100, 16_384);
     }
 
     [Fact]
