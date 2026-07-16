@@ -86,6 +86,7 @@ namespace ColorVision.Copilot
         private bool _isApplyingPromptHistory;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
+        private bool _isRetryingStatePersistence;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -198,6 +199,7 @@ namespace ColorVision.Copilot
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             ExportConversationCommand = new RelayCommand<CopilotConversationRecord>(ExportConversation, CopilotConversationMarkdownExporter.CanExport);
+            RetryStatePersistenceCommand = new RelayCommand(_ => RunUiOperation(RetryStatePersistenceAsync, "重试保存会话"), _ => CanRetryStatePersistence());
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
@@ -432,6 +434,8 @@ namespace ColorVision.Copilot
         public ICommand RenameConversationCommand { get; }
 
         public ICommand ExportConversationCommand { get; }
+
+        public ICommand RetryStatePersistenceCommand { get; }
 
         public ICommand DeleteConversationCommand { get; }
 
@@ -4730,6 +4734,35 @@ namespace ColorVision.Copilot
             }
         }
 
+        private bool CanRetryStatePersistence() => HasStatePersistenceNotice
+            && !_isRetryingStatePersistence
+            && Volatile.Read(ref _disposeState) == 0;
+
+        private async Task RetryStatePersistenceAsync()
+        {
+            if (!CanRetryStatePersistence())
+                return;
+
+            _isRetryingStatePersistence = true;
+            CommandManager.InvalidateRequerySuggested();
+            try
+            {
+                PersistState(immediate: true);
+                await _stateSaveScheduler.FlushAsync();
+                if (Volatile.Read(ref _disposeState) == 1)
+                    return;
+
+                UpdateStatePersistenceNotice(string.Empty, string.Empty);
+                LocalCommandResultTitle = "会话已保存";
+                LocalCommandResultText = "当前 Copilot 会话状态已经重新写入磁盘。";
+            }
+            finally
+            {
+                _isRetryingStatePersistence = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         private async Task SaveStateSnapshotAsync(CancellationToken cancellationToken)
         {
             var dispatcher = Application.Current?.Dispatcher;
@@ -4853,6 +4886,7 @@ namespace ColorVision.Copilot
 
             StatePersistenceNoticeText = text;
             StatePersistenceNoticeToolTip = tooltip;
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void PublishSelectedTaskEventJournal()

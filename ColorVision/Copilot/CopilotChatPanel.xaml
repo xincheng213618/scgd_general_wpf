@@ -783,13 +783,27 @@
                                    TextWrapping="Wrap"
                                    ToolTip="{Binding StateRecoveryNoticeToolTip}"
                                    Visibility="{Binding HasStateRecoveryNotice, Converter={StaticResource bool2VisibilityConverter}}" />
-                        <TextBlock Margin="0,3,0,0"
-                                   FontSize="10"
-                                   Foreground="{StaticResource CopilotControlWarningBrush}"
-                                   Text="{Binding StatePersistenceNoticeText}"
-                                   TextWrapping="Wrap"
-                                   ToolTip="{Binding StatePersistenceNoticeToolTip}"
-                                   Visibility="{Binding HasStatePersistenceNotice, Converter={StaticResource bool2VisibilityConverter}}" />
+                        <Grid Margin="0,3,0,0"
+                              ToolTip="{Binding StatePersistenceNoticeToolTip}"
+                              Visibility="{Binding HasStatePersistenceNotice, Converter={StaticResource bool2VisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="10"
+                                       Foreground="{StaticResource CopilotControlWarningBrush}"
+                                       Text="{Binding StatePersistenceNoticeText}"
+                                       TextWrapping="Wrap" />
+                            <Button Grid.Column="1"
+                                    Margin="10,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource MessageActionButtonStyle}"
+                                    Command="{Binding RetryStatePersistenceCommand}"
+                                    Content="重试保存"
+                                    Foreground="{StaticResource CopilotControlWarningBrush}"
+                                    ToolTip="立即重新保存当前 Copilot 会话" />
+                        </Grid>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1"
