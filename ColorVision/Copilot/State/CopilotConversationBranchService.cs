@@ -80,6 +80,7 @@ namespace ColorVision.Copilot
                 RequestContent = source.RequestContent,
                 RequestMode = source.IsUser ? NormalizeRequestMode(source.RequestMode) : lastUserMode,
                 WasResponseInterrupted = source.WasResponseInterrupted,
+                ResponseInterruptionDetail = source.ResponseInterruptionDetail,
             };
         }
 

@@ -52,7 +52,15 @@ namespace ColorVision.Copilot
 
             CompleteThinking(assistantMessage);
             var normalizedError = CopilotUserFacingErrorFormatter.Sanitize(errorMessage, sensitiveValues);
-            CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"Request failed: {normalizedError}");
+            if (!string.IsNullOrWhiteSpace(assistantMessage.Content))
+            {
+                assistantMessage.MarkResponseInterrupted(
+                    $"回复生成过程中发生错误；已保留现有内容，但回答可能不完整。错误：{normalizedError}");
+            }
+            else
+            {
+                CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, $"Request failed: {normalizedError}");
+            }
             conversation.ClearLastUsage();
         }
 

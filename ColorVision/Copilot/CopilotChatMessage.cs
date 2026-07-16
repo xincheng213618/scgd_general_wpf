@@ -94,6 +94,7 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotChatMessage : ViewModelBase
     {
+        private const int MaximumResponseInterruptionDetailLength = 800;
         private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
         private static readonly string[] ExecutionBlockSeparators = { "\r\n\r\n", "\n\n", "\r\r" };
 
@@ -250,13 +251,37 @@ namespace ColorVision.Copilot
         }
         private bool _wasResponseInterrupted;
 
+        public string ResponseInterruptionDetail
+        {
+            get => _responseInterruptionDetail;
+            set
+            {
+                var normalized = (value ?? string.Empty).Trim();
+                if (normalized.Length > MaximumResponseInterruptionDetailLength)
+                    normalized = normalized[..(MaximumResponseInterruptionDetailLength - 3)] + "...";
+                if (SetProperty(ref _responseInterruptionDetail, normalized))
+                    OnPropertyChanged(nameof(ResponseInterruptionText));
+            }
+        }
+        private string _responseInterruptionDetail = string.Empty;
+
+        public bool ShouldSerializeResponseInterruptionDetail() => WasResponseInterrupted && !string.IsNullOrWhiteSpace(ResponseInterruptionDetail);
+
         [JsonIgnore]
         public bool HasResponseInterruption => !IsUser && WasResponseInterrupted;
 
         [JsonIgnore]
-        public string ResponseInterruptionText => RequestMode == CopilotAgentMode.Chat
-            ? "应用退出时该回答仍在生成；已保留现有内容，但回答可能不完整。"
-            : "应用退出时该回答仍在生成，且没有可安全恢复的 Agent checkpoint；已保留现有内容。";
+        public string ResponseInterruptionText => !string.IsNullOrWhiteSpace(ResponseInterruptionDetail)
+            ? ResponseInterruptionDetail
+            : RequestMode == CopilotAgentMode.Chat
+                ? "应用退出时该回答仍在生成；已保留现有内容，但回答可能不完整。"
+                : "应用退出时该回答仍在生成，且没有可安全恢复的 Agent checkpoint；已保留现有内容。";
+
+        public void MarkResponseInterrupted(string? detail = null)
+        {
+            ResponseInterruptionDetail = detail;
+            WasResponseInterrupted = true;
+        }
 
         [JsonIgnore]
         public string ModelContent => string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
@@ -655,6 +680,7 @@ namespace ColorVision.Copilot
         {
             _isProcessingInProgress = true;
             IsResponsePending = true;
+            ResponseInterruptionDetail = string.Empty;
             WasResponseInterrupted = false;
 
             if (ThinkingStartedAt == default)
@@ -717,6 +743,17 @@ namespace ColorVision.Copilot
             if (_requestContent == null)
             {
                 RequestContent = string.Empty;
+                changed = true;
+            }
+
+            if (_responseInterruptionDetail == null)
+            {
+                ResponseInterruptionDetail = string.Empty;
+                changed = true;
+            }
+            else if (!WasResponseInterrupted && _responseInterruptionDetail.Length > 0)
+            {
+                ResponseInterruptionDetail = string.Empty;
                 changed = true;
             }
 

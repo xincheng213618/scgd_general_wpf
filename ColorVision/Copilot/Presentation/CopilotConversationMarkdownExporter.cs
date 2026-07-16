@@ -66,6 +66,12 @@ namespace ColorVision.Copilot
                     builder.AppendLine();
                 }
 
+                if (message.HasResponseInterruption)
+                {
+                    builder.Append("> ⚠️ ").AppendLine(EscapeMarkdownText(message.ResponseInterruptionText));
+                    builder.AppendLine();
+                }
+
                 if (!message.HasAttachments)
                     continue;
 
