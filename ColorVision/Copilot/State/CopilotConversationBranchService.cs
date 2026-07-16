@@ -77,6 +77,7 @@ namespace ColorVision.Copilot
                 Attachments = attachments,
                 AttachmentSnapshotCaptured = source.AttachmentSnapshotCaptured,
                 CreatedAt = source.CreatedAt,
+                IsContentDisplayOnly = source.IsContentDisplayOnly,
                 RequestContent = source.RequestContent,
                 RequestMode = source.IsUser ? NormalizeRequestMode(source.RequestMode) : lastUserMode,
                 WasResponseInterrupted = source.WasResponseInterrupted,

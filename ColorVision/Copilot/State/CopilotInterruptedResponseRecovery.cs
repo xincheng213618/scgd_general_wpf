@@ -21,10 +21,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 const string interruptedMessage = "回答因应用退出而中断，未收到可显示内容；可以重试本轮请求。";
-                if (assistantMessage.UsesResponseTimeline)
-                    assistantMessage.AppendResponseTimelineText(interruptedMessage);
-                else
-                    assistantMessage.Content = interruptedMessage;
+                CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, interruptedMessage);
             }
 
             conversation.Touch();

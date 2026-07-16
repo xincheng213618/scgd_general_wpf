@@ -175,6 +175,15 @@ namespace ColorVision.Copilot
         }
         private string _requestContent = string.Empty;
 
+        public bool IsContentDisplayOnly
+        {
+            get => _isContentDisplayOnly;
+            set => SetProperty(ref _isContentDisplayOnly, value);
+        }
+        private bool _isContentDisplayOnly;
+
+        public bool ShouldSerializeIsContentDisplayOnly() => IsContentDisplayOnly;
+
         public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
 
         public bool AttachmentSnapshotCaptured { get; set; }
@@ -284,7 +293,9 @@ namespace ColorVision.Copilot
         }
 
         [JsonIgnore]
-        public string ModelContent => string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
+        public string ModelContent => IsContentDisplayOnly
+            ? string.Empty
+            : string.IsNullOrWhiteSpace(RequestContent) ? Content : RequestContent;
 
         public string ExecutionContent
         {
@@ -678,6 +689,7 @@ namespace ColorVision.Copilot
 
         public void MarkThinkingStarted()
         {
+            ClearDisplayOnlyContent();
             _isProcessingInProgress = true;
             IsResponsePending = true;
             ResponseInterruptionDetail = string.Empty;
@@ -894,8 +906,15 @@ namespace ColorVision.Copilot
                             AppendResponseTimelineText(interruptedMessage);
                         else
                             Content = interruptedMessage;
+                        IsContentDisplayOnly = true;
                     }
                 }
+                changed = true;
+            }
+
+            if (IsContentDisplayOnly && (IsUser || string.IsNullOrWhiteSpace(Content)))
+            {
+                IsContentDisplayOnly = false;
                 changed = true;
             }
 
@@ -1009,6 +1028,7 @@ namespace ColorVision.Copilot
             if (!UsesResponseTimeline)
             {
                 Content = string.Empty;
+                IsContentDisplayOnly = false;
                 return;
             }
 
@@ -1019,8 +1039,23 @@ namespace ColorVision.Copilot
             }
 
             _content = string.Empty;
+            IsContentDisplayOnly = false;
             OnPropertyChanged(nameof(Content));
             OnResponseTimelineChanged();
+        }
+
+        public void ClearDisplayOnlyContent()
+        {
+            if (!IsContentDisplayOnly)
+                return;
+
+            if (UsesResponseTimeline)
+                ResetResponseTimelineText();
+            else
+            {
+                Content = string.Empty;
+                IsContentDisplayOnly = false;
+            }
         }
 
         public void UpsertAgentTrace(CopilotAgentTraceEntry traceEntry)

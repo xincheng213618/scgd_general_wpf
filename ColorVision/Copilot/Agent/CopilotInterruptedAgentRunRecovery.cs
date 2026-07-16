@@ -44,10 +44,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 const string interruptedMessage = "Agent 任务因应用退出而中断；最近的安全进度已经保存，可以继续。";
-                if (assistantMessage.UsesResponseTimeline)
-                    assistantMessage.AppendResponseTimelineText(interruptedMessage);
-                else
-                    assistantMessage.Content = interruptedMessage;
+                CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, interruptedMessage);
             }
             conversation.Touch();
             return true;

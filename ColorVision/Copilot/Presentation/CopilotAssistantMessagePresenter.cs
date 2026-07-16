@@ -83,6 +83,7 @@ namespace ColorVision.Copilot
             if (!delta.HasContent)
                 return;
 
+            assistantMessage.ClearDisplayOnlyContent();
             var isFirstContentChunk = string.IsNullOrWhiteSpace(assistantMessage.Content);
             if (recordResponseTimeline)
                 assistantMessage.AppendResponseTimelineText(delta.Content);
@@ -118,6 +119,7 @@ namespace ColorVision.Copilot
                 assistantMessage.AppendResponseTimelineText(text);
             else
                 assistantMessage.Content = text;
+            assistantMessage.IsContentDisplayOnly = true;
         }
 
         public static void FinalizeMessage(CopilotChatMessage assistantMessage)

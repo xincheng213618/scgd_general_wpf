@@ -2846,7 +2846,7 @@ namespace ColorVision.Copilot
                 return false;
 
             var userMessageCount = conversation.Messages.Count(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
-            var assistantMessageCount = conversation.Messages.Count(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.Content));
+            var assistantMessageCount = conversation.Messages.Count(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.ModelContent));
             return userMessageCount == 1 && assistantMessageCount == 1;
         }
 
@@ -3989,7 +3989,7 @@ namespace ColorVision.Copilot
         private static string BuildConversationTitlePrompt(CopilotConversationRecord conversation)
         {
             var firstUserMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.User && !string.IsNullOrWhiteSpace(message.Content));
-            var firstAssistantMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.Content));
+            var firstAssistantMessage = conversation.Messages.FirstOrDefault(message => message.Role == CopilotChatRole.Assistant && !string.IsNullOrWhiteSpace(message.ModelContent));
             if (firstUserMessage == null || firstAssistantMessage == null)
                 return string.Empty;
 
@@ -3998,7 +3998,7 @@ namespace ColorVision.Copilot
                 "Generate a short English title for the conversation below.",
                 "Requirements: 3 to 8 words, return only the title, no explanation, no quotes, no trailing period.",
                 $"User: {TruncateForTitlePrompt(firstUserMessage.Content, 180)}",
-                $"Assistant: {TruncateForTitlePrompt(firstAssistantMessage.Content, 260)}",
+                $"Assistant: {TruncateForTitlePrompt(firstAssistantMessage.ModelContent, 260)}",
             });
         }
 
