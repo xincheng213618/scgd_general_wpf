@@ -2515,6 +2515,12 @@ namespace ColorVision.Copilot
                 return new CopilotPromptQueueResult(false, false);
             if (!TryValidateComposerCharacterLimit(normalizedPrompt))
                 return new CopilotPromptQueueResult(false, false);
+            if (sendNow
+                && SelectedProfile?.IsConfigured == true
+                && !TryValidatePromptBudget(normalizedPrompt, mode, SelectedProfile))
+            {
+                return new CopilotPromptQueueResult(false, false);
+            }
 
             if (IsEditingMessage)
                 CancelMessageEdit();
@@ -2547,7 +2553,7 @@ namespace ColorVision.Copilot
                 return new CopilotPromptQueueResult(true, false);
 
             RunUiOperation(SendAsync, "发送外部请求");
-            return new CopilotPromptQueueResult(true, true);
+            return new CopilotPromptQueueResult(true, SelectedProfile?.IsConfigured == true);
         }
 
         private void CancelActiveRun()
@@ -3778,6 +3784,12 @@ namespace ColorVision.Copilot
                 return;
 
             var requestProfile = SelectedProfile.Clone();
+            if (!TryValidateComposerCharacterLimit(prompt)
+                || !TryValidatePromptBudget(prompt, userMessage.RequestMode, requestProfile))
+            {
+                return;
+            }
+
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
             conversation.AgentSessionCheckpoint = null;
