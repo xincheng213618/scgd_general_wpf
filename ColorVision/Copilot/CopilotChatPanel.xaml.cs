@@ -35,6 +35,7 @@ namespace ColorVision.Copilot
         private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
+        private bool _isScrollToBottomPending;
         private bool _isThemeSubscriptionActive;
 
         public CopilotChatPanel()
@@ -268,8 +269,14 @@ namespace ColorVision.Copilot
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            var shouldFollowNewMessage = _isScrollToBottomPending
+                || IsNearBottom()
+                || e.NewItems?.OfType<CopilotChatMessage>().Any(message => message.IsUser) == true;
             SynchronizeMessageSubscriptions();
-            ScrollToBottom();
+            if (shouldFollowNewMessage)
+                ScrollToBottom();
+            else if (e.Action == NotifyCollectionChangedAction.Add)
+                ShowScrollToLatestButton();
             UpdateEmptyStateVisibility();
         }
 
@@ -298,7 +305,10 @@ namespace ColorVision.Copilot
                 || e.PropertyName == nameof(CopilotChatMessage.ExecutionContent)
                 || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
-                ScrollToBottom(forceIfNearBottomOnly: true);
+                if (_isScrollToBottomPending || IsNearBottom())
+                    ScrollToBottom();
+                else
+                    ShowScrollToLatestButton();
             }
         }
 
@@ -513,12 +523,47 @@ namespace ColorVision.Copilot
             return MessagesScrollViewer.ScrollableHeight - MessagesScrollViewer.VerticalOffset <= threshold;
         }
 
-        private void ScrollToBottom(bool forceIfNearBottomOnly = false)
+        private void ScrollToBottom()
         {
-            if (forceIfNearBottomOnly && !IsNearBottom())
+            if (_isScrollToBottomPending)
                 return;
 
-            Dispatcher.BeginInvoke(() => MessagesScrollViewer.ScrollToEnd(), System.Windows.Threading.DispatcherPriority.Background);
+            _isScrollToBottomPending = true;
+            HideScrollToLatestButton();
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                try
+                {
+                    MessagesScrollViewer.ScrollToEnd();
+                }
+                finally
+                {
+                    _isScrollToBottomPending = false;
+                    HideScrollToLatestButton();
+                }
+            });
+        }
+
+        private void ShowScrollToLatestButton()
+        {
+            if (!_isScrollToBottomPending && !IsNearBottom())
+                ScrollToLatestButton.Visibility = Visibility.Visible;
+        }
+
+        private void HideScrollToLatestButton()
+        {
+            ScrollToLatestButton.Visibility = Visibility.Collapsed;
+        }
+
+        private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (IsNearBottom())
+                HideScrollToLatestButton();
+        }
+
+        private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)
+        {
+            ScrollToBottom();
         }
 
         private void ToggleConversationSidebarButton_Click(object sender, RoutedEventArgs e)

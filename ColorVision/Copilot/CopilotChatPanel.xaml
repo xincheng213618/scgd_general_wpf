@@ -1006,7 +1006,10 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="MessagesScrollViewer"
+                              Grid.Row="1"
+                              ScrollChanged="MessagesScrollViewer_ScrollChanged"
+                              VerticalScrollBarVisibility="Auto">
                     <ItemsControl MaxWidth="880"
                                   Margin="16,12,16,12"
                                   HorizontalAlignment="Stretch"
@@ -1354,6 +1357,21 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <Button x:Name="ScrollToLatestButton"
+                        Grid.Row="1"
+                        Panel.ZIndex="10"
+                        MinHeight="30"
+                        Margin="0,0,0,14"
+                        Padding="12,5"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        AutomationProperties.Name="回到最新消息"
+                        Click="ScrollToLatestButton_Click"
+                        Content="↓  下方有新内容"
+                        Style="{StaticResource CopilotPrimaryButtonStyle}"
+                        ToolTip="回到最新消息"
+                        Visibility="Collapsed" />
             </Grid>
 
             <Border Grid.Row="2"
