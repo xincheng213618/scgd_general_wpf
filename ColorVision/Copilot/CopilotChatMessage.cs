@@ -690,6 +690,18 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (_requestContent == null)
+            {
+                RequestContent = string.Empty;
+                changed = true;
+            }
+
+            if (!Enum.IsDefined(RequestMode))
+            {
+                RequestMode = CopilotAgentMode.Chat;
+                changed = true;
+            }
+
             if (_reasoningContent == null)
             {
                 ReasoningContent = string.Empty;

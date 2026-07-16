@@ -8,6 +8,7 @@ namespace ColorVision.Copilot
         public static bool Normalize(CopilotConversationRecord conversation, CopilotChatMessage? assistantMessage)
         {
             ArgumentNullException.ThrowIfNull(conversation);
+            InferLegacyRequestMode(conversation, assistantMessage);
             var checkpoint = conversation.AgentSessionCheckpoint;
             if (assistantMessage == null
                 || assistantMessage.IsUser
@@ -50,6 +51,28 @@ namespace ColorVision.Copilot
             }
             conversation.Touch();
             return true;
+        }
+
+        private static void InferLegacyRequestMode(CopilotConversationRecord conversation, CopilotChatMessage? assistantMessage)
+        {
+            if (assistantMessage == null || assistantMessage.IsUser)
+                return;
+            if (!Enum.IsDefined(assistantMessage.RequestMode))
+                assistantMessage.RequestMode = CopilotAgentMode.Chat;
+            if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
+                return;
+
+            var assistantIndex = conversation.Messages.IndexOf(assistantMessage);
+            for (var index = assistantIndex - 1; index >= 0; index--)
+            {
+                var candidate = conversation.Messages[index];
+                if (!candidate.IsUser)
+                    continue;
+
+                if (Enum.IsDefined(candidate.RequestMode) && candidate.RequestMode != CopilotAgentMode.Chat)
+                    assistantMessage.RequestMode = candidate.RequestMode;
+                return;
+            }
         }
     }
 }

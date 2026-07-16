@@ -1208,7 +1208,7 @@ namespace ColorVision.Copilot
                 Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
                 AttachmentSnapshotCaptured = true,
             };
-            var assistantMessage = CreatePendingAssistantMessage(requestProfile);
+            var assistantMessage = CreatePendingAssistantMessage(requestProfile, requestMode);
             var previousCheckpoint = conversation.AgentSessionCheckpoint;
 
             if (isReplacingTurn)
@@ -3256,14 +3256,14 @@ namespace ColorVision.Copilot
                 if (assistantMessage != null)
                     conversation.Messages.Remove(assistantMessage);
 
-                replacementAssistantMessage = CreatePendingAssistantMessage(requestProfile);
+                replacementAssistantMessage = CreatePendingAssistantMessage(requestProfile, userMessage.RequestMode);
                 conversation.Messages.Add(replacementAssistantMessage);
             }
             catch (Exception ex)
             {
                 if (replacementAssistantMessage == null)
                 {
-                    replacementAssistantMessage = CreatePendingAssistantMessage(requestProfile);
+                    replacementAssistantMessage = CreatePendingAssistantMessage(requestProfile, userMessage.RequestMode);
                     conversation.Messages.Add(replacementAssistantMessage);
                 }
 
@@ -3496,12 +3496,13 @@ namespace ColorVision.Copilot
             return "AI";
         }
 
-        private static CopilotChatMessage CreatePendingAssistantMessage(CopilotProfileConfig profile)
+        private static CopilotChatMessage CreatePendingAssistantMessage(CopilotProfileConfig profile, CopilotAgentMode requestMode)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
             {
                 AssistantName = ResolveAssistantHeader(profile),
+                RequestMode = requestMode,
             };
             assistantMessage.MarkThinkingStarted();
             return assistantMessage;
