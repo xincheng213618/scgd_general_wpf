@@ -585,6 +585,12 @@ namespace ColorVision.Copilot
             {
                 emit(CopilotAgentEvent.AnswerDelta(ex.Message));
             }
+            catch (CopilotAgentContextWindowExceededException ex)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent provider call was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
+                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
+            }
             catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
             {
                 if (bridge.StepRecords.Count == 0 && answerText.Length == 0)
@@ -862,6 +868,7 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             var finalAnswer = string.Empty;
             var timeBudgetExhausted = false;
+            var contextWindowExceeded = false;
             try
             {
                 var response = await retryChatClient.GetResponseAsync(
@@ -885,6 +892,12 @@ namespace ColorVision.Copilot
             {
                 throw;
             }
+            catch (CopilotAgentContextWindowExceededException ex)
+            {
+                contextWindowExceeded = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Final-answer-only recovery was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
+            }
             catch (Exception ex)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Final-answer-only recovery failed ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
@@ -893,9 +906,11 @@ namespace ColorVision.Copilot
             var hasFinalAnswer = !string.IsNullOrWhiteSpace(finalAnswer);
             if (!hasFinalAnswer)
             {
-                emit(CopilotAgentEvent.AnswerDelta(timeBudgetExhausted
-                    ? "最终回答生成达到本轮时间预算。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"
-                    : "模型仍未返回可显示的最终回答。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"));
+                emit(CopilotAgentEvent.AnswerDelta(contextWindowExceeded
+                    ? "最终回答所需上下文超过当前模型窗口，请缩短会话或附件内容后重试；已保存的上下文和工具结果没有被重放。"
+                    : timeBudgetExhausted
+                        ? "最终回答生成达到本轮时间预算。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"
+                        : "模型仍未返回可显示的最终回答。已保存的上下文和工具结果没有被重放，可以稍后再次重试最终回答。"));
             }
 
             var budgetSnapshot = runBudget.CreateSnapshot(
@@ -908,14 +923,18 @@ namespace ColorVision.Copilot
                 Mode = "execute",
                 ResumedFromCheckpoint = true,
             };
+            var budgetExhausted = timeBudgetExhausted || budgetSnapshot.BudgetExhausted;
             var stopReason = hasFinalAnswer
                 ? CopilotAgentStopReason.Completed
-                : timeBudgetExhausted
+                : budgetExhausted
                     ? CopilotAgentStopReason.BudgetExhausted
                     : CopilotAgentStopReason.IncompleteOutput;
             IReadOnlyList<CopilotAgentBlockerSnapshot> blockers = hasFinalAnswer
                 ? Array.Empty<CopilotAgentBlockerSnapshot>()
-                : [CreateProviderOutputBlocker(timeBudgetExhausted)];
+                : [CreateProviderOutputBlocker(
+                    timeBudgetExhausted,
+                    requestBudgetExhausted: budgetSnapshot.BudgetExhausted && !timeBudgetExhausted && !contextWindowExceeded,
+                    contextWindowExceeded)];
             taskEventJournalBuilder.RecordTaskLedger(taskLedger, "final-answer-only");
             foreach (var blocker in blockers)
                 taskEventJournalBuilder.RecordBlocker(blocker);
@@ -958,21 +977,26 @@ namespace ColorVision.Copilot
 
         private static CopilotAgentBlockerSnapshot CreateProviderOutputBlocker(
             bool timeBudgetExhausted,
-            bool requestBudgetExhausted = false)
+            bool requestBudgetExhausted = false,
+            bool contextWindowExceeded = false)
         {
             return new CopilotAgentBlockerSnapshot
             {
                 Kind = CopilotAgentBlockerKind.ProviderOutput,
                 Code = timeBudgetExhausted
                     ? "provider_output_timeout"
-                    : requestBudgetExhausted
-                        ? "provider_output_budget"
-                        : "provider_empty_output",
+                    : contextWindowExceeded
+                        ? "provider_context_window"
+                        : requestBudgetExhausted
+                            ? "provider_output_budget"
+                            : "provider_empty_output",
                 Summary = timeBudgetExhausted
                     ? "The final-answer-only provider call exhausted its time budget."
-                    : requestBudgetExhausted
-                        ? "The Agent request budget was exhausted before a final answer was produced."
-                        : "The model returned no final answer after the bounded finalization attempt.",
+                    : contextWindowExceeded
+                        ? "The final-answer-only request exceeded the configured model context window before it could be sent."
+                        : requestBudgetExhausted
+                            ? "The Agent request budget was exhausted before a final answer was produced."
+                            : "The model returned no final answer after the bounded finalization attempt.",
                 RequiresUserInput = true,
             };
         }

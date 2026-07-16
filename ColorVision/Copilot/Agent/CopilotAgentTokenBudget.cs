@@ -12,9 +12,23 @@ namespace ColorVision.Copilot
     internal sealed class CopilotAgentTokenBudgetExceededException : Exception
     {
         public CopilotAgentTokenBudgetExceededException()
-            : base("This Agent run reached its bounded token budget after completing the recorded tool calls. Continue in a new message if additional work is needed.")
+            : base("This Agent run reached its bounded cumulative token budget; the next provider call was not sent. Reduce context, continue with a new message, or increase the Agent request-token budget.")
         {
         }
+    }
+
+    internal sealed class CopilotAgentContextWindowExceededException : Exception
+    {
+        public CopilotAgentContextWindowExceededException(int estimatedInputTokens, int inputBudgetTokens)
+            : base($"This Agent request exceeds its configured context window (estimated input {estimatedInputTokens:N0} tokens; maximum {inputBudgetTokens:N0}). Reduce conversation or attachment context, or increase the Agent context-window setting only when the configured model supports it.")
+        {
+            EstimatedInputTokens = estimatedInputTokens;
+            InputBudgetTokens = inputBudgetTokens;
+        }
+
+        public int EstimatedInputTokens { get; }
+
+        public int InputBudgetTokens { get; }
     }
 
     public sealed class CopilotAgentTokenBudget
@@ -98,6 +112,7 @@ namespace ColorVision.Copilot
             cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
             var estimatedInputTokens = EstimateInputTokens(materializedMessages, options);
+            EnsureWithinContextWindow(estimatedInputTokens);
             if (!TryBeginProviderCall(estimatedInputTokens))
                 throw new CopilotAgentTokenBudgetExceededException();
 
@@ -112,7 +127,7 @@ namespace ColorVision.Copilot
                 throw;
             }
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
-            CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageCharacters(response.Messages)));
+            CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageWeight(response.Messages)));
             return response;
         }
 
@@ -123,17 +138,19 @@ namespace ColorVision.Copilot
         {
             cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
+            var estimatedInputTokens = EstimateInputTokens(materializedMessages, options);
+            EnsureWithinContextWindow(estimatedInputTokens);
+            if (!TryBeginProviderCall(estimatedInputTokens))
                 throw new CopilotAgentTokenBudgetExceededException();
 
             var usage = CopilotTokenUsage.Empty;
-            long responseCharacters = 0;
+            long responseWeight = 0;
             var completed = false;
             try
             {
                 await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
                 {
-                    responseCharacters += EstimateContentCharacters(update.Contents);
+                    responseWeight += EstimateContentWeight(update.Contents);
                     usage = usage.MergeProgress(ExtractUsage(update.Contents));
                     yield return update;
                 }
@@ -143,9 +160,22 @@ namespace ColorVision.Copilot
             {
                 CommitUsage(
                     usage,
-                    EstimateTokens(materializedMessages, options, responseCharacters),
+                    EstimateTokens(materializedMessages, options, responseWeight),
                     requireEstimatedFloor: !completed);
             }
+        }
+
+        private void EnsureWithinContextWindow(int estimatedInputTokens)
+        {
+            if (estimatedInputTokens <= _budget.InputBudgetTokens)
+                return;
+
+            lock (_syncRoot)
+            {
+                _budgetExhausted = true;
+                _usedEstimatedUsage = true;
+            }
+            throw new CopilotAgentContextWindowExceededException(estimatedInputTokens, _budget.InputBudgetTokens);
         }
 
         private bool TryBeginProviderCall(int estimatedInputTokens)
@@ -153,8 +183,7 @@ namespace ColorVision.Copilot
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
-                var wouldExceedBudget = _providerCalls > 0
-                    && _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
+                var wouldExceedBudget = _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
                 if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
@@ -235,131 +264,145 @@ namespace ColorVision.Copilot
         private static int EstimateTokens(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options,
-            long responseCharacters)
+            long responseWeight)
         {
-            long characters = EstimateInputCharacters(messages, options);
-            characters += Math.Max(0, responseCharacters);
-            return (int)Math.Clamp((characters + 3) / 4, 1, int.MaxValue);
+            var weight = EstimateInputWeight(messages, options) + Math.Max(0, responseWeight);
+            return WeightToTokenEstimate(weight);
         }
 
         private static int EstimateInputTokens(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options)
         {
-            var characters = EstimateInputCharacters(messages, options);
-            return (int)Math.Clamp((characters + 3) / 4, 1, int.MaxValue);
+            return WeightToTokenEstimate(EstimateInputWeight(messages, options));
         }
 
-        private static long EstimateInputCharacters(
+        private static long EstimateInputWeight(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options)
         {
-            long characters = options?.Instructions?.Length ?? 0;
-            characters += EstimateToolsCharacters(options?.Tools);
-            characters += EstimateMessageCharacters(messages);
-            return characters;
+            var weight = EstimateTextWeight(options?.Instructions);
+            weight += EstimateToolsWeight(options?.Tools);
+            weight += EstimateMessageWeight(messages);
+            return weight;
         }
 
-        private static long EstimateMessageCharacters(IEnumerable<Microsoft.Extensions.AI.ChatMessage>? messages)
+        private static long EstimateMessageWeight(IEnumerable<Microsoft.Extensions.AI.ChatMessage>? messages)
         {
-            long characters = 0;
+            long weight = 0;
             foreach (var message in messages ?? Enumerable.Empty<Microsoft.Extensions.AI.ChatMessage>())
             {
-                characters += 16;
-                characters += EstimateContentCharacters(message.Contents);
+                weight += 16;
+                weight += EstimateContentWeight(message.Contents);
             }
-            return characters;
+            return weight;
         }
 
-        private static int EstimateContentCharacters(IEnumerable<AIContent>? contents)
+        private static long EstimateContentWeight(IEnumerable<AIContent>? contents)
         {
-            long characters = 0;
+            long weight = 0;
             foreach (var content in contents ?? Enumerable.Empty<AIContent>())
-                characters += EstimateContentCharacters(content);
-            return (int)Math.Clamp(characters, 0, int.MaxValue);
+                weight += EstimateContentWeight(content);
+            return weight;
         }
 
-        private static int EstimateContentCharacters(AIContent? content)
+        private static long EstimateContentWeight(AIContent? content)
         {
-            long characters = content switch
+            return content switch
             {
                 null => 0,
-                TextContent text => text.Text?.Length ?? 0,
-                TextReasoningContent reasoning => (reasoning.Text?.Length ?? 0) + (reasoning.ProtectedData?.Length ?? 0),
-                FunctionCallContent functionCall => (functionCall.CallId?.Length ?? 0)
-                    + (functionCall.Name?.Length ?? 0)
-                    + EstimateValueCharacters(functionCall.Arguments)
-                    + (functionCall.Exception?.Message?.Length ?? 0),
-                FunctionResultContent functionResult => (functionResult.CallId?.Length ?? 0)
-                    + EstimateValueCharacters(functionResult.Result)
-                    + (functionResult.Exception?.Message?.Length ?? 0),
-                ToolApprovalRequestContent approvalRequest => (approvalRequest.RequestId?.Length ?? 0)
-                    + EstimateContentCharacters(approvalRequest.ToolCall),
-                ToolApprovalResponseContent approvalResponse => (approvalResponse.RequestId?.Length ?? 0)
-                    + (approvalResponse.Reason?.Length ?? 0)
-                    + EstimateContentCharacters(approvalResponse.ToolCall),
-                ErrorContent error => (error.Message?.Length ?? 0)
-                    + (error.ErrorCode?.Length ?? 0)
-                    + (error.Details?.Length ?? 0),
-                DataContent data => EstimateDataContentCharacters(data),
-                UriContent uri => (uri.Uri?.OriginalString.Length ?? 0) + (uri.MediaType?.Length ?? 0),
-                _ => content.ToString()?.Length ?? 0,
+                TextContent text => EstimateTextWeight(text.Text),
+                TextReasoningContent reasoning => EstimateTextWeight(reasoning.Text) + EstimateTextWeight(reasoning.ProtectedData),
+                FunctionCallContent functionCall => EstimateTextWeight(functionCall.CallId)
+                    + EstimateTextWeight(functionCall.Name)
+                    + EstimateValueWeight(functionCall.Arguments)
+                    + EstimateTextWeight(functionCall.Exception?.Message),
+                FunctionResultContent functionResult => EstimateTextWeight(functionResult.CallId)
+                    + EstimateValueWeight(functionResult.Result)
+                    + EstimateTextWeight(functionResult.Exception?.Message),
+                ToolApprovalRequestContent approvalRequest => EstimateTextWeight(approvalRequest.RequestId)
+                    + EstimateContentWeight(approvalRequest.ToolCall),
+                ToolApprovalResponseContent approvalResponse => EstimateTextWeight(approvalResponse.RequestId)
+                    + EstimateTextWeight(approvalResponse.Reason)
+                    + EstimateContentWeight(approvalResponse.ToolCall),
+                ErrorContent error => EstimateTextWeight(error.Message)
+                    + EstimateTextWeight(error.ErrorCode)
+                    + EstimateTextWeight(error.Details),
+                DataContent data => EstimateDataContentWeight(data),
+                UriContent uri => EstimateTextWeight(uri.Uri?.OriginalString) + EstimateTextWeight(uri.MediaType),
+                _ => EstimateTextWeight(content.ToString()),
             };
-            return (int)Math.Clamp(characters, 0, int.MaxValue);
         }
 
-        private static long EstimateToolsCharacters(IEnumerable<AITool>? tools)
+        private static long EstimateToolsWeight(IEnumerable<AITool>? tools)
         {
-            long characters = 0;
+            long weight = 0;
             foreach (var tool in tools ?? Enumerable.Empty<AITool>())
             {
-                characters += tool.Name?.Length ?? 0;
-                characters += tool.Description?.Length ?? 0;
+                weight += EstimateTextWeight(tool.Name);
+                weight += EstimateTextWeight(tool.Description);
                 if (tool is AIFunction function)
                 {
-                    characters += function.JsonSchema.ValueKind == JsonValueKind.Undefined
+                    weight += function.JsonSchema.ValueKind == JsonValueKind.Undefined
                         ? 0
-                        : function.JsonSchema.GetRawText().Length;
+                        : EstimateTextWeight(function.JsonSchema.GetRawText());
                     if (function.ReturnJsonSchema is JsonElement returnSchema
                         && returnSchema.ValueKind != JsonValueKind.Undefined)
                     {
-                        characters += returnSchema.GetRawText().Length;
+                        weight += EstimateTextWeight(returnSchema.GetRawText());
                     }
                 }
             }
-            return characters;
+            return weight;
         }
 
-        private static int EstimateValueCharacters(object? value)
+        private static long EstimateValueWeight(object? value)
         {
             if (value == null)
                 return 4;
             if (value is string text)
-                return text.Length;
+                return EstimateTextWeight(text);
             if (value is JsonElement element)
-                return element.GetRawText().Length;
+                return EstimateTextWeight(element.GetRawText());
 
             try
             {
-                return JsonSerializer.Serialize(value, value.GetType()).Length;
+                return EstimateTextWeight(JsonSerializer.Serialize(value, value.GetType()));
             }
             catch (Exception ex) when (ex is NotSupportedException or JsonException)
             {
-                return value.ToString()?.Length ?? 0;
+                return EstimateTextWeight(value.ToString());
             }
         }
 
-        private static long EstimateDataContentCharacters(DataContent data)
+        private static long EstimateDataContentWeight(DataContent data)
         {
-            var encodedCharacters = EstimateEncodedDataCharacters(data.Data.Length);
-            if (encodedCharacters == 0)
-                encodedCharacters = data.Uri?.Length ?? 0;
-            return encodedCharacters + (data.MediaType?.Length ?? 0) + (data.Name?.Length ?? 0);
+            var encodedWeight = EstimateEncodedDataWeight(data.Data.Length);
+            if (encodedWeight == 0)
+                encodedWeight = EstimateTextWeight(data.Uri);
+            return encodedWeight + EstimateTextWeight(data.MediaType) + EstimateTextWeight(data.Name);
         }
 
-        private static long EstimateEncodedDataCharacters(int byteCount)
+        private static long EstimateEncodedDataWeight(int byteCount)
         {
             return byteCount <= 0 ? 0 : ((long)byteCount + 2) / 3 * 4;
+        }
+
+        private static long EstimateTextWeight(string? value)
+        {
+            // Approximate ASCII-heavy prompts at four characters per token while treating
+            // CJK and other non-ASCII text as roughly one UTF-16 code unit per token.
+            long weight = 0;
+            foreach (var character in value ?? string.Empty)
+                weight += character <= 0x7f ? 1 : 4;
+            return weight;
+        }
+
+        private static int WeightToTokenEstimate(long weight)
+        {
+            var normalized = Math.Max(1, weight);
+            var tokens = normalized / 4 + (normalized % 4 == 0 ? 0 : 1);
+            return (int)Math.Clamp(tokens, 1, int.MaxValue);
         }
     }
 }
