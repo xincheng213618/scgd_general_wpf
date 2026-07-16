@@ -572,16 +572,7 @@ namespace ColorVision.Copilot
                 if (IsBusy)
                 {
                     var admission = EvaluateComposerRequestAdmission(ResolveComposerRequestMode());
-                    return admission.Reason switch
-                    {
-                        CopilotRequestAdmissionReason.Allowed => $"加入 Agent 队列（当前等待 {_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
-                        CopilotRequestAdmissionReason.ActiveChatIsExclusive => "另一个普通对话正在生成；完成后才能发送新请求",
-                        CopilotRequestAdmissionReason.ChatCannotQueue => "普通对话不能排队；请等待当前 Agent 任务结束",
-                        CopilotRequestAdmissionReason.ConversationAlreadyScheduled => "此会话已有任务正在运行或排队",
-                        CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
-                        CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
-                        _ => "当前没有可接收请求的会话",
-                    };
+                    return GetRequestAdmissionText(admission);
                 }
 
                 var action = Properties.Resources.CopilotSend;
@@ -1354,7 +1345,8 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 userMessage.RequestMode,
                 run => ExecuteHostedTurnAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot),
-                out var hostedRun)
+                out var hostedRun,
+                out var admission)
                 || hostedRun == null)
             {
                 conversation.Messages.Remove(assistantMessage);
@@ -1373,6 +1365,7 @@ namespace ColorVision.Copilot
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
+                ReportRequestAdmissionFailure(admission);
                 if (!isDirectSubmission)
                     OnComposerRequestModeChanged();
                 return;
@@ -2610,6 +2603,23 @@ namespace ColorVision.Copilot
 
         private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
             _taskHost.EvaluateRequestAdmission(SelectedConversation?.Id, mode);
+
+        private string GetRequestAdmissionText(CopilotRequestAdmissionResult admission) => admission.Reason switch
+        {
+            CopilotRequestAdmissionReason.Allowed => $"加入 Agent 队列（当前等待 {_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+            CopilotRequestAdmissionReason.ActiveChatIsExclusive => "另一个普通对话正在生成；完成后才能发送新请求",
+            CopilotRequestAdmissionReason.ChatCannotQueue => "普通对话不能排队；请等待当前 Agent 任务结束",
+            CopilotRequestAdmissionReason.ConversationAlreadyScheduled => "此会话已有任务正在运行或排队",
+            CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
+            CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+            _ => "当前没有可接收请求的会话",
+        };
+
+        private void ReportRequestAdmissionFailure(CopilotRequestAdmissionResult admission)
+        {
+            LocalCommandResultTitle = "请求未进入队列";
+            LocalCommandResultText = GetRequestAdmissionText(admission) + "。请求没有发送，请稍后重试。";
+        }
 
         private CopilotAgentMode ConsumeRequestModeOverride()
         {

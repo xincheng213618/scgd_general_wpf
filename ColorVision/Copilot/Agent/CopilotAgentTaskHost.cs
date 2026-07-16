@@ -278,21 +278,7 @@ namespace ColorVision.Copilot
 
             var normalizedConversationId = conversationId.Trim();
             lock (_gate)
-            {
-                if (_isShutdown)
-                    return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
-                if (ContainsConversationNoLock(normalizedConversationId))
-                    return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ConversationAlreadyScheduled);
-                if (_activeWorkItem == null)
-                    return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
-                if (!_activeWorkItem.Run.IsAgent)
-                    return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ActiveChatIsExclusive);
-                if (mode == CopilotAgentMode.Chat)
-                    return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ChatCannotQueue);
-                return new CopilotRequestAdmissionResult(_queuedWorkItems.Count < MaxQueuedRuns
-                    ? CopilotRequestAdmissionReason.Allowed
-                    : CopilotRequestAdmissionReason.QueueFull);
-            }
+                return EvaluateRequestAdmissionNoLock(normalizedConversationId, mode);
         }
 
         public IReadOnlyList<CopilotHostedAgentRun> QueuedRuns
@@ -355,7 +341,15 @@ namespace ColorVision.Copilot
             string conversationId,
             CopilotAgentMode mode,
             Func<CopilotHostedAgentRun, Task> operation,
-            out CopilotHostedAgentRun? run)
+            out CopilotHostedAgentRun? run) =>
+            TrySchedule(conversationId, mode, operation, out run, out _);
+
+        internal bool TrySchedule(
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
                 throw new ArgumentException("A conversation ID is required.", nameof(conversationId));
@@ -366,9 +360,8 @@ namespace ColorVision.Copilot
             var startsImmediately = false;
             lock (_gate)
             {
-                if (_isShutdown
-                    || ContainsConversationNoLock(normalizedConversationId)
-                    || _activeWorkItem != null && _queuedWorkItems.Count >= MaxQueuedRuns)
+                admission = EvaluateRequestAdmissionNoLock(normalizedConversationId, mode);
+                if (!admission.IsAllowed)
                 {
                     run = null;
                     return false;
@@ -392,6 +385,23 @@ namespace ColorVision.Copilot
             else
                 Publish(CopilotAgentTaskHostChangeKind.Queued, run);
             return true;
+        }
+
+        private CopilotRequestAdmissionResult EvaluateRequestAdmissionNoLock(string normalizedConversationId, CopilotAgentMode mode)
+        {
+            if (_isShutdown)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
+            if (ContainsConversationNoLock(normalizedConversationId))
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ConversationAlreadyScheduled);
+            if (_activeWorkItem == null)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
+            if (!_activeWorkItem.Run.IsAgent)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ActiveChatIsExclusive);
+            if (mode == CopilotAgentMode.Chat)
+                return new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ChatCannotQueue);
+            return new CopilotRequestAdmissionResult(_queuedWorkItems.Count < MaxQueuedRuns
+                ? CopilotRequestAdmissionReason.Allowed
+                : CopilotRequestAdmissionReason.QueueFull);
         }
 
         public int Shutdown()
