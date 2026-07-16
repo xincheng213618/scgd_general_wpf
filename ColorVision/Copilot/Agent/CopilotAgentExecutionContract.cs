@@ -2,6 +2,7 @@
 using Microsoft.Agents.AI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace ColorVision.Copilot
     {
         None,
         AttachedFileEvidence,
+        LocalFileEvidence,
         GitReviewEvidence,
         DirectUrlEvidence,
         PublicWebSearch,
@@ -29,14 +31,15 @@ namespace ColorVision.Copilot
         private readonly HashSet<string> _acceptedToolNames;
         private readonly string[][] _requiredToolGroups;
         private readonly bool _requiresAttachedFileEvidence;
+        private readonly bool _requiresLocalFileEvidence;
+        private readonly string[] _requiredLocalFilePaths;
 
         private CopilotAgentExecutionContract(
             CopilotAgentExecutionRequirement requirement,
             IEnumerable<IEnumerable<string>> requiredToolGroups,
-            bool requiresAttachedFileEvidence = false)
+            IEnumerable<string>? requiredLocalFilePaths = null)
         {
             Requirement = requirement;
-            _requiresAttachedFileEvidence = requiresAttachedFileEvidence;
             _requiredToolGroups = requiredToolGroups
                 .Select(group => group
                     .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -46,6 +49,14 @@ namespace ColorVision.Copilot
                 .ToArray();
             _preferredToolNames = _requiredToolGroups.SelectMany(group => group).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             _acceptedToolNames = _preferredToolNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _requiresAttachedFileEvidence = _acceptedToolNames.Contains("ReadAttachedFile");
+            _requiresLocalFileEvidence = _acceptedToolNames.Contains("ReadLocalFile");
+            _requiredLocalFilePaths = _requiresLocalFileEvidence
+                ? (requiredLocalFilePaths ?? Array.Empty<string>())
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray()
+                : Array.Empty<string>();
         }
 
         public CopilotAgentExecutionRequirement Requirement { get; }
@@ -62,9 +73,15 @@ namespace ColorVision.Copilot
             var orderedGroups = _requiredToolGroups.Select(group => group.Length == 1
                 ? group[0]
                 : $"({string.Join(" or ", group)})");
-            return "\n\nCurrent-turn execution contract: obtain successful tool evidence in this exact order before giving the final answer: "
+            var instruction = "\n\nCurrent-turn execution contract: obtain successful tool evidence in this exact order before giving the final answer: "
                 + string.Join(" -> ", orderedGroups)
                 + ". Do not claim a step completed before its successful tool result. If an earlier required step fails, report the concrete blocker instead of continuing with a dependent action.";
+            if (_requiredLocalFilePaths.Length > 0)
+            {
+                instruction += "\nReadLocalFile evidence is complete only after a successful call selects every explicit current-turn file using its exact path field:\n"
+                    + BuildBoundedPathList(_requiredLocalFilePaths);
+            }
+            return instruction;
         }
 
         public string Description
@@ -74,6 +91,7 @@ namespace ColorVision.Copilot
                 var requirementDescription = Requirement switch
                 {
                     CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
+                    CopilotAgentExecutionRequirement.LocalFileEvidence => "explicit local file evidence",
                     CopilotAgentExecutionRequirement.GitReviewEvidence => "Git working tree and diff evidence",
                     CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
                     CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
@@ -85,9 +103,13 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
                     _ => "no mandatory tool evidence",
                 };
-                return _requiresAttachedFileEvidence && Requirement != CopilotAgentExecutionRequirement.AttachedFileEvidence
-                    ? $"attached file evidence followed by {requirementDescription}"
-                    : requirementDescription;
+                var prerequisites = new List<string>();
+                if (_requiresAttachedFileEvidence && Requirement != CopilotAgentExecutionRequirement.AttachedFileEvidence)
+                    prerequisites.Add("attached file evidence");
+                if (_requiresLocalFileEvidence && Requirement != CopilotAgentExecutionRequirement.LocalFileEvidence)
+                    prerequisites.Add("explicit local file evidence");
+                prerequisites.Add(requirementDescription);
+                return string.Join(" followed by ", prerequisites);
             }
         }
 
@@ -98,12 +120,33 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             availableTools ??= Array.Empty<ICopilotTool>();
 
-            var attachedFileReadTools = request.Attachments
+            var attachedFilePaths = request.Attachments
                 .Where(item => item?.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value))
-                .Any()
-                    ? availableTools.Where(tool => string.Equals(tool.Name, "ReadAttachedFile", StringComparison.OrdinalIgnoreCase)).Select(tool => tool.Name).ToArray()
-                    : Array.Empty<string>();
-            var requiresAttachedFileEvidence = attachedFileReadTools.Length > 0;
+                .Select(item => NormalizePath(item.Value))
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var attachedFileReadTools = attachedFilePaths.Count > 0
+                ? availableTools
+                    .Where(tool => string.Equals(tool.Name, "ReadAttachedFile", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray()
+                : Array.Empty<string>();
+            var requiredLocalFilePaths = request.ReadableLocalFilePaths
+                .Select(NormalizeExistingFilePath)
+                .Where(path => !string.IsNullOrWhiteSpace(path) && !attachedFilePaths.Contains(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var localFileReadTools = requiredLocalFilePaths.Length > 0
+                ? availableTools
+                    .Where(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray()
+                : Array.Empty<string>();
+            var prerequisiteToolGroups = new List<IEnumerable<string>>();
+            if (attachedFileReadTools.Length > 0)
+                prerequisiteToolGroups.Add(attachedFileReadTools);
+            if (localFileReadTools.Length > 0)
+                prerequisiteToolGroups.Add(localFileReadTools);
             var explicitlyDisallowsPublicWebAccess = CopilotToolIntentPolicy.ExplicitlyDisallowsPublicWebAccess(request);
 
             var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
@@ -115,7 +158,8 @@ namespace ColorVision.Copilot
                 return Required(
                     CopilotAgentExecutionRequirement.WorkspaceRollback,
                     [workspaceRollbackTools],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
             {
@@ -126,7 +170,8 @@ namespace ColorVision.Copilot
                     needsValidation
                         ? [workspaceApplyTools, workspaceValidationTools]
                         : [workspaceApplyTools],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
             {
@@ -137,14 +182,16 @@ namespace ColorVision.Copilot
                     needsValidation
                         ? [workspaceApplyTools, workspaceValidationTools]
                         : [workspaceApplyTools],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
             if (needsValidation)
             {
                 return Required(
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
                     [workspaceValidationTools],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
 
             if (request.Mode == CopilotAgentMode.Review)
@@ -162,7 +209,8 @@ namespace ColorVision.Copilot
                     return Required(
                         CopilotAgentExecutionRequirement.GitReviewEvidence,
                         [gitWorkingTreeTools, gitDiffTools],
-                        attachedFileReadTools);
+                        prerequisiteToolGroups,
+                        requiredLocalFilePaths);
                 }
             }
 
@@ -173,7 +221,8 @@ namespace ColorVision.Copilot
                 return Required(
                     CopilotAgentExecutionRequirement.DirectUrlEvidence,
                     [urlFetchTools.Concat(webSearchTools)],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
 
             if (!explicitlyDisallowsPublicWebAccess && CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(request))
@@ -181,27 +230,29 @@ namespace ColorVision.Copilot
                 return Required(
                     CopilotAgentExecutionRequirement.PublicWebSearch,
                     [webSearchTools],
-                    attachedFileReadTools);
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths);
             }
 
-            return requiresAttachedFileEvidence
+            return prerequisiteToolGroups.Count > 0
                 ? Required(
-                    CopilotAgentExecutionRequirement.AttachedFileEvidence,
+                    localFileReadTools.Length > 0
+                        ? CopilotAgentExecutionRequirement.LocalFileEvidence
+                        : CopilotAgentExecutionRequirement.AttachedFileEvidence,
                     Array.Empty<IEnumerable<string>>(),
-                    attachedFileReadTools)
+                    prerequisiteToolGroups,
+                    requiredLocalFilePaths)
                 : None();
         }
 
         private static CopilotAgentExecutionContract Required(
             CopilotAgentExecutionRequirement requirement,
             IEnumerable<IEnumerable<string>> requiredToolGroups,
-            IReadOnlyList<string> attachedFileReadTools)
+            IReadOnlyList<IEnumerable<string>> prerequisiteToolGroups,
+            IReadOnlyList<string> requiredLocalFilePaths)
         {
-            var requiresAttachedFileEvidence = attachedFileReadTools.Count > 0;
-            var groups = requiresAttachedFileEvidence
-                ? new[] { attachedFileReadTools.AsEnumerable() }.Concat(requiredToolGroups)
-                : requiredToolGroups;
-            return new CopilotAgentExecutionContract(requirement, groups, requiresAttachedFileEvidence);
+            var groups = prerequisiteToolGroups.Concat(requiredToolGroups);
+            return new CopilotAgentExecutionContract(requirement, groups, requiredLocalFilePaths);
         }
 
         private static CopilotAgentExecutionContract None() => new(
@@ -221,8 +272,46 @@ namespace ColorVision.Copilot
                 .ToArray();
             var cursor = -1;
             string[]? missingGroup = null;
+            string[] missingLocalFilePaths = Array.Empty<string>();
             foreach (var group in _requiredToolGroups)
             {
+                if (_requiredLocalFilePaths.Length > 0
+                    && group.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+                {
+                    var coveredPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var lastMatchedIndex = -1;
+                    for (var index = cursor + 1; index < relevant.Length; index++)
+                    {
+                        var step = relevant[index];
+                        if (!string.Equals(step.Execution.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                            || !IsAcceptedEvidence(step))
+                        {
+                            continue;
+                        }
+
+                        var coveredPathCount = coveredPaths.Count;
+                        var selectedPath = NormalizePath(step.ToolCall.ToolInput.Path);
+                        if (_requiredLocalFilePaths.Contains(selectedPath, StringComparer.OrdinalIgnoreCase))
+                            coveredPaths.Add(selectedPath);
+                        if (coveredPaths.Count > coveredPathCount)
+                            lastMatchedIndex = index;
+                        if (coveredPaths.Count == _requiredLocalFilePaths.Length)
+                            break;
+                    }
+
+                    if (coveredPaths.Count < _requiredLocalFilePaths.Length)
+                    {
+                        missingGroup = group;
+                        missingLocalFilePaths = _requiredLocalFilePaths
+                            .Where(path => !coveredPaths.Contains(path))
+                            .ToArray();
+                        break;
+                    }
+
+                    cursor = lastMatchedIndex;
+                    continue;
+                }
+
                 var matchedIndex = Array.FindIndex(relevant, cursor + 1, step =>
                     group.Contains(step.Execution.ToolName, StringComparer.OrdinalIgnoreCase)
                     && IsAcceptedEvidence(step));
@@ -247,14 +336,21 @@ namespace ColorVision.Copilot
                 .Select(step => step.Execution.ToolName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var untriedNames = missingGroup.Where(name => !attemptedAfterCursor.Contains(name)).ToArray();
+            var attemptedLocalFilePaths = relevant.Skip(cursor + 1)
+                .Where(step => string.Equals(step.Execution.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                .Select(step => NormalizePath(step.ToolCall.ToolInput.Path))
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hasUnattemptedLocalFilePath = missingLocalFilePaths.Any(path => !attemptedLocalFilePaths.Contains(path));
             return new CopilotAgentExecutionContractEvaluation
             {
                 IsRequired = true,
                 IsSatisfied = false,
-                ShouldReinvoke = untriedNames.Length > 0,
-                Feedback = BuildFeedback(missingGroup, untriedNames),
+                ShouldReinvoke = untriedNames.Length > 0 || hasUnattemptedLocalFilePath,
+                Feedback = BuildFeedback(missingGroup, untriedNames, missingLocalFilePaths),
                 LastRelevantStep = relevant.LastOrDefault(),
                 MissingToolNames = missingGroup,
+                MissingLocalFilePaths = missingLocalFilePaths,
             };
         }
 
@@ -278,7 +374,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        private string BuildFeedback(string[] missingGroup, string[] untriedNames)
+        private string BuildFeedback(
+            string[] missingGroup,
+            string[] untriedNames,
+            IReadOnlyList<string> missingLocalFilePaths)
         {
             var preferred = untriedNames.Length > 0 ? untriedNames[0] : missingGroup[0];
             var usesPatchEnvelope = string.Equals(preferred, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
@@ -286,6 +385,11 @@ namespace ColorVision.Copilot
             if (missingGroup.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
             {
                 return "Execution contract: the user attached one or more files, but no successful attached-file evidence has been collected. Call ReadAttachedFile now before answering or taking a dependent action. Base subsequent claims on its observation; if the read fails, report a concrete blocker instead of claiming the file was inspected.";
+            }
+            if (missingGroup.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: one or more explicit current-turn local files have not been successfully read. Call ReadLocalFile separately with the exact path field for every file still missing below before answering or taking a dependent action. If a read fails, report the concrete blocker instead of claiming the file was inspected.\n"
+                    + BuildBoundedPathList(missingLocalFilePaths);
             }
             if (missingGroup.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase))
             {
@@ -324,6 +428,42 @@ namespace ColorVision.Copilot
             };
         }
 
+        private static string BuildBoundedPathList(IEnumerable<string> paths)
+        {
+            const int maximumPaths = 8;
+            var availablePaths = (paths ?? Array.Empty<string>())
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var lines = availablePaths.Take(maximumPaths).Select(path => $"- {path}").ToList();
+            if (availablePaths.Length > maximumPaths)
+                lines.Add($"- ... {availablePaths.Length - maximumPaths} additional explicit path(s) remain; continue from the original request after these are read.");
+            return string.Join("\n", lines);
+        }
+
+        private static string NormalizeExistingFilePath(string? path)
+        {
+            var normalized = NormalizePath(path);
+            return !string.IsNullOrWhiteSpace(normalized) && File.Exists(normalized)
+                ? normalized
+                : string.Empty;
+        }
+
+        private static string NormalizePath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(path.Trim());
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         private static bool IsAcceptedEvidence(CopilotAgentStepRecord step)
         {
             if (step.Observation.Success && step.Execution.State == CopilotToolExecutionState.Completed)
@@ -342,6 +482,8 @@ namespace ColorVision.Copilot
         {
             if (evaluation.MissingToolNames.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
                 return "required_attachment_evidence_missing";
+            if (evaluation.MissingToolNames.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+                return "required_local_file_evidence_missing";
             if (evaluation.MissingToolNames.Any(name => string.Equals(name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)))
             {
@@ -351,6 +493,7 @@ namespace ColorVision.Copilot
             return Requirement switch
             {
                 CopilotAgentExecutionRequirement.AttachedFileEvidence => "required_attachment_evidence_missing",
+                CopilotAgentExecutionRequirement.LocalFileEvidence => "required_local_file_evidence_missing",
                 CopilotAgentExecutionRequirement.GitReviewEvidence => "required_git_review_evidence_missing",
                 CopilotAgentExecutionRequirement.DirectUrlEvidence => "required_url_evidence_missing",
                 CopilotAgentExecutionRequirement.PublicWebSearch => "required_web_search_missing",
@@ -380,6 +523,8 @@ namespace ColorVision.Copilot
         public CopilotAgentStepRecord? LastRelevantStep { get; init; }
 
         public IReadOnlyList<string> MissingToolNames { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> MissingLocalFilePaths { get; init; } = Array.Empty<string>();
     }
 
     internal sealed class CopilotAgentExecutionContractLoopEvaluator : LoopEvaluator
