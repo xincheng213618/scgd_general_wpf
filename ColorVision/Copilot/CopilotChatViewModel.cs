@@ -528,7 +528,7 @@ namespace ColorVision.Copilot
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
                 if (_fileAttachmentCts != null)
-                    return "停止读取文件附件";
+                    return "停止处理附件";
                 if (_webPageAttachmentCts != null)
                     return "停止读取网页附件";
                 if (IsViewingQueuedRun)
@@ -3358,8 +3358,11 @@ namespace ColorVision.Copilot
 
         private void PasteImageAttachment()
         {
-            if (TryPasteClipboardImageAttachment())
+            if (TryBeginPasteClipboardImageAttachment(out var operation))
+            {
+                RunUiOperation(async () => await operation, "粘贴图片");
                 return;
+            }
 
             MessageBox.Show(
                 Application.Current.GetActiveWindow(),
@@ -3369,6 +3372,32 @@ namespace ColorVision.Copilot
                 MessageBoxImage.Information);
         }
 
+        internal bool TryBeginPasteClipboardImageAttachment(out Task<bool> operation)
+        {
+            operation = Task.FromResult(false);
+            if (IsBusy)
+                return false;
+
+            try
+            {
+                if (!TryGetFrozenClipboardImage(out var image))
+                    return false;
+
+                operation = SaveClipboardImageAttachmentAsync(image);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"Failed to paste image: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return true;
+            }
+        }
+
         public bool TryPasteClipboardImageAttachment()
         {
             if (IsBusy)
@@ -3376,19 +3405,12 @@ namespace ColorVision.Copilot
 
             try
             {
-                if (!Clipboard.ContainsImage())
-                    return false;
-
-                var image = Clipboard.GetImage();
-                if (image == null)
+                if (!TryGetFrozenClipboardImage(out var image))
                     return false;
 
                 var conversation = EnsureConversation();
-                var imagePath = SaveClipboardImage(image);
-                var title = $"Pasted Image {DateTime.Now:HH:mm:ss}";
-                conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(imagePath, title));
-                UpdateAttachmentsState(conversation);
-                return true;
+                var imagePath = SaveClipboardImage(image, CancellationToken.None);
+                return AddClipboardImageAttachment(conversation, imagePath);
             }
             catch (Exception ex)
             {
@@ -3400,6 +3422,99 @@ namespace ColorVision.Copilot
                     MessageBoxImage.Warning);
                 return false;
             }
+        }
+
+        private async Task<bool> SaveClipboardImageAttachmentAsync(BitmapSource image)
+        {
+            var conversation = EnsureConversation();
+            var cancellation = BeginAuxiliaryOperation();
+            Task<string>? saveTask = null;
+            _fileAttachmentCts = cancellation;
+            IsBusy = true;
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                saveTask = Task.Run(
+                    () => SaveClipboardImage(image, cancellation.Token),
+                    CancellationToken.None);
+                var imagePath = await saveTask.WaitAsync(cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (Volatile.Read(ref _disposeState) == 1 || !Conversations.Contains(conversation))
+                {
+                    CopilotChatStateStore.TryDeleteManagedAttachmentFile(_stateStore.AttachmentDirectoryPath, imagePath);
+                    return false;
+                }
+
+                return AddClipboardImageAttachment(conversation, imagePath);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                if (saveTask != null)
+                    ObserveBackgroundAttachmentTask(saveTask);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"Failed to paste image: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+                if (ReferenceEquals(_fileAttachmentCts, cancellation))
+                    _fileAttachmentCts = null;
+                CompleteAuxiliaryOperation(cancellation);
+                IsBusy = _taskHost.IsActive;
+            }
+        }
+
+        private static bool TryGetFrozenClipboardImage(out BitmapSource image)
+        {
+            image = null!;
+            if (!Clipboard.ContainsImage())
+                return false;
+
+            var clipboardImage = Clipboard.GetImage();
+            if (clipboardImage == null)
+                return false;
+            if (!clipboardImage.IsFrozen)
+            {
+                if (clipboardImage.CanFreeze)
+                {
+                    clipboardImage.Freeze();
+                }
+                else
+                {
+                    var copy = new WriteableBitmap(clipboardImage);
+                    copy.Freeze();
+                    clipboardImage = copy;
+                }
+            }
+
+            image = clipboardImage;
+            return true;
+        }
+
+        private static void ObserveBackgroundAttachmentTask(Task task)
+        {
+            _ = task.ContinueWith(
+                completed => _ = completed.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        private bool AddClipboardImageAttachment(CopilotConversationRecord conversation, string imagePath)
+        {
+            var title = $"Pasted Image {DateTime.Now:HH:mm:ss}";
+            conversation.Attachments.Add(CopilotAttachmentItem.CreateImage(imagePath, title));
+            UpdateAttachmentsState(conversation);
+            return true;
         }
 
         private void CopyMessage(CopilotChatMessage? message)
@@ -4373,8 +4488,9 @@ namespace ColorVision.Copilot
         private static string BuildStoredWebPageContent(CopilotFetchedWebPageContent page) =>
             CopilotWebPageToolSupport.BuildStoredWebPageContent(page);
 
-        private string SaveClipboardImage(BitmapSource image)
+        private string SaveClipboardImage(BitmapSource image, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Directory.CreateDirectory(_stateStore.AttachmentDirectoryPath);
 
             var filePath = Path.Combine(
@@ -4388,6 +4504,7 @@ namespace ColorVision.Copilot
             {
                 using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read))
                     encoder.Save(stream);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (new FileInfo(filePath).Length > CopilotImagePayloadLoader.MaximumImageBytes)
                 {

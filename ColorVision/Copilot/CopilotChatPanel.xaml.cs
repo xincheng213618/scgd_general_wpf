@@ -417,7 +417,7 @@ namespace ColorVision.Copilot
             SendWindowsVoiceTypingShortcut();
         }
 
-        private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.None
                 && e.Key is Key.Up or Key.Down
@@ -432,9 +432,11 @@ namespace ColorVision.Copilot
 
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                if (DataContext is CopilotChatViewModel pasteViewModel && pasteViewModel.TryPasteClipboardImageAttachment())
+                if (DataContext is CopilotChatViewModel pasteViewModel
+                    && pasteViewModel.TryBeginPasteClipboardImageAttachment(out var operation))
                 {
                     e.Handled = true;
+                    await operation;
                     return;
                 }
             }
@@ -476,18 +478,16 @@ namespace ColorVision.Copilot
             PromptTextBox.CaretIndex = PromptTextBox.Text.Length;
         }
 
-        private void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        private async void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (DataContext is not CopilotChatViewModel viewModel)
                 return;
 
-            if (!e.SourceDataObject.GetDataPresent(DataFormats.Bitmap) && !Clipboard.ContainsImage())
-                return;
-
-            if (!viewModel.TryPasteClipboardImageAttachment())
+            if (!viewModel.TryBeginPasteClipboardImageAttachment(out var operation))
                 return;
 
             e.CancelCommand();
+            await operation;
         }
 
         private void ComposerShellBorder_PreviewDragOver(object sender, DragEventArgs e)
