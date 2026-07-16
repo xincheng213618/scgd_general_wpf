@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotTextInputWindow : Window
     {
-        public CopilotTextInputWindow(string title, string description, string initialText = "", bool isMultiline = false)
+        public CopilotTextInputWindow(string title, string description, string initialText = "", bool isMultiline = false, bool isReadOnly = false)
         {
             InitializeComponent();
             this.ApplyCaption();
@@ -15,9 +15,15 @@ namespace ColorVision.Copilot
             DescriptionTextBlock.Text = description;
             InputTextBox.Text = initialText;
             InputTextBox.AcceptsReturn = isMultiline;
+            InputTextBox.IsReadOnly = isReadOnly;
             InputTextBox.MinHeight = isMultiline ? 140 : 38;
             InputTextBox.VerticalContentAlignment = isMultiline ? VerticalAlignment.Top : VerticalAlignment.Center;
             Height = isMultiline ? 320 : 190;
+            if (isReadOnly)
+            {
+                CancelButton.Visibility = Visibility.Collapsed;
+                OkButton.Content = "关闭";
+            }
 
             Loaded += CopilotTextInputWindow_Loaded;
             PreviewKeyDown += CopilotTextInputWindow_PreviewKeyDown;
@@ -33,6 +39,13 @@ namespace ColorVision.Copilot
 
         private void CopilotTextInputWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (InputTextBox.IsReadOnly && e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                DialogResult = true;
+                return;
+            }
+
             if (!InputTextBox.AcceptsReturn && e.Key == Key.Enter)
             {
                 e.Handled = true;

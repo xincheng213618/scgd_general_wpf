@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,12 @@ namespace ColorVision.Copilot
         private const int CompactHistoryLimit = 4;
         private const int CompactSummaryOutputTokens = 4096;
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
+        private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".application", ".bat", ".cmd", ".com", ".cpl", ".exe", ".gadget", ".hta", ".inf", ".ins", ".isp",
+            ".jar", ".js", ".jse", ".lnk", ".msi", ".msp", ".pif", ".ps1", ".py", ".pyw", ".reg", ".scr",
+            ".sct", ".sh", ".shb", ".shs", ".url", ".vb", ".vbe", ".vbs", ".ws", ".wsc", ".wsf", ".wsh",
+        };
         private const string CompactSystemPrompt = "You compact an existing conversation for seamless continuation. Preserve the user's active goal, constraints, decisions, verified facts, relevant files, commands and results, unfinished work, blockers, and safe next steps. Remove greetings, repetition, obsolete exploration, and verbose tool traces. Never invent facts or treat historical actions as current authorization. Return only a concise Markdown continuation summary.";
 
         private readonly CopilotChatService _chatService;
@@ -157,6 +164,7 @@ namespace ColorVision.Copilot
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
             OpenAgentRunNoticeCommand = new RelayCommand(_ => OpenAgentRunNotice(), _ => HasAgentRunNotice);
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
+            OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
             DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, conversation => !IsBusy && conversation != null);
@@ -370,6 +378,8 @@ namespace ColorVision.Copilot
         public ICommand OpenAgentRunNoticeCommand { get; }
 
         public ICommand SteerCommand { get; }
+
+        public ICommand OpenAttachmentCommand { get; }
 
         public ICommand RemoveAttachmentCommand { get; }
 
@@ -3215,6 +3225,91 @@ namespace ColorVision.Copilot
             }
 
             return string.Join(Environment.NewLine, sections);
+        }
+
+        private void OpenAttachment(CopilotAttachmentItem? attachment)
+        {
+            if (attachment == null)
+                return;
+
+            try
+            {
+                switch (attachment.Type)
+                {
+                    case CopilotAttachmentType.File:
+                    case CopilotAttachmentType.Image:
+                        OpenFileAttachment(attachment);
+                        break;
+                    case CopilotAttachmentType.WebPage:
+                        OpenWebAttachment(attachment);
+                        break;
+                    default:
+                        ShowTextAttachment(attachment, "查看上下文");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "无法打开附件：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private static void OpenFileAttachment(CopilotAttachmentItem attachment)
+        {
+            var filePath = TryNormalizeFilePath(attachment.Value);
+            if (filePath == null || !File.Exists(filePath))
+                throw new FileNotFoundException("附件文件不存在或已被移动。", attachment.Value);
+
+            if (UnsafeAttachmentExtensions.Contains(Path.GetExtension(filePath)))
+            {
+                var revealStartInfo = new ProcessStartInfo("explorer.exe")
+                {
+                    Arguments = $"/select,\"{filePath}\"",
+                    UseShellExecute = true,
+                };
+                Process.Start(revealStartInfo);
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo(filePath)
+            {
+                UseShellExecute = true,
+            });
+        }
+
+        private void OpenWebAttachment(CopilotAttachmentItem attachment)
+        {
+            if (Uri.TryCreate(attachment.Source, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                Process.Start(new ProcessStartInfo(uri.AbsoluteUri)
+                {
+                    UseShellExecute = true,
+                });
+                return;
+            }
+
+            ShowTextAttachment(attachment, "查看网页附件");
+        }
+
+        private static void ShowTextAttachment(CopilotAttachmentItem attachment, string title)
+        {
+            var window = new CopilotTextInputWindow(
+                title,
+                string.IsNullOrWhiteSpace(attachment.DisplayLabel) ? "附件内容" : attachment.DisplayLabel,
+                attachment.Value,
+                isMultiline: true,
+                isReadOnly: true)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            window.ShowDialog();
         }
 
         private void RemoveAttachment(CopilotAttachmentItem? attachment)

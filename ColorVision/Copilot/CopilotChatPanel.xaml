@@ -1055,6 +1055,12 @@
                                                                            Opacity="0.72"
                                                                            Text="{Binding DisplayLabel}"
                                                                            TextTrimming="CharacterEllipsis" />
+                                                                <Button Margin="5,0,0,0"
+                                                                        Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                        Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Content="↗"
+                                                                        ToolTip="查看附件" />
                                                             </DockPanel>
                                                         </Border>
                                                     </DataTemplate>
@@ -1557,6 +1563,12 @@
                                                                TextTrimming="CharacterEllipsis" />
                                                     <Button Margin="7,0,0,0"
                                                             Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                            Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="↗"
+                                                            ToolTip="查看附件" />
+                                                    <Button Margin="7,0,0,0"
+                                                            Style="{StaticResource AttachmentCloseButtonStyle}"
                                                             Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
                                                             CommandParameter="{Binding}"
                                                             Content="×" />
@@ -1614,19 +1626,22 @@
                                                                    TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
 
-                                                    <Button Grid.Column="2"
-                                                            Width="18"
-                                                            Height="18"
-                                                            Margin="8,0,0,0"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            Background="Transparent"
-                                                            BorderBrush="Transparent"
-                                                            BorderThickness="0"
-                                                            Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="×"
-                                                            Foreground="{DynamicResource GlobalTextBrush}" />
+                                                    <StackPanel Grid.Column="2"
+                                                                Margin="8,0,0,0"
+                                                                VerticalAlignment="Center"
+                                                                Orientation="Horizontal">
+                                                        <Button Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="↗"
+                                                                ToolTip="查看附件" />
+                                                        <Button Margin="4,0,0,0"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="×"
+                                                                ToolTip="移除附件" />
+                                                    </StackPanel>
                                                 </Grid>
                                             </Border>
                                         </Grid>
