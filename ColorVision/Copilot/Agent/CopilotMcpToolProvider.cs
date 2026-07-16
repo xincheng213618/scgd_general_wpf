@@ -83,6 +83,7 @@ namespace ColorVision.Copilot
                 if (tools.Count >= MaximumToolsPerRequest)
                     break;
                 McpClient? client = null;
+                HttpClientTransport? transport = null;
                 IAsyncDisposable? toolListChangedRegistration = null;
                 var toolListChangeNotificationPending = 0;
                 var discoveryReady = 0;
@@ -93,18 +94,29 @@ namespace ColorVision.Copilot
                     var headers = string.IsNullOrWhiteSpace(token)
                         ? null
                         : new Dictionary<string, string> { ["Authorization"] = "Bearer " + token };
-                    var transport = new HttpClientTransport(new HttpClientTransportOptions
+                    var transportOptions = new HttpClientTransportOptions
                     {
                         Name = server.Name,
                         Endpoint = new Uri(server.Endpoint),
                         TransportMode = HttpTransportMode.StreamableHttp,
                         ConnectionTimeout = TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds),
                         AdditionalHeaders = headers,
-                    });
+                    };
+                    var httpClient = CopilotMcpHttpTransport.CreateClient(Timeout.InfiniteTimeSpan);
+                    try
+                    {
+                        transport = new HttpClientTransport(transportOptions, httpClient, loggerFactory: null, ownsHttpClient: true);
+                    }
+                    catch
+                    {
+                        httpClient.Dispose();
+                        throw;
+                    }
 
                     using var connectionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     connectionTimeout.CancelAfter(TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds));
                     client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
+                    transport = null;
                     if (client.ServerCapabilities.Tools?.ListChanged == true)
                     {
                         try
@@ -250,6 +262,8 @@ namespace ColorVision.Copilot
                     }
                     if (client != null)
                         await client.DisposeAsync();
+                    else if (transport != null)
+                        await transport.DisposeAsync();
                 }
             }
 
