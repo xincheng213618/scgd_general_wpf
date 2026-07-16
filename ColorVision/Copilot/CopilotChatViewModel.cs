@@ -175,8 +175,8 @@ namespace ColorVision.Copilot
             BranchConversationCommand = new RelayCommand<CopilotChatMessage>(BranchConversation, CanBranchConversation);
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
             CancelMessageEditCommand = new RelayCommand(_ => CancelMessageEdit(), _ => IsEditingMessage);
-            RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: false), "重新生成回复"), CanRegenerateMessage);
-            RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshWebContext: true), "刷新网页后重新生成"), CanRegenerateMessage);
+            RetryMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshExternalContext: false), "重新生成回复"), CanRegenerateMessage);
+            RefreshMessageCommand = new RelayCommand<CopilotChatMessage>(message => RunUiOperation(() => RetryMessageAsync(message, refreshExternalContext: true), "刷新附件与网页后重新生成"), CanRegenerateMessage);
             ContinueAgentTasksCommand = new RelayCommand<CopilotChatMessage>(ContinueAgentTasks, CanContinueAgentTasks);
             RequestWorkspaceRollbackCommand = new RelayCommand<CopilotAgentTraceEntry>(RequestWorkspaceRollback, CanRequestWorkspaceRollback);
             OpenWorkspaceChangeFileCommand = new RelayCommand<CopilotWorkspaceChangeFile>(OpenWorkspaceChangeFile, CanOpenWorkspaceChangeFile);
@@ -1496,20 +1496,30 @@ namespace ColorVision.Copilot
         {
             var prompt = (userMessage.Content ?? string.Empty).Trim();
             var imageUnderstanding = CopilotImageUnderstandingResult.Empty;
-            if (refreshExternalContext || string.IsNullOrWhiteSpace(userMessage.RequestContent))
+            var rebuildRequestContext = refreshExternalContext || string.IsNullOrWhiteSpace(userMessage.RequestContent);
+            if (rebuildRequestContext)
             {
                 var requestContent = await _conversationRequestBuilder.BuildUserRequestContentAsync(prompt, turnSnapshot.LiveContext, cancellationToken);
                 imageUnderstanding = await _imageUnderstandingService.AnalyzeAsync(requestProfile, prompt, turnSnapshot.Attachments, cancellationToken);
-                userMessage.RequestContent = AppendImageUnderstandingContext(requestContent, imageUnderstanding);
+                userMessage.RequestContent = InsertImageUnderstandingContext(requestContent, prompt, imageUnderstanding);
+            }
+
+            if (rebuildRequestContext || (turnSnapshot.Attachments.Count > 0 && !userMessage.ChatAttachmentContextCaptured))
+            {
+                var attachmentContext = await CopilotConversationRequestBuilder.BuildAttachmentContextBlockAsync(
+                    turnSnapshot.Attachments,
+                    cancellationToken: cancellationToken);
+                userMessage.RequestContent = InsertRequestContextAfterPrompt(userMessage.RequestContent, prompt, attachmentContext);
+                userMessage.ChatAttachmentContextCaptured = turnSnapshot.Attachments.Count > 0;
             }
 
             var history = await CopilotConversationRequestBuilder.BuildChatHistoryAsync(
                 turnSnapshot.ConversationHistory,
                 userMessage.RequestContent,
-                turnSnapshot.Attachments,
-                ResolveConversationHistoryLimits(requestProfile),
-                includeAttachmentContext: true,
-                cancellationToken);
+                attachments: null,
+                limits: ResolveConversationHistoryLimits(requestProfile),
+                includeAttachmentContext: false,
+                cancellationToken: cancellationToken);
             var usage = await StreamChatReplyAsync(requestProfile, history, assistantMessage, cancellationToken);
             return imageUnderstanding.Usage.Add(usage);
         }
@@ -1636,16 +1646,35 @@ namespace ColorVision.Copilot
             return imageUnderstanding.Usage.Add(result.Usage);
         }
 
-        private static string AppendImageUnderstandingContext(
+        private static string InsertImageUnderstandingContext(
             string requestContent,
+            string prompt,
             CopilotImageUnderstandingResult imageUnderstanding)
         {
             if (!imageUnderstanding.HasContext)
                 return requestContent;
 
+            return InsertRequestContextAfterPrompt(requestContent, prompt, imageUnderstanding.Context);
+        }
+
+        private static string InsertRequestContextAfterPrompt(string requestContent, string prompt, string context)
+        {
+            if (string.IsNullOrWhiteSpace(context))
+                return requestContent;
+
+            var normalizedPrompt = (prompt ?? string.Empty).Trim();
+            if (normalizedPrompt.Length > 0 && requestContent.StartsWith(normalizedPrompt, StringComparison.Ordinal))
+            {
+                var remainder = requestContent[normalizedPrompt.Length..].TrimStart();
+                return remainder.Length == 0
+                    ? normalizedPrompt + Environment.NewLine + Environment.NewLine + context.Trim()
+                    : normalizedPrompt + Environment.NewLine + Environment.NewLine + context.Trim()
+                        + Environment.NewLine + Environment.NewLine + remainder;
+            }
+
             return string.IsNullOrWhiteSpace(requestContent)
-                ? imageUnderstanding.Context
-                : requestContent.TrimEnd() + Environment.NewLine + Environment.NewLine + imageUnderstanding.Context;
+                ? context.Trim()
+                : requestContent.TrimEnd() + Environment.NewLine + Environment.NewLine + context.Trim();
         }
 
         private static IReadOnlyList<CopilotContextItem> AppendImageUnderstandingContext(
@@ -4037,7 +4066,7 @@ namespace ColorVision.Copilot
                     CopilotCapabilityCatalog.Shared.GetSnapshot());
         }
 
-        private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshWebContext)
+        private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
         {
             if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out var assistantMessage))
                 return;
@@ -4079,7 +4108,7 @@ namespace ColorVision.Copilot
             var hostedRun = _taskHost.Start(
                 conversation.Id,
                 userMessage.RequestMode,
-                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshWebContext));
+                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext));
             await AwaitHostedRunCompletionAsync(hostedRun);
         }
 
@@ -4090,7 +4119,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage? assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
-            bool refreshWebContext)
+            bool refreshExternalContext)
         {
             CopilotChatMessage? replacementAssistantMessage = null;
             try
@@ -4123,7 +4152,7 @@ namespace ColorVision.Copilot
                 userMessage,
                 replacementAssistantMessage,
                 turnSnapshot,
-                refreshWebContext);
+                refreshExternalContext);
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

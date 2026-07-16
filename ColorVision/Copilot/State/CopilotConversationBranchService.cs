@@ -76,6 +76,7 @@ namespace ColorVision.Copilot
                 AssistantName = source.AssistantName,
                 Attachments = attachments,
                 AttachmentSnapshotCaptured = source.AttachmentSnapshotCaptured,
+                ChatAttachmentContextCaptured = source.ChatAttachmentContextCaptured,
                 CreatedAt = source.CreatedAt,
                 IsContentDisplayOnly = source.IsContentDisplayOnly,
                 RequestContent = source.RequestContent,
