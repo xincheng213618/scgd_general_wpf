@@ -121,6 +121,10 @@ namespace ColorVision.Copilot
             {
                 response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             }
+            catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
+            {
+                throw;
+            }
             catch
             {
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
@@ -146,22 +150,79 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             long responseWeight = 0;
             var completed = false;
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator;
             try
             {
-                await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
-                {
-                    responseWeight += EstimateContentWeight(update.Contents);
-                    usage = usage.MergeProgress(ExtractUsage(update.Contents));
-                    yield return update;
-                }
-                completed = true;
+                enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
             }
-            finally
+            catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
+            {
+                throw;
+            }
+            catch
+            {
+                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                throw;
+            }
+
+            if (enumerator == null)
             {
                 CommitUsage(
                     usage,
-                    EstimateTokens(materializedMessages, options, responseWeight),
-                    requireEstimatedFloor: !completed);
+                    EstimateTokens(materializedMessages, options, responseWeight));
+                yield break;
+            }
+
+            await using (enumerator)
+            {
+                try
+                {
+                    while (true)
+                    {
+                        var update = enumerator.Current;
+                        responseWeight += EstimateContentWeight(update.Contents);
+                        usage = usage.MergeProgress(ExtractUsage(update.Contents));
+                        yield return update;
+                        if (!await enumerator.MoveNextAsync())
+                            break;
+                    }
+                    completed = true;
+                }
+                finally
+                {
+                    CommitUsage(
+                        usage,
+                        EstimateTokens(materializedMessages, options, responseWeight),
+                        requireEstimatedFloor: !completed);
+                }
+            }
+        }
+
+        private async Task<IAsyncEnumerator<ChatResponseUpdate>?> OpenStreamingAttemptAsync(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options,
+            CancellationToken cancellationToken)
+        {
+            var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            try
+            {
+                if (await enumerator.MoveNextAsync())
+                    return enumerator;
+
+                await enumerator.DisposeAsync();
+                return null;
+            }
+            catch
+            {
+                try
+                {
+                    await enumerator.DisposeAsync();
+                }
+                catch
+                {
+                    // Preserve the provider failure used by context recovery.
+                }
+                throw;
             }
         }
 
@@ -171,10 +232,7 @@ namespace ColorVision.Copilot
                 return;
 
             lock (_syncRoot)
-            {
-                _budgetExhausted = true;
                 _usedEstimatedUsage = true;
-            }
             throw new CopilotAgentContextWindowExceededException(estimatedInputTokens, _budget.InputBudgetTokens);
         }
 
@@ -275,6 +333,11 @@ namespace ColorVision.Copilot
             ChatOptions? options)
         {
             return WeightToTokenEstimate(EstimateInputWeight(messages, options));
+        }
+
+        internal static int EstimateMessageTokens(Microsoft.Extensions.AI.ChatMessage[] messages)
+        {
+            return WeightToTokenEstimate(EstimateMessageWeight(messages));
         }
 
         private static long EstimateInputWeight(

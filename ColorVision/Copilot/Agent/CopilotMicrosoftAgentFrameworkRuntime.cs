@@ -299,7 +299,11 @@ namespace ColorVision.Copilot
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
                 retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(retryChatClient, bridge.RecordUnknownToolCall);
+            var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
+                retryChatClient,
+                tokenBudget.InputBudgetTokens,
+                recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
+            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(contextRecoveryChatClient, bridge.RecordUnknownToolCall);
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
             {
@@ -495,6 +499,7 @@ namespace ColorVision.Copilot
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
             var providerInterrupted = false;
+            var contextWindowExceeded = false;
             try
             {
                 while (true)
@@ -589,8 +594,16 @@ namespace ColorVision.Copilot
             }
             catch (CopilotAgentContextWindowExceededException ex)
             {
+                contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent provider call was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
+                emit(CopilotAgentEvent.AnswerDelta(ex.Message));
+            }
+            catch (CopilotAgentContextWindowRecoveryExhaustedException ex)
+            {
+                contextWindowExceeded = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent context recovery stopped after one bounded compaction attempt ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages; target {ex.TargetInputTokens:N0} input tokens)."));
                 emit(CopilotAgentEvent.AnswerDelta(ex.Message));
             }
             catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
@@ -621,6 +634,7 @@ namespace ColorVision.Copilot
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
+                && !contextWindowExceeded
                 && !hasModelFinalAnswer)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
@@ -635,7 +649,7 @@ namespace ColorVision.Copilot
                     .ToArray();
                 try
                 {
-                    var repairResponse = await retryChatClient.GetResponseAsync(
+                    var repairResponse = await contextRecoveryChatClient.GetResponseAsync(
                         repairMessages,
                         BuildFinalAnswerOptions(request.Profile),
                         cancellationToken);
@@ -719,12 +733,14 @@ namespace ColorVision.Copilot
                 CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
                 CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
                 _ when timeBudgetExhausted => CopilotAgentStopReason.BudgetExhausted,
+                _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer),
             };
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
+                && !contextWindowExceeded
                 && executionContractEvaluation.IsRequired
                 && !executionContractEvaluation.IsSatisfied)
             {
@@ -736,12 +752,20 @@ namespace ColorVision.Copilot
                 && controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
+                && !contextWindowExceeded
                 && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
             {
                 blockers = blockers.Append(executionContractBlocker).ToArray();
             }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();
+            if (contextWindowExceeded
+                && !blockers.Any(blocker => string.Equals(blocker.Code, "provider_context_window", StringComparison.Ordinal)))
+            {
+                blockers = blockers.Prepend(CreateProviderOutputBlocker(
+                    timeBudgetExhausted: false,
+                    contextWindowExceeded: true)).ToArray();
+            }
             if (stopReason == CopilotAgentStopReason.BudgetExhausted
                 && !hasModelFinalAnswer
                 && !blockers.Any(blocker => blocker.Kind == CopilotAgentBlockerKind.ProviderOutput))
@@ -863,9 +887,13 @@ namespace ColorVision.Copilot
                 tokenBudget,
                 snapshot => emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
-            using var retryChatClient = new CopilotProviderRetryChatClient(
+            var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
                 retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
+            using var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
+                retryChatClient,
+                tokenBudget.InputBudgetTokens,
+                recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
 
             var usage = CopilotTokenUsage.Empty;
             var finalAnswer = string.Empty;
@@ -873,7 +901,7 @@ namespace ColorVision.Copilot
             var contextWindowExceeded = false;
             try
             {
-                var response = await retryChatClient.GetResponseAsync(
+                var response = await contextRecoveryChatClient.GetResponseAsync(
                     messages,
                     BuildFinalAnswerOptions(request.Profile),
                     cancellationToken);
@@ -899,6 +927,12 @@ namespace ColorVision.Copilot
                 contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
                     $"Final-answer-only recovery was rejected locally because its estimated input ({ex.EstimatedInputTokens:N0} tokens) exceeded the configured input window ({ex.InputBudgetTokens:N0} tokens)."));
+            }
+            catch (CopilotAgentContextWindowRecoveryExhaustedException ex)
+            {
+                contextWindowExceeded = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Final-answer-only context recovery stopped after one bounded compaction attempt ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages; target {ex.TargetInputTokens:N0} input tokens)."));
             }
             catch (Exception ex)
             {
@@ -928,9 +962,11 @@ namespace ColorVision.Copilot
             var budgetExhausted = timeBudgetExhausted || budgetSnapshot.BudgetExhausted;
             var stopReason = hasFinalAnswer
                 ? CopilotAgentStopReason.Completed
-                : budgetExhausted
-                    ? CopilotAgentStopReason.BudgetExhausted
-                    : CopilotAgentStopReason.IncompleteOutput;
+                : contextWindowExceeded
+                    ? CopilotAgentStopReason.ProviderFailure
+                    : budgetExhausted
+                        ? CopilotAgentStopReason.BudgetExhausted
+                        : CopilotAgentStopReason.IncompleteOutput;
             IReadOnlyList<CopilotAgentBlockerSnapshot> blockers = hasFinalAnswer
                 ? Array.Empty<CopilotAgentBlockerSnapshot>()
                 : [CreateProviderOutputBlocker(
@@ -995,7 +1031,7 @@ namespace ColorVision.Copilot
                 Summary = timeBudgetExhausted
                     ? "The final-answer-only provider call exhausted its time budget."
                     : contextWindowExceeded
-                        ? "The final-answer-only request exceeded the configured model context window before it could be sent."
+                        ? "The provider rejected the request as larger than its actual context window after one bounded compaction recovery."
                         : requestBudgetExhausted
                             ? "The Agent request budget was exhausted before a final answer was produced."
                             : "The model returned no final answer after the bounded finalization attempt.",
