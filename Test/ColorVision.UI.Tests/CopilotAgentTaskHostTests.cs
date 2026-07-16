@@ -32,10 +32,11 @@ public sealed class CopilotAgentTaskHostTests
         Assert.Equal(CopilotAgentControlIntent.Pause, run.RunControl?.Intent);
 
         release.TrySetResult(null);
-        await run.Completion;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.Completion);
 
         Assert.False(host.IsActive);
         Assert.Equal(CopilotHostedRunState.Completed, run.State);
+        Assert.True(run.Completion.IsCanceled);
         Assert.False(run.CanRequestPause);
         Assert.False(run.CanRequestCancel);
         Assert.Equal(
@@ -66,9 +67,10 @@ public sealed class CopilotAgentTaskHostTests
         Assert.False(run.CanRequestCancel);
 
         release.TrySetResult(null);
-        await run.Completion;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.Completion);
 
         Assert.False(host.IsActive);
+        Assert.True(run.Completion.IsCanceled);
     }
 
     [Fact]
@@ -87,7 +89,25 @@ public sealed class CopilotAgentTaskHostTests
         Assert.Equal(CopilotHostedRunState.CancelRequested, run.State);
         Assert.Contains(CopilotAgentTaskHostChangeKind.ControlRequested, changes);
         release.TrySetResult(null);
-        await run.Completion;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.Completion);
+        Assert.True(run.Completion.IsCanceled);
+    }
+
+    [Fact]
+    public async Task Host_DoesNotMisclassifyUnrequestedOperationCancellationAsHostCancellation()
+    {
+        var host = new CopilotAgentTaskHost();
+        var run = host.Start(
+            "conversation-1",
+            CopilotAgentMode.Chat,
+            _ => Task.FromException(new OperationCanceledException("provider aborted")));
+
+        var error = await Assert.ThrowsAsync<OperationCanceledException>(() => run.Completion);
+
+        Assert.Equal("provider aborted", error.Message);
+        Assert.True(run.Completion.IsFaulted);
+        Assert.False(run.Completion.IsCanceled);
+        Assert.False(host.IsActive);
     }
 
     [Fact]
@@ -189,11 +209,12 @@ public sealed class CopilotAgentTaskHostTests
 
         Assert.NotNull(queued);
         Assert.True(host.RequestCancel(queued.Id));
-        await queued.Completion;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => queued.Completion);
 
         Assert.False(queued.HasStarted);
         Assert.Equal(CopilotAgentControlIntent.Cancel, queued.RunControl?.Intent);
         Assert.Equal(CopilotHostedRunState.Completed, queued.State);
+        Assert.True(queued.Completion.IsCanceled);
         Assert.Equal(0, queuedExecutionCount);
         Assert.Equal(0, host.QueuedCount);
         Assert.True(host.TrySchedule("conversation-3", CopilotAgentMode.Auto, _ => Task.CompletedTask, out var replacement));
@@ -231,11 +252,14 @@ public sealed class CopilotAgentTaskHostTests
         };
 
         releaseActive.TrySetResult(null);
-        await Task.WhenAll(active.Completion, second.Completion, third.Completion).WaitAsync(TimeSpan.FromSeconds(5));
+        await active.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => second.Completion.WaitAsync(TimeSpan.FromSeconds(5)));
+        await third.Completion.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(0, secondExecutionCount);
         Assert.False(second.HasStarted);
         Assert.Equal(CopilotAgentControlIntent.Cancel, second.RunControl?.Intent);
+        Assert.True(second.Completion.IsCanceled);
         Assert.DoesNotContain(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.Started);
         Assert.Contains(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.ControlRequested);
         Assert.Contains(changes, change => change.RunId == second.Id && change.Kind == CopilotAgentTaskHostChangeKind.Completed);

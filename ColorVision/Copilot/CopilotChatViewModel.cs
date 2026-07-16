@@ -1109,9 +1109,20 @@ namespace ColorVision.Copilot
 
             DismissLocalCommandResult();
             InputText = string.Empty;
-            await hostedRun.Completion;
+            await AwaitHostedRunCompletionAsync(hostedRun);
             if (!hostedRun.HasStarted)
                 FinalizeCancelledQueuedRun(conversation, assistantMessage);
+        }
+
+        private static async Task AwaitHostedRunCompletionAsync(CopilotHostedAgentRun hostedRun)
+        {
+            try
+            {
+                await hostedRun.Completion;
+            }
+            catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
+            {
+            }
         }
 
         private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
@@ -2836,7 +2847,7 @@ namespace ColorVision.Copilot
                 conversation.Id,
                 userMessage.RequestMode,
                 run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshWebContext));
-            await hostedRun.Completion;
+            await AwaitHostedRunCompletionAsync(hostedRun);
         }
 
         private async Task ExecuteHostedRetryAsync(

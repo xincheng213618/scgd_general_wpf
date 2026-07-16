@@ -154,8 +154,13 @@ namespace ColorVision.Copilot
 
         internal void Complete(Exception? error)
         {
-            Interlocked.Exchange(ref _state, (int)CopilotHostedRunState.Completed);
-            if (error == null)
+            var previousState = (CopilotHostedRunState)Interlocked.Exchange(ref _state, (int)CopilotHostedRunState.Completed);
+            if (previousState is CopilotHostedRunState.PauseRequested or CopilotHostedRunState.CancelRequested
+                || _cancellationToken.IsCancellationRequested)
+            {
+                _completion.TrySetCanceled(_cancellationToken);
+            }
+            else if (error == null)
                 _completion.TrySetResult(null);
             else
                 _completion.TrySetException(error);
