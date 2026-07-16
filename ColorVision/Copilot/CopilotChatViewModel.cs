@@ -1255,7 +1255,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var requestProfile = SelectedProfile.Clone();
+            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
             if (!TryValidatePromptBudget(prompt, requestMode, requestProfile))
                 return;
             if (!TryValidateComposerAttachments(Attachments))
@@ -3893,7 +3893,7 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var requestProfile = SelectedProfile.Clone();
+            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(SelectedProfile);
             if (!TryValidateComposerCharacterLimit(prompt)
                 || !TryValidatePromptBudget(prompt, userMessage.RequestMode, requestProfile))
             {
