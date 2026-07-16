@@ -158,12 +158,15 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(state);
             state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
-            return JsonConvert.SerializeObject(state, SerializerSettings);
+            var serializedState = JsonConvert.SerializeObject(state, SerializerSettings);
+            ValidateSerializedStateSize(serializedState);
+            return serializedState;
         }
 
         public async Task SaveSerializedAsync(string serializedState, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(serializedState);
+            ValidateSerializedStateSize(serializedState);
 
             await _fileGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -388,14 +391,31 @@ namespace ColorVision.Copilot
 
             try
             {
-                if (new FileInfo(filePath).Length > MaximumStateFileBytes)
+                using var stream = new FileStream(
+                    filePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize: 8192,
+                    FileOptions.SequentialScan);
+                if (stream.Length > MaximumStateFileBytes)
                     return false;
 
-                var json = File.ReadAllText(filePath);
-                if (!HasTrustedDocumentShape(json))
+                using var textReader = new StreamReader(
+                    stream,
+                    Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: true,
+                    bufferSize: 8192,
+                    leaveOpen: false);
+                using var jsonReader = new JsonTextReader(textReader) { CloseInput = false };
+                if (JToken.Load(jsonReader) is not JObject document
+                    || jsonReader.Read()
+                    || !HasTrustedDocumentShape(document))
+                {
                     return false;
+                }
 
-                var deserializedState = JsonConvert.DeserializeObject<CopilotChatState>(json, SerializerSettings);
+                var deserializedState = document.ToObject<CopilotChatState>(JsonSerializer.Create(SerializerSettings));
                 if (deserializedState == null)
                     return false;
 
@@ -409,11 +429,20 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool HasTrustedDocumentShape(string json)
+        private static void ValidateSerializedStateSize(string serializedState)
         {
-            if (JToken.Parse(json) is not JObject document)
-                return false;
+            if (serializedState.Length <= MaximumStateFileBytes
+                && Encoding.UTF8.GetByteCount(serializedState) <= MaximumStateFileBytes)
+            {
+                return;
+            }
 
+            throw new InvalidDataException(
+                $"Copilot state snapshot exceeded the size limit ({MaximumStateFileBytes / 1024 / 1024} MB).");
+        }
+
+        private static bool HasTrustedDocumentShape(JObject document)
+        {
             var schemaToken = document.GetValue(nameof(CopilotChatState.SchemaVersion), StringComparison.OrdinalIgnoreCase);
             if (schemaToken != null)
             {

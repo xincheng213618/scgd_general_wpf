@@ -227,6 +227,24 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public void StateStore_UsesBackupWhenPrimaryStateExceedsSizeLimit()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "backup-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        state.ActiveProfileId = "current-profile";
+        store.Save(state);
+        using (var stream = new FileStream(store.StateFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            stream.SetLength(64L * 1024 * 1024 + 1);
+
+        var recovered = store.Load();
+
+        Assert.Equal("backup-profile", recovered.ActiveProfileId);
+        Assert.Equal(CopilotChatStateLoadSource.Backup, store.LastLoadStatus.Source);
+    }
+
+    [Fact]
     public void StateStore_UsesBackupWhenPrimaryStateEnvelopeIsIncomplete()
     {
         var store = new CopilotChatStateStore(_tempRoot);
@@ -350,6 +368,25 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         File.WriteAllText(store.StateFilePath, "{ corrupt primary", Encoding.UTF8);
         Assert.Equal("backup-profile", store.Load().ActiveProfileId);
+    }
+
+    [Fact]
+    public async Task StateStore_RejectsOversizedDetachedSnapshotBeforeTouchingRecoveryFiles()
+    {
+        var store = new CopilotChatStateStore(_tempRoot);
+        var state = new CopilotChatState { ActiveProfileId = "current-profile" };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Model"));
+        store.Save(state);
+        var primaryBefore = File.ReadAllText(store.StateFilePath);
+        var utf8BytesPerCharacter = Encoding.UTF8.GetByteCount("界");
+        var oversizedSnapshot = new string('界', (int)(64L * 1024 * 1024 / utf8BytesPerCharacter) + 1);
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => store.SaveSerializedAsync(oversizedSnapshot));
+
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(primaryBefore, File.ReadAllText(store.StateFilePath));
+        Assert.False(File.Exists(store.TemporaryStateFilePath));
+        Assert.Equal("current-profile", store.Load().ActiveProfileId);
     }
 
     [Fact]
