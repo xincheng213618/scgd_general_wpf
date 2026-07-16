@@ -28,8 +28,27 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotConversationRequestBuilder
     {
+        private const int BinaryInspectionBytes = 512;
         public const int AttachmentContentLimit = 12_000;
         public const int MaximumWebContextCharacters = 8_000;
+        private static readonly byte[][] BinaryFileSignatures =
+        [
+            [0x25, 0x50, 0x44, 0x46, 0x2D],                         // PDF
+            [0x4D, 0x5A],                                           // Windows executable
+            [0x7F, 0x45, 0x4C, 0x46],                               // ELF executable
+            [0x50, 0x4B, 0x03, 0x04],                               // ZIP and Office Open XML
+            [0x50, 0x4B, 0x05, 0x06],
+            [0x50, 0x4B, 0x07, 0x08],
+            [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],       // PNG
+            [0xFF, 0xD8, 0xFF],                                     // JPEG
+            [0x47, 0x49, 0x46, 0x38],                               // GIF
+            [0x52, 0x49, 0x46, 0x46],                               // RIFF (WebP/WAV/AVI)
+            [0x1F, 0x8B],                                           // GZip
+            [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C],                   // 7-Zip
+            [0x52, 0x61, 0x72, 0x21, 0x1A, 0x07],                   // RAR
+            [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],       // OLE compound document
+            [0x53, 0x51, 0x4C, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6F, 0x72, 0x6D, 0x61, 0x74, 0x20, 0x33, 0x00],
+        ];
 
         private readonly Func<string, CancellationToken, Task<CopilotFetchedWebPageContent>> _loadWebPage;
 
@@ -329,11 +348,7 @@ namespace ColorVision.Copilot
                 if (!File.Exists(attachment.Value))
                     return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
 
-                var content = ReadBoundedTextFile(attachment.Value, out var wasTruncated);
-                if (wasTruncated)
-                    content += "\n...<truncated>";
-                var fence = ResolveCodeFence(attachment.Value);
-                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+                return FormatFileAttachmentBlock(attachment, ReadBoundedTextFile(attachment.Value));
             }
             catch (Exception ex)
             {
@@ -384,11 +399,8 @@ namespace ColorVision.Copilot
                 if (!File.Exists(attachment.Value))
                     return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
 
-                var (content, wasTruncated) = await ReadBoundedTextFileAsync(attachment.Value, cancellationToken).ConfigureAwait(false);
-                if (wasTruncated)
-                    content += "\n...<truncated>";
-                var fence = ResolveCodeFence(attachment.Value);
-                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+                var content = await ReadBoundedTextFileAsync(attachment.Value, cancellationToken).ConfigureAwait(false);
+                return FormatFileAttachmentBlock(attachment, content);
             }
             catch (OperationCanceledException)
             {
@@ -510,9 +522,32 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private static string ReadBoundedTextFile(string filePath, out bool wasTruncated)
+        private static string FormatFileAttachmentBlock(
+            CopilotAttachmentItem attachment,
+            CopilotBoundedTextFileContent fileContent)
+        {
+            if (fileContent.IsBinary)
+            {
+                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n"
+                    + "The file appears to contain binary data. Its raw bytes were not added to the model context; attach a supported image or a text export instead.\n";
+            }
+
+            var content = fileContent.Content;
+            if (fileContent.WasTruncated)
+                content += "\n...<truncated>";
+            var fence = ResolveCodeFence(attachment.Value);
+            return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
+        }
+
+        private static CopilotBoundedTextFileContent ReadBoundedTextFile(string filePath)
         {
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var prefix = new byte[BinaryInspectionBytes];
+            var prefixLength = ReadPrefix(stream, prefix);
+            if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
+                return new CopilotBoundedTextFileContent(string.Empty, WasTruncated: false, IsBinary: true);
+
+            stream.Position = 0;
             using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
             var buffer = new char[AttachmentContentLimit + 1];
             var totalRead = 0;
@@ -524,11 +559,14 @@ namespace ColorVision.Copilot
                 totalRead += read;
             }
 
-            wasTruncated = totalRead > AttachmentContentLimit || reader.Peek() >= 0;
-            return new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
+            var content = new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
+            return new CopilotBoundedTextFileContent(
+                content,
+                totalRead > AttachmentContentLimit || reader.Peek() >= 0,
+                IsBinaryText(content));
         }
 
-        private static async Task<(string Content, bool WasTruncated)> ReadBoundedTextFileAsync(
+        private static async Task<CopilotBoundedTextFileContent> ReadBoundedTextFileAsync(
             string filePath,
             CancellationToken cancellationToken)
         {
@@ -539,6 +577,12 @@ namespace ColorVision.Copilot
                 FileShare.ReadWrite,
                 bufferSize: 4096,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var prefix = new byte[BinaryInspectionBytes];
+            var prefixLength = await ReadPrefixAsync(stream, prefix, cancellationToken).ConfigureAwait(false);
+            if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
+                return new CopilotBoundedTextFileContent(string.Empty, WasTruncated: false, IsBinary: true);
+
+            stream.Position = 0;
             using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
             var buffer = new char[AttachmentContentLimit + 1];
             var totalRead = 0;
@@ -553,9 +597,97 @@ namespace ColorVision.Copilot
                 totalRead += read;
             }
 
-            return (
-                new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit)),
-                totalRead > AttachmentContentLimit);
+            var content = new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
+            return new CopilotBoundedTextFileContent(
+                content,
+                totalRead > AttachmentContentLimit,
+                IsBinaryText(content));
+        }
+
+        private static int ReadPrefix(FileStream stream, byte[] buffer)
+        {
+            var totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                var read = stream.Read(buffer, totalRead, buffer.Length - totalRead);
+                if (read == 0)
+                    break;
+                totalRead += read;
+            }
+            return totalRead;
+        }
+
+        private static async Task<int> ReadPrefixAsync(
+            FileStream stream,
+            byte[] buffer,
+            CancellationToken cancellationToken)
+        {
+            var totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                var read = await stream.ReadAsync(
+                    buffer.AsMemory(totalRead, buffer.Length - totalRead),
+                    cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+                totalRead += read;
+            }
+            return totalRead;
+        }
+
+        private static bool IsBinaryFilePrefix(ReadOnlySpan<byte> prefix)
+        {
+            if (prefix.Length == 0 || HasTextEncodingPreamble(prefix))
+                return false;
+            foreach (var signature in BinaryFileSignatures)
+            {
+                if (prefix.StartsWith(signature))
+                    return true;
+            }
+            if (prefix.Length >= 8
+                && prefix[4] == (byte)'f'
+                && prefix[5] == (byte)'t'
+                && prefix[6] == (byte)'y'
+                && prefix[7] == (byte)'p')
+            {
+                return true;
+            }
+
+            var controlBytes = 0;
+            foreach (var value in prefix)
+            {
+                if (value == 0)
+                    return true;
+                if (value < 0x20 && value is not 0x09 and not 0x0A and not 0x0C and not 0x0D)
+                    controlBytes++;
+            }
+            return controlBytes >= 4 && controlBytes * 20 >= prefix.Length;
+        }
+
+        private static bool HasTextEncodingPreamble(ReadOnlySpan<byte> prefix)
+        {
+            return prefix.StartsWith(Encoding.UTF8.Preamble)
+                || prefix.StartsWith(Encoding.Unicode.Preamble)
+                || prefix.StartsWith(Encoding.BigEndianUnicode.Preamble)
+                || prefix.StartsWith(Encoding.UTF32.Preamble)
+                || (prefix.Length >= 4
+                    && prefix[0] == 0x00
+                    && prefix[1] == 0x00
+                    && prefix[2] == 0xFE
+                    && prefix[3] == 0xFF);
+        }
+
+        private static bool IsBinaryText(ReadOnlySpan<char> content)
+        {
+            var controlCharacters = 0;
+            foreach (var value in content)
+            {
+                if (value == '\0')
+                    return true;
+                if (char.IsControl(value) && value is not '\t' and not '\n' and not '\f' and not '\r')
+                    controlCharacters++;
+            }
+            return controlCharacters >= 4 && controlCharacters * 20 >= content.Length;
         }
 
         private static string ResolveCodeFence(string filePath)
@@ -563,5 +695,10 @@ namespace ColorVision.Copilot
             var extension = Path.GetExtension(filePath).Trim().TrimStart('.');
             return string.IsNullOrWhiteSpace(extension) ? string.Empty : extension;
         }
+
+        private readonly record struct CopilotBoundedTextFileContent(
+            string Content,
+            bool WasTruncated,
+            bool IsBinary);
     }
 }
