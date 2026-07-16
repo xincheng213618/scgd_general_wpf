@@ -2355,12 +2355,16 @@ namespace ColorVision.Copilot
 
         private bool CanScheduleComposerRequest(CopilotAgentMode mode)
         {
-            return EvaluateComposerRequestAdmission(mode).IsAllowed;
+            return Volatile.Read(ref _disposeState) == 0
+                && !_isCompactingConversation
+                && EvaluateComposerRequestAdmission(mode).IsAllowed;
         }
 
         private bool CanScheduleConversationRequest(string? conversationId, CopilotAgentMode mode)
         {
-            return _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
+            return Volatile.Read(ref _disposeState) == 0
+                && !_isCompactingConversation
+                && _taskHost.EvaluateRequestAdmission(conversationId, mode).IsAllowed;
         }
 
         private CopilotRequestAdmissionResult EvaluateComposerRequestAdmission(CopilotAgentMode mode) =>
@@ -2404,13 +2408,13 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotContextItem>? contextAttachmentItems = null)
         {
             var normalizedPrompt = (prompt ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalizedPrompt))
+            if (Volatile.Read(ref _disposeState) == 1 || string.IsNullOrWhiteSpace(normalizedPrompt))
                 return new CopilotPromptQueueResult(false, false);
 
             if (IsEditingMessage)
                 CancelMessageEdit();
 
-            if (startNewConversation || SelectedConversation == null)
+            if ((startNewConversation || SelectedConversation == null) && CanSwitchConversation)
             {
                 var conversationTarget = ResolveNewConversationTarget();
                 SelectConversation(conversationTarget, persist: false);
