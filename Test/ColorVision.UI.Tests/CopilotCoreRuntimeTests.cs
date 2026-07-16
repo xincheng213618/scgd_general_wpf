@@ -3456,6 +3456,101 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     }
 
     [Fact]
+    public async Task TokenBudget_ChargesEstimatedInputWhenProviderFailsBeforeResponse()
+    {
+        var provider = new PreResponseFailureChatClient(1, HttpStatusCode.ServiceUnavailable);
+        using var client = CreateTokenBudgetClient(provider, out var getSnapshot);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "12345678")],
+            cancellationToken: CancellationToken.None));
+
+        var snapshot = getSnapshot();
+        Assert.Equal(1, snapshot.ProviderCalls);
+        Assert.Equal(6, snapshot.ConsumedTokens);
+        Assert.True(snapshot.UsedEstimatedUsage);
+    }
+
+    [Fact]
+    public async Task TokenBudget_BlocksRetryWhenFailedAttemptConsumedRemainingBudget()
+    {
+        var provider = new PreResponseFailureChatClient(int.MaxValue, HttpStatusCode.ServiceUnavailable);
+        using var client = CreateTokenBudgetClient(provider, out var getSnapshot, requestTokenBudget: 10);
+        var messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "12345678") };
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => client.GetResponseAsync(
+            messages,
+            cancellationToken: CancellationToken.None));
+        var error = await Record.ExceptionAsync(() => client.GetResponseAsync(
+            messages,
+            cancellationToken: CancellationToken.None));
+
+        Assert.NotNull(error);
+        Assert.Equal("CopilotAgentTokenBudgetExceededException", error.GetType().Name);
+        var snapshot = getSnapshot();
+        Assert.Equal(1, snapshot.ProviderCalls);
+        Assert.Equal(6, snapshot.ConsumedTokens);
+        Assert.True(snapshot.BudgetExhausted);
+    }
+
+    [Fact]
+    public async Task TokenBudget_ChargesPartialStreamingOutputWhenProviderStreamFails()
+    {
+        var provider = new PartialStreamFailureChatClient();
+        using var client = CreateTokenBudgetClient(provider, out var getSnapshot);
+
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "12345678")],
+                cancellationToken: CancellationToken.None))
+            {
+            }
+        });
+
+        var snapshot = getSnapshot();
+        Assert.Equal(1, snapshot.ProviderCalls);
+        Assert.Equal(10, snapshot.ConsumedTokens);
+        Assert.True(snapshot.UsedEstimatedUsage);
+    }
+
+    [Fact]
+    public async Task TokenBudget_ChargesPartialStreamingOutputWhenConsumerStopsEarly()
+    {
+        var provider = new PartialStreamFailureChatClient();
+        using var client = CreateTokenBudgetClient(provider, out var getSnapshot);
+
+        await foreach (var _ in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "12345678")],
+            cancellationToken: CancellationToken.None))
+        {
+            break;
+        }
+
+        var snapshot = getSnapshot();
+        Assert.Equal(1, snapshot.ProviderCalls);
+        Assert.Equal(10, snapshot.ConsumedTokens);
+        Assert.True(snapshot.UsedEstimatedUsage);
+    }
+
+    [Fact]
+    public async Task TokenBudget_DoesNotCountProviderCallWhenAlreadyCancelled()
+    {
+        var provider = new PreResponseFailureChatClient(1, HttpStatusCode.ServiceUnavailable);
+        using var client = CreateTokenBudgetClient(provider, out var getSnapshot);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, "12345678")],
+            cancellationToken: cancellation.Token));
+
+        var snapshot = getSnapshot();
+        Assert.Equal(0, snapshot.ProviderCalls);
+        Assert.Equal(0, snapshot.ConsumedTokens);
+    }
+
+    [Fact]
     public async Task AgentFrameworkRuntime_ResumesPersistedFrameworkSessionAndReconcilesNewerVisibleHistory()
     {
         var profile = CreateProfile();
@@ -4413,15 +4508,19 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             new CopilotToolRegistry(Array.Empty<ICopilotTool>()),
             new CopilotAgentContextBuilder(),
             _ => fakeChatClient);
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(40));
+        using var cancellation = new CancellationTokenSource();
         var events = new List<CopilotAgentEvent>();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runtime.RunAsync(new CopilotAgentRequest
+        var runTask = runtime.RunAsync(new CopilotAgentRequest
         {
             UserText = "cancel the long provider request",
             Profile = CreateProfile(),
             Mode = CopilotAgentMode.Diagnose,
-        }, events.Add, cancellation.Token));
+        }, events.Add, cancellation.Token);
+        await fakeChatClient.StreamStarted.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
 
         Assert.Equal(1, fakeChatClient.StreamCallCount);
         Assert.DoesNotContain(events, item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
@@ -4447,6 +4546,8 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         Assert.Equal(3, fakeChatClient.StreamCallCount);
         Assert.Equal(3, result.Budget.ProviderCalls);
+        Assert.True(result.Budget.ConsumedTokens > 0);
+        Assert.True(result.Budget.UsedEstimatedUsage);
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         var retryDiagnostics = events.Where(item => item.Type == CopilotAgentEventType.RuntimeDiagnostic
             && item.Text.Contains("provider request retry", StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -4504,6 +4605,9 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
 
         Assert.Equal(1, fakeChatClient.StreamCallCount);
         Assert.Equal(CopilotAgentStopReason.ProviderFailure, result.StopReason);
+        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.True(result.Budget.ConsumedTokens > 0);
+        Assert.True(result.Budget.UsedEstimatedUsage);
         Assert.NotNull(result.SessionCheckpoint);
         var blocker = Assert.Single(result.Blockers, item => item.Kind == CopilotAgentBlockerKind.ProviderOutput);
         Assert.Equal("provider_interrupted", blocker.Code);
@@ -5949,6 +6053,31 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
         };
     }
 
+    private static IChatClient CreateTokenBudgetClient(
+        IChatClient provider,
+        out Func<CopilotAgentBudgetSnapshot> getSnapshot,
+        int requestTokenBudget = 10_000)
+    {
+        var clientType = typeof(CopilotAgentRequest).Assembly.GetType(
+            "ColorVision.Copilot.CopilotTokenBudgetChatClient",
+            throwOnError: true)!;
+        var constructor = Assert.Single(clientType.GetConstructors(), item => item.GetParameters().Length == 3);
+        var client = Assert.IsAssignableFrom<IChatClient>(constructor.Invoke(
+        [
+            provider,
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                MaxOutputTokens = 256,
+                RequestTokenBudget = requestTokenBudget,
+            },
+            null,
+        ]));
+        var snapshotProperty = clientType.GetProperty("Snapshot")!;
+        getSnapshot = () => Assert.IsType<CopilotAgentBudgetSnapshot>(snapshotProperty.GetValue(client));
+        return client;
+    }
+
     private static HttpResponseMessage CreateEventStreamResponse(string content)
     {
         return new HttpResponseMessage(HttpStatusCode.OK)
@@ -7042,8 +7171,11 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
     private sealed class BlockingChatClient : IChatClient
     {
         private int _streamCallCount;
+        private readonly TaskCompletionSource _streamStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int StreamCallCount => Volatile.Read(ref _streamCallCount);
+
+        public Task StreamStarted => _streamStarted.Task;
 
         public async Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -7057,6 +7189,7 @@ public sealed class CopilotCoreRuntimeTests : IDisposable
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _streamCallCount);
+            _streamStarted.TrySetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             yield break;
         }

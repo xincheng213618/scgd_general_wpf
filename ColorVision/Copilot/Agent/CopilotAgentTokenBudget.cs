@@ -95,11 +95,22 @@ namespace ColorVision.Copilot
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
+            var estimatedInputTokens = EstimateInputTokens(materializedMessages, options);
+            if (!TryBeginProviderCall(estimatedInputTokens))
                 throw new CopilotAgentTokenBudgetExceededException();
 
-            var response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+            ChatResponse response;
+            try
+            {
+                response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+            }
+            catch
+            {
+                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                throw;
+            }
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
             CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageCharacters(response.Messages)));
             return response;
@@ -110,20 +121,31 @@ namespace ColorVision.Copilot
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
             if (!TryBeginProviderCall(EstimateInputTokens(materializedMessages, options)))
                 throw new CopilotAgentTokenBudgetExceededException();
 
             var usage = CopilotTokenUsage.Empty;
             long responseCharacters = 0;
-            await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
+            var completed = false;
+            try
             {
-                responseCharacters += EstimateContentCharacters(update.Contents);
-                usage = usage.MergeProgress(ExtractUsage(update.Contents));
-                yield return update;
+                await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
+                {
+                    responseCharacters += EstimateContentCharacters(update.Contents);
+                    usage = usage.MergeProgress(ExtractUsage(update.Contents));
+                    yield return update;
+                }
+                completed = true;
             }
-
-            CommitUsage(usage, EstimateTokens(materializedMessages, options, responseCharacters));
+            finally
+            {
+                CommitUsage(
+                    usage,
+                    EstimateTokens(materializedMessages, options, responseCharacters),
+                    requireEstimatedFloor: !completed);
+            }
         }
 
         private bool TryBeginProviderCall(int estimatedInputTokens)
@@ -154,20 +176,25 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private void CommitUsage(CopilotTokenUsage actualUsage, int estimatedTokens)
+        private void CommitUsage(CopilotTokenUsage actualUsage, int estimatedTokens, bool requireEstimatedFloor = false)
         {
             lock (_syncRoot)
             {
+                var consumedTokens = Math.Max(1, estimatedTokens);
                 if (actualUsage.HasAny)
                 {
                     _usage = _usage.Add(actualUsage);
-                    _consumedTokens += Math.Max(1, actualUsage.EffectiveTotalTokens);
+                    var actualTokens = Math.Max(1, actualUsage.EffectiveTotalTokens);
+                    if (requireEstimatedFloor && actualTokens < consumedTokens)
+                        _usedEstimatedUsage = true;
+                    else
+                        consumedTokens = actualTokens;
                 }
                 else
                 {
                     _usedEstimatedUsage = true;
-                    _consumedTokens += Math.Max(1, estimatedTokens);
                 }
+                _consumedTokens += consumedTokens;
 
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
