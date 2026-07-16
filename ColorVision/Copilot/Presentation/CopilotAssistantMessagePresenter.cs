@@ -75,7 +75,16 @@ namespace ColorVision.Copilot
             if (delta.HasReasoning)
             {
                 assistantMessage.MarkThinkingStarted();
-                assistantMessage.ReasoningContent += delta.ReasoningContent;
+                if (!assistantMessage.IsReasoningContentTruncated)
+                {
+                    var boundedReasoning = CopilotChatMessage.BoundAssistantDelta(
+                        assistantMessage.ReasoningContent.Length,
+                        delta.ReasoningContent,
+                        CopilotChatMessage.ReasoningTruncationMarker,
+                        out var reasoningTruncated);
+                    assistantMessage.ReasoningContent += boundedReasoning;
+                    assistantMessage.IsReasoningContentTruncated = reasoningTruncated;
+                }
                 assistantMessage.IsReasoningInProgress = true;
                 assistantMessage.IsReasoningExpanded = true;
             }
@@ -85,10 +94,22 @@ namespace ColorVision.Copilot
 
             assistantMessage.ClearDisplayOnlyContent();
             var isFirstContentChunk = string.IsNullOrWhiteSpace(assistantMessage.Content);
+            if (assistantMessage.IsResponseContentTruncated)
+            {
+                assistantMessage.IsReasoningInProgress = false;
+                return;
+            }
+
+            var boundedContent = CopilotChatMessage.BoundAssistantDelta(
+                assistantMessage.Content.Length,
+                delta.Content,
+                CopilotChatMessage.ResponseTruncationMarker,
+                out var contentTruncated);
             if (recordResponseTimeline)
-                assistantMessage.AppendResponseTimelineText(delta.Content);
+                assistantMessage.AppendResponseTimelineText(boundedContent);
             else
-                assistantMessage.Content += delta.Content;
+                assistantMessage.Content += boundedContent;
+            assistantMessage.IsResponseContentTruncated = contentTruncated;
             assistantMessage.IsReasoningInProgress = false;
             if (isFirstContentChunk && assistantMessage.HasReasoning)
             {

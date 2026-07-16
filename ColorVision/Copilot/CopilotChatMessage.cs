@@ -98,6 +98,9 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotChatMessage : ViewModelBase
     {
+        internal const int MaximumAssistantTextCharacters = 262_144;
+        internal const string ResponseTruncationMarker = "\n\n...<response truncated by app>";
+        internal const string ReasoningTruncationMarker = "\n...<reasoning truncated by app>";
         private const int MaximumResponseInterruptionDetailLength = 800;
         private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
         private static readonly string[] ExecutionBlockSeparators = { "\r\n\r\n", "\n\n", "\r\r" };
@@ -171,6 +174,10 @@ namespace ColorVision.Copilot
             }
         }
         private string _content = string.Empty;
+
+        public bool IsResponseContentTruncated { get; set; }
+
+        public bool ShouldSerializeIsResponseContentTruncated() => IsResponseContentTruncated;
 
         public string RequestContent
         {
@@ -562,6 +569,10 @@ namespace ColorVision.Copilot
         }
         private string _reasoningContent = string.Empty;
 
+        public bool IsReasoningContentTruncated { get; set; }
+
+        public bool ShouldSerializeIsReasoningContentTruncated() => IsReasoningContentTruncated;
+
         [JsonIgnore]
         public bool HasReasoning => !string.IsNullOrWhiteSpace(ReasoningContent);
 
@@ -759,6 +770,12 @@ namespace ColorVision.Copilot
                 Content = string.Empty;
                 changed = true;
             }
+            else if (!IsUser && _content.Length > MaximumAssistantTextCharacters)
+            {
+                Content = TruncateAssistantText(_content, ResponseTruncationMarker);
+                IsResponseContentTruncated = true;
+                changed = true;
+            }
 
             if (_requestContent == null)
             {
@@ -786,6 +803,18 @@ namespace ColorVision.Copilot
             if (_reasoningContent == null)
             {
                 ReasoningContent = string.Empty;
+                changed = true;
+            }
+            else if (_reasoningContent.Length > MaximumAssistantTextCharacters)
+            {
+                ReasoningContent = TruncateAssistantText(_reasoningContent, ReasoningTruncationMarker);
+                IsReasoningContentTruncated = true;
+                changed = true;
+            }
+            if (IsUser && (IsResponseContentTruncated || IsReasoningContentTruncated))
+            {
+                IsResponseContentTruncated = false;
+                IsReasoningContentTruncated = false;
                 changed = true;
             }
 
@@ -1038,6 +1067,7 @@ namespace ColorVision.Copilot
 
         public void ResetResponseTimelineText()
         {
+            IsResponseContentTruncated = false;
             if (!UsesResponseTimeline)
             {
                 Content = string.Empty;
@@ -1455,6 +1485,49 @@ namespace ColorVision.Copilot
         {
             var text = (value ?? string.Empty).Trim();
             return text.Length <= 1600 ? text : text[..1600] + Environment.NewLine + "...";
+        }
+
+        internal static string BoundAssistantDelta(
+            int existingLength,
+            string? delta,
+            string truncationMarker,
+            out bool truncated)
+        {
+            truncated = false;
+            var value = delta ?? string.Empty;
+            if (value.Length == 0)
+                return string.Empty;
+
+            var payloadLimit = MaximumAssistantTextCharacters - truncationMarker.Length;
+            var remaining = Math.Max(0, payloadLimit - existingLength);
+            if (value.Length <= remaining)
+                return value;
+
+            truncated = true;
+            var retainedLength = Math.Min(remaining, value.Length);
+            if (retainedLength > 0
+                && retainedLength < value.Length
+                && char.IsHighSurrogate(value[retainedLength - 1])
+                && char.IsLowSurrogate(value[retainedLength]))
+            {
+                retainedLength--;
+            }
+
+            return value[..retainedLength] + truncationMarker;
+        }
+
+        private static string TruncateAssistantText(string value, string truncationMarker)
+        {
+            var retainedLength = MaximumAssistantTextCharacters - truncationMarker.Length;
+            if (retainedLength > 0
+                && retainedLength < value.Length
+                && char.IsHighSurrogate(value[retainedLength - 1])
+                && char.IsLowSurrogate(value[retainedLength]))
+            {
+                retainedLength--;
+            }
+
+            return value[..retainedLength].TrimEnd() + truncationMarker;
         }
     }
 

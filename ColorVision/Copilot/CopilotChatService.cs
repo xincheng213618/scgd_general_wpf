@@ -67,6 +67,8 @@ namespace ColorVision.Copilot
         {
             var reasoningBuilder = new StringBuilder();
             var contentBuilder = new StringBuilder();
+            var reasoningTruncated = false;
+            var contentTruncated = false;
 
             var usage = await StreamReplyAsync(
                 config,
@@ -74,10 +76,22 @@ namespace ColorVision.Copilot
                 delta =>
                 {
                     if (delta.HasReasoning)
-                        reasoningBuilder.Append(delta.ReasoningContent);
+                    {
+                        AppendBoundedReplyText(
+                            reasoningBuilder,
+                            delta.ReasoningContent,
+                            CopilotChatMessage.ReasoningTruncationMarker,
+                            ref reasoningTruncated);
+                    }
 
                     if (delta.HasContent)
-                        contentBuilder.Append(delta.Content);
+                    {
+                        AppendBoundedReplyText(
+                            contentBuilder,
+                            delta.Content,
+                            CopilotChatMessage.ResponseTruncationMarker,
+                            ref contentTruncated);
+                    }
                 },
                 onRetry: null,
                 imageAttachments: imageAttachments,
@@ -86,6 +100,23 @@ namespace ColorVision.Copilot
             return new CopilotChatReply(
                 new CopilotStreamDelta(reasoningBuilder.ToString(), contentBuilder.ToString()),
                 usage);
+        }
+
+        private static void AppendBoundedReplyText(
+            StringBuilder builder,
+            string value,
+            string truncationMarker,
+            ref bool truncated)
+        {
+            if (truncated)
+                return;
+
+            var bounded = CopilotChatMessage.BoundAssistantDelta(
+                builder.Length,
+                value,
+                truncationMarker,
+                out truncated);
+            builder.Append(bounded);
         }
 
         public Task<CopilotTokenUsage> StreamReplyAsync(
