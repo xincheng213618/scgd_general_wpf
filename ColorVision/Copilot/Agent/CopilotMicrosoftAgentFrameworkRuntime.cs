@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ClientModel;
+using System.ClientModel.Primitives;
 
 namespace ColorVision.Copilot
 {
@@ -1166,6 +1167,7 @@ namespace ColorVision.Copilot
                 {
                     ApiKey = profile.ApiKey,
                     BaseUrl = profile.BaseUrl.Trim().TrimEnd('/'),
+                    HttpClient = CopilotProviderHttpTransport.CreateClient(),
                 });
                 return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
             }
@@ -1173,6 +1175,7 @@ namespace ColorVision.Copilot
             var options = new OpenAIClientOptions
             {
                 Endpoint = NormalizeOpenAiEndpoint(profile.BaseUrl),
+                Transport = new HttpClientPipelineTransport(CopilotProviderHttpTransport.CreateClient()),
             };
             var client = new ChatClient(profile.Model, new ApiKeyCredential(profile.ApiKey), options);
             return client.AsIChatClient();

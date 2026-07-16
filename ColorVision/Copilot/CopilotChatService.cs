@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -53,7 +52,7 @@ namespace ColorVision.Copilot
         private const int MaximumStreamingResponseBytes = 8 * 1024 * 1024;
         private const int MaximumStreamingLineCharacters = 1024 * 1024;
         private const string ProviderStatusCodeDataKey = "ColorVision.Copilot.ProviderStatusCode";
-        private static readonly HttpClient SharedHttpClient = CreateHttpClient();
+        private static readonly HttpClient SharedHttpClient = CopilotProviderHttpTransport.CreateClient();
         private readonly HttpClient _httpClient;
         private readonly int _maximumAttempts;
         private readonly Func<int, TimeSpan> _retryDelayFactory;
@@ -248,6 +247,15 @@ namespace ColorVision.Copilot
         {
             using var request = CreateRequest(config, messages, imagePayloads);
             using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+
+            var statusCode = (int)response.StatusCode;
+            if (statusCode is >= 300 and < 400)
+            {
+                var redirectException = new InvalidOperationException(
+                    $"HTTP {statusCode}: The provider redirected the request. Redirects are disabled to prevent sending API keys or prompt content to another location. Configure the final API base URL directly.");
+                redirectException.Data[ProviderStatusCodeDataKey] = statusCode;
+                throw redirectException;
+            }
 
             if (!response.IsSuccessStatusCode)
             {
@@ -481,17 +489,6 @@ namespace ColorVision.Copilot
                 });
             }
             return content;
-        }
-
-        private static HttpClient CreateHttpClient()
-        {
-            return new HttpClient(new HttpClientHandler
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
-            })
-            {
-                Timeout = TimeSpan.FromMinutes(5),
-            };
         }
 
         private static async Task<CopilotChatStreamResult> ReadStreamingResponseAsync(
