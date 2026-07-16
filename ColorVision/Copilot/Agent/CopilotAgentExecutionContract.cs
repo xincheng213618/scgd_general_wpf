@@ -12,6 +12,7 @@ namespace ColorVision.Copilot
     {
         None,
         AttachedFileEvidence,
+        GitReviewEvidence,
         DirectUrlEvidence,
         PublicWebSearch,
         WorkspaceEdit,
@@ -73,6 +74,7 @@ namespace ColorVision.Copilot
                 var requirementDescription = Requirement switch
                 {
                     CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
+                    CopilotAgentExecutionRequirement.GitReviewEvidence => "Git working tree and diff evidence",
                     CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
                     CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
                     CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
@@ -103,17 +105,6 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>();
             var requiresAttachedFileEvidence = attachedFileReadTools.Length > 0;
             var explicitlyDisallowsPublicWebAccess = CopilotToolIntentPolicy.ExplicitlyDisallowsPublicWebAccess(request);
-            if (explicitlyDisallowsPublicWebAccess)
-            {
-                if (!CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
-                    && !CopilotToolIntentPolicy.NeedsWorkspaceCreate(request)
-                    && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request)
-                    && !CopilotToolIntentPolicy.NeedsWorkspaceValidation(request)
-                    && !requiresAttachedFileEvidence)
-                {
-                    return None();
-                }
-            }
 
             var workspaceApplyTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceApplyTool).Select(tool => tool.Name);
             var workspaceValidationTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceValidationTool).Select(tool => tool.Name);
@@ -154,6 +145,25 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
                     [workspaceValidationTools],
                     attachedFileReadTools);
+            }
+
+            if (request.Mode == CopilotAgentMode.Review)
+            {
+                var gitWorkingTreeTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                var gitDiffTools = availableTools
+                    .Where(tool => string.Equals(tool.Name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
+                    .Select(tool => tool.Name)
+                    .ToArray();
+                if (gitWorkingTreeTools.Length > 0 || gitDiffTools.Length > 0)
+                {
+                    return Required(
+                        CopilotAgentExecutionRequirement.GitReviewEvidence,
+                        [gitWorkingTreeTools, gitDiffTools],
+                        attachedFileReadTools);
+                }
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
@@ -277,6 +287,14 @@ namespace ColorVision.Copilot
             {
                 return "Execution contract: the user attached one or more files, but no successful attached-file evidence has been collected. Call ReadAttachedFile now before answering or taking a dependent action. Base subsequent claims on its observation; if the read fails, report a concrete blocker instead of claiming the file was inspected.";
             }
+            if (missingGroup.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: Review mode requires current working-tree evidence before a code-review conclusion. Call InspectGitWorkingTree now and use its bounded status as evidence. If inspection fails or approval is denied, report the concrete blocker instead of claiming the repository state was inspected.";
+            }
+            if (missingGroup.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: Review mode has not collected the relevant staged or unstaged patch. Call InspectGitDiff now after working-tree inspection, then base findings only on the returned bounded diff. If output_complete is false, disclose the bounded scope and do not infer that omitted changes are clean.";
+            }
 
             return Requirement switch
             {
@@ -324,10 +342,16 @@ namespace ColorVision.Copilot
         {
             if (evaluation.MissingToolNames.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
                 return "required_attachment_evidence_missing";
+            if (evaluation.MissingToolNames.Any(name => string.Equals(name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)))
+            {
+                return "required_git_review_evidence_missing";
+            }
 
             return Requirement switch
             {
                 CopilotAgentExecutionRequirement.AttachedFileEvidence => "required_attachment_evidence_missing",
+                CopilotAgentExecutionRequirement.GitReviewEvidence => "required_git_review_evidence_missing",
                 CopilotAgentExecutionRequirement.DirectUrlEvidence => "required_url_evidence_missing",
                 CopilotAgentExecutionRequirement.PublicWebSearch => "required_web_search_missing",
                 CopilotAgentExecutionRequirement.WorkspaceEdit => "required_workspace_edit_missing",
