@@ -348,7 +348,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(config));
+            var request = new HttpRequestMessage(HttpMethod.Post, CopilotProviderEndpoint.Build(config));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -481,32 +481,6 @@ namespace ColorVision.Copilot
                 });
             }
             return content;
-        }
-
-        private static Uri BuildEndpoint(CopilotProfileConfig config)
-        {
-            var baseUrl = (config.BaseUrl ?? string.Empty).Trim().TrimEnd('/');
-            if (string.IsNullOrWhiteSpace(baseUrl))
-                throw new InvalidOperationException("Base URL is required.");
-
-            if (config.ProviderType == CopilotProviderType.AnthropicCompatible)
-            {
-                if (baseUrl.EndsWith("/messages", StringComparison.OrdinalIgnoreCase))
-                    return new Uri(baseUrl, UriKind.Absolute);
-
-                if (baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
-                    return new Uri(baseUrl + "/messages", UriKind.Absolute);
-
-                return new Uri(baseUrl + "/v1/messages", UriKind.Absolute);
-            }
-
-            if (baseUrl.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
-                return new Uri(baseUrl, UriKind.Absolute);
-
-            if (baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
-                return new Uri(baseUrl + "/chat/completions", UriKind.Absolute);
-
-            return new Uri(baseUrl + "/v1/chat/completions", UriKind.Absolute);
         }
 
         private static HttpClient CreateHttpClient()

@@ -308,6 +308,8 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="104" />
@@ -325,6 +327,20 @@
 
                                         <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
                                         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Row="2"
+                                                   Grid.Column="1"
+                                                   Margin="0,5,0,0"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   FontSize="11"
+                                                   Opacity="0.72"
+                                                   Text="{Binding SelectedProfile.EndpointStatusText}"
+                                                   TextWrapping="Wrap" />
+                                        <CheckBox Grid.Row="3"
+                                                  Grid.Column="1"
+                                                  Margin="0,8,0,0"
+                                                  Content="Allow API key over non-loopback HTTP"
+                                                  IsChecked="{Binding SelectedProfile.AllowInsecureHttp, UpdateSourceTrigger=PropertyChanged}"
+                                                  ToolTip="Use only for a trusted private model server when HTTPS is unavailable. The API key and prompt content will not be encrypted in transit." />
                                     </Grid>
                                 </StackPanel>
                             </Expander>

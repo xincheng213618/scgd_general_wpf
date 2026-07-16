@@ -63,6 +63,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(ProviderLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
+                    OnConfigurationStateChanged();
                 }
             }
         }
@@ -115,6 +116,21 @@ namespace ColorVision.Copilot
             }
         }
         private string _baseUrl = "https://api.deepseek.com/anthropic";
+
+        [DisplayName("Allow insecure HTTP")]
+        [Description("Allow a non-loopback HTTP endpoint to receive this profile's API key without transport encryption")]
+        public bool AllowInsecureHttp
+        {
+            get => _allowInsecureHttp;
+            set
+            {
+                if (SetProperty(ref _allowInsecureHttp, value))
+                    OnConfigurationStateChanged();
+            }
+        }
+        private bool _allowInsecureHttp;
+
+        public bool ShouldSerializeAllowInsecureHttp() => AllowInsecureHttp;
 
         [DisplayName("Model")]
         [Description("For example, gpt-4.1 or deepseek-v4-pro")]
@@ -180,10 +196,38 @@ namespace ColorVision.Copilot
         public bool IsConfigured =>
             !string.IsNullOrWhiteSpace(ApiKey) &&
             !string.IsNullOrWhiteSpace(BaseUrl) &&
-            !string.IsNullOrWhiteSpace(Model);
+            !string.IsNullOrWhiteSpace(Model) &&
+            CopilotProviderEndpoint.Validate(this).IsValid;
 
         [JsonIgnore]
-        public string ConfigurationStatusText => IsConfigured ? "Ready" : "Incomplete";
+        public string ConfigurationStatusText
+        {
+            get
+            {
+                if (!IsConfigured)
+                    return "Incomplete";
+                return CopilotProviderEndpoint.Validate(this).IsInsecureHttp ? "Ready · Insecure HTTP" : "Ready";
+            }
+        }
+
+        [JsonIgnore]
+        public string EndpointStatusText
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(BaseUrl))
+                    return "Enter an HTTPS model API base URL.";
+
+                var validation = CopilotProviderEndpoint.Validate(this);
+                if (!validation.IsValid)
+                    return validation.ErrorMessage;
+                if (validation.IsInsecureHttp)
+                    return "Warning: the API key will be sent over unencrypted remote HTTP.";
+                return string.Equals(validation.Endpoint!.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+                    ? "HTTPS protects the API key in transit."
+                    : "Loopback HTTP is allowed for a model server on this computer.";
+            }
+        }
 
         [JsonIgnore]
         public string ConfigurationStatusToolTip
@@ -191,9 +235,15 @@ namespace ColorVision.Copilot
             get
             {
                 var missing = BuildMissingConfigurationParts();
-                return missing.Length == 0
-                    ? "This profile has API key, endpoint, and model."
-                    : "Missing " + string.Join(", ", missing) + ".";
+                if (missing.Length > 0)
+                    return "Missing " + string.Join(", ", missing) + ".";
+
+                var validation = CopilotProviderEndpoint.Validate(this);
+                if (!validation.IsValid)
+                    return validation.ErrorMessage;
+                return validation.IsInsecureHttp
+                    ? "This profile is explicitly allowed to send its API key over unencrypted remote HTTP."
+                    : "This profile has API key, approved endpoint, and model.";
             }
         }
 
@@ -282,6 +332,7 @@ namespace ColorVision.Copilot
                 ProviderType = ProviderType,
                 ApiKey = ApiKey,
                 BaseUrl = BaseUrl,
+                AllowInsecureHttp = AllowInsecureHttp,
                 Model = Model,
                 MaxTokens = MaxTokens,
                 Temperature = Temperature,
@@ -326,8 +377,10 @@ namespace ColorVision.Copilot
 
         private void OnConfigurationStateChanged()
         {
+            OnPropertyChanged(nameof(IsConfigured));
             OnPropertyChanged(nameof(ConfigurationStatusText));
             OnPropertyChanged(nameof(ConfigurationStatusToolTip));
+            OnPropertyChanged(nameof(EndpointStatusText));
         }
 
         private string[] BuildMissingConfigurationParts()
