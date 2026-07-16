@@ -100,6 +100,7 @@ namespace ColorVision.Copilot
                 Summary = result.Success ? successSummary : failureSummary,
                 Content = result.Content,
                 ErrorMessage = result.Success ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
             };
         }
 

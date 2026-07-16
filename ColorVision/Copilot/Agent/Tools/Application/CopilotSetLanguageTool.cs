@@ -84,6 +84,7 @@ namespace ColorVision.Copilot
                 Summary = isWaitingForApproval ? "Language change is waiting for explicit ColorVision approval." : result.Success ? "Language change completed." : "Language change failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
                 Approval = result.Approval,
             };
         }

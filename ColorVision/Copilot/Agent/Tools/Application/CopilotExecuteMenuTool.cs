@@ -93,6 +93,7 @@ namespace ColorVision.Copilot
                     : result.Success ? "Menu command executed." : "Menu command execution failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
                 Approval = result.Approval,
             };
         }

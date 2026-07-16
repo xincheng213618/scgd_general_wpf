@@ -447,6 +447,7 @@ namespace ColorVision.Copilot.Mcp
                 Success = result.Success,
                 Content = result.Text,
                 ErrorCode = result.ErrorCode,
+                FailureKind = result.FailureKind,
                 Approval = result.RequiresApproval && !string.IsNullOrWhiteSpace(result.ApprovalActionId)
                     ? new CopilotToolApprovalInfo
                     {
@@ -2462,7 +2463,8 @@ namespace ColorVision.Copilot.Mcp
 
             return CopilotMcpToolCallResult.Fail(
                 errorCode,
-                string.IsNullOrWhiteSpace(result.ErrorMessage) ? text : result.ErrorMessage);
+                string.IsNullOrWhiteSpace(result.ErrorMessage) ? text : result.ErrorMessage,
+                result.FailureKind);
         }
 
         private static string FormatFlowSnapshot(CopilotFlowContextSnapshot snapshot)

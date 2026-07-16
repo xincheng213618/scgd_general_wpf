@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
                 Summary = isWaitingForApproval ? "Template patch is waiting for explicit ColorVision approval." : result.Success ? "Template patch applied to the active editor." : "Template patch application failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
                 Approval = result.Approval,
             };
         }

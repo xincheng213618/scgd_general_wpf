@@ -20,6 +20,8 @@ namespace ColorVision.Copilot
 
         public string ErrorCode { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public bool IsApprovalRequired => Approval != null;

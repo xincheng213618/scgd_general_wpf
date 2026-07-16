@@ -135,6 +135,7 @@ namespace ColorVision.Copilot
                 Summary = waitingForApproval ? "Flow patch is waiting for explicit approval." : result.Success ? "Flow patch applied." : "Flow patch failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success || waitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
                 Approval = result.Approval,
             };
         }
@@ -213,6 +214,7 @@ namespace ColorVision.Copilot
                 Summary = result.Success ? $"{Name} completed." : $"{Name} failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
             };
         }
 

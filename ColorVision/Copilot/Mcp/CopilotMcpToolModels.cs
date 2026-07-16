@@ -62,6 +62,8 @@ namespace ColorVision.Copilot.Mcp
 
         public string ErrorCode { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public bool RequiresApproval { get; init; }
 
         public string ApprovalActionId { get; init; } = string.Empty;
@@ -80,11 +82,17 @@ namespace ColorVision.Copilot.Mcp
             Text = text ?? string.Empty,
         };
 
-        public static CopilotMcpToolCallResult Fail(string errorCode, string message) => new()
+        public static CopilotMcpToolCallResult Fail(
+            string errorCode,
+            string message,
+            CopilotToolFailureKind failureKind = CopilotToolFailureKind.None) => new()
         {
             Success = false,
             ErrorCode = errorCode ?? string.Empty,
             Text = message ?? string.Empty,
+            FailureKind = failureKind == CopilotToolFailureKind.None
+                ? CopilotMcpToolFailureClassifier.Classify(errorCode)
+                : failureKind,
         };
 
         public static CopilotMcpToolCallResult ApprovalRequired(string message, ConfirmableAction action) => new()
