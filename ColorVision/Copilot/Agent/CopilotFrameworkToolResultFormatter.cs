@@ -66,6 +66,11 @@ namespace ColorVision.Copilot
 
         public static string FormatRejected(string toolName, string error)
         {
+            return FormatRejected(toolName, error, string.Empty, CopilotToolFailureKind.None);
+        }
+
+        public static string FormatRejected(string toolName, string error, string failureCode, CopilotToolFailureKind failureKind)
+        {
             var payload = new Dictionary<string, object?>
             {
                 ["tool"] = SanitizeInline(toolName, 120),
@@ -74,6 +79,11 @@ namespace ColorVision.Copilot
                 ["summary"] = SanitizeInline($"{toolName} was not executed.", MaxSummaryCharacters),
                 ["error"] = SanitizeInline(error, MaxErrorCharacters),
             };
+            if (failureKind != CopilotToolFailureKind.None)
+                payload["failure_kind"] = failureKind.ToString().ToLowerInvariant();
+            var normalizedFailureCode = CopilotToolFailureCode.Normalize(failureCode);
+            if (!string.IsNullOrWhiteSpace(normalizedFailureCode))
+                payload["failure_code"] = normalizedFailureCode;
             return JsonSerializer.Serialize(payload, JsonOptions);
         }
 

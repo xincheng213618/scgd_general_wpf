@@ -1627,6 +1627,7 @@ namespace ColorVision.Copilot
             private readonly List<CopilotAgentStepRecord> _stepRecords = new();
             private readonly Dictionary<string, ToolAttemptState> _attemptsBySignature = new(StringComparer.OrdinalIgnoreCase);
             private readonly Dictionary<string, FrameworkApprovalReservation> _approvedCalls = new(StringComparer.OrdinalIgnoreCase);
+            private readonly CopilotProviderToolCallLedger _providerToolCalls = new();
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
             private readonly Action<CopilotDelegatedRunUsage>? _recordDelegatedRunUsage;
@@ -1722,6 +1723,10 @@ namespace ColorVision.Copilot
                 string? reservationError = null;
                 lock (_syncRoot)
                 {
+                    if (!_providerToolCalls.TryReserveApproval(functionCall.CallId, signature, out error))
+                    {
+                        return false;
+                    }
                     if (!TryReserveAttempt(tool, signature, out var round, out var attempt, out error))
                     {
                         reservationError = error;
@@ -2073,10 +2078,34 @@ namespace ColorVision.Copilot
                 string? providerCallId,
                 CancellationToken cancellationToken)
             {
+                var signature = BuildExecutionSignature(tool.Name, toolInput);
+                var callResult = await _providerToolCalls.ExecuteOnceAsync(
+                    providerCallId,
+                    signature,
+                    () => ExecuteReservedAsync(tool, toolInput, providerCallId, signature, cancellationToken),
+                    cancellationToken);
+                if (callResult.HasConflict)
+                {
+                    return CopilotFrameworkToolResultFormatter.FormatRejected(
+                        tool.Name,
+                        callResult.Error,
+                        "duplicate_call_id_conflict",
+                        CopilotToolFailureKind.Conflict);
+                }
+
+                return callResult.Content;
+            }
+
+            private async Task<string> ExecuteReservedAsync(
+                ICopilotTool tool,
+                CopilotAgentToolInput toolInput,
+                string? providerCallId,
+                string signature,
+                CancellationToken cancellationToken)
+            {
                 int round;
                 int attempt;
                 int maxAttempts;
-                var signature = BuildExecutionSignature(tool.Name, toolInput);
                 FrameworkApprovalReservation? approvalReservation;
                 string? reservationError = null;
                 lock (_syncRoot)
