@@ -772,7 +772,7 @@
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
                                 IsEnabled="{Binding CanSwitchConversation}"
-                                ToolTip="{x:Static properties:Resources.CopilotNewConversation}">
+                                ToolTip="新建会话 (Ctrl+N)">
                             <TextBlock FontFamily="Segoe MDL2 Assets"
                                        FontSize="14"
                                        Text="&#xE710;" />
@@ -2160,7 +2160,7 @@
                                 Style="{StaticResource CopilotIconButtonStyle}"
                                 Command="{Binding NewChatCommand}"
                                 DockPanel.Dock="Right"
-                                ToolTip="{x:Static properties:Resources.CopilotNewConversation}">
+                                ToolTip="新建会话 (Ctrl+N)">
                             <TextBlock HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontFamily="Segoe MDL2 Assets"
@@ -2216,12 +2216,14 @@
                                            Opacity="0.38"
                                            Text="搜索会话"
                                            Visibility="{Binding IsConversationSearchEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
-                                <TextBox Padding="0"
+                                <TextBox x:Name="ConversationSearchTextBox"
+                                         Padding="0"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          FontSize="11"
                                          Foreground="{DynamicResource GlobalTextBrush}"
-                                         Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                                         Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="搜索会话 (Ctrl+F)" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"

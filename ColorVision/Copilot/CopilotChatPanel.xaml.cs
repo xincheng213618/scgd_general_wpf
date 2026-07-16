@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
             BindPromptCaretToThemeResource(PromptTextBox);
             DataContextChanged += CopilotChatPanel_DataContextChanged;
             Loaded += CopilotChatPanel_Loaded;
+            PreviewKeyDown += CopilotChatPanel_PreviewKeyDown;
             SizeChanged += CopilotChatPanel_SizeChanged;
             Unloaded += CopilotChatPanel_Unloaded;
             DataObject.AddPastingHandler(PromptTextBox, PromptTextBox_Pasting);
@@ -85,6 +86,94 @@ namespace ColorVision.Copilot
         private void PromptTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             ApplyPromptCaretBrush(PromptTextBox, ThemeManager.Current.CurrentUITheme);
+        }
+
+        private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                FocusConversationSearch();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel && viewModel.NewChatCommand.CanExecute(null))
+                {
+                    CloseProfileSelectorPopup();
+                    viewModel.NewChatCommand.Execute(null);
+                    FocusPromptInput();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key != Key.Escape)
+                return;
+
+            if (ProfileSelectorPopup.IsOpen)
+            {
+                CloseProfileSelectorPopup();
+                e.Handled = true;
+                return;
+            }
+
+            if (ConversationSearchTextBox.IsKeyboardFocusWithin)
+            {
+                if (DataContext is CopilotChatViewModel searchViewModel
+                    && searchViewModel.ClearConversationSearchCommand.CanExecute(null))
+                {
+                    searchViewModel.ClearConversationSearchCommand.Execute(null);
+                }
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (DataContext is CopilotChatViewModel editViewModel
+                && editViewModel.CancelMessageEditCommand.CanExecute(null))
+            {
+                editViewModel.CancelMessageEditCommand.Execute(null);
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (_isCompactSidebar && _isConversationSidebarExpanded)
+            {
+                _isConversationSidebarExpanded = false;
+                UpdateResponsiveLayout();
+                FocusPromptInput();
+                e.Handled = true;
+            }
+        }
+
+        private void FocusConversationSearch()
+        {
+            CloseProfileSelectorPopup();
+            if (_isCompactSidebar && !_isConversationSidebarExpanded)
+            {
+                _isConversationSidebarExpanded = true;
+                UpdateResponsiveLayout();
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                ConversationSearchTextBox.Focus();
+                Keyboard.Focus(ConversationSearchTextBox);
+                ConversationSearchTextBox.SelectAll();
+            });
+        }
+
+        private void FocusPromptInput()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                MovePromptCaretToEnd();
+            });
         }
 
         private void CopilotChatPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -344,25 +433,12 @@ namespace ColorVision.Copilot
 
         private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
-            {
-                PromptTextBox.Focus();
-                Keyboard.Focus(PromptTextBox);
-                MovePromptCaretToEnd();
-            });
+            FocusPromptInput();
         }
 
         private void EditMessageButton_Click(object sender, RoutedEventArgs e)
         {
-            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
-            {
-                if (DataContext is not CopilotChatViewModel { IsEditingMessage: true })
-                    return;
-
-                PromptTextBox.Focus();
-                Keyboard.Focus(PromptTextBox);
-                MovePromptCaretToEnd();
-            });
+            FocusPromptInput();
         }
 
         private void MovePromptCaretToEnd()
@@ -413,12 +489,7 @@ namespace ColorVision.Copilot
             }
 
             e.Effects = DragDropEffects.Copy;
-            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
-            {
-                PromptTextBox.Focus();
-                Keyboard.Focus(PromptTextBox);
-                MovePromptCaretToEnd();
-            });
+            FocusPromptInput();
         }
 
         private static bool TryGetDroppedFiles(IDataObject data, out string[] filePaths)
