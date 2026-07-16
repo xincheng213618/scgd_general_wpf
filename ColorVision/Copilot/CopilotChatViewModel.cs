@@ -1325,7 +1325,7 @@ namespace ColorVision.Copilot
 
         private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
         {
-            CopilotHostedTurnCompletion.CompleteQueuedCancellation(assistantMessage);
+            CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
             PersistState(immediate: true);
             RefreshAgentTasks();
@@ -3946,7 +3946,9 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
+            FinalizeUnstartedRunsForShutdown(scheduledRuns);
             _stateSaveScheduler.Dispose();
             PublishSelectedTaskEventJournal();
             try
@@ -3960,6 +3962,21 @@ namespace ColorVision.Copilot
             finally
             {
                 Dispose();
+            }
+        }
+
+        private void FinalizeUnstartedRunsForShutdown(IReadOnlyList<CopilotHostedAgentRun> scheduledRuns)
+        {
+            foreach (var run in scheduledRuns.Where(run => !run.HasStarted))
+            {
+                var conversation = Conversations.FirstOrDefault(candidate => string.Equals(candidate.Id, run.ConversationId, StringComparison.Ordinal));
+                var assistantMessage = conversation?.Messages.LastOrDefault(message => !message.IsUser
+                    && (message.IsResponsePending || message.IsThinkingInProgress));
+                if (conversation == null || assistantMessage == null)
+                    continue;
+
+                CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistantMessage);
+                UpdateConversationMetadata(conversation, touch: true);
             }
         }
 

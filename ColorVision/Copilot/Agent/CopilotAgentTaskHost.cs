@@ -309,6 +309,22 @@ namespace ColorVision.Copilot
             }
         }
 
+        public IReadOnlyList<CopilotHostedAgentRun> ScheduledRuns
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    var runs = new List<CopilotHostedAgentRun>(_queuedWorkItems.Count + 1);
+                    if (_activeWorkItem != null)
+                        runs.Add(_activeWorkItem.Run);
+                    foreach (var workItem in _queuedWorkItems)
+                        runs.Add(workItem.Run);
+                    return runs;
+                }
+            }
+        }
+
         public CopilotHostedAgentRun Start(
             string conversationId,
             CopilotAgentMode mode,

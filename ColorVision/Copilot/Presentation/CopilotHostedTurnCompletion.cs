@@ -56,13 +56,16 @@ namespace ColorVision.Copilot
             conversation.ClearLastUsage();
         }
 
-        public static void CompleteQueuedCancellation(CopilotChatMessage assistantMessage)
+        public static void CompleteBeforeStartCancellation(CopilotChatMessage assistantMessage)
         {
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
-            assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
-            CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, "排队的 Agent 任务已取消，未调用模型或工具。");
+            if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
+                assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
+            CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, assistantMessage.RequestMode == CopilotAgentMode.Chat
+                ? "请求已取消，尚未调用模型。"
+                : "排队的 Agent 任务已取消，未调用模型或工具。");
         }
 
         private static void SetUsage(CopilotConversationRecord conversation, CopilotTokenUsage usage)
