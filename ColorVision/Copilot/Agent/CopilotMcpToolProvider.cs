@@ -4,6 +4,7 @@ using ModelContextProtocol.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -160,6 +161,16 @@ namespace ColorVision.Copilot
                                 $"MCP client {server.Name} stopped live discovery after {discovery.PageCount} page(s) and "
                                 + $"{remoteTools.Length} cached tool definition(s) within the safety limits.");
                         }
+                        if (discovery.DuplicateToolCount > 0)
+                        {
+                            diagnostics.Add(
+                                $"MCP client {server.Name} skipped {discovery.DuplicateToolCount} duplicate tool definition(s).");
+                        }
+                        if (discovery.RejectedToolCount > 0)
+                        {
+                            diagnostics.Add(
+                                $"MCP client {server.Name} skipped {discovery.RejectedToolCount} invalid or oversized tool definition(s).");
+                        }
                     }
                     var remaining = MaximumToolsPerRequest - tools.Count;
                     var allowedTools = remoteTools
@@ -262,12 +273,17 @@ namespace ColorVision.Copilot
         IReadOnlyList<Tool> Tools,
         int DiscoveredToolCount,
         int PageCount,
+        int DuplicateToolCount,
+        int RejectedToolCount,
         bool Truncated);
 
     internal static class CopilotMcpToolDiscoveryPaginator
     {
         public const int MaximumToolDefinitions = 512;
         public const int MaximumPages = 32;
+        public const int MaximumRemoteToolNameLength = 128;
+        public const int MaximumSerializedToolDefinitionBytes = 128 * 1024;
+        public const int MaximumTotalToolDefinitionBytes = 2 * 1024 * 1024;
 
         public static async Task<CopilotMcpToolDiscoveryBatch> DiscoverAsync(
             Func<ListToolsRequestParams, CancellationToken, ValueTask<ListToolsResult>> listPageAsync,
@@ -283,7 +299,11 @@ namespace ColorVision.Copilot
 
             var tools = new List<Tool>(Math.Min(maximumToolDefinitions, 64));
             var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+            var seenToolNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var discoveredToolCount = 0;
+            var duplicateToolCount = 0;
+            var rejectedToolCount = 0;
+            var serializedToolDefinitionBytes = 0;
             var pageCount = 0;
             string? cursor = null;
             while (pageCount < maximumPages && tools.Count < maximumToolDefinitions)
@@ -297,10 +317,63 @@ namespace ColorVision.Copilot
                     : discoveredToolCount + pageTools.Count;
                 foreach (var tool in pageTools)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (tool == null)
+                    {
+                        rejectedToolCount++;
+                        continue;
+                    }
+                    if (string.IsNullOrWhiteSpace(tool.Name)
+                        || tool.Name.Length > MaximumRemoteToolNameLength
+                        || tool.Name.Any(char.IsControl))
+                    {
+                        rejectedToolCount++;
+                        continue;
+                    }
+                    if (seenToolNames.Contains(tool.Name))
+                    {
+                        duplicateToolCount++;
+                        continue;
+                    }
+                    int definitionBytes;
+                    try
+                    {
+                        definitionBytes = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(tool));
+                    }
+                    catch
+                    {
+                        rejectedToolCount++;
+                        continue;
+                    }
+                    if (definitionBytes > MaximumSerializedToolDefinitionBytes)
+                    {
+                        rejectedToolCount++;
+                        continue;
+                    }
+                    if (serializedToolDefinitionBytes > MaximumTotalToolDefinitionBytes - definitionBytes)
+                    {
+                        rejectedToolCount++;
+                        return new CopilotMcpToolDiscoveryBatch(
+                            tools,
+                            discoveredToolCount,
+                            pageCount,
+                            duplicateToolCount,
+                            rejectedToolCount,
+                            Truncated: true);
+                    }
                     if (tools.Count >= maximumToolDefinitions)
-                        break;
-                    if (tool != null)
-                        tools.Add(tool);
+                    {
+                        return new CopilotMcpToolDiscoveryBatch(
+                            tools,
+                            discoveredToolCount,
+                            pageCount,
+                            duplicateToolCount,
+                            rejectedToolCount,
+                            Truncated: true);
+                    }
+                    seenToolNames.Add(tool.Name);
+                    tools.Add(tool);
+                    serializedToolDefinitionBytes += definitionBytes;
                 }
 
                 var nextCursor = page?.NextCursor;
@@ -310,24 +383,63 @@ namespace ColorVision.Copilot
                         tools,
                         discoveredToolCount,
                         pageCount,
-                        Truncated: discoveredToolCount > tools.Count);
+                        duplicateToolCount,
+                        rejectedToolCount,
+                        Truncated: false);
                 }
 
                 if (tools.Count >= maximumToolDefinitions)
-                    return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, Truncated: true);
+                    return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, duplicateToolCount, rejectedToolCount, Truncated: true);
                 if (!seenCursors.Add(nextCursor))
                     throw new InvalidOperationException("External MCP server repeated a tools/list pagination cursor.");
                 cursor = nextCursor;
             }
 
-            return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, Truncated: true);
+            return new CopilotMcpToolDiscoveryBatch(tools, discoveredToolCount, pageCount, duplicateToolCount, rejectedToolCount, Truncated: true);
+        }
+    }
+
+    internal static class CopilotMcpToolIdentity
+    {
+        private const int MaximumIdentityLength = 96;
+        private const int HashSuffixLength = 12;
+        private static readonly Regex InvalidCatalogKeyCharacters = new("[^A-Za-z0-9_.-]", RegexOptions.Compiled);
+        private static readonly Regex InvalidLocalNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
+
+        public static string BuildLocalName(string serverName, string remoteToolName)
+        {
+            var normalizedServerName = InvalidLocalNameCharacters.Replace(serverName ?? string.Empty, "_");
+            var normalizedToolName = InvalidLocalNameCharacters.Replace(remoteToolName ?? string.Empty, "_");
+            var combined = "Mcp_" + normalizedServerName + "_" + normalizedToolName;
+            var isLossless = string.Equals(serverName, normalizedServerName, StringComparison.Ordinal)
+                && string.Equals(remoteToolName, normalizedToolName, StringComparison.Ordinal);
+            return isLossless && combined.Length <= MaximumIdentityLength
+                ? combined
+                : AppendHashSuffix(combined, serverName + "\n" + remoteToolName, "_");
+        }
+
+        public static string BuildCatalogKey(string remoteToolName)
+        {
+            var source = remoteToolName ?? string.Empty;
+            var normalized = InvalidCatalogKeyCharacters.Replace(source, "-").Trim('-', '.', '_');
+            var isLossless = normalized.Length > 0
+                && normalized.Length <= MaximumIdentityLength
+                && string.Equals(source, normalized, StringComparison.Ordinal);
+            return isLossless ? source : AppendHashSuffix(normalized.Length == 0 ? "tool" : normalized, source, "-");
+        }
+
+        private static string AppendHashSuffix(string prefix, string source, string separator)
+        {
+            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source ?? string.Empty)))[..HashSuffixLength].ToLowerInvariant();
+            var maximumPrefixLength = MaximumIdentityLength - separator.Length - hash.Length;
+            var boundedPrefix = prefix.Length <= maximumPrefixLength ? prefix : prefix[..maximumPrefixLength];
+            return boundedPrefix + separator + hash;
         }
     }
 
     internal sealed class CopilotMcpToolAdapter : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation, ICopilotCapabilityCatalogIdentity
     {
         private const int MaximumResultLength = 65_536;
-        private static readonly Regex InvalidNameCharacters = new("[^A-Za-z0-9_]", RegexOptions.Compiled);
         private readonly CopilotMcpClientServerConfig _server;
         private readonly McpClientTool _remoteTool;
 
@@ -338,7 +450,7 @@ namespace ColorVision.Copilot
         {
             _server = server?.Clone() ?? throw new ArgumentNullException(nameof(server));
             _remoteTool = remoteTool ?? throw new ArgumentNullException(nameof(remoteTool));
-            Name = BuildToolName(_server.Name, remoteTool.Name);
+            Name = CopilotMcpToolIdentity.BuildLocalName(_server.Name, remoteTool.Name);
             Description = BuildDescription(_server.Name, remoteTool.Description);
             InputSchema = CopilotToolInputSchema.FromJsonSchema(remoteTool.JsonSchema);
             Capability = CopilotMcpClientCapabilityPolicy.Create(accessPolicy, TimeSpan.FromSeconds(_server.ToolTimeoutSeconds));
@@ -348,7 +460,7 @@ namespace ColorVision.Copilot
 
         public string Description { get; }
 
-        public string CatalogCapabilityKey => _remoteTool.ProtocolTool.Name;
+        public string CatalogCapabilityKey => CopilotMcpToolIdentity.BuildCatalogKey(_remoteTool.ProtocolTool.Name);
 
         public CopilotToolCapabilityDescriptor Capability { get; }
 
@@ -435,12 +547,6 @@ namespace ColorVision.Copilot
             if (content.Length > MaximumResultLength)
                 content = content[..MaximumResultLength] + "...";
             return content;
-        }
-
-        private static string BuildToolName(string serverName, string toolName)
-        {
-            var combined = "Mcp_" + InvalidNameCharacters.Replace(serverName, "_") + "_" + InvalidNameCharacters.Replace(toolName, "_");
-            return combined.Length <= 96 ? combined : combined[..96];
         }
 
         private static string BuildDescription(string serverName, string? description)

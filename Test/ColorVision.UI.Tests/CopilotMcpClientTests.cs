@@ -123,6 +123,97 @@ public sealed class CopilotMcpClientTests
     }
 
     [Fact]
+    public async Task BoundedDiscoverySkipsDuplicateRemoteToolNamesAcrossPages()
+    {
+        var calls = 0;
+        var discovery = await DiscoverBoundedToolsAsync(
+            (_, _) =>
+            {
+                calls++;
+                return ValueTask.FromResult(new ListToolsResult
+                {
+                    Tools = calls == 1
+                        ? [CreateRemoteTool("Echo")]
+                        : [CreateRemoteTool("echo"), CreateRemoteTool("Status")],
+                    NextCursor = calls == 1 ? "next" : null,
+                });
+            },
+            maximumToolDefinitions: 10,
+            maximumPages: 10);
+
+        Assert.False(discovery.Truncated);
+        Assert.Equal(3, discovery.DiscoveredToolCount);
+        Assert.Equal(1, discovery.DuplicateToolCount);
+        Assert.Equal(new[] { "Echo", "Status" }, discovery.Tools.Select(tool => tool.Name));
+    }
+
+    [Fact]
+    public async Task BoundedDiscoverySkipsOversizedDefinitionAndKeepsLaterTools()
+    {
+        var oversized = CreateRemoteTool("usable");
+        oversized.Description = new string('x', 140 * 1024);
+        var invalidName = CreateRemoteTool("invalid");
+        invalidName.Name = "bad\nname";
+        var discovery = await DiscoverBoundedToolsAsync(
+            (_, _) => ValueTask.FromResult(new ListToolsResult
+            {
+                Tools = [oversized, invalidName, CreateRemoteTool("usable")],
+            }),
+            maximumToolDefinitions: 10,
+            maximumPages: 10);
+
+        Assert.False(discovery.Truncated);
+        Assert.Equal(3, discovery.DiscoveredToolCount);
+        Assert.Equal(2, discovery.RejectedToolCount);
+        Assert.Equal("usable", Assert.Single(discovery.Tools).Name);
+    }
+
+    [Fact]
+    public async Task BoundedDiscoveryStopsWhenCumulativeDefinitionBudgetIsExhausted()
+    {
+        var definitions = Enumerable.Range(1, 18)
+            .Select(index =>
+            {
+                var tool = CreateRemoteTool("tool-" + index);
+                tool.Description = new string('x', 120 * 1024);
+                return tool;
+            })
+            .ToArray();
+        var discovery = await DiscoverBoundedToolsAsync(
+            (_, _) => ValueTask.FromResult(new ListToolsResult { Tools = definitions }),
+            maximumToolDefinitions: 32,
+            maximumPages: 10);
+
+        Assert.True(discovery.Truncated);
+        Assert.Equal(18, discovery.DiscoveredToolCount);
+        Assert.Equal(1, discovery.RejectedToolCount);
+        Assert.Equal(17, discovery.Tools.Count);
+    }
+
+    [Fact]
+    public void ExternalToolIdentityAvoidsNormalizationAndTruncationCollisions()
+    {
+        var remoteNames = new[]
+        {
+            "a-b",
+            "a_b",
+            "a.b",
+            "a:b",
+            new string('x', 120) + "-one",
+            new string('x', 120) + "-two",
+        };
+        var localNames = remoteNames.Select(name => BuildExternalToolIdentity("BuildLocalName", "server-name", name)).ToArray();
+        var catalogKeys = remoteNames.Select(name => BuildExternalToolIdentity("BuildCatalogKey", name)).ToArray();
+
+        Assert.Equal(remoteNames.Length, localNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(remoteNames.Length, catalogKeys.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.All(localNames, name => Assert.InRange(name.Length, 1, 96));
+        Assert.All(catalogKeys, name => Assert.InRange(name.Length, 1, 96));
+        Assert.Equal("Mcp_colorvision_get_server_status", BuildExternalToolIdentity("BuildLocalName", "colorvision", "get_server_status"));
+        Assert.Equal(localNames[0], BuildExternalToolIdentity("BuildLocalName", "server-name", remoteNames[0]));
+    }
+
+    [Fact]
     public async Task BoundedDiscoveryStopsAtPageLimit()
     {
         var calls = 0;
@@ -328,12 +419,25 @@ public sealed class CopilotMcpClientTests
             Assert.IsAssignableFrom<IReadOnlyList<Tool>>(resultType.GetProperty("Tools")!.GetValue(result)),
             Assert.IsType<int>(resultType.GetProperty("DiscoveredToolCount")!.GetValue(result)),
             Assert.IsType<int>(resultType.GetProperty("PageCount")!.GetValue(result)),
+            Assert.IsType<int>(resultType.GetProperty("DuplicateToolCount")!.GetValue(result)),
+            Assert.IsType<int>(resultType.GetProperty("RejectedToolCount")!.GetValue(result)),
             Assert.IsType<bool>(resultType.GetProperty("Truncated")!.GetValue(result)));
+    }
+
+    private static string BuildExternalToolIdentity(string methodName, params string[] arguments)
+    {
+        var identityType = typeof(CopilotAgentRequest).Assembly.GetType(
+            "ColorVision.Copilot.CopilotMcpToolIdentity",
+            throwOnError: true)!;
+        var method = identityType.GetMethod(methodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+        return Assert.IsType<string>(method.Invoke(null, arguments.Cast<object>().ToArray()));
     }
 
     private sealed record BoundedDiscoveryResult(
         IReadOnlyList<Tool> Tools,
         int DiscoveredToolCount,
         int PageCount,
+        int DuplicateToolCount,
+        int RejectedToolCount,
         bool Truncated);
 }
