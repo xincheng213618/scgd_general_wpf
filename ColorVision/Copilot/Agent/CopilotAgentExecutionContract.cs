@@ -11,6 +11,7 @@ namespace ColorVision.Copilot
     internal enum CopilotAgentExecutionRequirement
     {
         None,
+        AttachedFileEvidence,
         DirectUrlEvidence,
         PublicWebSearch,
         WorkspaceEdit,
@@ -26,12 +27,15 @@ namespace ColorVision.Copilot
         private readonly string[] _preferredToolNames;
         private readonly HashSet<string> _acceptedToolNames;
         private readonly string[][] _requiredToolGroups;
+        private readonly bool _requiresAttachedFileEvidence;
 
         private CopilotAgentExecutionContract(
             CopilotAgentExecutionRequirement requirement,
-            IEnumerable<IEnumerable<string>> requiredToolGroups)
+            IEnumerable<IEnumerable<string>> requiredToolGroups,
+            bool requiresAttachedFileEvidence = false)
         {
             Requirement = requirement;
+            _requiresAttachedFileEvidence = requiresAttachedFileEvidence;
             _requiredToolGroups = requiredToolGroups
                 .Select(group => group
                     .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -49,18 +53,41 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AcceptedToolNames => _preferredToolNames;
 
-        public string Description => Requirement switch
+        public string BuildInitialInstruction()
         {
-            CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
-            CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
-            CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
-            CopilotAgentExecutionRequirement.WorkspaceEditAndValidation => "approved workspace edit followed by validation",
-            CopilotAgentExecutionRequirement.WorkspaceCreate => "approved workspace file creation",
-            CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "approved workspace file creation followed by validation",
-            CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
-            CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
-            _ => "no mandatory tool evidence",
-        };
+            if (!IsRequired)
+                return string.Empty;
+
+            var orderedGroups = _requiredToolGroups.Select(group => group.Length == 1
+                ? group[0]
+                : $"({string.Join(" or ", group)})");
+            return "\n\nCurrent-turn execution contract: obtain successful tool evidence in this exact order before giving the final answer: "
+                + string.Join(" -> ", orderedGroups)
+                + ". Do not claim a step completed before its successful tool result. If an earlier required step fails, report the concrete blocker instead of continuing with a dependent action.";
+        }
+
+        public string Description
+        {
+            get
+            {
+                var requirementDescription = Requirement switch
+                {
+                    CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
+                    CopilotAgentExecutionRequirement.DirectUrlEvidence => "direct URL evidence",
+                    CopilotAgentExecutionRequirement.PublicWebSearch => "explicit public web search",
+                    CopilotAgentExecutionRequirement.WorkspaceEdit => "approved workspace edit",
+                    CopilotAgentExecutionRequirement.WorkspaceEditAndValidation => "approved workspace edit followed by validation",
+                    CopilotAgentExecutionRequirement.WorkspaceCreate => "approved workspace file creation",
+                    CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation => "approved workspace file creation followed by validation",
+                    CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
+                    CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
+                    _ => "no mandatory tool evidence",
+                };
+                return _requiresAttachedFileEvidence && Requirement != CopilotAgentExecutionRequirement.AttachedFileEvidence
+                    ? $"attached file evidence followed by {requirementDescription}"
+                    : requirementDescription;
+            }
+        }
 
         public static CopilotAgentExecutionContract Create(
             CopilotAgentRequest request,
@@ -69,12 +96,20 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             availableTools ??= Array.Empty<ICopilotTool>();
 
-            if (CopilotToolIntentPolicy.ExplicitlyDisallowsPublicWebAccess(request))
+            var attachedFileReadTools = request.Attachments
+                .Where(item => item?.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value))
+                .Any()
+                    ? availableTools.Where(tool => string.Equals(tool.Name, "ReadAttachedFile", StringComparison.OrdinalIgnoreCase)).Select(tool => tool.Name).ToArray()
+                    : Array.Empty<string>();
+            var requiresAttachedFileEvidence = attachedFileReadTools.Length > 0;
+            var explicitlyDisallowsPublicWebAccess = CopilotToolIntentPolicy.ExplicitlyDisallowsPublicWebAccess(request);
+            if (explicitlyDisallowsPublicWebAccess)
             {
                 if (!CopilotToolIntentPolicy.NeedsWorkspaceEdit(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceCreate(request)
                     && !CopilotToolIntentPolicy.NeedsWorkspaceRollback(request)
-                    && !CopilotToolIntentPolicy.NeedsWorkspaceValidation(request))
+                    && !CopilotToolIntentPolicy.NeedsWorkspaceValidation(request)
+                    && !requiresAttachedFileEvidence)
                 {
                     return None();
                 }
@@ -86,54 +121,77 @@ namespace ColorVision.Copilot
             var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
             if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     CopilotAgentExecutionRequirement.WorkspaceRollback,
-                    [workspaceRollbackTools]);
+                    [workspaceRollbackTools],
+                    attachedFileReadTools);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceCreate(request))
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     needsValidation
                         ? CopilotAgentExecutionRequirement.WorkspaceCreateAndValidation
                         : CopilotAgentExecutionRequirement.WorkspaceCreate,
                     needsValidation
                         ? [workspaceApplyTools, workspaceValidationTools]
-                        : [workspaceApplyTools]);
+                        : [workspaceApplyTools],
+                    attachedFileReadTools);
             }
             if (CopilotToolIntentPolicy.NeedsWorkspaceEdit(request))
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     needsValidation
                         ? CopilotAgentExecutionRequirement.WorkspaceEditAndValidation
                         : CopilotAgentExecutionRequirement.WorkspaceEdit,
                     needsValidation
                         ? [workspaceApplyTools, workspaceValidationTools]
-                        : [workspaceApplyTools]);
+                        : [workspaceApplyTools],
+                    attachedFileReadTools);
             }
             if (needsValidation)
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     CopilotAgentExecutionRequirement.WorkspaceValidation,
-                    [workspaceValidationTools]);
+                    [workspaceValidationTools],
+                    attachedFileReadTools);
             }
 
             var urlFetchTools = availableTools.Where(CopilotToolIntentPolicy.IsUrlFetchTool).Select(tool => tool.Name);
             var webSearchTools = availableTools.Where(CopilotToolIntentPolicy.IsPublicWebSearchTool).Select(tool => tool.Name);
-            if (CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0)
+            if (!explicitlyDisallowsPublicWebAccess && CopilotWebPageToolSupport.ExtractHttpUrls(request.UserText).Count > 0)
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     CopilotAgentExecutionRequirement.DirectUrlEvidence,
-                    [urlFetchTools.Concat(webSearchTools)]);
+                    [urlFetchTools.Concat(webSearchTools)],
+                    attachedFileReadTools);
             }
 
-            if (CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(request))
+            if (!explicitlyDisallowsPublicWebAccess && CopilotToolIntentPolicy.ExplicitlyRequiresPublicWebSearch(request))
             {
-                return new CopilotAgentExecutionContract(
+                return Required(
                     CopilotAgentExecutionRequirement.PublicWebSearch,
-                    [webSearchTools]);
+                    [webSearchTools],
+                    attachedFileReadTools);
             }
 
-            return None();
+            return requiresAttachedFileEvidence
+                ? Required(
+                    CopilotAgentExecutionRequirement.AttachedFileEvidence,
+                    Array.Empty<IEnumerable<string>>(),
+                    attachedFileReadTools)
+                : None();
+        }
+
+        private static CopilotAgentExecutionContract Required(
+            CopilotAgentExecutionRequirement requirement,
+            IEnumerable<IEnumerable<string>> requiredToolGroups,
+            IReadOnlyList<string> attachedFileReadTools)
+        {
+            var requiresAttachedFileEvidence = attachedFileReadTools.Count > 0;
+            var groups = requiresAttachedFileEvidence
+                ? new[] { attachedFileReadTools.AsEnumerable() }.Concat(requiredToolGroups)
+                : requiredToolGroups;
+            return new CopilotAgentExecutionContract(requirement, groups, requiresAttachedFileEvidence);
         }
 
         private static CopilotAgentExecutionContract None() => new(
@@ -184,8 +242,9 @@ namespace ColorVision.Copilot
                 IsRequired = true,
                 IsSatisfied = false,
                 ShouldReinvoke = untriedNames.Length > 0,
-                Feedback = BuildFeedback(untriedNames),
+                Feedback = BuildFeedback(missingGroup, untriedNames),
                 LastRelevantStep = relevant.LastOrDefault(),
+                MissingToolNames = missingGroup,
             };
         }
 
@@ -198,7 +257,7 @@ namespace ColorVision.Copilot
             return new CopilotAgentBlockerSnapshot
             {
                 Kind = step == null ? CopilotAgentBlockerKind.ProviderOutput : CopilotAgentBlockerKind.ToolFailure,
-                Code = GetMissingEvidenceCode(),
+                Code = GetMissingEvidenceCode(evaluation),
                 Summary = step == null
                     ? "The model ended an explicit evidence request without calling an available matching tool."
                     : "The explicit evidence request ended without a successful matching tool result.",
@@ -209,11 +268,16 @@ namespace ColorVision.Copilot
             };
         }
 
-        private string BuildFeedback(string[] untriedNames)
+        private string BuildFeedback(string[] missingGroup, string[] untriedNames)
         {
-            var preferred = untriedNames.Length > 0 ? untriedNames[0] : _preferredToolNames[0];
+            var preferred = untriedNames.Length > 0 ? untriedNames[0] : missingGroup[0];
             var usesPatchEnvelope = string.Equals(preferred, "ApplyWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(preferred, "RollbackWorkspacePatchEnvelope", StringComparison.OrdinalIgnoreCase);
+            if (missingGroup.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: the user attached one or more files, but no successful attached-file evidence has been collected. Call ReadAttachedFile now before answering or taking a dependent action. Base subsequent claims on its observation; if the read fails, report a concrete blocker instead of claiming the file was inspected.";
+            }
+
             return Requirement switch
             {
                 CopilotAgentExecutionRequirement.DirectUrlEvidence =>
@@ -256,10 +320,14 @@ namespace ColorVision.Copilot
                     StringComparison.Ordinal);
         }
 
-        private string GetMissingEvidenceCode()
+        private string GetMissingEvidenceCode(CopilotAgentExecutionContractEvaluation evaluation)
         {
+            if (evaluation.MissingToolNames.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
+                return "required_attachment_evidence_missing";
+
             return Requirement switch
             {
+                CopilotAgentExecutionRequirement.AttachedFileEvidence => "required_attachment_evidence_missing",
                 CopilotAgentExecutionRequirement.DirectUrlEvidence => "required_url_evidence_missing",
                 CopilotAgentExecutionRequirement.PublicWebSearch => "required_web_search_missing",
                 CopilotAgentExecutionRequirement.WorkspaceEdit => "required_workspace_edit_missing",
@@ -286,6 +354,8 @@ namespace ColorVision.Copilot
         public string Feedback { get; init; } = string.Empty;
 
         public CopilotAgentStepRecord? LastRelevantStep { get; init; }
+
+        public IReadOnlyList<string> MissingToolNames { get; init; } = Array.Empty<string>();
     }
 
     internal sealed class CopilotAgentExecutionContractLoopEvaluator : LoopEvaluator
