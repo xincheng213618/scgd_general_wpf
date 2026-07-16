@@ -11,6 +11,12 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentContextBuilder
     {
         private const int MaxAttachmentContentChars = 12000;
+        private const int MaxApplicationContextItems = 24;
+        private const int MaxApplicationContextTitleChars = 240;
+        private const int MaxApplicationContextSummaryChars = 1200;
+        private const int MinimumApplicationContextTokens = 4096;
+        private const int MaximumApplicationContextTokens = 32768;
+        private const long ApplicationContextNoticeWeight = 2048;
         private const int MaxAnswerObservationSteps = 12;
         private const int MaxAnswerObservationContentChars = 6000;
         private const int MaxAnswerObservationTotalContentChars = 24000;
@@ -152,7 +158,9 @@ namespace ColorVision.Copilot
             builder.AppendLine("# User question");
             builder.AppendLine((request.UserText ?? string.Empty).Trim());
 
-            var applicationContext = BuildApplicationContext(request.ContextItems);
+            var applicationContext = BuildApplicationContext(
+                request.ContextItems,
+                CopilotAgentRunBudget.Resolve(request).ContextWindowTokens);
             var extraAttachmentContext = BuildAdditionalAttachmentContext(request.Attachments);
             var projectInstructions = CopilotAgentProjectInstructions.BuildPromptBlock(request.ProjectInstructions);
             var hasObservations = observations.Count > 0;
@@ -202,40 +210,152 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
-        private static string BuildApplicationContext(IReadOnlyList<CopilotContextItem> contextItems)
+        private static string BuildApplicationContext(
+            IReadOnlyList<CopilotContextItem> contextItems,
+            int contextWindowTokens)
         {
             if (contextItems == null || contextItems.Count == 0)
                 return string.Empty;
 
+            var availableItems = contextItems
+                .Where(item => item != null)
+                .Where(item => !string.IsNullOrWhiteSpace(item.Title)
+                    || !string.IsNullOrWhiteSpace(item.Summary)
+                    || !string.IsNullOrWhiteSpace(item.Content))
+                .ToArray();
+            if (availableItems.Length == 0)
+                return string.Empty;
+
+            var selectedItems = SelectApplicationContextItems(availableItems);
+            var contextTokenBudget = Math.Clamp(
+                contextWindowTokens / 4,
+                MinimumApplicationContextTokens,
+                MaximumApplicationContextTokens);
+            var totalWeightBudget = (long)contextTokenBudget * CopilotTokenEstimator.AsciiCharactersPerToken;
+            var itemWeightBudget = Math.Max(
+                1,
+                (totalWeightBudget - ApplicationContextNoticeWeight - selectedItems.Count * 2L) / selectedItems.Count);
             var builder = new StringBuilder();
-            foreach (var item in contextItems)
+            var truncatedItemCount = 0;
+            foreach (var item in selectedItems)
             {
-                if (item == null)
-                    continue;
-
-                if (string.IsNullOrWhiteSpace(item.Title)
-                    && string.IsNullOrWhiteSpace(item.Summary)
-                    && string.IsNullOrWhiteSpace(item.Content))
-                {
-                    continue;
-                }
-
-                builder.Append("## Application context");
-                if (!string.IsNullOrWhiteSpace(item.Title))
-                    builder.Append(": ").Append(item.Title.Trim());
-
-                builder.AppendLine();
-
-                if (!string.IsNullOrWhiteSpace(item.Summary))
-                    builder.Append("Summary: ").AppendLine(item.Summary.Trim());
-
-                if (!string.IsNullOrWhiteSpace(item.Content))
-                    builder.AppendLine(TruncateContent(item.Content, MaxAttachmentContentChars));
-
+                var block = BuildApplicationContextBlock(item, out var fieldWasTruncated);
+                var boundedBlock = TruncateToWeight(
+                    block,
+                    itemWeightBudget,
+                    "\n...<application context item truncated>",
+                    out var blockWasTruncated);
+                truncatedItemCount += fieldWasTruncated || blockWasTruncated ? 1 : 0;
+                builder.AppendLine(boundedBlock.TrimEnd());
                 builder.AppendLine();
             }
 
+            var omittedItemCount = availableItems.Length - selectedItems.Count;
+            if (omittedItemCount > 0 || truncatedItemCount > 0)
+            {
+                builder.AppendLine("## Application context budget notice");
+                builder.Append("Summary: Context was bounded before model submission");
+                if (omittedItemCount > 0)
+                    builder.Append("; ").Append(omittedItemCount).Append(" source(s) omitted");
+                if (truncatedItemCount > 0)
+                    builder.Append("; ").Append(truncatedItemCount).Append(" source(s) truncated");
+                builder.AppendLine(".");
+                builder.AppendLine("Use only the retained excerpts as evidence and do not assume omitted application state was inspected.");
+            }
+
             return builder.ToString().TrimEnd();
+        }
+
+        private static IReadOnlyList<CopilotContextItem> SelectApplicationContextItems(
+            IReadOnlyList<CopilotContextItem> items)
+        {
+            if (items.Count <= MaxApplicationContextItems)
+                return items;
+
+            var headCount = (MaxApplicationContextItems + 1) / 2;
+            var tailCount = MaxApplicationContextItems - headCount;
+            return items.Take(headCount).Concat(items.TakeLast(tailCount)).ToArray();
+        }
+
+        private static string BuildApplicationContextBlock(
+            CopilotContextItem item,
+            out bool wasTruncated)
+        {
+            wasTruncated = false;
+            var builder = new StringBuilder();
+            builder.Append("## Application context");
+            if (!string.IsNullOrWhiteSpace(item.Title))
+            {
+                var title = TruncateContextField(
+                    item.Title,
+                    MaxApplicationContextTitleChars,
+                    "...<title truncated>",
+                    out var titleWasTruncated);
+                wasTruncated |= titleWasTruncated;
+                builder.Append(": ").Append(title);
+            }
+
+            builder.AppendLine();
+            if (!string.IsNullOrWhiteSpace(item.Summary))
+            {
+                var summary = TruncateContextField(
+                    item.Summary,
+                    MaxApplicationContextSummaryChars,
+                    "...<summary truncated>",
+                    out var summaryWasTruncated);
+                wasTruncated |= summaryWasTruncated;
+                builder.Append("Summary: ").AppendLine(summary);
+            }
+            if (!string.IsNullOrWhiteSpace(item.Content))
+            {
+                var content = TruncateContextField(
+                    item.Content,
+                    MaxAttachmentContentChars,
+                    $"{Environment.NewLine}...<content truncated; kept the first {MaxAttachmentContentChars} characters.>",
+                    out var contentWasTruncated);
+                wasTruncated |= contentWasTruncated;
+                builder.AppendLine(content);
+            }
+            return builder.ToString().TrimEnd();
+        }
+
+        private static string TruncateContextField(
+            string value,
+            int maxCharacters,
+            string marker,
+            out bool wasTruncated)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.Length <= maxCharacters)
+            {
+                wasTruncated = false;
+                return normalized;
+            }
+
+            wasTruncated = true;
+            var retainedLength = GetSafePrefixLength(normalized, maxCharacters);
+            return normalized[..retainedLength].TrimEnd() + marker;
+        }
+
+        private static string TruncateToWeight(
+            string value,
+            long maximumWeight,
+            string marker,
+            out bool wasTruncated)
+        {
+            if (CopilotTokenEstimator.EstimateTextWeight(value) <= maximumWeight)
+            {
+                wasTruncated = false;
+                return value;
+            }
+
+            wasTruncated = true;
+            var markerWeight = CopilotTokenEstimator.EstimateTextWeight(marker);
+            var contentWeight = Math.Max(0, maximumWeight - markerWeight);
+            var retainedLength = CopilotTokenEstimator.GetPrefixLengthWithinWeight(value, contentWeight);
+            if (retainedLength <= 0)
+                return string.Empty;
+            return value[..retainedLength].TrimEnd() + marker;
         }
 
         private static string BuildAdditionalAttachmentContext(IReadOnlyList<CopilotAttachmentItem> attachments)
@@ -466,7 +586,22 @@ namespace ColorVision.Copilot
             if (content.Length <= maxCharacters)
                 return content;
 
-            return content[..maxCharacters] + Environment.NewLine + $"...<content truncated; kept the first {maxCharacters} characters.>";
+            var retainedLength = GetSafePrefixLength(content, maxCharacters);
+            return content[..retainedLength] + Environment.NewLine + $"...<content truncated; kept the first {retainedLength} characters.>";
+        }
+
+        private static int GetSafePrefixLength(string value, int maximumLength)
+        {
+            var retainedLength = Math.Clamp(maximumLength, 0, value.Length);
+            if (retainedLength > 0
+                && retainedLength < value.Length
+                && char.IsHighSurrogate(value[retainedLength - 1])
+                && char.IsLowSurrogate(value[retainedLength]))
+            {
+                retainedLength--;
+            }
+
+            return retainedLength;
         }
     }
 }
