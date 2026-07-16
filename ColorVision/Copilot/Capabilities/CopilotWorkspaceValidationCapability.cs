@@ -34,6 +34,8 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotWorkspaceValidationService
     {
+        internal const string ValidationFailedFailureCode = "workspace_validation_failed";
+
         private static readonly HashSet<string> AllowedTargetExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".sln", ".slnx", ".csproj", ".fsproj", ".vbproj",
@@ -153,11 +155,16 @@ namespace ColorVision.Copilot
             return new CopilotToolResult
             {
                 ToolName = "RunWorkspaceValidation",
-                Success = true,
+                Success = passed,
                 Summary = passed
                     ? $"Workspace {task} completed successfully."
                     : $"Workspace {task} completed with exit code {processResult.ExitCode}.",
                 Content = BuildContent(task, targetPath, configuration, platform, processResult),
+                ErrorMessage = passed
+                    ? string.Empty
+                    : $"dotnet {task} returned exit code {processResult.ExitCode}; inspect the captured validation output.",
+                FailureKind = passed ? CopilotToolFailureKind.None : CopilotToolFailureKind.Validation,
+                FailureCode = passed ? string.Empty : ValidationFailedFailureCode,
             };
         }
 

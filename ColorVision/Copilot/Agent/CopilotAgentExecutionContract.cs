@@ -157,8 +157,7 @@ namespace ColorVision.Copilot
             {
                 var matchedIndex = Array.FindIndex(relevant, cursor + 1, step =>
                     group.Contains(step.Execution.ToolName, StringComparer.OrdinalIgnoreCase)
-                    && step.Observation.Success
-                    && step.Execution.State == CopilotToolExecutionState.Completed);
+                    && IsAcceptedEvidence(step));
                 if (matchedIndex < 0)
                 {
                     missingGroup = group;
@@ -241,6 +240,20 @@ namespace ColorVision.Copilot
                         : $"Execution contract: the user explicitly requested a workspace rollback, but no approved rollback has completed. Call the available {preferred} tool and do not claim the rollback completed before it returns success.",
                 _ => string.Empty,
             };
+        }
+
+        private static bool IsAcceptedEvidence(CopilotAgentStepRecord step)
+        {
+            if (step.Observation.Success && step.Execution.State == CopilotToolExecutionState.Completed)
+                return true;
+
+            return string.Equals(step.Execution.ToolName, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase)
+                && step.Execution.State == CopilotToolExecutionState.Failed
+                && step.Observation.FailureKind == CopilotToolFailureKind.Validation
+                && string.Equals(
+                    CopilotToolFailureCode.Normalize(step.Observation.FailureCode),
+                    CopilotWorkspaceValidationService.ValidationFailedFailureCode,
+                    StringComparison.Ordinal);
         }
 
         private string GetMissingEvidenceCode()

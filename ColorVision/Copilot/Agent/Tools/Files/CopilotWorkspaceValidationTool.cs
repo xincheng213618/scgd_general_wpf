@@ -37,7 +37,7 @@ namespace ColorVision.Copilot
 
         public string Name => "RunWorkspaceValidation";
 
-        public string Description => "Run an approved, bounded dotnet build or dotnet test for a solution/project inside the current workspace, with an optional whitelisted platform. No shell or arbitrary arguments are accepted; nonzero exits are returned as validation evidence.";
+        public string Description => "Run an approved, bounded dotnet build or dotnet test for a solution/project inside the current workspace, with an optional whitelisted platform. No shell or arbitrary arguments are accepted; nonzero exits are returned as terminal failed validation evidence.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,
