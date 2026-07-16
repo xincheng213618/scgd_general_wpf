@@ -147,10 +147,12 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["query"] = StringProperty("File name or path fragment."),
                 }, "query"), "search", "read-only", "Call search_files with { \"query\": \"DeviceCamera\" }."),
-                Tool("grep_text", "Search text under allowed ColorVision workspace roots using a literal case-insensitive query. Required argument: query.", Schema(new Dictionary<string, object>
+                Tool("grep_text", "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. Required argument: query. Optional: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["query"] = StringProperty("Literal text to search for."),
-                }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\" }."),
+                    ["path"] = StringProperty("Optional directory relative to an allowed root, or an absolute allowed directory."),
+                    ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it."),
+                }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\", \"path\": \"ColorVision/Copilot\" }; pass its next_cursor unchanged for another page."),
                 Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root."),
@@ -836,7 +838,19 @@ namespace ColorVision.Copilot.Mcp
             if (roots.Count == 0)
                 return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
 
-            var result = CopilotGrepTextCapability.Search(roots, query, null, cancellationToken);
+            IReadOnlyList<string> searchRoots = roots;
+            var path = GetString(arguments, "path");
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
+                    return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
+                if (!Directory.Exists(fullPath))
+                    return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
+                searchRoots = [fullPath];
+            }
+
+            var cursor = GetString(arguments, "cursor");
+            var result = CopilotGrepTextCapability.SearchWithinScope(searchRoots, roots, query, null, cursor, cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision text search results");
@@ -846,6 +860,8 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"Matches shown: {result.Matches.Count}");
             builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
             builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
+            if (!string.IsNullOrWhiteSpace(result.NextCursor))
+                builder.AppendLine($"Next cursor: {result.NextCursor}");
             builder.AppendLine();
             foreach (var match in result.Matches.Take(MaxGrepMatches))
                 builder.AppendLine($"- {match.DisplayPath}:{match.LineNumber}: {CopilotWorkspaceSearchSupport.TruncateLine(match.LineText, 220)}");
