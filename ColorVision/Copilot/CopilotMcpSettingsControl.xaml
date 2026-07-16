@@ -295,10 +295,62 @@
                             Padding="10,4"
                             Command="{Binding RefreshExternalMcpClientsCommand}"
                             Content="Refresh Discovery"/>
+                    <Button DockPanel.Dock="Right"
+                            Margin="10,0,0,0"
+                            Padding="10,4"
+                            Command="{Binding CopyExternalMcpClientsStatusCommand}"
+                            Content="Copy Status"/>
                     <TextBlock VerticalAlignment="Center"
                                Style="{StaticResource McpHintTextStyle}"
                                Text="{Binding ExternalMcpClientsStatusText}"/>
                 </DockPanel>
+                <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding ExternalMcpClientStatuses}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,6"
+                                    Padding="10,8"
+                                    Background="{DynamicResource GlobalBorderBrush}"
+                                    BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Text="{Binding ServerName}"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="12,0,0,0"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryBrush}"
+                                                   Text="{Binding StateText}"/>
+                                    </Grid>
+                                    <TextBlock Grid.Row="1"
+                                               Margin="0,4,0,0"
+                                               Style="{StaticResource McpHintTextStyle}"
+                                               Text="{Binding DetailText}"/>
+                                    <DockPanel Grid.Row="2" Margin="0,4,0,0" LastChildFill="True">
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Margin="12,0,0,0"
+                                                   Style="{StaticResource McpHintTextStyle}"
+                                                   Text="{Binding CheckedText}"/>
+                                        <TextBlock Style="{StaticResource McpHintTextStyle}"
+                                                   Text="{Binding Endpoint}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </Border>
     </StackPanel>
