@@ -46,36 +46,9 @@ namespace ColorVision.Copilot
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var label = NormalizeLabel(attachment.DisplayLabel);
-                if (string.IsNullOrWhiteSpace(attachment.Value) || !File.Exists(attachment.Value))
-                    throw new InvalidOperationException($"图片“{label}”不存在或已被移动。");
-
-                long fileLength;
-                try
-                {
-                    fileLength = new FileInfo(attachment.Value).Length;
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-                {
-                    throw new InvalidOperationException($"无法读取图片“{label}”：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}", ex);
-                }
-                if (fileLength <= 0)
-                    throw new InvalidOperationException($"图片“{label}”为空文件。");
-                if (fileLength > MaximumImageBytes)
-                    throw new InvalidOperationException($"图片“{label}”超过 {MaximumImageBytes / 1024 / 1024} MB 限制。");
-                if (totalBytes + fileLength > MaximumTotalBytes)
+                var bytes = await LoadImageBytesAsync(attachment.Value, label, cancellationToken).ConfigureAwait(false);
+                if (totalBytes + bytes.LongLength > MaximumTotalBytes)
                     throw new InvalidOperationException($"图片总大小超过 {MaximumTotalBytes / 1024 / 1024} MB 限制。");
-
-                byte[] bytes;
-                try
-                {
-                    bytes = await File.ReadAllBytesAsync(attachment.Value, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-                {
-                    throw new InvalidOperationException($"无法读取图片“{label}”：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}", ex);
-                }
-                if (bytes.LongLength > MaximumImageBytes || totalBytes + bytes.LongLength > MaximumTotalBytes)
-                    throw new InvalidOperationException($"图片“{label}”在读取期间发生变化并超过大小限制。");
                 if (!TryDetectMediaType(bytes, out var mediaType))
                     throw new InvalidOperationException($"图片“{label}”不是受支持的 PNG、JPEG、GIF 或 WebP 文件。");
 
@@ -84,6 +57,79 @@ namespace ColorVision.Copilot
             }
 
             return payloads;
+        }
+
+        private static Task<byte[]> LoadImageBytesAsync(
+            string? filePath,
+            string label,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // File existence checks and opens can block before asynchronous reads begin on UNC paths.
+            return Task.Run(() => LoadImageBytesCoreAsync(filePath, label, cancellationToken), cancellationToken);
+        }
+
+        private static async Task<byte[]> LoadImageBytesCoreAsync(
+            string? filePath,
+            string label,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                    throw new InvalidOperationException($"图片“{label}”不存在或已被移动。");
+
+                using var stream = new FileStream(
+                    filePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite,
+                    bufferSize: 81920,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan);
+                if (stream.Length <= 0)
+                    throw new InvalidOperationException($"图片“{label}”为空文件。");
+                if (stream.Length > MaximumImageBytes)
+                    throw new InvalidOperationException($"图片“{label}”超过 {MaximumImageBytes / 1024 / 1024} MB 限制。");
+
+                using var content = new MemoryStream(capacity: (int)stream.Length);
+                var buffer = new byte[81920];
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var remaining = MaximumImageBytes + 1 - content.Length;
+                    var maximumRead = (int)Math.Min(buffer.LongLength, remaining);
+                    if (maximumRead <= 0)
+                        break;
+
+                    var read = await stream.ReadAsync(buffer.AsMemory(0, maximumRead), cancellationToken).ConfigureAwait(false);
+                    if (read == 0)
+                        break;
+
+                    content.Write(buffer, 0, read);
+                    if (content.Length > MaximumImageBytes)
+                        throw new InvalidOperationException($"图片“{label}”在读取期间发生变化并超过大小限制。");
+                }
+
+                if (content.Length == 0)
+                    throw new InvalidOperationException($"图片“{label}”为空文件。");
+                return content.ToArray();
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                throw new InvalidOperationException($"无法读取图片“{label}”：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}", ex);
+            }
         }
 
         private static bool TryDetectMediaType(ReadOnlySpan<byte> bytes, out string mediaType)
