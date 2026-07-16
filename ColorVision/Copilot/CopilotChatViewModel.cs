@@ -146,7 +146,7 @@ namespace ColorVision.Copilot
             SelectConversation(Conversations.FirstOrDefault(conversation => conversation.Id == _state.ActiveConversationId) ?? initialConversation, persist: false);
 
             SendCommand = new RelayCommand(_ => ExecuteSendOrSteer());
-            NewChatCommand = new RelayCommand(_ => StartNewChat());
+            NewChatCommand = new RelayCommand(_ => StartNewChat(), _ => CanSwitchConversation);
             CompactConversationCommand = new RelayCommand(
                 _ => CompactConversationFromUi(),
                 _ => IsConversationContextReduced && !IsBusy && !_isCompactingConversation && SelectedConversation != null);
@@ -2170,8 +2170,8 @@ namespace ColorVision.Copilot
 
         private void StartNewChat()
         {
-            if (IsBusy && !IsAgentRequestActive)
-                CancelCurrentReply(discardAgentCheckpoint: true);
+            if (!CanSwitchConversation)
+                return;
             if (IsEditingMessage)
                 CancelMessageEdit();
             ClearPendingRequestModeOverride();
