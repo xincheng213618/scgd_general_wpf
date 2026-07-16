@@ -445,7 +445,8 @@ namespace ColorVision.Copilot
 
             var toolName = toolCall.ToolName ?? string.Empty;
             var toolInput = toolCall.ToolInput ?? CopilotAgentToolInput.Empty;
-            if (string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+            if ((string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(toolName, "ReadAttachedFile", StringComparison.OrdinalIgnoreCase))
                 && !string.IsNullOrWhiteSpace(toolInput.Path))
             {
                 var builder = new StringBuilder();

@@ -27,6 +27,9 @@ namespace ColorVision.Copilot
         private static readonly Regex FileSectionRegex = new(
             @"(?m)^(?=\[File\]\s)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex AttachmentFileSectionRegex = new(
+            @"(?m)^(?=\[Attachment Read Scope\]|\[File\]\s)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -181,7 +184,8 @@ namespace ColorVision.Copilot
             {
                 "FetchUrl" => WebPageSectionRegex,
                 "WebSearch" => WebSearchSectionRegex,
-                "ReadLocalFile" or "ReadAttachedFile" => FileSectionRegex,
+                "ReadLocalFile" => FileSectionRegex,
+                "ReadAttachedFile" => AttachmentFileSectionRegex,
                 _ => null,
             };
             if (regex == null)
