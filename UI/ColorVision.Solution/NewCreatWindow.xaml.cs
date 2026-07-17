@@ -4,37 +4,30 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Themes;
-using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Mru;
 
 namespace ColorVision.Solution
 {
 
     public class NewCreateViewMode : ViewModelBase
     {
-        public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };
+        public MruPathService RecentLocations { get; } = MruPathService.CreateLocal("recent-create-locations.json");
 
         public NewCreateViewMode()
         {
-            foreach (var item in RecentNewCreateCache.RecentFiles)
-            {
-                DirectoryInfo directoryInfo = new(item);
-                if (directoryInfo.Exists)
-                {
-                    RecentNewCreateCacheList.Add(directoryInfo.FullName);
-                }
-            }
+            RefreshRecentLocations();
 
-            if (RecentNewCreateCacheList.Count == 0)
+            if (RecentLocationPaths.Count == 0)
             {
-                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                RecentNewCreateCache.InsertFile(Default);
-                RecentNewCreateCacheList.Add(Default);
-                if (Directory.Exists(Default))
-                    Directory.CreateDirectory(Default);
+                string defaultLocation = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "ColorVision");
+                Directory.CreateDirectory(defaultLocation);
+                RememberLocation(defaultLocation);
             }
-            DirectoryPath = RecentNewCreateCacheList[0];
+            DirectoryPath = RecentLocationPaths[0];
             Name = NewCreateFileName(SolutionSetting.Instance.DefaultCreatName);
-            RecentNewCreateNameCacheList.Add(Name);
+            RecentNameSuggestions.Add(Name);
         }
 
         public string NewCreateFileName(string FileName)
@@ -64,8 +57,25 @@ namespace ColorVision.Solution
         public string DirectoryPath { get => _DirectoryPath; set { IsCanCreate = !(string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(Name));  _DirectoryPath = value; OnPropertyChanged(); } }
         private string _DirectoryPath = string.Empty;
 
-        public ObservableCollection<string> RecentNewCreateCacheList { get; set; } = new ObservableCollection<string>();
-        public ObservableCollection<string> RecentNewCreateNameCacheList { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<string> RecentLocationPaths { get; } = new();
+        public ObservableCollection<string> RecentNameSuggestions { get; } = new();
+
+        public void RememberLocation(string path)
+        {
+            if (RecentLocations.Touch(path))
+                RefreshRecentLocations();
+        }
+
+        private void RefreshRecentLocations()
+        {
+            RecentLocationPaths.Clear();
+            foreach (string path in RecentLocations.Items
+                .Select(entry => entry.Path)
+                .Where(Directory.Exists))
+            {
+                RecentLocationPaths.Add(path);
+            }
+        }
 
     }
 
@@ -97,7 +107,7 @@ namespace ColorVision.Solution
                     return;
                 }
                 NewCreateViewMode.DirectoryPath = dialog.SelectedPath;
-                NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
+                NewCreateViewMode.RememberLocation(NewCreateViewMode.DirectoryPath);
             }
         }
         public bool IsCreate { get; set; }
@@ -150,7 +160,7 @@ namespace ColorVision.Solution
             }
 
             Directory.CreateDirectory(SolutionDirectoryPath);
-            NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
+            NewCreateViewMode.RememberLocation(NewCreateViewMode.DirectoryPath);
 
 
             IsCreate = true;
@@ -161,7 +171,7 @@ namespace ColorVision.Solution
         {
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
-                NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
+                NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentLocationPaths[comboBox.SelectedIndex];
                 NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(SolutionSetting.Instance.DefaultCreatName);
 
             }

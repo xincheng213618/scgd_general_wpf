@@ -65,8 +65,8 @@
   <data name="RecentUsedContent" xml:space="preserve">
     <value>最近使用したコンテンツ</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>最近のファイル(_F)</value>
+  <data name="RecentWorkspaces" xml:space="preserve">
+    <value>最近使用したワークスペース(_W)</value>
   </data>
   <data name="SearchProjectFiles" xml:space="preserve">
     <value>プロジェクトファイルの検索</value>

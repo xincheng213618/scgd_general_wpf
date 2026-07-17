@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.Editor;
-using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Mru;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;
 using ColorVision.UI.Menus.Base.File;
@@ -50,44 +50,30 @@ namespace ColorVision.Solution
         {
             InitializeComponent();
         }
-        private static RecentFileList SolutionHistory => SolutionManager.GetInstance().SolutionHistory;
+        private static MruPathService RecentWorkspaces => SolutionManager.GetInstance().RecentWorkspaces;
 
         public ObservableCollection<SolutionInfo> SolutionInfos { get; set; }= new ObservableCollection<SolutionInfo>();
 
         private void BaseWindow_Initialized(object sender, EventArgs e)
         {
-            SolutionInfos.Clear();
-            foreach (var item in SolutionHistory.RecentFiles)
-            {
-                if (TryCreateSolutionInfo(item, out SolutionInfo solutionInfo))
-                {
-                    SolutionInfos.Add(solutionInfo);
-                }
-                else
-                {
-                    SolutionHistory.RemoveFile(item);
-                }
-            }
+            RefreshRecentWorkspaceList();
             ListView1.ItemsSource = SolutionInfos;
             ListView1.Visibility = Visibility.Visible;
         }
 
-        internal static bool TryCreateSolutionInfo(string path, out SolutionInfo solutionInfo)
+        internal static SolutionInfo CreateSolutionInfo(MruPathEntry entry)
         {
-            solutionInfo = null!;
-            if (!ResourceOpenService.TryDescribeWorkspaceResource(
-                path,
-                out WorkspaceResourceInfo resourceInfo))
-                return false;
-
-            solutionInfo = new SolutionInfo
+            bool isAvailable = ResourceOpenService.TryDescribeWorkspaceResource(
+                entry.Path,
+                out WorkspaceResourceInfo resourceInfo);
+            return new SolutionInfo
             {
-                Name = resourceInfo.DisplayName,
-                KindName = resourceInfo.KindDisplayName,
-                FullName = resourceInfo.FullPath,
-                CreationTime = resourceInfo.CreationTime.ToString("yyyy/MM/dd H:mm"),
+                Name = isAvailable ? resourceInfo.DisplayName : GetDisplayName(entry.Path),
+                KindName = isAvailable ? resourceInfo.KindDisplayName : "不可用",
+                FullName = isAvailable ? resourceInfo.FullPath : entry.Path,
+                LastUsedTime = entry.LastUsedUtc.ToLocalTime().ToString("yyyy/MM/dd H:mm"),
+                IsPinned = entry.IsPinned,
             };
-            return true;
         }
 
         private async void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
@@ -166,8 +152,12 @@ namespace ColorVision.Solution
 
         private void RecentSolutions_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (ListView1.SelectedItem is not SolutionInfo)
+            if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
+            {
                 e.Handled = true;
+                return;
+            }
+            TogglePinMenuItem.Header = solutionInfo.IsPinned ? "取消固定" : "固定到最近列表";
         }
 
         private async void OpenRecentSolution_Click(object sender, RoutedEventArgs e)
@@ -186,9 +176,31 @@ namespace ColorVision.Solution
             if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
                 return;
 
-            SolutionHistory.RemoveFile(solutionInfo.FullName);
-            SolutionInfos.Remove(solutionInfo);
-            ApplyRecentFilter();
+            RecentWorkspaces.Remove(solutionInfo.FullName);
+            RefreshRecentWorkspaceList();
+        }
+
+        private void TogglePinRecentSolution_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
+                return;
+            RecentWorkspaces.SetPinned(solutionInfo.FullName, !solutionInfo.IsPinned);
+            RefreshRecentWorkspaceList();
+        }
+
+        private void ClearRecentSolutions_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show(
+                this,
+                "确定要清空最近工作区列表吗？",
+                "清空最近列表",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            RecentWorkspaces.Clear();
+            RefreshRecentWorkspaceList();
         }
 
         private async Task<bool> OpenSelectedRecentSolutionAsync()
@@ -202,11 +214,6 @@ namespace ColorVision.Solution
                 return true;
             }
 
-            if (!SolutionManager.IsSupportedOpenPath(solutionInfo.FullName))
-            {
-                SolutionInfos.Remove(solutionInfo);
-                ApplyRecentFilter();
-            }
             return false;
         }
 
@@ -284,7 +291,7 @@ namespace ColorVision.Solution
                 .Where(template => keywords.All(keyword =>
                     template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
                     || template.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                    || template.CreationTime.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                    || template.LastUsedTime.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             ListView1.ItemsSource = filteredResults;
@@ -294,6 +301,20 @@ namespace ColorVision.Solution
                 SearchNoneText.Text = $"{Properties.Resources.NoFound} {searchText} {Properties.Resources.RelateItem}";
             }
         }
+
+        private void RefreshRecentWorkspaceList()
+        {
+            SolutionInfos.Clear();
+            foreach (MruPathEntry entry in RecentWorkspaces.Items)
+                SolutionInfos.Add(CreateSolutionInfo(entry));
+            ApplyRecentFilter();
+        }
+
+        private static string GetDisplayName(string path)
+        {
+            string name = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+            return string.IsNullOrWhiteSpace(name) ? path : name;
+        }
     }
 
     public sealed class SolutionInfo
@@ -301,6 +322,8 @@ namespace ColorVision.Solution
         public string Name { get; set; } = string.Empty;
         public string KindName { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
-        public string CreationTime { get; set; } = string.Empty;
+        public string LastUsedTime { get; set; } = string.Empty;
+        public bool IsPinned { get; set; }
+        public string PinIndicator => IsPinned ? "📌" : string.Empty;
     }
 }

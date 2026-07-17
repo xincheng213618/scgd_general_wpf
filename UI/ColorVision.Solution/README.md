@@ -43,9 +43,9 @@
 - 文件夹内多图预览
 - 缩略图缓存管理 (ThumbnailCacheManager)
 
-### 最近文件 (RecentFile/)
-- 最近打开的解决方案列表
-- 注册表持久化 (RegistryPersister)
+### 最近工作区 (Mru/)
+- 文件夹、项目和解决方案的 MRU 列表
+- 内存快照、固定项目与 JSON 原子持久化
 
 ### 终端集成 (Terminal/)
 - 基于 Windows ConPTY 的内置终端

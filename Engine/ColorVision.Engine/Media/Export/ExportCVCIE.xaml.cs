@@ -59,13 +59,13 @@ namespace ColorVision.Engine.Media
                     return;
                 }
                 VExportCIE.SavePath = dialog.SelectedPath;
-                VExportCIE.RecentImage.InsertFile(VExportCIE.SavePath);
+                VExportCIE.RememberExportLocation(VExportCIE.SavePath);
             }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            VExportCIE.RecentImage.InsertFile(VExportCIE.SavePath);
+            VExportCIE.RememberExportLocation(VExportCIE.SavePath);
             Thread thread = new(() => VExportCIE.SaveToTif(VExportCIE));
             thread.Start();
             Close();

@@ -36,8 +36,10 @@
                             <ContextMenu>
                                 <MenuItem Header="{x:Static properties:Resources.Open}" Click="OpenRecentSolution_Click" />
                                 <MenuItem Header="{x:Static properties:Resources.CopyPath}" Click="CopyRecentPath_Click" />
+                                <MenuItem x:Name="TogglePinMenuItem" Header="固定到最近列表" Click="TogglePinRecentSolution_Click" />
                                 <Separator />
                                 <MenuItem Header="从最近列表中移除" Click="RemoveRecentSolution_Click" />
+                                <MenuItem Header="清空最近列表" Click="ClearRecentSolutions_Click" />
                             </ContextMenu>
                         </ListView.ContextMenu>
                         <ListView.ItemContainerStyle>
@@ -64,13 +66,14 @@
                                                     </Grid.ColumnDefinitions>
                                                     <Grid Grid.Column="1" Margin="0,2">
                                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                            <TextBlock Text="{Binding PinIndicator}" Margin="0,0,5,0" />
                                                             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="Bold" />
                                                             <Border Margin="8,0,0,0" Padding="5,0" CornerRadius="2" Background="#227F8FA4">
                                                                 <TextBlock Text="{Binding KindName}" FontSize="11" VerticalAlignment="Center" />
                                                             </Border>
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
-                                                        <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                                        <TextBlock Text="{Binding LastUsedTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                                                     </Grid>
                                                 </Grid>
                                             </Border>

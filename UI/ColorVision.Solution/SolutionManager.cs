@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Mru;
 using ColorVision.Solution.Workspace;
 using ColorVision.Solution.Explorer;
 using ColorVision.UI.Extension;
@@ -53,11 +53,12 @@ namespace ColorVision.Solution
         private readonly Func<SolutionExplorer, bool> _tryCloseWorkspaceDocuments;
         private CancellationTokenSource? _workspaceOpenCancellation;
         private int _workspaceOpenVersion;
+        private JumpListManager? _jumpListManager;
         internal Task InitialWorkspaceOpenTask { get; private set; } = Task.CompletedTask;
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
-        public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+        public MruPathService RecentWorkspaces { get; } = MruPathService.CreateLocal("recent-workspaces.json");
 
         /// <summary>
         /// 工程初始化的时候
@@ -154,7 +155,7 @@ namespace ColorVision.Solution
                 ?? TryCloseWorkspaceDocumentsCore;
             ColorVision.UI.FileProcessorFactory.GetInstance().ResourceOpenHandler ??=
                 Editor.ResourceOpenService.Instance.RouteFileProcessorOpen;
-            SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
+            RecentWorkspaces.Changed += RecentWorkspaces_Changed;
 
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
@@ -177,8 +178,10 @@ namespace ColorVision.Solution
 
         private async Task RestoreInitialWorkspaceAsync(string? solutionPath)
         {
+            MruPathEntry? mostRecentWorkspace = RecentWorkspaces.Items
+                .MaxBy(entry => entry.LastUsedUtc);
             string? restorePath = solutionPath
-                ?? SolutionHistory.RecentFiles.FirstOrDefault();
+                ?? mostRecentWorkspace?.Path;
             bool succeeded = false;
             if (!string.IsNullOrWhiteSpace(restorePath))
             {
@@ -188,8 +191,8 @@ namespace ColorVision.Solution
                     return;
             }
 
-            var jumpListManager = new JumpListManager();
-            jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
+            _jumpListManager = new JumpListManager();
+            _jumpListManager.SetRecentWorkspaces(RecentWorkspaces.Items.Select(entry => entry.Path));
             if (succeeded || CurrentSolutionExplorer != null || IsOpeningWorkspace)
                 return;
 
@@ -200,6 +203,12 @@ namespace ColorVision.Solution
             string defaultSolution = Path.Combine(defaultRoot, "Default");
             Directory.CreateDirectory(defaultSolution);
             CreateSolution(defaultSolution);
+        }
+
+        private void RecentWorkspaces_Changed(object? sender, EventArgs e)
+        {
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentWorkspace));
+            _jumpListManager?.SetRecentWorkspaces(RecentWorkspaces.Items.Select(entry => entry.Path));
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
@@ -239,7 +248,7 @@ namespace ColorVision.Solution
             return true;
         }
 
-        internal static string NormalizeRecentPath(string? path)
+        internal static string NormalizeWorkspacePath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -266,7 +275,7 @@ namespace ColorVision.Solution
                 return false;
             }
 
-            string normalizedPath = NormalizeRecentPath(path);
+            string normalizedPath = NormalizeWorkspacePath(path);
             return Directory.Exists(normalizedPath)
                 || (File.Exists(normalizedPath) && (IsSolutionFilePath(normalizedPath) || IsProjectFilePath(normalizedPath)));
         }
@@ -385,7 +394,7 @@ namespace ColorVision.Solution
                 return false;
             }
 
-            string normalizedPath = NormalizeRecentPath(path);
+            string normalizedPath = NormalizeWorkspacePath(path);
 
             if (Directory.Exists(normalizedPath))
             {
@@ -441,7 +450,7 @@ namespace ColorVision.Solution
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            string normalizedPath = NormalizeRecentPath(path);
+            string normalizedPath = NormalizeWorkspacePath(path);
             if (Directory.Exists(normalizedPath))
             {
                 DirectoryInfo directoryInfo = new(normalizedPath);
@@ -618,13 +627,6 @@ namespace ColorVision.Solution
                 out string displayName,
                 out errorMessage))
             {
-                string normalizedPath = NormalizeRecentPath(fullPath);
-                if (!string.IsNullOrWhiteSpace(normalizedPath)
-                    && !IsSupportedOpenPath(normalizedPath))
-                {
-                    SolutionHistory.RemoveFile(normalizedPath);
-                    SolutionHistory.RemoveFile(fullPath);
-                }
                 log.Warn($"无法解析要打开的解决方案或工作区: {fullPath}, {errorMessage}");
                 return false;
             }
@@ -668,9 +670,7 @@ namespace ColorVision.Solution
             CurrentSolutionExplorer = candidateExplorer;
             SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
             SolutionExplorers.Add(candidateExplorer);
-            SolutionHistory.InsertFile(historyPath);
-            if (!string.Equals(fullPath, historyPath, StringComparison.OrdinalIgnoreCase))
-                SolutionHistory.RemoveFile(fullPath);
+            RecentWorkspaces.Touch(historyPath, fullPath);
             SolutionLoaded?.Invoke(historyPath, EventArgs.Empty);
             errorMessage = string.Empty;
             return true;
@@ -697,13 +697,6 @@ namespace ColorVision.Solution
                 requestCancellation.Token.ThrowIfCancellationRequested();
                 if (!resolution.Succeeded)
                 {
-                    string normalizedPath = NormalizeRecentPath(fullPath);
-                    if (!string.IsNullOrWhiteSpace(normalizedPath)
-                        && !IsSupportedOpenPath(normalizedPath))
-                    {
-                        SolutionHistory.RemoveFile(normalizedPath);
-                        SolutionHistory.RemoveFile(fullPath);
-                    }
                     log.Warn($"无法解析要打开的解决方案或工作区: {fullPath}, {resolution.ErrorMessage}");
                     return new SolutionOpenOperationResult(false, resolution.ErrorMessage);
                 }
@@ -762,9 +755,7 @@ namespace ColorVision.Solution
                 CurrentSolutionExplorer = candidateExplorer;
                 SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
                 SolutionExplorers.Add(candidateExplorer);
-                SolutionHistory.InsertFile(resolution.HistoryPath);
-                if (!string.Equals(fullPath, resolution.HistoryPath, StringComparison.OrdinalIgnoreCase))
-                    SolutionHistory.RemoveFile(fullPath);
+                RecentWorkspaces.Touch(resolution.HistoryPath, fullPath);
                 SolutionLoaded?.Invoke(resolution.HistoryPath, EventArgs.Empty);
                 return new SolutionOpenOperationResult(true);
             }
@@ -899,7 +890,7 @@ namespace ColorVision.Solution
             try
             {
                 string requestedPath = Path.TrimEndingDirectorySeparator(
-                    Path.GetFullPath(NormalizeRecentPath(path)));
+                    Path.GetFullPath(NormalizeWorkspacePath(path)));
                 string currentPath = Path.TrimEndingDirectorySeparator(
                     Path.GetFullPath(CurrentWorkspacePath));
                 return string.Equals(requestedPath, currentPath, StringComparison.OrdinalIgnoreCase);

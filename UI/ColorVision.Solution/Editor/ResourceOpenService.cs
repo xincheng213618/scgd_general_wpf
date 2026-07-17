@@ -521,7 +521,7 @@ namespace ColorVision.Solution.Editor
             out WorkspaceResourceInfo resourceInfo)
         {
             resourceInfo = null!;
-            string normalizedPath = SolutionManager.NormalizeRecentPath(path);
+            string normalizedPath = SolutionManager.NormalizeWorkspacePath(path);
             ResourceOpenKind kind = Classify(normalizedPath);
             if (kind == ResourceOpenKind.Folder)
             {
