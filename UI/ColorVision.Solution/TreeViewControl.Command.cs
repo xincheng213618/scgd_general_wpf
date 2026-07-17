@@ -39,7 +39,7 @@ namespace ColorVision.Solution
 
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            var selectedNodes = _selectionService.SelectedNodes;
+            var selectedNodes = _selectionService.CommandNodes;
             if (selectedNodes.Count == 0)
             {
                 e.CanExecute = false;
@@ -86,10 +86,10 @@ namespace ColorVision.Solution
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectionService.SelectedNodes.Count == 0)
+                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectionService.CommandNodes.Count == 0)
                     return;
 
-                var targetNode = _selectionService.SelectedNodes[0];
+                var targetNode = _selectionService.CommandNodes[0];
                 string targetDir = targetNode.FullPath;
                 if (targetNode is FileNode)
                     targetDir = Path.GetDirectoryName(targetNode.FullPath) ?? targetDir;
@@ -118,7 +118,7 @@ namespace ColorVision.Solution
 
         private void CanExecuteDelete(object sender, CanExecuteRoutedEventArgs e)
         {
-            var selectedNodes = _selectionService.SelectedNodes;
+            var selectedNodes = _selectionService.CommandNodes;
             e.CanExecute = selectedNodes.Count > 0 && selectedNodes.All(node => node.CanDelete);
             e.Handled = true;
         }
@@ -129,7 +129,7 @@ namespace ColorVision.Solution
             if (nodes.Count == 0)
                 return;
 
-            if (_selectionService.SelectedNodes.Count == 1)
+            if (_selectionService.CommandNodes.Count == 1)
             {
                 if (!nodes[0].TryDelete(showConfirmation: true))
                     return;
@@ -173,15 +173,19 @@ namespace ColorVision.Solution
 
         private void CanExecuteRename(object sender, CanExecuteRoutedEventArgs e)
         {
-            var selectedNodes = _selectionService.SelectedNodes;
+            var selectedNodes = _selectionService.CommandNodes;
             e.CanExecute = selectedNodes.Count == 1 && selectedNodes[0].CanReName;
             e.Handled = true;
         }
 
         private void ExecuteRename(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_selectionService.SelectedNodes is [var node] && node.CanReName)
-                node.IsEditMode = true;
+            if (_selectionService.SelectedNodes is [var visualNode]
+                && _selectionService.CommandNodes is [var commandNode]
+                && commandNode.CanReName)
+            {
+                visualNode.IsEditMode = true;
+            }
             e.Handled = true;
         }
 
@@ -199,7 +203,7 @@ namespace ColorVision.Solution
 
         private SolutionExplorer? GetSelectedSolutionExplorer()
         {
-            if (_selectionService.SelectedNodes is not [var selectedNode])
+            if (_selectionService.CommandNodes is not [var selectedNode])
                 return null;
 
             for (SolutionNode? current = selectedNode; current != null; current = current.Parent)
@@ -218,7 +222,7 @@ namespace ColorVision.Solution
         private void CanExecuteProjectCapability(object sender, CanExecuteRoutedEventArgs e)
         {
             string? capabilityId = SolutionProjectCommands.GetCapabilityId(e.Command);
-            e.CanExecute = capabilityId != null && _selectionService.SelectedNodes switch
+            e.CanExecute = capabilityId != null && _selectionService.CommandNodes switch
             {
                 [ProjectNode projectNode] => projectNode.CanExecuteCapability(capabilityId),
                 [_] when capabilityId is ProjectCapabilityIds.Run or ProjectCapabilityIds.Debug
@@ -233,9 +237,9 @@ namespace ColorVision.Solution
             string? capabilityId = SolutionProjectCommands.GetCapabilityId(e.Command);
             if (capabilityId != null)
             {
-                if (_selectionService.SelectedNodes is [ProjectNode projectNode])
+                if (_selectionService.CommandNodes is [ProjectNode projectNode])
                     projectNode.ExecuteCapability(capabilityId);
-                else if (_selectionService.SelectedNodes.Count == 1
+                else if (_selectionService.CommandNodes.Count == 1
                     && capabilityId is ProjectCapabilityIds.Run or ProjectCapabilityIds.Debug)
                 {
                     GetSelectedSolutionExplorer()?.ExecuteStartupProject(capabilityId);
@@ -246,28 +250,28 @@ namespace ColorVision.Solution
 
         private void CanExecuteSetStartupProject(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _selectionService.SelectedNodes is [ProjectNode projectNode]
+            e.CanExecute = _selectionService.CommandNodes is [ProjectNode projectNode]
                 && projectNode.SolutionExplorer?.CanSetStartupProject(projectNode.Project) == true;
             e.Handled = true;
         }
 
         private void ExecuteSetStartupProject(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_selectionService.SelectedNodes is [ProjectNode projectNode])
+            if (_selectionService.CommandNodes is [ProjectNode projectNode])
                 projectNode.SolutionExplorer?.SetStartupProject(projectNode.Project);
             e.Handled = true;
         }
 
         private void CanExecuteBuildSolution(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _selectionService.SelectedNodes is [SolutionExplorer solutionExplorer]
+            e.CanExecute = _selectionService.CommandNodes is [SolutionExplorer solutionExplorer]
                 && solutionExplorer.CanBuildSolution();
             e.Handled = true;
         }
 
         private void ExecuteBuildSolution(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_selectionService.SelectedNodes is [SolutionExplorer solutionExplorer])
+            if (_selectionService.CommandNodes is [SolutionExplorer solutionExplorer])
                 solutionExplorer.BuildSolution();
             e.Handled = true;
         }
@@ -318,7 +322,7 @@ namespace ColorVision.Solution
             out ProjectNode? projectNode,
             out IReadOnlyList<SolutionNode> nodes)
         {
-            nodes = _selectionService.SelectedNodes;
+            nodes = _selectionService.CommandNodes;
             projectNode = null;
             if (nodes.Count == 0 || nodes.Any(node => node is ProjectNode))
                 return false;

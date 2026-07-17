@@ -9,6 +9,10 @@ namespace ColorVision.Solution.Explorer
         private readonly List<SolutionNode> _selectedNodes = new();
 
         public IReadOnlyList<SolutionNode> SelectedNodes => _selectedNodes;
+        public IReadOnlyList<SolutionNode> CommandNodes => _selectedNodes
+            .Select(node => node.ResolveCommandTarget())
+            .Distinct()
+            .ToList();
 
         public SolutionNode? AnchorNode { get; private set; }
 
@@ -90,7 +94,7 @@ namespace ColorVision.Solution.Explorer
         public IReadOnlyList<SolutionNode> GetTopLevelNodes(Func<SolutionNode, bool> predicate)
         {
             ArgumentNullException.ThrowIfNull(predicate);
-            var candidates = _selectedNodes.Where(predicate).ToList();
+            var candidates = CommandNodes.Where(predicate).ToList();
             return candidates
                 .Where(node => !candidates.Any(parent => !ReferenceEquals(parent, node) && IsAncestorOf(parent, node)))
                 .ToList();

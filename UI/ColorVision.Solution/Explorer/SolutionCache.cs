@@ -99,7 +99,10 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        public List<FileTreeCacheEntry> Search(string[] keywords, int maxResults = 500)
+        public List<FileTreeCacheEntry> Search(
+            string[] keywords,
+            int maxResults = 500,
+            string? rootPath = null)
         {
             if (_disposed || keywords.Length == 0) return new List<FileTreeCacheEntry>();
             lock (_lock)
@@ -107,10 +110,21 @@ namespace ColorVision.Solution.Explorer
                 try
                 {
                     var query = _db.Queryable<FileTreeCacheEntry>();
+                    if (!string.IsNullOrWhiteSpace(rootPath))
+                    {
+                        string normalizedRootPath = Path.GetFullPath(rootPath)
+                            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        string childPrefix = normalizedRootPath + Path.DirectorySeparatorChar;
+                        query = query.Where(entry =>
+                            entry.FullPath == normalizedRootPath
+                            || entry.FullPath.StartsWith(childPrefix));
+                    }
                     foreach (string keyword in keywords.Where(keyword => !string.IsNullOrWhiteSpace(keyword)))
                     {
                         string term = keyword;
-                        query = query.Where(entry => entry.Name.Contains(term));
+                        query = query.Where(entry =>
+                            entry.Name.Contains(term)
+                            || entry.FullPath.Contains(term));
                     }
 
                     return query

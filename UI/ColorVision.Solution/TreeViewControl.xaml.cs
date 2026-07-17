@@ -49,27 +49,36 @@ namespace ColorVision.Solution
         private readonly SolutionContextMenuService _contextMenuService;
         private readonly SolutionSelectionService _selectionService;
         private readonly DispatcherTimer _workspaceStateSaveTimer;
+        private readonly DispatcherTimer _searchDebounceTimer;
         private readonly HashSet<SolutionExplorer> _observedExplorers = new();
+        private readonly List<SolutionSearchResultNode> _searchResultNodes = new();
         private SolutionNode? _dropTargetNode;
         private CancellationTokenSource? _workspaceStateRestoreCancellation;
+        private CancellationTokenSource? _searchCancellation;
+        private int _searchVersion;
         private bool _isDragging;
         private bool _isRestoringWorkspaceState;
 
-        public IReadOnlyList<SolutionNode> SelectedNodes => _selectionService.SelectedNodes;
+        public IReadOnlyList<SolutionNode> SelectedNodes => _selectionService.CommandNodes;
 
         public TreeViewControl()
         {
-            InitializeComponent();
             _selectionService = new SolutionSelectionService();
             _contextMenuService = new SolutionContextMenuService();
-            _contextMenuService.GetSelectedNodes = () => _selectionService.SelectedNodes;
-            _contextMenuService.CommandTarget = SolutionTreeView;
             _workspaceStateSaveTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(350),
             };
             _workspaceStateSaveTimer.Tick += WorkspaceStateSaveTimer_Tick;
+            _searchDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(220),
+            };
+            _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
             _selectionService.SelectionChanged += SelectionService_SelectionChanged;
+            InitializeComponent();
+            _contextMenuService.GetSelectedNodes = () => _selectionService.CommandNodes;
+            _contextMenuService.CommandTarget = SolutionTreeView;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -81,7 +90,7 @@ namespace ColorVision.Solution
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
-            SolutionNode? targetNode = GetNodeAtPoint(e.GetPosition(SolutionTreeView));
+            SolutionNode? targetNode = GetNodeAtPoint(e.GetPosition(SolutionTreeView))?.ResolveCommandTarget();
             ClearDropTargetVisual();
             if (TryGetSolutionOrganizationDragData(e.Data, out SolutionOrganizationDragData? organizationData))
             {
@@ -164,7 +173,7 @@ namespace ColorVision.Solution
 
         private void TreeViewControl_DragOver(object sender, DragEventArgs e)
         {
-            SolutionNode? targetNode = GetNodeAtPoint(e.GetPosition(SolutionTreeView));
+            SolutionNode? targetNode = GetNodeAtPoint(e.GetPosition(SolutionTreeView))?.ResolveCommandTarget();
             if (TryGetSolutionOrganizationDragData(e.Data, out SolutionOrganizationDragData? organizationData))
             {
                 SolutionExplorer? targetExplorer = null;
@@ -243,6 +252,8 @@ namespace ColorVision.Solution
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
+            if (!string.IsNullOrWhiteSpace(SearchBar1.Text))
+                SearchBar1TextChanged();
         }
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
@@ -250,6 +261,9 @@ namespace ColorVision.Solution
             SaveWorkspaceState(SolutionManager.CurrentSolutionExplorer);
             CancelWorkspaceStateRestore();
             _workspaceStateSaveTimer.Stop();
+            _searchDebounceTimer.Stop();
+            CancelPendingSearch();
+            DisposeSearchResultNodes();
             SolutionManager.SolutionExplorers.CollectionChanged -= SolutionExplorers_CollectionChanged;
             foreach (SolutionExplorer explorer in _observedExplorers.ToList())
                 DetachExplorer(explorer);
@@ -278,6 +292,8 @@ namespace ColorVision.Solution
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
+            if (!string.IsNullOrWhiteSpace(SearchBar1.Text))
+                SearchBar1TextChanged();
         }
 
         private void SynchronizeObservedExplorers()
@@ -314,7 +330,8 @@ namespace ColorVision.Solution
 
         private void Explorer_VisualChildrenChanged(object? sender, EventArgs e)
         {
-            SearchBar1TextChanged();
+            if (!string.IsNullOrWhiteSpace(SearchBar1.Text))
+                SearchBar1TextChanged();
         }
 
         private void Explorer_SolutionStateReloading(object? sender, EventArgs e)
@@ -338,6 +355,8 @@ namespace ColorVision.Solution
 
             _workspaceStateSaveTimer.Stop();
             Dispatcher.BeginInvoke(() => RestoreWorkspaceState(explorer), DispatcherPriority.Loaded);
+            if (!string.IsNullOrWhiteSpace(SearchBar1.Text))
+                SearchBar1TextChanged();
         }
 
         private void Explorer_Disposing(object? sender, EventArgs e)
@@ -392,8 +411,8 @@ namespace ColorVision.Solution
             {
                 SolutionWorkspaceState state = SolutionWorkspaceStateStore.Capture(
                     explorer,
-                    _selectionService.SelectedNodes,
-                    _selectionService.AnchorNode);
+                    _selectionService.CommandNodes,
+                    _selectionService.AnchorNode?.ResolveCommandTarget());
                 SolutionWorkspaceStateStore.Save(explorer.ConfigFileInfo.FullName, state);
             }
             catch (Exception ex) when (ex is IOException
@@ -565,7 +584,7 @@ namespace ColorVision.Solution
                 return;
             }
 
-            IReadOnlyList<SolutionNode> selectedNodes = _selectionService.SelectedNodes;
+            IReadOnlyList<SolutionNode> selectedNodes = _selectionService.CommandNodes;
             if (TryCreateSolutionOrganizationDragData(selectedNodes, out SolutionOrganizationDragData? organizationData))
             {
                 var organizationDataObject = new DataObject();
@@ -794,7 +813,7 @@ namespace ColorVision.Solution
 
         private string? GetDropTargetDirectory(DragEventArgs e)
         {
-            var node = GetNodeAtPoint(e.GetPosition(SolutionTreeView));
+            var node = GetNodeAtPoint(e.GetPosition(SolutionTreeView))?.ResolveCommandTarget();
             if (node is FileNode)
                 return Path.GetDirectoryName(node.FullPath);
 
@@ -806,6 +825,7 @@ namespace ColorVision.Solution
 
         private static SolutionNode? GetPhysicalDropTargetNode(SolutionNode? targetNode)
         {
+            targetNode = targetNode?.ResolveCommandTarget();
             if (targetNode is FileNode)
                 return targetNode.Parent ?? SolutionManager.CurrentSolutionExplorer;
             if (targetNode != null && Directory.Exists(targetNode.FullPath))
@@ -886,64 +906,154 @@ namespace ColorVision.Solution
                 selected.IsSelected = false;
         }
 
-        private readonly char[] Chars = new[] { ' ' };
-
         public void SearchBar1TextChanged()
         {
-            string text = SearchBar1.Text;
-            if (string.IsNullOrWhiteSpace(text))
+            if (SolutionTreeView == null || SearchStatusText == null)
+                return;
+
+            _searchDebounceTimer.Stop();
+            if (string.IsNullOrWhiteSpace(SearchBar1.Text))
             {
-                SolutionTreeView.ItemsSource = SolutionManager.GetInstance().SolutionExplorers;
+                CancelPendingSearch();
+                ShowSolutionTree();
+                return;
             }
-            else
+
+            SearchStatusText.Text = "正在搜索…";
+            SearchStatusText.Visibility = Visibility.Visible;
+            _searchDebounceTimer.Start();
+        }
+
+        private async void SearchDebounceTimer_Tick(object? sender, EventArgs e)
+        {
+            _searchDebounceTimer.Stop();
+            string query = SearchBar1.Text.Trim();
+            if (query.Length == 0)
             {
-                var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-                var currentExplorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
-                List<SolutionNode> filteredResults;
-                if (currentExplorer?.Cache?.HasCache() == true)
+                ShowSolutionTree();
+                return;
+            }
+
+            CancelPendingSearch();
+            var cancellation = new CancellationTokenSource();
+            _searchCancellation = cancellation;
+            int version = ++_searchVersion;
+            try
+            {
+                SolutionSearchResult result = await SolutionSearchService.SearchAsync(
+                    SolutionManager.SolutionExplorers.ToList(),
+                    query,
+                    SolutionSearchService.DefaultMaxResults,
+                    cancellation.Token);
+                if (cancellation.IsCancellationRequested
+                    || version != _searchVersion
+                    || !string.Equals(query, SearchBar1.Text.Trim(), StringComparison.Ordinal))
                 {
-                    filteredResults = currentExplorer.Cache.Search(keywords)
-                        .Select(CreateSearchResultNode)
-                        .Where(node => node != null)
-                        .Cast<SolutionNode>()
-                        .ToList();
-                }
-                else
-                {
-                    filteredResults = SolutionManager.GetInstance().SolutionExplorers.
-                        SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
-                        .OfType<SolutionNode>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
-                        .ToList();
+                    return;
                 }
 
-                SolutionTreeView.ItemsSource = filteredResults;
+                ApplySearchResult(result);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                SearchStatusText.Text = $"搜索失败：{ex.Message}";
+                SearchStatusText.Visibility = Visibility.Visible;
+            }
+            finally
+            {
+                if (ReferenceEquals(_searchCancellation, cancellation))
+                    _searchCancellation = null;
+                cancellation.Dispose();
             }
         }
 
-        private static SolutionNode? CreateSearchResultNode(FileTreeCacheEntry entry)
+        private void ApplySearchResult(SolutionSearchResult result)
         {
+            _selectionService.Clear();
+            SolutionTreeView.ItemsSource = null;
+            DisposeSearchResultNodes();
+            foreach (SolutionSearchHit hit in result.Hits)
+            {
+                if (!SolutionManager.SolutionExplorers.Contains(hit.Explorer))
+                    continue;
+                SolutionNode? targetNode = CreateSearchTargetNode(hit, out bool ownsTarget);
+                if (targetNode == null)
+                    continue;
+                _searchResultNodes.Add(new SolutionSearchResultNode(
+                    targetNode,
+                    hit.DisplayPath,
+                    ownsTarget));
+            }
+
+            SolutionTreeView.ItemsSource = _searchResultNodes;
+            SearchStatusText.Text = result.IsTruncated
+                ? $"显示前 {_searchResultNodes.Count} 项，请继续输入以缩小范围"
+                : $"找到 {_searchResultNodes.Count} 项";
+            SearchStatusText.Visibility = Visibility.Visible;
+        }
+
+        private static SolutionNode? CreateSearchTargetNode(
+            SolutionSearchHit hit,
+            out bool ownsTarget)
+        {
+            ownsTarget = false;
+            if (hit.ExistingNode != null)
+                return hit.ExistingNode;
+
             try
             {
-                if (entry.IsDirectory)
+                SolutionNode targetNode;
+                if (hit.IsDirectory)
                 {
-                    if (!Directory.Exists(entry.FullPath))
+                    if (!Directory.Exists(hit.FullPath))
                         return null;
-                    return SolutionNodeFactory.CreateFolderNode(
-                        new DirectoryInfo(entry.FullPath),
-                        SolutionManager.GetInstance().CurrentSolutionExplorer);
+                    targetNode = SolutionNodeFactory.CreateFolderNode(
+                        new DirectoryInfo(hit.FullPath),
+                        hit.Explorer);
+                }
+                else
+                {
+                    if (!File.Exists(hit.FullPath))
+                        return null;
+                    targetNode = SolutionNodeFactory.CreateFileNode(new FileInfo(hit.FullPath));
                 }
 
-                if (!File.Exists(entry.FullPath))
-                    return null;
-                return SolutionNodeFactory.CreateFileNode(new FileInfo(entry.FullPath));
+                targetNode.Parent = hit.ParentNode;
+                targetNode.UpdateProjectMembershipState();
+                ownsTarget = true;
+                return targetNode;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"创建搜索结果节点失败: {hit.FullPath}, {ex}");
                 return null;
             }
+        }
+
+        private void ShowSolutionTree()
+        {
+            _selectionService.Clear();
+            SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            DisposeSearchResultNodes();
+            SearchStatusText.Text = string.Empty;
+            SearchStatusText.Visibility = Visibility.Collapsed;
+        }
+
+        private void CancelPendingSearch()
+        {
+            _searchVersion++;
+            _searchCancellation?.Cancel();
+            _searchCancellation = null;
+        }
+
+        private void DisposeSearchResultNodes()
+        {
+            foreach (SolutionSearchResultNode searchResultNode in _searchResultNodes)
+                searchResultNode.Dispose();
+            _searchResultNodes.Clear();
         }
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)

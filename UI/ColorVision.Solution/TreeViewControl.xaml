@@ -22,6 +22,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
             <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Visibility="Collapsed" Orientation="Horizontal" Margin="3">
@@ -158,6 +159,13 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </Border>
+        <TextBlock x:Name="SearchStatusText"
+                   Grid.Row="3"
+                   Margin="8,2,5,4"
+                   FontSize="11"
+                   Opacity="0.7"
+                   Visibility="Collapsed"
+                   AutomationProperties.LiveSetting="Polite"/>
     </Grid>
 
 </UserControl>

@@ -198,6 +198,126 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SelectionService_SearchResultsResolveToCommandTargets()
+    {
+        var parent = CreateNode("parent");
+        var child = CreateNode("child");
+        parent.AddChild(child);
+        using var parentResult = new SolutionSearchResultNode(parent, "Project\\parent", ownsTarget: false);
+        using var childResult = new SolutionSearchResultNode(child, "Project\\parent\\child", ownsTarget: false);
+        var service = new SolutionSelectionService();
+
+        service.SelectMany([parentResult, childResult]);
+
+        Assert.Equal([parent, child], service.CommandNodes);
+        Assert.Equal([parent], service.GetTopLevelNodes(_ => true));
+        Assert.Equal([parentResult, childResult], service.SelectedNodes);
+    }
+
+    [Fact]
+    public void SolutionSearch_ParseKeywordsSupportsPhrasesAndRemovesDuplicates()
+    {
+        IReadOnlyList<string> keywords = SolutionSearchService.ParseKeywords(
+            "  \"alpha beta\"  gamma  GAMMA  ");
+
+        Assert.Equal(["alpha beta", "gamma"], keywords);
+    }
+
+    [Fact]
+    public async Task SolutionSearch_ExplicitModeHonorsProjectScopesAndExternalProjects()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string externalContainer = CreateTemporaryDirectory();
+        string projectADirectory = Path.Combine(solutionDirectory, "ProjectA");
+        string projectBDirectory = Path.Combine(externalContainer, "ProjectB");
+        string projectAFile = Path.Combine(projectADirectory, "ProjectA.cvproj");
+        string projectBFile = Path.Combine(projectBDirectory, "ProjectB.cvproj");
+        string includedA = Path.Combine(projectADirectory, "Source", "needle-a.txt");
+        string excludedA = Path.Combine(projectADirectory, "Output", "needle-excluded.txt");
+        string includedB = Path.Combine(projectBDirectory, "Source", "needle-b.txt");
+        string outsideProject = Path.Combine(solutionDirectory, "Outside", "needle-outside.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(includedA)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(excludedA)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(includedB)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(outsideProject)!);
+        File.WriteAllText(includedA, "A");
+        File.WriteAllText(excludedA, "excluded");
+        File.WriteAllText(includedB, "B");
+        File.WriteAllText(outsideProject, "outside");
+        FolderProjectProvider.CreateProjectFile(projectAFile, "ProjectA", excludedPaths: ["Output/**"]);
+        FolderProjectProvider.CreateProjectFile(projectBFile, "ProjectB");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects =
+            [
+                Path.GetRelativePath(solutionDirectory, projectAFile),
+                Path.GetRelativePath(solutionDirectory, projectBFile),
+            ],
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            explorer.Cache!.RebuildCache(solutionDirectory);
+
+            SolutionSearchResult result = await SolutionSearchService.SearchAsync([explorer], "needle", 20);
+            string[] paths = result.Hits.Select(hit => hit.FullPath).ToArray();
+
+            Assert.Contains(includedA, paths, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(includedB, paths, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(excludedA, paths, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(outsideProject, paths, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(result.Hits, hit =>
+                string.Equals(hit.FullPath, includedB, StringComparison.OrdinalIgnoreCase)
+                && hit.DisplayPath.StartsWith("ProjectB", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+            Directory.Delete(externalContainer, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionSearch_MatchesPathSegmentsAndReportsTruncation()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string matchingDirectory = Path.Combine(solutionDirectory, "UniqueNeedleFolder");
+        Directory.CreateDirectory(matchingDirectory);
+        for (int index = 0; index < 5; index++)
+            File.WriteAllText(Path.Combine(matchingDirectory, $"item-{index}.txt"), index.ToString());
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.AutoDiscover,
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            explorer.Cache!.RebuildCache(solutionDirectory);
+
+            SolutionSearchResult result = await SolutionSearchService.SearchAsync(
+                [explorer],
+                "UniqueNeedleFolder",
+                maxResults: 2);
+
+            Assert.Equal(2, result.Hits.Count);
+            Assert.True(result.IsTruncated);
+            Assert.All(result.Hits, hit =>
+                Assert.Contains("UniqueNeedleFolder", hit.FullPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void FolderProjectProvider_LoadsLegacyAndTypedProjectFiles()
     {
         string directoryPath = CreateTemporaryDirectory();

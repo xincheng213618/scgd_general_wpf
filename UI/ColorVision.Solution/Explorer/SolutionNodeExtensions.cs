@@ -2,6 +2,14 @@ namespace ColorVision.Solution.Explorer
 {
     public static class SolutionNodeExtensions
     {
+        public static SolutionNode ResolveCommandTarget(this SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            return node is SolutionSearchResultNode searchResultNode
+                ? searchResultNode.TargetNode
+                : node;
+        }
+
         public static T? GetAncestor<T>(this SolutionNode node) where T : SolutionNode
         {
             if (node is T t)
