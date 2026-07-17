@@ -4,10 +4,8 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
-using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 
@@ -54,9 +52,6 @@ namespace ColorVision.Solution.Explorer
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotExplainFile", Order = 20, Header = "问 AI 解释此文件", Command = AskCopilotExplainFileCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotDiagnoseFile", Order = 21, Header = "问 AI 诊断此文件/日志", Command = AskCopilotDiagnoseFileCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
         }
 
         private void AskCopilotAboutFile(CopilotPromptMode mode, bool diagnose)

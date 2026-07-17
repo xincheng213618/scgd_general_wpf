@@ -7,7 +7,6 @@ using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -38,6 +37,7 @@ namespace ColorVision.Solution.Explorer
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
+        public RelayCommand OpenFusionCommand { get; set; }
         private bool _childrenLoaded;
         private bool _childrenLoading;
         private bool _isExpanded;
@@ -248,6 +248,7 @@ namespace ColorVision.Solution.Explorer
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
+            OpenFusionCommand = new RelayCommand(_ => OpenFusionWithFolderImages(), _ => DirectoryInfo.Exists);
         }
 
         public override void Open()
@@ -259,11 +260,6 @@ namespace ColorVision.Solution.Explorer
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Fusion", Order = 50, Header = "景深融合(_F)", Command = new RelayCommand(_ => OpenFusionWithFolderImages()) });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
         }
 
         private void AskCopilotAboutFolder()

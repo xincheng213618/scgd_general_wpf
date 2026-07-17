@@ -1,6 +1,8 @@
 using ColorVision.Solution;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
+using ColorVision.Solution.FileMeta;
+using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Terminal;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI.Menus;
@@ -649,6 +651,91 @@ public class SolutionManagerFoundationTests
         Assert.DoesNotContain(nodeItems, item => item.GuidId == SolutionCommandIds.Delete);
         Assert.Single(openingItems, item => item.GuidId == "CopyFullPath");
         Assert.Single(openingItems, item => item.GuidId == SolutionCommandIds.Delete);
+    }
+
+    [Fact]
+    public void ResourceNodeMenusComposeFixedActionsDynamicallyAndPreserveMetaExtensions()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "sample.txt");
+        string folderPath = Path.Combine(rootPath, "Folder");
+        string solutionPath = Path.Combine(rootPath, "Example.cvsln");
+        File.WriteAllText(filePath, "sample");
+        Directory.CreateDirectory(folderPath);
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig { RootPath = "." });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(rootPath, solutionPath);
+            var fileNode = new FileNode(new TestFileMenuMeta(
+                new FileInfo(filePath),
+                "TestFileMetaAction"));
+            using var folderNode = new FolderNode(new TestFolderMenuMeta(
+                new DirectoryInfo(folderPath),
+                "TestFolderMetaAction"));
+            using var searchResult = new SolutionSearchResultNode(
+                explorer,
+                fileNode,
+                "sample.txt",
+                ownsTarget: false);
+            var fileNodeItems = new List<MenuItemMetadata>();
+            var folderNodeItems = new List<MenuItemMetadata>();
+            fileNode.CollectMenuItems(fileNodeItems);
+            folderNode.CollectMenuItems(folderNodeItems);
+
+            List<MenuItemMetadata> fileMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode]);
+            List<MenuItemMetadata> folderMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([folderNode]);
+            List<MenuItemMetadata> searchMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([searchResult]);
+            List<MenuItemMetadata> multiMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
+
+            Assert.Contains(fileNodeItems, item => item.GuidId == "TestFileMetaAction");
+            Assert.Contains(folderNodeItems, item => item.GuidId == "TestFolderMetaAction");
+            Assert.DoesNotContain(fileNodeItems, item => item.GuidId is
+                "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder");
+            Assert.DoesNotContain(folderNodeItems, item => item.GuidId is
+                "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
+
+            Assert.Contains(fileMenuItems, item => item.GuidId == "TestFileMetaAction");
+            Assert.Same(
+                fileNode.AskCopilotExplainFileCommand,
+                Assert.Single(fileMenuItems, item => item.GuidId == "AskCopilotExplainFile").Command);
+            Assert.Same(
+                fileNode.AskCopilotDiagnoseFileCommand,
+                Assert.Single(fileMenuItems, item => item.GuidId == "AskCopilotDiagnoseFile").Command);
+            Assert.Same(
+                fileNode.OpenContainingFolderCommand,
+                Assert.Single(fileMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
+
+            Assert.Contains(folderMenuItems, item => item.GuidId == "TestFolderMetaAction");
+            Assert.Same(
+                folderNode.AskCopilotSummarizeFolderCommand,
+                Assert.Single(folderMenuItems, item => item.GuidId == "AskCopilotSummarizeFolder").Command);
+            Assert.Same(
+                folderNode.OpenFusionCommand,
+                Assert.Single(folderMenuItems, item => item.GuidId == "Fusion").Command);
+            Assert.Same(
+                folderNode.OpenFileInExplorerCommand,
+                Assert.Single(folderMenuItems, item => item.GuidId == "MenuOpenFileInExplorer").Command);
+            Assert.Same(
+                folderNode.OpenInCmdCommand,
+                Assert.Single(folderMenuItems, item => item.GuidId == "OpenInCmdCommad").Command);
+
+            Assert.Contains(searchMenuItems, item => item.GuidId == "TestFileMetaAction");
+            Assert.Same(
+                fileNode.OpenContainingFolderCommand,
+                Assert.Single(searchMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
+            Assert.DoesNotContain(multiMenuItems, item => item.GuidId is
+                "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder"
+                or "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
     }
 
     [Fact]
@@ -5334,6 +5421,55 @@ public class SolutionManagerFoundationTests
                     GuidId = _menuId,
                     Order = 500,
                     Header = Id,
+                },
+            ];
+        }
+    }
+
+    private sealed class TestFileMenuMeta : FileMetaBase
+    {
+        private readonly string _menuId;
+
+        public TestFileMenuMeta(FileInfo fileInfo, string menuId)
+        {
+            FileInfo = fileInfo;
+            Name = fileInfo.Name;
+            _menuId = menuId;
+        }
+
+        public override IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = _menuId,
+                    Order = 40,
+                    Header = _menuId,
+                },
+            ];
+        }
+    }
+
+    private sealed class TestFolderMenuMeta : FolderMetaBase
+    {
+        private readonly string _menuId;
+
+        public TestFolderMenuMeta(DirectoryInfo directoryInfo, string menuId)
+        {
+            DirectoryInfo = directoryInfo;
+            _menuId = menuId;
+        }
+
+        public override IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = _menuId,
+                    Order = 40,
+                    Header = _menuId,
                 },
             ];
         }
