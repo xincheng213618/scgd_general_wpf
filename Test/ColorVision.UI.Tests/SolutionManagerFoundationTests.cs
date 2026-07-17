@@ -1109,6 +1109,16 @@ public class SolutionManagerFoundationTests
                 fileNode,
                 "duplicate/sample.txt",
                 ownsTarget: false);
+            using var folderSearchResult = new SolutionSearchResultNode(
+                explorer,
+                folderNode,
+                "Folder",
+                ownsTarget: false);
+            using var duplicateFolderSearchResult = new SolutionSearchResultNode(
+                explorer,
+                folderNode,
+                "duplicate/Folder",
+                ownsTarget: false);
             var searchNodeItems = new List<MenuItemMetadata>();
             searchResult.CollectMenuItems(searchNodeItems);
             List<MenuItemMetadata> fileMenuItems =
@@ -1125,6 +1135,9 @@ public class SolutionManagerFoundationTests
                 SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
             List<MenuItemMetadata> duplicateSearchMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([searchResult, duplicateSearchResult]);
+            List<MenuItemMetadata> duplicateFolderSearchMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([folderSearchResult, duplicateFolderSearchResult]);
+            var duplicateSearchContext = new SolutionMenuContext([searchResult, duplicateSearchResult]);
 
             Assert.Same(
                 SolutionResourceCommands.Open,
@@ -1193,6 +1206,15 @@ public class SolutionManagerFoundationTests
                     item.GuidId == SolutionNavigationCommands.RevealInTreeId).Command);
             Assert.DoesNotContain(duplicateSearchMenuItems, item =>
                 item.GuidId == SolutionNavigationCommands.RevealInTreeId);
+            Assert.True(duplicateSearchContext.IsMultipleSelection);
+            Assert.Equal(2, duplicateSearchContext.VisualNodes.Count);
+            Assert.Single(duplicateSearchContext.Nodes);
+            Assert.DoesNotContain(duplicateSearchMenuItems, item => item.GuidId is
+                SolutionResourceCommands.OpenWithId or SolutionCommandIds.Rename or SolutionCommandIds.Properties
+                or "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder");
+            Assert.DoesNotContain(duplicateFolderSearchMenuItems, item => item.GuidId is
+                SolutionResourceCommands.OpenWithId or SolutionCommandIds.Paste
+                or "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
             Assert.Equal(filePath, fileNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(folderPath, folderNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);

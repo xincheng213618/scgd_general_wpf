@@ -26,7 +26,7 @@ namespace ColorVision.Solution.Explorer
         public IReadOnlyList<SolutionNode> Nodes { get; }
         public SolutionNode PrimaryVisualNode => VisualNodes[0];
         public SolutionNode PrimaryNode => Nodes[0];
-        public bool IsMultipleSelection => Nodes.Count > 1;
+        public bool IsMultipleSelection => VisualNodes.Count > 1;
 
         public SolutionMenuContext(IReadOnlyList<SolutionNode> visualNodes)
         {
@@ -143,7 +143,7 @@ namespace ColorVision.Solution.Explorer
             foreach (Registration registration in snapshot)
             {
                 ISolutionMenuContribution contribution = registration.Contribution;
-                if (!MatchesSelectionPolicy(contribution.SelectionPolicy, context.Nodes.Count))
+                if (!MatchesSelectionPolicy(contribution.SelectionPolicy, context.VisualNodes.Count))
                     continue;
                 try
                 {
@@ -881,7 +881,7 @@ namespace ColorVision.Solution.Explorer
         {
             return CanCopy(context.Nodes)
                 || CanCut(context.Nodes)
-                || (context.Nodes.Count == 1 && context.PrimaryNode.CanPaste);
+                || (!context.IsMultipleSelection && context.PrimaryNode.CanPaste);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
@@ -911,7 +911,7 @@ namespace ColorVision.Solution.Explorer
                     InputGestureText = "Ctrl+C",
                 });
             }
-            if (context.Nodes.Count == 1 && context.PrimaryNode.CanPaste)
+            if (!context.IsMultipleSelection && context.PrimaryNode.CanPaste)
             {
                 menuItems.Add(new MenuItemMetadata
                 {
