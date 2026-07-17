@@ -110,6 +110,9 @@ namespace ColorVision.Solution.Explorer
         internal const string ImportedStructureReadOnlyMessage = "外部解决方案的结构由源 .sln/.slnx 文件控制，当前以只读方式导入。";
         public DirectoryInfo DirectoryInfo { get; private set; }
         public RelayCommand OpenFileInExplorerCommand { get; }
+        public RelayCommand OpenImportedSolutionSourceCommand { get; }
+        public RelayCommand RevealImportedSolutionSourceCommand { get; }
+        public RelayCommand CopyImportedSolutionSourcePathCommand { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand EditCommand { get; }
 
@@ -140,7 +143,9 @@ namespace ColorVision.Solution.Explorer
         public override bool CanOpen => DirectoryInfo.Exists;
         public override bool CanRefresh => true;
         public override bool CanShowProperties => DirectoryInfo.Exists;
-        public override string? EditorResourcePath => ConfigFileInfo.FullName;
+        public override string? EditorResourcePath => IsImportedSolution
+            ? ImportedSolutionSourcePath
+            : ConfigFileInfo.FullName;
         public string PhysicalContainerPath => DirectoryInfo.FullName;
         public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists && CanModifySolutionStructure
             ? SolutionContainerAction.AddNewItem
@@ -153,6 +158,11 @@ namespace ColorVision.Solution.Explorer
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
         internal bool IsImportedSolution => ImportedSolutionWorkspaceService.IsImportedSolution(Config);
+        internal string? ImportedSolutionSourcePath => ImportedSolutionWorkspaceService.TryGetSourceFile(
+            Config,
+            out FileInfo? sourceFile)
+                ? sourceFile?.FullName
+                : null;
         internal bool CanModifySolutionStructure => !IsImportedSolution;
         public string ActiveConfiguration => Config.ActiveConfiguration;
 
@@ -171,6 +181,15 @@ namespace ColorVision.Solution.Explorer
 
             CopyFullPathCommand = new RelayCommand(_ => Common.Clipboard.SetText(FullPath), _ => DirectoryInfo.Exists);
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
+            OpenImportedSolutionSourceCommand = new RelayCommand(
+                _ => OpenImportedSolutionSource(),
+                _ => ImportedSolutionSourcePath is { } path && File.Exists(path));
+            RevealImportedSolutionSourceCommand = new RelayCommand(
+                _ => RevealImportedSolutionSource(),
+                _ => ImportedSolutionSourcePath is { } path && File.Exists(path));
+            CopyImportedSolutionSourcePathCommand = new RelayCommand(
+                _ => CopyImportedSolutionSourcePath(),
+                _ => !string.IsNullOrWhiteSpace(ImportedSolutionSourcePath));
             SaveCommand = new RelayCommand(_ => SaveConfigWithUserFeedback());
             EditCommand = new RelayCommand(_ =>
             {
@@ -3051,6 +3070,29 @@ namespace ColorVision.Solution.Explorer
         public override void Open()
         {
             new SolutionEditor().Open(FullPath);
+        }
+
+        private void OpenImportedSolutionSource()
+        {
+            string? sourcePath = ImportedSolutionSourcePath;
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                return;
+            if (!global::ColorVision.Solution.EditorManager.Instance.TryOpenFile(sourcePath, out string errorMessage))
+                ShowUserError(errorMessage);
+        }
+
+        private void RevealImportedSolutionSource()
+        {
+            string? sourcePath = ImportedSolutionSourcePath;
+            if (!string.IsNullOrWhiteSpace(sourcePath) && File.Exists(sourcePath))
+                ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(sourcePath);
+        }
+
+        private void CopyImportedSolutionSourcePath()
+        {
+            string? sourcePath = ImportedSolutionSourcePath;
+            if (!string.IsNullOrWhiteSpace(sourcePath))
+                Common.Clipboard.SetText(sourcePath);
         }
 
         public override void Refresh()

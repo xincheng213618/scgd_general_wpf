@@ -11,6 +11,10 @@ namespace ColorVision.Solution.Explorer
     {
         public const string OpenId = "Open";
         public const string OpenWithId = "OpenWith";
+        public const string ImportedSourceMenuId = "ImportedSolutionSource";
+        public const string EditImportedSourceId = "EditImportedSolutionSource";
+        public const string RevealImportedSourceId = "RevealImportedSolutionSource";
+        public const string CopyImportedSourcePathId = "CopyImportedSolutionSourcePath";
 
         public static RoutedUICommand Open { get; } = new(
             "打开",

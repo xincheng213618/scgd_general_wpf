@@ -3902,6 +3902,12 @@ public class SolutionManagerFoundationTests
 
             Assert.True(explorer.IsImportedSolution);
             Assert.False(explorer.CanModifySolutionStructure);
+            Assert.Equal(solutionPath, explorer.ImportedSolutionSourcePath, ignoreCase: true);
+            Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);
+            Assert.False(string.Equals(
+                importedWorkspacePath,
+                explorer.EditorResourcePath,
+                StringComparison.OrdinalIgnoreCase));
             Assert.Equal(SolutionContainerAction.None, explorer.SupportedContainerActions);
             Assert.Equal(SolutionContainerAction.None, sourceFolder.SupportedContainerActions);
             Assert.False(sourceFolder.CanReName);
@@ -3912,6 +3918,17 @@ public class SolutionManagerFoundationTests
             List<MenuItemMetadata> rootMenu = SolutionContextMenuService.CreateMenuMetadata([explorer]);
             Assert.DoesNotContain(rootMenu, item => item.GuidId == SolutionContainerCommands.AddMenuId);
             Assert.DoesNotContain(rootMenu, item => item.GuidId == "Edit");
+            Assert.Contains(rootMenu, item => item.GuidId == SolutionResourceCommands.OpenWithId);
+            Assert.Contains(rootMenu, item => item.GuidId == SolutionResourceCommands.ImportedSourceMenuId);
+            Assert.Contains(rootMenu, item => item.GuidId == SolutionResourceCommands.EditImportedSourceId
+                && ReferenceEquals(item.Command, explorer.OpenImportedSolutionSourceCommand));
+            Assert.Contains(rootMenu, item => item.GuidId == SolutionResourceCommands.RevealImportedSourceId
+                && ReferenceEquals(item.Command, explorer.RevealImportedSolutionSourceCommand));
+            Assert.Contains(rootMenu, item => item.GuidId == SolutionResourceCommands.CopyImportedSourcePathId
+                && ReferenceEquals(item.Command, explorer.CopyImportedSolutionSourcePathCommand));
+            Assert.True(explorer.OpenImportedSolutionSourceCommand.CanExecute(null));
+            Assert.True(explorer.RevealImportedSolutionSourceCommand.CanExecute(null));
+            Assert.True(explorer.CopyImportedSolutionSourcePathCommand.CanExecute(null));
             List<MenuItemMetadata> projectMenu = SolutionContextMenuService.CreateMenuMetadata([projectNode]);
             Assert.DoesNotContain(projectMenu, item => item.GuidId == SolutionCommandIds.Delete);
             Assert.DoesNotContain(projectMenu, item => item.GuidId == "MoveProjectToSolutionFolder");
@@ -3950,6 +3967,37 @@ public class SolutionManagerFoundationTests
                 File.Delete($"{importedWorkspacePath}.bak");
                 File.Delete($"{importedWorkspacePath}.cache.db");
             }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void NativeSolutionRoot_KeepsWorkspaceEditorAndEditableMenu()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(directoryPath, "Example.cvsln");
+        try
+        {
+            SolutionConfigStore.Save(solutionPath, new SolutionConfig
+            {
+                RootPath = directoryPath,
+                ProjectMode = SolutionProjectMode.Explicit,
+            });
+            using var explorer = CreateSolutionExplorer(directoryPath, solutionPath);
+
+            Assert.False(explorer.IsImportedSolution);
+            Assert.True(explorer.CanModifySolutionStructure);
+            Assert.Null(explorer.ImportedSolutionSourcePath);
+            Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);
+            Assert.NotEqual(SolutionContainerAction.None, explorer.SupportedContainerActions);
+            List<MenuItemMetadata> rootMenu = SolutionContextMenuService.CreateMenuMetadata([explorer]);
+            Assert.Contains(rootMenu, item => item.GuidId == "Edit"
+                && ReferenceEquals(item.Command, explorer.EditCommand));
+            Assert.DoesNotContain(rootMenu, item => item.GuidId == SolutionResourceCommands.ImportedSourceMenuId);
+        }
+        finally
+        {
+            File.Delete($"{solutionPath}.cache.db");
             Directory.Delete(directoryPath, recursive: true);
         }
     }

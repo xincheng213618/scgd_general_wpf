@@ -3,6 +3,7 @@ using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Windows.Input;
 
@@ -627,6 +628,40 @@ namespace ColorVision.Solution.Explorer
                     Order = 50,
                     Header = ColorVision.Solution.Properties.Resources.EditSolution,
                     Command = explorer.EditCommand,
+                });
+            }
+            else if (explorer.ImportedSolutionSourcePath is { } sourcePath)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.ImportedSourceMenuId,
+                    Order = 40,
+                    Header = $"外部解决方案源: {Path.GetFileName(sourcePath)}",
+                });
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
+                    GuidId = SolutionResourceCommands.EditImportedSourceId,
+                    Order = 1,
+                    Header = "编辑源文件(_E)",
+                    Command = explorer.OpenImportedSolutionSourceCommand,
+                    Icon = MenuItemIcon.TryFindResource("DICode"),
+                });
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
+                    GuidId = SolutionResourceCommands.RevealImportedSourceId,
+                    Order = 2,
+                    Header = "在文件资源管理器中定位(_X)",
+                    Command = explorer.RevealImportedSolutionSourceCommand,
+                });
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
+                    GuidId = SolutionResourceCommands.CopyImportedSourcePathId,
+                    Order = 3,
+                    Header = "复制源文件路径(_C)",
+                    Command = explorer.CopyImportedSolutionSourcePathCommand,
                 });
             }
             menuItems.Add(new MenuItemMetadata
