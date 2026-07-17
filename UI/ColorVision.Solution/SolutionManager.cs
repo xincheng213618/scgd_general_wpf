@@ -640,20 +640,6 @@ namespace ColorVision.Solution
             return false;
         }
 
-        public static bool OpenFolderDialog()
-        {
-            var dialog = new Microsoft.Win32.OpenFolderDialog
-            {
-                Title = ColorVision.UI.Properties.Resources.OpenFolder,
-                Multiselect = false,
-            };
-
-            Window? owner = WindowHelpers.GetActiveWindow();
-            bool? result = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
-            return result == true
-                && Editor.ResourceOpenService.Instance.TryOpenWithFeedback(dialog.FolderName, owner);
-        }
-
         public static async Task<bool> OpenFolderDialogAsync(
             CancellationToken cancellationToken = default)
         {

@@ -2055,6 +2055,17 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void WorkspaceOpenMenus_UseGlobalRoutedCommands()
+    {
+        var openSolution = new MenuOpenSolution();
+        var openFolder = new MenuOpenFolder();
+
+        Assert.Same(ApplicationCommands.Open, openSolution.Command);
+        Assert.Equal("Ctrl+O", openSolution.InputGestureText);
+        Assert.Same(SolutionWorkspaceCommands.OpenFolder, openFolder.Command);
+    }
+
+    [Fact]
     public void ResourceOpenService_PreservesResultsAcrossLegacyFileRoute()
     {
         FileOpenRouteResult projectFailure = ResourceOpenService.ToFileOpenRouteResult(

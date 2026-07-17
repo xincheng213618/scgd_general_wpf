@@ -22,11 +22,8 @@ namespace ColorVision.Solution
         public override int Order => 1;
 
         public override string Header => ColorVision.UI.Properties.Resources.ProjectSolution_P;
-
-        public override void Execute()
-        {
-            SolutionManager.OpenSolutionWindow();
-        }
+        public override string InputGestureText => "Ctrl+O";
+        public override ICommand Command => ApplicationCommands.Open;
     }
 
     public class MenuOpenFolder : MenuItemFileBase
@@ -38,11 +35,7 @@ namespace ColorVision.Solution
         public override int Order => 2;
 
         public override string Header => ColorVision.UI.Properties.Resources.OpenFolder;
-
-        public override void Execute()
-        {
-            _ = SolutionManager.OpenFolderDialogAsync();
-        }
+        public override ICommand Command => SolutionWorkspaceCommands.OpenFolder;
     }
 
     /// <summary>
