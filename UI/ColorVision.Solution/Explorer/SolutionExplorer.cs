@@ -3030,11 +3030,7 @@ namespace ColorVision.Solution.Explorer
                             loadResult.Project.ProjectDirectory.FullName,
                             DirectoryInfo.FullName);
                 }
-                return TryResolveProjectReference(
-                        DirectoryInfo.FullName,
-                        reference,
-                        out ProjectDefinition? project,
-                        out _)
+                return TryResolveProjectReference(DirectoryInfo.FullName, reference, out ProjectDefinition? project, out _, out _)
                     && project != null
                     && PathEquals(project.ProjectDirectory.FullName, DirectoryInfo.FullName);
             });
@@ -3057,20 +3053,6 @@ namespace ColorVision.Solution.Explorer
             {
                 return fallback;
             }
-        }
-
-        internal static bool TryResolveProjectReference(
-            string solutionDirectory,
-            string projectReference,
-            out ProjectDefinition? project,
-            out string resolvedPath)
-        {
-            return TryResolveProjectReference(
-                solutionDirectory,
-                projectReference,
-                out project,
-                out resolvedPath,
-                out _);
         }
 
         internal static bool TryResolveProjectReference(
