@@ -76,7 +76,6 @@ namespace ColorVision.Solution.Explorer
             CanCut = targetNode.CanCut;
             CanDelete = targetNode.CanDelete;
             CanReName = targetNode.CanReName;
-            Initialize();
         }
 
         public override bool CanAdd
@@ -108,11 +107,6 @@ namespace ColorVision.Solution.Explorer
         public override void CopyFullPath()
         {
             TargetNode.CopyFullPath();
-        }
-
-        public override void Copy()
-        {
-            TargetNode.Copy();
         }
 
         internal override bool TryDelete(bool showConfirmation)

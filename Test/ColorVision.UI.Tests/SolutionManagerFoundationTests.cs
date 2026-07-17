@@ -639,12 +639,24 @@ public class SolutionManagerFoundationTests
     public void SolutionContextMenuUsesRegisteredContributionsAtOpening()
     {
         var node = CreateNode("C:\\Workspace\\sample.txt");
-        node.Initialize();
 
         List<MenuItemMetadata> openingItems = SolutionContextMenuService.CreateMenuMetadata([node]);
 
         Assert.Single(openingItems, item => item.GuidId == "CopyFullPath");
         Assert.Single(openingItems, item => item.GuidId == SolutionCommandIds.Delete);
+    }
+
+    [Fact]
+    public void SolutionNode_UnsupportedRenameIsRejectedWithoutThrowing()
+    {
+        var node = CreateNode("C:\\Workspace\\Original.txt");
+        node.Name = "Original";
+        node.IsEditMode = true;
+
+        node.Name = "Renamed";
+
+        Assert.Equal("Original", node.Name);
+        Assert.False(node.ReName("Renamed"));
     }
 
     [Fact]

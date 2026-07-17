@@ -41,7 +41,6 @@ namespace ColorVision.Solution.Explorer
             CanCut = false;
             CanDelete = solutionExplorer.CanModifySolutionStructure;
             CanReName = solutionExplorer.CanModifySolutionStructure;
-            Initialize();
         }
 
         public override bool ReName(string name)

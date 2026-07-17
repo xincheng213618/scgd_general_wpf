@@ -54,16 +54,9 @@ namespace ColorVision.Solution.Explorer
             FolderMeta = folder;
             FullPath = DirectoryInfo.FullName;
             Name1 = DirectoryInfo.Name;
-            Initialize();
-            AddLazyPlaceholderIfNeeded();
-        }
-
-        public override void Initialize()
-        {
-            base.Initialize();
-
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
+            AddLazyPlaceholderIfNeeded();
         }
 
         public override bool IsExpanded

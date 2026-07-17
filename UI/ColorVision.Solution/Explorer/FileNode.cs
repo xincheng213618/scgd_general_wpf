@@ -37,12 +37,11 @@ namespace ColorVision.Solution.Explorer
             FullPath = FileInfo.FullName;
             CanCopy = true;
             CanCut = true;
-            Initialize();
+            InitializeCommands();
         }
 
-        public override void Initialize()
+        private void InitializeCommands()
         {
-            base.Initialize();
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             AskCopilotExplainFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Code, false), a => FileInfo.Exists);
             AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);

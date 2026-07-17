@@ -481,7 +481,6 @@ namespace ColorVision.Solution.Explorer
             CanCut = false;
             CanDelete = solutionExplorer.CanModifySolutionStructure;
             CanReName = false;
-            Initialize();
             RemoveFromSolutionCommand = new RelayCommand(
                 _ => _solutionExplorer.RemoveProjectReference(ProjectReference),
                 _ => _solutionExplorer.CanModifySolutionStructure);

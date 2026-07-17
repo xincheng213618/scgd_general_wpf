@@ -246,9 +246,7 @@ namespace ColorVision.Solution.Explorer
             CanReName = false;
             CanCopy = false;
             CanCut = false;
-            Initialize();
 
-            CopyFullPathCommand = new RelayCommand(_ => Common.Clipboard.SetText(FullPath), _ => DirectoryInfo.Exists);
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
             OpenImportedSolutionSourceCommand = new RelayCommand(
                 _ => OpenImportedSolutionSource(),

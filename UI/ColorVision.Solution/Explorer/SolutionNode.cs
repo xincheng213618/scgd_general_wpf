@@ -3,9 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
 using System.IO;
 using ColorVision.UI;
@@ -143,12 +141,6 @@ namespace ColorVision.Solution.Explorer
 
         public virtual ImageSource? Icon { get; set; }
 
-        public RelayCommand AddChildrenCommand { get; set; }
-        public RelayCommand RemoveChildrenCommand { get; set; }
-        public RelayCommand OpenCommand { get; set; }
-        public RelayCommand DeleteCommand { get; set; }
-        public RelayCommand CopyFullPathCommand { get; set; }
-
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
@@ -187,13 +179,6 @@ namespace ColorVision.Solution.Explorer
         /// </summary>
         public virtual string? ClipboardResourcePath => null;
         public bool IsExcludedFromProject { get; private set; }
-
-        public virtual void Initialize()
-        {
-            OpenCommand = new RelayCommand(_ => Open(), _ => CanOpen);
-            DeleteCommand = new RelayCommand(s => Delete());
-            CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));
-        }
 
         public virtual void ShowProperty() { }
 
@@ -254,11 +239,6 @@ namespace ColorVision.Solution.Explorer
         private bool _canPasteEnabled = true;
         public virtual bool CanCut { get; set; }
 
-        public void MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            Open();
-        }
-
         public virtual void Open() { }
 
         public virtual void CopyFullPath()
@@ -302,15 +282,7 @@ namespace ColorVision.Solution.Explorer
             MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        public virtual void Copy()
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual bool ReName(string name)
-        {
-            throw new NotImplementedException();
-        }
+        public virtual bool ReName(string name) => false;
 
         public virtual int CompareTo(object obj)
         {
