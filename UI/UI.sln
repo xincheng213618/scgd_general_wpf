@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Database", "Col
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.ImageTools", "ColorVision.ImageTools\ColorVision.ImageTools.csproj", "{61A13650-5552-4F2D-AF42-62AF5406DEDC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Rbac", "ColorVision.Rbac\ColorVision.Rbac.csproj", "{291284E2-4AC0-42D0-8EC5-6197D89115AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -206,6 +208,22 @@ Global
 		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x64.Build.0 = Release|x64
 		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x86.ActiveCfg = Release|x64
 		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x86.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|Any CPU.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|ARM64.Build.0 = Debug|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x64.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x64.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x86.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x86.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|Any CPU.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|Any CPU.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|ARM64.ActiveCfg = Release|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|ARM64.Build.0 = Release|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x64.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x64.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x86.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

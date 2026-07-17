@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
-        xmlns:properties ="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:RbacManager}"

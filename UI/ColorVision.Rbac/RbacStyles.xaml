@@ -1,6 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:properties="clr-namespace:ColorVision.Solution.Properties">
+                    xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution">
 
     <Style TargetType="{x:Type TextBlock}">
         <Setter Property="VerticalAlignment" Value="Center"/>

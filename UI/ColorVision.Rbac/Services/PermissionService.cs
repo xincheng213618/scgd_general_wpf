@@ -46,9 +46,6 @@ namespace ColorVision.Rbac.Services
                 new PermissionEntity{ Name="管理权限", Code="permission.manage", Group="Permission", Remark="管理系统权限"},
                 new PermissionEntity{ Name="查看审计日志", Code="audit.view", Group="Audit", Remark="查看审计日志"},
                 new PermissionEntity{ Name="导出审计日志", Code="audit.export", Group="Audit", Remark="导出审计日志"},
-                new PermissionEntity{ Name="创建租户", Code="tenant.create", Group="Tenant", Remark="创建新租户"},
-                new PermissionEntity{ Name="编辑租户", Code="tenant.edit", Group="Tenant", Remark="编辑租户信息"},
-                new PermissionEntity{ Name="查看租户", Code="tenant.view", Group="Tenant", Remark="查看租户列表"},
             };
         }
 

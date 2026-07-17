@@ -45,6 +45,7 @@ namespace ColorVision
         public MainWindow()
         {
             ImageTools.ImageToolsModule.EnsureLoaded();
+            Rbac.RbacModule.EnsureLoaded();
             InitializeComponent();
             Config.SetWindow(this);
 

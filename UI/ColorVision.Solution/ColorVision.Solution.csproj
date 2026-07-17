@@ -22,7 +22,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\ColorVision.Database\ColorVision.Database.csproj" />
 		<ProjectReference Include="..\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
 		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />

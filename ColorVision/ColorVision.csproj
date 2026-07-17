@@ -138,6 +138,7 @@
     <ProjectReference Include="..\src\ColorVisionServiceHost\ColorVisionServiceHost.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.ImageTools\ColorVision.ImageTools.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.Rbac\ColorVision.Rbac.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 

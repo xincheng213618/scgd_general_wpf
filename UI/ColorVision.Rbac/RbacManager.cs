@@ -35,9 +35,7 @@ namespace ColorVision.Rbac
         public IPermissionService PermissionService { get; set; }
         public IAuditLogService AuditLogService { get; set; }
         
-        // 新增服务
         public IRoleService RoleService { get; set; }
-        public ITenantService TenantService { get; set; }
         public ISessionService SessionService { get; set; }
         public IPermissionChecker PermissionChecker { get; set; }
 
@@ -60,7 +58,6 @@ namespace ColorVision.Rbac
                 });
 
                 db.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
-                db.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
                 db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
                 db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
                 db.CodeFirst.InitTables<AuditLogEntity>();
@@ -79,9 +76,7 @@ namespace ColorVision.Rbac
             UserService = new UserService(db);
             PermissionService = new PermissionService(db);
             
-            // 初始化新增服务
             RoleService = new RoleService(db, AuditLogService);
-            TenantService = new TenantService(db, AuditLogService);
             SessionService = new SessionService(db);
             PermissionChecker = new PermissionChecker(db);
             

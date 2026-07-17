@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.Sign_in}" Height="550"  Width="420" 
         Background="Transparent"
