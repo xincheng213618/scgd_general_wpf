@@ -3230,7 +3230,7 @@
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>請選擇一個前處理動作</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>類型：{0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>重新啟動 {0}</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>顯示節點 ID、Token、裝置代碼等偵錯屬性</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>顯示進階屬性，如節點 ID、Token、服務名稱等</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>啟動 {0} 失敗：{1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>停止 {0} 失敗：{1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>全幅</value></data>

@@ -501,7 +501,6 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 var dockPanel = FlowNodePropertyPanel.Instance;
                 if (dockPanel == null) return;
-                dockPanel.EditorHelper = this;
                 signPanel = dockPanel.SignStackPanel;
             }
             else
@@ -543,11 +542,8 @@ namespace ColorVision.Engine.Templates.Flow
                     Node = STNodeEditor.ActiveNode,
                     SignStackPanel = signPanel,
                     STNodeEditor = STNodeEditor,
-                    PropertyStackPanel = StackPanel,
-                    OnActiveChanged = RefreshActiveNodePropertyPanel
+                    Refresh = RefreshActiveNodePropertyPanel
                 };
-                if (STNodeEditor.ActiveNode is CVCommonNode commonNode)
-                    context.RebindNodeEvent(commonNode, nameof(RefreshActiveNodePropertyPanel), RefreshActiveNodePropertyPanel);
                 configurator.Configure(context);
             }
 
@@ -558,7 +554,8 @@ namespace ColorVision.Engine.Templates.Flow
             StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
                 STNodeEditor.ActiveNode,
                 resourceManager,
-                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance,
+                advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();

@@ -10,6 +10,7 @@ using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
@@ -632,30 +633,61 @@ namespace ColorVision.UI
             object obj,
             ResourceManager? resourceManager = null,
             bool showCategoryHeader = true,
-            IPropertyEditorMetadataProvider? metadataProvider = null)
+            IPropertyEditorMetadataProvider? metadataProvider = null,
+            PropertyEditorAdvancedOptions? advancedOptions = null)
         {
             var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            var previousProvider = MetadataProviderContext.Value;
+            if (advancedOptions == null)
+                return GenerateWithMetadataProvider(obj, resourceManager, visited, showCategoryHeader, metadataProvider);
 
-            if (metadataProvider != null)
+            var propertyPanel = new StackPanel();
+            void Rebuild()
             {
-                MetadataProviderContext.Value = metadataProvider;
+                var generatedPanel = GenerateWithMetadataProvider(obj, resourceManager, visited, showCategoryHeader, metadataProvider, advancedOptions, Rebuild);
+                propertyPanel.Children.Clear();
+                while (generatedPanel.Children.Count > 0)
+                {
+                    UIElement child = generatedPanel.Children[0];
+                    generatedPanel.Children.RemoveAt(0);
+                    propertyPanel.Children.Add(child);
+                }
             }
+
+            Rebuild();
+            return propertyPanel;
+        }
+
+        private static StackPanel GenerateWithMetadataProvider(
+            object obj,
+            ResourceManager? resourceManager,
+            HashSet<object> visited,
+            bool showCategoryHeader,
+            IPropertyEditorMetadataProvider? metadataProvider,
+            PropertyEditorAdvancedOptions? advancedOptions = null,
+            Action? advancedChanged = null)
+        {
+            var previousProvider = MetadataProviderContext.Value;
+            if (metadataProvider != null)
+                MetadataProviderContext.Value = metadataProvider;
 
             try
             {
-                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
+                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader, advancedOptions, advancedChanged);
             }
             finally
             {
                 if (metadataProvider != null)
-                {
                     MetadataProviderContext.Value = previousProvider;
-                }
             }
         }
 
-        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited, bool showCategoryHeader = true)
+        private static StackPanel GenPropertyEditorControl(
+            object obj,
+            ResourceManager? resourceManager,
+            HashSet<object> visited,
+            bool showCategoryHeader = true,
+            PropertyEditorAdvancedOptions? advancedOptions = null,
+            Action? advancedChanged = null)
         {
             if (obj == null) return new StackPanel();
             if (!visited.Add(obj)) return new StackPanel();
@@ -715,9 +747,19 @@ namespace ColorVision.UI
 
                 var propertyPanel = new StackPanel();
                 CollectProperties(obj);
-                
+                bool hasAdvancedProperties = advancedOptions != null && categoryGroups.Values.SelectMany(properties => properties).Any(property => advancedOptions.IsAdvancedProperty(property));
+                bool hasStandardProperties = advancedOptions == null || categoryGroups.Values.SelectMany(properties => properties).Any(property => !advancedOptions.IsAdvancedProperty(property));
+                bool advancedToggleAdded = false;
+
                 foreach (var categoryGroup in categoryGroups)
                 {
+                    var visibleProperties = advancedOptions?.ShowAdvancedProperties == false
+                        ? categoryGroup.Value.Where(property => !advancedOptions.IsAdvancedProperty(property)).ToList()
+                        : categoryGroup.Value;
+                    bool addAdvancedToggle = showCategoryHeader && hasAdvancedProperties && !advancedToggleAdded && (visibleProperties.Count > 0 || !hasStandardProperties);
+                    if (visibleProperties.Count == 0 && !addAdvancedToggle)
+                        continue;
+
                     var border = new Border
                     {
                         BorderThickness = new Thickness(1),
@@ -733,29 +775,25 @@ namespace ColorVision.UI
 
                     if (showCategoryHeader)
                     {
-                        var categoryHeader = new TextBlock
-                        {
-                            Text = categoryGroup.Key,
-                            FontWeight = FontWeights.Bold,
-                            Foreground = GlobalTextBrush,
-                            Margin = new Thickness(0, 0, 0, 5)
-                        };
-                        categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                        var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
                         stackPanel.Children.Add(categoryHeader);
+                        advancedToggleAdded |= addAdvancedToggle;
                     }
 
 
                     border.Child = stackPanel;
 
-                    foreach (var property in categoryGroup.Value)
+                    int propertyEditorCount = 0;
+                    foreach (var property in visibleProperties)
                     {
                         if (TryCreatePropertyDockPanel(property, obj, visited, out var dockPanel))
                         {
                             stackPanel.Children.Add(dockPanel);
+                            propertyEditorCount++;
                         }
                     }
 
-                    if (showCategoryHeader ? stackPanel.Children.Count > 1 : stackPanel.Children.Count > 0)
+                    if (propertyEditorCount > 0 || addAdvancedToggle)
                     {
                         propertyPanel.Children.Add(border);
                     }
@@ -768,6 +806,71 @@ namespace ColorVision.UI
             {
                 visited.Remove(obj);
             }
+        }
+
+        private static DockPanel CreateCategoryHeader(string title, PropertyEditorAdvancedOptions? advancedOptions, Action? advancedChanged)
+        {
+            var header = new DockPanel
+            {
+                LastChildFill = true,
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+
+            if (advancedOptions != null)
+            {
+                var icon = new TextBlock
+                {
+                    Text = advancedOptions.IconGlyph,
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 14,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                icon.SetResourceReference(TextBlock.ForegroundProperty, advancedOptions.ShowAdvancedProperties ? "PrimaryBrush" : "GlobalTextBrush");
+
+                var toggle = new ToggleButton
+                {
+                    Width = 22,
+                    Height = 20,
+                    Padding = new Thickness(0),
+                    Margin = new Thickness(5, -2, 0, 0),
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    Content = icon,
+                    IsChecked = advancedOptions.ShowAdvancedProperties,
+                    ToolTip = advancedOptions.ToolTip,
+                    Focusable = false
+                };
+                AutomationProperties.SetName(toggle, advancedOptions.ToolTip);
+                toggle.Checked += (_, _) =>
+                {
+                    if (advancedOptions.ShowAdvancedProperties)
+                        return;
+
+                    advancedOptions.ShowAdvancedProperties = true;
+                    advancedChanged?.Invoke();
+                };
+                toggle.Unchecked += (_, _) =>
+                {
+                    if (!advancedOptions.ShowAdvancedProperties)
+                        return;
+
+                    advancedOptions.ShowAdvancedProperties = false;
+                    advancedChanged?.Invoke();
+                };
+                DockPanel.SetDock(toggle, Dock.Right);
+                header.Children.Add(toggle);
+            }
+
+            var titleText = new TextBlock
+            {
+                Text = title,
+                FontWeight = FontWeights.Bold,
+                Foreground = GlobalTextBrush
+            };
+            titleText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            header.Children.Add(titleText);
+            return header;
         }
 
 
