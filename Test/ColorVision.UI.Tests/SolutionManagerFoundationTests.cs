@@ -3980,6 +3980,115 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public async Task ExplicitProjectMutationAndCommands_UseLoadedDefinitionsWithoutReloadingProvider()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string extension = $".loadedproj{Guid.NewGuid():N}";
+        string projectPath = Path.Combine(directoryPath, $"App{extension}");
+        string solutionPath = Path.Combine(directoryPath, "Loaded.cvsln");
+        File.WriteAllText(projectPath, string.Empty);
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetFileName(projectPath)],
+        });
+        var provider = new ControlledAsyncProjectProvider(extension, "Initial");
+        ProjectProviderRegistry.Register(provider, priority: 1000);
+        var manager = new SolutionManager(restoreLastWorkspace: false);
+        try
+        {
+            SolutionOpenOperationResult openResult = await manager.OpenSolutionAsync(solutionPath);
+            Assert.True(openResult.Succeeded, openResult.ErrorMessage);
+            SolutionExplorer explorer = Assert.IsType<SolutionExplorer>(manager.CurrentSolutionExplorer);
+            ProjectNode originalNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            int asyncLoadCount = provider.AsyncLoadCount;
+
+            ProjectDefinition updatedProject = originalNode.Project with { Name = "Updated" };
+            explorer.ApplyProjectMutation(updatedProject);
+            IReadOnlyList<ProjectDefinition> configurationProjects =
+                explorer.LoadProjectsForConfigurationEditing();
+            ProjectBuildPlan buildPlan = explorer.CreateBuildPlan(updatedProject);
+
+            ProjectNode updatedNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            Assert.Same(originalNode, updatedNode);
+            Assert.Equal("Updated", updatedNode.Project.Name);
+            Assert.Equal("Updated", Assert.Single(configurationProjects).Name);
+            Assert.Contains(buildPlan.OrderedProjects, project => project.Name == "Updated");
+            Assert.Equal(asyncLoadCount, provider.AsyncLoadCount);
+            Assert.Equal(0, provider.SyncLoadCount);
+        }
+        finally
+        {
+            foreach (SolutionExplorer explorer in manager.SolutionExplorers.ToList())
+                explorer.Dispose();
+            manager.SolutionHistory.RemoveFile(solutionPath);
+            File.Delete(SolutionConfigStore.GetBackupPath(solutionPath));
+            File.Delete($"{solutionPath}.cache.db");
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ImportedSolutionRefresh_CancelsActiveProjectRefreshAndAppliesOneSnapshot()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string extension = $".crossrefresh{Guid.NewGuid():N}";
+        string projectPath = Path.Combine(directoryPath, $"App{extension}");
+        string solutionPath = Path.Combine(directoryPath, "Cross.asyncsln");
+        File.WriteAllText(projectPath, string.Empty);
+        File.WriteAllText(solutionPath, string.Empty);
+        var solutionProvider = new ControlledAsyncSolutionProvider(
+            "NeverBlocked.asyncsln",
+            Path.GetFileName(projectPath));
+        var projectProvider = new ControlledAsyncProjectProvider(extension, "Initial");
+        SolutionFileProviderRegistry.Register(solutionProvider, priority: 1000);
+        ProjectProviderRegistry.Register(projectProvider, priority: 1000);
+        var manager = new SolutionManager(restoreLastWorkspace: false);
+        string? workspacePath = null;
+        try
+        {
+            SolutionOpenOperationResult openResult = await manager.OpenSolutionAsync(solutionPath);
+            Assert.True(openResult.Succeeded, openResult.ErrorMessage);
+            SolutionExplorer explorer = Assert.IsType<SolutionExplorer>(manager.CurrentSolutionExplorer);
+            Assert.True(explorer.IsImportedSolution);
+            workspacePath = explorer.ConfigFileInfo.FullName;
+
+            projectProvider.ProjectName = "Stale";
+            Task staleLoadStarted = projectProvider.BlockNextLoad(ignoreCancellation: true);
+            Task<ProjectRefreshResult> staleRefresh = explorer.RefreshExplicitProjectStateAsync();
+            await staleLoadStarted.WaitAsync(TimeSpan.FromSeconds(10));
+
+            projectProvider.ProjectName = "ImportedLatest";
+            Task<ImportedSolutionWorkspaceResult> importedRefresh =
+                explorer.RefreshImportedSolutionStateAsync();
+            ImportedSolutionWorkspaceResult importedResult = await importedRefresh;
+            ProjectRefreshResult staleResult = await staleRefresh;
+
+            Assert.True(importedResult.Succeeded, importedResult.ErrorMessage);
+            Assert.True(staleResult.Canceled);
+            Assert.Equal(
+                "ImportedLatest",
+                Assert.Single(explorer.VisualChildren.GetAllVisualChildren().OfType<ProjectNode>()).Project.Name);
+            Assert.Equal(0, projectProvider.SyncLoadCount);
+        }
+        finally
+        {
+            await projectProvider.ReleaseBlockedLoadAsync();
+            foreach (SolutionExplorer explorer in manager.SolutionExplorers.ToList())
+                explorer.Dispose();
+            manager.SolutionHistory.RemoveFile(solutionPath);
+            if (!string.IsNullOrWhiteSpace(workspacePath))
+            {
+                File.Delete(workspacePath);
+                File.Delete(SolutionConfigStore.GetBackupPath(workspacePath));
+                File.Delete($"{workspacePath}.cache.db");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task WorkspaceOpenAsync_NewerRequestCancelsOlderWithoutReplacingItLater()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -5378,6 +5487,7 @@ public class SolutionManagerFoundationTests
         private LoadGate? _activeGate;
         private string _projectName;
         private int _syncLoadCount;
+        private int _asyncLoadCount;
 
         public ControlledAsyncProjectProvider(string extension, string projectName)
         {
@@ -5390,6 +5500,7 @@ public class SolutionManagerFoundationTests
         public string Id { get; }
         public IReadOnlyList<string> ProjectFilePatterns { get; }
         public int SyncLoadCount => Volatile.Read(ref _syncLoadCount);
+        public int AsyncLoadCount => Volatile.Read(ref _asyncLoadCount);
         public Task CancellationObserved => _cancellationObserved.Task;
         public string ProjectName
         {
@@ -5411,6 +5522,7 @@ public class SolutionManagerFoundationTests
             FileInfo projectFile,
             CancellationToken cancellationToken = default)
         {
+            Interlocked.Increment(ref _asyncLoadCount);
             LoadGate? gate;
             string projectName = ProjectName;
             lock (_syncRoot)

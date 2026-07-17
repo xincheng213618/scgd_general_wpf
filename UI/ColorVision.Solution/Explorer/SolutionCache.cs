@@ -64,6 +64,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return false;
             lock (_lock)
             {
+                if (_disposed) return false;
                 try
                 {
                     return File.Exists(_dbPath) && _db.Queryable<FileTreeCacheEntry>().Any();
@@ -83,6 +84,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return new List<FileTreeCacheEntry>();
             lock (_lock)
             {
+                if (_disposed) return new List<FileTreeCacheEntry>();
                 try
                 {
                     return _db.Queryable<FileTreeCacheEntry>()
@@ -107,6 +109,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed || keywords.Length == 0) return new List<FileTreeCacheEntry>();
             lock (_lock)
             {
+                if (_disposed) return new List<FileTreeCacheEntry>();
                 try
                 {
                     while (true)
@@ -145,6 +148,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     _db.Ado.BeginTran();
@@ -228,6 +232,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return false;
             lock (_lock)
             {
+                if (_disposed) return false;
                 try
                 {
                     var dirInfo = new DirectoryInfo(directoryPath);
@@ -276,6 +281,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     var fileInfo = new FileInfo(fullPath);
@@ -304,6 +310,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     var dirInfo = new DirectoryInfo(fullPath);
@@ -328,6 +335,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     var directoryInfo = new DirectoryInfo(fullPath);
@@ -357,6 +365,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     RemoveEntryInternal(fullPath, isDirectory: true);

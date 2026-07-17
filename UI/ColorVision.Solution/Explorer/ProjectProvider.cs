@@ -1293,14 +1293,15 @@ namespace ColorVision.Solution.Explorer
             out ProjectCommandInvocation? invocation)
         {
             Initialize();
+            IProjectCommandProvider? provider;
             lock (_syncRoot)
             {
-                IProjectCommandProvider? provider = _providers.FirstOrDefault(registration =>
+                provider = _providers.FirstOrDefault(registration =>
                     string.Equals(registration.Provider.Id, project.ProviderId, StringComparison.OrdinalIgnoreCase))?.Provider
                     as IProjectCommandProvider;
-                if (provider != null)
-                    return provider.TryCreateInvocation(project, capabilityId, out invocation);
             }
+            if (provider != null)
+                return provider.TryCreateInvocation(project, capabilityId, out invocation);
 
             invocation = null;
             return false;

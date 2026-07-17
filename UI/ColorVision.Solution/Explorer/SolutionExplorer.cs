@@ -137,6 +137,7 @@ namespace ColorVision.Solution.Explorer
         private DispatcherTimer _changedDebounceTimer;
         private DispatcherTimer _projectChangedDebounceTimer;
         private DispatcherTimer? _importSourceChangedDebounceTimer;
+        private readonly SemaphoreSlim _solutionRefreshGate = new(1, 1);
         private CancellationTokenSource? _projectRefreshCancellation;
         private CancellationTokenSource? _importRefreshCancellation;
         private readonly EventHandler _processExitHandler;
@@ -1242,18 +1243,11 @@ namespace ColorVision.Solution.Explorer
             var projects = new List<ProjectDefinition>();
             if (IsExplicitProjectMode)
             {
-                foreach (string reference in Config.Projects.Distinct(StringComparer.OrdinalIgnoreCase))
-                {
-                    if (TryResolveProjectReference(
-                        DirectoryInfo.FullName,
-                        reference,
-                        out ProjectDefinition? project,
-                        out _)
-                        && project != null)
-                    {
-                        projects.Add(applyActiveConfiguration ? ApplyActiveConfiguration(project) : project);
-                    }
-                }
+                projects.AddRange(VisualChildren.GetAllVisualChildren()
+                    .OfType<ProjectNode>()
+                    .Select(node => applyActiveConfiguration
+                        ? ApplyActiveConfiguration(node.Project)
+                        : node.Project));
             }
             else
             {
@@ -1490,6 +1484,7 @@ namespace ColorVision.Solution.Explorer
                 return false;
             }
 
+            var updatedProjects = new List<ProjectDefinition>();
             try
             {
                 foreach (var item in changedDependencies)
@@ -1497,11 +1492,13 @@ namespace ColorVision.Solution.Explorer
                     if (!ProjectProviderRegistry.TrySetProjectDependencies(
                         item.Project,
                         item.Dependencies,
-                        out _,
-                        out errorMessage))
+                        out ProjectDefinition? updatedProject,
+                        out errorMessage)
+                        || updatedProject == null)
                     {
                         throw new InvalidOperationException(errorMessage);
                     }
+                    updatedProjects.Add(updatedProject);
                 }
 
                 Config.ActiveConfiguration = NormalizeConfigurationName(changes.ActiveConfiguration);
@@ -1546,7 +1543,7 @@ namespace ColorVision.Solution.Explorer
                 return false;
             }
 
-            ReloadSolutionState();
+            ApplyProjectMutations(updatedProjects);
             OperationHistory.Clear();
             return true;
         }
@@ -3173,8 +3170,12 @@ namespace ColorVision.Solution.Explorer
             {
             }
 
+            bool refreshGateEntered = false;
             try
             {
+                await _solutionRefreshGate.WaitAsync(requestCancellation.Token);
+                refreshGateEntered = true;
+                requestCancellation.Token.ThrowIfCancellationRequested();
                 Dictionary<string, ProjectReferenceLoadResult> preparedProjectReferences =
                     await LoadProjectReferencesAsync(
                         DirectoryInfo.FullName,
@@ -3220,6 +3221,8 @@ namespace ColorVision.Solution.Explorer
             }
             finally
             {
+                if (refreshGateEntered)
+                    _solutionRefreshGate.Release();
                 Interlocked.CompareExchange(
                     ref _projectRefreshCancellation,
                     null,
@@ -3249,13 +3252,90 @@ namespace ColorVision.Solution.Explorer
 
         internal void ApplyProjectMutation(ProjectDefinition updatedProject)
         {
-            if (IsExplicitProjectMode)
+            ArgumentNullException.ThrowIfNull(updatedProject);
+            ApplyProjectMutations([updatedProject]);
+        }
+
+        private void ApplyProjectMutations(List<ProjectDefinition> updatedProjects)
+        {
+            ArgumentNullException.ThrowIfNull(updatedProjects);
+            if (!IsExplicitProjectMode)
             {
-                ReconcileExplicitProjects(reloadLoadedProjects: true);
+                ReloadSolutionState();
                 return;
             }
 
-            ReloadSolutionState();
+            _projectChangedDebounceTimer.Stop();
+            CancelActiveProjectRefresh();
+            if (updatedProjects.Count > 0)
+            {
+                _preparedProjectReferences = CaptureLoadedProjectReferences(updatedProjects);
+                ReconcileExplicitProjects(reloadLoadedProjects: true);
+            }
+
+            foreach (ProjectNode projectNode in VisualChildren.GetAllVisualChildren().OfType<ProjectNode>())
+                projectNode.RefreshConfigurationState();
+            UpdateStartupProjectState();
+            InvalidateMenuItems();
+            RefreshConfigurationCommandSurfaces();
+        }
+
+        private Dictionary<string, ProjectReferenceLoadResult> CaptureLoadedProjectReferences(
+            List<ProjectDefinition> updatedProjects)
+        {
+            List<ProjectNode> projectNodes = VisualChildren.GetAllVisualChildren()
+                .OfType<ProjectNode>()
+                .ToList();
+            List<UnavailableProjectNode> unavailableNodes = VisualChildren.GetAllVisualChildren()
+                .OfType<UnavailableProjectNode>()
+                .ToList();
+            var results = new Dictionary<string, ProjectReferenceLoadResult>(StringComparer.OrdinalIgnoreCase);
+            foreach (string reference in Config.Projects.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                ProjectDefinition? project = updatedProjects.FirstOrDefault(item =>
+                        ProjectReferenceMatches(DirectoryInfo.FullName, reference, item))
+                    ?? projectNodes
+                        .Select(node => node.Project)
+                        .FirstOrDefault(item => ProjectReferenceMatches(
+                            DirectoryInfo.FullName,
+                            reference,
+                            item));
+                if (project != null)
+                {
+                    results[reference] = new ProjectReferenceLoadResult(
+                        reference,
+                        project,
+                        project.ProjectFile.FullName,
+                        string.Empty);
+                    continue;
+                }
+
+                UnavailableProjectNode? unavailableNode = unavailableNodes.FirstOrDefault(node =>
+                    ProjectReferencesEqual(
+                        DirectoryInfo.FullName,
+                        reference,
+                        node.ProjectReference));
+                results[reference] = new ProjectReferenceLoadResult(
+                    reference,
+                    null,
+                    unavailableNode?.ResolvedPath ?? ResolveProjectReferencePath(reference),
+                    unavailableNode?.LoadError ?? "项目当前未加载。");
+            }
+            return results;
+        }
+
+        private string ResolveProjectReferencePath(string projectReference)
+        {
+            try
+            {
+                return Path.GetFullPath(Path.IsPathRooted(projectReference)
+                    ? projectReference
+                    : Path.Combine(DirectoryInfo.FullName, projectReference));
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return string.Empty;
+            }
         }
 
         internal void ReloadSolutionState()
@@ -3311,32 +3391,6 @@ namespace ColorVision.Solution.Explorer
             SolutionStateReloaded?.Invoke(this, EventArgs.Empty);
         }
 
-        internal bool TryRefreshImportedSolutionState(out string errorMessage)
-        {
-            errorMessage = string.Empty;
-            if (!IsImportedSolution)
-            {
-                errorMessage = "当前解决方案不是外部导入工作区。";
-                return false;
-            }
-
-            _importSourceChangedDebounceTimer?.Stop();
-            if (!ImportedSolutionWorkspaceService.TryRefresh(
-                ConfigFileInfo,
-                Config,
-                out SolutionConfig? refreshedConfig,
-                out errorMessage)
-                || refreshedConfig == null)
-            {
-                return false;
-            }
-
-            Config = refreshedConfig;
-            Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
-            ReloadSolutionState();
-            return true;
-        }
-
         internal async Task<ImportedSolutionWorkspaceResult> RefreshImportedSolutionStateAsync(
             CancellationToken cancellationToken = default)
         {
@@ -3348,6 +3402,7 @@ namespace ColorVision.Solution.Explorer
             }
 
             _importSourceChangedDebounceTimer?.Stop();
+            CancelActiveProjectRefresh();
             var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             CancellationTokenSource? previousCancellation = Interlocked.Exchange(
                 ref _importRefreshCancellation,
@@ -3360,8 +3415,12 @@ namespace ColorVision.Solution.Explorer
             {
             }
 
+            bool refreshGateEntered = false;
             try
             {
+                await _solutionRefreshGate.WaitAsync(requestCancellation.Token);
+                refreshGateEntered = true;
+                requestCancellation.Token.ThrowIfCancellationRequested();
                 ImportedSolutionWorkspaceResult result = await ImportedSolutionWorkspaceService.RefreshAsync(
                     ConfigFileInfo,
                     Config,
@@ -3399,6 +3458,8 @@ namespace ColorVision.Solution.Explorer
             }
             finally
             {
+                if (refreshGateEntered)
+                    _solutionRefreshGate.Release();
                 Interlocked.CompareExchange(
                     ref _importRefreshCancellation,
                     null,
