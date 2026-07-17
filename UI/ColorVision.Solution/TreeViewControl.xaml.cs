@@ -62,6 +62,7 @@ namespace ColorVision.Solution
         private bool _isRestoringWorkspaceState;
         private bool _isClearingSearchForReveal;
         private bool _allowProgrammaticBringIntoView;
+        private bool _suppressTreeSelectionSynchronization;
 
         public IReadOnlyList<SolutionNode> SelectedNodes => _selectionService.CommandNodes;
 
@@ -402,6 +403,24 @@ namespace ColorVision.Solution
                 e.Handled = true;
         }
 
+        private void SolutionTreeView_SelectedItemChanged(
+            object sender,
+            RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (_suppressTreeSelectionSynchronization
+                || e.NewValue is not SolutionNode node)
+            {
+                return;
+            }
+            if (_selectionService.SelectedNodes is [var selected]
+                && ReferenceEquals(selected, node))
+            {
+                return;
+            }
+
+            _selectionService.SelectSingle(node);
+        }
+
         private void TreeViewItem_ExpansionChanged(object sender, RoutedEventArgs e)
         {
             ScheduleWorkspaceStateSave();
@@ -546,7 +565,14 @@ namespace ColorVision.Solution
                     bool isShift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
                     bool isRightClick = e.ChangedButton == MouseButton.Right;
 
-                    if (isShift)
+                    if (isRightClick)
+                    {
+                        bool preserveMultiSelection = _selectionService.SelectedNodes.Contains(node);
+                        _selectionService.PreserveOrSelectForContext(node);
+                        ClearTreeViewSelection();
+                        e.Handled = preserveMultiSelection;
+                    }
+                    else if (isShift)
                     {
                         _selectionService.SelectRange(GetVisibleNodes(), node, additive: isCtrl);
                         ClearTreeViewSelection();
@@ -557,13 +583,6 @@ namespace ColorVision.Solution
                         _selectionService.Toggle(node);
                         ClearTreeViewSelection();
                         e.Handled = true;
-                    }
-                    else if (isRightClick)
-                    {
-                        bool preserveMultiSelection = _selectionService.SelectedNodes.Contains(node);
-                        _selectionService.PreserveOrSelectForContext(node);
-                        ClearTreeViewSelection();
-                        e.Handled = preserveMultiSelection;
                     }
                     else
                     {
@@ -923,6 +942,7 @@ namespace ColorVision.Solution
         private void ClearSelection()
         {
             _selectionService.Clear();
+            ClearTreeViewSelection();
         }
 
         private List<SolutionNode> GetVisibleNodes()
@@ -949,8 +969,18 @@ namespace ColorVision.Solution
         /// </summary>
         private void ClearTreeViewSelection()
         {
-            if (SolutionTreeView.SelectedItem is SolutionNode selected)
+            if (SolutionTreeView.SelectedItem is not SolutionNode selected)
+                return;
+
+            _suppressTreeSelectionSynchronization = true;
+            try
+            {
                 selected.IsSelected = false;
+            }
+            finally
+            {
+                _suppressTreeSelectionSynchronization = false;
+            }
         }
 
         public void SearchBar1TextChanged()

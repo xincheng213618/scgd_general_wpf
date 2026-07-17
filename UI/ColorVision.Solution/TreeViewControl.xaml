@@ -7,6 +7,7 @@
              xmlns:local="clr-namespace:ColorVision.Solution"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+             xmlns:explorer="clr-namespace:ColorVision.Solution.Explorer"
              d:DataContext="{d:DesignInstance local:SolutionManager}"
              mc:Ignorable="d" 
              d:DesignWidth="300" d:DesignHeight="600" Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
@@ -71,7 +72,7 @@
             </DockPanel>
         </Grid>
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="SolutionTreeView_ContextMenuOpening">
+            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="SolutionTreeView_ContextMenuOpening" SelectedItemChanged="SolutionTreeView_SelectedItemChanged">
                 <TreeView.Resources>
                     <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
                     <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
@@ -107,7 +108,7 @@
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
                         <EventSetter Event="Expanded" Handler="TreeViewItem_ExpansionChanged"/>
                         <EventSetter Event="Collapsed" Handler="TreeViewItem_ExpansionChanged"/>
-                        <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
+                        <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{x:Static explorer:SolutionResourceCommands.Open}" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="{x:Type TreeViewItem}">

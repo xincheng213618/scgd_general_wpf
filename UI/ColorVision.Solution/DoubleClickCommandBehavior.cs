@@ -27,14 +27,10 @@ namespace ColorVision.Solution
         {
             if (target is Control control)
             {
-                if (e.NewValue != null)
-                {
-                    control.MouseDoubleClick += OnMouseDoubleClick;
-                }
-                else
-                {
+                if (e.OldValue != null)
                     control.MouseDoubleClick -= OnMouseDoubleClick;
-                }
+                if (e.NewValue != null)
+                    control.MouseDoubleClick += OnMouseDoubleClick;
             }
         }
 
@@ -42,8 +38,25 @@ namespace ColorVision.Solution
         {
             if (sender is TreeViewItem treeviewItem && treeviewItem.IsSelected == false)
                 return;
-            if (sender is Control control && control.GetValue(DoubleClickCommandProperty) is ICommand command && command.CanExecute(null))
+            if (sender is not Control control
+                || control.GetValue(DoubleClickCommandProperty) is not ICommand command)
+            {
+                return;
+            }
+
+            if (command is RoutedCommand routedCommand)
+            {
+                if (!routedCommand.CanExecute(null, control))
+                    return;
+                routedCommand.Execute(null, control);
+            }
+            else
+            {
+                if (!command.CanExecute(null))
+                    return;
                 command.Execute(null);
+            }
+            e.Handled = true;
         }
     }
 }

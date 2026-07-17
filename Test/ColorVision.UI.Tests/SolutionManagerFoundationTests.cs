@@ -535,6 +535,29 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SelectionService_ContextSelectionPreservesBatchAndReplacesOutsideNode()
+    {
+        var first = CreateNode("first");
+        var second = CreateNode("second");
+        var outside = CreateNode("outside");
+        var service = new SolutionSelectionService();
+        service.SelectMany([first, second], first);
+
+        service.PreserveOrSelectForContext(second);
+
+        Assert.Equal([first, second], service.SelectedNodes);
+        Assert.Same(first, service.AnchorNode);
+
+        service.PreserveOrSelectForContext(outside);
+
+        Assert.Equal([outside], service.SelectedNodes);
+        Assert.Same(outside, service.AnchorNode);
+        Assert.False(first.IsMultiSelected);
+        Assert.False(second.IsMultiSelected);
+        Assert.True(outside.IsMultiSelected);
+    }
+
+    [Fact]
     public void SolutionMenuContributionsComposeAndHonorSelectionPolicies()
     {
         string prefix = $"tests.solution-menu.{Guid.NewGuid():N}";
