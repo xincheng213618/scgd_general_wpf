@@ -40,6 +40,7 @@ namespace ColorVision.Solution
         public override string GuidId => SolutionMenuIds.Build;
         public override string Header => "生成(_B)";
         public override int Order => 4;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuBuildSolution : MenuItemBase
@@ -50,6 +51,7 @@ namespace ColorVision.Solution
         public override string InputGestureText => "Ctrl+Shift+B";
         public override int Order => 10;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.BuildSolution;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuSolutionConfiguration : MenuItemBase
@@ -59,6 +61,7 @@ namespace ColorVision.Solution
         public override string GuidId => SolutionMenuIds.Configuration;
         public override string Header => "活动解决方案配置(_C)";
         public override int Order => 20;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuSolutionConfigurationManager : MenuItemBase
@@ -68,6 +71,7 @@ namespace ColorVision.Solution
         public override string Header => "配置管理器(_M)...";
         public override int Order => 30;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.ConfigurationManager;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuSolutionPlatform : MenuItemBase
@@ -77,12 +81,16 @@ namespace ColorVision.Solution
         public override string GuidId => SolutionMenuIds.Platform;
         public override string Header => "活动解决方案平台(_P)";
         public override int Order => 21;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class SolutionConfigurationMenuProvider : IMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
+            if (!SolutionFeatureVisibility.ShowBuildAndDebugUI)
+                return Array.Empty<MenuItemMetadata>();
+
             SolutionExplorer? explorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
             if (explorer == null)
                 return Array.Empty<MenuItemMetadata>();
@@ -113,6 +121,9 @@ namespace ColorVision.Solution
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
+            if (!SolutionFeatureVisibility.ShowBuildAndDebugUI)
+                return Array.Empty<MenuItemMetadata>();
+
             SolutionExplorer? explorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
             if (explorer == null)
                 return Array.Empty<MenuItemMetadata>();
@@ -144,6 +155,7 @@ namespace ColorVision.Solution
         public override string GuidId => SolutionMenuIds.Debug;
         public override string Header => "调试(_D)";
         public override int Order => 4;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuDebugStartupProject : MenuItemBase
@@ -154,6 +166,7 @@ namespace ColorVision.Solution
         public override string InputGestureText => "F5";
         public override int Order => 10;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.Debug;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 
     public sealed class MenuRunStartupProject : MenuItemBase
@@ -164,5 +177,6 @@ namespace ColorVision.Solution
         public override string InputGestureText => "Ctrl+F5";
         public override int Order => 20;
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.Run;
+        public override System.Windows.Visibility Visibility => SolutionFeatureVisibility.BuildAndDebugMenuVisibility;
     }
 }

@@ -512,7 +512,8 @@ namespace ColorVision.Solution.Explorer
                 });
             }
 
-            if (projectNode.SolutionExplorer?.CanSetStartupProject(projectNode.Project) == true)
+            if (SolutionFeatureVisibility.ShowBuildAndDebugUI
+                && projectNode.SolutionExplorer?.CanSetStartupProject(projectNode.Project) == true)
             {
                 menuItems.Add(new MenuItemMetadata
                 {
@@ -526,6 +527,12 @@ namespace ColorVision.Solution.Explorer
 
             foreach (ProjectCapabilityDescriptor capability in projectNode.Capabilities)
             {
+                if (!SolutionFeatureVisibility.ShowBuildAndDebugUI
+                    && SolutionFeatureVisibility.IsBuildOrDebugCapability(capability.Id))
+                {
+                    continue;
+                }
+
                 ICommand command = SolutionProjectCommands.GetCommand(capability.Id)
                     ?? new RelayCommand(
                         _ => projectNode.ExecuteCapability(capability.Id),
@@ -557,92 +564,96 @@ namespace ColorVision.Solution.Explorer
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
         {
             var explorer = (SolutionExplorer)context.PrimaryNode;
-            var menuItems = new List<MenuItemMetadata>
+            var menuItems = new List<MenuItemMetadata>();
+            if (SolutionFeatureVisibility.ShowBuildAndDebugUI)
             {
-                new()
-                {
-                    GuidId = SolutionProjectCommands.BuildSolutionId,
-                    Order = 5,
-                    Header = "生成解决方案(_B)",
-                    Command = SolutionProjectCommands.BuildSolution,
-                    Icon = MenuItemIcon.TryFindResource("DIBuild"),
-                },
-                new()
-                {
-                    GuidId = SolutionProjectCommands.RunStartupProjectId,
-                    Order = 6,
-                    Header = "运行启动项目(_R)",
-                    Command = SolutionProjectCommands.Run,
-                    Icon = MenuItemIcon.TryFindResource("DIRun"),
-                    InputGestureText = "Ctrl+F5",
-                },
-                new()
-                {
-                    GuidId = SolutionProjectCommands.DebugStartupProjectId,
-                    Order = 7,
-                    Header = "调试启动项目(_D)",
-                    Command = SolutionProjectCommands.Debug,
-                    Icon = MenuItemIcon.TryFindResource("DIDebug"),
-                    InputGestureText = "F5",
-                },
-                new()
-                {
-                    GuidId = SolutionProjectCommands.ActiveConfigurationId,
-                    Order = 8,
-                    Header = $"活动配置: {explorer.ActiveConfiguration}",
-                },
-            };
+                menuItems.AddRange(
+                [
+                    new MenuItemMetadata
+                    {
+                        GuidId = SolutionProjectCommands.BuildSolutionId,
+                        Order = 5,
+                        Header = "生成解决方案(_B)",
+                        Command = SolutionProjectCommands.BuildSolution,
+                        Icon = MenuItemIcon.TryFindResource("DIBuild"),
+                    },
+                    new MenuItemMetadata
+                    {
+                        GuidId = SolutionProjectCommands.RunStartupProjectId,
+                        Order = 6,
+                        Header = "运行启动项目(_R)",
+                        Command = SolutionProjectCommands.Run,
+                        Icon = MenuItemIcon.TryFindResource("DIRun"),
+                        InputGestureText = "Ctrl+F5",
+                    },
+                    new MenuItemMetadata
+                    {
+                        GuidId = SolutionProjectCommands.DebugStartupProjectId,
+                        Order = 7,
+                        Header = "调试启动项目(_D)",
+                        Command = SolutionProjectCommands.Debug,
+                        Icon = MenuItemIcon.TryFindResource("DIDebug"),
+                        InputGestureText = "F5",
+                    },
+                    new MenuItemMetadata
+                    {
+                        GuidId = SolutionProjectCommands.ActiveConfigurationId,
+                        Order = 8,
+                        Header = $"活动配置: {explorer.ActiveConfiguration}",
+                    },
+                ]);
 
-            int configurationOrder = 0;
-            foreach (string configuration in explorer.GetAvailableSolutionConfigurations())
-            {
-                string selectedConfiguration = configuration;
+                int configurationOrder = 0;
+                foreach (string configuration in explorer.GetAvailableSolutionConfigurations())
+                {
+                    string selectedConfiguration = configuration;
+                    menuItems.Add(new MenuItemMetadata
+                    {
+                        OwnerGuid = SolutionProjectCommands.ActiveConfigurationId,
+                        GuidId = $"SolutionConfiguration.{configuration}",
+                        Order = configurationOrder++,
+                        Header = configuration,
+                        Command = new RelayCommand(_ => explorer.SetActiveConfiguration(selectedConfiguration)),
+                        IsChecked = string.Equals(
+                            explorer.ActiveConfiguration,
+                            configuration,
+                            StringComparison.OrdinalIgnoreCase),
+                    });
+                }
+
                 menuItems.Add(new MenuItemMetadata
                 {
-                    OwnerGuid = SolutionProjectCommands.ActiveConfigurationId,
-                    GuidId = $"SolutionConfiguration.{configuration}",
-                    Order = configurationOrder++,
-                    Header = configuration,
-                    Command = new RelayCommand(_ => explorer.SetActiveConfiguration(selectedConfiguration)),
-                    IsChecked = string.Equals(
-                        explorer.ActiveConfiguration,
-                        configuration,
-                        StringComparison.OrdinalIgnoreCase),
+                    GuidId = SolutionProjectCommands.ActivePlatformId,
+                    Order = 9,
+                    Header = $"活动平台: {explorer.ActivePlatform}",
                 });
-            }
+                int platformOrder = 0;
+                foreach (string platform in explorer.GetAvailableSolutionPlatforms())
+                {
+                    string selectedPlatform = platform;
+                    menuItems.Add(new MenuItemMetadata
+                    {
+                        OwnerGuid = SolutionProjectCommands.ActivePlatformId,
+                        GuidId = $"SolutionPlatform.{platform}",
+                        Order = platformOrder++,
+                        Header = platform,
+                        Command = new RelayCommand(_ => explorer.SetActivePlatform(selectedPlatform)),
+                        IsChecked = string.Equals(
+                            explorer.ActivePlatform,
+                            platform,
+                            StringComparison.OrdinalIgnoreCase),
+                    });
+                }
 
-            menuItems.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionProjectCommands.ActivePlatformId,
-                Order = 9,
-                Header = $"活动平台: {explorer.ActivePlatform}",
-            });
-            int platformOrder = 0;
-            foreach (string platform in explorer.GetAvailableSolutionPlatforms())
-            {
-                string selectedPlatform = platform;
                 menuItems.Add(new MenuItemMetadata
                 {
-                    OwnerGuid = SolutionProjectCommands.ActivePlatformId,
-                    GuidId = $"SolutionPlatform.{platform}",
-                    Order = platformOrder++,
-                    Header = platform,
-                    Command = new RelayCommand(_ => explorer.SetActivePlatform(selectedPlatform)),
-                    IsChecked = string.Equals(
-                        explorer.ActivePlatform,
-                        platform,
-                        StringComparison.OrdinalIgnoreCase),
+                    GuidId = SolutionProjectCommands.ConfigurationManagerId,
+                    Order = 10,
+                    Header = "配置管理器(_C)...",
+                    Command = SolutionProjectCommands.ConfigurationManager,
+                    Icon = MenuItemIcon.TryFindResource("DISetting"),
                 });
             }
-
-            menuItems.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionProjectCommands.ConfigurationManagerId,
-                Order = 10,
-                Header = "配置管理器(_C)...",
-                Command = SolutionProjectCommands.ConfigurationManager,
-                Icon = MenuItemIcon.TryFindResource("DISetting"),
-            });
             menuItems.Add(new MenuItemMetadata
             {
                 GuidId = "Edit",

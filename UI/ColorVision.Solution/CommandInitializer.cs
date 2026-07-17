@@ -77,29 +77,32 @@ namespace ColorVision.Solution
                 (_, _) => EditorDocumentService.TryReloadActiveDocument(),
                 (_, e) => e.CanExecute = EditorDocumentService.CanReloadActiveDocument());
 
-            AddCommandBinding(
-                mainWindow,
-                SolutionProjectCommands.BuildSolution,
-                (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.BuildSolution(),
-                (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanBuildSolution() == true);
+            if (SolutionFeatureVisibility.ShowBuildAndDebugUI)
+            {
+                AddCommandBinding(
+                    mainWindow,
+                    SolutionProjectCommands.BuildSolution,
+                    (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.BuildSolution(),
+                    (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanBuildSolution() == true);
 
-            AddCommandBinding(
-                mainWindow,
-                SolutionProjectCommands.Run,
-                (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ExecuteStartupProject(ProjectCapabilityIds.Run),
-                (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanExecuteStartupProject(ProjectCapabilityIds.Run) == true);
+                AddCommandBinding(
+                    mainWindow,
+                    SolutionProjectCommands.Run,
+                    (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ExecuteStartupProject(ProjectCapabilityIds.Run),
+                    (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanExecuteStartupProject(ProjectCapabilityIds.Run) == true);
 
-            AddCommandBinding(
-                mainWindow,
-                SolutionProjectCommands.Debug,
-                (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ExecuteStartupProject(ProjectCapabilityIds.Debug),
-                (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanExecuteStartupProject(ProjectCapabilityIds.Debug) == true);
+                AddCommandBinding(
+                    mainWindow,
+                    SolutionProjectCommands.Debug,
+                    (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ExecuteStartupProject(ProjectCapabilityIds.Debug),
+                    (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer?.CanExecuteStartupProject(ProjectCapabilityIds.Debug) == true);
 
-            AddCommandBinding(
-                mainWindow,
-                SolutionProjectCommands.ConfigurationManager,
-                (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ShowConfigurationManager(),
-                (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer != null);
+                AddCommandBinding(
+                    mainWindow,
+                    SolutionProjectCommands.ConfigurationManager,
+                    (_, _) => SolutionManager.GetInstance().CurrentSolutionExplorer?.ShowConfigurationManager(),
+                    (_, e) => e.CanExecute = SolutionManager.GetInstance().CurrentSolutionExplorer != null);
+            }
         }
 
         private static void ExecuteSolutionHistory(bool undo)

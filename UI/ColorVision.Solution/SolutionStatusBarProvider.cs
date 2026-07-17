@@ -11,7 +11,7 @@ namespace ColorVision.Solution
     {
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            return new List<StatusBarMeta>
+            var items = new List<StatusBarMeta>
             {
                 new StatusBarMeta
                 {
@@ -38,8 +38,11 @@ namespace ColorVision.Solution
                     Source = SolutionManager.GetInstance(),
                     ActionType = StatusBarActionType.Popup,
                     PopupContentFactory = CreateOpeningPopup,
-                },
-                new StatusBarMeta
+                }
+            };
+            if (SolutionFeatureVisibility.ShowBuildAndDebugUI)
+            {
+                items.Add(new StatusBarMeta
                 {
                     Id = "SolutionConfiguration",
                     Name = "Solution Configuration",
@@ -51,8 +54,9 @@ namespace ColorVision.Solution
                     Source = SolutionManager.GetInstance(),
                     ActionType = StatusBarActionType.Popup,
                     PopupContentFactory = CreateConfigurationPopup,
-                }
-            };
+                });
+            }
+            return items;
         }
 
         private static FrameworkElement CreateOpeningPopup()

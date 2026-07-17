@@ -37,12 +37,15 @@ namespace ColorVision.Solution
             RegisterCommand(SolutionContainerCommands.AddNewProject, ExecuteContainerAction, CanExecuteContainerAction);
             RegisterCommand(SolutionContainerCommands.AddExistingProject, ExecuteContainerAction, CanExecuteContainerAction);
             RegisterCommand(SolutionContainerCommands.CreateSolutionFolder, ExecuteContainerAction, CanExecuteContainerAction);
-            RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
-            RegisterCommand(SolutionProjectCommands.BuildSolution, ExecuteBuildSolution, CanExecuteBuildSolution);
-            RegisterCommand(SolutionProjectCommands.Run, ExecuteProjectCapability, CanExecuteProjectCapability);
-            RegisterCommand(SolutionProjectCommands.Debug, ExecuteProjectCapability, CanExecuteProjectCapability);
-            RegisterCommand(SolutionProjectCommands.ConfigurationManager, ExecuteConfigurationManager, CanExecuteConfigurationManager);
-            RegisterCommand(SolutionProjectCommands.SetStartupProject, ExecuteSetStartupProject, CanExecuteSetStartupProject);
+            if (SolutionFeatureVisibility.ShowBuildAndDebugUI)
+            {
+                RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
+                RegisterCommand(SolutionProjectCommands.BuildSolution, ExecuteBuildSolution, CanExecuteBuildSolution);
+                RegisterCommand(SolutionProjectCommands.Run, ExecuteProjectCapability, CanExecuteProjectCapability);
+                RegisterCommand(SolutionProjectCommands.Debug, ExecuteProjectCapability, CanExecuteProjectCapability);
+                RegisterCommand(SolutionProjectCommands.ConfigurationManager, ExecuteConfigurationManager, CanExecuteConfigurationManager);
+                RegisterCommand(SolutionProjectCommands.SetStartupProject, ExecuteSetStartupProject, CanExecuteSetStartupProject);
+            }
             RegisterCommand(SolutionProjectCommands.ExcludeFromProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
             RegisterCommand(SolutionProjectCommands.IncludeInProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
             RegisterCommand(SolutionNavigationCommands.RevealInTree, ExecuteRevealInTree, CanExecuteRevealInTree);
