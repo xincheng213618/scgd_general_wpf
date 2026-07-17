@@ -70,7 +70,7 @@
             </DockPanel>
         </Grid>
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible">
+            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="SolutionTreeView_ContextMenuOpening">
                 <TreeView.Resources>
                     <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
                     <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">

@@ -25,8 +25,7 @@ namespace ColorVision.Solution
 
         public override void Execute()
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            openSolutionWindow.Show();
+            SolutionManager.OpenSolutionWindow();
         }
     }
 
@@ -55,7 +54,7 @@ namespace ColorVision.Solution
         {
             InitializeComponent();
         }
-        RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+        private static RecentFileList SolutionHistory => SolutionManager.GetInstance().SolutionHistory;
 
         public ObservableCollection<SolutionInfo> SolutionInfos { get; set; }= new ObservableCollection<SolutionInfo>();
 
@@ -111,11 +110,15 @@ namespace ColorVision.Solution
 
         private void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
         {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
             string projectPatterns = Explorer.ProjectProviderRegistry.GetProjectFileDialogPattern();
-            openFileDialog.Filter = $"ColorVision 解决方案或项目 (*.cvsln;{projectPatterns})|*.cvsln;{projectPatterns}|解决方案 (*.cvsln)|*.cvsln|项目 ({projectPatterns})|{projectPatterns}";
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                CheckFileExists = true,
+                Filter = $"ColorVision 解决方案或项目 (*.cvsln;{projectPatterns})|*.cvsln;{projectPatterns}|解决方案 (*.cvsln)|*.cvsln|项目 ({projectPatterns})|{projectPatterns}",
+                Multiselect = false,
+                RestoreDirectory = true,
+            };
+            if (openFileDialog.ShowDialog(this) == true)
             {
                 if (ResourceOpenService.Instance.TryOpen(openFileDialog.FileName))
                     Close();
@@ -142,28 +145,79 @@ namespace ColorVision.Solution
 
         }
 
-        private void ListView1_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        private void RecentSolutions_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView)
+            if (e.ChangedButton != MouseButton.Left
+                || sender is not ListView listView
+                || ItemsControl.ContainerFromElement(listView, e.OriginalSource as DependencyObject) is not ListViewItem)
+                return;
+
+            OpenSelectedRecentSolution();
+        }
+
+        private void RecentSolutions_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && OpenSelectedRecentSolution())
+                e.Handled = true;
+        }
+
+        private void RecentSolutions_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not ListView listView)
+                return;
+
+            if (ItemsControl.ContainerFromElement(listView, e.OriginalSource as DependencyObject) is ListViewItem item)
             {
-                if (listView.SelectedIndex > -1)
-                {
-                    SolutionManager.GetInstance().OpenSolution(SolutionInfos[listView.SelectedIndex].FullName);
-                    Close();
-                }
+                item.IsSelected = true;
+                item.Focus();
+            }
+            else
+            {
+                listView.SelectedItem = null;
             }
         }
 
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void RecentSolutions_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (sender is ListView listView)
+            if (ListView1.SelectedItem is not SolutionInfo)
+                e.Handled = true;
+        }
+
+        private void OpenRecentSolution_Click(object sender, RoutedEventArgs e)
+        {
+            OpenSelectedRecentSolution();
+        }
+
+        private void CopyRecentPath_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedItem is SolutionInfo solutionInfo)
+                Common.Clipboard.SetText(solutionInfo.FullName);
+        }
+
+        private void RemoveRecentSolution_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
+                return;
+
+            SolutionHistory.RemoveFile(solutionInfo.FullName);
+            SolutionInfos.Remove(solutionInfo);
+            ApplyRecentFilter();
+        }
+
+        private bool OpenSelectedRecentSolution()
+        {
+            if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
+                return false;
+
+            if (SolutionManager.GetInstance().OpenSolution(solutionInfo.FullName))
             {
-                if (listView.SelectedIndex > -1)
-                {
-                    SolutionManager.GetInstance().OpenSolution(SolutionInfos[listView.SelectedIndex].FullName);
-                    Close();
-                }
+                Close();
+                return true;
             }
+
+            SolutionInfos.Remove(solutionInfo);
+            ApplyRecentFilter();
+            return false;
         }
 
 
@@ -176,62 +230,43 @@ namespace ColorVision.Solution
         private readonly char[] Chars = new[] { ' ' };
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (sender is TextBox textBox)
-            {
-                if (SearchNoneText.Visibility == Visibility.Visible)
-                    SearchNoneText.Visibility = Visibility.Collapsed;
-
-                if (string.IsNullOrWhiteSpace(textBox.Text))
-                {
-                    ListView1.ItemsSource = SolutionInfos;
-                }
-                else
-                {
-                    var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
-                    var filteredResults = SolutionInfos
-                        .OfType<SolutionInfo>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.FullName.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)||
-                            template.CreationTime.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
-                        .ToList();
-
-                    // 更新 ListView 的数据源
-                    ListView1.ItemsSource = filteredResults;
-                    if (filteredResults.Count == 0)
-                    {
-                        SearchNoneText.Visibility = Visibility.Visible;
-                        SearchNoneText.Text = ColorVision.Solution.Properties.Resources.NoFound+" " + textBox.Text +" "+ ColorVision.Solution.Properties.Resources.RelateItem;
-                    }
-                }
-            }
+            if (sender is TextBox)
+                ApplyRecentFilter();
         }
 
-        private void Delete(object sender, RoutedEventArgs e)
+        private void ApplyRecentFilter()
         {
-            
+            if (SearchNoneText.Visibility == Visibility.Visible)
+                SearchNoneText.Visibility = Visibility.Collapsed;
+
+            string searchText = Searchbox.Text;
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                ListView1.ItemsSource = SolutionInfos;
+                return;
+            }
+
+            string[] keywords = searchText.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+            var filteredResults = SolutionInfos
+                .Where(template => keywords.All(keyword =>
+                    template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    || template.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                    || template.CreationTime.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            ListView1.ItemsSource = filteredResults;
+            if (filteredResults.Count == 0)
+            {
+                SearchNoneText.Visibility = Visibility.Visible;
+                SearchNoneText.Text = $"{Properties.Resources.NoFound} {searchText} {Properties.Resources.RelateItem}";
+            }
         }
     }
 
-    public class SolutionInfo  :ViewModelBase
+    public sealed class SolutionInfo
     {
-        public RelayCommand CopyCommand { get; set; }
-
-        public ContextMenu ContextMenu { get; set; }
-
-        public SolutionInfo()
-        {
-            CopyCommand = new RelayCommand(a => { if (FullName != null) Common.Clipboard.SetText(FullName); } , a => FullName!=null);
-
-            MenuItem menuItem = new MenuItem() { Header =ColorVision.Solution.Properties.Resources.CopyPath ,Command = CopyCommand };
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(menuItem);
-        }
-
-        public string Name { get; set; }
-        public string FullName { get; set; }
-        public string CreationTime { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string CreationTime { get; set; } = string.Empty;
     }
 }

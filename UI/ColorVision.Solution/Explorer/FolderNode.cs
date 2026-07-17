@@ -189,7 +189,7 @@ namespace ColorVision.Solution.Explorer
             {
                 if (window.AlwaysUseSelectedEditor)
                     EditorManager.Instance.SetDefaultFolderEditor(selectedEditor.Id);
-                EditorManager.Instance.OpenFolderWith(FullPath, selectedEditor.Id);
+                ResourceOpenService.Instance.TryOpenWith(FullPath, selectedEditor.Id);
             }
         }
 

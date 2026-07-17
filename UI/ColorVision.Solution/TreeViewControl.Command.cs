@@ -33,7 +33,6 @@ namespace ColorVision.Solution
         private void RegisterCommand(ICommand command, ExecutedRoutedEventHandler executed, CanExecuteRoutedEventHandler canExecute)
         {
             SolutionTreeView.CommandBindings.Add(new CommandBinding(command, executed, canExecute));
-            CommandBindings.Add(new CommandBinding(command, executed, canExecute));
         }
 
         #region Command Handlers
@@ -42,7 +41,11 @@ namespace ColorVision.Solution
         {
             var selectedNodes = _selectionService.SelectedNodes;
             if (selectedNodes.Count == 0)
+            {
+                e.CanExecute = false;
+                e.Handled = true;
                 return;
+            }
 
             if (e.Command == ApplicationCommands.Copy)
             {

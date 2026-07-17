@@ -160,45 +160,83 @@ namespace ColorVision.Solution
 
         private static string ResolveDirectorySolutionPath(DirectoryInfo directoryInfo)
         {
-            string folderWorkspacePath = Path.Combine(directoryInfo.FullName, FolderWorkspaceFileName);
-            if (File.Exists(folderWorkspacePath))
-            {
-                return folderWorkspacePath;
-            }
-
-            string conventionalSolutionPath = Path.Combine(directoryInfo.FullName, directoryInfo.Name + ".cvsln");
-            if (File.Exists(conventionalSolutionPath))
-            {
-                return conventionalSolutionPath;
-            }
-
-            string[] existingSolutions = Directory.GetFiles(directoryInfo.FullName, "*.cvsln", SearchOption.TopDirectoryOnly);
-            if (existingSolutions.Length == 1)
-            {
-                return existingSolutions[0];
-            }
-
-            EnsureFolderWorkspaceFile(folderWorkspacePath);
-            return folderWorkspacePath;
+            return TryCreateFolderWorkspace(directoryInfo, out string workspacePath)
+                ? workspacePath
+                : string.Empty;
         }
 
-        private static void EnsureFolderWorkspaceFile(string solutionPath)
+        internal static bool TryCreateFolderWorkspace(DirectoryInfo directoryInfo, out string solutionPath)
         {
-            if (File.Exists(solutionPath))
-            {
-                return;
-            }
-
-            SolutionConfigStore.Save(solutionPath, new SolutionConfig());
+            ArgumentNullException.ThrowIfNull(directoryInfo);
+            solutionPath = string.Empty;
+            directoryInfo.Refresh();
+            if (!directoryInfo.Exists)
+                return false;
 
             try
             {
-                File.SetAttributes(solutionPath, File.GetAttributes(solutionPath) | FileAttributes.Hidden);
+                string normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directoryInfo.FullName));
+                string workspaceDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ColorVision",
+                    "FolderWorkspaces");
+                Directory.CreateDirectory(workspaceDirectory);
+
+                string workspaceKey = Tool.GetMD5(normalizedRoot.ToUpperInvariant());
+                solutionPath = Path.Combine(workspaceDirectory, $"{workspaceKey}.cvsln");
+                bool workspaceExists = File.Exists(solutionPath);
+                SolutionConfig config = workspaceExists
+                    ? SolutionConfigStore.Load(solutionPath).Config
+                    : LoadLegacyFolderWorkspace(directoryInfo);
+                bool rootChanged = !string.Equals(
+                    config.RootPath,
+                    normalizedRoot,
+                    StringComparison.OrdinalIgnoreCase);
+                config.RootPath = normalizedRoot;
+                if (!workspaceExists || rootChanged)
+                    SolutionConfigStore.Save(solutionPath, config);
+                return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
             {
-                log.Debug($"无法设置工作区配置文件为隐藏: {solutionPath}, {ex.Message}");
+                log.Warn($"创建文件夹工作区失败: {directoryInfo.FullName}, {ex.Message}");
+                solutionPath = string.Empty;
+                return false;
             }
+        }
+
+        private static SolutionConfig LoadLegacyFolderWorkspace(DirectoryInfo directoryInfo)
+        {
+            string legacyWorkspacePath = Path.Combine(directoryInfo.FullName, FolderWorkspaceFileName);
+            if (!File.Exists(legacyWorkspacePath))
+                return new SolutionConfig();
+
+            try
+            {
+                return SolutionConfigStore.DeserializeAndMigrate(
+                    File.ReadAllText(legacyWorkspacePath),
+                    out _);
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                log.Warn($"读取旧文件夹工作区失败，将创建新工作区: {legacyWorkspacePath}, {ex.Message}");
+                return new SolutionConfig();
+            }
+        }
+
+        public bool OpenFolder(string folderPath)
+        {
+            return Directory.Exists(folderPath) && OpenSolution(folderPath);
         }
 
         private static bool TryResolveOpenTarget(string path, out string solutionPath, out string historyPath, out string displayName)
@@ -305,7 +343,7 @@ namespace ColorVision.Solution
 
             Window? owner = WindowHelpers.GetActiveWindow();
             bool? result = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
-            return result == true && GetInstance().OpenSolution(dialog.FolderName);
+            return result == true && GetInstance().OpenFolder(dialog.FolderName);
         }
 
         public bool OpenSolution(string FullPath)

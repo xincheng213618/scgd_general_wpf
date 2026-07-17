@@ -28,12 +28,26 @@ namespace ColorVision.Solution.Editor
         {
             return Classify(path) switch
             {
-                ResourceOpenKind.Folder => SolutionManager.GetInstance().OpenSolution(path),
+                ResourceOpenKind.Folder => SolutionManager.GetInstance().OpenFolder(path),
                 ResourceOpenKind.Solution => SolutionManager.GetInstance().OpenSolution(path),
                 ResourceOpenKind.Project => SolutionManager.GetInstance().OpenProject(path),
                 ResourceOpenKind.File => _editorManager.TryOpenFile(path),
                 _ => false,
             };
+        }
+
+        /// <summary>
+        /// Opens an existing physical resource with one explicit editor. This
+        /// intentionally bypasses solution/project activation: choosing an
+        /// editor is an explicit user decision, not extension-based routing.
+        /// </summary>
+        public bool TryOpenWith(string path, string editorId)
+        {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(editorId))
+                return false;
+            if (Directory.Exists(path))
+                return _editorManager.OpenFolderWith(path, editorId);
+            return File.Exists(path) && _editorManager.OpenFileWith(path, editorId);
         }
 
         public static bool TryOpenFile(string filePath) => EditorManager.Instance.TryOpenFile(filePath);

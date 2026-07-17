@@ -55,7 +55,7 @@ namespace ColorVision.Solution.Explorer
             {
                 if (window.AlwaysUseSelectedEditor)
                     EditorManager.Instance.SetDefaultEditor(ext, selectedEditor.Id);
-                EditorManager.Instance.OpenFileWith(FullPath, selectedEditor.Id);
+                ResourceOpenService.Instance.TryOpenWith(FullPath, selectedEditor.Id);
             }
         }
 

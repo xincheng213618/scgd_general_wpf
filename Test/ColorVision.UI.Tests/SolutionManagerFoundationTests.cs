@@ -518,6 +518,84 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void FolderWorkspace_IsStableAndDoesNotWriteConfigurationIntoOpenedFolder()
+    {
+        string folderPath = CreateTemporaryDirectory();
+        string? workspacePath = null;
+
+        try
+        {
+            Assert.True(SolutionManager.TryCreateFolderWorkspace(
+                new DirectoryInfo(folderPath),
+                out workspacePath));
+            Assert.True(File.Exists(workspacePath));
+            Assert.False(File.Exists(Path.Combine(folderPath, SolutionManager.FolderWorkspaceFileName)));
+            Assert.False(workspacePath.StartsWith(
+                Path.TrimEndingDirectorySeparator(folderPath) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase));
+
+            SolutionConfig config = SolutionConfigStore.Load(workspacePath).Config;
+            Assert.Equal(folderPath, config.RootPath, ignoreCase: true);
+            config.SolutionFolders.Add(new SolutionFolderDefinition { Id = "preserved", Name = "Preserved" });
+            SolutionConfigStore.Save(workspacePath, config);
+
+            Assert.True(SolutionManager.TryCreateFolderWorkspace(
+                new DirectoryInfo(folderPath),
+                out string reopenedWorkspacePath));
+            Assert.Equal(workspacePath, reopenedWorkspacePath, ignoreCase: true);
+            Assert.Contains(
+                SolutionConfigStore.Load(reopenedWorkspacePath).Config.SolutionFolders,
+                folder => folder.Id == "preserved");
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(workspacePath))
+            {
+                File.Delete(workspacePath);
+                File.Delete(SolutionConfigStore.GetBackupPath(workspacePath));
+            }
+            Directory.Delete(folderPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FolderWorkspace_MigratesLegacyConfigurationWithoutRewritingSourceFolder()
+    {
+        string folderPath = CreateTemporaryDirectory();
+        string legacyWorkspacePath = Path.Combine(folderPath, SolutionManager.FolderWorkspaceFileName);
+        string? workspacePath = null;
+        var legacyConfig = new SolutionConfig();
+        legacyConfig.SolutionFolders.Add(new SolutionFolderDefinition { Id = "legacy", Name = "Legacy" });
+        string legacyContent = SolutionConfigStore.Serialize(legacyConfig);
+        File.WriteAllText(legacyWorkspacePath, legacyContent);
+
+        try
+        {
+            Assert.True(SolutionManager.TryCreateFolderWorkspace(
+                new DirectoryInfo(folderPath),
+                out workspacePath));
+
+            Assert.False(string.Equals(
+                legacyWorkspacePath,
+                workspacePath,
+                StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(legacyContent, File.ReadAllText(legacyWorkspacePath));
+            SolutionConfig migratedConfig = SolutionConfigStore.Load(workspacePath).Config;
+            Assert.Equal(folderPath, migratedConfig.RootPath, ignoreCase: true);
+            Assert.Contains(migratedConfig.SolutionFolders, folder => folder.Id == "legacy");
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(workspacePath))
+            {
+                File.Delete(workspacePath);
+                File.Delete(SolutionConfigStore.GetBackupPath(workspacePath));
+            }
+            Directory.Delete(folderPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ProviderDeclaredProjectFormat_DrivesRoutingDiscoveryAndTreeVisibility()
     {
         string directoryPath = CreateTemporaryDirectory();

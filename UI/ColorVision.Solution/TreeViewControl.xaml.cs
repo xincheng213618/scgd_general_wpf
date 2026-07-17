@@ -349,6 +349,13 @@ namespace ColorVision.Solution
         private void SelectionService_SelectionChanged(object? sender, EventArgs e)
         {
             ScheduleWorkspaceStateSave();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (_selectionService.SelectedNodes.Count == 0)
+                e.Handled = true;
         }
 
         private void TreeViewItem_ExpansionChanged(object sender, RoutedEventArgs e)
@@ -452,8 +459,11 @@ namespace ColorVision.Solution
                 TreeViewItem? item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                 {
-                    if (e.ChangedButton == MouseButton.Left)
+                    if (e.ChangedButton is MouseButton.Left or MouseButton.Right)
+                    {
                         ClearSelection();
+                        e.Handled = e.ChangedButton == MouseButton.Right;
+                    }
                     return;
                 }
 
@@ -461,7 +471,7 @@ namespace ColorVision.Solution
                 {
                     bool isCtrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
                     bool isShift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                    bool isRightClick = e.RightButton == MouseButtonState.Pressed;
+                    bool isRightClick = e.ChangedButton == MouseButton.Right;
 
                     if (isShift)
                     {

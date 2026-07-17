@@ -31,11 +31,18 @@
                     <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </DockPanel>
                 <Grid  Grid.Row="1" Margin="-10,0,0,0">
-                    <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged"  PreviewMouseRightButtonDown="ListView1_MouseRightButtonDown">
+                    <ListView x:Name="ListView1" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" MouseDoubleClick="RecentSolutions_MouseDoubleClick" PreviewKeyDown="RecentSolutions_PreviewKeyDown" PreviewMouseRightButtonDown="RecentSolutions_PreviewMouseRightButtonDown" ContextMenuOpening="RecentSolutions_ContextMenuOpening">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{x:Static properties:Resources.Open}" Click="OpenRecentSolution_Click" />
+                                <MenuItem Header="{x:Static properties:Resources.CopyPath}" Click="CopyRecentPath_Click" />
+                                <Separator />
+                                <MenuItem Header="从最近列表中移除" Click="RemoveRecentSolution_Click" />
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle}">
                                 <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
@@ -51,11 +58,6 @@
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SolutionInfo}" >
                                             <Border x:Name="border1"  Height="45" Background="Transparent" Margin="0,2,0,2" BorderThickness="0" Width="450">
-                                                <Border.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="Delete" />
-                                                    </ContextMenu>
-                                                </Border.ContextMenu>
                                                 <Grid Margin="0,2,50,2">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
