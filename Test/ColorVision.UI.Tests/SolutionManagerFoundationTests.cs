@@ -3835,6 +3835,127 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ImportedSolutionRefresh_ThreeWayMergesProjectConfigurationOverrides()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(directoryPath, "src", "App");
+        string projectPath = Path.Combine(projectDirectory, "App.csproj");
+        string solutionPath = Path.Combine(directoryPath, "Example.sln");
+        string? importedWorkspacePath = null;
+        try
+        {
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(solutionPath, CreateSolutionContents("Debug", "Release", includeStaging: false));
+
+            Assert.True(SolutionManager.TryCreateImportedSolution(
+                new FileInfo(solutionPath),
+                out importedWorkspacePath,
+                out _));
+            SolutionConfig config = SolutionConfigStore.Load(importedWorkspacePath).Config;
+            string projectReference = Assert.Single(config.Projects);
+            config.ProjectConfigurations[projectReference]["Release"] = "LocalRelease";
+            config.ActiveConfiguration = "Release";
+            SolutionConfigStore.Save(importedWorkspacePath, config);
+
+            File.WriteAllText(solutionPath, CreateSolutionContents("Debug2", "Release2", includeStaging: true));
+            Assert.True(ImportedSolutionWorkspaceService.TryRefresh(
+                new FileInfo(importedWorkspacePath),
+                config,
+                out SolutionConfig? firstRefresh,
+                out string firstError),
+                firstError);
+            Assert.NotNull(firstRefresh);
+            Dictionary<string, string> firstMappings = firstRefresh.ProjectConfigurations[projectReference];
+            Assert.Equal("Debug2", firstMappings["Debug"]);
+            Assert.Equal("LocalRelease", firstMappings["Release"]);
+            Assert.Equal("Staging", firstMappings["Staging"]);
+            Assert.Equal("Release", firstRefresh.ActiveConfiguration);
+            JObject firstBaseline = Assert.IsType<JObject>(
+                firstRefresh.ExtensionData![ImportedSolutionWorkspaceService.ConfigurationBaselineExtensionKey]);
+            Assert.Equal("Debug2", firstBaseline[projectReference]!["Debug"]!.Value<string>());
+            Assert.Equal("Release2", firstBaseline[projectReference]!["Release"]!.Value<string>());
+
+            File.WriteAllText(solutionPath, CreateSolutionContents("Debug3", "Release3", includeStaging: false));
+            Assert.True(ImportedSolutionWorkspaceService.TryRefresh(
+                new FileInfo(importedWorkspacePath),
+                firstRefresh,
+                out SolutionConfig? secondRefresh,
+                out string secondError),
+                secondError);
+            Assert.NotNull(secondRefresh);
+            Dictionary<string, string> secondMappings = secondRefresh.ProjectConfigurations[projectReference];
+            Assert.Equal("Debug3", secondMappings["Debug"]);
+            Assert.Equal("LocalRelease", secondMappings["Release"]);
+            Assert.DoesNotContain("Staging", secondMappings.Keys, StringComparer.OrdinalIgnoreCase);
+
+            secondMappings["Release"] = "Release3";
+            SolutionConfigStore.Save(importedWorkspacePath, secondRefresh);
+            File.WriteAllText(solutionPath, CreateSolutionContents("Debug4", "Release4", includeStaging: false));
+            Assert.True(ImportedSolutionWorkspaceService.TryRefresh(
+                new FileInfo(importedWorkspacePath),
+                secondRefresh,
+                out SolutionConfig? thirdRefresh,
+                out string thirdError),
+                thirdError);
+            Assert.NotNull(thirdRefresh);
+            Assert.Equal("Debug4", thirdRefresh.ProjectConfigurations[projectReference]["Debug"]);
+            Assert.Equal("Release4", thirdRefresh.ProjectConfigurations[projectReference]["Release"]);
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(importedWorkspacePath))
+            {
+                File.Delete(importedWorkspacePath);
+                File.Delete($"{importedWorkspacePath}.bak");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+
+        static string CreateSolutionContents(
+            string debugMapping,
+            string releaseMapping,
+            bool includeStaging)
+        {
+            string template = """
+                Microsoft Visual Studio Solution File, Format Version 12.00
+                # Visual Studio Version 17
+                VisualStudioVersion = 17.0.31903.59
+                MinimumVisualStudioVersion = 10.0.40219.1
+                Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "src\App\App.csproj", "{11111111-1111-1111-1111-111111111111}"
+                EndProject
+                Global
+                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                $SOLUTION_STAGING$
+                    EndGlobalSection
+                    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.ActiveCfg = $DEBUG$|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = $DEBUG$|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = $RELEASE$|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = $RELEASE$|Any CPU
+                $PROJECT_STAGING$
+                    EndGlobalSection
+                EndGlobal
+                """;
+            string solutionStaging = includeStaging
+                ? "        Staging|Any CPU = Staging|Any CPU"
+                : string.Empty;
+            string projectStaging = includeStaging
+                ? string.Join(Environment.NewLine,
+                    "        {11111111-1111-1111-1111-111111111111}.Staging|Any CPU.ActiveCfg = Staging|Any CPU",
+                    "        {11111111-1111-1111-1111-111111111111}.Staging|Any CPU.Build.0 = Staging|Any CPU")
+                : string.Empty;
+            return template
+                .Replace("$DEBUG$", debugMapping, StringComparison.Ordinal)
+                .Replace("$RELEASE$", releaseMapping, StringComparison.Ordinal)
+                .Replace("$SOLUTION_STAGING$", solutionStaging, StringComparison.Ordinal)
+                .Replace("$PROJECT_STAGING$", projectStaging, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void MalformedVisualStudioSolution_ProvidesActionableOpenError()
     {
         string directoryPath = CreateTemporaryDirectory();

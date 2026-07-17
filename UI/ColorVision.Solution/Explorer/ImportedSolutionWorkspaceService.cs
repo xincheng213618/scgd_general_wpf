@@ -14,6 +14,7 @@ namespace ColorVision.Solution.Explorer
     {
         internal const string ProviderExtensionKey = "ImportedSolutionProvider";
         internal const string SourceExtensionKey = "ImportedSolutionSource";
+        internal const string ConfigurationBaselineExtensionKey = "ImportedSolutionConfigurationBaseline";
 
         public static bool TryCreate(
             FileInfo sourceFile,
@@ -85,12 +86,18 @@ namespace ColorVision.Solution.Explorer
                         item => item.Reference,
                         item => folderIds[item.Project.SolutionFolderPath!],
                         StringComparer.OrdinalIgnoreCase);
-                config.ProjectConfigurations = projects.ToDictionary(
+                Dictionary<string, Dictionary<string, string>> sourceProjectConfigurations = projects.ToDictionary(
                     item => item.Reference,
                     item => new Dictionary<string, string>(
                         item.Project.Configurations,
                         StringComparer.OrdinalIgnoreCase),
                     StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, Dictionary<string, string>>? previousConfigurationBaseline =
+                    ReadConfigurationBaseline(config);
+                config.ProjectConfigurations = MergeProjectConfigurations(
+                    sourceProjectConfigurations,
+                    config.ProjectConfigurations,
+                    previousConfigurationBaseline);
 
                 config.SolutionItems = new ObservableCollection<SolutionItemDefinition>(definition.Folders
                     .Where(folder => folderIds.ContainsKey(folder.Path))
@@ -116,6 +123,7 @@ namespace ColorVision.Solution.Explorer
                 config.ExtensionData ??= new Dictionary<string, JToken>();
                 config.ExtensionData[ProviderExtensionKey] = new JValue(definition.ProviderId);
                 config.ExtensionData[SourceExtensionKey] = new JValue(definition.SourceFile.FullName);
+                config.ExtensionData[ConfigurationBaselineExtensionKey] = JToken.FromObject(sourceProjectConfigurations);
                 SolutionConfigStore.Save(solutionPath, config);
 
                 displayName = definition.Name;
@@ -213,6 +221,70 @@ namespace ColorVision.Solution.Explorer
             {
                 errorMessage = $"重新加载导入工作区失败：{ex.Message}";
                 return false;
+            }
+        }
+
+        private static Dictionary<string, Dictionary<string, string>> MergeProjectConfigurations(
+            Dictionary<string, Dictionary<string, string>> sourceConfigurations,
+            Dictionary<string, Dictionary<string, string>> currentConfigurations,
+            Dictionary<string, Dictionary<string, string>>? previousBaseline)
+        {
+            var merged = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sourceProject in sourceConfigurations)
+            {
+                currentConfigurations.TryGetValue(sourceProject.Key, out Dictionary<string, string>? currentProject);
+                Dictionary<string, string>? baselineProject = null;
+                previousBaseline?.TryGetValue(sourceProject.Key, out baselineProject);
+                var mergedProject = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var sourceMapping in sourceProject.Value)
+                {
+                    string? currentValue = null;
+                    bool hasCurrentValue = currentProject?.TryGetValue(
+                        sourceMapping.Key,
+                        out currentValue) == true;
+                    string? baselineValue = null;
+                    bool hasBaselineValue = baselineProject?.TryGetValue(
+                        sourceMapping.Key,
+                        out baselineValue) == true;
+                    bool hasLocalOverride = hasCurrentValue
+                        && (!hasBaselineValue
+                            || !string.Equals(currentValue, baselineValue, StringComparison.OrdinalIgnoreCase));
+                    mergedProject[sourceMapping.Key] = hasLocalOverride
+                        ? currentValue!
+                        : sourceMapping.Value;
+                }
+                merged[sourceProject.Key] = mergedProject;
+            }
+            return merged;
+        }
+
+        private static Dictionary<string, Dictionary<string, string>>? ReadConfigurationBaseline(
+            SolutionConfig config)
+        {
+            if (config.ExtensionData == null
+                || !config.ExtensionData.TryGetValue(
+                    ConfigurationBaselineExtensionKey,
+                    out JToken? baselineToken)
+                || baselineToken.Type != JTokenType.Object)
+            {
+                return null;
+            }
+
+            try
+            {
+                Dictionary<string, Dictionary<string, string>>? baseline = baselineToken
+                    .ToObject<Dictionary<string, Dictionary<string, string>>>();
+                return baseline?.Where(project => !string.IsNullOrWhiteSpace(project.Key))
+                    .ToDictionary(
+                        project => project.Key,
+                        project => new Dictionary<string, string>(
+                            project.Value ?? new Dictionary<string, string>(),
+                            StringComparer.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase);
+            }
+            catch (JsonException)
+            {
+                return null;
             }
         }
 
