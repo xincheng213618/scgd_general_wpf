@@ -543,6 +543,100 @@ namespace ColorVision.Solution.Explorer
         }
     }
 
+    [SolutionMenuContribution(priority: 238)]
+    public sealed class SolutionRootMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.root-actions";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode is SolutionExplorer;
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            var explorer = (SolutionExplorer)context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>
+            {
+                new()
+                {
+                    GuidId = SolutionProjectCommands.BuildSolutionId,
+                    Order = 5,
+                    Header = "生成解决方案(_B)",
+                    Command = SolutionProjectCommands.BuildSolution,
+                    Icon = MenuItemIcon.TryFindResource("DIBuild"),
+                },
+                new()
+                {
+                    GuidId = SolutionProjectCommands.RunStartupProjectId,
+                    Order = 6,
+                    Header = "运行启动项目(_R)",
+                    Command = SolutionProjectCommands.Run,
+                    Icon = MenuItemIcon.TryFindResource("DIRun"),
+                    InputGestureText = "Ctrl+F5",
+                },
+                new()
+                {
+                    GuidId = SolutionProjectCommands.DebugStartupProjectId,
+                    Order = 7,
+                    Header = "调试启动项目(_D)",
+                    Command = SolutionProjectCommands.Debug,
+                    Icon = MenuItemIcon.TryFindResource("DIDebug"),
+                    InputGestureText = "F5",
+                },
+                new()
+                {
+                    GuidId = SolutionProjectCommands.ActiveConfigurationId,
+                    Order = 8,
+                    Header = $"活动配置: {explorer.ActiveConfiguration}",
+                },
+            };
+
+            int configurationOrder = 0;
+            foreach (string configuration in explorer.GetAvailableSolutionConfigurations())
+            {
+                string selectedConfiguration = configuration;
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = SolutionProjectCommands.ActiveConfigurationId,
+                    GuidId = $"SolutionConfiguration.{configuration}",
+                    Order = configurationOrder++,
+                    Header = configuration,
+                    Command = new RelayCommand(_ => explorer.SetActiveConfiguration(selectedConfiguration)),
+                    IsChecked = string.Equals(
+                        explorer.ActiveConfiguration,
+                        configuration,
+                        StringComparison.OrdinalIgnoreCase),
+                });
+            }
+
+            menuItems.Add(new MenuItemMetadata
+            {
+                GuidId = SolutionProjectCommands.ConfigurationManagerId,
+                Order = 9,
+                Header = "配置管理器(_C)...",
+                Command = SolutionProjectCommands.ConfigurationManager,
+                Icon = MenuItemIcon.TryFindResource("DISetting"),
+            });
+            menuItems.Add(new MenuItemMetadata
+            {
+                GuidId = "Edit",
+                Order = 50,
+                Header = ColorVision.Solution.Properties.Resources.EditSolution,
+                Command = explorer.EditCommand,
+            });
+            menuItems.Add(new MenuItemMetadata
+            {
+                GuidId = "MenuOpenFileInExplorer",
+                Order = 200,
+                Header = ColorVision.Solution.Properties.Resources.MenuOpenFileInExplorer,
+                Command = explorer.OpenFileInExplorerCommand,
+            });
+            return menuItems;
+        }
+    }
+
     [SolutionMenuContribution(priority: 225)]
     public sealed class SolutionOrganizationMenuContribution : ISolutionMenuContribution
     {

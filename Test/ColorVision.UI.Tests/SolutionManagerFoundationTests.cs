@@ -725,6 +725,84 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SolutionRootMenus_AreComposedFromCurrentConfiguration()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        ProjectDefinition project = CreateBuildProject(solutionDirectory, "App");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetRelativePath(solutionDirectory, project.ProjectFile.FullName)],
+            ActiveConfiguration = "Debug",
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            var nodeItems = new List<MenuItemMetadata>();
+            explorer.CollectMenuItems(nodeItems);
+
+            List<MenuItemMetadata> initialItems =
+                SolutionContextMenuService.CreateMenuMetadata([explorer]);
+
+            Assert.DoesNotContain(nodeItems, item => item.GuidId is
+                SolutionProjectCommands.BuildSolutionId
+                or SolutionProjectCommands.RunStartupProjectId
+                or SolutionProjectCommands.DebugStartupProjectId
+                or SolutionProjectCommands.ActiveConfigurationId
+                or SolutionProjectCommands.ConfigurationManagerId
+                or "Edit"
+                or "MenuOpenFileInExplorer");
+            Assert.Same(
+                SolutionProjectCommands.BuildSolution,
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.BuildSolutionId).Command);
+            Assert.Same(
+                SolutionProjectCommands.Run,
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.RunStartupProjectId).Command);
+            Assert.Same(
+                SolutionProjectCommands.Debug,
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.DebugStartupProjectId).Command);
+            Assert.Equal(
+                "活动配置: Debug",
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.ActiveConfigurationId).Header);
+            Assert.True(Assert.Single(initialItems, item =>
+                item.GuidId == "SolutionConfiguration.Debug").IsChecked);
+            MenuItemMetadata releaseItem = Assert.Single(initialItems, item =>
+                item.GuidId == "SolutionConfiguration.Release");
+            Assert.False(releaseItem.IsChecked);
+            Assert.IsType<ColorVision.Common.MVVM.RelayCommand>(releaseItem.Command);
+            Assert.Same(
+                SolutionProjectCommands.ConfigurationManager,
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.ConfigurationManagerId).Command);
+
+            releaseItem.Command!.Execute(null);
+            List<MenuItemMetadata> updatedItems =
+                SolutionContextMenuService.CreateMenuMetadata([explorer]);
+
+            Assert.Equal("Release", explorer.ActiveConfiguration);
+            Assert.Equal(
+                "活动配置: Release",
+                Assert.Single(updatedItems, item =>
+                    item.GuidId == SolutionProjectCommands.ActiveConfigurationId).Header);
+            Assert.True(Assert.Single(updatedItems, item =>
+                item.GuidId == "SolutionConfiguration.Release").IsChecked);
+            Assert.False(Assert.Single(updatedItems, item =>
+                item.GuidId == "SolutionConfiguration.Debug").IsChecked);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SelectionService_SelectManyRestoresMovedNodeSelectionAndAnchor()
     {
         var first = CreateNode("first");

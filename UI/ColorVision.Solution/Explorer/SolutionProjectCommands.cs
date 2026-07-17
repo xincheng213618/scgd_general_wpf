@@ -9,9 +9,14 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     public static class SolutionProjectCommands
     {
+        public const string ActiveConfigurationId = "ActiveSolutionConfiguration";
+        public const string BuildSolutionId = "BuildSolution";
+        public const string ConfigurationManagerId = "SolutionConfigurationManager";
+        public const string DebugStartupProjectId = "DebugStartupProject";
         public const string EditProjectFileId = "EditProjectFile";
         public const string ExcludeFromProjectId = "ExcludeFromProject";
         public const string IncludeInProjectId = "IncludeInProject";
+        public const string RunStartupProjectId = "RunStartupProject";
         public const string SetStartupProjectId = "SetStartupProject";
         public const string ShowAllFilesId = "ShowAllProjectFiles";
 

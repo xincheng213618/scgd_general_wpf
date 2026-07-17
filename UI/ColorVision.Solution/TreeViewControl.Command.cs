@@ -35,6 +35,7 @@ namespace ColorVision.Solution
             RegisterCommand(SolutionProjectCommands.BuildSolution, ExecuteBuildSolution, CanExecuteBuildSolution);
             RegisterCommand(SolutionProjectCommands.Run, ExecuteProjectCapability, CanExecuteProjectCapability);
             RegisterCommand(SolutionProjectCommands.Debug, ExecuteProjectCapability, CanExecuteProjectCapability);
+            RegisterCommand(SolutionProjectCommands.ConfigurationManager, ExecuteConfigurationManager, CanExecuteConfigurationManager);
             RegisterCommand(SolutionProjectCommands.SetStartupProject, ExecuteSetStartupProject, CanExecuteSetStartupProject);
             RegisterCommand(SolutionProjectCommands.ExcludeFromProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
             RegisterCommand(SolutionProjectCommands.IncludeInProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
@@ -525,6 +526,19 @@ namespace ColorVision.Solution
         {
             if (_selectionService.CommandNodes is [SolutionExplorer solutionExplorer])
                 solutionExplorer.BuildSolution();
+            e.Handled = true;
+        }
+
+        private void CanExecuteConfigurationManager(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [SolutionExplorer];
+            e.Handled = true;
+        }
+
+        private void ExecuteConfigurationManager(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is [SolutionExplorer solutionExplorer])
+                solutionExplorer.ShowConfigurationManager();
             e.Handled = true;
         }
 
