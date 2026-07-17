@@ -40,7 +40,7 @@
                     </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn >
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type local:EditorTypeViewModel}">
+                            <DataTemplate DataType="{x:Type local:EditorDescriptorViewModel}">
                                 <TextBlock Text="{Binding  Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

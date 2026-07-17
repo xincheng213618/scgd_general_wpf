@@ -3,15 +3,15 @@ using System.Windows;
 
 namespace ColorVision.Solution.Editor
 {
-    public class FolderEditorTypeViewModel
+    public class FolderEditorDescriptorViewModel
     {
         public string Name { get; set; }
-        public Type Type { get; set; }
+        public EditorDescriptor Descriptor { get; }
 
-        public FolderEditorTypeViewModel(Type type)
+        public FolderEditorDescriptorViewModel(EditorDescriptor descriptor)
         {
-            Type = type;
-            Name = EditorManager.GetEditorName(type);
+            Descriptor = descriptor;
+            Name = EditorManager.GetEditorName(descriptor);
         }
         public override string ToString() => Name;
     }
@@ -21,19 +21,28 @@ namespace ColorVision.Solution.Editor
     /// </summary>
     public partial class FolderEditorSelectionWindow : Window
     {
-        public Type? SelectedEditorType { get; private set; }
+        public EditorDescriptor? SelectedEditor { get; private set; }
 
         public bool AlwaysUseSelectedEditor => AlwaysUseCheckBox.IsChecked == true;
 
-        public List<FolderEditorTypeViewModel> EditorTypes { get; private set; }
+        public List<FolderEditorDescriptorViewModel> EditorTypes { get; private set; }
 
-        public FolderEditorSelectionWindow(List<Type> types, Type? currentType, string folderPath)
+        public FolderEditorSelectionWindow(
+            IReadOnlyList<EditorDescriptor> descriptors,
+            string? currentEditorId,
+            string folderPath)
         {
             InitializeComponent();
             this.ApplyCaption();
-            EditorTypes = types.Select(t => new FolderEditorTypeViewModel(t)).ToList();
+            EditorTypes = descriptors.Select(descriptor =>
+                new FolderEditorDescriptorViewModel(descriptor)).ToList();
             ListEditorSelection.ItemsSource = EditorTypes;
-            int selectedIndex = currentType == null ? -1 : types.IndexOf(currentType);
+            int selectedIndex = currentEditorId == null
+                ? -1
+                : EditorTypes.FindIndex(item => string.Equals(
+                    item.Descriptor.Id,
+                    currentEditorId,
+                    StringComparison.OrdinalIgnoreCase));
             ListEditorSelection.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
         }
 
@@ -49,10 +58,10 @@ namespace ColorVision.Solution.Editor
 
         private void ConfirmSelection()
         {
-            if (ListEditorSelection.SelectedItem is not FolderEditorTypeViewModel selected)
+            if (ListEditorSelection.SelectedItem is not FolderEditorDescriptorViewModel selected)
                 return;
 
-            SelectedEditorType = selected.Type;
+            SelectedEditor = selected.Descriptor;
             DialogResult = true;
             Close();
         }

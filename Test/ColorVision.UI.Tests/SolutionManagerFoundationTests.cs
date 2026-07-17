@@ -61,6 +61,54 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void EditorManager_ProgrammaticDescriptorsPreserveStableIdsAndDisplayNames()
+    {
+        string suffix = Guid.NewGuid().ToString("N");
+        string extension = $".dynamic{suffix}";
+        string firstId = $"tests.dynamic.first.{suffix}";
+        string secondId = $"tests.dynamic.second.{suffix}";
+        var first = new EditorDescriptor(
+            firstId,
+            typeof(TrackingEditor),
+            EditorResourceKind.File,
+            [extension],
+            IsGeneric: false,
+            IsDefault: false,
+            Priority: 10,
+            IsVisibleInOpenWith: true,
+            DisplayName: "动态编辑器 A");
+        var second = first with
+        {
+            Id = secondId,
+            Priority = 20,
+            DisplayName = "动态编辑器 B",
+        };
+        EditorManager.Instance.RegisterEditor(first);
+        EditorManager.Instance.RegisterEditor(second);
+        string directoryPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(directoryPath, $"Example{extension}");
+        File.WriteAllText(filePath, "test");
+
+        try
+        {
+            List<EditorDescriptor> descriptors = EditorManager.Instance
+                .GetFileEditorDescriptors(extension, visibleOnly: true)
+                .Where(item => item.Id == firstId || item.Id == secondId)
+                .ToList();
+
+            Assert.Equal([secondId, firstId], descriptors.Select(item => item.Id));
+            Assert.Equal("动态编辑器 B", EditorManager.GetEditorName(descriptors[0]));
+            TrackingEditor.LastOpenedPath = null;
+            Assert.True(EditorManager.Instance.OpenFileWith(filePath, secondId));
+            Assert.Equal(filePath, TrackingEditor.LastOpenedPath, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryGetProjectDirectory_ResolvesExistingProjectFile()
     {
         string directoryPath = Path.Combine(Path.GetTempPath(), $"ColorVision.Solution.Tests-{Guid.NewGuid():N}");
@@ -498,6 +546,55 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void RegisteringProjectProvider_ReplacesUnavailableProjectInOpenSolution()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string projectPath = Path.Combine(solutionDirectory, "Example.lateproj");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        File.WriteAllText(projectPath, "{}");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetFileName(projectPath)],
+        });
+
+        try
+        {
+            using var explorer = new SolutionExplorer(new SolutionEnvironments
+            {
+                SolutionDir = solutionDirectory,
+                SolutionName = "Example",
+                SolutionExt = ".cvsln",
+                SolutionFileName = "Example",
+                SolutionPath = solutionPath,
+            });
+            UnavailableProjectNode unavailableNode = Assert.Single(
+                explorer.VisualChildren.OfType<UnavailableProjectNode>());
+            var unavailableMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+            unavailableNode.CollectMenuItems(unavailableMenuItems);
+            Assert.Contains(unavailableMenuItems, item =>
+                item.GuidId == SolutionCommandIds.Delete
+                && ReferenceEquals(item.Command, ApplicationCommands.Delete));
+
+            ProjectProviderRegistry.Register(new LateProjectProvider(), priority: 1000);
+
+            ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            Assert.Equal(LateProjectProvider.ProviderId, projectNode.Project.ProviderId);
+            Assert.Empty(explorer.VisualChildren.OfType<UnavailableProjectNode>());
+            Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
+            var projectMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+            projectNode.CollectMenuItems(projectMenuItems);
+            Assert.Single(projectMenuItems, item => item.GuidId == SolutionCommandIds.Delete);
+            Assert.DoesNotContain(projectMenuItems, item => item.GuidId == "RemoveProjectFromSolution");
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ProjectProviderRegistry_ReportsUnsupportedProjectType()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -923,6 +1020,52 @@ public class SolutionManagerFoundationTests
             Assert.Equal(createdFolder.Id, Assert.Single(explorer.VisualChildren.OfType<SolutionFolderNode>()).FolderId);
             Assert.True(explorer.CanUndoSolutionOperation);
             Assert.False(explorer.CanRedoSolutionOperation);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SolutionExplorer_MultiDeleteIsOneUndoableSolutionOperation()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            SolutionFolders =
+            [
+                new SolutionFolderDefinition { Id = "first", Name = "First" },
+                new SolutionFolderDefinition { Id = "second", Name = "Second" },
+            ],
+        });
+
+        try
+        {
+            using var explorer = new SolutionExplorer(new SolutionEnvironments
+            {
+                SolutionDir = solutionDirectory,
+                SolutionName = "Example",
+                SolutionExt = ".cvsln",
+                SolutionFileName = "Example",
+                SolutionPath = solutionPath,
+            });
+            List<SolutionNode> folderNodes = explorer.VisualChildren
+                .OfType<SolutionFolderNode>()
+                .Cast<SolutionNode>()
+                .ToList();
+
+            Assert.Empty(explorer.DeleteNodesAsSingleOperation(folderNodes));
+            Assert.Empty(explorer.Config.SolutionFolders);
+            Assert.True(explorer.CanUndoSolutionOperation);
+
+            Assert.True(explorer.TryUndoSolutionOperation(out string undoError), undoError);
+            Assert.Equal(2, explorer.Config.SolutionFolders.Count);
+            Assert.False(explorer.CanUndoSolutionOperation);
+            Assert.True(explorer.CanRedoSolutionOperation);
         }
         finally
         {
@@ -2029,6 +2172,16 @@ public class SolutionManagerFoundationTests
     private sealed class AlternateEditor { }
     private sealed class GenericEditor { }
 
+    private sealed class TrackingEditor : IEditor
+    {
+        public static string? LastOpenedPath { get; set; }
+
+        public void Open(string filePath)
+        {
+            LastOpenedPath = filePath;
+        }
+    }
+
     private sealed class TrackingDisposableNode : SolutionNode, IDisposable
     {
         public bool IsDisposed { get; private set; }
@@ -2049,6 +2202,25 @@ public class SolutionManagerFoundationTests
         public bool CanLoad(FileInfo projectFile) =>
             projectFile.Exists
             && string.Equals(projectFile.Extension, ".mockproj", StringComparison.OrdinalIgnoreCase);
+
+        public ProjectDefinition Load(FileInfo projectFile) => new(
+            Id,
+            Path.GetFileNameWithoutExtension(projectFile.Name),
+            "1.0",
+            projectFile,
+            RootDirectory: projectFile.Directory);
+    }
+
+    private sealed class LateProjectProvider : IProjectProvider, IProjectFileFormatProvider
+    {
+        public const string ProviderId = "tests.late-project";
+
+        public string Id => ProviderId;
+        public IReadOnlyList<string> ProjectFilePatterns { get; } = ["*.lateproj"];
+
+        public bool CanLoad(FileInfo projectFile) =>
+            projectFile.Exists
+            && string.Equals(projectFile.Extension, ".lateproj", StringComparison.OrdinalIgnoreCase);
 
         public ProjectDefinition Load(FileInfo projectFile) => new(
             Id,

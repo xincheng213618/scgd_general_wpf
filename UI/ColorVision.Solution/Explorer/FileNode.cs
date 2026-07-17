@@ -45,17 +45,17 @@ namespace ColorVision.Solution.Explorer
         public void OpenMethod()
         {
             var ext = Path.GetExtension(FullPath);
-            var types = EditorManager.Instance.GetVisibleEditorsForExt(ext);
-            var current = EditorManager.Instance.GetDefaultEditorType(ext);
+            var descriptors = EditorManager.Instance.GetFileEditorDescriptors(ext, visibleOnly: true);
+            var current = EditorManager.Instance.GetDefaultFileEditorDescriptor(ext);
 
-            if (types.Count == 0) return;
+            if (descriptors.Count == 0) return;
 
-            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (window.ShowDialog() == true && window.SelectedEditorType is { } selectedType)
+            var window = new EditorSelectionWindow(descriptors, current?.Id, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (window.ShowDialog() == true && window.SelectedEditor is { } selectedEditor)
             {
                 if (window.AlwaysUseSelectedEditor)
-                    EditorManager.Instance.SetDefaultEditor(ext, selectedType);
-                EditorManager.Instance.OpenFileWith(FullPath, selectedType);
+                    EditorManager.Instance.SetDefaultEditor(ext, selectedEditor.Id);
+                EditorManager.Instance.OpenFileWith(FullPath, selectedEditor.Id);
             }
         }
 

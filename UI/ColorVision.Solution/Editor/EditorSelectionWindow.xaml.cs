@@ -5,21 +5,19 @@ using System.Windows;
 
 namespace ColorVision.Solution.Editor
 {
-    public class EditorTypeViewModel
+    public class EditorDescriptorViewModel
     {
         public string Name { get; set; }
-        public Type Type { get; set; }
+        public EditorDescriptor Descriptor { get; }
 
-        public EditorTypeViewModel(Type type,string ext)
+        public EditorDescriptorViewModel(EditorDescriptor descriptor, string extension)
         {
-            Type = type;
-            Name = EditorManager.GetEditorName(type); // 你已实现的 Name 获取逻辑
-            if (type == typeof(SystemEditor))
+            Descriptor = descriptor;
+            Name = EditorManager.GetEditorName(descriptor);
+            if (descriptor.EditorType == typeof(SystemEditor))
             {
-                string friendlyName = FileAssociation.GetFriendlyAppName(ext);
-
+                string friendlyName = FileAssociation.GetFriendlyAppName(extension);
                 Name = $"{Name} ({friendlyName})";
-
             }
         }
         public override string ToString() => Name;
@@ -30,20 +28,29 @@ namespace ColorVision.Solution.Editor
     /// </summary>
     public partial class EditorSelectionWindow : Window
     {
-        public Type? SelectedEditorType { get; private set; }
+        public EditorDescriptor? SelectedEditor { get; private set; }
 
         public bool AlwaysUseSelectedEditor => AlwaysUseCheckBox.IsChecked == true;
 
-        public List<EditorTypeViewModel> EditorTypes { get; private set; }
+        public List<EditorDescriptorViewModel> EditorTypes { get; private set; }
 
-        public EditorSelectionWindow(List<Type> types, Type? currentType, string filepath)
+        public EditorSelectionWindow(
+            IReadOnlyList<EditorDescriptor> descriptors,
+            string? currentEditorId,
+            string filePath)
         {
             InitializeComponent();
             this.ApplyCaption();
-            string ext = Path.GetExtension(filepath);
-            EditorTypes = types.Select(t => new EditorTypeViewModel(t, ext)).ToList();
+            string extension = Path.GetExtension(filePath);
+            EditorTypes = descriptors.Select(descriptor =>
+                new EditorDescriptorViewModel(descriptor, extension)).ToList();
             ListEditorSelection.ItemsSource = EditorTypes;
-            int selectedIndex = currentType == null ? -1 : types.IndexOf(currentType);
+            int selectedIndex = currentEditorId == null
+                ? -1
+                : EditorTypes.FindIndex(item => string.Equals(
+                    item.Descriptor.Id,
+                    currentEditorId,
+                    StringComparison.OrdinalIgnoreCase));
             ListEditorSelection.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
         }
 
@@ -59,10 +66,10 @@ namespace ColorVision.Solution.Editor
 
         private void ConfirmSelection()
         {
-            if (ListEditorSelection.SelectedItem is not EditorTypeViewModel selected)
+            if (ListEditorSelection.SelectedItem is not EditorDescriptorViewModel selected)
                 return;
 
-            SelectedEditorType = selected.Type;
+            SelectedEditor = selected.Descriptor;
             DialogResult = true;
             Close();
         }

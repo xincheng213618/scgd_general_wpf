@@ -19,7 +19,8 @@ namespace ColorVision.Solution.Editor
         bool IsGeneric,
         bool IsDefault,
         int Priority,
-        bool IsVisibleInOpenWith)
+        bool IsVisibleInOpenWith,
+        string? DisplayName = null)
     {
         public bool SupportsExtension(string extension)
         {

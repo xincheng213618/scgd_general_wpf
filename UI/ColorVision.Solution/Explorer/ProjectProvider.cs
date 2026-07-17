@@ -899,58 +899,98 @@ namespace ColorVision.Solution.Explorer
         private sealed record Registration(IProjectProvider Provider, int Priority);
 
         private static readonly List<Registration> _providers = new();
+        private static readonly HashSet<Assembly> _registeredAssemblies = new();
         private static readonly object _syncRoot = new();
         private static string[] _projectFilePatterns = [];
         private static bool _initialized;
+        private static bool _assemblyLoadSubscribed;
+
+        public static event EventHandler? ProvidersChanged;
 
         public static void Initialize()
         {
             if (_initialized)
                 return;
 
+            bool changed = false;
             lock (_syncRoot)
             {
                 if (_initialized)
                     return;
 
+                if (!_assemblyLoadSubscribed)
+                {
+                    AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+                    _assemblyLoadSubscribed = true;
+                }
+
                 Assembly[] assemblies = AssemblyService.Instance?.GetAssemblies()
                     ?? AppDomain.CurrentDomain.GetAssemblies();
                 foreach (Assembly assembly in assemblies)
-                {
-                    foreach (Type type in GetLoadableTypes(assembly))
-                    {
-                        var attribute = type.GetCustomAttribute<ProjectProviderAttribute>();
-                        if (attribute == null
-                            || !typeof(IProjectProvider).IsAssignableFrom(type)
-                            || type.IsAbstract
-                            || type.IsInterface)
-                        {
-                            continue;
-                        }
-
-                        try
-                        {
-                            Register((IProjectProvider)Activator.CreateInstance(type)!, attribute.Priority);
-                        }
-                        catch
-                        {
-                        }
-                    }
-                }
+                    changed |= RegisterProvidersFromAssemblyCore(assembly);
                 _initialized = true;
             }
+
+            if (changed)
+                ProvidersChanged?.Invoke(null, EventArgs.Empty);
         }
 
         public static void Register(IProjectProvider provider, int priority = 0)
         {
             ArgumentNullException.ThrowIfNull(provider);
+            if (string.IsNullOrWhiteSpace(provider.Id))
+                throw new ArgumentException("项目 Provider Id 不允许为空。", nameof(provider));
             lock (_syncRoot)
             {
-                _providers.RemoveAll(item => string.Equals(item.Provider.Id, provider.Id, StringComparison.OrdinalIgnoreCase));
-                _providers.Add(new Registration(provider, priority));
-                _providers.Sort((left, right) => right.Priority.CompareTo(left.Priority));
-                _projectFilePatterns = CreateProjectFilePatterns();
+                RegisterCore(provider, priority);
             }
+            ProvidersChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+        {
+            bool changed;
+            lock (_syncRoot)
+                changed = RegisterProvidersFromAssemblyCore(e.LoadedAssembly);
+            if (changed)
+                ProvidersChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        private static bool RegisterProvidersFromAssemblyCore(Assembly assembly)
+        {
+            if (!_registeredAssemblies.Add(assembly))
+                return false;
+
+            bool changed = false;
+            foreach (Type type in GetLoadableTypes(assembly))
+            {
+                var attribute = type.GetCustomAttribute<ProjectProviderAttribute>();
+                if (attribute == null
+                    || !typeof(IProjectProvider).IsAssignableFrom(type)
+                    || type.IsAbstract
+                    || type.IsInterface)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    RegisterCore((IProjectProvider)Activator.CreateInstance(type)!, attribute.Priority);
+                    changed = true;
+                }
+                catch
+                {
+                }
+            }
+            return changed;
+        }
+
+        private static void RegisterCore(IProjectProvider provider, int priority)
+        {
+            _providers.RemoveAll(item => string.Equals(item.Provider.Id, provider.Id, StringComparison.OrdinalIgnoreCase));
+            _providers.Add(new Registration(provider, priority));
+            _providers.Sort((left, right) => right.Priority.CompareTo(left.Priority));
+            _projectFilePatterns = CreateProjectFilePatterns();
         }
 
         public static bool TryLoadProject(DirectoryInfo directory, out ProjectDefinition? project)

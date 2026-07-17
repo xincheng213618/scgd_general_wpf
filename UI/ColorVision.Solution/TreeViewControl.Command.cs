@@ -149,7 +149,10 @@ namespace ColorVision.Solution
                 if (!EditorDocumentService.TryCloseDocumentsForResources(nodes.Select(node => node.FullPath)))
                     return;
 
-                var failedNodes = nodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList();
+                SolutionExplorer? explorer = SolutionManager.CurrentSolutionExplorer;
+                IReadOnlyList<SolutionNode> failedNodes = explorer != null
+                    ? explorer.DeleteNodesAsSingleOperation(nodes)
+                    : nodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList();
                 if (failedNodes.Count > 0)
                 {
                     MessageBox.Show(

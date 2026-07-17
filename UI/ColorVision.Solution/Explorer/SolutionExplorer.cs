@@ -204,6 +204,7 @@ namespace ColorVision.Solution.Explorer
             }
 
             _operationHistoryEnabled = true;
+            ProjectProviderRegistry.ProvidersChanged += ProjectProviderRegistry_ProvidersChanged;
             _processExitHandler = (_, __) =>
             {
                 try
@@ -221,6 +222,28 @@ namespace ColorVision.Solution.Explorer
                 }
             };
             AppDomain.CurrentDomain.ProcessExit += _processExitHandler;
+        }
+
+        private void ProjectProviderRegistry_ProvidersChanged(object? sender, EventArgs e)
+        {
+            if (_disposed)
+                return;
+
+            void RefreshProviders()
+            {
+                if (_disposed)
+                    return;
+                if (IsExplicitProjectMode)
+                    ReconcileExplicitProjects(reloadLoadedProjects: true);
+                else
+                    ReloadSolutionState();
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+                dispatcher.BeginInvoke(RefreshProviders);
+            else
+                RefreshProviders();
         }
 
 
@@ -2414,6 +2437,7 @@ namespace ColorVision.Solution.Explorer
             var retainedUnavailableNodes = new HashSet<UnavailableProjectNode>();
             foreach (var item in unavailable)
             {
+                RemovePhysicalNodeShadowingProjectReference(item.ResolvedPath);
                 string unavailablePath = Directory.Exists(item.ResolvedPath)
                     ? Path.Combine(item.ResolvedPath, ".missing.cvproj")
                     : item.ResolvedPath;
@@ -2490,6 +2514,25 @@ namespace ColorVision.Solution.Explorer
 
             foreach (SolutionFolderNode node in currentFolderNodes.Where(node => !retainedFolderNodes.Contains(node)))
                 node.Parent?.RemoveChild(node);
+        }
+
+        private void RemovePhysicalNodeShadowingProjectReference(string resolvedPath)
+        {
+            if (string.IsNullOrWhiteSpace(resolvedPath))
+                return;
+
+            foreach (SolutionNode node in VisualChildren.GetAllVisualChildren()
+                .Where(node => node is not ProjectNode
+                    and not UnavailableProjectNode
+                    and not SolutionItemNode
+                    && !string.IsNullOrWhiteSpace(node.FullPath)
+                    && string.Equals(node.FullPath, resolvedPath, StringComparison.OrdinalIgnoreCase))
+                .ToList())
+            {
+                node.Parent?.RemoveChild(node);
+                if (node is IDisposable disposable)
+                    disposable.Dispose();
+            }
         }
 
         private static void ReparentSolutionNode(SolutionNode node, SolutionNode parent)
@@ -2789,6 +2832,19 @@ namespace ColorVision.Solution.Explorer
             new SolutionEditor().Open(FullPath);
         }
 
+        internal IReadOnlyList<SolutionNode> DeleteNodesAsSingleOperation(IReadOnlyList<SolutionNode> nodes)
+        {
+            ArgumentNullException.ThrowIfNull(nodes);
+            List<SolutionNode> distinctNodes = nodes.Distinct().ToList();
+            if (distinctNodes.Count == 0)
+                return Array.Empty<SolutionNode>();
+
+            return ExecuteTrackedMutation(
+                $"删除或移除 {distinctNodes.Count} 项",
+                () => distinctNodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList(),
+                _ => true);
+        }
+
         private TResult ExecuteTrackedMutation<TResult>(
             string description,
             Func<TResult> mutation,
@@ -3017,6 +3073,7 @@ namespace ColorVision.Solution.Explorer
                 return;
             _disposed = true;
             Disposing?.Invoke(this, EventArgs.Empty);
+            ProjectProviderRegistry.ProvidersChanged -= ProjectProviderRegistry_ProvidersChanged;
             AppDomain.CurrentDomain.ProcessExit -= _processExitHandler;
             _fileSystemWatcher?.Dispose();
             _changedDebounceTimer?.Stop();

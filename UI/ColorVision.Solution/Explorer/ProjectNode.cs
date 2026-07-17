@@ -53,6 +53,11 @@ namespace ColorVision.Solution.Explorer
             _showAllFilesMenuItem = null;
             _startupProjectMenuItem = null;
             base.InitMenuItem();
+            if (SolutionExplorer?.IsExplicitProjectMode == true
+                && MenuItemMetadatas.FirstOrDefault(item => item.GuidId == SolutionCommandIds.Delete) is { } removeProjectItem)
+            {
+                removeProjectItem.Header = "从解决方案中移除(_V)";
+            }
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = "EditProjectFile",
@@ -134,13 +139,6 @@ namespace ColorVision.Solution.Explorer
                         });
                     }
                 }
-                MenuItemMetadatas.Add(new MenuItemMetadata
-                {
-                    GuidId = "RemoveProjectFromSolution",
-                    Order = 90,
-                    Header = "从解决方案中移除(_V)",
-                    Command = RemoveFromSolutionCommand,
-                });
             }
         }
 
@@ -362,7 +360,7 @@ namespace ColorVision.Solution.Explorer
             CanAdd = false;
             CanCopy = false;
             CanCut = false;
-            CanDelete = false;
+            CanDelete = true;
             CanPaste = false;
             CanReName = false;
             Initialize();
@@ -405,10 +403,10 @@ namespace ColorVision.Solution.Explorer
             });
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
-                GuidId = "RemoveUnavailableProjectFromSolution",
+                GuidId = SolutionCommandIds.Delete,
                 Order = 3,
                 Header = "从解决方案中移除(_V)",
-                Command = RemoveFromSolutionCommand,
+                Command = System.Windows.Input.ApplicationCommands.Delete,
             });
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
@@ -417,6 +415,22 @@ namespace ColorVision.Solution.Explorer
                 Header = "复制完整路径",
                 Command = CopyFullPathCommand,
             });
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (showConfirmation
+                && MessageBox.Show(
+                    Application.Current?.GetActiveWindow(),
+                    $"从解决方案中移除项目引用“{Name}”吗？",
+                    "ColorVision",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question) != MessageBoxResult.OK)
+            {
+                return false;
+            }
+
+            return _solutionExplorer.RemoveProjectReference(ProjectReference);
         }
 
         private static string GetDisplayName(string projectReference, string resolvedPath)

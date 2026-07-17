@@ -33,13 +33,19 @@ namespace ColorVision.Solution
         private readonly Dictionary<string, List<EditorDescriptor>> _fileEditorsByExtension = new(StringComparer.OrdinalIgnoreCase);
         private readonly List<EditorDescriptor> _genericFileEditors = new();
         private readonly List<EditorDescriptor> _folderEditors = new();
-        private readonly Dictionary<string, EditorDescriptor> _configuredFileEditors = new(StringComparer.OrdinalIgnoreCase);
-        private EditorDescriptor? _configuredFolderEditor;
+        private readonly Dictionary<string, string> _configuredFileEditorIds = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<Assembly> _registeredAssemblies = new();
+        private readonly object _syncRoot = new();
+        private string? _configuredFolderEditorId;
         private bool _configurationLoaded;
+
+        public event EventHandler? EditorsChanged;
 
         private EditorManager()
         {
-            RegisterEditors();
+            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+            RegisterEditors(AssemblyService.Instance?.GetAssemblies()
+                ?? AppDomain.CurrentDomain.GetAssemblies());
             LoadConfiguredEditors();
         }
 
@@ -54,94 +60,181 @@ namespace ColorVision.Solution
             return normalized.ToLowerInvariant();
         }
 
-        private void RegisterEditors()
+        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
         {
-            Assembly[] assemblies = AssemblyService.Instance?.GetAssemblies()
-                ?? AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies)
+            RegisterEditors([e.LoadedAssembly]);
+        }
+
+        private void RegisterEditors(IEnumerable<Assembly> assemblies)
+        {
+            bool changed = false;
+            lock (_syncRoot)
             {
-                foreach (var type in GetLoadableTypes(assembly))
+                foreach (Assembly assembly in assemblies)
                 {
-                    if (!typeof(IEditor).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
+                    if (!_registeredAssemblies.Add(assembly))
                         continue;
 
-                    if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
+                    foreach (Type type in GetLoadableTypes(assembly))
                     {
-                        var extensions = extensionAttribute.Extensions
-                            .Select(NormalizeExtension)
-                            .Where(extension => extension.Length > 0)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray();
-                        var descriptor = new EditorDescriptor(
-                            GetEditorId(type, extensionAttribute.EditorId),
-                            type,
-                            EditorResourceKind.File,
-                            extensions,
-                            IsGeneric: false,
-                            extensionAttribute.IsDefault,
-                            extensionAttribute.Priority,
-                            extensionAttribute.IsVisibleInOpenWith);
+                        if (!typeof(IEditor).IsAssignableFrom(type) || type.IsInterface || type.IsAbstract)
+                            continue;
 
-                        foreach (string extension in extensions)
+                        if (type.GetCustomAttribute<EditorForExtensionAttribute>() is { } extensionAttribute)
                         {
-                            if (!_fileEditorsByExtension.TryGetValue(extension, out var descriptors))
-                            {
-                                descriptors = new List<EditorDescriptor>();
-                                _fileEditorsByExtension[extension] = descriptors;
-                            }
-                            AddUnique(descriptors, descriptor);
+                            changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
+                                GetEditorId(type, extensionAttribute.EditorId),
+                                type,
+                                EditorResourceKind.File,
+                                extensionAttribute.Extensions,
+                                IsGeneric: false,
+                                extensionAttribute.IsDefault,
+                                extensionAttribute.Priority,
+                                extensionAttribute.IsVisibleInOpenWith,
+                                GetLocalizedName(extensionAttribute.ResourceKey, extensionAttribute.Name)));
                         }
-                    }
 
-                    if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
-                    {
-                        AddUnique(_genericFileEditors, new EditorDescriptor(
-                            GetEditorId(type, genericAttribute.EditorId),
-                            type,
-                            EditorResourceKind.File,
-                            Array.Empty<string>(),
-                            IsGeneric: true,
-                            genericAttribute.IsDefault,
-                            genericAttribute.Priority,
-                            genericAttribute.IsVisibleInOpenWith));
-                    }
+                        if (type.GetCustomAttribute<GenericEditorAttribute>() is { } genericAttribute)
+                        {
+                            changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
+                                GetEditorId(type, genericAttribute.EditorId),
+                                type,
+                                EditorResourceKind.File,
+                                Array.Empty<string>(),
+                                IsGeneric: true,
+                                genericAttribute.IsDefault,
+                                genericAttribute.Priority,
+                                genericAttribute.IsVisibleInOpenWith,
+                                GetLocalizedName(genericAttribute.ResourceKey, genericAttribute.Name)));
+                        }
 
-                    if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
-                    {
-                        AddUnique(_folderEditors, new EditorDescriptor(
-                            GetEditorId(type, folderAttribute.EditorId),
-                            type,
-                            EditorResourceKind.Folder,
-                            Array.Empty<string>(),
-                            IsGeneric: false,
-                            folderAttribute.IsDefault,
-                            folderAttribute.Priority,
-                            folderAttribute.IsVisibleInOpenWith));
+                        if (type.GetCustomAttribute<FolderEditorAttribute>() is { } folderAttribute)
+                        {
+                            changed |= TryRegisterDiscoveredEditor(new EditorDescriptor(
+                                GetEditorId(type, folderAttribute.EditorId),
+                                type,
+                                EditorResourceKind.Folder,
+                                Array.Empty<string>(),
+                                IsGeneric: false,
+                                folderAttribute.IsDefault,
+                                folderAttribute.Priority,
+                                folderAttribute.IsVisibleInOpenWith,
+                                GetLocalizedName(folderAttribute.ResourceKey, folderAttribute.Name)));
+                        }
                     }
                 }
             }
+
+            if (changed)
+                EditorsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void RegisterEditor(EditorDescriptor descriptor)
+        {
+            ArgumentNullException.ThrowIfNull(descriptor);
+            bool changed;
+            lock (_syncRoot)
+                changed = RegisterEditorCore(descriptor);
+            if (changed)
+                EditorsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private bool TryRegisterDiscoveredEditor(EditorDescriptor descriptor)
+        {
+            try
+            {
+                return RegisterEditorCore(descriptor);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        private bool RegisterEditorCore(EditorDescriptor descriptor)
+        {
+            if (string.IsNullOrWhiteSpace(descriptor.Id))
+                throw new ArgumentException("编辑器 Id 不允许为空。", nameof(descriptor));
+            if (!typeof(IEditor).IsAssignableFrom(descriptor.EditorType)
+                || descriptor.EditorType.IsAbstract
+                || descriptor.EditorType.IsInterface)
+            {
+                throw new ArgumentException("编辑器类型必须是可实例化的 IEditor。", nameof(descriptor));
+            }
+
+            string id = descriptor.Id.Trim();
+            string[] extensions = (descriptor.Extensions ?? Array.Empty<string>())
+                .Select(NormalizeExtension)
+                .Where(extension => extension.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (descriptor.ResourceKind == EditorResourceKind.File
+                && !descriptor.IsGeneric
+                && extensions.Length == 0)
+            {
+                throw new ArgumentException("非通用文件编辑器必须声明至少一个扩展名。", nameof(descriptor));
+            }
+
+            var normalized = descriptor with
+            {
+                Id = id,
+                Extensions = descriptor.ResourceKind == EditorResourceKind.Folder ? Array.Empty<string>() : extensions,
+                IsGeneric = descriptor.ResourceKind == EditorResourceKind.File && descriptor.IsGeneric,
+                DisplayName = string.IsNullOrWhiteSpace(descriptor.DisplayName) ? null : descriptor.DisplayName.Trim(),
+            };
+
+            RemoveEditorById(id);
+            if (normalized.ResourceKind == EditorResourceKind.Folder)
+            {
+                _folderEditors.Add(normalized);
+            }
+            else if (normalized.IsGeneric)
+            {
+                _genericFileEditors.Add(normalized);
+            }
+            else
+            {
+                foreach (string extension in normalized.Extensions)
+                {
+                    if (!_fileEditorsByExtension.TryGetValue(extension, out List<EditorDescriptor>? descriptors))
+                    {
+                        descriptors = new List<EditorDescriptor>();
+                        _fileEditorsByExtension[extension] = descriptors;
+                    }
+                    descriptors.Add(normalized);
+                }
+            }
+            return true;
+        }
+
+        private void RemoveEditorById(string editorId)
+        {
+            _genericFileEditors.RemoveAll(item => string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
+            _folderEditors.RemoveAll(item => string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
+            foreach (List<EditorDescriptor> descriptors in _fileEditorsByExtension.Values)
+                descriptors.RemoveAll(item => string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
         }
 
         private void LoadConfiguredEditors()
         {
-            if (_configurationLoaded || ConfigService.Instance == null)
-                return;
-
-            EditorManagerConfig config = ConfigService.Instance.GetRequiredService<EditorManagerConfig>();
-            foreach (var pair in config.DefaultEditors)
+            lock (_syncRoot)
             {
-                string extension = NormalizeExtension(pair.Key);
-                if (extension.Length == 0)
-                    continue;
+                if (_configurationLoaded || ConfigService.Instance == null)
+                    return;
 
-                var descriptor = FindStoredDescriptor(GetFileEditorDescriptors(extension), pair.Value);
-                if (descriptor != null)
-                    _configuredFileEditors[extension] = descriptor;
+                EditorManagerConfig config = ConfigService.Instance.GetRequiredService<EditorManagerConfig>();
+                foreach (var pair in config.DefaultEditors)
+                {
+                    string extension = NormalizeExtension(pair.Key);
+                    if (extension.Length > 0 && !string.IsNullOrWhiteSpace(pair.Value))
+                        _configuredFileEditorIds[extension] = pair.Value;
+                }
+
+                _configuredFolderEditorId = string.IsNullOrWhiteSpace(config.DefaultFolderEditor)
+                    ? null
+                    : config.DefaultFolderEditor;
+                _configurationLoaded = true;
             }
-
-            if (!string.IsNullOrWhiteSpace(config.DefaultFolderEditor))
-                _configuredFolderEditor = FindStoredDescriptor(GetFolderEditorDescriptors(), config.DefaultFolderEditor);
-            _configurationLoaded = true;
         }
 
         private static string GetEditorId(Type type, string? registeredId)
@@ -149,13 +242,6 @@ namespace ColorVision.Solution
             return string.IsNullOrWhiteSpace(registeredId)
                 ? type.FullName ?? type.Name
                 : registeredId.Trim();
-        }
-
-        private static void AddUnique(List<EditorDescriptor> descriptors, EditorDescriptor descriptor)
-        {
-            if (descriptors.Any(item => string.Equals(item.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase)))
-                return;
-            descriptors.Add(descriptor);
         }
 
         private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
@@ -236,6 +322,14 @@ namespace ColorVision.Solution
             return type.Name;
         }
 
+        public static string GetEditorName(EditorDescriptor descriptor)
+        {
+            ArgumentNullException.ThrowIfNull(descriptor);
+            return string.IsNullOrWhiteSpace(descriptor.DisplayName)
+                ? GetEditorName(descriptor.EditorType)
+                : descriptor.DisplayName;
+        }
+
         private static string? GetLocalizedName(string? resourceKey, string? fallbackName)
         {
             if (!string.IsNullOrWhiteSpace(resourceKey))
@@ -250,10 +344,17 @@ namespace ColorVision.Solution
         public IReadOnlyList<EditorDescriptor> GetFileEditorDescriptors(string? extension, bool visibleOnly = false)
         {
             string normalizedExtension = NormalizeExtension(extension);
-            IEnumerable<EditorDescriptor> specialized = _fileEditorsByExtension.TryGetValue(normalizedExtension, out var descriptors)
-                ? descriptors
-                : Enumerable.Empty<EditorDescriptor>();
-            IEnumerable<EditorDescriptor> all = OrderDescriptors(specialized).Concat(OrderDescriptors(_genericFileEditors));
+            List<EditorDescriptor> specialized;
+            List<EditorDescriptor> generic;
+            lock (_syncRoot)
+            {
+                specialized = _fileEditorsByExtension.TryGetValue(normalizedExtension, out var descriptors)
+                    ? descriptors.ToList()
+                    : new List<EditorDescriptor>();
+                generic = _genericFileEditors.ToList();
+            }
+
+            IEnumerable<EditorDescriptor> all = OrderDescriptors(specialized).Concat(OrderDescriptors(generic));
             if (visibleOnly)
                 all = all.Where(descriptor => descriptor.IsVisibleInOpenWith);
             return all.DistinctBy(descriptor => descriptor.Id, StringComparer.OrdinalIgnoreCase).ToList();
@@ -261,7 +362,10 @@ namespace ColorVision.Solution
 
         public IReadOnlyList<EditorDescriptor> GetFolderEditorDescriptors(bool visibleOnly = false)
         {
-            IEnumerable<EditorDescriptor> descriptors = OrderDescriptors(_folderEditors);
+            List<EditorDescriptor> snapshot;
+            lock (_syncRoot)
+                snapshot = _folderEditors.ToList();
+            IEnumerable<EditorDescriptor> descriptors = OrderDescriptors(snapshot);
             if (visibleOnly)
                 descriptors = descriptors.Where(descriptor => descriptor.IsVisibleInOpenWith);
             return descriptors.ToList();
@@ -271,16 +375,28 @@ namespace ColorVision.Solution
         {
             LoadConfiguredEditors();
             string normalizedExtension = NormalizeExtension(extension);
-            _fileEditorsByExtension.TryGetValue(normalizedExtension, out var specialized);
-            string? configuredId = _configuredFileEditors.TryGetValue(normalizedExtension, out var configured) ? configured.Id : null;
-            return SelectDefaultFileEditor(specialized ?? Enumerable.Empty<EditorDescriptor>(), _genericFileEditors, configuredId);
+            List<EditorDescriptor> specialized;
+            List<EditorDescriptor> generic;
+            string? configuredId;
+            lock (_syncRoot)
+            {
+                specialized = _fileEditorsByExtension.TryGetValue(normalizedExtension, out var descriptors)
+                    ? descriptors.ToList()
+                    : new List<EditorDescriptor>();
+                generic = _genericFileEditors.ToList();
+                configuredId = _configuredFileEditorIds.GetValueOrDefault(normalizedExtension);
+            }
+            return SelectDefaultFileEditor(specialized, generic, configuredId);
         }
 
         public EditorDescriptor? GetDefaultFolderEditorDescriptor()
         {
             LoadConfiguredEditors();
             var descriptors = GetFolderEditorDescriptors();
-            return FindStoredDescriptor(descriptors, _configuredFolderEditor?.Id)
+            string? configuredId;
+            lock (_syncRoot)
+                configuredId = _configuredFolderEditorId;
+            return FindStoredDescriptor(descriptors, configuredId)
                 ?? descriptors.FirstOrDefault(descriptor => descriptor.IsDefault)
                 ?? (descriptors.Count > 0 ? descriptors[0] : null);
         }
@@ -306,9 +422,22 @@ namespace ColorVision.Solution
             if (descriptor == null)
                 return;
 
-            _configuredFileEditors[normalizedExtension] = descriptor;
+            SetDefaultEditor(normalizedExtension, descriptor.Id);
+        }
+
+        public bool SetDefaultEditor(string extension, string editorId)
+        {
+            string normalizedExtension = NormalizeExtension(extension);
+            var descriptor = GetFileEditorDescriptors(normalizedExtension).FirstOrDefault(item =>
+                string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
+            if (descriptor == null)
+                return false;
+
+            lock (_syncRoot)
+                _configuredFileEditorIds[normalizedExtension] = descriptor.Id;
             EditorManagerConfig.Instance.DefaultEditors[normalizedExtension] = descriptor.Id;
             ConfigService.Instance.Save<EditorManagerConfig>();
+            return true;
         }
 
         public List<Type> GetFolderEditors() => GetFolderEditorDescriptors().Select(descriptor => descriptor.EditorType).ToList();
@@ -323,9 +452,21 @@ namespace ColorVision.Solution
             if (descriptor == null)
                 return;
 
-            _configuredFolderEditor = descriptor;
+            SetDefaultFolderEditor(descriptor.Id);
+        }
+
+        public bool SetDefaultFolderEditor(string editorId)
+        {
+            var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item =>
+                string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
+            if (descriptor == null)
+                return false;
+
+            lock (_syncRoot)
+                _configuredFolderEditorId = descriptor.Id;
             EditorManagerConfig.Instance.DefaultFolderEditor = descriptor.Id;
             ConfigService.Instance.Save<EditorManagerConfig>();
+            return true;
         }
 
         public IEditor? OpenFile(string filePath)

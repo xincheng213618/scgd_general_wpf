@@ -179,17 +179,17 @@ namespace ColorVision.Solution.Explorer
 
         public void OpenMethod()
         {
-            var types = EditorManager.Instance.GetVisibleFolderEditors();
-            var current = EditorManager.Instance.GetDefaultFolderEditorType();
+            var descriptors = EditorManager.Instance.GetFolderEditorDescriptors(visibleOnly: true);
+            var current = EditorManager.Instance.GetDefaultFolderEditorDescriptor();
 
-            if (types.Count == 0) return;
+            if (descriptors.Count == 0) return;
 
-            var window = new FolderEditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (window.ShowDialog() == true && window.SelectedEditorType is { } selectedType)
+            var window = new FolderEditorSelectionWindow(descriptors, current?.Id, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (window.ShowDialog() == true && window.SelectedEditor is { } selectedEditor)
             {
                 if (window.AlwaysUseSelectedEditor)
-                    EditorManager.Instance.SetDefaultFolderEditor(selectedType);
-                EditorManager.Instance.OpenFolderWith(FullPath, selectedType);
+                    EditorManager.Instance.SetDefaultFolderEditor(selectedEditor.Id);
+                EditorManager.Instance.OpenFolderWith(FullPath, selectedEditor.Id);
             }
         }
 
