@@ -123,11 +123,13 @@ namespace ColorVision.Solution
 
             if (e.Command == ApplicationCommands.Copy)
             {
-                e.CanExecute = selectedNodes.All(node => node.CanCopy && !string.IsNullOrEmpty(node.FullPath));
+                e.CanExecute = selectedNodes.All(node =>
+                    node.CanCopy && node.ClipboardResourcePath != null);
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                e.CanExecute = selectedNodes.All(node => node.CanCut && !string.IsNullOrEmpty(node.FullPath));
+                e.CanExecute = selectedNodes.All(node =>
+                    node.CanCut && node.ClipboardResourcePath != null);
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
@@ -169,9 +171,14 @@ namespace ColorVision.Solution
                     || !targetNode.CanPaste)
                     return;
 
-                CopyOrMovePaths(sourcePaths, physicalContainer.PhysicalContainerPath, isCut);
+                SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(
+                    sourcePaths,
+                    physicalContainer.PhysicalContainerPath,
+                    isCut);
+                if (result.Failures.Count > 0)
+                    ShowFileOperationFailures(result, isCut ? "移动失败" : "复制失败");
 
-                if (isCut && isInternalClipboard)
+                if (isCut && isInternalClipboard && result.IsComplete)
                 {
                     Clipboard.Clear();
                     _isCutOperation = false;
@@ -205,10 +212,34 @@ namespace ColorVision.Solution
 
         private string[] GetSelectedPaths(Func<SolutionNode, bool> capability)
         {
-            return _selectionService.GetTopLevelNodes(node => capability(node) && !string.IsNullOrWhiteSpace(node.FullPath))
-                .Select(node => node.FullPath)
+            return _selectionService.GetTopLevelNodes(node =>
+                    capability(node) && node.ClipboardResourcePath != null)
+                .Select(node => node.ClipboardResourcePath!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        private static void ShowFileOperationFailures(
+            SolutionFileOperationResult result,
+            string title)
+        {
+            MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                BuildFileOperationFailureMessage(result),
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        private static string BuildFileOperationFailureMessage(SolutionFileOperationResult result)
+        {
+            string details = string.Join(
+                Environment.NewLine,
+                result.Failures.Take(5).Select(failure =>
+                    $"• {Path.GetFileName(failure.SourcePath)}: {failure.Message}"));
+            if (result.Failures.Count > 5)
+                details += $"{Environment.NewLine}• …";
+            return $"已完成 {result.SucceededCount}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}";
         }
 
         private void CanExecuteDelete(object sender, CanExecuteRoutedEventArgs e)
@@ -530,41 +561,6 @@ namespace ColorVision.Solution
             return projectNode != null;
         }
 
-        private static void CopyOrMovePaths(IEnumerable<string> sourcePaths, string targetDir, bool isMove)
-        {
-            foreach (var sourcePath in sourcePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
-            {
-                if (File.Exists(sourcePath))
-                {
-                    string destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                    if (isMove)
-                    {
-                        if (!IsSamePath(sourcePath, destPath) && !PathExists(destPath))
-                            File.Move(sourcePath, destPath);
-                    }
-                    else
-                    {
-                        File.Copy(sourcePath, GetAvailableCopyPath(destPath, isDirectory: false));
-                    }
-                }
-                else if (Directory.Exists(sourcePath))
-                {
-                    string destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                    if (isMove)
-                    {
-                        if (!IsSamePath(sourcePath, destPath) && !IsSubPathOf(destPath, sourcePath) && !PathExists(destPath))
-                            Directory.Move(sourcePath, destPath);
-                    }
-                    else
-                    {
-                        string copyDestination = GetAvailableCopyPath(destPath, isDirectory: true);
-                        if (IsSafeDirectoryCopyDestination(sourcePath, copyDestination))
-                            CopyDirectory(sourcePath, copyDestination);
-                    }
-                }
-            }
-        }
-
         private static void SetClipboardPaths(string[] paths, bool isCut)
         {
             Clipboard.SetDataObject(CreatePathDataObject(paths, isCut), copy: true);
@@ -579,7 +575,7 @@ namespace ColorVision.Solution
             var fileDropList = new StringCollection();
             fileDropList.AddRange(paths);
             dataObject.SetFileDropList(fileDropList);
-            dataObject.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(isCut ? 2 : 5)));
+            dataObject.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(isCut ? 2 : 1)));
 
             return dataObject;
         }
@@ -643,71 +639,6 @@ namespace ColorVision.Solution
             }
 
             return false;
-        }
-
-        private static void CopyDirectory(string sourceDir, string destinationDir)
-        {
-            var files = Directory.GetFiles(sourceDir);
-            var directories = Directory.GetDirectories(sourceDir);
-
-            Directory.CreateDirectory(destinationDir);
-            foreach (var file in files)
-                File.Copy(file, Path.Combine(destinationDir, Path.GetFileName(file)));
-            foreach (var dir in directories)
-                CopyDirectory(dir, Path.Combine(destinationDir, Path.GetFileName(dir)));
-        }
-
-        private static string GetAvailableCopyPath(string desiredPath, bool isDirectory)
-        {
-            if (!PathExists(desiredPath))
-                return desiredPath;
-
-            string? directory = Path.GetDirectoryName(desiredPath);
-            if (string.IsNullOrEmpty(directory))
-                return desiredPath;
-
-            string baseName = isDirectory
-                ? Path.GetFileName(desiredPath)
-                : Path.GetFileNameWithoutExtension(desiredPath);
-            string extension = isDirectory ? string.Empty : Path.GetExtension(desiredPath);
-            if (string.IsNullOrEmpty(baseName))
-            {
-                baseName = Path.GetFileName(desiredPath);
-                extension = string.Empty;
-            }
-
-            for (int count = 1; ; count++)
-            {
-                string candidate = Path.Combine(directory, $"{baseName} - Copy ({count}){extension}");
-                if (!PathExists(candidate))
-                    return candidate;
-            }
-        }
-
-        private static bool PathExists(string path)
-        {
-            return File.Exists(path) || Directory.Exists(path);
-        }
-
-        private static bool IsSamePath(string left, string right)
-        {
-            return string.Equals(
-                Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
-                StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsSubPathOf(string candidatePath, string parentPath)
-        {
-            string candidate = Path.GetFullPath(candidatePath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            string parent = Path.GetFullPath(parentPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-            return candidate.StartsWith(parent, StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static bool IsSafeDirectoryCopyDestination(string sourcePath, string destinationPath)
-        {
-            return !IsSamePath(sourcePath, destinationPath)
-                && !IsSubPathOf(destinationPath, sourcePath);
         }
 
         #endregion

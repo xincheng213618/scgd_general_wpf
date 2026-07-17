@@ -59,6 +59,7 @@ namespace ColorVision.Solution.Explorer
         public override bool CanRefresh => TargetNode.CanRefresh;
         public override bool CanShowProperties => TargetNode.CanShowProperties;
         public override string? EditorResourcePath => TargetNode.EditorResourcePath;
+        public override string? ClipboardResourcePath => TargetNode.ClipboardResourcePath;
 
         internal SolutionSearchResultNode(
             SolutionExplorer explorer,

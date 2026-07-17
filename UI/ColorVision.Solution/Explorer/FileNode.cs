@@ -19,6 +19,9 @@ namespace ColorVision.Solution.Explorer
         public override bool CanOpen => FileInfo.Exists;
         public override bool CanShowProperties => FileInfo.Exists;
         public override string? EditorResourcePath => FileInfo.FullName;
+        public override string? ClipboardResourcePath => FileInfo.Exists
+            ? FileInfo.FullName
+            : null;
         public override bool CanReName { get; set; } = true;
 
         public IFileMeta FileMeta { get; set; }
@@ -34,6 +37,8 @@ namespace ColorVision.Solution.Explorer
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
             FullPath = FileInfo.FullName;
+            CanCopy = true;
+            CanCut = true;
             Initialize();
         }
 

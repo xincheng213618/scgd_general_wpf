@@ -165,9 +165,55 @@ public class SolutionManagerFoundationTests
         string descendantPath = Path.Combine(sourcePath, "Child", "Source");
         string siblingPath = Path.Combine(Path.GetDirectoryName(sourcePath)!, "Source - Copy (1)");
 
-        Assert.False(TreeViewControl.IsSafeDirectoryCopyDestination(sourcePath, sourcePath));
-        Assert.False(TreeViewControl.IsSafeDirectoryCopyDestination(sourcePath, descendantPath));
-        Assert.True(TreeViewControl.IsSafeDirectoryCopyDestination(sourcePath, siblingPath));
+        Assert.False(SolutionClipboardFileOperations.IsSafeDirectoryCopyDestination(sourcePath, sourcePath));
+        Assert.False(SolutionClipboardFileOperations.IsSafeDirectoryCopyDestination(sourcePath, descendantPath));
+        Assert.True(SolutionClipboardFileOperations.IsSafeDirectoryCopyDestination(sourcePath, siblingPath));
+    }
+
+    [Fact]
+    public void ClipboardFileOperations_ReportPartialMovesAndKeepFailedSources()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string sourceDirectory = Path.Combine(rootPath, "Source");
+        string targetDirectory = Path.Combine(rootPath, "Target");
+        Directory.CreateDirectory(sourceDirectory);
+        Directory.CreateDirectory(targetDirectory);
+        string firstSource = Path.Combine(sourceDirectory, "first.txt");
+        string secondSource = Path.Combine(sourceDirectory, "second.txt");
+        File.WriteAllText(firstSource, "first");
+        File.WriteAllText(secondSource, "second");
+        File.WriteAllText(Path.Combine(targetDirectory, "second.txt"), "existing");
+
+        try
+        {
+            SolutionFileOperationResult moveResult = SolutionClipboardFileOperations.Execute(
+                [firstSource, secondSource],
+                targetDirectory,
+                isMove: true);
+
+            Assert.Equal(2, moveResult.RequestedCount);
+            Assert.Equal(1, moveResult.SucceededCount);
+            Assert.False(moveResult.IsComplete);
+            SolutionFileOperationFailure failure = Assert.Single(moveResult.Failures);
+            Assert.Equal(secondSource, failure.SourcePath, ignoreCase: true);
+            Assert.False(File.Exists(firstSource));
+            Assert.True(File.Exists(Path.Combine(targetDirectory, "first.txt")));
+            Assert.True(File.Exists(secondSource));
+            Assert.Equal("existing", File.ReadAllText(Path.Combine(targetDirectory, "second.txt")));
+
+            SolutionFileOperationResult copyResult = SolutionClipboardFileOperations.Execute(
+                [Path.Combine(targetDirectory, "first.txt")],
+                targetDirectory,
+                isMove: false);
+
+            Assert.True(copyResult.IsComplete);
+            Assert.Empty(copyResult.Failures);
+            Assert.True(File.Exists(Path.Combine(targetDirectory, "first - Copy (1).txt")));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
     }
 
     [Fact]
@@ -517,9 +563,13 @@ public class SolutionManagerFoundationTests
         Assert.False(node.CanRefresh);
         Assert.False(node.CanReName);
         Assert.False(node.CanShowProperties);
+        Assert.False(node.CanCopy);
+        Assert.False(node.CanCut);
         Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Refresh);
         Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Rename);
         Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Properties);
+        Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Copy);
+        Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Cut);
     }
 
     [Fact]
@@ -552,6 +602,8 @@ public class SolutionManagerFoundationTests
             List<MenuItemMetadata> projectMenu = SolutionContextMenuService.CreateMenuMetadata([projectNode]);
             List<MenuItemMetadata> solutionFolderMenu =
                 SolutionContextMenuService.CreateMenuMetadata([solutionFolderNode]);
+            List<MenuItemMetadata> physicalMultiMenu =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
 
             Assert.True(explorer.CanAdd);
             Assert.True(folderNode.CanAdd);
@@ -566,6 +618,11 @@ public class SolutionManagerFoundationTests
             Assert.False(fileNode.CanPaste);
             Assert.False(solutionFolderNode.CanPaste);
             Assert.False(new SolutionNode().CanPaste);
+            Assert.Equal(filePath, fileNode.ClipboardResourcePath, ignoreCase: true);
+            Assert.Equal(folderPath, folderNode.ClipboardResourcePath, ignoreCase: true);
+            Assert.Equal(project.ProjectDirectory.FullName, projectNode.ClipboardResourcePath, ignoreCase: true);
+            Assert.Null(explorer.ClipboardResourcePath);
+            Assert.Null(solutionFolderNode.ClipboardResourcePath);
             Assert.Equal(
                 solutionDirectory,
                 Assert.IsAssignableFrom<ISolutionPhysicalContainer>(explorer).PhysicalContainerPath,
@@ -590,6 +647,31 @@ public class SolutionManagerFoundationTests
                 Assert.Single(projectMenu, item => item.GuidId == SolutionCommandIds.Paste).Command);
             Assert.DoesNotContain(fileMenu, item => item.GuidId == SolutionCommandIds.Paste);
             Assert.DoesNotContain(solutionFolderMenu, item => item.GuidId == SolutionCommandIds.Paste);
+            Assert.Same(
+                ApplicationCommands.Copy,
+                Assert.Single(fileMenu, item => item.GuidId == SolutionCommandIds.Copy).Command);
+            Assert.Same(
+                ApplicationCommands.Cut,
+                Assert.Single(fileMenu, item => item.GuidId == SolutionCommandIds.Cut).Command);
+            Assert.Same(
+                ApplicationCommands.Copy,
+                Assert.Single(folderMenu, item => item.GuidId == SolutionCommandIds.Copy).Command);
+            Assert.Same(
+                ApplicationCommands.Cut,
+                Assert.Single(folderMenu, item => item.GuidId == SolutionCommandIds.Cut).Command);
+            Assert.DoesNotContain(rootMenu, item => item.GuidId == SolutionCommandIds.Copy);
+            Assert.DoesNotContain(projectMenu, item => item.GuidId == SolutionCommandIds.Copy);
+            Assert.DoesNotContain(solutionFolderMenu, item => item.GuidId == SolutionCommandIds.Copy);
+            Assert.Same(
+                ApplicationCommands.Copy,
+                Assert.Single(physicalMultiMenu, item =>
+                    item.GuidId == SolutionCommandIds.Copy).Command);
+            Assert.Same(
+                ApplicationCommands.Cut,
+                Assert.Single(physicalMultiMenu, item =>
+                    item.GuidId == SolutionCommandIds.Cut).Command);
+            Assert.DoesNotContain(physicalMultiMenu, item =>
+                item.GuidId == SolutionCommandIds.Paste);
 
             Assert.Same(
                 SolutionContainerCommands.AddNewItem,

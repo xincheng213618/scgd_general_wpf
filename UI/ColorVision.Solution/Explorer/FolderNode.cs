@@ -21,6 +21,9 @@ namespace ColorVision.Solution.Explorer
         public override bool CanRefresh => DirectoryInfo.Exists;
         public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => DirectoryInfo.FullName;
+        public override string? ClipboardResourcePath => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
         public string PhysicalContainerPath => DirectoryInfo.FullName;
         public virtual SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
             ? SolutionContainerAction.AddNewItem

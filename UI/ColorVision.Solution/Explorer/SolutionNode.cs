@@ -175,6 +175,11 @@ namespace ColorVision.Solution.Explorer
         /// from FullPath, which may represent a tree identity or project root.
         /// </summary>
         public virtual string? EditorResourcePath => null;
+        /// <summary>
+        /// Existing physical file or directory placed on the Windows clipboard.
+        /// FullPath remains a tree identity and must not be used as a substitute.
+        /// </summary>
+        public virtual string? ClipboardResourcePath => null;
         public bool IsExcludedFromProject { get; private set; }
 
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
@@ -197,8 +202,6 @@ namespace ColorVision.Solution.Explorer
         {
             MenuItemMetadatas.Clear();
             AddProjectMembershipMenuItem();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Cut, Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Ctrl+X" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Copy, Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Ctrl+C" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
         }
 
@@ -286,7 +289,7 @@ namespace ColorVision.Solution.Explorer
             }
         }
         private bool _canAddEnabled = true;
-        public virtual bool CanCopy { get; set; } = true;
+        public virtual bool CanCopy { get; set; }
         public virtual bool CanPaste
         {
             get => _canPasteEnabled
@@ -301,7 +304,7 @@ namespace ColorVision.Solution.Explorer
             }
         }
         private bool _canPasteEnabled = true;
-        public virtual bool CanCut { get; set; } = true;
+        public virtual bool CanCut { get; set; }
 
         public void MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {

@@ -467,21 +467,48 @@ namespace ColorVision.Solution.Explorer
     }
 
     [SolutionMenuContribution(priority: 200)]
-    public sealed class PhysicalPasteMenuContribution : ISolutionMenuContribution
+    public sealed class ClipboardMenuContribution : ISolutionMenuContribution
     {
-        public string Id => "colorvision.solution.physical-paste";
-        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+        public string Id => "colorvision.solution.clipboard";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.Any;
 
         public bool IsApplicable(SolutionMenuContext context)
         {
-            return context.PrimaryNode.CanPaste;
+            return CanCopy(context.Nodes)
+                || CanCut(context.Nodes)
+                || (context.Nodes.Count == 1 && context.PrimaryNode.CanPaste);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
         {
-            return
-            [
-                new MenuItemMetadata
+            var menuItems = new List<MenuItemMetadata>();
+            if (CanCut(context.Nodes))
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Cut,
+                    Order = 100,
+                    Command = ApplicationCommands.Cut,
+                    Header = ColorVision.UI.Properties.Resources.MenuCut,
+                    Icon = MenuItemIcon.TryFindResource("DICut"),
+                    InputGestureText = "Ctrl+X",
+                });
+            }
+            if (CanCopy(context.Nodes))
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Copy,
+                    Order = 101,
+                    Command = ApplicationCommands.Copy,
+                    Header = ColorVision.UI.Properties.Resources.MenuCopy,
+                    Icon = MenuItemIcon.TryFindResource("DICopy"),
+                    InputGestureText = "Ctrl+C",
+                });
+            }
+            if (context.Nodes.Count == 1 && context.PrimaryNode.CanPaste)
+            {
+                menuItems.Add(new MenuItemMetadata
                 {
                     GuidId = SolutionCommandIds.Paste,
                     Order = 102,
@@ -489,8 +516,21 @@ namespace ColorVision.Solution.Explorer
                     Header = ColorVision.UI.Properties.Resources.MenuPaste,
                     Icon = MenuItemIcon.TryFindResource("DIPaste"),
                     InputGestureText = "Ctrl+V",
-                },
-            ];
+                });
+            }
+            return menuItems;
+        }
+
+        private static bool CanCopy(IReadOnlyList<SolutionNode> nodes)
+        {
+            return nodes.Count > 0
+                && nodes.All(node => node.CanCopy && node.ClipboardResourcePath != null);
+        }
+
+        private static bool CanCut(IReadOnlyList<SolutionNode> nodes)
+        {
+            return nodes.Count > 0
+                && nodes.All(node => node.CanCut && node.ClipboardResourcePath != null);
         }
     }
 

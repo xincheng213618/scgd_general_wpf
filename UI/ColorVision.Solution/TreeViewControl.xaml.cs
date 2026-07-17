@@ -169,7 +169,15 @@ namespace ColorVision.Solution
                     ? e.AllowedEffects.HasFlag(DragDropEffects.Move)
                         && !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
                     : Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
-                CopyOrMovePaths(paths, targetDir, isMove);
+                SolutionFileOperationResult result = SolutionClipboardFileOperations.Execute(
+                    paths,
+                    targetDir,
+                    isMove);
+                if (result.Failures.Count > 0)
+                    ShowFileOperationFailures(result, isMove ? "移动失败" : "复制失败");
+                e.Effects = result.SucceededCount > 0
+                    ? isMove ? DragDropEffects.Move : DragDropEffects.Copy
+                    : DragDropEffects.None;
                 e.Handled = true;
             }
         }
@@ -224,10 +232,11 @@ namespace ColorVision.Solution
                         && !Keyboard.Modifiers.HasFlag(ModifierKeys.Control)
                     : Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
                 DragDropEffects requestedEffect = isMove ? DragDropEffects.Move : DragDropEffects.Copy;
-                e.Effects = e.AllowedEffects.HasFlag(requestedEffect) ? requestedEffect : DragDropEffects.None;
-                SetDropTargetVisual(e.Effects == DragDropEffects.None
-                    ? null
-                    : GetPhysicalDropTargetNode(targetNode));
+                SolutionNode? physicalTarget = GetPhysicalDropTargetNode(targetNode);
+                e.Effects = physicalTarget != null && e.AllowedEffects.HasFlag(requestedEffect)
+                    ? requestedEffect
+                    : DragDropEffects.None;
+                SetDropTargetVisual(e.Effects == DragDropEffects.None ? null : physicalTarget);
             }
             else
             {
@@ -600,18 +609,19 @@ namespace ColorVision.Solution
                 return;
             }
 
-            if (selectedNodes.Any(node => !node.CanCopy))
+            if (selectedNodes.Any(node => !node.CanCopy || node.ClipboardResourcePath == null))
                 return;
 
-            var paths = selectedNodes
-                .Where(node => !string.IsNullOrWhiteSpace(node.FullPath) && (File.Exists(node.FullPath) || Directory.Exists(node.FullPath)))
-                .Select(node => node.FullPath)
+            IReadOnlyList<SolutionNode> physicalNodes = _selectionService.GetTopLevelNodes(node =>
+                node.CanCopy && node.ClipboardResourcePath != null);
+            var paths = physicalNodes
+                .Select(node => node.ClipboardResourcePath!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             if (paths.Length == 0)
                 return;
 
-            DragDropEffects allowedEffects = selectedNodes.All(node => node.CanCut)
+            DragDropEffects allowedEffects = physicalNodes.All(node => node.CanCut)
                 ? DragDropEffects.Copy | DragDropEffects.Move
                 : DragDropEffects.Copy;
             RunDragDrop(CreatePathDataObject(paths, isCut: false), allowedEffects);
@@ -820,24 +830,30 @@ namespace ColorVision.Solution
 
         private string? GetDropTargetDirectory(DragEventArgs e)
         {
-            var node = GetNodeAtPoint(e.GetPosition(SolutionTreeView))?.ResolveCommandTarget();
-            if (node is FileNode)
-                return Path.GetDirectoryName(node.FullPath);
-
-            if (node != null && Directory.Exists(node.FullPath))
-                return node.FullPath;
-
-            return SolutionManager.CurrentSolutionExplorer?.DirectoryInfo?.FullName;
+            SolutionNode? targetNode = GetPhysicalDropTargetNode(
+                GetNodeAtPoint(e.GetPosition(SolutionTreeView)));
+            return (targetNode as ISolutionPhysicalContainer)?.PhysicalContainerPath;
         }
 
         private static SolutionNode? GetPhysicalDropTargetNode(SolutionNode? targetNode)
         {
-            targetNode = targetNode?.ResolveCommandTarget();
-            if (targetNode is FileNode)
-                return targetNode.Parent ?? SolutionManager.CurrentSolutionExplorer;
-            if (targetNode != null && Directory.Exists(targetNode.FullPath))
+            if (targetNode == null)
+            {
+                SolutionExplorer? currentExplorer = SolutionManager.CurrentSolutionExplorer;
+                return currentExplorer?.CanPaste == true ? currentExplorer : null;
+            }
+
+            targetNode = targetNode.ResolveCommandTarget();
+            if (targetNode is ISolutionPhysicalContainer && targetNode.CanPaste)
                 return targetNode;
-            return SolutionManager.CurrentSolutionExplorer;
+            if (targetNode is FileNode
+                && targetNode.Parent?.ResolveCommandTarget() is ISolutionPhysicalContainer parentContainer
+                && targetNode.Parent.CanPaste
+                && Directory.Exists(parentContainer.PhysicalContainerPath))
+            {
+                return targetNode.Parent;
+            }
+            return null;
         }
 
         private void RunDragDrop(IDataObject dataObject, DragDropEffects allowedEffects)
