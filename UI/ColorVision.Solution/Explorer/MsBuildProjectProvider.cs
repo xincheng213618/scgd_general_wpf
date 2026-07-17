@@ -157,7 +157,7 @@ namespace ColorVision.Solution.Explorer
                 || sdk.Contains(".Worker", StringComparison.OrdinalIgnoreCase));
         }
 
-        private static IReadOnlyList<string> GetSdkNames(XDocument document)
+        private static List<string> GetSdkNames(XDocument document)
         {
             var sdkNames = new List<string>();
             string? rootSdk = document.Root?.Attribute("Sdk")?.Value;
@@ -187,7 +187,7 @@ namespace ColorVision.Solution.Explorer
                 || element.Parent?.Attribute("Condition") != null;
         }
 
-        private static IReadOnlyList<string> ReadProjectReferences(XDocument document)
+        private static List<string> ReadProjectReferences(XDocument document)
         {
             return document.Descendants()
                 .Where(element => string.Equals(element.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
@@ -198,7 +198,7 @@ namespace ColorVision.Solution.Explorer
                 .ToList();
         }
 
-        private static IReadOnlyDictionary<string, ProjectConfigurationDefinition> ReadConfigurations(XDocument document)
+        private static Dictionary<string, ProjectConfigurationDefinition> ReadConfigurations(XDocument document)
         {
             List<string> configurations = document.Descendants()
                 .Where(element => string.Equals(element.Name.LocalName, "Configurations", StringComparison.OrdinalIgnoreCase))

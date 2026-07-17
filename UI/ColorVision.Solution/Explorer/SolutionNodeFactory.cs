@@ -390,7 +390,7 @@ namespace ColorVision.Solution.Explorer
         /// </summary>
         public static bool IsInternalFile(string fileName)
         {
-            if (fileName.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase)) return true;
+            if (SolutionManager.IsSolutionFilePath(fileName)) return true;
             if (ProjectProviderRegistry.IsSupportedProjectFilePath(fileName)) return true;
             if (fileName.EndsWith(".cvsln.cache.db", StringComparison.OrdinalIgnoreCase)) return true;
             if (fileName.EndsWith(".cvsln.bak", StringComparison.OrdinalIgnoreCase)) return true;

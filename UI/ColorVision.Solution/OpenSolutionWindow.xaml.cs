@@ -113,11 +113,12 @@ namespace ColorVision.Solution
 
         private void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
         {
+            string solutionPatterns = SolutionManager.GetSolutionFileDialogPattern();
             string projectPatterns = Explorer.ProjectProviderRegistry.GetProjectFileDialogPattern();
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
                 CheckFileExists = true,
-                Filter = $"ColorVision 解决方案或项目 (*.cvsln;{projectPatterns})|*.cvsln;{projectPatterns}|解决方案 (*.cvsln)|*.cvsln|项目 ({projectPatterns})|{projectPatterns}",
+                Filter = $"支持的解决方案或项目 ({solutionPatterns};{projectPatterns})|{solutionPatterns};{projectPatterns}|解决方案 ({solutionPatterns})|{solutionPatterns}|项目 ({projectPatterns})|{projectPatterns}",
                 Multiselect = false,
                 RestoreDirectory = true,
             };

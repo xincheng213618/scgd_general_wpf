@@ -3621,6 +3621,140 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void VisualStudioSolutionFileProvider_LoadsSlnStructureAndConfigurationMappings()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(directoryPath, "src", "App");
+        string projectPath = Path.Combine(projectDirectory, "App.csproj");
+        string readmePath = Path.Combine(directoryPath, "README.md");
+        string solutionPath = Path.Combine(directoryPath, "Example.sln");
+        try
+        {
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(readmePath, "readme");
+            File.WriteAllText(solutionPath, """
+                Microsoft Visual Studio Solution File, Format Version 12.00
+                # Visual Studio Version 17
+                VisualStudioVersion = 17.0.31903.59
+                MinimumVisualStudioVersion = 10.0.40219.1
+                Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "src\App\App.csproj", "{11111111-1111-1111-1111-111111111111}"
+                EndProject
+                Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{22222222-2222-2222-2222-222222222222}"
+                    ProjectSection(SolutionItems) = preProject
+                        README.md = README.md
+                    EndProjectSection
+                EndProject
+                Global
+                    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                    EndGlobalSection
+                    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
+                    EndGlobalSection
+                    GlobalSection(NestedProjects) = preSolution
+                        {11111111-1111-1111-1111-111111111111} = {22222222-2222-2222-2222-222222222222}
+                    EndGlobalSection
+                EndGlobal
+                """);
+
+            var provider = new VisualStudioSolutionFileProvider();
+            SolutionFileDefinition definition = provider.Load(new FileInfo(solutionPath));
+            SolutionFileProject project = Assert.Single(definition.Projects);
+            SolutionFileFolder folder = Assert.Single(definition.Folders);
+
+            Assert.Equal(VisualStudioSolutionFileProvider.ProviderId, definition.ProviderId);
+            Assert.Equal("Example", definition.Name);
+            Assert.Equal(["Debug", "Release"], definition.Configurations);
+            Assert.Equal("src\\App\\App.csproj", project.Path);
+            Assert.Equal(folder.Path, project.SolutionFolderPath);
+            Assert.Equal("Release", project.Configurations["Release"]);
+            Assert.Equal("src", folder.Name);
+            Assert.Contains("README.md", folder.Files, StringComparer.OrdinalIgnoreCase);
+            Assert.True(SolutionFileProviderRegistry.TryLoadSolution(
+                new FileInfo(solutionPath),
+                out SolutionFileDefinition? registeredDefinition,
+                out string errorMessage),
+                errorMessage);
+            Assert.Equal(VisualStudioSolutionFileProvider.ProviderId, registeredDefinition?.ProviderId);
+            Assert.Equal(ResourceOpenKind.Solution, ResourceOpenService.Classify(solutionPath));
+            Assert.Contains("*.sln", SolutionFileProviderRegistry.GetSolutionFilePatterns(), StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ImportedSlnxSolution_UsesPrivateWorkspaceAndPreservesSourceFile()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(directoryPath, "src", "App");
+        string projectPath = Path.Combine(projectDirectory, "App.csproj");
+        string readmePath = Path.Combine(directoryPath, "README.md");
+        string solutionPath = Path.Combine(directoryPath, "Example.slnx");
+        string solutionContents = """
+            <Solution>
+              <Folder Name="/Solution Items/">
+                <File Path="README.md" />
+              </Folder>
+              <Folder Name="/src/">
+                <Project Path="src\App\App.csproj" />
+              </Folder>
+            </Solution>
+            """;
+        string? importedWorkspacePath = null;
+        try
+        {
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(readmePath, "readme");
+            File.WriteAllText(solutionPath, solutionContents);
+
+            Assert.True(SolutionManager.TryCreateImportedSolution(
+                new FileInfo(solutionPath),
+                out importedWorkspacePath,
+                out string displayName));
+
+            Assert.Equal("Example", displayName);
+            Assert.True(File.Exists(importedWorkspacePath));
+            Assert.False(importedWorkspacePath.StartsWith(
+                Path.TrimEndingDirectorySeparator(directoryPath) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(solutionContents, File.ReadAllText(solutionPath));
+
+            SolutionConfig config = SolutionConfigStore.Load(importedWorkspacePath).Config;
+            string projectReference = Assert.Single(config.Projects);
+            Assert.Equal(Path.Combine("src", "App", "App.csproj"), projectReference, ignoreCase: true);
+            Assert.Equal(SolutionProjectMode.Explicit, config.ProjectMode);
+            Assert.Equal(directoryPath, config.RootPath, ignoreCase: true);
+            SolutionFolderDefinition sourceFolder = Assert.Single(config.SolutionFolders, folder => folder.Name == "src");
+            Assert.Equal(sourceFolder.Id, config.ProjectSolutionFolders[projectReference]);
+            SolutionItemDefinition solutionItem = Assert.Single(config.SolutionItems);
+            Assert.Equal("README.md", solutionItem.Path, ignoreCase: true);
+            Assert.Equal(
+                VisualStudioSolutionFileProvider.ProviderId,
+                config.ExtensionData!["ImportedSolutionProvider"]!.Value<string>());
+            Assert.Equal(solutionPath, config.ExtensionData["ImportedSolutionSource"]!.Value<string>(), ignoreCase: true);
+            Assert.Contains("*.slnx", SolutionManager.GetSolutionFileDialogPattern(), StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(importedWorkspacePath))
+            {
+                File.Delete(importedWorkspacePath);
+                File.Delete($"{importedWorkspacePath}.bak");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionConfiguration_MapsAndListsProjectConfigurations()
     {
         string containerPath = CreateTemporaryDirectory();

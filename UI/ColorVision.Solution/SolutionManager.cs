@@ -22,6 +22,7 @@ namespace ColorVision.Solution
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SolutionManager));
         internal const string FolderWorkspaceFileName = ".ColorVision.cvsln";
+        private static readonly string[] NativeSolutionFilePatterns = ["*.cvsln"];
 
         private static SolutionManager _instance;
         private static readonly object _locker = new();
@@ -102,8 +103,21 @@ namespace ColorVision.Solution
 
         internal static bool IsSolutionFilePath(string? path)
         {
+            return IsNativeSolutionFilePath(path)
+                || SolutionFileProviderRegistry.IsSupportedSolutionFilePath(path);
+        }
+
+        internal static bool IsNativeSolutionFilePath(string? path)
+        {
             return !string.IsNullOrWhiteSpace(path)
                 && path.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static string GetSolutionFileDialogPattern()
+        {
+            return string.Join(';', NativeSolutionFilePatterns
+                .Concat(SolutionFileProviderRegistry.GetSolutionFilePatterns())
+                .Distinct(StringComparer.OrdinalIgnoreCase));
         }
 
         internal static bool IsProjectFilePath(string? path)
@@ -154,7 +168,7 @@ namespace ColorVision.Solution
 
         private static bool IsFolderWorkspaceFile(string? path)
         {
-            return IsSolutionFilePath(path)
+            return IsNativeSolutionFilePath(path)
                 && string.Equals(Path.GetFileName(path), FolderWorkspaceFileName, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -261,12 +275,23 @@ namespace ColorVision.Solution
                 return File.Exists(solutionPath);
             }
 
-            if (File.Exists(normalizedPath) && IsSolutionFilePath(normalizedPath))
+            if (File.Exists(normalizedPath) && IsNativeSolutionFilePath(normalizedPath))
             {
                 FileInfo fileInfo = new(normalizedPath);
                 solutionPath = fileInfo.FullName;
                 historyPath = fileInfo.FullName;
                 displayName = Path.GetFileNameWithoutExtension(fileInfo.Name);
+                return true;
+            }
+
+            if (File.Exists(normalizedPath)
+                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath)
+                && TryCreateImportedSolution(
+                    new FileInfo(normalizedPath),
+                    out solutionPath,
+                    out displayName))
+            {
+                historyPath = Path.GetFullPath(normalizedPath);
                 return true;
             }
 
@@ -331,6 +356,24 @@ namespace ColorVision.Solution
                 displayName = string.Empty;
                 return false;
             }
+        }
+
+        internal static bool TryCreateImportedSolution(
+            FileInfo sourceFile,
+            out string solutionPath,
+            out string displayName)
+        {
+            if (ImportedSolutionWorkspaceService.TryCreate(
+                sourceFile,
+                out solutionPath,
+                out displayName,
+                out string errorMessage))
+            {
+                return true;
+            }
+
+            log.Warn($"导入解决方案失败: {sourceFile.FullName}, {errorMessage}");
+            return false;
         }
 
         public static bool OpenFolderDialog()
