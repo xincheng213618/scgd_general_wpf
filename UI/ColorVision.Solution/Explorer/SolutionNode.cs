@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
+using System.IO;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
@@ -198,7 +199,6 @@ namespace ColorVision.Solution.Explorer
             AddProjectMembershipMenuItem();
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Cut, Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Ctrl+X" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Copy, Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Ctrl+C" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Paste, Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Ctrl+V" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
         }
 
@@ -272,9 +272,35 @@ namespace ColorVision.Solution.Explorer
 
         public virtual bool CanReName { get; set; }
         public virtual bool CanDelete { get; set; } = true;
-        public virtual bool CanAdd { get; set; } = true;
+        public virtual bool CanAdd
+        {
+            get => _canAddEnabled
+                && this is ISolutionContainerNode container
+                && container.SupportedContainerActions != SolutionContainerAction.None;
+            set
+            {
+                if (_canAddEnabled == value)
+                    return;
+                _canAddEnabled = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _canAddEnabled = true;
         public virtual bool CanCopy { get; set; } = true;
-        public virtual bool CanPaste { get; set; } = true;
+        public virtual bool CanPaste
+        {
+            get => _canPasteEnabled
+                && this is ISolutionPhysicalContainer container
+                && Directory.Exists(container.PhysicalContainerPath);
+            set
+            {
+                if (_canPasteEnabled == value)
+                    return;
+                _canPasteEnabled = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _canPasteEnabled = true;
         public virtual bool CanCut { get; set; } = true;
 
         public void MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -349,11 +375,9 @@ namespace ColorVision.Solution.Explorer
         public LazyLoadingNode()
         {
             Name1 = "Loading...";
-            CanAdd = false;
             CanCopy = false;
             CanCut = false;
             CanDelete = false;
-            CanPaste = false;
             CanReName = false;
         }
     }

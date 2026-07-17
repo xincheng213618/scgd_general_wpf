@@ -25,6 +25,12 @@ namespace ColorVision.Solution
             RegisterCommand(ApplicationCommands.Properties, ExecuteProperties, CanExecuteProperties);
             RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
             RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
+            RegisterCommand(SolutionContainerCommands.AddNewItem, ExecuteContainerAction, CanExecuteContainerAction);
+            RegisterCommand(SolutionContainerCommands.AddExistingItem, ExecuteContainerAction, CanExecuteContainerAction);
+            RegisterCommand(SolutionContainerCommands.CreateFolder, ExecuteContainerAction, CanExecuteContainerAction);
+            RegisterCommand(SolutionContainerCommands.AddNewProject, ExecuteContainerAction, CanExecuteContainerAction);
+            RegisterCommand(SolutionContainerCommands.AddExistingProject, ExecuteContainerAction, CanExecuteContainerAction);
+            RegisterCommand(SolutionContainerCommands.CreateSolutionFolder, ExecuteContainerAction, CanExecuteContainerAction);
             RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
             RegisterCommand(SolutionProjectCommands.BuildSolution, ExecuteBuildSolution, CanExecuteBuildSolution);
             RegisterCommand(SolutionProjectCommands.Run, ExecuteProjectCapability, CanExecuteProjectCapability);
@@ -126,6 +132,7 @@ namespace ColorVision.Solution
             else if (e.Command == ApplicationCommands.Paste)
             {
                 e.CanExecute = selectedNodes.Count == 1
+                    && selectedNodes[0] is ISolutionPhysicalContainer
                     && selectedNodes[0].CanPaste
                     && HasClipboardPaths();
             }
@@ -157,21 +164,41 @@ namespace ColorVision.Solution
                 if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectionService.CommandNodes.Count == 0)
                     return;
 
-                var targetNode = _selectionService.CommandNodes[0];
-                string targetDir = targetNode.FullPath;
-                if (targetNode is FileNode)
-                    targetDir = Path.GetDirectoryName(targetNode.FullPath) ?? targetDir;
-
-                if (string.IsNullOrEmpty(targetDir) || !Directory.Exists(targetDir))
+                SolutionNode targetNode = _selectionService.CommandNodes[0];
+                if (targetNode is not ISolutionPhysicalContainer physicalContainer
+                    || !targetNode.CanPaste)
                     return;
 
-                CopyOrMovePaths(sourcePaths, targetDir, isCut);
+                CopyOrMovePaths(sourcePaths, physicalContainer.PhysicalContainerPath, isCut);
 
                 if (isCut && isInternalClipboard)
                 {
                     Clipboard.Clear();
                     _isCutOperation = false;
                 }
+            }
+            e.Handled = true;
+        }
+
+        private void CanExecuteContainerAction(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = SolutionContainerCommands.TryGetAction(e.Command, out SolutionContainerAction action)
+                && _selectionService.CommandNodes is [SolutionNode node]
+                && node.CanAdd
+                && node is ISolutionContainerNode container
+                && container.Supports(action);
+            e.Handled = true;
+        }
+
+        private void ExecuteContainerAction(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (SolutionContainerCommands.TryGetAction(e.Command, out SolutionContainerAction action)
+                && _selectionService.CommandNodes is [SolutionNode node]
+                && node.CanAdd
+                && node is ISolutionContainerNode container
+                && container.Supports(action))
+            {
+                container.ExecuteContainerAction(action);
             }
             e.Handled = true;
         }

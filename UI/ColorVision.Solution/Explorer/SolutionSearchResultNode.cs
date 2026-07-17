@@ -72,13 +72,22 @@ namespace ColorVision.Solution.Explorer
             _ownsTarget = ownsTarget;
             FullPath = targetNode.FullPath;
             Icon = targetNode.Icon;
-            CanAdd = targetNode.CanAdd;
             CanCopy = targetNode.CanCopy;
             CanCut = targetNode.CanCut;
             CanDelete = targetNode.CanDelete;
-            CanPaste = targetNode.CanPaste;
             CanReName = targetNode.CanReName;
             Initialize();
+        }
+
+        public override bool CanAdd
+        {
+            get => TargetNode.CanAdd;
+            set => TargetNode.CanAdd = value;
+        }
+        public override bool CanPaste
+        {
+            get => TargetNode.CanPaste;
+            set => TargetNode.CanPaste = value;
         }
 
         public override void Open()

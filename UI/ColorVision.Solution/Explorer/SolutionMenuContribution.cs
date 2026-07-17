@@ -368,6 +368,132 @@ namespace ColorVision.Solution.Explorer
         }
     }
 
+    [SolutionMenuContribution(priority: 240)]
+    public sealed class ContainerMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.container-actions";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode.CanAdd
+                && context.PrimaryNode is ISolutionContainerNode container
+                && container.SupportedContainerActions != SolutionContainerAction.None;
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            var container = (ISolutionContainerNode)context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>
+            {
+                new()
+                {
+                    GuidId = SolutionContainerCommands.AddMenuId,
+                    Order = 10,
+                    Header = ColorVision.Solution.Properties.Resources.MenuAdd,
+                },
+            };
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.AddNewItem,
+                SolutionContainerCommands.AddNewItemId,
+                1,
+                "新建项(_N)...",
+                SolutionContainerCommands.AddNewItem);
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.AddExistingItem,
+                SolutionContainerCommands.AddExistingItemId,
+                2,
+                "现有项(_E)...",
+                SolutionContainerCommands.AddExistingItem);
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.CreateFolder,
+                SolutionContainerCommands.CreateFolderId,
+                10,
+                ColorVision.Solution.Properties.Resources.AddFolder,
+                SolutionContainerCommands.CreateFolder);
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.AddNewProject,
+                SolutionContainerCommands.AddNewProjectId,
+                15,
+                "新建项目(_P)...",
+                SolutionContainerCommands.AddNewProject);
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.AddExistingProject,
+                SolutionContainerCommands.AddExistingProjectId,
+                20,
+                "现有项目(_E)...",
+                SolutionContainerCommands.AddExistingProject);
+            AddAction(
+                menuItems,
+                container,
+                SolutionContainerAction.CreateSolutionFolder,
+                SolutionContainerCommands.CreateSolutionFolderId,
+                25,
+                "新建解决方案文件夹(_F)",
+                SolutionContainerCommands.CreateSolutionFolder);
+            return menuItems;
+        }
+
+        private static void AddAction(
+            List<MenuItemMetadata> menuItems,
+            ISolutionContainerNode container,
+            SolutionContainerAction action,
+            string id,
+            int order,
+            string header,
+            ICommand command)
+        {
+            if (!container.Supports(action))
+                return;
+            menuItems.Add(new MenuItemMetadata
+            {
+                OwnerGuid = SolutionContainerCommands.AddMenuId,
+                GuidId = id,
+                Order = order,
+                Header = header,
+                Command = command,
+            });
+        }
+    }
+
+    [SolutionMenuContribution(priority: 200)]
+    public sealed class PhysicalPasteMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.physical-paste";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode.CanPaste;
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Paste,
+                    Order = 102,
+                    Command = ApplicationCommands.Paste,
+                    Header = ColorVision.UI.Properties.Resources.MenuPaste,
+                    Icon = MenuItemIcon.TryFindResource("DIPaste"),
+                    InputGestureText = "Ctrl+V",
+                },
+            ];
+        }
+    }
+
     [SolutionMenuContribution(priority: 100)]
     public sealed class CopyFullPathMenuContribution : ISolutionMenuContribution
     {

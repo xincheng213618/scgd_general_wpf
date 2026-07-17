@@ -567,11 +567,9 @@ namespace ColorVision.Solution.Explorer
             ResolvedPath = resolvedPath;
             FullPath = GetNodeIdentityPath(resolvedPath);
             Name1 = $"{GetDisplayName(projectReference, resolvedPath)} (不可用)";
-            CanAdd = false;
             CanCopy = false;
             CanCut = false;
             CanDelete = true;
-            CanPaste = false;
             CanReName = false;
             Initialize();
             RemoveFromSolutionCommand = new RelayCommand(_ => _solutionExplorer.RemoveProjectReference(ProjectReference));

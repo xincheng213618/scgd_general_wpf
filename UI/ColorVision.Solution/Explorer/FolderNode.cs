@@ -14,19 +14,24 @@ using System.Windows.Media;
 
 namespace ColorVision.Solution.Explorer
 {
-    public class FolderNode : SolutionNode, IDisposable
+    public class FolderNode : SolutionNode, ISolutionContainerNode, ISolutionPhysicalContainer, IDisposable
     {
         internal override string? PhysicalDeletePath => DirectoryInfo.FullName;
         public override bool CanOpen => DirectoryInfo.Exists;
         public override bool CanRefresh => DirectoryInfo.Exists;
         public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => DirectoryInfo.FullName;
+        public string PhysicalContainerPath => DirectoryInfo.FullName;
+        public virtual SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
+            ? SolutionContainerAction.AddNewItem
+                | SolutionContainerAction.AddExistingItem
+                | SolutionContainerAction.CreateFolder
+            : SolutionContainerAction.None;
 
         public IFolderMeta FolderMeta { get; set; }
 
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
-        public RelayCommand AddDirCommand { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
@@ -238,7 +243,6 @@ namespace ColorVision.Solution.Explorer
         private void InitializeCommands()
         {
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            AddDirCommand = new RelayCommand(a => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
         }
@@ -253,11 +257,6 @@ namespace ColorVision.Solution.Explorer
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddExistingItem", Order = 2, Header = "现有项(_E)...", Command = new RelayCommand(_ => AddExistingItem()) });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 10, Header = "新建文件夹", Command = AddDirCommand });
-
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Fusion", Order = 50, Header = "景深融合(_F)", Command = new RelayCommand(_ => OpenFusionWithFolderImages()) });
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
@@ -494,6 +493,25 @@ namespace ColorVision.Solution.Explorer
             TryDelete(showConfirmation: true);
         }
 
+        public virtual void ExecuteContainerAction(SolutionContainerAction action)
+        {
+            if (!CanAdd || !this.Supports(action))
+                return;
+
+            switch (action)
+            {
+                case SolutionContainerAction.AddNewItem:
+                    ShowAddNewItemDialog();
+                    break;
+                case SolutionContainerAction.AddExistingItem:
+                    AddExistingItem();
+                    break;
+                case SolutionContainerAction.CreateFolder:
+                    SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName);
+                    break;
+            }
+        }
+
         internal override bool TryDelete(bool showConfirmation)
         {
             if (showConfirmation
@@ -528,14 +546,8 @@ namespace ColorVision.Solution.Explorer
         public override bool CanDelete { get => _CanDelete; set { _CanDelete = value; NotifyPropertyChanged(); } }
         private bool _CanDelete = true;
 
-        public override bool CanAdd { get => _CanAdd; set { _CanAdd = value; NotifyPropertyChanged(); } }
-        private bool _CanAdd = true;
-
         public override bool CanCopy { get => _CanCopy; set { _CanCopy = value; NotifyPropertyChanged(); } }
         private bool _CanCopy = true;
-
-        public override bool CanPaste { get => _CanPaste; set { _CanPaste = value; NotifyPropertyChanged(); } }
-        private bool _CanPaste = true;
 
         public override bool CanCut { get => _CanCut; set { _CanCut = value; NotifyPropertyChanged(); } }
         private bool _CanCut = true;

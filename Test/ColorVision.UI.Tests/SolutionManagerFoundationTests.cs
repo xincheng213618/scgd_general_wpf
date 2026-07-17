@@ -523,6 +523,125 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ContainerCommands_AreContributedFromExplicitContainerCapabilities()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string folderPath = Path.Combine(solutionDirectory, "Folder");
+        string filePath = Path.Combine(solutionDirectory, "sample.txt");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        Directory.CreateDirectory(folderPath);
+        File.WriteAllText(filePath, "sample");
+        ProjectDefinition project = CreateBuildProject(solutionDirectory, "Project");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig { RootPath = "." });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            using FolderNode folderNode = SolutionNodeFactory.CreateFolderNode(
+                new DirectoryInfo(folderPath),
+                explorer);
+            using ProjectNode projectNode = SolutionNodeFactory.CreateProjectNode(project, explorer);
+            FileNode fileNode = SolutionNodeFactory.CreateFileNode(new FileInfo(filePath));
+            var solutionFolderNode = new SolutionFolderNode(
+                explorer,
+                new SolutionFolderDefinition { Name = "Logical" });
+
+            List<MenuItemMetadata> rootMenu = SolutionContextMenuService.CreateMenuMetadata([explorer]);
+            List<MenuItemMetadata> folderMenu = SolutionContextMenuService.CreateMenuMetadata([folderNode]);
+            List<MenuItemMetadata> fileMenu = SolutionContextMenuService.CreateMenuMetadata([fileNode]);
+            List<MenuItemMetadata> projectMenu = SolutionContextMenuService.CreateMenuMetadata([projectNode]);
+            List<MenuItemMetadata> solutionFolderMenu =
+                SolutionContextMenuService.CreateMenuMetadata([solutionFolderNode]);
+
+            Assert.True(explorer.CanAdd);
+            Assert.True(folderNode.CanAdd);
+            Assert.True(projectNode.CanAdd);
+            Assert.True(solutionFolderNode.CanAdd);
+            Assert.False(fileNode.CanAdd);
+            Assert.False(new SolutionNode().CanAdd);
+
+            Assert.True(explorer.CanPaste);
+            Assert.True(folderNode.CanPaste);
+            Assert.True(projectNode.CanPaste);
+            Assert.False(fileNode.CanPaste);
+            Assert.False(solutionFolderNode.CanPaste);
+            Assert.False(new SolutionNode().CanPaste);
+            Assert.Equal(
+                solutionDirectory,
+                Assert.IsAssignableFrom<ISolutionPhysicalContainer>(explorer).PhysicalContainerPath,
+                ignoreCase: true);
+            Assert.Equal(
+                folderPath,
+                Assert.IsAssignableFrom<ISolutionPhysicalContainer>(folderNode).PhysicalContainerPath,
+                ignoreCase: true);
+            Assert.Equal(
+                project.ProjectDirectory.FullName,
+                Assert.IsAssignableFrom<ISolutionPhysicalContainer>(projectNode).PhysicalContainerPath,
+                ignoreCase: true);
+
+            Assert.Same(
+                ApplicationCommands.Paste,
+                Assert.Single(rootMenu, item => item.GuidId == SolutionCommandIds.Paste).Command);
+            Assert.Same(
+                ApplicationCommands.Paste,
+                Assert.Single(folderMenu, item => item.GuidId == SolutionCommandIds.Paste).Command);
+            Assert.Same(
+                ApplicationCommands.Paste,
+                Assert.Single(projectMenu, item => item.GuidId == SolutionCommandIds.Paste).Command);
+            Assert.DoesNotContain(fileMenu, item => item.GuidId == SolutionCommandIds.Paste);
+            Assert.DoesNotContain(solutionFolderMenu, item => item.GuidId == SolutionCommandIds.Paste);
+
+            Assert.Same(
+                SolutionContainerCommands.AddNewItem,
+                Assert.Single(folderMenu, item =>
+                    item.GuidId == SolutionContainerCommands.AddNewItemId).Command);
+            Assert.Same(
+                SolutionContainerCommands.AddExistingItem,
+                Assert.Single(folderMenu, item =>
+                    item.GuidId == SolutionContainerCommands.AddExistingItemId).Command);
+            Assert.Same(
+                SolutionContainerCommands.CreateFolder,
+                Assert.Single(folderMenu, item =>
+                    item.GuidId == SolutionContainerCommands.CreateFolderId).Command);
+            Assert.DoesNotContain(folderMenu, item =>
+                item.GuidId == SolutionContainerCommands.AddNewProjectId);
+            Assert.Same(
+                SolutionContainerCommands.AddNewItem,
+                Assert.Single(projectMenu, item =>
+                    item.GuidId == SolutionContainerCommands.AddNewItemId).Command);
+            Assert.DoesNotContain(projectMenu, item =>
+                item.GuidId == SolutionContainerCommands.AddNewProjectId);
+            Assert.DoesNotContain(solutionFolderMenu, item =>
+                item.GuidId == SolutionContainerCommands.CreateFolderId);
+            Assert.Same(
+                SolutionContainerCommands.CreateSolutionFolder,
+                Assert.Single(solutionFolderMenu, item =>
+                    item.GuidId == SolutionContainerCommands.CreateSolutionFolderId).Command);
+            Assert.Same(
+                SolutionContainerCommands.AddNewProject,
+                Assert.Single(rootMenu, item =>
+                    item.GuidId == SolutionContainerCommands.AddNewProjectId).Command);
+            Assert.Same(
+                SolutionContainerCommands.AddExistingProject,
+                Assert.Single(rootMenu, item =>
+                    item.GuidId == SolutionContainerCommands.AddExistingProjectId).Command);
+
+            folderNode.CanAdd = false;
+            folderNode.CanPaste = false;
+            List<MenuItemMetadata> disabledFolderMenu =
+                SolutionContextMenuService.CreateMenuMetadata([folderNode]);
+            Assert.DoesNotContain(disabledFolderMenu, item =>
+                item.GuidId == SolutionContainerCommands.AddMenuId);
+            Assert.DoesNotContain(disabledFolderMenu, item =>
+                item.GuidId == SolutionCommandIds.Paste);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionCache_AddDirectoryTreeIndexesExistingDescendants()
     {
         string rootPath = CreateTemporaryDirectory();

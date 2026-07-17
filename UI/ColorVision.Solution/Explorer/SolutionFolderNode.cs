@@ -11,7 +11,7 @@ namespace ColorVision.Solution.Explorer
     /// A virtual solution folder. It organizes projects and other solution
     /// folders but never maps to, renames, or deletes a physical directory.
     /// </summary>
-    public sealed class SolutionFolderNode : SolutionNode
+    public sealed class SolutionFolderNode : SolutionNode, ISolutionContainerNode
     {
         private readonly SolutionExplorer _solutionExplorer;
 
@@ -19,11 +19,12 @@ namespace ColorVision.Solution.Explorer
         public string FolderId => Definition.Id;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
-        public RelayCommand AddSolutionFolderCommand { get; }
-        public RelayCommand AddExistingItemCommand { get; }
-        public RelayCommand AddNewItemCommand { get; }
-        public RelayCommand AddExistingProjectCommand { get; }
-        public RelayCommand AddNewProjectCommand { get; }
+        public SolutionContainerAction SupportedContainerActions =>
+            SolutionContainerAction.AddNewItem
+            | SolutionContainerAction.AddExistingItem
+            | SolutionContainerAction.AddNewProject
+            | SolutionContainerAction.AddExistingProject
+            | SolutionContainerAction.CreateSolutionFolder;
 
         public SolutionFolderNode(
             SolutionExplorer solutionExplorer,
@@ -39,73 +40,13 @@ namespace ColorVision.Solution.Explorer
             Icon = FileIcon.GetDirectoryIconImageSource();
             CanCopy = false;
             CanCut = false;
-            CanPaste = false;
             CanReName = true;
             Initialize();
-
-            AddSolutionFolderCommand = new RelayCommand(
-                _ => _solutionExplorer.CreateSolutionFolder(FolderId));
-            AddExistingItemCommand = new RelayCommand(
-                _ => _solutionExplorer.AddExistingItem(FolderId));
-            AddNewItemCommand = new RelayCommand(
-                _ => _solutionExplorer.ShowAddNewItemDialog(FolderId));
-            AddExistingProjectCommand = new RelayCommand(
-                _ => _solutionExplorer.AddExistingProject(FolderId));
-            AddNewProjectCommand = new RelayCommand(
-                _ => _solutionExplorer.ShowAddNewProjectDialog(FolderId));
         }
 
         public override void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            const string addMenuId = "AddToSolutionFolder";
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = addMenuId,
-                Order = 10,
-                Header = "添加(_D)",
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = addMenuId,
-                GuidId = "AddNestedSolutionFolder",
-                Order = 1,
-                Header = "新建解决方案文件夹(_F)",
-                Command = AddSolutionFolderCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = addMenuId,
-                GuidId = "AddNewItemToSolutionFolder",
-                Order = 5,
-                Header = "新建项(_N)...",
-                Command = AddNewItemCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = addMenuId,
-                GuidId = "AddExistingItemToSolutionFolder",
-                Order = 6,
-                Header = "现有项(_E)...",
-                Command = AddExistingItemCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = addMenuId,
-                GuidId = "AddNewProjectToSolutionFolder",
-                Order = 10,
-                Header = "新建项目(_P)...",
-                Command = AddNewProjectCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = addMenuId,
-                GuidId = "AddExistingProjectToSolutionFolder",
-                Order = 11,
-                Header = "现有项目(_E)...",
-                Command = AddExistingProjectCommand,
-            });
-
             IReadOnlyList<(string? Id, string DisplayName)> moveOptions =
                 _solutionExplorer.GetSolutionFolderMoveOptions(FolderId);
             if (moveOptions.Count > 1)
@@ -152,6 +93,31 @@ namespace ColorVision.Solution.Explorer
 
             Definition.Name = name.Trim();
             return true;
+        }
+
+        public void ExecuteContainerAction(SolutionContainerAction action)
+        {
+            if (!CanAdd || !this.Supports(action))
+                return;
+
+            switch (action)
+            {
+                case SolutionContainerAction.AddNewItem:
+                    _solutionExplorer.ShowAddNewItemDialog(FolderId);
+                    break;
+                case SolutionContainerAction.AddExistingItem:
+                    _solutionExplorer.AddExistingItem(FolderId);
+                    break;
+                case SolutionContainerAction.AddNewProject:
+                    _solutionExplorer.ShowAddNewProjectDialog(FolderId);
+                    break;
+                case SolutionContainerAction.AddExistingProject:
+                    _solutionExplorer.AddExistingProject(FolderId);
+                    break;
+                case SolutionContainerAction.CreateSolutionFolder:
+                    _solutionExplorer.CreateSolutionFolder(FolderId);
+                    break;
+            }
         }
 
         internal void UpdateDefinition(SolutionFolderDefinition definition)

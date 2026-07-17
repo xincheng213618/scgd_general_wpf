@@ -104,14 +104,13 @@ namespace ColorVision.Solution.Explorer
     /// <summary>
     /// 解决方案资源管理器，管理目录、配置、命令及事件
     /// </summary>
-    public class SolutionExplorer : SolutionNode, IDisposable
+    public class SolutionExplorer : SolutionNode, ISolutionContainerNode, ISolutionPhysicalContainer, IDisposable
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
         public DirectoryInfo DirectoryInfo { get; private set; }
         public RelayCommand OpenFileInExplorerCommand { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand EditCommand { get; }
-        public RelayCommand AddDirCommand { get; }
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
         private FileSystemWatcher _fileSystemWatcher;
@@ -140,6 +139,15 @@ namespace ColorVision.Solution.Explorer
         public override bool CanRefresh => true;
         public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => ConfigFileInfo.FullName;
+        public string PhysicalContainerPath => DirectoryInfo.FullName;
+        public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
+            ? SolutionContainerAction.AddNewItem
+                | SolutionContainerAction.AddExistingItem
+                | SolutionContainerAction.CreateFolder
+                | SolutionContainerAction.AddNewProject
+                | SolutionContainerAction.AddExistingProject
+                | SolutionContainerAction.CreateSolutionFolder
+            : SolutionContainerAction.None;
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
         public string ActiveConfiguration => Config.ActiveConfiguration;
@@ -159,7 +167,6 @@ namespace ColorVision.Solution.Explorer
 
             CopyFullPathCommand = new RelayCommand(_ => Common.Clipboard.SetText(FullPath), _ => DirectoryInfo.Exists);
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
-            AddDirCommand = new RelayCommand(_ => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             SaveCommand = new RelayCommand(_ => SaveConfigWithUserFeedback());
             EditCommand = new RelayCommand(_ =>
             {
@@ -716,61 +723,6 @@ namespace ColorVision.Solution.Explorer
 
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
-                GuidId = "Add",
-                Order = 10,
-                Header = Resources.MenuAdd
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddNewItem",
-                Order = 1,
-                Header = "新建项(_N)...",
-                Command = new RelayCommand(_ => ShowAddNewItemDialog())
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddExistingItem",
-                Order = 2,
-                Header = "现有项(_E)...",
-                Command = new RelayCommand(_ => AddExistingItem())
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddFolder",
-                Order = 10,
-                Header = ColorVision.Solution.Properties.Resources.AddFolder,
-                Command = AddDirCommand
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddNewProject",
-                Order = 15,
-                Header = "新建项目(_P)...",
-                Command = new RelayCommand(_ => ShowAddNewProjectDialog())
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddExistingProject",
-                Order = 20,
-                Header = "现有项目(_E)...",
-                Command = new RelayCommand(_ => AddExistingProject())
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                OwnerGuid = "Add",
-                GuidId = "AddSolutionFolder",
-                Order = 25,
-                Header = "新建解决方案文件夹(_F)",
-                Command = new RelayCommand(_ => CreateSolutionFolder())
-            });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
                 GuidId = "MenuOpenFileInExplorer",
                 Order = 200,
                 Command = OpenFileInExplorerCommand,
@@ -888,6 +840,34 @@ namespace ColorVision.Solution.Explorer
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                 }
+            }
+        }
+
+        public void ExecuteContainerAction(SolutionContainerAction action)
+        {
+            if (!CanAdd || !this.Supports(action))
+                return;
+
+            switch (action)
+            {
+                case SolutionContainerAction.AddNewItem:
+                    ShowAddNewItemDialog();
+                    break;
+                case SolutionContainerAction.AddExistingItem:
+                    AddExistingItem();
+                    break;
+                case SolutionContainerAction.CreateFolder:
+                    SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName);
+                    break;
+                case SolutionContainerAction.AddNewProject:
+                    ShowAddNewProjectDialog();
+                    break;
+                case SolutionContainerAction.AddExistingProject:
+                    AddExistingProject();
+                    break;
+                case SolutionContainerAction.CreateSolutionFolder:
+                    CreateSolutionFolder();
+                    break;
             }
         }
 
