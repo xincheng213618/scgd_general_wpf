@@ -13,17 +13,27 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ColorVision.Solution.Workspace;
 
 namespace ColorVision.Solution.Editor.AvalonEditor
 {
     /// <summary>
     /// AvalonEditControll.xaml 的交互逻辑
     /// </summary>
-    public partial class AvalonEditControll : UserControl,IDisposable
+    public partial class AvalonEditControll : UserControl, IDisposable, IEditorDocumentContent, IResourcePathAwareDocumentContent, IReloadableEditorDocumentContent
     {
+        private DispatcherTimer? _foldingUpdateTimer;
+        private bool _isDirty;
+        private bool _disposed;
+
+        public bool IsDirty => _isDirty;
+        public bool CanSave => !string.IsNullOrWhiteSpace(currentFileName);
+        public event EventHandler? DocumentStateChanged;
+
         public AvalonEditControll()
         {
             InitializeComponent();
+            textEditor.TextChanged += TextEditor_TextChanged;
         }
         public AvalonEditControll(string currentFileName)
         {
@@ -37,37 +47,14 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
             SearchPanel.Install(textEditor);
 
-            DispatcherTimer foldingUpdateTimer = new DispatcherTimer();
-            foldingUpdateTimer.Interval = TimeSpan.FromSeconds(2);
-            foldingUpdateTimer.Tick += delegate { UpdateFoldings(); };
-            foldingUpdateTimer.Start();
+            _foldingUpdateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _foldingUpdateTimer.Tick += FoldingUpdateTimer_Tick;
+            _foldingUpdateTimer.Start();
 
             this.currentFileName = currentFileName;
 
-            if (File.Exists(currentFileName))
-            {
-                string text = File.ReadAllText(currentFileName);
-
-                if (text.Length < 10000)
-                {
-                    try
-                    {
-                        var parsedJson = JToken.Parse(text);
-                        textEditor.Text = parsedJson.ToString(Formatting.Indented);
-                    }
-                    catch (JsonReaderException)
-                    {
-                        textEditor.Text = text;
-
-                    }
-                }
-                else
-                {
-                    textEditor.Text = text;
-                }
-                textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName)) ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
-                textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
-            }
+            ReloadFromDisk();
+            textEditor.TextChanged += TextEditor_TextChanged;
         }
 
 
@@ -93,6 +80,8 @@ namespace ColorVision.Solution.Editor.AvalonEditor
                 textEditor.Text = Text;
             }
             textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension("Json");
+            textEditor.Document.UndoStack.MarkAsOriginalFile();
+            SetDirty(false);
         }
         public string GetJsonText()
         {
@@ -131,28 +120,60 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             dlg.CheckFileExists = true;
             if (dlg.ShowDialog() ?? false)
             {
-                currentFileName = dlg.FileName;
-                textEditor.Load(currentFileName);
-                textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName));
+                EditorManager.Instance.TryOpenFile(dlg.FileName);
             }
         }
 
-        void saveFileClick(object sender, EventArgs e)
+        public bool Save()
         {
-            if (currentFileName == null)
+            if (!CanSave)
+                return false;
+
+            textEditor.Save(currentFileName);
+            textEditor.Document.UndoStack.MarkAsOriginalFile();
+            SetDirty(false);
+            return true;
+        }
+
+        public bool TryUpdateResourcePath(string resourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(resourcePath) || !File.Exists(resourcePath))
+                return false;
+
+            currentFileName = Path.GetFullPath(resourcePath);
+            textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName))
+                ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
+            return true;
+        }
+
+        public bool ReloadFromDisk()
+        {
+            if (!File.Exists(currentFileName))
+                return false;
+
+            string text = File.ReadAllText(currentFileName);
+            if (text.Length < 10000)
             {
-                SaveFileDialog dlg = new SaveFileDialog();
-                dlg.DefaultExt = ".txt";
-                if (dlg.ShowDialog() ?? false)
+                try
                 {
-                    currentFileName = dlg.FileName;
+                    textEditor.Text = JToken.Parse(text).ToString(Formatting.Indented);
                 }
-                else
+                catch (JsonReaderException)
                 {
-                    return;
+                    textEditor.Text = text;
                 }
             }
-            textEditor.Save(currentFileName);
+            else
+            {
+                textEditor.Text = text;
+            }
+
+            textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName))
+                ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            textEditor.Document.UndoStack.MarkAsOriginalFile();
+            SetDirty(false);
+            return true;
         }
 
 
@@ -253,16 +274,35 @@ namespace ColorVision.Solution.Editor.AvalonEditor
 
         public void Dispose()
         {
+            if (_disposed)
+                return;
+            _disposed = true;
+
+            _foldingUpdateTimer?.Stop();
+            if (_foldingUpdateTimer != null)
+                _foldingUpdateTimer.Tick -= FoldingUpdateTimer_Tick;
+            _foldingUpdateTimer = null;
+            completionWindow?.Close();
+            completionWindow = null;
+            textEditor.TextChanged -= TextEditor_TextChanged;
+            textEditor.TextArea.TextEntering -= textEditor_TextArea_TextEntering;
+            textEditor.TextArea.TextEntered -= textEditor_TextArea_TextEntered;
+            textEditor.TextArea.Caret.PositionChanged -= Caret_PositionChanged;
+            if (foldingManager != null)
+            {
+                FoldingManager.Uninstall(foldingManager);
+                foldingManager = null;
+            }
             textEditor.Clear();
             textEditor.Document = null;
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            DocumentStateChanged = null;
             GC.SuppressFinalize(this);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            textEditor.Save(currentFileName);
+            if (!Save())
+                return;
 
             // 1. 查找 Python 路径（Windows 下）
             string pythonPath = GetPythonPath();
@@ -287,6 +327,24 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             };
 
             Process.Start(psi); // 直接启动，不需要捕获输出
+        }
+
+        private void TextEditor_TextChanged(object? sender, EventArgs e)
+        {
+            SetDirty(!textEditor.Document.UndoStack.IsOriginalFile);
+        }
+
+        private void FoldingUpdateTimer_Tick(object? sender, EventArgs e)
+        {
+            UpdateFoldings();
+        }
+
+        private void SetDirty(bool value)
+        {
+            if (_isDirty == value)
+                return;
+            _isDirty = value;
+            DocumentStateChanged?.Invoke(this, EventArgs.Empty);
         }
 
         // 自动查找 Python 路径

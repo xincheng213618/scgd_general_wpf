@@ -8,43 +8,15 @@ using System.Windows.Data;
 namespace ColorVision.Solution.Workspace
 {
 
-    [FolderEditor("SolutionEditor")]
     public class SolutionEditor : EditorBase
     {
         public override void Open(string filePath)
         {
-            string GuidId = Tool.GetMD5(filePath);
-            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
-
-            if (existingDocument != null)
-            {
-                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
-                {
-                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
-                }
-                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
-                {
-                    var window = Window.GetWindow(layoutFloatingWindow);
-                    if (window != null)
-                    {
-                        window.Activate();
-                    }
-                }
-            }
-            else
-            {
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Properties.Resources.Sol_Workspace_Home };
-                layoutDocument.Content = new SoloutionEditorControl();
-                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
-                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
-                layoutDocument.IsActiveChanged += (s, e) =>
-                {
-                    if (layoutDocument.IsActive)
-                    {
-                        WorkspaceManager.OnContentIdSelected(filePath);
-                    }
-                };
-            }
+            EditorDocumentService.Open(
+                filePath,
+                GetType(),
+                Properties.Resources.Sol_Workspace_Home,
+                () => new SoloutionEditorControl());
         }
     }
 

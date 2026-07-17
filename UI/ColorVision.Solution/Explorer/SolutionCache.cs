@@ -1,4 +1,5 @@
 using log4net;
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
 
@@ -37,15 +38,17 @@ namespace ColorVision.Solution.Explorer
 
         private readonly SqlSugarClient _db;
         private readonly string _dbPath;
+        private readonly string _connectionString;
         private readonly object _lock = new();
         private bool _disposed;
 
         public SolutionCache(string solutionFilePath)
         {
             _dbPath = solutionFilePath + ".cache.db";
+            _connectionString = $"Data Source={_dbPath}";
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={_dbPath}",
+                ConnectionString = _connectionString,
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -351,6 +354,8 @@ namespace ColorVision.Solution.Explorer
                 lock (_lock)
                 {
                     _db?.Dispose();
+                    using var poolKey = new SqliteConnection(_connectionString);
+                    SqliteConnection.ClearPool(poolKey);
                 }
             }
             GC.SuppressFinalize(this);

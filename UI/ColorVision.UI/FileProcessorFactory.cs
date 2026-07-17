@@ -44,13 +44,10 @@ namespace ColorVision.UI
                 {
                     return;
                 }
-                IFileProcessor fileProcessor = FileProcessorFactory.GetInstance().GetFileProcessor(selectedFilePath);
-                if (fileProcessor == null)
+                if (!FileProcessorFactory.GetInstance().HandleFile(selectedFilePath))
                 {
                     MessageBox.Show(Properties.Resources.UnsupportedFileFormat);
-                    return;
                 }
-                fileProcessor.Process(selectedFilePath);
             }
         }
     }
@@ -62,6 +59,12 @@ namespace ColorVision.UI
 
         private readonly Dictionary<string, List<Type>> _extTypeMap = new();
         private Type? _genericType;
+
+        /// <summary>
+        /// Optional workspace-aware handler installed by the solution module.
+        /// The legacy processor path remains available for standalone file mode.
+        /// </summary>
+        public Func<string, bool>? WorkspaceOpenHandler { get; set; }
 
         private FileProcessorFactory()
         {
@@ -126,6 +129,9 @@ namespace ColorVision.UI
         public bool HandleFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
+            if (WorkspaceOpenHandler?.Invoke(filePath) == true)
+                return true;
+
             var processor = GetFileProcessor(filePath);
             if (processor != null)
             {

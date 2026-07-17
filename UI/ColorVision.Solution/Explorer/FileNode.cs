@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.IO;
@@ -44,16 +45,17 @@ namespace ColorVision.Solution.Explorer
         public void OpenMethod()
         {
             var ext = Path.GetExtension(FullPath);
-            var types = EditorManager.Instance.GetEditorsForExt(ext);
+            var types = EditorManager.Instance.GetVisibleEditorsForExt(ext);
             var current = EditorManager.Instance.GetDefaultEditorType(ext);
 
             if (types.Count == 0) return;
 
-            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            if (window.ShowDialog() == true)
+            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (window.ShowDialog() == true && window.SelectedEditorType is { } selectedType)
             {
-                var selectedType = window.SelectedEditorType;
-                EditorManager.Instance.SetDefaultEditor(ext, selectedType);
+                if (window.AlwaysUseSelectedEditor)
+                    EditorManager.Instance.SetDefaultEditor(ext, selectedType);
+                EditorManager.Instance.OpenFileWith(FullPath, selectedType);
             }
         }
 
@@ -122,12 +124,30 @@ namespace ColorVision.Solution.Explorer
 
         public override void Open()
         {
-            var editor = EditorManager.Instance.OpenFile(FullPath);
-            editor?.Open(FullPath);
+            EditorManager.Instance.TryOpenFile(FullPath);
         }
 
         public override void Delete()
         {
+            TryDelete(showConfirmation: true);
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (showConfirmation
+                && MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"确定将“{Name}”移到回收站吗？",
+                    "ColorVision",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning) != MessageBoxResult.OK)
+            {
+                return false;
+            }
+
+            if (!EditorDocumentService.TryCloseDocumentsForResources([FileInfo.FullName]))
+                return false;
+
             try
             {
                 LogOperation($"开始删除文件到回收站: {FileInfo.FullName}");
@@ -135,31 +155,36 @@ namespace ColorVision.Solution.Explorer
                 if (result != 0)
                 {
                     ShowUserError($"删除文件失败，Shell 返回代码: {result}");
-                    return;
+                    return false;
                 }
                 LogOperation($"成功删除文件到回收站: {FileInfo.FullName}");
-                base.Delete();
+                base.TryDelete(showConfirmation: false);
+                return true;
             }
             catch (UnauthorizedAccessException ex)
             {
                 LogError($"删除文件失败 - 权限不足: {ex.Message}", ex);
                 ShowUserError("权限不足，无法删除文件");
+                return false;
             }
             catch (FileNotFoundException ex)
             {
                 LogError($"删除文件失败 - 文件未找到: {ex.Message}", ex);
                 ShowUserError("文件不存在，可能已被删除");
-                base.Delete();
+                base.TryDelete(showConfirmation: false);
+                return true;
             }
             catch (IOException ex)
             {
                 LogError($"删除文件失败 - IO错误: {ex.Message}", ex);
                 ShowUserError($"删除文件失败: {ex.Message}");
+                return false;
             }
             catch (Exception ex)
             {
                 LogError($"删除文件失败 - 未知错误: {ex.Message}", ex);
                 ShowUserError($"删除失败: {ex.Message}");
+                return false;
             }
         }
 
@@ -191,7 +216,11 @@ namespace ColorVision.Solution.Explorer
                         return false;
                     }
 
+                    if (!EditorDocumentService.TryPrepareResourceRename(originalPath))
+                        return false;
+
                     File.Move(FileInfo.FullName, destinationFilePath);
+                    EditorDocumentService.NotifyResourceRenamed(originalPath, destinationFilePath);
                     FileInfo = new FileInfo(destinationFilePath);
                     FullPath = destinationFilePath;
 

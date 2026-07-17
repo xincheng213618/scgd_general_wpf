@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.RecentFile;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;
@@ -112,11 +113,12 @@ namespace ColorVision.Solution
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
-            openFileDialog.Filter = "ColorVision Solution (*.cvsln)|*.cvsln";
+            string projectPatterns = Explorer.ProjectProviderRegistry.GetProjectFileDialogPattern();
+            openFileDialog.Filter = $"ColorVision 解决方案或项目 (*.cvsln;{projectPatterns})|*.cvsln;{projectPatterns}|解决方案 (*.cvsln)|*.cvsln|项目 ({projectPatterns})|{projectPatterns}";
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                SolutionManager.GetInstance().OpenSolution(openFileDialog.FileName);
-                Close();
+                if (ResourceOpenService.Instance.TryOpen(openFileDialog.FileName))
+                    Close();
             }
         }
 

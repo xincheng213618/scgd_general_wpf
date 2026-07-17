@@ -15,7 +15,7 @@ namespace ColorVision.Solution.Explorer
         public void CreateProject(string projectDir, string projectName)
         {
             string cvprojPath = Path.Combine(projectDir, projectName + ".cvproj");
-            File.WriteAllText(cvprojPath, "{\n  \"Name\": \"" + projectName + "\",\n  \"Version\": \"1.0\"\n}\n");
+            FolderProjectProvider.CreateProjectFile(cvprojPath, projectName);
         }
     }
 
@@ -31,7 +31,21 @@ namespace ColorVision.Solution.Explorer
         public void CreateProject(string projectDir, string projectName)
         {
             string cvprojPath = Path.Combine(projectDir, projectName + ".cvproj");
-            File.WriteAllText(cvprojPath, "{\n  \"Name\": \"" + projectName + "\",\n  \"Version\": \"1.0\"\n}\n");
+            FolderProjectProvider.CreateProjectFile(
+                cvprojPath,
+                projectName,
+                configurations: new Dictionary<string, ProjectConfigurationDefinition>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Debug"] = new(new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        [ProjectCapabilityIds.Run] = new("python \"Scripts\\main.py\"", "."),
+                        [ProjectCapabilityIds.Debug] = new("python -m pdb \"Scripts\\main.py\"", "."),
+                    }),
+                    ["Release"] = new(new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        [ProjectCapabilityIds.Run] = new("python -O \"Scripts\\main.py\"", "."),
+                    }),
+                });
 
             string scriptsDir = Path.Combine(projectDir, "Scripts");
             Directory.CreateDirectory(scriptsDir);
@@ -60,7 +74,7 @@ namespace ColorVision.Solution.Explorer
         public void CreateProject(string projectDir, string projectName)
         {
             string cvprojPath = Path.Combine(projectDir, projectName + ".cvproj");
-            File.WriteAllText(cvprojPath, "{\n  \"Name\": \"" + projectName + "\",\n  \"Version\": \"1.0\"\n}\n");
+            FolderProjectProvider.CreateProjectFile(cvprojPath, projectName);
 
             Directory.CreateDirectory(Path.Combine(projectDir, "Data"));
             Directory.CreateDirectory(Path.Combine(projectDir, "Config"));

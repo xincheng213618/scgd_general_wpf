@@ -9,7 +9,7 @@
              xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
              d:DataContext="{d:DesignInstance local:SolutionManager}"
              mc:Ignorable="d" 
-             d:DesignWidth="300" d:DesignHeight="600"  Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded">
+             d:DesignWidth="300" d:DesignHeight="600" Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -104,6 +104,8 @@
                         <Setter Property="MinHeight" Value="19"/>
 
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                        <EventSetter Event="Expanded" Handler="TreeViewItem_ExpansionChanged"/>
+                        <EventSetter Event="Collapsed" Handler="TreeViewItem_ExpansionChanged"/>
                         <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
                         <Setter Property="Template">
                             <Setter.Value>
@@ -138,6 +140,11 @@
                                         <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
                                             <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
                                             <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SecondaryRegionBrush}" />
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
                                         </DataTrigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />

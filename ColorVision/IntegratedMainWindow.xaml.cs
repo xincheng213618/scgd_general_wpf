@@ -313,7 +313,15 @@ namespace ColorVision
             AllowDrop = true;
             Drop += MainWindow_Drop;
 
-            Closing += (_, _) => WorkspaceManager.LayoutManager?.SaveLayout();
+            Closing += (_, e) =>
+            {
+                if (!EditorDocumentService.TryCloseAllDocuments())
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                WorkspaceManager.LayoutManager?.SaveLayout();
+            };
         }
 
         private void HookAcquirePanelActivation()
@@ -423,11 +431,7 @@ namespace ColorVision
             if (string.IsNullOrWhiteSpace(firstFile))
                 return;
 
-            if (File.Exists(firstFile))
-            {
-                FileProcessorFactory.GetInstance().HandleFile(firstFile);
-                e.Handled = true;
-            }
+            e.Handled = ResourceOpenService.Instance.TryOpen(firstFile);
         }
 
         private void InitRightMenuItemPanel()

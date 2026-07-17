@@ -1,0 +1,436 @@
+using ColorVision.Common.MVVM;
+using ColorVision.Solution.FolderMeta;
+using ColorVision.UI.Menus;
+using System.IO;
+using System.Windows;
+
+namespace ColorVision.Solution.Explorer
+{
+    /// <summary>
+    /// A project is a first-class workspace node backed by one provider-owned
+    /// project file. It is intentionally stricter than a normal folder until
+    /// project rename/move transactions are implemented.
+    /// </summary>
+    public sealed class ProjectNode : FolderNode
+    {
+        private FileSystemWatcher? _externalProjectWatcher;
+
+        public ProjectDefinition Project { get; private set; }
+        public IReadOnlyList<ProjectCapabilityDescriptor> Capabilities { get; private set; }
+        public SolutionExplorer? SolutionExplorer { get; }
+
+        public RelayCommand EditProjectFileCommand { get; }
+        public RelayCommand RemoveFromSolutionCommand { get; }
+        public RelayCommand ToggleShowAllFilesCommand { get; }
+        public bool ShowAllFiles { get; private set; }
+        public override bool IsStartupProject => _isStartupProject;
+        private bool _isStartupProject;
+        private MenuItemMetadata? _showAllFilesMenuItem;
+        private MenuItemMetadata? _startupProjectMenuItem;
+
+        public ProjectNode(IFolderMeta folderMeta, ProjectDefinition project, SolutionExplorer? solutionExplorer = null)
+            : base(folderMeta)
+        {
+            Project = project;
+            SolutionExplorer = solutionExplorer;
+            string projectName = string.IsNullOrWhiteSpace(project.Name) ? DirectoryInfo.Name : project.Name;
+            Name1 = string.IsNullOrWhiteSpace(project.LoadError) ? projectName : $"{projectName} (加载失败)";
+            CanReName = false;
+            CanCut = false;
+            CanCopy = false;
+            Capabilities = ProjectProviderRegistry.GetCapabilities(GetExecutionProject());
+            EditProjectFileCommand = new RelayCommand(_ => EditProjectFile(), _ => Project.ProjectFile.Exists);
+            ToggleShowAllFilesCommand = new RelayCommand(_ => ToggleShowAllFiles());
+            RemoveFromSolutionCommand = new RelayCommand(
+                _ => SolutionExplorer?.RemoveProject(Project),
+                _ => SolutionExplorer?.IsExplicitProjectMode == true);
+            SetStartupProjectState(SolutionExplorer?.IsConfiguredStartupProject(Project) == true);
+            InitializeExternalProjectWatcher();
+        }
+
+        public override void InitMenuItem()
+        {
+            _showAllFilesMenuItem = null;
+            _startupProjectMenuItem = null;
+            base.InitMenuItem();
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "EditProjectFile",
+                Order = 3,
+                Header = "编辑项目文件(_E)",
+                Command = EditProjectFileCommand,
+                Icon = MenuItemIcon.TryFindResource("DICode")
+            });
+
+            if (Project.ItemRules?.Exclude.Count > 0)
+            {
+                _showAllFilesMenuItem = new MenuItemMetadata
+                {
+                    GuidId = "ShowAllProjectFiles",
+                    Order = 4,
+                    Header = "显示所有文件(_S)",
+                    Command = ToggleShowAllFilesCommand,
+                    IsChecked = ShowAllFiles,
+                };
+                MenuItemMetadatas.Add(_showAllFilesMenuItem);
+            }
+
+            if (SolutionExplorer?.CanSetStartupProject(Project) == true)
+            {
+                _startupProjectMenuItem = new MenuItemMetadata
+                {
+                    GuidId = "SetStartupProject",
+                    Order = 5,
+                    Header = "设为启动项目(_A)",
+                    Command = SolutionProjectCommands.SetStartupProject,
+                    IsChecked = IsStartupProject,
+                };
+                MenuItemMetadatas.Add(_startupProjectMenuItem);
+            }
+
+            foreach (ProjectCapabilityDescriptor capability in Capabilities)
+            {
+                var routedCommand = SolutionProjectCommands.GetCommand(capability.Id);
+                MenuItemMetadatas.Add(new MenuItemMetadata
+                {
+                    GuidId = $"ProjectCapability.{capability.Id}",
+                    Order = 10 + capability.Order,
+                    Header = capability.Header,
+                    Command = routedCommand ?? new RelayCommand(
+                        _ => ExecuteCapability(capability.Id),
+                        _ => CanExecuteCapability(capability.Id)),
+                    Icon = MenuItemIcon.TryFindResource(GetCapabilityIcon(capability.Id)),
+                });
+            }
+
+            if (SolutionExplorer?.IsExplicitProjectMode == true)
+            {
+                if (SolutionExplorer.GetSolutionFolderOptions().Count > 1)
+                {
+                    const string moveMenuId = "MoveProjectToSolutionFolder";
+                    MenuItemMetadatas.Add(new MenuItemMetadata
+                    {
+                        GuidId = moveMenuId,
+                        Order = 80,
+                        Header = "移动到解决方案文件夹(_M)",
+                    });
+                    string? currentFolderId = SolutionExplorer.GetProjectSolutionFolderId(Project);
+                    int order = 0;
+                    foreach (var option in SolutionExplorer.GetSolutionFolderOptions())
+                    {
+                        string? targetFolderId = option.Id;
+                        MenuItemMetadatas.Add(new MenuItemMetadata
+                        {
+                            OwnerGuid = moveMenuId,
+                            GuidId = $"MoveProjectToSolutionFolder.{targetFolderId ?? "Root"}",
+                            Order = order++,
+                            Header = option.DisplayName,
+                            IsChecked = string.Equals(
+                                currentFolderId,
+                                targetFolderId,
+                                StringComparison.OrdinalIgnoreCase),
+                            Command = new RelayCommand(_ =>
+                                SolutionExplorer.MoveProjectToSolutionFolder(Project, targetFolderId)),
+                        });
+                    }
+                }
+                MenuItemMetadatas.Add(new MenuItemMetadata
+                {
+                    GuidId = "RemoveProjectFromSolution",
+                    Order = 90,
+                    Header = "从解决方案中移除(_V)",
+                    Command = RemoveFromSolutionCommand,
+                });
+            }
+        }
+
+        public bool CanExecuteCapability(string capabilityId)
+        {
+            ProjectDefinition executionProject = GetExecutionProject();
+            if (string.Equals(capabilityId, ProjectCapabilityIds.Build, StringComparison.OrdinalIgnoreCase)
+                && SolutionExplorer != null)
+            {
+                return global::ColorVision.Solution.Explorer.SolutionExplorer.CanBuildProject(executionProject);
+            }
+            return ProjectProviderRegistry.CanExecuteCapability(executionProject, capabilityId);
+        }
+
+        public bool ExecuteCapability(string capabilityId)
+        {
+            if (string.Equals(capabilityId, ProjectCapabilityIds.Build, StringComparison.OrdinalIgnoreCase)
+                && SolutionExplorer != null)
+            {
+                return SolutionExplorer.BuildProject(Project);
+            }
+
+            bool executed = ProjectProviderRegistry.ExecuteCapability(GetExecutionProject(), capabilityId);
+            if (!executed)
+                ShowUserInfo("当前项目能力无法执行，请检查项目命令配置和终端状态。");
+            return executed;
+        }
+
+        public bool IncludesPath(string fullPath)
+        {
+            return ShowAllFiles || Project.ItemRules?.IsVisible(Project.ProjectDirectory, fullPath) != false;
+        }
+
+        public bool IsPathIncludedByProjectRules(string fullPath)
+        {
+            return Project.ItemRules?.Includes(Project.ProjectDirectory, fullPath) != false;
+        }
+
+        internal static ProjectNode? FindOwningProject(SolutionNode node)
+        {
+            for (SolutionNode? current = node; current != null; current = current.Parent)
+            {
+                if (current is ProjectNode projectNode)
+                    return projectNode;
+            }
+            return null;
+        }
+
+        internal void SetStartupProjectState(bool isStartupProject)
+        {
+            if (_isStartupProject == isStartupProject)
+                return;
+
+            _isStartupProject = isStartupProject;
+            if (_startupProjectMenuItem != null)
+                _startupProjectMenuItem.IsChecked = isStartupProject;
+            NotifyPropertyChanged(nameof(IsStartupProject));
+        }
+
+        internal void RefreshConfigurationState()
+        {
+            Capabilities = ProjectProviderRegistry.GetCapabilities(GetExecutionProject());
+            InvalidateMenuItems();
+            NotifyPropertyChanged(nameof(Capabilities));
+        }
+
+        internal bool CanReuseFor(ProjectDefinition project)
+        {
+            return string.Equals(Project.ProviderId, project.ProviderId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    Project.ProjectFile.FullName,
+                    project.ProjectFile.FullName,
+                    StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    Project.ProjectDirectory.FullName,
+                    project.ProjectDirectory.FullName,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal void UpdateProjectDefinition(ProjectDefinition project)
+        {
+            if (!CanReuseFor(project))
+                throw new InvalidOperationException("不能使用不同 Provider、项目文件或根目录的定义更新现有项目节点。");
+
+            bool reloadTree = !HaveEquivalentItemRules(Project.ItemRules, project.ItemRules);
+            Project = project;
+            string projectName = string.IsNullOrWhiteSpace(project.Name) ? DirectoryInfo.Name : project.Name;
+            Name1 = string.IsNullOrWhiteSpace(project.LoadError) ? projectName : $"{projectName} (加载失败)";
+            NotifyPropertyChanged(nameof(Name));
+            RefreshConfigurationState();
+            if (reloadTree)
+                ReloadChildren();
+        }
+
+        private static bool HaveEquivalentItemRules(ProjectItemRules? left, ProjectItemRules? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left == null || right == null)
+                return false;
+            return left.Exclude.SequenceEqual(right.Exclude, StringComparer.OrdinalIgnoreCase)
+                && left.Include.SequenceEqual(right.Include, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private ProjectDefinition GetExecutionProject()
+        {
+            return SolutionExplorer?.ApplyActiveConfiguration(Project) ?? Project;
+        }
+
+        private void ToggleShowAllFiles()
+        {
+            ShowAllFiles = !ShowAllFiles;
+            if (_showAllFilesMenuItem != null)
+                _showAllFilesMenuItem.IsChecked = ShowAllFiles;
+            ReloadChildren();
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (SolutionExplorer?.IsExplicitProjectMode == true)
+            {
+                if (showConfirmation
+                    && MessageBox.Show(
+                        Application.Current?.GetActiveWindow(),
+                        $"从解决方案中移除项目“{Name}”吗？项目文件和目录不会被删除。",
+                        "ColorVision",
+                        MessageBoxButton.OKCancel,
+                        MessageBoxImage.Question) != MessageBoxResult.OK)
+                {
+                    return false;
+                }
+                return SolutionExplorer.RemoveProject(Project);
+            }
+
+            if (!base.TryDelete(showConfirmation))
+                return false;
+
+            (SolutionExplorer ?? SolutionManager.GetInstance().CurrentSolutionExplorer)?.UnregisterProject(Project);
+            return true;
+        }
+
+        private void EditProjectFile()
+        {
+            EditorManager.Instance.TryOpenFile(Project.ProjectFile.FullName);
+        }
+
+        private void InitializeExternalProjectWatcher()
+        {
+            if (SolutionExplorer?.IsExplicitProjectMode != true
+                || SolutionExplorer.IsPathWithinSolution(Project.ProjectFile.FullName)
+                || Project.ProjectFile.Directory is not { Exists: true } projectDirectory)
+            {
+                return;
+            }
+
+            _externalProjectWatcher = new FileSystemWatcher(projectDirectory.FullName, Project.ProjectFile.Name)
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+                EnableRaisingEvents = true,
+            };
+            FileSystemEventHandler refreshHandler = (_, _) => SolutionExplorer.RefreshExplicitProjectState();
+            RenamedEventHandler renameHandler = (_, _) => SolutionExplorer.RefreshExplicitProjectState();
+            _externalProjectWatcher.Created += refreshHandler;
+            _externalProjectWatcher.Changed += refreshHandler;
+            _externalProjectWatcher.Deleted += refreshHandler;
+            _externalProjectWatcher.Renamed += renameHandler;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _externalProjectWatcher?.Dispose();
+                _externalProjectWatcher = null;
+            }
+            base.Dispose(disposing);
+        }
+
+        private static string GetCapabilityIcon(string capabilityId)
+        {
+            return capabilityId.ToLowerInvariant() switch
+            {
+                ProjectCapabilityIds.Build => "DIBuild",
+                ProjectCapabilityIds.Run => "DIRun",
+                ProjectCapabilityIds.Debug => "DIDebug",
+                _ => "DICommand",
+            };
+        }
+    }
+
+    /// <summary>
+    /// Keeps an explicit project reference visible when its file is missing or
+    /// no installed provider can load it.
+    /// </summary>
+    public sealed class UnavailableProjectNode : SolutionNode
+    {
+        private readonly SolutionExplorer _solutionExplorer;
+
+        public string ProjectReference { get; }
+        public string LoadError { get; private set; }
+        internal SolutionExplorer SolutionExplorer => _solutionExplorer;
+
+        public RelayCommand RemoveFromSolutionCommand { get; }
+        public RelayCommand ShowLoadErrorCommand { get; }
+
+        public UnavailableProjectNode(
+            SolutionExplorer solutionExplorer,
+            string projectReference,
+            string resolvedPath,
+            string? loadError = null)
+        {
+            _solutionExplorer = solutionExplorer;
+            ProjectReference = projectReference;
+            LoadError = string.IsNullOrWhiteSpace(loadError)
+                ? "项目文件不存在，或没有已安装的 Provider 能加载该项目。"
+                : loadError;
+            FullPath = resolvedPath;
+            Name1 = $"{GetDisplayName(projectReference, resolvedPath)} (不可用)";
+            CanAdd = false;
+            CanCopy = false;
+            CanCut = false;
+            CanDelete = false;
+            CanPaste = false;
+            CanReName = false;
+            Initialize();
+            RemoveFromSolutionCommand = new RelayCommand(_ => _solutionExplorer.RemoveProjectReference(ProjectReference));
+            ShowLoadErrorCommand = new RelayCommand(_ => MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                LoadError,
+                "项目加载错误",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning));
+        }
+
+        internal void UpdateUnavailableState(string resolvedPath, string? loadError)
+        {
+            LoadError = string.IsNullOrWhiteSpace(loadError)
+                ? "项目文件不存在，或没有已安装的 Provider 能加载该项目。"
+                : loadError;
+            FullPath = resolvedPath;
+            Name1 = $"{GetDisplayName(ProjectReference, resolvedPath)} (不可用)";
+            NotifyPropertyChanged(nameof(Name));
+            InvalidateMenuItems();
+        }
+
+        public override void InitMenuItem()
+        {
+            MenuItemMetadatas.Clear();
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = SolutionCommandIds.Refresh,
+                Order = 1,
+                Header = "重新加载项目(_R)",
+                Command = System.Windows.Input.NavigationCommands.Refresh,
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "ShowUnavailableProjectError",
+                Order = 2,
+                Header = "查看加载错误(_E)...",
+                Command = ShowLoadErrorCommand,
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "RemoveUnavailableProjectFromSolution",
+                Order = 3,
+                Header = "从解决方案中移除(_V)",
+                Command = RemoveFromSolutionCommand,
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "CopyFullPath",
+                Order = 200,
+                Header = "复制完整路径",
+                Command = CopyFullPathCommand,
+            });
+        }
+
+        private static string GetDisplayName(string projectReference, string resolvedPath)
+        {
+            try
+            {
+                string path = string.IsNullOrWhiteSpace(resolvedPath) ? projectReference : resolvedPath;
+                string name = Path.GetFileNameWithoutExtension(Path.TrimEndingDirectorySeparator(path));
+                return string.IsNullOrWhiteSpace(name) ? projectReference : name;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return projectReference;
+            }
+        }
+    }
+}

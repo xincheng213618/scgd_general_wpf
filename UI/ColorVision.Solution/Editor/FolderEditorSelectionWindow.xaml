@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Solution.Editor"
         xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:uiProperties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Sol_OpenAs}" Height="250" Width="300" Background="{DynamicResource GlobalBackground}">
+        Title="{x:Static properties:Resources.Sol_OpenAs}" Height="300" Width="360" Background="{DynamicResource GlobalBackground}">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -19,6 +20,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock Text="{x:Static properties:Resources.Sol_OpenFolderHint}" Margin="10,0,0,10"/>
@@ -46,7 +48,11 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <Button Grid.Row="2" Content="{x:Static properties:Resources.Sol_OK}" Width="80" HorizontalAlignment="Right" Click="OkButton_Click"/>
+        <CheckBox x:Name="AlwaysUseCheckBox" Grid.Row="2" Margin="5,8" Content="始终使用此编辑器打开文件夹"/>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{x:Static properties:Resources.Sol_OK}" Width="80" IsDefault="True" Click="OkButton_Click"/>
+            <Button Content="{x:Static uiProperties:Resources.Cancel}" Width="80" Margin="5,0,0,0" IsCancel="True"/>
+        </StackPanel>
     </Grid>
 
 </Window>

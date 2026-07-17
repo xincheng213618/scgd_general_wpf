@@ -77,9 +77,8 @@ namespace ColorVision.Copilot
                 if (!TryGetWorkspaceRoot(out var workspaceRoot) || !IsCurrentWorkspaceFile(target.FilePath, workspaceRoot))
                     throw new InvalidOperationException("文件已不存在或不在当前工作区内。");
 
-                var editor = EditorManager.Instance.OpenFile(target.FilePath)
-                    ?? throw new InvalidOperationException("当前没有可用于打开此文件的编辑器。");
-                editor.Open(target.FilePath);
+                if (!EditorManager.Instance.TryOpenFile(target.FilePath))
+                    throw new InvalidOperationException("当前没有可用于打开此文件的编辑器。");
 
                 if (target.LineNumber is > 0
                     && WorkspaceManager.LayoutDocumentPane != null

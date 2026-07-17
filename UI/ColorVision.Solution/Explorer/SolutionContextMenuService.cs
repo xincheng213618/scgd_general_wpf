@@ -1,5 +1,4 @@
 #pragma warning disable CS8604,CS8620
-using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,6 +21,12 @@ namespace ColorVision.Solution.Explorer
         private readonly ContextMenu _contextMenu;
 
         public ContextMenu ContextMenu => _contextMenu;
+
+        /// <summary>
+        /// Routed commands from a ContextMenu are outside the TreeView visual
+        /// tree, so they need an explicit target to reach the command bindings.
+        /// </summary>
+        public IInputElement? CommandTarget { get; set; }
 
         public SolutionContextMenuService()
         {
@@ -84,39 +89,15 @@ namespace ColorVision.Solution.Explorer
                 commonGuids.IntersectWith(nodeGuids);
             }
 
-            // Build metadata list with wrapped commands that execute on all nodes
+            // Multi-selection exposes only commands with explicit batch semantics.
+            // Matching GuidIds alone is not enough: Open/Properties/Add may share
+            // ids while still being single-target commands.
             var commonMetadatas = new List<MenuItemMetadata>();
-            foreach (var meta in allNodeMetadatas[0].Where(m => commonGuids.Contains(m.GuidId)))
+            foreach (var meta in allNodeMetadatas[0].Where(m => commonGuids.Contains(m.GuidId)
+                && SolutionCommandIds.SupportsMultipleSelection(m.GuidId)
+                && m.Command is RoutedCommand))
             {
-                // For RoutedCommands (Cut/Copy/Paste/Delete), keep as-is — they're handled by CommandBindings
-                if (meta.Command is RoutedCommand)
-                {
-                    commonMetadatas.Add(meta);
-                    continue;
-                }
-
-                // For per-node commands (Open, etc.), wrap to execute on ALL selected nodes
-                var guidId = meta.GuidId;
-                var multiCommand = new RelayCommand(_ =>
-                {
-                    foreach (var nodeMetas in allNodeMetadatas)
-                    {
-                        var matching = nodeMetas.FirstOrDefault(m => m.GuidId == guidId);
-                        matching?.Command?.Execute(null);
-                    }
-                });
-
-                commonMetadatas.Add(new MenuItemMetadata()
-                {
-                    GuidId = meta.GuidId,
-                    OwnerGuid = meta.OwnerGuid,
-                    Order = meta.Order,
-                    Header = meta.Header,
-                    Icon = meta.Icon,
-                    InputGestureText = meta.InputGestureText,
-                    Command = multiCommand,
-                    Visibility = meta.Visibility,
-                });
+                commonMetadatas.Add(meta);
             }
 
             BuildMenuFromMetadata(commonMetadatas);
@@ -138,7 +119,10 @@ namespace ColorVision.Solution.Explorer
                         Icon = meta.Icon,
                         InputGestureText = meta.InputGestureText,
                         Command = meta.Command,
+                        CommandTarget = meta.Command is RoutedCommand ? CommandTarget : null,
                         Visibility = meta.Visibility,
+                        IsCheckable = meta.IsChecked.HasValue,
+                        IsChecked = meta.IsChecked ?? false,
                     };
 
                     if (meta.GuidId != null)
@@ -163,7 +147,10 @@ namespace ColorVision.Solution.Explorer
                 {
                     Header = meta.Header,
                     Command = meta.Command,
+                    CommandTarget = meta.Command is RoutedCommand ? CommandTarget : null,
                     Icon = meta.Icon,
+                    IsCheckable = meta.IsChecked.HasValue,
+                    IsChecked = meta.IsChecked ?? false,
                 };
 
                 if (meta.GuidId != null)

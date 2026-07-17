@@ -1,4 +1,5 @@
 using ColorVision.UI;
+using ColorVision.Solution.Explorer;
 using System.IO;
 using System.Reflection;
 
@@ -67,10 +68,10 @@ namespace ColorVision.Solution.FolderMeta
         {
             var dirName = directoryInfo.Name.ToLowerInvariant();
             
-            // Check if directory contains .cvproj files → treat as Project folder
+            // A provider-owned project file makes this a project folder.
             try
             {
-                if (directoryInfo.GetFiles("*.cvproj", SearchOption.TopDirectoryOnly).Length > 0)
+                if (ProjectProviderRegistry.EnumerateProjectFiles(directoryInfo, SearchOption.TopDirectoryOnly).Any())
                 {
                     // Find the ProjectFolder type from registered patterns
                     if (_patternTypeMap.TryGetValue("project", out var projectType))

@@ -10,7 +10,7 @@ namespace ColorVision.UI.Menus
     {
         public static object? TryFindResource(object resourceKey)
         {
-            if (Application.Current.TryFindResource(resourceKey) is Brush brush)
+            if (Application.Current?.TryFindResource(resourceKey) is Brush)
             {
                 var rectangle = new Rectangle() { Height = 16, Width = 16 };
                 rectangle.SetResourceReference(Rectangle.FillProperty, resourceKey);
@@ -29,6 +29,8 @@ namespace ColorVision.UI.Menus
                 InputGestureText = item.InputGestureText,
                 Command = item.Command,
                 Tag = item,
+                IsCheckable = item.IsChecked.HasValue,
+                IsChecked = item.IsChecked ?? false,
                 Visibility = item.Visibility,
             };
             return menuItem;

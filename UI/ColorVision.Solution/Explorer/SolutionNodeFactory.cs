@@ -24,43 +24,49 @@ namespace ColorVision.Solution.Explorer
                 FileMetaRegistry.RegisterFileMetasFromAssemblies();
                 NewItemTemplateRegistry.Initialize();
                 ProjectTemplateRegistry.Initialize();
+                ProjectProviderRegistry.Initialize();
                 _registriesInitialized = true;
             }
         }
 
-        public static FolderNode CreateFolderNode(DirectoryInfo directoryInfo)
+        public static FolderNode CreateFolderNode(DirectoryInfo directoryInfo, SolutionExplorer? solutionExplorer = null)
+        {
+            if (ProjectProviderRegistry.TryLoadProject(directoryInfo, out ProjectDefinition? project)
+                && project != null
+                && (solutionExplorer == null || solutionExplorer.IsProjectIncluded(project)))
+            {
+                return new ProjectNode(CreateFolderMeta(project.ProjectDirectory), project, solutionExplorer);
+            }
+
+            return new FolderNode(CreateFolderMeta(directoryInfo));
+        }
+
+        internal static ProjectNode CreateProjectNode(ProjectDefinition project, SolutionExplorer solutionExplorer)
+        {
+            return new ProjectNode(CreateFolderMeta(project.ProjectDirectory), project, solutionExplorer);
+        }
+
+        private static IFolderMeta CreateFolderMeta(DirectoryInfo directoryInfo)
         {
             var folderMetaType = FolderMetaRegistry.GetFolderMetaType(directoryInfo);
-
-            IFolderMeta folderMeta;
-            if (folderMetaType != null)
-            {
-                folderMeta = (IFolderMeta)Activator.CreateInstance(folderMetaType, directoryInfo)!;
-            }
-            else
-            {
-                folderMeta = new BaseFolder(directoryInfo);
-            }
-
-            return new FolderNode(folderMeta);
+            return folderMetaType != null
+                ? (IFolderMeta)Activator.CreateInstance(folderMetaType, directoryInfo)!
+                : new BaseFolder(directoryInfo);
         }
 
         public static FileNode CreateFileNode(FileInfo fileInfo)
         {
+            return new FileNode(CreateFileMeta(fileInfo));
+        }
+
+        internal static IFileMeta CreateFileMeta(FileInfo fileInfo)
+        {
             var extension = fileInfo.Extension;
             var fileMetaType = FileMetaRegistry.GetFileMetaTypeByExtension(extension);
 
-            IFileMeta fileMeta;
             if (fileMetaType != null)
-            {
-                fileMeta = (IFileMeta)Activator.CreateInstance(fileMetaType, fileInfo)!;
-            }
-            else
-            {
-                fileMeta = new CommonFile(fileInfo);
-            }
-
-            return new FileNode(fileMeta);
+                return (IFileMeta)Activator.CreateInstance(fileMetaType, fileInfo)!;
+            return new CommonFile(fileInfo);
         }
 
         public static void CreateNewFolder(SolutionNode parent, string parentFullName)
@@ -78,7 +84,7 @@ namespace ColorVision.Solution.Explorer
                 Directory.CreateDirectory(newName);
                 DirectoryInfo directoryInfo = new DirectoryInfo(newName);
 
-                FolderNode folder = CreateFolderNode(directoryInfo);
+                FolderNode folder = CreateFolderNode(directoryInfo, FindSolutionExplorer(parent));
                 parent.AddChild(folder);
                 parent.SortByName();
                 if (!parent.IsExpanded)
@@ -98,7 +104,8 @@ namespace ColorVision.Solution.Explorer
             if (parent.VisualChildren.Count > 0)
                 return;
 
-            if (cache != null && cache.HasCache() && cache.ValidateDirectory(directoryInfo.FullName) && TryPopulateChildrenFromCache(parent, directoryInfo, cache))
+            SolutionExplorer? solutionExplorer = FindSolutionExplorer(parent);
+            if (cache != null && cache.HasCache() && cache.ValidateDirectory(directoryInfo.FullName) && TryPopulateChildrenFromCache(parent, directoryInfo, cache, solutionExplorer))
                 return;
 
             int directoryCount = 0;
@@ -111,7 +118,13 @@ namespace ColorVision.Solution.Explorer
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
                     continue;
 
-                var folder = CreateFolderNode(item);
+                if (!ShouldIncludeProjectPath(parent, item.FullName))
+                    continue;
+
+                if (solutionExplorer?.ShouldOmitPhysicalProjectDirectory(parent, item) == true)
+                    continue;
+
+                var folder = CreateFolderNode(item, solutionExplorer);
                 parent.AddChild(folder);
             }
 
@@ -122,6 +135,9 @@ namespace ColorVision.Solution.Explorer
                 if (fileCount % 50 == 0)
                     await Task.Yield();
 
+                if (!ShouldIncludeProjectPath(parent, item.FullName))
+                    continue;
+
                 var sw = Stopwatch.StartNew();
                 AddFileNode(parent, item);
                 sw.Stop();
@@ -130,7 +146,11 @@ namespace ColorVision.Solution.Explorer
 
         }
 
-        private static bool TryPopulateChildrenFromCache(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache cache)
+        private static bool TryPopulateChildrenFromCache(
+            ISolutionNode parent,
+            DirectoryInfo directoryInfo,
+            SolutionCache cache,
+            SolutionExplorer? solutionExplorer)
         {
             var cachedChildren = cache.GetChildren(directoryInfo.FullName);
             if (cachedChildren.Count == 0)
@@ -144,12 +164,20 @@ namespace ColorVision.Solution.Explorer
                     {
                         if (!Directory.Exists(entry.FullPath))
                             continue;
+                        if (!ShouldIncludeProjectPath(parent, entry.FullPath))
+                            continue;
 
-                        parent.AddChild(CreateFolderNode(new DirectoryInfo(entry.FullPath)));
+                        var childDirectory = new DirectoryInfo(entry.FullPath);
+                        if (solutionExplorer?.ShouldOmitPhysicalProjectDirectory(parent, childDirectory) == true)
+                            continue;
+
+                        parent.AddChild(CreateFolderNode(childDirectory, solutionExplorer));
                     }
                     else
                     {
                         if (!File.Exists(entry.FullPath))
+                            continue;
+                        if (!ShouldIncludeProjectPath(parent, entry.FullPath))
                             continue;
 
                         AddFileNode(parent, new FileInfo(entry.FullPath));
@@ -193,14 +221,24 @@ namespace ColorVision.Solution.Explorer
         public static bool IsInternalFile(string fileName)
         {
             if (fileName.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase)) return true;
-            if (fileName.EndsWith(".cvproj", StringComparison.OrdinalIgnoreCase)) return true;
+            if (ProjectProviderRegistry.IsSupportedProjectFilePath(fileName)) return true;
             if (fileName.EndsWith(".cvsln.cache.db", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvsln.bak", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.Contains(".cvsln.corrupt-", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)
+                && (fileName.Contains(".cvsln.", StringComparison.OrdinalIgnoreCase)
+                    || fileName.Contains(".cvproj.", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
             return false;
         }
 
         public static void AddFileNode(ISolutionNode parent, FileInfo fileInfo)
         {
             if (IsInternalFile(fileInfo.Name)) return;
+            if (!ShouldIncludeProjectPath(parent, fileInfo.FullName)) return;
+            if (FindSolutionExplorer(parent)?.ShouldOmitPhysicalSolutionItem(parent, fileInfo) == true) return;
 
             if (fileInfo.Extension.Contains("lnk"))
             {
@@ -213,7 +251,40 @@ namespace ColorVision.Solution.Explorer
 
         public static void AddFolderNode(ISolutionNode parent, DirectoryInfo directoryInfo)
         {
-            AddNode(parent, CreateFolderNode(directoryInfo));
+            if (!ShouldIncludeProjectPath(parent, directoryInfo.FullName))
+                return;
+
+            SolutionExplorer? solutionExplorer = FindSolutionExplorer(parent);
+            if (solutionExplorer?.ShouldOmitPhysicalProjectDirectory(parent, directoryInfo) == true)
+                return;
+            AddNode(parent, CreateFolderNode(directoryInfo, solutionExplorer));
+        }
+
+        internal static SolutionExplorer? FindSolutionExplorer(ISolutionNode parent)
+        {
+            if (parent is SolutionExplorer solutionExplorer)
+                return solutionExplorer;
+
+            SolutionNode? node = parent as SolutionNode;
+            while (node != null)
+            {
+                if (node is SolutionExplorer owner)
+                    return owner;
+                node = node.Parent;
+            }
+            return null;
+        }
+
+        private static bool ShouldIncludeProjectPath(ISolutionNode parent, string fullPath)
+        {
+            SolutionNode? node = parent as SolutionNode;
+            while (node != null)
+            {
+                if (node is ProjectNode projectNode)
+                    return projectNode.IncludesPath(fullPath);
+                node = node.Parent;
+            }
+            return true;
         }
 
         private static void AddNode(ISolutionNode parent, SolutionNode node)

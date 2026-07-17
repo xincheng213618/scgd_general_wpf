@@ -1,4 +1,5 @@
 ﻿using ColorVision.Solution;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
@@ -45,7 +46,7 @@ namespace ColorVision
                             string inputFile = parser.GetValue("input");
                             if (inputFile != null)
                             {
-                                FileProcessorFactory.GetInstance().HandleFile(inputFile);
+                                ResourceOpenService.Instance.TryOpen(inputFile);
                             }
                             string s = parser.GetValue("solutionpath");
                             if (s != null)

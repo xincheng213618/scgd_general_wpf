@@ -5,6 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.IO;
@@ -95,6 +96,18 @@ namespace ColorVision.Solution.Explorer
             AddLazyPlaceholderIfNeeded();
         }
 
+        public void ReloadChildren()
+        {
+            foreach (IDisposable disposable in VisualChildren.OfType<IDisposable>().ToList())
+                disposable.Dispose();
+            VisualChildren.Clear();
+            _childrenLoaded = false;
+            _childrenLoading = false;
+            AddLazyPlaceholderIfNeeded();
+            if (IsExpanded)
+                EnsureChildrenLoaded();
+        }
+
         private void AddLazyPlaceholderIfNeeded()
         {
             if (SolutionNodeFactory.HasVisibleChildren(DirectoryInfo))
@@ -166,28 +179,23 @@ namespace ColorVision.Solution.Explorer
 
         public void OpenMethod()
         {
-            var types = EditorManager.Instance.GetFolderEditors();
+            var types = EditorManager.Instance.GetVisibleFolderEditors();
             var current = EditorManager.Instance.GetDefaultFolderEditorType();
 
             if (types.Count == 0) return;
 
-            var window = new FolderEditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            if (window.ShowDialog() == true)
+            var window = new FolderEditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (window.ShowDialog() == true && window.SelectedEditorType is { } selectedType)
             {
-                var selectedType = window.SelectedEditorType;
-                EditorManager.Instance.SetDefaultFolderEditor(selectedType);
+                if (window.AlwaysUseSelectedEditor)
+                    EditorManager.Instance.SetDefaultFolderEditor(selectedType);
+                EditorManager.Instance.OpenFolderWith(FullPath, selectedType);
             }
         }
 
         public override void Open()
         {
-            var editor = EditorManager.Instance.OpenFolder(FullPath);
-            editor?.Open(FullPath);
-        }
-
-        public override void InitContextMenu()
-        {
-            base.InitContextMenu();
+            IsExpanded = !IsExpanded;
         }
 
         public override void InitMenuItem()
@@ -360,6 +368,17 @@ namespace ColorVision.Solution.Explorer
 
                     LogOperation($"开始重命名文件夹: {originalPath} -> {name}");
 
+                    string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
+
+                    if (Directory.Exists(destinationDirectoryPath))
+                    {
+                        ShowUserError($"目标文件夹 '{name}' 已存在");
+                        return false;
+                    }
+
+                    if (!EditorDocumentService.TryPrepareResourceRename(originalPath))
+                        return false;
+
                     // 临时禁用文件系统监视器
                     if (FileSystemWatcher?.EnableRaisingEvents == true)
                     {
@@ -375,15 +394,8 @@ namespace ColorVision.Solution.Explorer
                         }
                     }
 
-                    string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
-
-                    if (Directory.Exists(destinationDirectoryPath))
-                    {
-                        ShowUserError($"目标文件夹 '{name}' 已存在");
-                        return false;
-                    }
-
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
+                    EditorDocumentService.NotifyResourceRenamed(originalPath, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
                     FullPath = destinationDirectoryPath;
 
@@ -475,23 +487,34 @@ namespace ColorVision.Solution.Explorer
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            TryDelete(showConfirmation: true);
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (showConfirmation
+                && MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
+                return false;
+
+            if (!EditorDocumentService.TryCloseDocumentsForResources([DirectoryInfo.FullName]))
+                return false;
+
+            try
             {
-                try
+                int result = ShellFileOperations.DeleteToRecycleBin(DirectoryInfo.FullName);
+                if (result != 0)
                 {
-                    int result = ShellFileOperations.DeleteToRecycleBin(DirectoryInfo.FullName);
-                    if (result != 0)
-                    {
-                        ShowUserError($"删除文件夹失败，Shell 返回代码: {result}");
-                        return;
-                    }
-                    base.Delete();
+                    ShowUserError($"删除文件夹失败，Shell 返回代码: {result}");
+                    return false;
                 }
-                catch (Exception ex)
-                {
-                    LogError($"删除文件夹失败: {DirectoryInfo.FullName}", ex);
-                    ShowUserError($"删除文件夹失败: {ex.Message}");
-                }
+                base.TryDelete(showConfirmation: false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"删除文件夹失败: {DirectoryInfo.FullName}", ex);
+                ShowUserError($"删除文件夹失败: {ex.Message}");
+                return false;
             }
         }
 

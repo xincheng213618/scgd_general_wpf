@@ -201,6 +201,11 @@ namespace ColorVision
             // 窗口关闭时自动保存布局
             this.Closing += (s, e) =>
             {
+                if (!EditorDocumentService.TryCloseAllDocuments())
+                {
+                    e.Cancel = true;
+                    return;
+                }
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
         }
@@ -251,15 +256,8 @@ namespace ColorVision
                 var a = sarr as string[];
                 var fn = a?.First();
 
-                if (File.Exists(fn))
-                { 
-                    FileProcessorFactory.GetInstance().HandleFile(fn);
-                    e.Handled = true;
-                }
-                else if (Directory.Exists(fn))
-                {
-                    DirectoryInfo directoryInfo = new DirectoryInfo(fn);
-                }
+                if (!string.IsNullOrWhiteSpace(fn))
+                    e.Handled = ResourceOpenService.Instance.TryOpen(fn);
             }
         }
 

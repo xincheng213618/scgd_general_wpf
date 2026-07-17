@@ -41,54 +41,25 @@ namespace ColorVision.Solution.MultiImageViewer
     }
 
 
-    [GenericEditor("MultiImageViewerEditor"), FolderEditor("MultiImageViewerEditor")]
+    [FolderEditor("MultiImageViewerEditor", editorId: "colorvision.folder.multi-image", priority: 80)]
     public class MultiImageViewerEditor : EditorBase
     {
         public override void Open(string filePath)
         {
-            string GuidId = Tool.GetMD5(filePath);
-            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
+            if (!Directory.Exists(filePath))
+                return;
 
-            if (existingDocument != null)
-            {
-                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+            EditorDocumentService.Open(
+                filePath,
+                GetType(),
+                Path.GetFileName(filePath),
+                () =>
                 {
-                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
-                }
-                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
-                {
-                    var window = Window.GetWindow(layoutFloatingWindow);
-                    if (window != null)
-                    {
-                        window.Activate();
-                    }
-                }
-            }
-            else
-            {
-
-                var directory = new DirectoryInfo(filePath);
-                MultiImageViewer MultiImageViewer = new MultiImageViewer();
-                MultiImageViewer.LoadFromFolderAsync(filePath);
-
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
-
-                layoutDocument.Content = MultiImageViewer;
-                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
-                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
-                layoutDocument.IsActiveChanged += (s, e) =>
-                {
-                    if (layoutDocument.IsActive)
-                    {
-                        WorkspaceManager.OnContentIdSelected(filePath);
-                    }
-                };
-                layoutDocument.Closing += (s, e) =>
-                {
-                    MultiImageViewer?.Dispose();
-                };
-
-            }
+                    var viewer = new MultiImageViewer();
+                    viewer.LoadFromFolderAsync(filePath);
+                    return viewer;
+                },
+                viewer => viewer.Dispose());
         }
     }
 

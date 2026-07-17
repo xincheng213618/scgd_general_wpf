@@ -5,6 +5,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.Terminal
 {
+    public sealed record TerminalCommandRequest(string DisplayName, string Command, string WorkingDirectory);
+
     /// <summary>
     /// Singleton service that manages the terminal panel.
     /// Provides API for other components to run scripts/commands in the terminal.
@@ -50,6 +52,33 @@ namespace ColorVision.Solution.Terminal
             if (terminalControl == null) return;
             ActivatePanel();
             terminalControl.SendCommand(command);
+        }
+
+        public void SendCommand(string command, string workingDirectory)
+        {
+            TrySendCommand(command, workingDirectory);
+        }
+
+        public bool TrySendCommand(string command, string workingDirectory)
+        {
+            var terminalControl = GetActiveTerminalControl();
+            if (terminalControl == null) return false;
+            ActivatePanel();
+            terminalControl.SendCommand(command, workingDirectory);
+            return true;
+        }
+
+        public bool TrySendCommandBatch(IReadOnlyList<TerminalCommandRequest> commands)
+        {
+            if (commands.Count == 0)
+                return false;
+
+            var terminalControl = GetActiveTerminalControl();
+            if (terminalControl == null)
+                return false;
+            ActivatePanel();
+            terminalControl.SendCommandBatch(commands);
+            return true;
         }
 
         public void NotifyPanelActivated()

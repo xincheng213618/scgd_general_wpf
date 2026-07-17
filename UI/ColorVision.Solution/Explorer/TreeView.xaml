@@ -68,6 +68,9 @@
             <Trigger Property="IsEditMode" Value="False">
                 <Setter Property="ContentTemplate" Value="{StaticResource displayTemplate}"/>
             </Trigger>
+            <DataTrigger Binding="{Binding IsStartupProject}" Value="True">
+                <Setter Property="FontWeight" Value="Bold"/>
+            </DataTrigger>
         </Style.Triggers>
     </Style>
 
@@ -83,14 +86,39 @@
         <TextBlock Text="{Binding Name}" Padding="6,0" Opacity="0.6"/>
     </DataTemplate>
 
-    <HierarchicalDataTemplate DataType="{x:Type Explorer:FileNode}"   ItemsSource="{Binding VisualChildren}">
+    <HierarchicalDataTemplate DataType="{x:Type Explorer:SolutionFolderNode}" ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}">
+            <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
+            <local:EditableTextBlock Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
+        </StackPanel>
+    </HierarchicalDataTemplate>
+
+    <HierarchicalDataTemplate DataType="{x:Type Explorer:FileNode}"   ItemsSource="{Binding VisualChildren}">
+        <StackPanel>
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource TreeViewItemPanel}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsExcludedFromProject}" Value="True">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
             <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
     <HierarchicalDataTemplate DataType="{x:Type Explorer:FolderNode}"   ItemsSource="{Binding VisualChildren}">
-        <StackPanel Style="{StaticResource TreeViewItemPanel}" >
+        <StackPanel>
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource TreeViewItemPanel}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsExcludedFromProject}" Value="True">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
             <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>

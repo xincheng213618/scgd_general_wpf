@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Solution.RecentFile;
 using ColorVision.Solution.Workspace;
 using ColorVision.Solution.Explorer;
@@ -7,6 +8,7 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
 using log4net;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -39,13 +41,27 @@ namespace ColorVision.Solution
         public event EventHandler SolutionLoaded;
 
         public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
-        public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; OnPropertyChanged(); } }
+        public SolutionExplorer CurrentSolutionExplorer
+        {
+            get => _CurrentSolutionExplorer;
+            set
+            {
+                if (ReferenceEquals(_CurrentSolutionExplorer, value))
+                    return;
+
+                _CurrentSolutionExplorer = value;
+                OnPropertyChanged();
+                MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Configuration);
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            }
+        }
         private SolutionExplorer _CurrentSolutionExplorer;
 
         public RelayCommand SettingCommand { get; set; } 
 
         public SolutionManager()
         {
+            ColorVision.UI.FileProcessorFactory.GetInstance().WorkspaceOpenHandler ??= Editor.ResourceOpenService.TryOpenFile;
             SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
 
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
@@ -90,6 +106,25 @@ namespace ColorVision.Solution
                 && path.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static bool IsProjectFilePath(string? path)
+        {
+            return ProjectProviderRegistry.IsSupportedProjectFilePath(path);
+        }
+
+        internal static bool TryGetProjectDirectory(string? projectPath, out string directoryPath)
+        {
+            directoryPath = string.Empty;
+            if (!IsProjectFilePath(projectPath) || !File.Exists(projectPath))
+                return false;
+
+            string? parentDirectory = Path.GetDirectoryName(Path.GetFullPath(projectPath));
+            if (string.IsNullOrWhiteSpace(parentDirectory) || !Directory.Exists(parentDirectory))
+                return false;
+
+            directoryPath = parentDirectory;
+            return true;
+        }
+
         internal static string NormalizeRecentPath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -113,7 +148,8 @@ namespace ColorVision.Solution
             }
 
             string normalizedPath = NormalizeRecentPath(path);
-            return Directory.Exists(normalizedPath) || (File.Exists(normalizedPath) && IsSolutionFilePath(normalizedPath));
+            return Directory.Exists(normalizedPath)
+                || (File.Exists(normalizedPath) && (IsSolutionFilePath(normalizedPath) || IsProjectFilePath(normalizedPath)));
         }
 
         private static bool IsFolderWorkspaceFile(string? path)
@@ -153,7 +189,7 @@ namespace ColorVision.Solution
                 return;
             }
 
-            new SolutionConfig().ToJsonNFile(solutionPath);
+            SolutionConfigStore.Save(solutionPath, new SolutionConfig());
 
             try
             {
@@ -196,7 +232,67 @@ namespace ColorVision.Solution
                 return true;
             }
 
+            if (File.Exists(normalizedPath)
+                && IsProjectFilePath(normalizedPath)
+                && TryCreateImplicitProjectSolution(new FileInfo(normalizedPath), out solutionPath, out displayName))
+            {
+                historyPath = Path.GetFullPath(normalizedPath);
+                return true;
+            }
+
             return false;
+        }
+
+        internal static bool TryCreateImplicitProjectSolution(
+            FileInfo projectFile,
+            out string solutionPath,
+            out string displayName)
+        {
+            solutionPath = string.Empty;
+            displayName = string.Empty;
+            if (!ProjectProviderRegistry.TryLoadProject(projectFile, out ProjectDefinition? project) || project == null)
+                return false;
+
+            try
+            {
+                string implicitSolutionDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ColorVision",
+                    "ImplicitSolutions");
+                Directory.CreateDirectory(implicitSolutionDirectory);
+                string projectKey = Tool.GetMD5(project.ProjectFile.FullName.ToUpperInvariant());
+                solutionPath = Path.Combine(implicitSolutionDirectory, $"{projectKey}.cvsln");
+                string projectReference = Path.GetRelativePath(project.ProjectDirectory.FullName, project.ProjectFile.FullName);
+
+                SolutionConfig config;
+                if (File.Exists(solutionPath))
+                {
+                    config = SolutionConfigStore.Load(solutionPath).Config;
+                }
+                else
+                {
+                    config = new SolutionConfig();
+                }
+
+                config.RootPath = project.ProjectDirectory.FullName;
+                config.ProjectMode = SolutionProjectMode.Explicit;
+                if (!config.Projects.Any(reference => string.Equals(reference, projectReference, StringComparison.OrdinalIgnoreCase)))
+                    config.Projects.Insert(0, projectReference);
+                config.StartupProject = projectReference;
+                SolutionConfigStore.Save(solutionPath, config);
+
+                displayName = string.IsNullOrWhiteSpace(project.Name)
+                    ? Path.GetFileNameWithoutExtension(project.ProjectFile.Name)
+                    : project.Name;
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                log.Warn($"创建隐式解决方案失败: {projectFile.FullName}, {ex.Message}");
+                solutionPath = string.Empty;
+                displayName = string.Empty;
+                return false;
+            }
         }
 
         public static bool OpenFolderDialog()
@@ -214,30 +310,7 @@ namespace ColorVision.Solution
 
         public bool OpenSolution(string FullPath)
         {
-            if (TryResolveOpenTarget(FullPath, out string solutionPath, out string historyPath, out string displayName))
-            {
-                FileInfo fileInfo = new(solutionPath);
-                SolutionHistory.InsertFile(historyPath);
-                if (!string.Equals(FullPath, historyPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    SolutionHistory.RemoveFile(FullPath);
-                }
-
-                SolutionLoaded?.Invoke(historyPath, new EventArgs());
-                if (fileInfo.Exists)
-                {
-                    SolutionEnvironments.SolutionDir = Directory.GetParent(fileInfo.FullName).FullName;
-                    SolutionEnvironments.SolutionPath = fileInfo.FullName;
-                    SolutionEnvironments.SolutionExt = fileInfo.Extension;
-                    SolutionEnvironments.SolutionName = fileInfo.Name;
-                    SolutionEnvironments.SolutionFileName = displayName;
-                }
-                DisposeSolutionExplorers();
-                CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
-                SolutionExplorers.Add(CurrentSolutionExplorer);
-                return true;
-            }
-            else
+            if (!TryResolveOpenTarget(FullPath, out string solutionPath, out string historyPath, out string displayName))
             {
                 string normalizedPath = NormalizeRecentPath(FullPath);
                 if (!string.IsNullOrWhiteSpace(normalizedPath))
@@ -247,6 +320,67 @@ namespace ColorVision.Solution
                 SolutionHistory.RemoveFile(FullPath);
                 return false;
             }
+
+            FileInfo fileInfo = new(solutionPath);
+            var candidateEnvironment = new SolutionEnvironments
+            {
+                SolutionDir = Directory.GetParent(fileInfo.FullName)?.FullName ?? string.Empty,
+                SolutionPath = fileInfo.FullName,
+                SolutionExt = fileInfo.Extension,
+                SolutionName = fileInfo.Name,
+                SolutionFileName = displayName,
+            };
+            SolutionExplorer candidateExplorer;
+            try
+            {
+                candidateExplorer = new SolutionExplorer(candidateEnvironment);
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                log.Warn($"打开解决方案失败: {solutionPath}", ex);
+                MessageBox.Show(
+                    Application.Current?.GetActiveWindow(),
+                    $"无法打开解决方案。\n\n{ex.Message}",
+                    "无法打开解决方案",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+
+            DisposeSolutionExplorers();
+            SolutionEnvironments = candidateEnvironment;
+            CurrentSolutionExplorer = candidateExplorer;
+            SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
+            SolutionExplorers.Add(candidateExplorer);
+            SolutionHistory.InsertFile(historyPath);
+            if (!string.Equals(FullPath, historyPath, StringComparison.OrdinalIgnoreCase))
+                SolutionHistory.RemoveFile(FullPath);
+            SolutionLoaded?.Invoke(historyPath, EventArgs.Empty);
+            return true;
+        }
+
+        public bool OpenProject(string projectPath)
+        {
+            var projectFile = new FileInfo(projectPath);
+            if (!ProjectProviderRegistry.TryLoadProject(
+                projectFile,
+                out _,
+                out string errorMessage))
+            {
+                MessageBox.Show(
+                    Application.Current?.GetActiveWindow(),
+                    errorMessage,
+                    "无法打开项目",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return false;
+            }
+            return OpenSolution(projectPath);
         }
 
         public bool CreateSolution(string SolutionDirectoryPath)
@@ -257,7 +391,7 @@ namespace ColorVision.Solution
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
 
-            new SolutionConfig().ToJsonNFile(slnName);
+            SolutionConfigStore.Save(slnName, new SolutionConfig { ProjectMode = SolutionProjectMode.Explicit });
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);

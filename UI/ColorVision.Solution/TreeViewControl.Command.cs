@@ -1,5 +1,6 @@
 ﻿using ColorVision.Solution.Explorer;
 using ColorVision.UI;
+using ColorVision.Solution.Workspace;
 using System.Collections.Specialized;
 using System.IO;
 using System.Windows;
@@ -14,69 +15,57 @@ namespace ColorVision.Solution
 
         private void IniCommand()
         {
-            // Add command bindings to both the TreeView and the UserControl
-            // so keyboard shortcuts work regardless of internal focus state
-            var copyBinding = new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand);
-            var cutBinding = new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
-            var pasteBinding = new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
+            RegisterCommand(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand);
+            RegisterCommand(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
+            RegisterCommand(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
+            RegisterCommand(ApplicationCommands.Delete, ExecuteDelete, CanExecuteDelete);
+            RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
+            RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
+            RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
+            RegisterCommand(SolutionProjectCommands.BuildSolution, ExecuteBuildSolution, CanExecuteBuildSolution);
+            RegisterCommand(SolutionProjectCommands.Run, ExecuteProjectCapability, CanExecuteProjectCapability);
+            RegisterCommand(SolutionProjectCommands.Debug, ExecuteProjectCapability, CanExecuteProjectCapability);
+            RegisterCommand(SolutionProjectCommands.SetStartupProject, ExecuteSetStartupProject, CanExecuteSetStartupProject);
+            RegisterCommand(SolutionProjectCommands.ExcludeFromProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
+            RegisterCommand(SolutionProjectCommands.IncludeInProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
+        }
 
-            SolutionTreeView.CommandBindings.Add(copyBinding);
-            SolutionTreeView.CommandBindings.Add(cutBinding);
-            SolutionTreeView.CommandBindings.Add(pasteBinding);
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
-
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) =>
-            {
-                // Multi-select delete
-                var toDelete = _selectedNodes
-                    .Where(n => n.CanDelete && !_selectedNodes.Any(parent => !ReferenceEquals(parent, n) && IsAncestorOf(parent, n)))
-                    .ToList();
-                foreach (var node in toDelete)
-                    node.Delete();
-            }
-            , (s, e) => e.CanExecute = _selectedNodes.Any(n => n.CanDelete)));
-
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
-            {
-                // Rename only works on single selection
-                if (_selectedNodes.Count == 1 && _selectedNodes[0].CanReName)
-                    _selectedNodes[0].IsEditMode = true;
-            }, (s, e) => e.CanExecute = _selectedNodes.Count == 1 && _selectedNodes[0].CanReName));
+        private void RegisterCommand(ICommand command, ExecutedRoutedEventHandler executed, CanExecuteRoutedEventHandler canExecute)
+        {
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(command, executed, canExecute));
+            CommandBindings.Add(new CommandBinding(command, executed, canExecute));
         }
 
         #region Command Handlers
 
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            if (_selectedNodes.Count == 0)
+            var selectedNodes = _selectionService.SelectedNodes;
+            if (selectedNodes.Count == 0)
                 return;
 
             if (e.Command == ApplicationCommands.Copy)
             {
-                e.CanExecute = _selectedNodes.All(n => n.CanCopy && !string.IsNullOrEmpty(n.FullPath));
+                e.CanExecute = selectedNodes.All(node => node.CanCopy && !string.IsNullOrEmpty(node.FullPath));
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                e.CanExecute = _selectedNodes.All(n => n.CanCut && !string.IsNullOrEmpty(n.FullPath));
+                e.CanExecute = selectedNodes.All(node => node.CanCut && !string.IsNullOrEmpty(node.FullPath));
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                e.CanExecute = _selectedNodes.Count == 1
-                    && _selectedNodes[0].CanPaste
+                e.CanExecute = selectedNodes.Count == 1
+                    && selectedNodes[0].CanPaste
                     && HasClipboardPaths();
             }
+            e.Handled = true;
         }
 
         private void ExecutedCommand(object sender, ExecutedRoutedEventArgs e)
         {
             if (e.Command == ApplicationCommands.Copy)
             {
-                var paths = _selectedNodes
-                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
-                    .Select(n => n.FullPath)
-                    .ToArray();
+                string[] paths = GetSelectedPaths(node => node.CanCopy);
                 if (paths.Length > 0)
                 {
                     SetClipboardPaths(paths, isCut: false);
@@ -85,10 +74,7 @@ namespace ColorVision.Solution
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                var paths = _selectedNodes
-                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
-                    .Select(n => n.FullPath)
-                    .ToArray();
+                string[] paths = GetSelectedPaths(node => node.CanCut);
                 if (paths.Length > 0)
                 {
                     SetClipboardPaths(paths, isCut: true);
@@ -97,10 +83,10 @@ namespace ColorVision.Solution
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectedNodes.Count == 0)
+                if (!TryGetClipboardPaths(out var sourcePaths, out bool isCut, out bool isInternalClipboard) || _selectionService.SelectedNodes.Count == 0)
                     return;
 
-                var targetNode = _selectedNodes[0];
+                var targetNode = _selectionService.SelectedNodes[0];
                 string targetDir = targetNode.FullPath;
                 if (targetNode is FileNode)
                     targetDir = Path.GetDirectoryName(targetNode.FullPath) ?? targetDir;
@@ -116,6 +102,239 @@ namespace ColorVision.Solution
                     _isCutOperation = false;
                 }
             }
+            e.Handled = true;
+        }
+
+        private string[] GetSelectedPaths(Func<SolutionNode, bool> capability)
+        {
+            return _selectionService.GetTopLevelNodes(node => capability(node) && !string.IsNullOrWhiteSpace(node.FullPath))
+                .Select(node => node.FullPath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private void CanExecuteDelete(object sender, CanExecuteRoutedEventArgs e)
+        {
+            var selectedNodes = _selectionService.SelectedNodes;
+            e.CanExecute = selectedNodes.Count > 0 && selectedNodes.All(node => node.CanDelete);
+            e.Handled = true;
+        }
+
+        private void ExecuteDelete(object sender, ExecutedRoutedEventArgs e)
+        {
+            var nodes = _selectionService.GetTopLevelNodes(node => node.CanDelete);
+            if (nodes.Count == 0)
+                return;
+
+            if (_selectionService.SelectedNodes.Count == 1)
+            {
+                if (!nodes[0].TryDelete(showConfirmation: true))
+                    return;
+            }
+            else
+            {
+                string names = string.Join(Environment.NewLine, nodes.Take(5).Select(node => $"• {node.Name}"));
+                if (nodes.Count > 5)
+                    names += $"{Environment.NewLine}• …";
+
+                var result = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"确定删除或从解决方案移除选中的 {nodes.Count} 项吗？{Environment.NewLine}{Environment.NewLine}{names}",
+                    "ColorVision",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning);
+                if (result != MessageBoxResult.OK)
+                    return;
+
+                if (!EditorDocumentService.TryCloseDocumentsForResources(nodes.Select(node => node.FullPath)))
+                    return;
+
+                var failedNodes = nodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList();
+                if (failedNodes.Count > 0)
+                {
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"有 {failedNodes.Count} 项未能删除或移除，请查看前面的错误信息。",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+
+            _selectionService.Clear();
+            e.Handled = true;
+        }
+
+        private void CanExecuteRename(object sender, CanExecuteRoutedEventArgs e)
+        {
+            var selectedNodes = _selectionService.SelectedNodes;
+            e.CanExecute = selectedNodes.Count == 1 && selectedNodes[0].CanReName;
+            e.Handled = true;
+        }
+
+        private void ExecuteRename(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.SelectedNodes is [var node] && node.CanReName)
+                node.IsEditMode = true;
+            e.Handled = true;
+        }
+
+        private void CanExecuteRefresh(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = GetSelectedSolutionExplorer() != null;
+            e.Handled = true;
+        }
+
+        private void ExecuteRefresh(object sender, ExecutedRoutedEventArgs e)
+        {
+            GetSelectedSolutionExplorer()?.ReloadSolutionState();
+            e.Handled = true;
+        }
+
+        private SolutionExplorer? GetSelectedSolutionExplorer()
+        {
+            if (_selectionService.SelectedNodes is not [var selectedNode])
+                return null;
+
+            for (SolutionNode? current = selectedNode; current != null; current = current.Parent)
+            {
+                if (current is SolutionExplorer solutionExplorer)
+                    return solutionExplorer;
+            }
+            return selectedNode switch
+            {
+                ProjectNode projectNode => projectNode.SolutionExplorer,
+                UnavailableProjectNode unavailableProjectNode => unavailableProjectNode.SolutionExplorer,
+                _ => null,
+            };
+        }
+
+        private void CanExecuteProjectCapability(object sender, CanExecuteRoutedEventArgs e)
+        {
+            string? capabilityId = SolutionProjectCommands.GetCapabilityId(e.Command);
+            e.CanExecute = capabilityId != null && _selectionService.SelectedNodes switch
+            {
+                [ProjectNode projectNode] => projectNode.CanExecuteCapability(capabilityId),
+                [_] when capabilityId is ProjectCapabilityIds.Run or ProjectCapabilityIds.Debug
+                    => GetSelectedSolutionExplorer()?.CanExecuteStartupProject(capabilityId) == true,
+                _ => false,
+            };
+            e.Handled = true;
+        }
+
+        private void ExecuteProjectCapability(object sender, ExecutedRoutedEventArgs e)
+        {
+            string? capabilityId = SolutionProjectCommands.GetCapabilityId(e.Command);
+            if (capabilityId != null)
+            {
+                if (_selectionService.SelectedNodes is [ProjectNode projectNode])
+                    projectNode.ExecuteCapability(capabilityId);
+                else if (_selectionService.SelectedNodes.Count == 1
+                    && capabilityId is ProjectCapabilityIds.Run or ProjectCapabilityIds.Debug)
+                {
+                    GetSelectedSolutionExplorer()?.ExecuteStartupProject(capabilityId);
+                }
+            }
+            e.Handled = true;
+        }
+
+        private void CanExecuteSetStartupProject(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.SelectedNodes is [ProjectNode projectNode]
+                && projectNode.SolutionExplorer?.CanSetStartupProject(projectNode.Project) == true;
+            e.Handled = true;
+        }
+
+        private void ExecuteSetStartupProject(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.SelectedNodes is [ProjectNode projectNode])
+                projectNode.SolutionExplorer?.SetStartupProject(projectNode.Project);
+            e.Handled = true;
+        }
+
+        private void CanExecuteBuildSolution(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.SelectedNodes is [SolutionExplorer solutionExplorer]
+                && solutionExplorer.CanBuildSolution();
+            e.Handled = true;
+        }
+
+        private void ExecuteBuildSolution(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.SelectedNodes is [SolutionExplorer solutionExplorer])
+                solutionExplorer.BuildSolution();
+            e.Handled = true;
+        }
+
+        private void CanExecuteProjectItemMembership(object sender, CanExecuteRoutedEventArgs e)
+        {
+            bool include = e.Command == SolutionProjectCommands.IncludeInProject;
+            e.CanExecute = TryGetProjectItemSelection(include, out _, out _);
+            e.Handled = true;
+        }
+
+        private void ExecuteProjectItemMembership(object sender, ExecutedRoutedEventArgs e)
+        {
+            bool include = e.Command == SolutionProjectCommands.IncludeInProject;
+            if (!TryGetProjectItemSelection(include, out ProjectNode? projectNode, out IReadOnlyList<SolutionNode> nodes)
+                || projectNode == null)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            IReadOnlyList<SolutionNode> topLevelNodes = _selectionService.GetTopLevelNodes(nodes.Contains);
+            if (!ProjectProviderRegistry.TrySetProjectItemMembership(
+                projectNode.Project,
+                topLevelNodes.Select(node => node.FullPath).ToList(),
+                include,
+                out ProjectDefinition? updatedProject,
+                out string errorMessage)
+                || updatedProject == null)
+            {
+                MessageBox.Show(
+                    Application.Current?.GetActiveWindow(),
+                    errorMessage,
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                e.Handled = true;
+                return;
+            }
+
+            _selectionService.Clear();
+            projectNode.SolutionExplorer?.ApplyProjectMutation(updatedProject);
+            e.Handled = true;
+        }
+
+        private bool TryGetProjectItemSelection(
+            bool include,
+            out ProjectNode? projectNode,
+            out IReadOnlyList<SolutionNode> nodes)
+        {
+            nodes = _selectionService.SelectedNodes;
+            projectNode = null;
+            if (nodes.Count == 0 || nodes.Any(node => node is ProjectNode))
+                return false;
+
+            foreach (SolutionNode node in nodes)
+            {
+                ProjectNode? owner = ProjectNode.FindOwningProject(node);
+                if (owner == null
+                    || (projectNode != null && !string.Equals(
+                        projectNode.Project.ProjectFile.FullName,
+                        owner.Project.ProjectFile.FullName,
+                        StringComparison.OrdinalIgnoreCase))
+                    || owner.IsPathIncludedByProjectRules(node.FullPath) == include
+                    || !ProjectProviderRegistry.CanChangeProjectItemMembership(owner.Project, node.FullPath))
+                {
+                    projectNode = null;
+                    return false;
+                }
+
+                projectNode ??= owner;
+            }
+            return projectNode != null;
         }
 
         private static void CopyOrMovePaths(IEnumerable<string> sourcePaths, string targetDir, bool isMove)
@@ -145,7 +364,9 @@ namespace ColorVision.Solution
                     }
                     else
                     {
-                        CopyDirectory(sourcePath, GetAvailableCopyPath(destPath, isDirectory: true));
+                        string copyDestination = GetAvailableCopyPath(destPath, isDirectory: true);
+                        if (IsSafeDirectoryCopyDestination(sourcePath, copyDestination))
+                            CopyDirectory(sourcePath, copyDestination);
                     }
                 }
             }
@@ -290,16 +511,10 @@ namespace ColorVision.Solution
             return candidate.StartsWith(parent, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsAncestorOf(SolutionNode possibleAncestor, SolutionNode node)
+        internal static bool IsSafeDirectoryCopyDestination(string sourcePath, string destinationPath)
         {
-            var parent = node.Parent;
-            while (parent != null)
-            {
-                if (ReferenceEquals(parent, possibleAncestor))
-                    return true;
-                parent = parent.Parent;
-            }
-            return false;
+            return !IsSamePath(sourcePath, destinationPath)
+                && !IsSubPathOf(destinationPath, sourcePath);
         }
 
         #endregion

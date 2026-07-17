@@ -39,6 +39,7 @@ namespace ColorVision.Solution.Explorer
                 return;
             }
             node.Parent = this;
+            node.UpdateProjectMembershipState();
             AddChildEventHandler?.Invoke(this, new EventArgs());
             VisualChildren.SortedAdd(node);
         }
@@ -97,7 +98,15 @@ namespace ColorVision.Solution.Explorer
         public bool IsMultiSelected { get => _IsMultiSelected; set { _IsMultiSelected = value; NotifyPropertyChanged(); } }
         private bool _IsMultiSelected;
 
-        public ContextMenu ContextMenu { get; set; }
+        /// <summary>
+        /// Indicates that this node is the currently validated drag-and-drop target.
+        /// It is independent from selection so drag feedback never changes command state.
+        /// </summary>
+        public bool IsDropTarget { get => _IsDropTarget; set { _IsDropTarget = value; NotifyPropertyChanged(); } }
+        private bool _IsDropTarget;
+
+        public virtual bool IsStartupProject => false;
+        public bool IsExcludedFromProject { get; private set; }
 
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
 
@@ -117,70 +126,39 @@ namespace ColorVision.Solution.Explorer
             CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));
         }
 
-        public virtual void InitContextMenu()
-        {
-            ContextMenu.Items.Clear();
-            var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
-
-            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
-            {
-                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
-                for (int i = 0; i < iMenuItems1.Count; i++)
-                {
-                    var iMenuItem = iMenuItems1[i];
-                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                    MenuItem menuItem = new MenuItem
-                    {
-                        Header = iMenuItem.Header,
-                        Icon = iMenuItem.Icon,
-                        InputGestureText = iMenuItem.InputGestureText,
-                        Command = iMenuItem.Command,
-                        Tag = iMenuItem,
-                        Visibility = iMenuItem.Visibility,
-                    };
-
-                    CreateMenu(menuItem, GuidId);
-                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
-                    {
-                        parentMenuItem.Items.Add(new Separator());
-                    }
-                    parentMenuItem.Items.Add(menuItem);
-                }
-                foreach (var item in iMenuItems1)
-                {
-                    iMenuItems.Remove(item);
-                }
-            }
-
-            var iMenuItemMetas = MenuItemMetadatas.Where(item=>item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible).OrderBy(item => item.Order).ToList();
-
-            for (int i = 0; i < iMenuItemMetas.Count; i++)
-            {
-                MenuItemMetadata menuItemMeta = iMenuItemMetas[i];
-                MenuItem menuItem = new MenuItem() 
-                { 
-                    Header = menuItemMeta.Header, 
-                    Command = menuItemMeta.Command,
-                    Icon  = menuItemMeta.Icon
-                };
-                if (menuItemMeta.GuidId != null)
-                    CreateMenu(menuItem, menuItemMeta.GuidId);
-                if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
-                    ContextMenu.Items.Add(new Separator());
-
-                ContextMenu.Items.Add(menuItem);
-            }
-        }
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Crtl+X" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Crtl+C" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Crtl+V" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
+            AddProjectMembershipMenuItem();
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Cut, Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Ctrl+X" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Copy, Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Ctrl+C" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Paste, Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Ctrl+V" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Rename, Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径", Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
+        }
+
+        private void AddProjectMembershipMenuItem()
+        {
+            if (this is ProjectNode
+                || string.IsNullOrWhiteSpace(FullPath)
+                || ProjectNode.FindOwningProject(this) is not { } projectNode
+                || !ProjectProviderRegistry.CanChangeProjectItemMembership(projectNode.Project, FullPath))
+            {
+                return;
+            }
+
+            bool isIncluded = projectNode.IsPathIncludedByProjectRules(FullPath);
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = isIncluded ? "ExcludeFromProject" : "IncludeInProject",
+                Order = 90,
+                Header = isIncluded ? "从项目中排除(_J)" : "包括在项目中(_J)",
+                Command = isIncluded
+                    ? SolutionProjectCommands.ExcludeFromProject
+                    : SolutionProjectCommands.IncludeInProject,
+            });
         }
 
         /// <summary>
@@ -198,13 +176,23 @@ namespace ColorVision.Solution.Explorer
             target.AddRange(MenuItemMetadatas);
         }
 
+        internal void InvalidateMenuItems()
+        {
+            _menuInitialized = false;
+            MenuItemMetadatas.Clear();
+        }
+
         public virtual void ShowProperty() { }
 
         public virtual void Delete()
         {
-            if (Parent == null)
-                return;
-            Parent.RemoveChild(this);
+            TryDelete(showConfirmation: true);
+        }
+
+        internal virtual bool TryDelete(bool showConfirmation)
+        {
+            Parent?.RemoveChild(this);
+            return true;
         }
 
         public virtual bool CanReName { get; set; } = true;
@@ -227,6 +215,18 @@ namespace ColorVision.Solution.Explorer
             {
                 Common.Clipboard.SetText(FullPath);
             }
+        }
+
+        internal void UpdateProjectMembershipState()
+        {
+            bool isExcluded = this is not ProjectNode
+                && ProjectNode.FindOwningProject(this) is { } projectNode
+                && !projectNode.IsPathIncludedByProjectRules(FullPath);
+            if (IsExcludedFromProject == isExcluded)
+                return;
+
+            IsExcludedFromProject = isExcluded;
+            NotifyPropertyChanged(nameof(IsExcludedFromProject));
         }
 
         protected virtual void LogOperation(string message)

@@ -10,68 +10,30 @@ using System.Windows;
 namespace ColorVision.Solution.Editor
 {
 
-    [GenericEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2"), FolderEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2")]
+    [GenericEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2", editorId: "colorvision.web", isVisibleInOpenWith: false), FolderEditor("WebView2编辑器", resourceKey: "Sol_Editor_WebView2", editorId: "colorvision.web.folder")]
     public class WebView2Editor : EditorBase
     {
         public override void Open(string filePath)
         {
-            string GuidId = Tool.GetMD5(filePath);
-            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
-
-            if (existingDocument != null)
-            {
-                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+            string resourcePath = filePath;
+            EditorDocumentService.Open(
+                resourcePath,
+                GetType(),
+                Path.GetFileName(resourcePath),
+                () =>
                 {
-                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
-                }
-                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
-                {
-                    var window = Window.GetWindow(layoutFloatingWindow);
-                    if (window != null)
+                    var webView = new WebView2();
+                    Application.Current.Dispatcher.Invoke(async () =>
                     {
-                        window.Activate();
-                    }
-                }
-            }
-            else
-            {
-
-                var directory = new DirectoryInfo(filePath);
-
-                WebView2 webView2 = new WebView2();
-
-                Application.Current.Dispatcher.Invoke(async () =>
-                {
-                    await WebViewService.EnsureWebViewInitializedAsync(webView2);
-
-                    if (!Uri.IsWellFormedUriString(filePath, UriKind.RelativeOrAbsolute))
-                    {
-                        filePath = "file:///" + filePath.Replace("\\", "/");
-                    }
-                    webView2.Source = new Uri(filePath, UriKind.RelativeOrAbsolute);
-
-                });
-
-
-
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
-
-                layoutDocument.Content = webView2;
-                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
-                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
-                layoutDocument.IsActiveChanged += (s, e) =>
-                {
-                    if (layoutDocument.IsActive)
-                    {
-                        WorkspaceManager.OnContentIdSelected(filePath);
-                    }
-                };
-                layoutDocument.Closing += (s, e) =>
-                {
-                    webView2?.Dispose();
-                };
-
-            }
+                        await WebViewService.EnsureWebViewInitializedAsync(webView);
+                        string source = Uri.IsWellFormedUriString(resourcePath, UriKind.RelativeOrAbsolute)
+                            ? resourcePath
+                            : "file:///" + resourcePath.Replace("\\", "/");
+                        webView.Source = new Uri(source, UriKind.RelativeOrAbsolute);
+                    });
+                    return webView;
+                },
+                webView => webView.Dispose());
         }
     }
 }
