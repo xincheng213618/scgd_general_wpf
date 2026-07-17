@@ -649,7 +649,17 @@ namespace ColorVision.Solution
 
         private static IEditor? CreateEditor(EditorDescriptor? descriptor)
         {
-            return descriptor == null ? null : Activator.CreateInstance(descriptor.EditorType) as IEditor;
+            if (descriptor == null)
+                return null;
+            IEditor? editor = descriptor.Factory != null
+                ? descriptor.Factory()
+                : Activator.CreateInstance(descriptor.EditorType) as IEditor;
+            if (editor != null && !descriptor.EditorType.IsInstanceOfType(editor))
+            {
+                throw new InvalidOperationException(
+                    $"编辑器工厂“{descriptor.Id}”返回了与声明类型不一致的实例。");
+            }
+            return editor;
         }
 
         private static bool OpenWithDescriptor(

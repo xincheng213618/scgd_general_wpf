@@ -1,3 +1,4 @@
+using ColorVision.Solution.Editor;
 using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
@@ -21,5 +22,31 @@ namespace ColorVision.Solution.Explorer
             "打开方式",
             nameof(OpenWith),
             typeof(SolutionResourceCommands));
+    }
+
+    internal static class SolutionResourceOpenPolicy
+    {
+        public static bool CanOpen(IReadOnlyList<SolutionNode> nodes)
+        {
+            ArgumentNullException.ThrowIfNull(nodes);
+            if (nodes is [var node])
+                return node.CanOpen;
+            return TryGetBatchResourcePaths(nodes, out _);
+        }
+
+        public static bool TryGetBatchResourcePaths(
+            IReadOnlyList<SolutionNode> nodes,
+            out string[] resourcePaths)
+        {
+            ArgumentNullException.ThrowIfNull(nodes);
+            resourcePaths = nodes
+                .Select(node => node.EditorResourcePath)
+                .OfType<string>()
+                .ToArray();
+            return nodes.Count > 1
+                && nodes.All(node => node.CanOpen)
+                && resourcePaths.Length == nodes.Count
+                && ResourceOpenService.CanOpenTogether(resourcePaths);
+        }
     }
 }

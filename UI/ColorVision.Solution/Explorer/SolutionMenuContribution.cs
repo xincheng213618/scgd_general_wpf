@@ -275,19 +275,26 @@ namespace ColorVision.Solution.Explorer
     public sealed class ResourceOpenMenuContribution : ISolutionMenuContribution
     {
         public string Id => "colorvision.solution.resource-open";
-        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.Any;
 
         public bool IsApplicable(SolutionMenuContext context)
         {
-            return context.PrimaryNode.CanOpen
-                || !string.IsNullOrWhiteSpace(context.PrimaryNode.EditorResourcePath);
+            if (!context.IsMultipleSelection)
+            {
+                return context.PrimaryNode.CanOpen
+                    || !string.IsNullOrWhiteSpace(context.PrimaryNode.EditorResourcePath);
+            }
+            return SolutionResourceOpenPolicy.CanOpen(context.Nodes);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
         {
             SolutionNode node = context.PrimaryNode;
             var menuItems = new List<MenuItemMetadata>();
-            if (node.CanOpen)
+            bool canOpen = context.IsMultipleSelection
+                ? SolutionResourceOpenPolicy.CanOpen(context.Nodes)
+                : node.CanOpen;
+            if (canOpen)
             {
                 menuItems.Add(new MenuItemMetadata
                 {
@@ -300,7 +307,8 @@ namespace ColorVision.Solution.Explorer
                 });
             }
 
-            if (node.EditorResourcePath is { } resourcePath
+            if (!context.IsMultipleSelection
+                && node.EditorResourcePath is { } resourcePath
                 && ResourceOpenService.Instance.GetOpenWithEditors(resourcePath).Count > 0)
             {
                 menuItems.Add(new MenuItemMetadata

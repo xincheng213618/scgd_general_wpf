@@ -110,6 +110,52 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void EditorManager_UsesRegisteredFactoryForEditorsWithDependencies()
+    {
+        string suffix = Guid.NewGuid().ToString("N");
+        string extension = $".factory{suffix}";
+        string editorId = $"tests.factory.{suffix}";
+        string invalidFactoryId = $"tests.factory.invalid.{suffix}";
+        const string dependency = "injected dependency";
+        EditorManager.Instance.RegisterEditor(CreateFileDescriptor<FactoryOnlyEditor>(
+            editorId,
+            isDefault: true,
+            extension: extension,
+            factory: () => FactoryOnlyEditor.Create(dependency)));
+        EditorManager.Instance.RegisterEditor(CreateFileDescriptor<FactoryOnlyEditor>(
+            invalidFactoryId,
+            extension: extension,
+            factory: () => new TrackingEditor()));
+        string directoryPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(directoryPath, $"Example{extension}");
+        File.WriteAllText(filePath, "test");
+
+        try
+        {
+            FactoryOnlyEditor.LastDependency = null;
+            FactoryOnlyEditor.LastOpenedPath = null;
+
+            Assert.True(EditorManager.Instance.OpenFileWith(
+                filePath,
+                editorId,
+                out string errorMessage),
+                errorMessage);
+            Assert.Equal(dependency, FactoryOnlyEditor.LastDependency);
+            Assert.Equal(filePath, FactoryOnlyEditor.LastOpenedPath, ignoreCase: true);
+
+            Assert.False(EditorManager.Instance.OpenFileWith(
+                filePath,
+                invalidFactoryId,
+                out string invalidFactoryError));
+            Assert.Contains("声明类型不一致", invalidFactoryError, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ResourceOpenService_SeparatesProjectActivationFromExplicitEditing()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -189,6 +235,60 @@ public class SolutionManagerFoundationTests
             Assert.True(successfulResult.Succeeded);
             Assert.Null(successfulResult.DefaultEditorUpdated);
             Assert.Equal(filePath, TrackingEditor.LastOpenedPath, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResourceOpenService_BatchOpensFilesWithoutReplacingWorkspaces()
+    {
+        string suffix = Guid.NewGuid().ToString("N");
+        string extension = $".batch{suffix}";
+        string failingExtension = $".batchfail{suffix}";
+        EditorManager manager = EditorManager.Instance;
+        manager.RegisterEditor(CreateFileDescriptor<BatchRecordingEditor>(
+            $"tests.batch.{suffix}",
+            isDefault: true,
+            extension: extension));
+        manager.RegisterEditor(CreateFileDescriptor<ThrowingOpenEditor>(
+            $"tests.batch.fail.{suffix}",
+            isDefault: true,
+            extension: failingExtension));
+        string directoryPath = CreateTemporaryDirectory();
+        string firstPath = Path.Combine(directoryPath, $"First{extension}");
+        string secondPath = Path.Combine(directoryPath, $"Second{extension}");
+        string failingPath = Path.Combine(directoryPath, $"Failed{failingExtension}");
+        string solutionPath = Path.Combine(directoryPath, "Nested.cvsln");
+        File.WriteAllText(firstPath, "first");
+        File.WriteAllText(secondPath, "second");
+        File.WriteAllText(failingPath, "failed");
+        File.WriteAllText(solutionPath, "{}");
+
+        try
+        {
+            BatchRecordingEditor.OpenedPaths.Clear();
+            ResourceOpenService service = ResourceOpenService.Instance;
+
+            Assert.True(ResourceOpenService.CanOpenTogether([firstPath, secondPath]));
+            Assert.False(ResourceOpenService.CanOpenTogether([firstPath, solutionPath]));
+
+            ResourceOpenBatchResult result = service.OpenMany(
+                [firstPath, solutionPath, secondPath, failingPath]);
+
+            Assert.False(result.IsComplete);
+            Assert.Equal(4, result.RequestedCount);
+            Assert.Equal([firstPath, secondPath], result.SuccessfulPaths);
+            Assert.Equal([firstPath, secondPath], BatchRecordingEditor.OpenedPaths);
+            Assert.Contains(result.Failures, failure =>
+                failure.Kind == ResourceOpenKind.Solution
+                && failure.ResourcePath == solutionPath);
+            Assert.Contains(result.Failures, failure =>
+                failure.Kind == ResourceOpenKind.File
+                && failure.ResourcePath == failingPath
+                && failure.Message.Contains("Open failed", StringComparison.Ordinal));
         }
         finally
         {
@@ -647,7 +747,9 @@ public class SolutionManagerFoundationTests
     {
         string solutionDirectory = CreateTemporaryDirectory();
         string filePath = Path.Combine(solutionDirectory, "sample.txt");
+        string secondFilePath = Path.Combine(solutionDirectory, "second.txt");
         File.WriteAllText(filePath, "sample");
+        File.WriteAllText(secondFilePath, "second");
         string folderPath = Path.Combine(solutionDirectory, "Folder");
         Directory.CreateDirectory(folderPath);
         string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
@@ -657,6 +759,7 @@ public class SolutionManagerFoundationTests
         {
             using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
             FileNode fileNode = SolutionNodeFactory.CreateFileNode(new FileInfo(filePath));
+            FileNode secondFileNode = SolutionNodeFactory.CreateFileNode(new FileInfo(secondFilePath));
             using FolderNode folderNode = SolutionNodeFactory.CreateFolderNode(
                 new DirectoryInfo(folderPath),
                 explorer);
@@ -673,6 +776,10 @@ public class SolutionManagerFoundationTests
                 SolutionContextMenuService.CreateMenuMetadata([searchResult]);
             List<MenuItemMetadata> solutionMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([explorer]);
+            List<MenuItemMetadata> multiFileMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode, secondFileNode]);
+            List<MenuItemMetadata> mixedMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
 
             Assert.Same(
                 SolutionResourceCommands.Open,
@@ -698,6 +805,14 @@ public class SolutionManagerFoundationTests
             Assert.Same(
                 SolutionResourceCommands.OpenWith,
                 Assert.Single(solutionMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
+            Assert.Same(
+                SolutionResourceCommands.Open,
+                Assert.Single(multiFileMenuItems, item => item.GuidId == SolutionResourceCommands.OpenId).Command);
+            Assert.DoesNotContain(multiFileMenuItems, item =>
+                item.GuidId == SolutionResourceCommands.OpenWithId);
+            Assert.DoesNotContain(mixedMenuItems, item =>
+                item.GuidId == SolutionResourceCommands.OpenId
+                || item.GuidId == SolutionResourceCommands.OpenWithId);
             Assert.Same(
                 Commands.ReName,
                 Assert.Single(fileMenuItems, item => item.GuidId == SolutionCommandIds.Rename).Command);
@@ -3641,7 +3756,8 @@ public class SolutionManagerFoundationTests
         bool isGeneric = false,
         bool isDefault = false,
         int priority = 0,
-        string extension = ".test")
+        string extension = ".test",
+        Func<IEditor>? factory = null)
     {
         return new EditorDescriptor(
             id,
@@ -3651,7 +3767,10 @@ public class SolutionManagerFoundationTests
             isGeneric,
             isDefault,
             priority,
-            IsVisibleInOpenWith: true);
+            IsVisibleInOpenWith: true)
+        {
+            Factory = factory,
+        };
     }
 
     private static SolutionNode CreateNode(string path)
@@ -3760,6 +3879,37 @@ public class SolutionManagerFoundationTests
         public void Open(string filePath)
         {
             throw new InvalidOperationException("Open failed.");
+        }
+    }
+
+    private sealed class FactoryOnlyEditor : IEditor
+    {
+        private readonly string _dependency;
+
+        public static string? LastDependency { get; set; }
+        public static string? LastOpenedPath { get; set; }
+
+        private FactoryOnlyEditor(string dependency)
+        {
+            _dependency = dependency;
+        }
+
+        public static FactoryOnlyEditor Create(string dependency) => new(dependency);
+
+        public void Open(string filePath)
+        {
+            LastDependency = _dependency;
+            LastOpenedPath = filePath;
+        }
+    }
+
+    private sealed class BatchRecordingEditor : IEditor
+    {
+        public static List<string> OpenedPaths { get; } = new();
+
+        public void Open(string filePath)
+        {
+            OpenedPaths.Add(filePath);
         }
     }
 

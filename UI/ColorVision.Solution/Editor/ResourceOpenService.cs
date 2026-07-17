@@ -17,6 +17,29 @@ namespace ColorVision.Solution.Editor
         string ErrorMessage = "",
         bool? DefaultEditorUpdated = null);
 
+    public sealed record ResourceOpenFailure(
+        string ResourcePath,
+        ResourceOpenKind Kind,
+        string Message);
+
+    public sealed class ResourceOpenBatchResult
+    {
+        public int RequestedCount { get; }
+        public IReadOnlyList<string> SuccessfulPaths { get; }
+        public IReadOnlyList<ResourceOpenFailure> Failures { get; }
+        public bool IsComplete => RequestedCount > 0 && SuccessfulPaths.Count == RequestedCount;
+
+        public ResourceOpenBatchResult(
+            int requestedCount,
+            IReadOnlyList<string> successfulPaths,
+            IReadOnlyList<ResourceOpenFailure> failures)
+        {
+            RequestedCount = requestedCount;
+            SuccessfulPaths = successfulPaths;
+            Failures = failures;
+        }
+    }
+
     /// <summary>
     /// Canonical application-level open router. It separates workspace/project
     /// activation from editor selection so callers do not need extension logic.
@@ -72,6 +95,54 @@ namespace ColorVision.Solution.Editor
         }
 
         public bool TryOpen(string path) => Open(path).Succeeded;
+
+        public static bool CanOpenTogether(IEnumerable<string> paths)
+        {
+            ArgumentNullException.ThrowIfNull(paths);
+            List<string> resources = paths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (resources.Count == 0)
+                return false;
+            if (resources.Count == 1)
+                return Classify(resources[0]) != ResourceOpenKind.Missing;
+            return resources.All(path => Classify(path) == ResourceOpenKind.File);
+        }
+
+        public ResourceOpenBatchResult OpenMany(IEnumerable<string> paths)
+        {
+            ArgumentNullException.ThrowIfNull(paths);
+            List<string> resources = paths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var successfulPaths = new List<string>();
+            var failures = new List<ResourceOpenFailure>();
+
+            foreach (string path in resources)
+            {
+                ResourceOpenKind kind = Classify(path);
+                if (resources.Count > 1 && kind != ResourceOpenKind.File)
+                {
+                    failures.Add(new ResourceOpenFailure(
+                        path,
+                        kind,
+                        kind == ResourceOpenKind.Missing
+                            ? "资源不存在。"
+                            : "批量打开仅支持普通文件；文件夹、工程和解决方案需要单独打开。"));
+                    continue;
+                }
+
+                ResourceOpenResult result = Open(path);
+                if (result.Succeeded)
+                    successfulPaths.Add(path);
+                else
+                    failures.Add(new ResourceOpenFailure(path, result.Kind, result.ErrorMessage));
+            }
+
+            return new ResourceOpenBatchResult(resources.Count, successfulPaths, failures);
+        }
 
         /// <summary>
         /// Opens an existing physical resource with one explicit editor. This

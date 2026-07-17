@@ -50,15 +50,43 @@ namespace ColorVision.Solution
 
         private void CanExecuteOpen(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _selectionService.CommandNodes is [var node] && node.CanOpen;
+            IReadOnlyList<SolutionNode> nodes = _selectionService.CommandNodes;
+            e.CanExecute = SolutionResourceOpenPolicy.CanOpen(nodes);
             e.Handled = true;
         }
 
         private void ExecuteOpen(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_selectionService.CommandNodes is [var node] && node.CanOpen)
+            IReadOnlyList<SolutionNode> nodes = _selectionService.CommandNodes;
+            if (nodes is [var node] && node.CanOpen)
+            {
                 node.Open();
+            }
+            else if (SolutionResourceOpenPolicy.TryGetBatchResourcePaths(
+                nodes,
+                out string[] resourcePaths))
+            {
+                ResourceOpenBatchResult result = ResourceOpenService.Instance.OpenMany(resourcePaths);
+                if (result.Failures.Count > 0)
+                    ShowResourceOpenFailures(result);
+            }
             e.Handled = true;
+        }
+
+        private static void ShowResourceOpenFailures(ResourceOpenBatchResult result)
+        {
+            string details = string.Join(
+                Environment.NewLine,
+                result.Failures.Take(5).Select(failure =>
+                    $"• {Path.GetFileName(failure.ResourcePath)}: {failure.Message}"));
+            if (result.Failures.Count > 5)
+                details += $"{Environment.NewLine}• …";
+            MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                $"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}",
+                "部分文件未能打开",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
 
         private void CanExecuteOpenWith(object sender, CanExecuteRoutedEventArgs e)

@@ -22,6 +22,12 @@ namespace ColorVision.Solution.Editor
         bool IsVisibleInOpenWith,
         string? DisplayName = null)
     {
+        /// <summary>
+        /// Optional creation hook for editors that require injected dependencies.
+        /// The editor type remains the stable identity and compatibility metadata.
+        /// </summary>
+        public Func<IEditor>? Factory { get; init; }
+
         public bool SupportsExtension(string extension)
         {
             if (ResourceKind != EditorResourceKind.File)
