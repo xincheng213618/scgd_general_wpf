@@ -558,6 +558,31 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SelectionService_SiblingScopeUsesCurrentHierarchyAndSkipsLoadingPlaceholder()
+    {
+        var firstRoot = CreateNode("first-root");
+        var secondRoot = CreateNode("second-root");
+        var parent = CreateNode("parent");
+        var firstChild = CreateNode("first-child");
+        var secondChild = CreateNode("second-child");
+        parent.AddChild(firstChild);
+        parent.AddChild(new LazyLoadingNode());
+        parent.AddChild(secondChild);
+
+        IReadOnlyList<SolutionNode> childScope =
+            SolutionSelectionService.GetSiblingSelectionScope(
+                secondChild,
+                [firstRoot, secondRoot]);
+        IReadOnlyList<SolutionNode> rootScope =
+            SolutionSelectionService.GetSiblingSelectionScope(
+                firstRoot,
+                [firstRoot, secondRoot]);
+
+        Assert.Equal([firstChild, secondChild], childScope);
+        Assert.Equal([firstRoot, secondRoot], rootScope);
+    }
+
+    [Fact]
     public void SolutionMenuContributionsComposeAndHonorSelectionPolicies()
     {
         string prefix = $"tests.solution-menu.{Guid.NewGuid():N}";

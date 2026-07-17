@@ -100,6 +100,20 @@ namespace ColorVision.Solution.Explorer
                 .ToList();
         }
 
+        public static IReadOnlyList<SolutionNode> GetSiblingSelectionScope(
+            SolutionNode? currentNode,
+            IEnumerable<SolutionNode> rootNodes)
+        {
+            ArgumentNullException.ThrowIfNull(rootNodes);
+            IEnumerable<SolutionNode> candidates = currentNode?.Parent != null
+                ? currentNode.Parent.VisualChildren
+                : rootNodes;
+            return candidates
+                .Where(node => node is not LazyLoadingNode)
+                .Distinct()
+                .ToList();
+        }
+
         private void ReplaceSelection(IEnumerable<SolutionNode> nodes)
         {
             var replacement = nodes.Distinct().ToList();

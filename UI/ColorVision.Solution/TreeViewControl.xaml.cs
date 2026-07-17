@@ -418,7 +418,35 @@ namespace ColorVision.Solution
                 return;
             }
 
-            _selectionService.SelectSingle(node);
+            ModifierKeys modifiers = Keyboard.Modifiers;
+            if (modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                _selectionService.SelectRange(
+                    GetVisibleNodes(),
+                    node,
+                    additive: modifiers.HasFlag(ModifierKeys.Control));
+            }
+            else
+            {
+                _selectionService.SelectSingle(node);
+            }
+        }
+
+        private void SolutionTreeView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.OriginalSource is TextBox
+                || e.Key != Key.Space
+                || !Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                return;
+            }
+
+            SolutionNode? currentNode = GetCurrentTreeNode();
+            if (currentNode == null)
+                return;
+
+            _selectionService.Toggle(currentNode);
+            e.Handled = true;
         }
 
         private void TreeViewItem_ExpansionChanged(object sender, RoutedEventArgs e)

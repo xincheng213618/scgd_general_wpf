@@ -19,6 +19,7 @@ namespace ColorVision.Solution
             RegisterCommand(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand);
             RegisterCommand(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
             RegisterCommand(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
+            RegisterCommand(ApplicationCommands.SelectAll, ExecuteSelectAll, CanExecuteSelectAll);
             RegisterCommand(ApplicationCommands.Delete, ExecuteDelete, CanExecuteDelete);
             RegisterCommand(SolutionResourceCommands.Open, ExecuteOpen, CanExecuteOpen);
             RegisterCommand(SolutionResourceCommands.OpenWith, ExecuteOpenWith, CanExecuteOpenWith);
@@ -134,6 +135,40 @@ namespace ColorVision.Solution
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+        }
+
+        private void CanExecuteSelectAll(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = GetCurrentSelectionScope().Count > 0;
+            e.Handled = true;
+        }
+
+        private void ExecuteSelectAll(object sender, ExecutedRoutedEventArgs e)
+        {
+            IReadOnlyList<SolutionNode> nodes = GetCurrentSelectionScope();
+            if (nodes.Count > 0)
+            {
+                SolutionNode? currentNode = GetCurrentTreeNode();
+                _selectionService.SelectMany(
+                    nodes,
+                    currentNode != null && nodes.Contains(currentNode)
+                        ? currentNode
+                        : nodes[^1]);
+            }
+            e.Handled = true;
+        }
+
+        private IReadOnlyList<SolutionNode> GetCurrentSelectionScope()
+        {
+            return SolutionSelectionService.GetSiblingSelectionScope(
+                GetCurrentTreeNode(),
+                SolutionTreeView.Items.OfType<SolutionNode>());
+        }
+
+        private SolutionNode? GetCurrentTreeNode()
+        {
+            return SolutionTreeView.SelectedItem as SolutionNode
+                ?? _selectionService.AnchorNode;
         }
 
         private void CanExecuteProperties(object sender, CanExecuteRoutedEventArgs e)
