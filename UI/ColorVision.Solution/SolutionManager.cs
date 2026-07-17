@@ -87,6 +87,7 @@ namespace ColorVision.Solution
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanCloseSolution));
                 MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Configuration);
+                MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Platform);
                 System.Windows.Input.CommandManager.InvalidateRequerySuggested();
             }
         }

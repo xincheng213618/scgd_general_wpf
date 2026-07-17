@@ -614,8 +614,32 @@ namespace ColorVision.Solution.Explorer
 
             menuItems.Add(new MenuItemMetadata
             {
-                GuidId = SolutionProjectCommands.ConfigurationManagerId,
+                GuidId = SolutionProjectCommands.ActivePlatformId,
                 Order = 9,
+                Header = $"活动平台: {explorer.ActivePlatform}",
+            });
+            int platformOrder = 0;
+            foreach (string platform in explorer.GetAvailableSolutionPlatforms())
+            {
+                string selectedPlatform = platform;
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = SolutionProjectCommands.ActivePlatformId,
+                    GuidId = $"SolutionPlatform.{platform}",
+                    Order = platformOrder++,
+                    Header = platform,
+                    Command = new RelayCommand(_ => explorer.SetActivePlatform(selectedPlatform)),
+                    IsChecked = string.Equals(
+                        explorer.ActivePlatform,
+                        platform,
+                        StringComparison.OrdinalIgnoreCase),
+                });
+            }
+
+            menuItems.Add(new MenuItemMetadata
+            {
+                GuidId = SolutionProjectCommands.ConfigurationManagerId,
+                Order = 10,
                 Header = "配置管理器(_C)...",
                 Command = SolutionProjectCommands.ConfigurationManager,
                 Icon = MenuItemIcon.TryFindResource("DISetting"),

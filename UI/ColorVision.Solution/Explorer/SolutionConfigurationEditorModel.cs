@@ -17,9 +17,25 @@ namespace ColorVision.Solution.Explorer
 
     public sealed record SolutionConfigurationChanges(
         string ActiveConfiguration,
+        string ActivePlatform,
         ProjectDefinition? StartupProject,
         IReadOnlyDictionary<string, Dictionary<string, string>> ProjectConfigurations,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> ProjectDependencies);
+        IReadOnlyDictionary<string, IReadOnlyList<string>> ProjectDependencies)
+    {
+        public SolutionConfigurationChanges(
+            string activeConfiguration,
+            ProjectDefinition? startupProject,
+            IReadOnlyDictionary<string, Dictionary<string, string>> projectConfigurations,
+            IReadOnlyDictionary<string, IReadOnlyList<string>> projectDependencies)
+            : this(
+                activeConfiguration,
+                SolutionConfigurationIdentity.DefaultPlatform,
+                startupProject,
+                projectConfigurations,
+                projectDependencies)
+        {
+        }
+    }
 
     public sealed class SolutionStartupProjectOption
     {
@@ -135,11 +151,13 @@ namespace ColorVision.Solution.Explorer
         private readonly Dictionary<string, Dictionary<string, string>> _draftMappings;
         private bool _suppressChanges;
         private string _activeConfiguration;
+        private string _activePlatform;
         private SolutionConfigurationProjectModel? _selectedProject;
         private SolutionStartupProjectOption? _selectedStartupProject;
         private string? _unavailableStartupReference;
 
         public ObservableCollection<string> AvailableConfigurations { get; }
+        public ObservableCollection<string> AvailablePlatforms { get; }
         public ObservableCollection<SolutionConfigurationProjectModel> Projects { get; } = new();
         public ObservableCollection<SolutionStartupProjectOption> StartupProjects { get; } = new();
         public ObservableCollection<SolutionConfigurationDiagnostic> Diagnostics { get; } = new();
@@ -148,6 +166,12 @@ namespace ColorVision.Solution.Explorer
         {
             get => _activeConfiguration;
             set => ChangeActiveConfiguration(value);
+        }
+
+        public string ActivePlatform
+        {
+            get => _activePlatform;
+            set => ChangeActivePlatform(value);
         }
 
         public SolutionConfigurationProjectModel? SelectedProject
@@ -190,9 +214,27 @@ namespace ColorVision.Solution.Explorer
             string? activeConfiguration,
             string? startupProjectReference,
             IReadOnlyDictionary<string, Dictionary<string, string>>? projectConfigurations)
+            : this(
+                solutionDirectory,
+                projects,
+                activeConfiguration,
+                SolutionConfigurationIdentity.DefaultPlatform,
+                startupProjectReference,
+                projectConfigurations)
+        {
+        }
+
+        public SolutionConfigurationEditorModel(
+            string solutionDirectory,
+            IEnumerable<ProjectDefinition> projects,
+            string? activeConfiguration,
+            string? activePlatform,
+            string? startupProjectReference,
+            IReadOnlyDictionary<string, Dictionary<string, string>>? projectConfigurations)
         {
             _solutionDirectory = solutionDirectory;
             _activeConfiguration = SolutionExplorer.NormalizeConfigurationName(activeConfiguration);
+            _activePlatform = SolutionExplorer.NormalizePlatformName(activePlatform);
             _draftMappings = CloneMappings(projectConfigurations);
             _suppressChanges = true;
             List<ProjectDefinition> availableProjects = projects
@@ -206,6 +248,10 @@ namespace ColorVision.Solution.Explorer
                     availableProjects,
                     _activeConfiguration,
                     _draftMappings));
+            AvailablePlatforms = new ObservableCollection<string>(
+                SolutionExplorer.GetAvailableSolutionPlatforms(
+                    _activePlatform,
+                    _draftMappings));
 
             foreach (ProjectDefinition project in availableProjects)
             {
@@ -214,6 +260,7 @@ namespace ColorVision.Solution.Explorer
                 string selectedConfiguration = SolutionExplorer.ResolveProjectConfigurationName(
                     _solutionDirectory,
                     _activeConfiguration,
+                    _activePlatform,
                     _draftMappings,
                     project);
                 Projects.Add(new SolutionConfigurationProjectModel(
@@ -244,6 +291,7 @@ namespace ColorVision.Solution.Explorer
                 StringComparer.OrdinalIgnoreCase);
             return new SolutionConfigurationChanges(
                 _activeConfiguration,
+                _activePlatform,
                 _selectedStartupProject?.Project,
                 CloneMappings(_draftMappings),
                 dependencies);
@@ -331,12 +379,39 @@ namespace ColorVision.Solution.Explorer
                 project.SetSelectedConfiguration(SolutionExplorer.ResolveProjectConfigurationName(
                     _solutionDirectory,
                     _activeConfiguration,
+                    _activePlatform,
                     _draftMappings,
                     project.Project));
             }
             _suppressChanges = false;
             RefreshProjectConfigurationOptions();
             OnPropertyChanged(nameof(ActiveConfiguration));
+            Changed();
+        }
+
+        private void ChangeActivePlatform(string? platformName)
+        {
+            string normalizedName = SolutionExplorer.NormalizePlatformName(platformName);
+            if (string.Equals(_activePlatform, normalizedName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            StoreCurrentMappings();
+            _activePlatform = normalizedName;
+            if (!AvailablePlatforms.Contains(normalizedName, StringComparer.OrdinalIgnoreCase))
+                AvailablePlatforms.Add(normalizedName);
+            _suppressChanges = true;
+            foreach (SolutionConfigurationProjectModel project in Projects)
+            {
+                project.SetSelectedConfiguration(SolutionExplorer.ResolveProjectConfigurationName(
+                    _solutionDirectory,
+                    _activeConfiguration,
+                    _activePlatform,
+                    _draftMappings,
+                    project.Project));
+            }
+            _suppressChanges = false;
+            RefreshProjectConfigurationOptions();
+            OnPropertyChanged(nameof(ActivePlatform));
             Changed();
         }
 
@@ -355,11 +430,22 @@ namespace ColorVision.Solution.Explorer
                     _draftMappings[mappingReference] = mapping;
                 }
 
+                string configurationKey = SolutionConfigurationIdentity.CreateKey(
+                    _activeConfiguration,
+                    _activePlatform);
                 foreach (string existingConfiguration in mapping.Keys
                     .Where(configuration => string.Equals(
-                        configuration,
-                        _activeConfiguration,
-                        StringComparison.OrdinalIgnoreCase))
+                            configuration,
+                            configurationKey,
+                            StringComparison.OrdinalIgnoreCase)
+                        || (string.Equals(
+                                _activePlatform,
+                                SolutionConfigurationIdentity.DefaultPlatform,
+                                StringComparison.OrdinalIgnoreCase)
+                            && string.Equals(
+                                configuration,
+                                _activeConfiguration,
+                                StringComparison.OrdinalIgnoreCase)))
                     .ToList())
                 {
                     mapping.Remove(existingConfiguration);
@@ -369,7 +455,7 @@ namespace ColorVision.Solution.Explorer
                     _activeConfiguration,
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    mapping[_activeConfiguration] = project.SelectedConfiguration;
+                    mapping[configurationKey] = project.SelectedConfiguration;
                 }
                 if (mapping.Count == 0)
                     _draftMappings.Remove(mappingReference);

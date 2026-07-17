@@ -10,6 +10,7 @@ namespace ColorVision.Solution.Explorer
     public static class SolutionProjectCommands
     {
         public const string ActiveConfigurationId = "ActiveSolutionConfiguration";
+        public const string ActivePlatformId = "ActiveSolutionPlatform";
         public const string BuildSolutionId = "BuildSolution";
         public const string ConfigurationManagerId = "SolutionConfigurationManager";
         public const string DebugStartupProjectId = "DebugStartupProject";

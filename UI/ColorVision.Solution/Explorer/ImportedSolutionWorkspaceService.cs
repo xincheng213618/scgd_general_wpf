@@ -195,6 +195,16 @@ namespace ColorVision.Solution.Explorer
                         ?? (definition.Configurations.Count > 0 ? definition.Configurations[0] : null)
                         ?? "Debug";
                 }
+                if (!definition.Platforms.Contains(config.ActivePlatform, StringComparer.OrdinalIgnoreCase))
+                {
+                    config.ActivePlatform = definition.Platforms.FirstOrDefault(platform =>
+                            string.Equals(
+                                platform,
+                                SolutionConfigurationIdentity.DefaultPlatform,
+                                StringComparison.OrdinalIgnoreCase))
+                        ?? (definition.Platforms.Count > 0 ? definition.Platforms[0] : null)
+                        ?? SolutionConfigurationIdentity.DefaultPlatform;
+                }
                 config.ExtensionData ??= new Dictionary<string, JToken>();
                 config.ExtensionData[ProviderExtensionKey] = new JValue(definition.ProviderId);
                 config.ExtensionData[SourceExtensionKey] = new JValue(definition.SourceFile.FullName);

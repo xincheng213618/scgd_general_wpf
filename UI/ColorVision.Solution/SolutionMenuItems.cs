@@ -32,6 +32,7 @@ namespace ColorVision.Solution
         public const string Build = "Solution.BuildMenu";
         public const string Debug = "Solution.DebugMenu";
         public const string Configuration = "Solution.ConfigurationMenu";
+        public const string Platform = "Solution.PlatformMenu";
     }
 
     public sealed class MenuSolutionBuild : GlobalMenuBase
@@ -69,6 +70,15 @@ namespace ColorVision.Solution
         public override System.Windows.Input.ICommand Command => SolutionProjectCommands.ConfigurationManager;
     }
 
+    public sealed class MenuSolutionPlatform : MenuItemBase
+    {
+        public override string TargetName => MenuItemConstants.GlobalTarget;
+        public override string OwnerGuid => SolutionMenuIds.Build;
+        public override string GuidId => SolutionMenuIds.Platform;
+        public override string Header => "活动解决方案平台(_P)";
+        public override int Order => 21;
+    }
+
     public sealed class SolutionConfigurationMenuProvider : IMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
@@ -91,6 +101,36 @@ namespace ColorVision.Solution
                         StringComparison.OrdinalIgnoreCase),
                     Command = new RelayCommand(
                         _ => explorer.SetActiveConfiguration(configuration),
+                        _ => ReferenceEquals(
+                            explorer,
+                            SolutionManager.GetInstance().CurrentSolutionExplorer)),
+                })
+                .ToList();
+        }
+    }
+
+    public sealed class SolutionPlatformMenuProvider : IMenuItemProvider
+    {
+        public IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            SolutionExplorer? explorer = SolutionManager.GetInstance().CurrentSolutionExplorer;
+            if (explorer == null)
+                return Array.Empty<MenuItemMetadata>();
+
+            return explorer.GetAvailableSolutionPlatforms()
+                .Select((platform, index) => new MenuItemMetadata
+                {
+                    TargetName = MenuItemConstants.GlobalTarget,
+                    OwnerGuid = SolutionMenuIds.Platform,
+                    GuidId = $"Solution.Platform.{platform}",
+                    Header = platform,
+                    Order = index,
+                    IsChecked = string.Equals(
+                        explorer.ActivePlatform,
+                        platform,
+                        StringComparison.OrdinalIgnoreCase),
+                    Command = new RelayCommand(
+                        _ => explorer.SetActivePlatform(platform),
                         _ => ReferenceEquals(
                             explorer,
                             SolutionManager.GetInstance().CurrentSolutionExplorer)),

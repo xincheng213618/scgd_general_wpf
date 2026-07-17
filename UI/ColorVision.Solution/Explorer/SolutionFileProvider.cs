@@ -30,7 +30,29 @@ namespace ColorVision.Solution.Explorer
         DirectoryInfo RootDirectory,
         IReadOnlyList<SolutionFileProject> Projects,
         IReadOnlyList<SolutionFileFolder> Folders,
-        IReadOnlyList<string> Configurations);
+        IReadOnlyList<string> Configurations,
+        IReadOnlyList<string> Platforms)
+    {
+        public SolutionFileDefinition(
+            string providerId,
+            string name,
+            FileInfo sourceFile,
+            DirectoryInfo rootDirectory,
+            IReadOnlyList<SolutionFileProject> projects,
+            IReadOnlyList<SolutionFileFolder> folders,
+            IReadOnlyList<string> configurations)
+            : this(
+                providerId,
+                name,
+                sourceFile,
+                rootDirectory,
+                projects,
+                folders,
+                configurations,
+                [SolutionConfigurationIdentity.DefaultPlatform])
+        {
+        }
+    }
 
     public interface ISolutionFileProvider
     {
@@ -105,19 +127,25 @@ namespace ColorVision.Solution.Explorer
             cancellationToken.ThrowIfCancellationRequested();
             DirectoryInfo rootDirectory = solutionFile.Directory
                 ?? throw new InvalidDataException("解决方案文件没有有效的父目录。");
-            string platform = model.Platforms.Count > 0 ? model.Platforms[0] : string.Empty;
             IReadOnlyList<string> configurations = model.BuildTypes.Count > 0
                 ? model.BuildTypes.ToList()
                 : ["Debug", "Release"];
+            IReadOnlyList<string> platforms = model.Platforms.Count > 0
+                ? model.Platforms.ToList()
+                : [SolutionConfigurationIdentity.DefaultPlatform];
 
             List<SolutionFileProject> projects = model.SolutionProjects
                 .Where(project => !string.IsNullOrWhiteSpace(project.FilePath))
                 .Select(project => new SolutionFileProject(
                     project.FilePath,
                     project.Parent?.Path,
-                    configurations.ToDictionary(
-                        configuration => configuration,
-                        configuration => GetProjectConfiguration(project, configuration, platform),
+                    configurations.SelectMany(configuration => platforms.Select(platform => new
+                    {
+                        Key = SolutionConfigurationIdentity.CreateKey(configuration, platform),
+                        Value = GetProjectConfiguration(project, configuration, platform),
+                    })).ToDictionary(
+                        item => item.Key,
+                        item => item.Value,
                         StringComparer.OrdinalIgnoreCase)))
                 .ToList();
             List<SolutionFileFolder> folders = model.SolutionFolders
@@ -135,7 +163,8 @@ namespace ColorVision.Solution.Explorer
                 rootDirectory,
                 projects,
                 folders,
-                configurations);
+                configurations,
+                platforms);
         }
 
         private static string GetProjectConfiguration(

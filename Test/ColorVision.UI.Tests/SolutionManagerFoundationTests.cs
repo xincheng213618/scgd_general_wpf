@@ -910,6 +910,12 @@ public class SolutionManagerFoundationTests
                 "活动配置: Debug",
                 Assert.Single(initialItems, item =>
                     item.GuidId == SolutionProjectCommands.ActiveConfigurationId).Header);
+            Assert.Equal(
+                "活动平台: Any CPU",
+                Assert.Single(initialItems, item =>
+                    item.GuidId == SolutionProjectCommands.ActivePlatformId).Header);
+            Assert.True(Assert.Single(initialItems, item =>
+                item.GuidId == "SolutionPlatform.Any CPU").IsChecked);
             Assert.True(Assert.Single(initialItems, item =>
                 item.GuidId == "SolutionConfiguration.Debug").IsChecked);
             MenuItemMetadata releaseItem = Assert.Single(initialItems, item =>
@@ -2722,6 +2728,7 @@ public class SolutionManagerFoundationTests
         Assert.Equal(SolutionConfigStore.CurrentSchemaVersion, config.SchemaVersion);
         Assert.Equal(SolutionProjectMode.Explicit, config.ProjectMode);
         Assert.Equal("Debug", config.ActiveConfiguration);
+        Assert.Equal("Any CPU", config.ActivePlatform);
         Assert.NotNull(config.ProjectConfigurations);
         Assert.NotNull(config.SolutionFolders);
         Assert.NotNull(config.ProjectSolutionFolders);
@@ -2788,6 +2795,7 @@ public class SolutionManagerFoundationTests
         Assert.Equal(SolutionMenuIds.Debug, new MenuSolutionDebug().GuidId);
         Assert.Same(SolutionProjectCommands.BuildSolution, new MenuBuildSolution().Command);
         Assert.Same(SolutionProjectCommands.ConfigurationManager, new MenuSolutionConfigurationManager().Command);
+        Assert.Equal(SolutionMenuIds.Platform, new MenuSolutionPlatform().GuidId);
         Assert.Same(SolutionProjectCommands.Debug, new MenuDebugStartupProject().Command);
         Assert.Same(SolutionProjectCommands.Run, new MenuRunStartupProject().Command);
     }
@@ -2800,6 +2808,7 @@ public class SolutionManagerFoundationTests
         File.WriteAllText(solutionPath, JsonConvert.SerializeObject(new SolutionConfig
         {
             ActiveConfiguration = "Debug",
+            ActivePlatform = "Any CPU",
             RootPath = ".",
         }));
 
@@ -2817,12 +2826,18 @@ public class SolutionManagerFoundationTests
             explorer.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
 
             Assert.True(explorer.SetActiveConfiguration("Release"));
+            Assert.True(explorer.SetActivePlatform("x64"));
 
             Assert.Equal("Release", explorer.ActiveConfiguration);
+            Assert.Equal("x64", explorer.ActivePlatform);
             Assert.Contains(nameof(SolutionExplorer.ActiveConfiguration), changedProperties);
+            Assert.Contains(nameof(SolutionExplorer.ActivePlatform), changedProperties);
+            Assert.Contains(nameof(SolutionExplorer.ActiveConfigurationDisplay), changedProperties);
             var saved = JsonConvert.DeserializeObject<SolutionConfig>(File.ReadAllText(solutionPath));
             Assert.Equal("Release", saved?.ActiveConfiguration);
+            Assert.Equal("x64", saved?.ActivePlatform);
             Assert.False(explorer.SetActiveConfiguration("Release"));
+            Assert.False(explorer.SetActivePlatform("x64"));
         }
         finally
         {
@@ -2883,9 +2898,11 @@ public class SolutionManagerFoundationTests
 
                 var model = Assert.IsType<SolutionConfigurationEditorModel>(window.DataContext);
                 var configurationComboBox = Assert.IsType<ComboBox>(window.FindName("ActiveConfigurationComboBox"));
+                var platformComboBox = Assert.IsType<ComboBox>(window.FindName("ActivePlatformComboBox"));
                 var projectGrid = Assert.IsType<DataGrid>(window.FindName("ProjectConfigurationDataGrid"));
                 var saveButton = Assert.IsType<Button>(window.FindName("SaveButton"));
                 Assert.Equal(2, configurationComboBox.Items.Count);
+                Assert.Single(platformComboBox.Items);
                 Assert.Single(projectGrid.Items);
                 Assert.True(saveButton.IsEnabled);
 
@@ -4188,9 +4205,17 @@ public class SolutionManagerFoundationTests
             File.WriteAllText(nativeProjectPath, """
                 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                   <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                      <Configuration>Debug</Configuration>
+                      <Platform>Win32</Platform>
+                    </ProjectConfiguration>
                     <ProjectConfiguration Include="Debug|x64">
                       <Configuration>Debug</Configuration>
                       <Platform>x64</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|Win32">
+                      <Configuration>Release</Configuration>
+                      <Platform>Win32</Platform>
                     </ProjectConfiguration>
                     <ProjectConfiguration Include="Release|x64">
                       <Configuration>Release</Configuration>
@@ -4216,18 +4241,28 @@ public class SolutionManagerFoundationTests
                 EndProject
                 Global
                     GlobalSection(SolutionConfigurationPlatforms) = preSolution
-                        Debug|Any CPU = Debug|Any CPU
-                        Release|Any CPU = Release|Any CPU
+                        Debug|x86 = Debug|x86
+                        Debug|x64 = Debug|x64
+                        Release|x86 = Release|x86
+                        Release|x64 = Release|x64
                     EndGlobalSection
                     GlobalSection(ProjectConfigurationPlatforms) = postSolution
-                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-                        {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
-                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
-                        {11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
-                        {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.ActiveCfg = Debug|x64
-                        {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.Build.0 = Debug|x64
-                        {33333333-3333-3333-3333-333333333333}.Release|Any CPU.ActiveCfg = Release|x64
-                        {33333333-3333-3333-3333-333333333333}.Release|Any CPU.Build.0 = Release|x64
+                        {11111111-1111-1111-1111-111111111111}.Debug|x86.ActiveCfg = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Debug|x86.Build.0 = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Debug|x64.ActiveCfg = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Debug|x64.Build.0 = Debug|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|x86.ActiveCfg = Release|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|x86.Build.0 = Release|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|x64.ActiveCfg = Release|Any CPU
+                        {11111111-1111-1111-1111-111111111111}.Release|x64.Build.0 = Release|Any CPU
+                        {33333333-3333-3333-3333-333333333333}.Debug|x86.ActiveCfg = Debug|Win32
+                        {33333333-3333-3333-3333-333333333333}.Debug|x86.Build.0 = Debug|Win32
+                        {33333333-3333-3333-3333-333333333333}.Debug|x64.ActiveCfg = Debug|x64
+                        {33333333-3333-3333-3333-333333333333}.Debug|x64.Build.0 = Debug|x64
+                        {33333333-3333-3333-3333-333333333333}.Release|x86.ActiveCfg = Release|Win32
+                        {33333333-3333-3333-3333-333333333333}.Release|x86.Build.0 = Release|Win32
+                        {33333333-3333-3333-3333-333333333333}.Release|x64.ActiveCfg = Release|x64
+                        {33333333-3333-3333-3333-333333333333}.Release|x64.Build.0 = Release|x64
                     EndGlobalSection
                     GlobalSection(NestedProjects) = preSolution
                         {11111111-1111-1111-1111-111111111111} = {22222222-2222-2222-2222-222222222222}
@@ -4246,11 +4281,13 @@ public class SolutionManagerFoundationTests
             Assert.Equal(VisualStudioSolutionFileProvider.ProviderId, definition.ProviderId);
             Assert.Equal("Example", definition.Name);
             Assert.Equal(["Debug", "Release"], definition.Configurations);
+            Assert.Equal(["x86", "x64"], definition.Platforms);
             Assert.Equal("src\\App\\App.csproj", project.Path);
             Assert.Equal(folder.Path, project.SolutionFolderPath);
-            Assert.Equal("Release", project.Configurations["Release"]);
-            Assert.Equal("Debug|x64", nativeProject.Configurations["Debug"]);
-            Assert.Equal("Release|x64", nativeProject.Configurations["Release"]);
+            Assert.Equal("Release", project.Configurations["Release|x64"]);
+            Assert.Equal("Debug|Win32", nativeProject.Configurations["Debug|x86"]);
+            Assert.Equal("Debug|x64", nativeProject.Configurations["Debug|x64"]);
+            Assert.Equal("Release|x64", nativeProject.Configurations["Release|x64"]);
             Assert.Equal("src", folder.Name);
             Assert.Contains("README.md", folder.Files, StringComparer.OrdinalIgnoreCase);
             Assert.True(SolutionFileProviderRegistry.TryLoadSolution(
@@ -4267,16 +4304,28 @@ public class SolutionManagerFoundationTests
                 out _));
             SolutionConfig importedConfig = SolutionConfigStore.Load(importedWorkspacePath).Config;
             string nativeReference = Path.Combine("src", "Native", "Native.vcxproj");
-            Assert.Equal("Debug|x64", importedConfig.ProjectConfigurations[nativeReference]["Debug"]);
+            Assert.Equal("Debug|Win32", importedConfig.ProjectConfigurations[nativeReference]["Debug|x86"]);
+            Assert.Equal("Debug|x64", importedConfig.ProjectConfigurations[nativeReference]["Debug|x64"]);
             using SolutionExplorer explorer = CreateSolutionExplorer(directoryPath, importedWorkspacePath);
             ProjectNode nativeProjectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>(), node =>
                 node.Project.ProjectFile.Extension.Equals(".vcxproj", StringComparison.OrdinalIgnoreCase));
+            explorer.SetActivePlatform("x86");
             ProjectDefinition configuredNativeProject = explorer.ApplyActiveConfiguration(nativeProjectNode.Project);
-            Assert.Equal("Debug|x64", configuredNativeProject.ActiveConfiguration);
+            Assert.Equal("Debug|Win32", configuredNativeProject.ActiveConfiguration);
             Assert.True(ProjectProviderRegistry.TryCreateCapabilityInvocation(
                 configuredNativeProject,
                 ProjectCapabilityIds.Build,
                 out ProjectCommandInvocation? nativeInvocation));
+            Assert.Equal(
+                $"msbuild \"{nativeProjectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"Win32\"",
+                nativeInvocation?.Command);
+            Assert.True(explorer.SetActivePlatform("x64"));
+            configuredNativeProject = explorer.ApplyActiveConfiguration(nativeProjectNode.Project);
+            Assert.Equal("Debug|x64", configuredNativeProject.ActiveConfiguration);
+            Assert.True(ProjectProviderRegistry.TryCreateCapabilityInvocation(
+                configuredNativeProject,
+                ProjectCapabilityIds.Build,
+                out nativeInvocation));
             Assert.Equal(
                 $"msbuild \"{nativeProjectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"x64\"",
                 nativeInvocation?.Command);
@@ -4891,7 +4940,7 @@ public class SolutionManagerFoundationTests
                 out _));
             SolutionConfig config = SolutionConfigStore.Load(importedWorkspacePath).Config;
             string projectReference = Assert.Single(config.Projects);
-            config.ProjectConfigurations[projectReference]["Release"] = "LocalRelease";
+            config.ProjectConfigurations[projectReference]["Release|Any CPU"] = "LocalRelease";
             config.ActiveConfiguration = "Release";
             SolutionConfigStore.Save(importedWorkspacePath, config);
 
@@ -4904,14 +4953,14 @@ public class SolutionManagerFoundationTests
                 firstError);
             Assert.NotNull(firstRefresh);
             Dictionary<string, string> firstMappings = firstRefresh.ProjectConfigurations[projectReference];
-            Assert.Equal("Debug2", firstMappings["Debug"]);
-            Assert.Equal("LocalRelease", firstMappings["Release"]);
-            Assert.Equal("Staging", firstMappings["Staging"]);
+            Assert.Equal("Debug2", firstMappings["Debug|Any CPU"]);
+            Assert.Equal("LocalRelease", firstMappings["Release|Any CPU"]);
+            Assert.Equal("Staging", firstMappings["Staging|Any CPU"]);
             Assert.Equal("Release", firstRefresh.ActiveConfiguration);
             JObject firstBaseline = Assert.IsType<JObject>(
                 firstRefresh.ExtensionData![ImportedSolutionWorkspaceService.ConfigurationBaselineExtensionKey]);
-            Assert.Equal("Debug2", firstBaseline[projectReference]!["Debug"]!.Value<string>());
-            Assert.Equal("Release2", firstBaseline[projectReference]!["Release"]!.Value<string>());
+            Assert.Equal("Debug2", firstBaseline[projectReference]!["Debug|Any CPU"]!.Value<string>());
+            Assert.Equal("Release2", firstBaseline[projectReference]!["Release|Any CPU"]!.Value<string>());
 
             File.WriteAllText(solutionPath, CreateSolutionContents("Debug3", "Release3", includeStaging: false));
             Assert.True(ImportedSolutionWorkspaceService.TryRefresh(
@@ -4922,11 +4971,11 @@ public class SolutionManagerFoundationTests
                 secondError);
             Assert.NotNull(secondRefresh);
             Dictionary<string, string> secondMappings = secondRefresh.ProjectConfigurations[projectReference];
-            Assert.Equal("Debug3", secondMappings["Debug"]);
-            Assert.Equal("LocalRelease", secondMappings["Release"]);
-            Assert.DoesNotContain("Staging", secondMappings.Keys, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal("Debug3", secondMappings["Debug|Any CPU"]);
+            Assert.Equal("LocalRelease", secondMappings["Release|Any CPU"]);
+            Assert.DoesNotContain("Staging|Any CPU", secondMappings.Keys, StringComparer.OrdinalIgnoreCase);
 
-            secondMappings["Release"] = "Release3";
+            secondMappings["Release|Any CPU"] = "Release3";
             SolutionConfigStore.Save(importedWorkspacePath, secondRefresh);
             File.WriteAllText(solutionPath, CreateSolutionContents("Debug4", "Release4", includeStaging: false));
             Assert.True(ImportedSolutionWorkspaceService.TryRefresh(
@@ -4936,8 +4985,8 @@ public class SolutionManagerFoundationTests
                 out string thirdError),
                 thirdError);
             Assert.NotNull(thirdRefresh);
-            Assert.Equal("Debug4", thirdRefresh.ProjectConfigurations[projectReference]["Debug"]);
-            Assert.Equal("Release4", thirdRefresh.ProjectConfigurations[projectReference]["Release"]);
+            Assert.Equal("Debug4", thirdRefresh.ProjectConfigurations[projectReference]["Debug|Any CPU"]);
+            Assert.Equal("Release4", thirdRefresh.ProjectConfigurations[projectReference]["Release|Any CPU"]);
         }
         finally
         {
@@ -5178,15 +5227,23 @@ public class SolutionManagerFoundationTests
             {
                 [Path.Combine("App", "App.cvproj")] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["Debug"] = "Development",
+                    ["Debug|Any CPU"] = "Development",
+                    ["Debug|x64"] = "Production",
                     ["Release"] = "Production",
-                    ["Staging"] = "Development",
+                    ["Staging|x64"] = "Development",
                 },
             };
 
             string mappedConfiguration = SolutionExplorer.ResolveProjectConfigurationName(
                 containerPath,
                 "debug",
+                "x64",
+                mappings,
+                project);
+            string legacyMappedConfiguration = SolutionExplorer.ResolveProjectConfigurationName(
+                containerPath,
+                "release",
+                "x64",
                 mappings,
                 project);
             string defaultConfiguration = SolutionExplorer.ResolveProjectConfigurationName(
@@ -5198,10 +5255,19 @@ public class SolutionManagerFoundationTests
                 [project],
                 "Debug",
                 mappings);
+            IReadOnlyList<string> availablePlatforms = SolutionExplorer.GetAvailableSolutionPlatforms(
+                "Any CPU",
+                mappings);
+            IReadOnlyList<string> nativePlatforms = SolutionExplorer.GetAvailableSolutionPlatforms(
+                "x64",
+                projectConfigurations: null);
 
-            Assert.Equal("Development", mappedConfiguration);
+            Assert.Equal("Production", mappedConfiguration);
+            Assert.Equal("Production", legacyMappedConfiguration);
             Assert.Equal("release", defaultConfiguration);
             Assert.Equal(["Debug", "Release", "Development", "Production", "Staging"], availableConfigurations);
+            Assert.Equal(["Any CPU", "x64"], availablePlatforms);
+            Assert.Equal(["Any CPU", "x64"], nativePlatforms);
         }
         finally
         {
@@ -5215,11 +5281,12 @@ public class SolutionManagerFoundationTests
         var config = new SolutionConfig
         {
             ActiveConfiguration = "Release",
+            ActivePlatform = "x64",
             ProjectConfigurations = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["App/App.cvproj"] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["Release"] = "Production",
+                    ["Release|x64"] = "Production",
                 },
             },
         };
@@ -5228,7 +5295,8 @@ public class SolutionManagerFoundationTests
         SolutionConfig restored = JsonConvert.DeserializeObject<SolutionConfig>(json)!;
 
         Assert.Equal("Release", restored.ActiveConfiguration);
-        Assert.Equal("Production", restored.ProjectConfigurations["App/App.cvproj"]["Release"]);
+        Assert.Equal("x64", restored.ActivePlatform);
+        Assert.Equal("Production", restored.ProjectConfigurations["App/App.cvproj"]["Release|x64"]);
     }
 
     [Fact]
@@ -5243,6 +5311,7 @@ public class SolutionManagerFoundationTests
                 containerPath,
                 [projectA, projectB],
                 "Debug",
+                "Any CPU",
                 startupProjectReference: null,
                 projectConfigurations: null);
             SolutionConfigurationProjectModel rowA = Assert.Single(model.Projects, row => row.Project.Name == "A");
@@ -5261,6 +5330,7 @@ public class SolutionManagerFoundationTests
 
             Assert.False(model.HasErrors);
             Assert.Equal("Release", changes.ActiveConfiguration);
+            Assert.Equal("Any CPU", changes.ActivePlatform);
             Assert.Equal(["../B/B.cvproj"], changes.ProjectDependencies[projectA.ProjectFile.FullName]);
             Assert.Empty(changes.ProjectDependencies[projectB.ProjectFile.FullName]);
         }
@@ -5294,6 +5364,7 @@ public class SolutionManagerFoundationTests
                 containerPath,
                 [project],
                 "Release",
+                "Any CPU",
                 startupReference,
                 projectConfigurations: null);
             SolutionConfigurationProjectModel row = Assert.Single(model.Projects);
@@ -5311,7 +5382,7 @@ public class SolutionManagerFoundationTests
             Assert.False(model.HasErrors);
             Assert.Equal(
                 "Debug",
-                changes.ProjectConfigurations["App/App.cvproj"]["Release"]);
+                changes.ProjectConfigurations["App/App.cvproj"]["Release|Any CPU"]);
             Assert.Empty(changes.ProjectDependencies[project.ProjectFile.FullName]);
         }
         finally
@@ -6067,7 +6138,8 @@ public class SolutionManagerFoundationTests
                 solutionFile.Directory!,
                 projects,
                 Array.Empty<SolutionFileFolder>(),
-                ["Debug", "Release"]);
+                ["Debug", "Release"],
+                ["Any CPU"]);
         }
     }
 
@@ -6258,7 +6330,8 @@ public class SolutionManagerFoundationTests
                     solutionFile.Directory!,
                     Array.Empty<SolutionFileProject>(),
                     Array.Empty<SolutionFileFolder>(),
-                    ["Debug", "Release"]);
+                    ["Debug", "Release"],
+                    ["Any CPU"]);
             }
             finally
             {

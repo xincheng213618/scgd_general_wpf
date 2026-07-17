@@ -47,7 +47,7 @@ namespace ColorVision.Solution
                     Type = StatusBarType.Text,
                     Alignment = StatusBarAlignment.Right,
                     Order = 100,
-                    BindingName = nameof(SolutionManager.CurrentSolutionExplorer) + "." + nameof(SolutionExplorer.ActiveConfiguration),
+                    BindingName = nameof(SolutionManager.CurrentSolutionExplorer) + "." + nameof(SolutionExplorer.ActiveConfigurationDisplay),
                     Source = SolutionManager.GetInstance(),
                     ActionType = StatusBarActionType.Popup,
                     PopupContentFactory = CreateConfigurationPopup,
@@ -180,6 +180,27 @@ namespace ColorVision.Solution
                 var button = CreatePopupButton($"{(isSelected ? "●" : "  ")}  {configuration}");
                 button.IsEnabled = !isSelected;
                 button.Click += (_, _) => explorer.SetActiveConfiguration(configuration);
+                stack.Children.Add(button);
+            }
+
+            stack.Children.Add(new Separator { Margin = new Thickness(0, 4, 0, 4) });
+            var platformTitle = new TextBlock
+            {
+                Text = "活动解决方案平台",
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(8, 4, 8, 4),
+            };
+            platformTitle.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            stack.Children.Add(platformTitle);
+            foreach (string platform in explorer.GetAvailableSolutionPlatforms())
+            {
+                bool isSelected = string.Equals(
+                    explorer.ActivePlatform,
+                    platform,
+                    StringComparison.OrdinalIgnoreCase);
+                var button = CreatePopupButton($"{(isSelected ? "●" : "  ")}  {platform}");
+                button.IsEnabled = !isSelected;
+                button.Click += (_, _) => explorer.SetActivePlatform(platform);
                 stack.Children.Add(button);
             }
 

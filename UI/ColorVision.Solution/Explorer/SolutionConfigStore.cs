@@ -18,7 +18,7 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     internal static class SolutionConfigStore
     {
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
 
         public static SolutionConfigLoadResult Load(string filePath)
         {
@@ -94,6 +94,13 @@ namespace ColorVision.Solution.Explorer
                         EnsureProperty(root, nameof(SolutionConfig.SolutionItems), new JArray());
                         version = 3;
                         break;
+                    case 3:
+                        EnsureProperty(
+                            root,
+                            nameof(SolutionConfig.ActivePlatform),
+                            SolutionConfigurationIdentity.DefaultPlatform);
+                        version = 4;
+                        break;
                     default:
                         throw new InvalidDataException($"没有从 SchemaVersion {version} 开始的迁移路径。");
                 }
@@ -127,8 +134,9 @@ namespace ColorVision.Solution.Explorer
             config.RootPath ??= string.Empty;
             config.StartupProject ??= string.Empty;
             config.ActiveConfiguration = string.IsNullOrWhiteSpace(config.ActiveConfiguration)
-                ? "Debug"
+                ? SolutionConfigurationIdentity.DefaultConfiguration
                 : config.ActiveConfiguration.Trim();
+            config.ActivePlatform = SolutionConfigurationIdentity.NormalizePlatform(config.ActivePlatform);
             config.Projects ??= new ObservableCollection<string>();
             foreach (string reference in config.Projects
                 .Where(reference => string.IsNullOrWhiteSpace(reference))

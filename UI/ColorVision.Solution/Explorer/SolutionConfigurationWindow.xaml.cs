@@ -15,6 +15,7 @@ namespace ColorVision.Solution.Explorer
                 solutionExplorer.DirectoryInfo.FullName,
                 solutionExplorer.LoadProjectsForConfigurationEditing(),
                 solutionExplorer.Config.ActiveConfiguration,
+                solutionExplorer.Config.ActivePlatform,
                 solutionExplorer.Config.StartupProject,
                 solutionExplorer.Config.ProjectConfigurations);
             _model.ModelChanged += (_, _) => UpdateSaveState();

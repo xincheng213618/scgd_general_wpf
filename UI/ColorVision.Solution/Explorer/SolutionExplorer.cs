@@ -70,6 +70,12 @@ namespace ColorVision.Solution.Explorer
         public string ActiveConfiguration { get; set; } = "Debug";
 
         /// <summary>
+        /// The solution-wide platform selected together with
+        /// <see cref="ActiveConfiguration"/>.
+        /// </summary>
+        public string ActivePlatform { get; set; } = SolutionConfigurationIdentity.DefaultPlatform;
+
+        /// <summary>
         /// Project reference -> solution configuration -> project configuration.
         /// This mirrors the configuration mapping role of a Visual Studio solution.
         /// </summary>
@@ -200,6 +206,9 @@ namespace ColorVision.Solution.Explorer
                 : null;
         internal bool CanModifySolutionStructure => !IsImportedSolution;
         public string ActiveConfiguration => Config.ActiveConfiguration;
+        public string ActivePlatform => Config.ActivePlatform;
+        public string ActiveConfigurationDisplay =>
+            $"{Config.ActiveConfiguration} | {Config.ActivePlatform}";
 
         internal IReadOnlyList<string> GetDocumentResourceRoots()
         {
@@ -371,6 +380,7 @@ namespace ColorVision.Solution.Explorer
                     ?? SolutionConfigStore.Load(fullPath);
                 Config = loadResult.Config;
                 Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
+                Config.ActivePlatform = NormalizePlatformName(Config.ActivePlatform);
                 if (loadResult.RecoveredFromBackup)
                 {
                     string archiveMessage = string.IsNullOrWhiteSpace(loadResult.CorruptCopyPath)
@@ -415,6 +425,8 @@ namespace ColorVision.Solution.Explorer
                 SolutionConfigLoadResult loadResult = SolutionConfigStore.Load(fullPath);
                 loadResult.Config.ActiveConfiguration = NormalizeConfigurationName(
                     loadResult.Config.ActiveConfiguration);
+                loadResult.Config.ActivePlatform = NormalizePlatformName(
+                    loadResult.Config.ActivePlatform);
                 DirectoryInfo rootDirectory = ResolveRootDirectory(
                     configFile,
                     loadResult.Config.RootPath);
@@ -1314,6 +1326,7 @@ namespace ColorVision.Solution.Explorer
             return ResolveProjectConfigurationName(
                 DirectoryInfo.FullName,
                 Config.ActiveConfiguration,
+                Config.ActivePlatform,
                 Config.ProjectConfigurations,
                 project);
         }
@@ -1321,6 +1334,21 @@ namespace ColorVision.Solution.Explorer
         internal static string ResolveProjectConfigurationName(
             string solutionDirectory,
             string? activeConfiguration,
+            IReadOnlyDictionary<string, Dictionary<string, string>>? projectConfigurations,
+            ProjectDefinition project)
+        {
+            return ResolveProjectConfigurationName(
+                solutionDirectory,
+                activeConfiguration,
+                activePlatform: null,
+                projectConfigurations,
+                project);
+        }
+
+        internal static string ResolveProjectConfigurationName(
+            string solutionDirectory,
+            string? activeConfiguration,
+            string? activePlatform,
             IReadOnlyDictionary<string, Dictionary<string, string>>? projectConfigurations,
             ProjectDefinition project)
         {
@@ -1335,7 +1363,20 @@ namespace ColorVision.Solution.Explorer
                 if (projectMapping.Value == null)
                     return normalizedActiveConfiguration;
 
-                string? mappedConfiguration = projectMapping.Value
+                string? mappedConfiguration = null;
+                if (!string.IsNullOrWhiteSpace(activePlatform))
+                {
+                    string configurationKey = SolutionConfigurationIdentity.CreateKey(
+                        normalizedActiveConfiguration,
+                        activePlatform);
+                    mappedConfiguration = projectMapping.Value
+                        .FirstOrDefault(pair => string.Equals(
+                            pair.Key,
+                            configurationKey,
+                            StringComparison.OrdinalIgnoreCase))
+                        .Value;
+                }
+                mappedConfiguration ??= projectMapping.Value
                     .FirstOrDefault(pair => string.Equals(
                         pair.Key,
                         normalizedActiveConfiguration,
@@ -1380,7 +1421,15 @@ namespace ColorVision.Solution.Explorer
                     .SelectMany(mapping => mapping.Keys)
                     .Where(name => !string.IsNullOrWhiteSpace(name)))
                 {
-                    result.Add(configuration.Trim());
+                    string configurationName = configuration.Trim();
+                    if (SolutionConfigurationIdentity.TryParseKey(
+                        configuration,
+                        out string parsedConfiguration,
+                        out _))
+                    {
+                        configurationName = parsedConfiguration;
+                    }
+                    result.Add(configurationName);
                 }
             }
 
@@ -1395,6 +1444,50 @@ namespace ColorVision.Solution.Explorer
                 .ToList();
         }
 
+        internal IReadOnlyList<string> GetAvailableSolutionPlatforms()
+        {
+            return GetAvailableSolutionPlatforms(
+                Config.ActivePlatform,
+                Config.ProjectConfigurations);
+        }
+
+        internal static IReadOnlyList<string> GetAvailableSolutionPlatforms(
+            string? activePlatform,
+            IReadOnlyDictionary<string, Dictionary<string, string>>? projectConfigurations)
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                NormalizePlatformName(activePlatform),
+            };
+            bool hasPlatformMappings = false;
+            if (projectConfigurations != null)
+            {
+                foreach (string configurationKey in projectConfigurations.Values
+                    .SelectMany(mapping => mapping.Keys)
+                    .Where(name => !string.IsNullOrWhiteSpace(name)))
+                {
+                    if (SolutionConfigurationIdentity.TryParseKey(
+                        configurationKey,
+                        out _,
+                        out string platform))
+                    {
+                        hasPlatformMappings = true;
+                        result.Add(platform);
+                    }
+                }
+            }
+            if (!hasPlatformMappings)
+                result.Add(SolutionConfigurationIdentity.DefaultPlatform);
+
+            return result
+                .OrderBy(platform => string.Equals(
+                    platform,
+                    SolutionConfigurationIdentity.DefaultPlatform,
+                    StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(platform => platform, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+        }
+
         internal bool SetActiveConfiguration(string configurationName)
         {
             if (_trackedMutationDepth == 0)
@@ -1404,6 +1497,23 @@ namespace ColorVision.Solution.Explorer
                 return false;
 
             Config.ActiveConfiguration = normalizedName;
+            SaveConfig();
+            foreach (ProjectNode projectNode in VisualChildren.GetAllVisualChildren().OfType<ProjectNode>())
+                projectNode.RefreshConfigurationState();
+            EnsureStartupProject();
+            RefreshConfigurationCommandSurfaces();
+            return true;
+        }
+
+        internal bool SetActivePlatform(string platformName)
+        {
+            if (_trackedMutationDepth == 0)
+                return ExecuteTrackedMutation("更改活动解决方案平台", () => SetActivePlatform(platformName), result => result);
+            string normalizedName = NormalizePlatformName(platformName);
+            if (string.Equals(Config.ActivePlatform, normalizedName, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            Config.ActivePlatform = normalizedName;
             SaveConfig();
             foreach (ProjectNode projectNode in VisualChildren.GetAllVisualChildren().OfType<ProjectNode>())
                 projectNode.RefreshConfigurationState();
@@ -1427,6 +1537,7 @@ namespace ColorVision.Solution.Explorer
                 string projectConfiguration = ResolveProjectConfigurationName(
                     DirectoryInfo.FullName,
                     changes.ActiveConfiguration,
+                    changes.ActivePlatform,
                     changes.ProjectConfigurations,
                     project);
                 if (project.Configurations?.Count > 0
@@ -1513,6 +1624,7 @@ namespace ColorVision.Solution.Explorer
                 }
 
                 Config.ActiveConfiguration = NormalizeConfigurationName(changes.ActiveConfiguration);
+                Config.ActivePlatform = NormalizePlatformName(changes.ActivePlatform);
                 Config.ProjectConfigurations = CloneProjectConfigurations(changes.ProjectConfigurations);
                 Config.StartupProject = changes.StartupProject == null
                     ? string.Empty
@@ -1561,7 +1673,12 @@ namespace ColorVision.Solution.Explorer
 
         internal static string NormalizeConfigurationName(string? configurationName)
         {
-            return string.IsNullOrWhiteSpace(configurationName) ? "Debug" : configurationName.Trim();
+            return SolutionConfigurationIdentity.NormalizeConfiguration(configurationName);
+        }
+
+        internal static string NormalizePlatformName(string? platformName)
+        {
+            return SolutionConfigurationIdentity.NormalizePlatform(platformName);
         }
 
         private static IReadOnlyList<string>? FindDependencyChanges(
@@ -3454,6 +3571,7 @@ namespace ColorVision.Solution.Explorer
                 _preparedProjectReferences = preparedProjectReferences;
                 Config = result.Config;
                 Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
+                Config.ActivePlatform = NormalizePlatformName(Config.ActivePlatform);
                 ReloadSolutionState();
                 return result;
             }
@@ -3486,7 +3604,10 @@ namespace ColorVision.Solution.Explorer
         private void RefreshConfigurationCommandSurfaces()
         {
             NotifyPropertyChanged(nameof(ActiveConfiguration));
+            NotifyPropertyChanged(nameof(ActivePlatform));
+            NotifyPropertyChanged(nameof(ActiveConfigurationDisplay));
             MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Configuration);
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Platform);
             System.Windows.Input.CommandManager.InvalidateRequerySuggested();
         }
 
@@ -3710,6 +3831,8 @@ namespace ColorVision.Solution.Explorer
             SaveConfig();
             ReloadSolutionState();
             NotifyPropertyChanged(nameof(ActiveConfiguration));
+            NotifyPropertyChanged(nameof(ActivePlatform));
+            NotifyPropertyChanged(nameof(ActiveConfigurationDisplay));
         }
 
         /// <summary>

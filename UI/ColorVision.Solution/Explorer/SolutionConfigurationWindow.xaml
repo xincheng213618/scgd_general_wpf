@@ -31,14 +31,21 @@
                     <ColumnDefinition Width="220"/>
                     <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="活动配置" FontWeight="Bold" Margin="0,0,10,0"/>
                 <ComboBox x:Name="ActiveConfigurationComboBox" Grid.Column="1" MinWidth="160"
                           ItemsSource="{Binding AvailableConfigurations}"
                           SelectedItem="{Binding ActiveConfiguration, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <TextBlock Grid.Column="3" Text="启动项目" FontWeight="Bold" Margin="0,0,10,0"/>
-                <ComboBox x:Name="StartupProjectComboBox" Grid.Column="4" MinWidth="220"
+                <TextBlock Grid.Column="3" Text="活动平台" FontWeight="Bold" Margin="0,0,10,0"/>
+                <ComboBox x:Name="ActivePlatformComboBox" Grid.Column="4" MinWidth="140"
+                          ItemsSource="{Binding AvailablePlatforms}"
+                          SelectedItem="{Binding ActivePlatform, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Grid.Column="6" Text="启动项目" FontWeight="Bold" Margin="0,0,10,0"/>
+                <ComboBox x:Name="StartupProjectComboBox" Grid.Column="7" MinWidth="220"
                           ItemsSource="{Binding StartupProjects}"
                           DisplayMemberPath="DisplayName"
                           SelectedItem="{Binding SelectedStartupProject, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
