@@ -53,7 +53,7 @@ namespace ColorVision.Solution.Explorer
 
         /// <summary>
         /// 项目引用列表 - 存储相对于解决方案目录的项目路径
-        /// 类似VS的.sln，项目路径信息保存在解决方案配置中
+        /// 项目路径信息保存在 ColorVision 解决方案配置中
         /// </summary>
         public ObservableCollection<string> Projects { get; set; } = new ObservableCollection<string>();
 
@@ -129,11 +129,7 @@ namespace ColorVision.Solution.Explorer
     public class SolutionExplorer : SolutionNode, ISolutionContainerNode, ISolutionPhysicalContainer, IDisposable
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
-        internal const string ImportedStructureReadOnlyMessage = "外部解决方案的结构由源 .sln/.slnx 文件控制，当前以只读方式导入。";
         public DirectoryInfo DirectoryInfo { get; private set; }
-        public RelayCommand OpenImportedSolutionSourceCommand { get; }
-        public RelayCommand RevealImportedSolutionSourceCommand { get; }
-        public RelayCommand CopyImportedSolutionSourcePathCommand { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand EditCommand { get; }
 
@@ -141,10 +137,8 @@ namespace ColorVision.Solution.Explorer
         private FileSystemWatcher _fileSystemWatcher;
         private DispatcherTimer _changedDebounceTimer;
         private DispatcherTimer _projectChangedDebounceTimer;
-        private DispatcherTimer? _importSourceChangedDebounceTimer;
         private readonly SemaphoreSlim _solutionRefreshGate = new(1, 1);
         private CancellationTokenSource? _projectRefreshCancellation;
-        private CancellationTokenSource? _importRefreshCancellation;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
         private int _cacheRebuildPending;
@@ -182,13 +176,11 @@ namespace ColorVision.Solution.Explorer
                     return sourcePath;
                 }
 
-                return IsImportedSolution
-                    ? ImportedSolutionSourcePath
-                    : ConfigFileInfo.FullName;
+                return ConfigFileInfo.FullName;
             }
         }
         public string PhysicalContainerPath => DirectoryInfo.FullName;
-        public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists && CanModifySolutionStructure
+        public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
             ? SolutionContainerAction.AddNewItem
                 | SolutionContainerAction.AddExistingItem
                 | SolutionContainerAction.CreateFolder
@@ -198,13 +190,6 @@ namespace ColorVision.Solution.Explorer
             : SolutionContainerAction.None;
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
-        internal bool IsImportedSolution => ImportedSolutionWorkspaceService.IsImportedSolution(Config);
-        internal string? ImportedSolutionSourcePath => ImportedSolutionWorkspaceService.TryGetSourceFile(
-            Config,
-            out FileInfo? sourceFile)
-                ? sourceFile?.FullName
-                : null;
-        internal bool CanModifySolutionStructure => !IsImportedSolution;
         public string ActiveConfiguration => Config.ActiveConfiguration;
         public string ActivePlatform => Config.ActivePlatform;
         public string ActiveConfigurationDisplay =>
@@ -217,9 +202,6 @@ namespace ColorVision.Solution.Explorer
                 DirectoryInfo.FullName,
                 ConfigFileInfo.FullName,
             };
-            if (ImportedSolutionSourcePath is { } importedSourcePath)
-                roots.Add(importedSourcePath);
-
             foreach (SolutionNode node in VisualChildren.GetAllVisualChildren())
             {
                 switch (node)
@@ -258,15 +240,6 @@ namespace ColorVision.Solution.Explorer
             CanCopy = false;
             CanCut = false;
 
-            OpenImportedSolutionSourceCommand = new RelayCommand(
-                _ => OpenImportedSolutionSource(),
-                _ => ImportedSolutionSourcePath is { } path && File.Exists(path));
-            RevealImportedSolutionSourceCommand = new RelayCommand(
-                _ => RevealImportedSolutionSource(),
-                _ => ImportedSolutionSourcePath is { } path && File.Exists(path));
-            CopyImportedSolutionSourcePathCommand = new RelayCommand(
-                _ => CopyImportedSolutionSourcePath(),
-                _ => !string.IsNullOrWhiteSpace(ImportedSolutionSourcePath));
             SaveCommand = new RelayCommand(_ => SaveConfigWithUserFeedback());
             EditCommand = new RelayCommand(_ =>
             {
@@ -279,7 +252,7 @@ namespace ColorVision.Solution.Explorer
                     }.ShowDialog();
                     return SaveConfigWithUserFeedback();
                 }, result => result);
-            }, _ => CanModifySolutionStructure);
+            });
             // Initialize SQLite cache BEFORE file watcher to avoid watcher picking up cache.db creation
             try
             {
@@ -294,7 +267,7 @@ namespace ColorVision.Solution.Explorer
             InitializeFileSystemWatcher();
 
             var stopwatch = Stopwatch.StartNew();
-            if (!IsImportedSolution && !HasRootProjectReference())
+            if (!HasRootProjectReference())
                 SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, Cache);
             ReconcileExplicitProjects();
             EnsureStartupProject();
@@ -575,18 +548,6 @@ namespace ColorVision.Solution.Explorer
                     if (!result.Succeeded && !result.Canceled)
                         Logger.Warn($"自动刷新项目失败: {result.ErrorMessage}");
                 };
-                if (IsImportedSolution)
-                {
-                    _importSourceChangedDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                    _importSourceChangedDebounceTimer.Tick += async (_, _) =>
-                    {
-                        _importSourceChangedDebounceTimer.Stop();
-                        ImportedSolutionWorkspaceResult result = await RefreshImportedSolutionStateAsync();
-                        if (!result.Succeeded && !result.Canceled)
-                            Logger.Warn($"自动刷新外部解决方案失败: {result.ErrorMessage}");
-                    };
-                }
-
                 _fileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName)
                 {
                     EnableRaisingEvents = true,
@@ -607,17 +568,12 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
-                return;
             if (SolutionManager.IsProjectFilePath(e.FullPath))
                 RefreshProjectFileState(e.FullPath);
         }
 
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
-            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
-                return;
-
             // Skip internal solution files (e.g. .cvsln, .cache.db)
             if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
             {
@@ -677,9 +633,6 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
         {
-            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
-                return;
-
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
                 Cache?.Remove(e.FullPath);
@@ -717,12 +670,6 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
         {
-            if (QueueImportedSolutionRefreshIfSource(e.FullPath)
-                || QueueImportedSolutionRefreshIfSource(e.OldFullPath))
-            {
-                return;
-            }
-
             bool oldPathIsSolutionItem = IsRegisteredSolutionItemPath(e.OldFullPath);
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
@@ -787,35 +734,6 @@ namespace ColorVision.Solution.Explorer
         {
             Logger.Warn("解决方案文件监视器发生错误，将重建搜索缓存。", e.GetException());
             QueueCacheRebuild();
-        }
-
-        internal bool IsImportedSolutionSourcePath(string? path)
-        {
-            return !string.IsNullOrWhiteSpace(path)
-                && ImportedSolutionWorkspaceService.TryGetSourceFile(Config, out FileInfo? sourceFile)
-                && sourceFile != null
-                && PathEquals(sourceFile.FullName, path);
-        }
-
-        private bool QueueImportedSolutionRefreshIfSource(string? path)
-        {
-            if (!IsImportedSolutionSourcePath(path) || _importSourceChangedDebounceTimer == null)
-                return false;
-
-            Dispatcher dispatcher = _importSourceChangedDebounceTimer.Dispatcher;
-            void QueueRefresh()
-            {
-                if (_disposed)
-                    return;
-                _importSourceChangedDebounceTimer.Stop();
-                _importSourceChangedDebounceTimer.Start();
-            }
-
-            if (dispatcher.CheckAccess())
-                QueueRefresh();
-            else
-                _ = dispatcher.BeginInvoke(QueueRefresh);
-            return true;
         }
 
         private void QueueDirectoryIndex(string directoryPath, string parentPath)
@@ -956,8 +874,6 @@ namespace ColorVision.Solution.Explorer
 
         internal void ShowAddNewItemDialog(string? solutionFolderId = null)
         {
-            if (!CanModifySolutionStructure)
-                return;
             var window = new AddNewItemWindow(DirectoryInfo.FullName)
             {
                 Owner = Application.Current.GetActiveWindow(),
@@ -1031,8 +947,6 @@ namespace ColorVision.Solution.Explorer
 
         internal void AddExistingItem(string? solutionFolderId = null)
         {
-            if (!CanModifySolutionStructure)
-                return;
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "添加现有项",
@@ -1055,8 +969,6 @@ namespace ColorVision.Solution.Explorer
 
         internal void ShowAddNewProjectDialog(string? solutionFolderId = null)
         {
-            if (!CanModifySolutionStructure)
-                return;
             var window = new AddNewProjectWindow(DirectoryInfo.FullName)
             {
                 Owner = Application.Current.GetActiveWindow(),
@@ -1095,8 +1007,6 @@ namespace ColorVision.Solution.Explorer
 
         internal void AddExistingProject(string? solutionFolderId = null)
         {
-            if (!CanModifySolutionStructure)
-                return;
             string projectPatterns = ProjectProviderRegistry.GetProjectFileDialogPattern();
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -1781,8 +1691,6 @@ namespace ColorVision.Solution.Explorer
 
         internal SolutionFolderDefinition CreateSolutionFolder(string? parentId = null)
         {
-            if (!CanModifySolutionStructure)
-                throw new InvalidOperationException(ImportedStructureReadOnlyMessage);
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("新建解决方案文件夹", () => CreateSolutionFolder(parentId), _ => true);
             EnsureExplicitProjectModePreservingProjects();
@@ -1816,8 +1724,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool TryRenameSolutionFolder(string folderId, string name)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("重命名解决方案文件夹", () => TryRenameSolutionFolder(folderId, name), result => result);
             string normalizedName = name?.Trim() ?? string.Empty;
@@ -1846,8 +1752,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveSolutionFolder(string folderId)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("删除解决方案文件夹", () => RemoveSolutionFolder(folderId), result => result);
             SolutionFolderDefinition? folder = Config.SolutionFolders.FirstOrDefault(item =>
@@ -1973,11 +1877,6 @@ namespace ColorVision.Solution.Explorer
             out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (!CanModifySolutionStructure)
-            {
-                errorMessage = ImportedStructureReadOnlyMessage;
-                return false;
-            }
             if (!IsExplicitProjectMode)
             {
                 errorMessage = "只有显式项目模式支持解决方案文件夹组织。";
@@ -2215,8 +2114,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RegisterProject(DirectoryInfo projectDirectory, string? solutionFolderId = null)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (!ProjectProviderRegistry.TryLoadProject(projectDirectory, out ProjectDefinition? project))
                 return false;
             return RegisterProject(project, solutionFolderId);
@@ -2232,11 +2129,6 @@ namespace ColorVision.Solution.Explorer
             string? solutionFolderId,
             out string errorMessage)
         {
-            if (!CanModifySolutionStructure)
-            {
-                errorMessage = ImportedStructureReadOnlyMessage;
-                return false;
-            }
             if (!ProjectProviderRegistry.TryLoadProject(
                 projectFile,
                 out ProjectDefinition? project,
@@ -2250,8 +2142,6 @@ namespace ColorVision.Solution.Explorer
 
         private bool RegisterProject(ProjectDefinition project, string? solutionFolderId)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation($"添加项目“{project.Name}”", () => RegisterProject(project, solutionFolderId), result => result);
             EnsureExplicitProjectModePreservingProjects();
@@ -2280,11 +2170,6 @@ namespace ColorVision.Solution.Explorer
             string? solutionFolderId,
             out string errorMessage)
         {
-            if (!CanModifySolutionStructure)
-            {
-                errorMessage = ImportedStructureReadOnlyMessage;
-                return false;
-            }
             if (_trackedMutationDepth == 0)
             {
                 string trackedError = string.Empty;
@@ -2369,8 +2254,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool MoveSolutionItemToFolder(string itemId, string? solutionFolderId)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("移动解决方案项", () => MoveSolutionItemToFolder(itemId, solutionFolderId), result => result);
             if (solutionFolderId != null && !IsKnownSolutionFolder(solutionFolderId))
@@ -2392,8 +2275,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveSolutionItem(string itemId)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("从解决方案移除解决方案项", () => RemoveSolutionItem(itemId), result => result);
             SolutionItemDefinition? item = Config.SolutionItems.FirstOrDefault(candidate => string.Equals(
@@ -2573,12 +2454,6 @@ namespace ColorVision.Solution.Explorer
             out IReadOnlyList<SolutionNode> registeredNodes,
             out string errorMessage)
         {
-            if (!CanModifySolutionStructure)
-            {
-                registeredNodes = Array.Empty<SolutionNode>();
-                errorMessage = ImportedStructureReadOnlyMessage;
-                return false;
-            }
             if (_trackedMutationDepth == 0)
             {
                 IReadOnlyList<SolutionNode> trackedNodes = Array.Empty<SolutionNode>();
@@ -2764,8 +2639,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveProject(ProjectDefinition project)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation($"从解决方案移除项目“{project.Name}”", () => RemoveProject(project), result => result);
             if (!IsExplicitProjectMode || !UnregisterProject(project))
@@ -2781,8 +2654,6 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveProjectReference(string projectReference)
         {
-            if (!CanModifySolutionStructure)
-                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("移除不可用项目引用", () => RemoveProjectReference(projectReference), result => result);
             if (!Config.Projects.Remove(projectReference))
@@ -3485,7 +3356,7 @@ namespace ColorVision.Solution.Explorer
 
             // A user-requested refresh must observe the current file system,
             // rather than replaying a possibly stale persisted tree cache.
-            if (!IsImportedSolution && !HasRootProjectReference())
+            if (!HasRootProjectReference())
                 SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache: null);
             ReconcileExplicitProjects();
 
@@ -3514,91 +3385,6 @@ namespace ColorVision.Solution.Explorer
             }
 
             SolutionStateReloaded?.Invoke(this, EventArgs.Empty);
-        }
-
-        internal async Task<ImportedSolutionWorkspaceResult> RefreshImportedSolutionStateAsync(
-            CancellationToken cancellationToken = default)
-        {
-            if (!IsImportedSolution)
-            {
-                return new ImportedSolutionWorkspaceResult(
-                    false,
-                    ErrorMessage: "当前解决方案不是外部导入工作区。");
-            }
-
-            _importSourceChangedDebounceTimer?.Stop();
-            CancelActiveProjectRefresh();
-            var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            CancellationTokenSource? previousCancellation = Interlocked.Exchange(
-                ref _importRefreshCancellation,
-                requestCancellation);
-            try
-            {
-                previousCancellation?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-
-            bool refreshGateEntered = false;
-            try
-            {
-                await _solutionRefreshGate.WaitAsync(requestCancellation.Token);
-                refreshGateEntered = true;
-                requestCancellation.Token.ThrowIfCancellationRequested();
-                ImportedSolutionWorkspaceResult result = await ImportedSolutionWorkspaceService.RefreshAsync(
-                    ConfigFileInfo,
-                    Config,
-                    requestCancellation.Token);
-                if (!result.Succeeded || result.Config == null)
-                    return result;
-                DirectoryInfo refreshedRoot = ResolveRootDirectory(
-                    ConfigFileInfo,
-                    result.Config.RootPath);
-                Dictionary<string, ProjectReferenceLoadResult> preparedProjectReferences =
-                    await LoadProjectReferencesAsync(
-                        refreshedRoot.FullName,
-                        result.Config,
-                        requestCancellation.Token);
-                requestCancellation.Token.ThrowIfCancellationRequested();
-                if (_disposed
-                    || !ReferenceEquals(
-                        Interlocked.CompareExchange(ref _importRefreshCancellation, null, null),
-                        requestCancellation))
-                {
-                    return result with { Succeeded = false, Canceled = true };
-                }
-                _preparedProjectReferences = preparedProjectReferences;
-                Config = result.Config;
-                Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
-                Config.ActivePlatform = NormalizePlatformName(Config.ActivePlatform);
-                ReloadSolutionState();
-                return result;
-            }
-            catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
-            {
-                return new ImportedSolutionWorkspaceResult(
-                    false,
-                    ErrorMessage: "刷新外部解决方案已取消。",
-                    Canceled: true);
-            }
-            finally
-            {
-                if (refreshGateEntered)
-                    _solutionRefreshGate.Release();
-                Interlocked.CompareExchange(
-                    ref _importRefreshCancellation,
-                    null,
-                    requestCancellation);
-                requestCancellation.Dispose();
-            }
-        }
-
-        private async Task RefreshImportedSolutionStateWithFeedbackAsync()
-        {
-            ImportedSolutionWorkspaceResult result = await RefreshImportedSolutionStateAsync();
-            if (!result.Succeeded && !result.Canceled)
-                ShowUserError(result.ErrorMessage);
         }
 
         private void RefreshConfigurationCommandSurfaces()
@@ -3681,36 +3467,8 @@ namespace ColorVision.Solution.Explorer
             new SolutionEditor().Open(FullPath);
         }
 
-        private void OpenImportedSolutionSource()
-        {
-            string? sourcePath = ImportedSolutionSourcePath;
-            if (string.IsNullOrWhiteSpace(sourcePath))
-                return;
-            if (!global::ColorVision.Solution.EditorManager.Instance.TryOpenFile(sourcePath, out string errorMessage))
-                ShowUserError(errorMessage);
-        }
-
-        private void RevealImportedSolutionSource()
-        {
-            string? sourcePath = ImportedSolutionSourcePath;
-            if (!string.IsNullOrWhiteSpace(sourcePath) && File.Exists(sourcePath))
-                ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(sourcePath);
-        }
-
-        private void CopyImportedSolutionSourcePath()
-        {
-            string? sourcePath = ImportedSolutionSourcePath;
-            if (!string.IsNullOrWhiteSpace(sourcePath))
-                Common.Clipboard.SetText(sourcePath);
-        }
-
         public override void Refresh()
         {
-            if (IsImportedSolution)
-            {
-                _ = RefreshImportedSolutionStateWithFeedbackAsync();
-                return;
-            }
             if (IsExplicitProjectMode)
             {
                 _ = RefreshExplicitProjectStateWithFeedbackAsync(reloadSolutionState: true);
@@ -3967,15 +3725,7 @@ namespace ColorVision.Solution.Explorer
             _fileSystemWatcher?.Dispose();
             _changedDebounceTimer?.Stop();
             _projectChangedDebounceTimer?.Stop();
-            _importSourceChangedDebounceTimer?.Stop();
             CancelActiveProjectRefresh();
-            try
-            {
-                _importRefreshCancellation?.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
             DisposeVisualChildren(this);
             VisualChildren.Clear();
             Cache?.Dispose();

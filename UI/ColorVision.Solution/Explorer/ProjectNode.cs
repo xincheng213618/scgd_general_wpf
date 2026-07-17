@@ -46,14 +46,12 @@ namespace ColorVision.Solution.Explorer
             CanReName = false;
             CanCut = false;
             CanCopy = false;
-            CanDelete = solutionExplorer?.CanModifySolutionStructure != false;
             Capabilities = ProjectProviderRegistry.GetCapabilities(GetExecutionProject());
             EditProjectFileCommand = new RelayCommand(_ => EditProjectFile(), _ => Project.ProjectFile.Exists);
             ToggleShowAllFilesCommand = new RelayCommand(_ => ToggleShowAllFiles());
             RemoveFromSolutionCommand = new RelayCommand(
                 _ => SolutionExplorer?.RemoveProject(Project),
-                _ => SolutionExplorer?.IsExplicitProjectMode == true
-                    && SolutionExplorer.CanModifySolutionStructure);
+                _ => SolutionExplorer?.IsExplicitProjectMode == true);
             SetStartupProjectState(SolutionExplorer?.IsConfiguredStartupProject(Project) == true);
             InitializeExternalProjectWatcher();
         }
@@ -479,11 +477,9 @@ namespace ColorVision.Solution.Explorer
             Name1 = $"{GetDisplayName(projectReference, resolvedPath)} (不可用)";
             CanCopy = false;
             CanCut = false;
-            CanDelete = solutionExplorer.CanModifySolutionStructure;
+            CanDelete = true;
             CanReName = false;
-            RemoveFromSolutionCommand = new RelayCommand(
-                _ => _solutionExplorer.RemoveProjectReference(ProjectReference),
-                _ => _solutionExplorer.CanModifySolutionStructure);
+            RemoveFromSolutionCommand = new RelayCommand(_ => _solutionExplorer.RemoveProjectReference(ProjectReference));
             ShowLoadErrorCommand = new RelayCommand(_ => MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
                 BuildDiagnosticMessage(),

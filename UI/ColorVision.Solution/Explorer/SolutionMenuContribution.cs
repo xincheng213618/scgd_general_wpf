@@ -3,7 +3,6 @@ using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Windows.Input;
 
@@ -644,50 +643,13 @@ namespace ColorVision.Solution.Explorer
                 Command = SolutionProjectCommands.ConfigurationManager,
                 Icon = MenuItemIcon.TryFindResource("DISetting"),
             });
-            if (explorer.CanModifySolutionStructure)
+            menuItems.Add(new MenuItemMetadata
             {
-                menuItems.Add(new MenuItemMetadata
-                {
-                    GuidId = "Edit",
-                    Order = 50,
-                    Header = ColorVision.Solution.Properties.Resources.EditSolution,
-                    Command = explorer.EditCommand,
-                });
-            }
-            else if (explorer.ImportedSolutionSourcePath is { } sourcePath)
-            {
-                menuItems.Add(new MenuItemMetadata
-                {
-                    GuidId = SolutionResourceCommands.ImportedSourceMenuId,
-                    Order = 40,
-                    Header = $"外部解决方案源: {Path.GetFileName(sourcePath)}",
-                });
-                menuItems.Add(new MenuItemMetadata
-                {
-                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
-                    GuidId = SolutionResourceCommands.EditImportedSourceId,
-                    Order = 1,
-                    Header = "编辑源文件(_E)",
-                    Command = explorer.OpenImportedSolutionSourceCommand,
-                    Icon = MenuItemIcon.TryFindResource("DICode"),
-                });
-                menuItems.Add(new MenuItemMetadata
-                {
-                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
-                    GuidId = SolutionResourceCommands.RevealImportedSourceId,
-                    Order = 2,
-                    Header = "在文件资源管理器中定位(_X)",
-                    Command = explorer.RevealImportedSolutionSourceCommand,
-                });
-                menuItems.Add(new MenuItemMetadata
-                {
-                    OwnerGuid = SolutionResourceCommands.ImportedSourceMenuId,
-                    GuidId = SolutionResourceCommands.CopyImportedSourcePathId,
-                    Order = 3,
-                    Header = "复制源文件路径(_C)",
-                    Command = explorer.CopyImportedSolutionSourcePathCommand,
-                });
-            }
+                GuidId = "Edit",
+                Order = 50,
+                Header = ColorVision.Solution.Properties.Resources.EditSolution,
+                Command = explorer.EditCommand,
+            });
             return menuItems;
         }
     }
@@ -703,13 +665,10 @@ namespace ColorVision.Solution.Explorer
             return context.PrimaryNode switch
             {
                 ProjectNode projectNode => projectNode.SolutionExplorer?.IsExplicitProjectMode == true
-                    && projectNode.SolutionExplorer.CanModifySolutionStructure
                     && projectNode.SolutionExplorer.GetSolutionFolderOptions().Count > 1,
-                SolutionFolderNode folderNode => folderNode.SolutionExplorer.CanModifySolutionStructure
-                    && folderNode.SolutionExplorer
+                SolutionFolderNode folderNode => folderNode.SolutionExplorer
                     .GetSolutionFolderMoveOptions(folderNode.FolderId).Count > 1,
-                SolutionItemNode itemNode => itemNode.SolutionExplorer.CanModifySolutionStructure
-                    && itemNode.SolutionExplorer
+                SolutionItemNode itemNode => itemNode.SolutionExplorer
                     .GetSolutionFolderOptions().Count > 1,
                 _ => false,
             };

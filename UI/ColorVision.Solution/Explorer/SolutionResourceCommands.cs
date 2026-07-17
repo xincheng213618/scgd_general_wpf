@@ -18,11 +18,6 @@ namespace ColorVision.Solution.Explorer
         public const string RunScriptId = "RunScript";
         public const string RevealInFileExplorerId = "RevealInFileExplorer";
         public const string OpenInTerminalId = "OpenInTerminal";
-        public const string ImportedSourceMenuId = "ImportedSolutionSource";
-        public const string EditImportedSourceId = "EditImportedSolutionSource";
-        public const string RevealImportedSourceId = "RevealImportedSolutionSource";
-        public const string CopyImportedSourcePathId = "CopyImportedSolutionSourcePath";
-
         public static RoutedUICommand Open { get; } = new(
             "打开",
             nameof(Open),

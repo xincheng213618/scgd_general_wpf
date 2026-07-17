@@ -30,7 +30,6 @@ namespace ColorVision.Solution.Explorer
             _solutionExplorer = solutionExplorer;
             Definition = definition;
             CanCut = false;
-            CanDelete = solutionExplorer.CanModifySolutionStructure;
             CanReName = false;
             UpdateState(definition, fullPath);
             InitializeExternalWatcher();

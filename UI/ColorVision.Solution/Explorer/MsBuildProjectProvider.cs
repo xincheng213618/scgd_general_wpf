@@ -5,7 +5,7 @@ using System.Xml.Linq;
 namespace ColorVision.Solution.Explorer
 {
     /// <summary>
-    /// Read-only adapter for standard .NET and Visual C++ MSBuild projects.
+    /// Read-only adapter for standard .NET MSBuild projects.
     /// It deliberately avoids evaluating imports or modifying the project file;
     /// full MSBuild evaluation can be supplied later by a dedicated integration.
     /// </summary>
@@ -14,7 +14,7 @@ namespace ColorVision.Solution.Explorer
     {
         public const string ProviderId = "msbuild.project";
 
-        private static readonly string[] SupportedExtensions = [".csproj", ".fsproj", ".vbproj", ".vcxproj"];
+        private static readonly string[] SupportedExtensions = [".csproj", ".fsproj", ".vbproj"];
         private static readonly ProjectItemRules DefaultItemRules = new(
             [
                 "bin", "bin/**",
@@ -25,7 +25,7 @@ namespace ColorVision.Solution.Explorer
             ]);
 
         public string Id => ProviderId;
-        public IReadOnlyList<string> ProjectFilePatterns { get; } = ["*.csproj", "*.fsproj", "*.vbproj", "*.vcxproj"];
+        public IReadOnlyList<string> ProjectFilePatterns { get; } = ["*.csproj", "*.fsproj", "*.vbproj"];
 
         public bool CanLoad(FileInfo projectFile)
         {
@@ -46,7 +46,6 @@ namespace ColorVision.Solution.Explorer
                 }
 
                 bool isSdkStyle = GetSdkNames(document).Count > 0;
-                bool isVisualCpp = string.Equals(projectFile.Extension, ".vcxproj", StringComparison.OrdinalIgnoreCase);
                 bool isRunnable = IsRunnableProject(document, isSdkStyle);
                 var commands = new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -70,7 +69,7 @@ namespace ColorVision.Solution.Explorer
                     RootDirectory: projectFile.Directory,
                     ItemRules: DefaultItemRules,
                     Dependencies: ReadProjectReferences(document),
-                    Configurations: ReadConfigurations(document, isVisualCpp));
+                    Configurations: ReadConfigurations(document));
             }
             catch (Exception ex) when (ex is IOException
                 or UnauthorizedAccessException
@@ -121,13 +120,6 @@ namespace ColorVision.Solution.Explorer
                 string configuration = string.IsNullOrWhiteSpace(project.ActiveConfiguration)
                     ? "Debug"
                     : project.ActiveConfiguration;
-                string? platform = null;
-                if (string.Equals(project.ProjectFile.Extension, ".vcxproj", StringComparison.OrdinalIgnoreCase)
-                    && TrySplitConfigurationPlatform(configuration, out string configurationName, out string platformName))
-                {
-                    configuration = configurationName;
-                    platform = platformName;
-                }
                 string workingDirectory = string.IsNullOrWhiteSpace(command.WorkingDirectory)
                     ? project.ProjectDirectory.FullName
                     : Path.GetFullPath(Path.IsPathRooted(command.WorkingDirectory)
@@ -137,12 +129,6 @@ namespace ColorVision.Solution.Explorer
                     .Replace("{ProjectDir}", project.ProjectDirectory.FullName, StringComparison.OrdinalIgnoreCase)
                     .Replace("{ProjectFile}", project.ProjectFile.FullName, StringComparison.OrdinalIgnoreCase)
                     .Replace("{Configuration}", configuration, StringComparison.OrdinalIgnoreCase);
-                if (!string.IsNullOrWhiteSpace(platform)
-                    && string.Equals(capabilityId, ProjectCapabilityIds.Build, StringComparison.OrdinalIgnoreCase)
-                    && !expandedCommand.Contains("/p:Platform=", StringComparison.OrdinalIgnoreCase))
-                {
-                    expandedCommand += $" /p:Platform=\"{platform}\"";
-                }
                 invocation = new ProjectCommandInvocation(project, capabilityId, expandedCommand, workingDirectory);
                 return true;
             }
@@ -214,22 +200,7 @@ namespace ColorVision.Solution.Explorer
                 .ToList();
         }
 
-        private static Dictionary<string, ProjectConfigurationDefinition> ReadConfigurations(
-            XDocument document,
-            bool isVisualCpp)
-        {
-            if (isVisualCpp)
-            {
-                Dictionary<string, ProjectConfigurationDefinition> visualCppConfigurations =
-                    ReadVisualCppConfigurations(document);
-                if (visualCppConfigurations.Count > 0)
-                    return visualCppConfigurations;
-            }
-
-            return ReadNamedConfigurations(document);
-        }
-
-        private static Dictionary<string, ProjectConfigurationDefinition> ReadNamedConfigurations(XDocument document)
+        private static Dictionary<string, ProjectConfigurationDefinition> ReadConfigurations(XDocument document)
         {
             List<string> configurations = document.Descendants()
                 .Where(element => string.Equals(element.Name.LocalName, "Configurations", StringComparison.OrdinalIgnoreCase))
@@ -247,92 +218,6 @@ namespace ColorVision.Solution.Explorer
                 _ => new ProjectConfigurationDefinition(
                     new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)),
                 StringComparer.OrdinalIgnoreCase);
-        }
-
-        private static Dictionary<string, ProjectConfigurationDefinition> ReadVisualCppConfigurations(XDocument document)
-        {
-            var entries = document.Descendants()
-                .Where(element => string.Equals(element.Name.LocalName, "ProjectConfiguration", StringComparison.OrdinalIgnoreCase))
-                .Select(element =>
-                {
-                    string include = element.Attribute("Include")?.Value?.Trim() ?? string.Empty;
-                    string[] includeParts = include.Split('|', 2, StringSplitOptions.TrimEntries);
-                    string configuration = GetChildValue(element, "Configuration")
-                        ?? includeParts.FirstOrDefault()
-                        ?? string.Empty;
-                    string platform = GetChildValue(element, "Platform")
-                        ?? (includeParts.Length == 2 ? includeParts[1] : string.Empty);
-                    return new { Configuration = configuration, Platform = platform };
-                })
-                .Where(entry => !string.IsNullOrWhiteSpace(entry.Configuration)
-                    && !entry.Configuration.Contains("$(", StringComparison.Ordinal))
-                .ToList();
-
-            var result = new Dictionary<string, ProjectConfigurationDefinition>(StringComparer.OrdinalIgnoreCase);
-            foreach (var configurationGroup in entries.GroupBy(
-                entry => entry.Configuration,
-                StringComparer.OrdinalIgnoreCase))
-            {
-                string preferredPlatform = configurationGroup
-                    .Where(entry => !string.IsNullOrWhiteSpace(entry.Platform))
-                    .OrderBy(entry => GetPlatformPreference(entry.Platform))
-                    .ThenBy(entry => entry.Platform, StringComparer.OrdinalIgnoreCase)
-                    .Select(entry => entry.Platform)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .FirstOrDefault() ?? string.Empty;
-                result[configurationGroup.Key] = CreateVisualCppConfiguration(preferredPlatform);
-            }
-            return result;
-        }
-
-        private static ProjectConfigurationDefinition CreateVisualCppConfiguration(string platform)
-        {
-            var commands = new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(platform))
-            {
-                commands[ProjectCapabilityIds.Build] = new ProjectCommandDefinition(
-                    $"msbuild \"{{ProjectFile}}\" /t:Build /p:Configuration=\"{{Configuration}}\" /p:Platform=\"{platform}\"");
-            }
-            return new ProjectConfigurationDefinition(commands);
-        }
-
-        private static bool TrySplitConfigurationPlatform(
-            string value,
-            out string configuration,
-            out string platform)
-        {
-            int separatorIndex = value.IndexOf('|');
-            if (separatorIndex <= 0 || separatorIndex == value.Length - 1)
-            {
-                configuration = value;
-                platform = string.Empty;
-                return false;
-            }
-
-            configuration = value[..separatorIndex].Trim();
-            platform = value[(separatorIndex + 1)..].Trim();
-            return !string.IsNullOrWhiteSpace(configuration)
-                && !string.IsNullOrWhiteSpace(platform);
-        }
-
-        private static string? GetChildValue(XElement element, string childName)
-        {
-            return element.Elements()
-                .FirstOrDefault(child => string.Equals(child.Name.LocalName, childName, StringComparison.OrdinalIgnoreCase))
-                ?.Value
-                .Trim();
-        }
-
-        private static int GetPlatformPreference(string platform)
-        {
-            return platform.ToLowerInvariant() switch
-            {
-                "x64" => 0,
-                "win32" => 1,
-                "any cpu" or "anycpu" => 2,
-                "arm64" => 3,
-                _ => 10,
-            };
         }
 
         private static bool TryGetCommand(

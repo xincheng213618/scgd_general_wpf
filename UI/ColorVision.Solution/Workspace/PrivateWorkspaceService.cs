@@ -10,7 +10,6 @@ namespace ColorVision.Solution.Workspace
     {
         Folder,
         Project,
-        ImportedSolution,
     }
 
     /// <summary>
@@ -139,7 +138,6 @@ namespace ColorVision.Solution.Workspace
             {
                 PrivateWorkspaceKind.Folder => "FolderWorkspaces",
                 PrivateWorkspaceKind.Project => "ImplicitSolutions",
-                PrivateWorkspaceKind.ImportedSolution => "ImportedSolutions",
                 _ => throw new ArgumentOutOfRangeException(nameof(kind)),
             };
             return Path.Combine(

@@ -17,13 +17,12 @@ namespace ColorVision.Solution.Explorer
         public override SolutionDeleteKind DeleteKind => SolutionDeleteKind.RemoveSolutionFolder;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
-        public SolutionContainerAction SupportedContainerActions => _solutionExplorer.CanModifySolutionStructure
-            ? SolutionContainerAction.AddNewItem
-                | SolutionContainerAction.AddExistingItem
-                | SolutionContainerAction.AddNewProject
-                | SolutionContainerAction.AddExistingProject
-                | SolutionContainerAction.CreateSolutionFolder
-            : SolutionContainerAction.None;
+        public SolutionContainerAction SupportedContainerActions =>
+            SolutionContainerAction.AddNewItem
+            | SolutionContainerAction.AddExistingItem
+            | SolutionContainerAction.AddNewProject
+            | SolutionContainerAction.AddExistingProject
+            | SolutionContainerAction.CreateSolutionFolder;
 
         public SolutionFolderNode(
             SolutionExplorer solutionExplorer,
@@ -39,8 +38,7 @@ namespace ColorVision.Solution.Explorer
             Icon = FileIcon.GetDirectoryIconImageSource();
             CanCopy = false;
             CanCut = false;
-            CanDelete = solutionExplorer.CanModifySolutionStructure;
-            CanReName = solutionExplorer.CanModifySolutionStructure;
+            CanReName = true;
         }
 
         public override bool ReName(string name)

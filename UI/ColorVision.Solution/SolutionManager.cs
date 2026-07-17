@@ -206,8 +206,7 @@ namespace ColorVision.Solution
 
         internal static bool IsSolutionFilePath(string? path)
         {
-            return IsNativeSolutionFilePath(path)
-                || SolutionFileProviderRegistry.IsSupportedSolutionFilePath(path);
+            return IsNativeSolutionFilePath(path);
         }
 
         internal static bool IsNativeSolutionFilePath(string? path)
@@ -218,9 +217,7 @@ namespace ColorVision.Solution
 
         internal static string GetSolutionFileDialogPattern()
         {
-            return string.Join(';', NativeSolutionFilePatterns
-                .Concat(SolutionFileProviderRegistry.GetSolutionFilePatterns())
-                .Distinct(StringComparer.OrdinalIgnoreCase));
+            return string.Join(';', NativeSolutionFilePatterns);
         }
 
         internal static bool IsProjectFilePath(string? path)
@@ -412,20 +409,6 @@ namespace ColorVision.Solution
             }
 
             if (File.Exists(normalizedPath)
-                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath)
-                && TryCreateImportedSolution(new FileInfo(normalizedPath), out solutionPath, out displayName, out errorMessage))
-            {
-                historyPath = Path.GetFullPath(normalizedPath);
-                return true;
-            }
-
-            if (File.Exists(normalizedPath)
-                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath))
-            {
-                return false;
-            }
-
-            if (File.Exists(normalizedPath)
                 && IsProjectFilePath(normalizedPath)
                 && TryCreateImplicitProjectSolution(
                     new FileInfo(normalizedPath),
@@ -490,24 +473,6 @@ namespace ColorVision.Solution
                     fileInfo.FullName,
                     fileInfo.FullName,
                     Path.GetFileNameWithoutExtension(fileInfo.Name));
-            }
-
-            if (File.Exists(normalizedPath)
-                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath))
-            {
-                ImportedSolutionWorkspaceResult result = await ImportedSolutionWorkspaceService
-                    .CreateAsync(new FileInfo(normalizedPath), cancellationToken)
-                    .ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-                return result.Succeeded
-                    ? new SolutionOpenTargetResolution(
-                        true,
-                        result.WorkspacePath,
-                        Path.GetFullPath(normalizedPath),
-                        result.DisplayName)
-                    : new SolutionOpenTargetResolution(
-                        false,
-                        ErrorMessage: result.ErrorMessage);
             }
 
             if (File.Exists(normalizedPath) && IsProjectFilePath(normalizedPath))
@@ -612,33 +577,6 @@ namespace ColorVision.Solution
                 displayName = string.Empty;
                 return false;
             }
-        }
-
-        internal static bool TryCreateImportedSolution(
-            FileInfo sourceFile,
-            out string solutionPath,
-            out string displayName)
-        {
-            return TryCreateImportedSolution(sourceFile, out solutionPath, out displayName, out _);
-        }
-
-        internal static bool TryCreateImportedSolution(
-            FileInfo sourceFile,
-            out string solutionPath,
-            out string displayName,
-            out string errorMessage)
-        {
-            if (ImportedSolutionWorkspaceService.TryCreate(
-                sourceFile,
-                out solutionPath,
-                out displayName,
-                out errorMessage))
-            {
-                return true;
-            }
-
-            log.Warn($"导入解决方案失败: {sourceFile.FullName}, {errorMessage}");
-            return false;
         }
 
         public static async Task<bool> OpenFolderDialogAsync(
