@@ -87,12 +87,6 @@ namespace ColorVision.Update
             DialogResult = false;
         }
 
-        private void SecondaryButton_Click(object sender, RoutedEventArgs e)
-        {
-            ResultAction = UpdatePreviewAction.SkipVersion;
-            DialogResult = false;
-        }
-
         private void ApplicationSnapshotsLink_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             new ApplicationSnapshotsWindow

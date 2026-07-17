@@ -35,6 +35,7 @@ namespace ColorVision.UI.Tests
             Assert.Contains("setlocal DisableDelayedExpansion", batch, StringComparison.Ordinal);
             Assert.Contains(PluginUpdater.EscapeForBatchValue(baseDirectory), batch, StringComparison.Ordinal);
             Assert.Contains("^>nul ^& rd /s /q \"%SELF_DIR%\" 2^>nul", batch, StringComparison.Ordinal);
+            Assert.Equal(2, batch.Split("call :schedule_cleanup", StringSplitOptions.None).Length - 1);
             Assert.DoesNotContain("UPDATE_STATE", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(":rollback", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("enabledelayedexpansion", batch, StringComparison.OrdinalIgnoreCase);
@@ -111,6 +112,77 @@ namespace ColorVision.UI.Tests
             Assert.Equal("third.party", pluginId);
             Assert.True(File.Exists(Path.Combine(stagingRoot, "third.party", "manifest.json")));
             Assert.False(Directory.Exists(Path.Combine(stagingRoot, "DifferentAssemblyName")));
+        }
+
+        [Fact]
+        public void BatchStagingOverlaysPluginAlreadyStagedByApplicationPackage()
+        {
+            string packagePath = CreatePluginPackage("MarketplacePackage", "third.party", wrapped: false);
+            string stagingRoot = Path.Combine(_tempDirectory, "Stage", "Plugins");
+            string existingPluginDirectory = Path.Combine(stagingRoot, "third.party");
+            Directory.CreateDirectory(existingPluginDirectory);
+            File.WriteAllText(Path.Combine(existingPluginDirectory, "HostOnly.dll"), "host");
+            File.WriteAllText(Path.Combine(existingPluginDirectory, "ThirdParty.dll"), "old");
+
+            int stagedCount = PluginUpdater.StagePluginPackages(
+                new[] { packagePath },
+                stagingRoot,
+                Path.Combine(_tempDirectory, "Extract"));
+
+            Assert.Equal(1, stagedCount);
+            Assert.Equal("host", File.ReadAllText(Path.Combine(existingPluginDirectory, "HostOnly.dll")));
+            Assert.Equal("test", File.ReadAllText(Path.Combine(existingPluginDirectory, "ThirdParty.dll")));
+            Assert.True(File.Exists(Path.Combine(existingPluginDirectory, "manifest.json")));
+        }
+
+        [Fact]
+        public void BatchStagingRejectsDuplicatePluginIds()
+        {
+            string firstPackage = CreatePluginPackage("First", "third.party", wrapped: false);
+            string secondPackage = CreatePluginPackage("Second", "third.party", wrapped: true);
+
+            Assert.Throws<InvalidDataException>(() => PluginUpdater.StagePluginPackages(
+                new[] { firstPackage, secondPackage },
+                Path.Combine(_tempDirectory, "Stage", "Plugins"),
+                Path.Combine(_tempDirectory, "Extract")));
+        }
+
+        [Fact]
+        public void EmptyPluginPackageIsRejected()
+        {
+            string packagePath = Path.Combine(_tempDirectory, "Empty.cvxp");
+            using (ZipFile.Open(packagePath, ZipArchiveMode.Create))
+            {
+            }
+
+            Assert.False(PluginUpdater.IsPluginPackageFileReady(packagePath));
+            Assert.Throws<InvalidDataException>(() => PluginUpdater.StagePluginPackages(
+                new[] { packagePath },
+                Path.Combine(_tempDirectory, "Stage", "Plugins"),
+                Path.Combine(_tempDirectory, "Extract")));
+        }
+
+        [Fact]
+        public void PluginPackageReadinessRejectsInProgressDamagedAndWrongExtensionFiles()
+        {
+            string packagePath = CreatePluginPackage("Ready", "third.party", wrapped: false);
+            Assert.True(PluginUpdater.IsPluginPackageFileReady(packagePath));
+
+            File.WriteAllText(packagePath + ".aria2", string.Empty);
+            Assert.False(PluginUpdater.IsPluginPackageFileReady(packagePath));
+            File.Delete(packagePath + ".aria2");
+
+            string zipPath = Path.ChangeExtension(packagePath, ".zip");
+            File.Copy(packagePath, zipPath);
+            Assert.True(PluginUpdater.IsPluginPackageFileReady(zipPath));
+
+            string wrongExtensionPath = Path.ChangeExtension(packagePath, ".bin");
+            File.Copy(packagePath, wrongExtensionPath);
+            Assert.False(PluginUpdater.IsPluginPackageFileReady(wrongExtensionPath));
+
+            string damagedPackagePath = Path.Combine(_tempDirectory, "Damaged.cvxp");
+            File.WriteAllText(damagedPackagePath, "not a zip archive");
+            Assert.False(PluginUpdater.IsPluginPackageFileReady(damagedPackagePath));
         }
 
         [Fact]

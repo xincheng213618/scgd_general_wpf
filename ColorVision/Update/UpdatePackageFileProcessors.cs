@@ -6,12 +6,11 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace ColorVision.Update
 {
     [FileExtension(".cvx")]
-    public class CVXFileProcess : IFileProcessor
+    public class IncrementalUpdatePackageFileProcessor : IFileProcessor
     {
         public int Order => 1;
 
@@ -21,7 +20,7 @@ namespace ColorVision.Update
         }
         public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
+            if (!AutoUpdater.IsIncrementalPackageFileReady(filePath)) return false;
 
             AutoUpdater.RestartIsIncrementApplication(filePath);
             return true;
@@ -29,7 +28,7 @@ namespace ColorVision.Update
     }
 
     [FileExtension(".cvxp")]
-    public class CVXPProcessUpdte : IFileProcessor
+    public class PluginPackageFileProcessor : IFileProcessor
     {
         public int Order => 1;
 
@@ -40,7 +39,7 @@ namespace ColorVision.Update
 
         public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
+            if (!PluginUpdater.IsPluginPackageFileReady(filePath)) return false;
 
             PluginUpdater.UpdatePlugin(filePath);
             return true;
@@ -48,9 +47,9 @@ namespace ColorVision.Update
     }
 
     [FileExtension(".zip")]
-    public class FileProcessUpdte : IFileProcessor
+    public class ZipPluginPackageFileProcessor : IFileProcessor
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(FileProcessUpdte));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ZipPluginPackageFileProcessor));
 
         public int Order => 1;
 
@@ -61,15 +60,7 @@ namespace ColorVision.Update
 
         public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
-
-            string fileName = Path.GetFileName(filePath);
-
-            if (Regex.IsMatch(fileName, @"^ColorVision-Update-\[.*\]\.zip$", RegexOptions.IgnoreCase))
-            {
-                AutoUpdater.RestartIsIncrementApplication(filePath);
-                return true;
-            }
+            if (!PluginUpdater.IsPluginPackageFileReady(filePath)) return false;
 
             try
             {

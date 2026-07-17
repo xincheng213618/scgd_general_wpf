@@ -602,6 +602,100 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public async Task SolutionSearch_PreservesBestMatchAcrossSolutions()
+    {
+        string crowdedSolutionDirectory = CreateTemporaryDirectory();
+        string exactSolutionDirectory = CreateTemporaryDirectory();
+        string crowdedSolutionPath = Path.Combine(crowdedSolutionDirectory, "Crowded.cvsln");
+        string exactSolutionPath = Path.Combine(exactSolutionDirectory, "Exact.cvsln");
+        for (int index = 0; index < 8; index++)
+            File.WriteAllText(Path.Combine(crowdedSolutionDirectory, $"needle-{index:D2}.txt"), index.ToString());
+        string exactPath = Path.Combine(exactSolutionDirectory, "needle");
+        File.WriteAllText(exactPath, "exact");
+        SolutionConfigStore.Save(crowdedSolutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.AutoDiscover,
+        });
+        SolutionConfigStore.Save(exactSolutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.AutoDiscover,
+        });
+
+        try
+        {
+            using var crowdedExplorer = CreateSolutionExplorer(crowdedSolutionDirectory, crowdedSolutionPath);
+            using var exactExplorer = CreateSolutionExplorer(exactSolutionDirectory, exactSolutionPath);
+            crowdedExplorer.Cache!.RebuildCache(crowdedSolutionDirectory);
+            exactExplorer.Cache!.RebuildCache(exactSolutionDirectory);
+
+            SolutionSearchResult result = await SolutionSearchService.SearchAsync(
+                [crowdedExplorer, exactExplorer],
+                "needle",
+                maxResults: 1);
+
+            SolutionSearchHit hit = Assert.Single(result.Hits);
+            Assert.Equal(exactPath, hit.FullPath, ignoreCase: true);
+            Assert.True(result.IsTruncated);
+        }
+        finally
+        {
+            Directory.Delete(crowdedSolutionDirectory, recursive: true);
+            Directory.Delete(exactSolutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionSearch_PreservesBestMatchAcrossExternalProjectRoots()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string externalContainer = CreateTemporaryDirectory();
+        string crowdedProjectDirectory = Path.Combine(externalContainer, "CrowdedProject");
+        string exactProjectDirectory = Path.Combine(externalContainer, "ExactProject");
+        Directory.CreateDirectory(crowdedProjectDirectory);
+        Directory.CreateDirectory(exactProjectDirectory);
+        for (int index = 0; index < 8; index++)
+            File.WriteAllText(Path.Combine(crowdedProjectDirectory, $"needle-{index:D2}.txt"), index.ToString());
+        string exactPath = Path.Combine(exactProjectDirectory, "needle");
+        File.WriteAllText(exactPath, "exact");
+        string crowdedProjectPath = Path.Combine(crowdedProjectDirectory, "CrowdedProject.cvproj");
+        string exactProjectPath = Path.Combine(exactProjectDirectory, "ExactProject.cvproj");
+        FolderProjectProvider.CreateProjectFile(crowdedProjectPath, "CrowdedProject");
+        FolderProjectProvider.CreateProjectFile(exactProjectPath, "ExactProject");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects =
+            [
+                Path.GetRelativePath(solutionDirectory, crowdedProjectPath),
+                Path.GetRelativePath(solutionDirectory, exactProjectPath),
+            ],
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+
+            SolutionSearchResult result = await SolutionSearchService.SearchAsync(
+                [explorer],
+                "needle",
+                maxResults: 1);
+
+            SolutionSearchHit hit = Assert.Single(result.Hits);
+            Assert.Equal(exactPath, hit.FullPath, ignoreCase: true);
+            Assert.True(result.IsTruncated);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+            Directory.Delete(externalContainer, recursive: true);
+        }
+    }
+
+    [Fact]
     public void FolderProjectProvider_LoadsLegacyAndTypedProjectFiles()
     {
         string directoryPath = CreateTemporaryDirectory();

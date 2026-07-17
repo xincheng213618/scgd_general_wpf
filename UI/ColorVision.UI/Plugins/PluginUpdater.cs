@@ -122,6 +122,7 @@ namespace ColorVision.UI.Plugins
         {
             if (downloadPaths == null || downloadPaths.Length == 0) return;
 
+            string? tempRoot = null;
             try
             {
                 // 1. 保存配置（原逻辑）
@@ -129,7 +130,7 @@ namespace ColorVision.UI.Plugins
                 PluginLoaderrConfig.Instance.Save();
 
                 // 2. 定义临时与目标路径
-                string tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");
+                tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");
                 string stageRoot = Path.Combine(tempRoot, "ColorVision");
                 string stagingRoot = Path.Combine(stageRoot, "Plugins"); // Staging for all plugins
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;     // 程序当前目录
@@ -143,20 +144,7 @@ namespace ColorVision.UI.Plugins
                 Directory.CreateDirectory(stagingRoot);
 
                 // 4. 将不同来源的插件包统一整理为 Plugins/<manifest.id>/
-                string packageExtractionRoot = Path.Combine(tempRoot, "Packages");
-                HashSet<string> stagedPluginIds = new(StringComparer.OrdinalIgnoreCase);
-                int stagedPackageCount = 0;
-                foreach (string downloadPath in downloadPaths)
-                {
-                    if (string.IsNullOrWhiteSpace(downloadPath) || !File.Exists(downloadPath))
-                        continue;
-
-                    StagePluginPackage(downloadPath, stagingRoot, packageExtractionRoot, stagedPluginIds);
-                    stagedPackageCount++;
-                }
-
-                if (stagedPackageCount == 0)
-                    throw new InvalidOperationException("No valid plugin package was provided.");
+                StagePluginPackages(downloadPaths, stagingRoot, Path.Combine(tempRoot, "Packages"));
 
                 // 5. 生成批处理
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
@@ -181,13 +169,73 @@ namespace ColorVision.UI.Plugins
                     psi.Verb = "runas";
                     psi.WindowStyle = ProcessWindowStyle.Normal;
                 }
-                Process.Start(psi);
+                _ = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start plugin update batch.");
                 Environment.Exit(0);
             }
             catch (Exception ex)
             {
+                TryDeleteDirectory(tempRoot);
                 log.Error("Plugin update failed before updater batch completed.", ex);
                 MessageBox.Show($"Update failed: {ex.Message}");
+            }
+        }
+
+        private static void TryDeleteDirectory(string? directory)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+                    Directory.Delete(directory, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to remove plugin update staging directory '{directory}': {ex.Message}");
+            }
+        }
+
+        public static int StagePluginPackages(IEnumerable<string> packagePaths, string stagingRoot, string extractionRoot)
+        {
+            if (packagePaths == null)
+                throw new ArgumentNullException(nameof(packagePaths));
+
+            List<string> paths = packagePaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (paths.Count == 0)
+                throw new InvalidOperationException("No plugin package was provided.");
+
+            HashSet<string> stagedPluginIds = new(StringComparer.OrdinalIgnoreCase);
+            foreach (string packagePath in paths)
+                StagePluginPackage(packagePath, stagingRoot, extractionRoot, stagedPluginIds);
+            return paths.Count;
+        }
+
+        public static bool IsPluginPackageFileReady(string? packagePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(packagePath)
+                    || !File.Exists(packagePath)
+                    || File.Exists(packagePath + ".aria2")
+                    || new FileInfo(packagePath).Length == 0)
+                {
+                    return false;
+                }
+
+                string extension = Path.GetExtension(packagePath);
+                if (!string.Equals(extension, ".cvxp", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(extension, ".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                using ZipArchive archive = ZipFile.OpenRead(packagePath);
+                return archive.Entries.Any(entry => !string.IsNullOrEmpty(entry.Name));
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -195,6 +243,8 @@ namespace ColorVision.UI.Plugins
         {
             if (string.IsNullOrWhiteSpace(packagePath) || !File.Exists(packagePath))
                 throw new FileNotFoundException("Plugin package was not found.", packagePath);
+            if (!IsPluginPackageFileReady(packagePath))
+                throw new InvalidDataException("Plugin package is incomplete or invalid.");
             if (string.IsNullOrWhiteSpace(stagingRoot))
                 throw new ArgumentException("Plugin staging directory cannot be empty.", nameof(stagingRoot));
             if (string.IsNullOrWhiteSpace(extractionRoot))
@@ -205,6 +255,9 @@ namespace ColorVision.UI.Plugins
 
             string packageExtractionDirectory = Path.Combine(extractionRoot, Guid.NewGuid().ToString("N"));
             ZipFile.ExtractToDirectory(packagePath, packageExtractionDirectory);
+            if (!Directory.Exists(packageExtractionDirectory)
+                || !Directory.EnumerateFileSystemEntries(packageExtractionDirectory).Any())
+                throw new InvalidDataException("Plugin package is empty.");
 
             List<string> manifestPaths = Directory.EnumerateFiles(packageExtractionDirectory, "*", SearchOption.AllDirectories)
                 .Where(path => string.Equals(Path.GetFileName(path), "manifest.json", StringComparison.OrdinalIgnoreCase))
@@ -237,12 +290,31 @@ namespace ColorVision.UI.Plugins
                 throw new InvalidDataException("Plugin manifest id must be a valid single directory name.");
             if (stagedPluginIds != null && !stagedPluginIds.Add(pluginId))
                 throw new InvalidDataException($"Plugin package '{pluginId}' was supplied more than once.");
-            if (Directory.Exists(targetPluginDirectory))
-                throw new InvalidDataException($"Plugin staging directory already exists: {targetPluginDirectory}");
 
             string pluginSourceDirectory = Path.GetDirectoryName(manifestPaths[0])!;
-            Directory.Move(pluginSourceDirectory, targetPluginDirectory);
+            if (Directory.Exists(targetPluginDirectory))
+            {
+                OverlayDirectory(pluginSourceDirectory, targetPluginDirectory);
+                Directory.Delete(pluginSourceDirectory, recursive: true);
+            }
+            else
+            {
+                Directory.Move(pluginSourceDirectory, targetPluginDirectory);
+            }
             return pluginId;
+        }
+
+        private static void OverlayDirectory(string sourceDirectory, string targetDirectory)
+        {
+            foreach (string directory in Directory.EnumerateDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+                Directory.CreateDirectory(Path.Combine(targetDirectory, Path.GetRelativePath(sourceDirectory, directory)));
+
+            foreach (string file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+            {
+                string targetPath = Path.Combine(targetDirectory, Path.GetRelativePath(sourceDirectory, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+                File.Copy(file, targetPath, overwrite: true);
+            }
         }
 
         internal static string EscapeForBatchValue(string path)
@@ -317,13 +389,8 @@ namespace ColorVision.UI.Plugins
             }
             sb.AppendLine();
 
-            sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);
-            sb.AppendLine("set \"SELF=%~f0\"");
-            sb.AppendLine("set \"SELF_DIR=%~dp0\"");
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%SELF_DIR%\" 2^>nul");
-            sb.AppendLine();
-
             sb.AppendLine(Properties.Resources.EchoUpdateComplete);
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("endlocal");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
@@ -337,8 +404,15 @@ namespace ColorVision.UI.Plugins
             {
                 sb.AppendLine($"start \"\" /b \"{escapedExePath}\" {restartArguments}");
             }
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("endlocal");
             sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+            sb.AppendLine(":schedule_cleanup");
+            sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);
+            sb.AppendLine("set \"SELF_DIR=%~dp0\"");
+            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%SELF_DIR%\" 2^>nul");
+            sb.AppendLine("exit /b 0");
 
             File.WriteAllText(batchFilePath, sb.ToString(), Encoding.GetEncoding(936));
         }

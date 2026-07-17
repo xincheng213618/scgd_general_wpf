@@ -78,15 +78,16 @@ namespace ColorVision.Solution.Explorer
             int candidateLimit = maxResults > (int.MaxValue - 1) / 4
                 ? int.MaxValue
                 : maxResults * 4 + 1;
-            var accumulator = new SearchAccumulator(candidateLimit);
+            var contextAccumulators = new List<SearchAccumulator>(contexts.Count);
             foreach (SearchContext context in contexts)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var contextAccumulator = new SearchAccumulator(candidateLimit);
                 foreach (LoadedCandidate candidate in context.LoadedCandidates)
                 {
                     if (!Matches(candidate.Name, candidate.FullPath, candidate.DisplayPath, keywords))
                         continue;
-                    accumulator.Add(new SolutionSearchHit(
+                    contextAccumulator.Add(new SolutionSearchHit(
                         context.Explorer,
                         candidate.FullPath,
                         candidate.Name,
@@ -99,7 +100,7 @@ namespace ColorVision.Solution.Explorer
 
                 bool hasCache = context.Cache?.HasCache() == true;
                 if (hasCache)
-                    AddCachedCandidates(context, keywords, query, accumulator, cancellationToken);
+                    AddCachedCandidates(context, keywords, query, contextAccumulator, cancellationToken);
 
                 IEnumerable<string> scanRoots = hasCache
                     ? context.ProjectScopes
@@ -110,22 +111,26 @@ namespace ColorVision.Solution.Explorer
                         : [context.RootPath];
                 foreach (string rootPath in scanRoots.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
-                    ScanDirectory(context, rootPath, keywords, query, accumulator, cancellationToken);
-                    if (accumulator.IsAtCapacity)
-                        break;
+                    var rootAccumulator = new SearchAccumulator(candidateLimit);
+                    ScanDirectory(context, rootPath, keywords, query, rootAccumulator, cancellationToken);
+                    contextAccumulator.AddRange(rootAccumulator.Hits);
+                    if (rootAccumulator.WasTruncated)
+                        contextAccumulator.MarkTruncated();
                 }
+                contextAccumulators.Add(contextAccumulator);
             }
 
-            List<SolutionSearchHit> orderedHits = accumulator.Hits
-                .OrderBy(hit => hit.MatchRank)
-                .ThenByDescending(hit => hit.IsDirectory)
-                .ThenBy(hit => hit.Name, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(hit => hit.DisplayPath, StringComparer.OrdinalIgnoreCase)
+            var mergedAccumulator = new SearchAccumulator(int.MaxValue);
+            foreach (SearchAccumulator contextAccumulator in contextAccumulators)
+                mergedAccumulator.AddRange(contextAccumulator.Hits);
+            List<SolutionSearchHit> allHits = mergedAccumulator.Hits.ToList();
+            List<SolutionSearchHit> orderedHits = allHits
                 .Take(maxResults)
                 .ToList();
             return new SolutionSearchResult(
                 orderedHits,
-                accumulator.WasTruncated || accumulator.Hits.Count > maxResults);
+                contextAccumulators.Any(accumulator => accumulator.WasTruncated)
+                    || allHits.Count > maxResults);
         }
 
         private static void AddCachedCandidates(
@@ -143,13 +148,16 @@ namespace ColorVision.Solution.Explorer
             foreach (string rootPath in searchRoots.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                int queryLimit = accumulator.Capacity == int.MaxValue
+                    ? int.MaxValue
+                    : accumulator.Capacity + 1;
                 List<FileTreeCacheEntry> entries = context.Cache!.Search(
                     keywords.ToArray(),
-                    accumulator.Capacity,
+                    queryLimit,
                     rootPath);
-                if (entries.Count >= accumulator.Capacity)
+                if (entries.Count > accumulator.Capacity)
                     accumulator.MarkTruncated();
-                foreach (FileTreeCacheEntry entry in entries)
+                foreach (FileTreeCacheEntry entry in entries.Take(accumulator.Capacity))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     AddPhysicalCandidate(
@@ -456,11 +464,12 @@ namespace ColorVision.Solution.Explorer
         private sealed class SearchAccumulator
         {
             private readonly Dictionary<string, SolutionSearchHit> _hits = new(StringComparer.OrdinalIgnoreCase);
+            private readonly SortedSet<SolutionSearchHit> _orderedHits = new(Comparer<SolutionSearchHit>.Create(CompareHits));
 
             public int Capacity { get; }
             public bool WasTruncated { get; private set; }
             public bool IsAtCapacity => _hits.Count >= Capacity;
-            public Dictionary<string, SolutionSearchHit>.ValueCollection Hits => _hits.Values;
+            public IEnumerable<SolutionSearchHit> Hits => _orderedHits;
 
             public SearchAccumulator(int capacity)
             {
@@ -469,30 +478,74 @@ namespace ColorVision.Solution.Explorer
 
             public void Add(SolutionSearchHit hit)
             {
+                string key = GetKey(hit);
+                if (_hits.TryGetValue(key, out SolutionSearchHit? existing))
+                {
+                    if (existing.ExistingNode == null && hit.ExistingNode != null)
+                    {
+                        _orderedHits.Remove(existing);
+                        _hits[key] = hit;
+                        _orderedHits.Add(hit);
+                    }
+                    return;
+                }
+                if (IsAtCapacity)
+                {
+                    WasTruncated = true;
+                    SolutionSearchHit? worstHit = _orderedHits.Max;
+                    if (worstHit == null || CompareHits(hit, worstHit) >= 0)
+                        return;
+                    _orderedHits.Remove(worstHit);
+                    _hits.Remove(GetKey(worstHit));
+                }
+                _hits.Add(key, hit);
+                _orderedHits.Add(hit);
+            }
+
+            public void AddRange(IEnumerable<SolutionSearchHit> hits)
+            {
+                foreach (SolutionSearchHit hit in hits)
+                    Add(hit);
+            }
+
+            public void MarkTruncated()
+            {
+                WasTruncated = true;
+            }
+
+            private static int CompareHits(SolutionSearchHit? left, SolutionSearchHit? right)
+            {
+                if (ReferenceEquals(left, right))
+                    return 0;
+                if (left == null)
+                    return 1;
+                if (right == null)
+                    return -1;
+
+                int result = left.MatchRank.CompareTo(right.MatchRank);
+                if (result != 0)
+                    return result;
+                result = right.IsDirectory.CompareTo(left.IsDirectory);
+                if (result != 0)
+                    return result;
+                result = StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name);
+                if (result != 0)
+                    return result;
+                result = StringComparer.OrdinalIgnoreCase.Compare(left.DisplayPath, right.DisplayPath);
+                return result != 0
+                    ? result
+                    : StringComparer.OrdinalIgnoreCase.Compare(GetKey(left), GetKey(right));
+            }
+
+            private static string GetKey(SolutionSearchHit hit)
+            {
                 string identity = !string.IsNullOrWhiteSpace(hit.FullPath)
                     ? hit.FullPath
                     : hit.ExistingNode == null
                         ? $"{hit.Name}|{hit.DisplayPath}"
                         : SolutionWorkspaceStateStore.GetNodeId(hit.ExistingNode)
                             ?? $"{hit.Name}|{hit.DisplayPath}";
-                string key = $"{hit.Explorer.ConfigFileInfo.FullName}|{identity}";
-                if (_hits.TryGetValue(key, out SolutionSearchHit? existing))
-                {
-                    if (existing.ExistingNode == null && hit.ExistingNode != null)
-                        _hits[key] = hit;
-                    return;
-                }
-                if (IsAtCapacity)
-                {
-                    WasTruncated = true;
-                    return;
-                }
-                _hits.Add(key, hit);
-            }
-
-            public void MarkTruncated()
-            {
-                WasTruncated = true;
+                return $"{hit.Explorer.ConfigFileInfo.FullName}|{identity}";
             }
         }
     }

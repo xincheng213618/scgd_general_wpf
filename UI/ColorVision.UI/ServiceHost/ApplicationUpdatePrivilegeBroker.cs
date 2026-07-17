@@ -1,4 +1,6 @@
+using ColorVision.Common.Utilities;
 using log4net;
+using System.IO;
 
 namespace ColorVision.UI.ServiceHost
 {
@@ -8,8 +10,21 @@ namespace ColorVision.UI.ServiceHost
 
         public static bool TryPrepareApplicationDirectory(string? serviceHostPackageDirectory = null, TimeSpan? timeout = null)
         {
+            string applicationDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             return TryPrepareApplicationDirectory(
+                applicationDirectory,
                 () => ColorVisionServiceHostClient.Default.PrepareApplicationUpdateAsync(serviceHostPackageDirectory, timeout));
+        }
+
+        internal static bool TryPrepareApplicationDirectory(string applicationDirectory, Func<Task<ServiceHostResponse>> prepareAccessAsync)
+        {
+            if (Tool.HasWritePermission(applicationDirectory))
+            {
+                log.Debug($"Application directory is already writable; ColorVisionServiceHost is not required: {applicationDirectory}");
+                return true;
+            }
+
+            return TryPrepareApplicationDirectory(prepareAccessAsync);
         }
 
         internal static bool TryPrepareApplicationDirectory(Func<Task<ServiceHostResponse>> prepareAccessAsync)

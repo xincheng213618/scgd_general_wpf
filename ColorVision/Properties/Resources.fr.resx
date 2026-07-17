@@ -271,9 +271,6 @@
   <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
     <value>Fermer</value>
   </data>
-  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
-    <value>Ignorer cette version</value>
-  </data>
   <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
     <value>Requis</value>
   </data>

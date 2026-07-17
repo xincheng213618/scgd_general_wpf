@@ -17,7 +17,7 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
     }
 
     [Fact]
-    public void ListSnapshotsDeletesCorruptedZipFiles()
+    public void ListSnapshotsKeepsUnreadableZipFilesForManualRecovery()
     {
         string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
         Directory.CreateDirectory(snapshotDirectory);
@@ -27,8 +27,42 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
         IReadOnlyList<ApplicationSnapshotInfo> snapshots = ApplicationSnapshotService.Instance.ListSnapshots();
 
         Assert.Empty(snapshots);
-        Assert.False(File.Exists(corruptedSnapshotPath));
-        Assert.False(Directory.Exists(Path.Combine(snapshotDirectory, "Corrupted")));
+        Assert.True(File.Exists(corruptedSnapshotPath));
+        Assert.Equal("not a zip", File.ReadAllText(corruptedSnapshotPath));
+    }
+
+    [Fact]
+    public void UnreadableDefaultSnapshotIsMovedToRecoveryInsteadOfDeleted()
+    {
+        string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
+        Directory.CreateDirectory(snapshotDirectory);
+        string defaultSnapshotPath = Path.Combine(snapshotDirectory, "default.zip");
+        File.WriteAllText(defaultSnapshotPath, "recover me");
+
+        string recoveryPath = ApplicationSnapshotService.MoveUnreadableSnapshotToRecovery(defaultSnapshotPath);
+
+        Assert.False(File.Exists(defaultSnapshotPath));
+        Assert.True(File.Exists(recoveryPath));
+        Assert.Equal(Path.Combine(snapshotDirectory, "Recovery"), Path.GetDirectoryName(recoveryPath));
+        Assert.Equal("recover me", File.ReadAllText(recoveryPath));
+    }
+
+    [Fact]
+    public void RebuiltSnapshotPreservesPreviousFileInRecovery()
+    {
+        string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
+        Directory.CreateDirectory(snapshotDirectory);
+        string snapshotPath = Path.Combine(snapshotDirectory, "default.zip");
+        string completedSnapshotPath = Path.Combine(snapshotDirectory, "completed.tmp");
+        File.WriteAllText(snapshotPath, "previous snapshot");
+        File.WriteAllText(completedSnapshotPath, "new snapshot");
+
+        ApplicationSnapshotService.PromoteCompletedSnapshot(completedSnapshotPath, snapshotPath);
+
+        Assert.Equal("new snapshot", File.ReadAllText(snapshotPath));
+        Assert.False(File.Exists(completedSnapshotPath));
+        string recoveryPath = Assert.Single(Directory.EnumerateFiles(Path.Combine(snapshotDirectory, "Recovery"), "*.zip"));
+        Assert.Equal("previous snapshot", File.ReadAllText(recoveryPath));
     }
 
     public void Dispose()

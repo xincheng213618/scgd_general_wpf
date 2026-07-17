@@ -1,4 +1,5 @@
 using ColorVision.Update;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Compression;
 using Resources = ColorVision.Properties.Resources;
@@ -7,6 +8,16 @@ namespace ColorVision.UI.Tests
 {
     public sealed class AutoUpdatePlanTests
     {
+        [Fact]
+        public void LegacySkippedVersionConfigIsIgnored()
+        {
+            AutoUpdateConfig? config = JsonConvert.DeserializeObject<AutoUpdateConfig>("""{"IsAutoUpdate":false,"SkippedVersion":"1.4.10.85"}""");
+
+            Assert.NotNull(config);
+            Assert.False(config.IsAutoUpdate);
+            Assert.Null(typeof(AutoUpdateConfig).GetProperty("SkippedVersion"));
+        }
+
         [Fact]
         public void SameSeriesBuildJumpUsesOrderedIncrementalPackages()
         {
@@ -91,6 +102,28 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void LegacyZipNamedUpdatePackageIsNotHandledAsApplicationUpdate()
+        {
+            string tempDirectory = Directory.CreateTempSubdirectory("ColorVisionLegacyUpdatePackageTest-").FullName;
+            string packagePath = Path.Combine(tempDirectory, "ColorVision-Update-[1.4.10.82].zip");
+
+            try
+            {
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+                {
+                    using Stream stream = archive.CreateEntry("ColorVision.exe").Open();
+                    stream.WriteByte(1);
+                }
+
+                Assert.False(new ZipPluginPackageFileProcessor().Process(packagePath));
+            }
+            finally
+            {
+                Directory.Delete(tempDirectory, true);
+            }
+        }
+
+        [Fact]
         public void MissingIncrementalPackageRequiresFullInstallerFallback()
         {
             Assert.True(AutoUpdater.RequiresFullInstallerFallback(expectedPackageCount: 3, availablePackageCount: 2));
@@ -107,8 +140,11 @@ namespace ColorVision.UI.Tests
             {
                 File.WriteAllText(packagePath, "not a zip archive");
                 Assert.False(AutoUpdater.IsIncrementalPackageFileReady(packagePath));
-                Assert.True(AutoUpdater.DeleteInvalidIncrementalPackageFile(packagePath));
+                string? recoveryPath = AutoUpdater.MoveInvalidApplicationPackageToRecovery(packagePath, isIncremental: true);
                 Assert.False(File.Exists(packagePath));
+                Assert.NotNull(recoveryPath);
+                Assert.True(File.Exists(recoveryPath));
+                Assert.Equal("not a zip archive", File.ReadAllText(recoveryPath));
 
                 using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
                 {
@@ -117,11 +153,15 @@ namespace ColorVision.UI.Tests
                 }
 
                 Assert.True(AutoUpdater.IsIncrementalPackageFileReady(packagePath));
-                Assert.False(AutoUpdater.DeleteInvalidIncrementalPackageFile(packagePath));
+                Assert.Null(AutoUpdater.MoveInvalidApplicationPackageToRecovery(packagePath, isIncremental: true));
+
+                string legacyZipPath = Path.ChangeExtension(packagePath, ".zip");
+                File.Copy(packagePath, legacyZipPath);
+                Assert.False(AutoUpdater.IsIncrementalPackageFileReady(legacyZipPath));
 
                 File.WriteAllText(packagePath + ".aria2", string.Empty);
                 Assert.False(AutoUpdater.IsIncrementalPackageFileReady(packagePath));
-                Assert.False(AutoUpdater.DeleteInvalidIncrementalPackageFile(packagePath));
+                Assert.Null(AutoUpdater.MoveInvalidApplicationPackageToRecovery(packagePath, isIncremental: true));
                 Assert.True(File.Exists(packagePath));
             }
             finally
@@ -141,8 +181,11 @@ namespace ColorVision.UI.Tests
                 File.WriteAllText(installerPath, "not an executable");
                 Assert.False(AutoUpdater.IsFullInstallerFileReady(installerPath));
                 Assert.False(AutoUpdater.IsApplicationPackageFileReady(installerPath, isIncremental: false));
-                Assert.True(AutoUpdater.DeleteInvalidFullInstallerFile(installerPath));
+                string? recoveryPath = AutoUpdater.MoveInvalidApplicationPackageToRecovery(installerPath, isIncremental: false);
                 Assert.False(File.Exists(installerPath));
+                Assert.NotNull(recoveryPath);
+                Assert.True(File.Exists(recoveryPath));
+                Assert.Equal("not an executable", File.ReadAllText(recoveryPath));
 
                 byte[] portableExecutable = new byte[68];
                 portableExecutable[0] = (byte)'M';
@@ -153,11 +196,11 @@ namespace ColorVision.UI.Tests
                 File.WriteAllBytes(installerPath, portableExecutable);
 
                 Assert.True(AutoUpdater.IsFullInstallerFileReady(installerPath));
-                Assert.False(AutoUpdater.DeleteInvalidFullInstallerFile(installerPath));
+                Assert.Null(AutoUpdater.MoveInvalidApplicationPackageToRecovery(installerPath, isIncremental: false));
 
                 File.WriteAllText(installerPath + ".aria2", string.Empty);
                 Assert.False(AutoUpdater.IsFullInstallerFileReady(installerPath));
-                Assert.False(AutoUpdater.DeleteInvalidFullInstallerFile(installerPath));
+                Assert.Null(AutoUpdater.MoveInvalidApplicationPackageToRecovery(installerPath, isIncremental: false));
                 Assert.True(File.Exists(installerPath));
             }
             finally
@@ -228,6 +271,88 @@ namespace ColorVision.UI.Tests
                     availableApplicationPackages,
                     expectedPluginPackages,
                     availablePluginPackages));
+        }
+
+        [Theory]
+        [InlineData(true, false, true, true, true, (int)ExitUpdateContent.Plugins)]
+        [InlineData(true, true, false, true, true, (int)ExitUpdateContent.Plugins)]
+        [InlineData(true, true, true, true, false, (int)ExitUpdateContent.Application)]
+        [InlineData(true, true, true, true, true, (int)(ExitUpdateContent.Application | ExitUpdateContent.Plugins))]
+        [InlineData(true, false, true, false, false, (int)ExitUpdateContent.None)]
+        public void ExitUpdateKeepsReadyApplicationAndPluginPackagesIndependent(
+            bool hasApplicationUpdate,
+            bool isIncrementalApplicationUpdate,
+            bool applicationPackagesReady,
+            bool hasPluginUpdates,
+            bool pluginPackagesReady,
+            int expectedContent)
+        {
+            Assert.Equal(
+                (ExitUpdateContent)expectedContent,
+                CombinedUpdateCoordinator.DetermineExitUpdateContent(
+                    hasApplicationUpdate,
+                    isIncrementalApplicationUpdate,
+                    applicationPackagesReady,
+                    hasPluginUpdates,
+                    pluginPackagesReady));
+        }
+
+        [Fact]
+        public void StartupPrefetchUsesCurrentHostForPluginsWhenApplicationRequiresFullInstaller()
+        {
+            Version currentVersion = new(1, 4, 10, 86);
+            AutoUpdatePlan fullApplicationPlan = new()
+            {
+                CurrentVersion = currentVersion,
+                LatestVersion = new Version(1, 5, 1, 1),
+                VersionsToApply = [new Version(1, 5, 1, 1)],
+                IsIncremental = false,
+            };
+
+            Assert.Equal(
+                currentVersion,
+                CombinedUpdateCoordinator.ResolvePluginPlanHostVersion(
+                    fullApplicationPlan,
+                    currentVersion,
+                    includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: true));
+        }
+
+        [Fact]
+        public void InteractiveFullInstallerDoesNotOfferAPluginPlanItCannotApplyTogether()
+        {
+            Version currentVersion = new(1, 4, 10, 86);
+            AutoUpdatePlan fullApplicationPlan = new()
+            {
+                CurrentVersion = currentVersion,
+                LatestVersion = new Version(1, 5, 1, 1),
+                VersionsToApply = [new Version(1, 5, 1, 1)],
+                IsIncremental = false,
+            };
+
+            Assert.Null(
+                CombinedUpdateCoordinator.ResolvePluginPlanHostVersion(
+                    fullApplicationPlan,
+                    currentVersion,
+                    includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false));
+        }
+
+        [Fact]
+        public void IncrementalApplicationPlanChecksPluginsAgainstItsTargetVersion()
+        {
+            AutoUpdatePlan incrementalApplicationPlan = new()
+            {
+                CurrentVersion = new Version(1, 4, 10, 85),
+                LatestVersion = new Version(1, 4, 10, 86),
+                VersionsToApply = [new Version(1, 4, 10, 86)],
+                IsIncremental = true,
+            };
+
+            Assert.Equal(
+                incrementalApplicationPlan.LatestVersion,
+                CombinedUpdateCoordinator.ResolvePluginPlanHostVersion(
+                    incrementalApplicationPlan,
+                    incrementalApplicationPlan.CurrentVersion,
+                    includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false));
         }
 
         [Fact]

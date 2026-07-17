@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Marketplace;
+using ColorVision.UI.Plugins;
 using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
@@ -48,12 +49,6 @@ namespace ColorVision.Update
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
-        /// <summary>
-        /// 用户选择跳过的版本
-        /// </summary>
-        public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
-        private string _SkippedVersion = string.Empty;
-
     }
 
 
@@ -91,54 +86,13 @@ namespace ColorVision.Update
                 : Environments.DirApplicationFullPackageCache;
         }
 
-        public static void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
-
-        public static void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
-        {
-            string downloadUrl = IsIncrement
-                ? GetIncrementalPackageDownloadUrl(Version)
-                : GetReleasePackageDownloadUrl(Version);
-            Action<DownloadTask>? taskCallback;
-            taskCallback = task =>
-            {
-                bool packageReady = task.Status == DownloadStatus.Completed
-                    && IsApplicationPackageFileReady(task.SavePath, IsIncrement);
-                if (packageReady)
-                {
-                    UpdateApplication(task.SavePath, IsIncrement);
-                }
-                else
-                {
-                    if (task.Status == DownloadStatus.Completed)
-                    {
-                        if (IsIncrement)
-                        {
-                            DeleteInvalidIncrementalPackageFile(task.SavePath);
-                        }
-                        else
-                        {
-                            DeleteInvalidFullInstallerFile(task.SavePath);
-                        }
-                    }
-
-                    log.Error($"Download failed via IDownloadService: {downloadUrl}");
-                    PostToUiThread(() => downloadFailedAction?.Invoke());
-                }
-            };
-            DownloadWindow.ShowInstance();
-            string packageFileName = IsIncrement
-                ? GetIncrementalPackageFileName(Version)
-                : GetReleasePackageFileName(Version);
-            Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, DownloadPath, "1:1", taskCallback, packageFileName);
-        }
-
         public async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
             LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
             if (LatestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                Update(LatestVersion, GetApplicationPackageCacheDirectory(isIncremental: false));
+                StartFullUpdate(LatestVersion);
             });
         }
 
@@ -444,10 +398,7 @@ namespace ColorVision.Update
                     continue;
 
                 string canonicalPath = Path.Combine(downloadDirectory, fileName);
-                if (plan.IsIncremental)
-                    DeleteInvalidIncrementalPackageFile(canonicalPath);
-                else
-                    DeleteInvalidFullInstallerFile(canonicalPath);
+                _ = MoveInvalidApplicationPackageToRecovery(canonicalPath, plan.IsIncremental);
 
                 string downloadUrl = plan.IsIncremental
                     ? GetIncrementalPackageDownloadUrl(version)
@@ -580,10 +531,7 @@ namespace ColorVision.Update
                     && IsApplicationPackageFileReady(task.SavePath, isIncremental);
                 if (!ready && task.Status == DownloadStatus.Completed)
                 {
-                    if (isIncremental)
-                        DeleteInvalidIncrementalPackageFile(task.SavePath);
-                    else
-                        DeleteInvalidFullInstallerFile(task.SavePath);
+                    _ = MoveInvalidApplicationPackageToRecovery(task.SavePath, isIncremental);
                 }
 
                 completion.TrySetResult(ready);
@@ -681,6 +629,7 @@ namespace ColorVision.Update
                 if (string.IsNullOrWhiteSpace(filePath)
                     || !File.Exists(filePath)
                     || File.Exists(filePath + ".aria2")
+                    || !string.Equals(Path.GetExtension(filePath), ".cvx", StringComparison.OrdinalIgnoreCase)
                     || new FileInfo(filePath).Length == 0)
                 {
                     return false;
@@ -736,47 +685,31 @@ namespace ColorVision.Update
                 : IsFullInstallerFileReady(filePath);
         }
 
-        internal static bool DeleteInvalidIncrementalPackageFile(string? filePath)
+        internal static string? MoveInvalidApplicationPackageToRecovery(string? filePath, bool isIncremental)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(filePath)
                     || !File.Exists(filePath)
                     || File.Exists(filePath + ".aria2")
-                    || IsIncrementalPackageFileReady(filePath))
+                    || IsApplicationPackageFileReady(filePath, isIncremental))
                 {
-                    return false;
+                    return null;
                 }
 
-                File.Delete(filePath);
-                return true;
+                string sourcePath = Path.GetFullPath(filePath);
+                string recoveryDirectory = Path.Combine(Path.GetDirectoryName(sourcePath)!, "Recovery");
+                Directory.CreateDirectory(recoveryDirectory);
+                string recoveryFileName = $"{Path.GetFileNameWithoutExtension(sourcePath)}-unreadable-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}{Path.GetExtension(sourcePath)}";
+                string recoveryPath = Path.Combine(recoveryDirectory, recoveryFileName);
+                File.Move(sourcePath, recoveryPath);
+                log.Warn($"Moved unreadable application package cache to recovery storage: {recoveryPath}");
+                return recoveryPath;
             }
             catch (Exception ex)
             {
-                log.Warn($"Failed to delete invalid incremental package cache '{filePath}': {ex.Message}");
-                return false;
-            }
-        }
-
-        internal static bool DeleteInvalidFullInstallerFile(string? filePath)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filePath)
-                    || !File.Exists(filePath)
-                    || File.Exists(filePath + ".aria2")
-                    || IsFullInstallerFileReady(filePath))
-                {
-                    return false;
-                }
-
-                File.Delete(filePath);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Warn($"Failed to delete invalid full installer cache '{filePath}': {ex.Message}");
-                return false;
+                log.Warn($"Failed to preserve unreadable application package cache '{filePath}': {ex.Message}");
+                return null;
             }
         }
 
@@ -817,56 +750,56 @@ namespace ColorVision.Update
             bool allowElevationFallback,
             bool showErrors)
         {
-            string? tempDirectory = null;
+            string? tempRoot = null;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
-                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList() ?? new List<string>();
                 List<string> pluginPackagePaths = pluginDownloadPaths?
-                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList() ?? new List<string>();
 
-                // 解压缩 ZIP 文件到临时目录
-                tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVisionUpdate-{Guid.NewGuid():N}");
+                if (applicationPackagePaths.Any(path => !IsIncrementalPackageFileReady(path)))
+                    throw new InvalidDataException("One or more incremental application packages are incomplete or invalid.");
+
+                // 更新脚本、解包中间文件和最终待复制文件相互隔离。
+                tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionUpdate-{Guid.NewGuid():N}");
+                string stageDirectory = Path.Combine(tempRoot, "ColorVision");
+                Directory.CreateDirectory(stageDirectory);
 
                 bool hasAnyPackage = false;
                 foreach (string downloadPath in applicationPackagePaths)
                 {
-                    ZipFile.ExtractToDirectory(downloadPath, tempDirectory, true);
+                    ZipFile.ExtractToDirectory(downloadPath, stageDirectory, true);
                     hasAnyPackage = true;
                 }
 
                 if (pluginPackagePaths.Count > 0)
                 {
-                    string pluginsDirectory = Path.Combine(tempDirectory, "Plugins");
-                    Directory.CreateDirectory(pluginsDirectory);
-
-                    foreach (string pluginDownloadPath in pluginPackagePaths)
-                    {
-                        ZipFile.ExtractToDirectory(pluginDownloadPath, pluginsDirectory, true);
-                        hasAnyPackage = true;
-                    }
+                    string pluginsDirectory = Path.Combine(stageDirectory, "Plugins");
+                    PluginUpdater.StagePluginPackages(pluginPackagePaths, pluginsDirectory, Path.Combine(tempRoot, "Packages"));
+                    hasAnyPackage = true;
                 }
 
                 if (!hasAnyPackage)
                     throw new InvalidOperationException("Unable to locate incremental update package.");
 
-                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(tempDirectory);
+                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(stageDirectory);
                 if (skippedShellExtensionFiles > 0)
                 {
                     log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
                 }
 
                 // 创建批处理文件内容
-                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+                string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
 
                 TimeSpan? privilegeTimeout = allowElevationFallback ? null : TimeSpan.FromSeconds(3);
-                string serviceHostPackageDirectory = Path.Combine(tempDirectory, "ServiceHost");
+                string serviceHostPackageDirectory = Path.Combine(stageDirectory, "ServiceHost");
                 string? availableServiceHostPackageDirectory = File.Exists(Path.Combine(serviceHostPackageDirectory, ServiceHostProtocol.ExecutableName))
                     ? serviceHostPackageDirectory
                     : null;
@@ -876,12 +809,13 @@ namespace ColorVision.Update
                 if (!canUpdateWithoutElevation && !allowElevationFallback)
                 {
                     log.Info("Skipped exit-time update because ColorVisionServiceHost could not prepare the application directory silently.");
-                    TryDeleteUpdateStage(tempDirectory);
+                    TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
 
                 string batchContent = CreateIncrementalUpdateBatch(
-                    tempDirectory,
+                    stageDirectory,
+                    tempRoot,
                     programDirectory,
                     executableName,
                     repairServiceHost: !canUpdateWithoutElevation,
@@ -894,7 +828,8 @@ namespace ColorVision.Update
                 {
                     FileName = batchFilePath,
                     UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = tempRoot,
                 };
 
                 if (!canUpdateWithoutElevation && allowElevationFallback)
@@ -914,7 +849,7 @@ namespace ColorVision.Update
                     log.Error("Failed to start incremental update batch.", ex);
                     if (showErrors)
                         MessageBox.Show(ex.Message);
-                    TryDeleteUpdateStage(tempDirectory);
+                    TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
             }
@@ -923,7 +858,7 @@ namespace ColorVision.Update
                 log.Error("Failed to prepare incremental update.", ex);
                 if (showErrors)
                     MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
-                TryDeleteUpdateStage(tempDirectory);
+                TryDeleteUpdateStage(tempRoot);
                 return false;
             }
         }
@@ -965,7 +900,8 @@ namespace ColorVision.Update
         }
 
         private static string CreateIncrementalUpdateBatch(
-            string tempDirectory,
+            string stageDirectory,
+            string cleanupDirectory,
             string programDirectory,
             string executableName,
             bool repairServiceHost,
@@ -976,7 +912,8 @@ namespace ColorVision.Update
             sb.AppendLine("@echo off");
             sb.AppendLine("setlocal DisableDelayedExpansion");
             sb.AppendLine("title ColorVision Incremental Updater");
-            sb.AppendLine($"set \"STAGE={EscapeForBatchValue(tempDirectory)}\"");
+            sb.AppendLine($"set \"STAGE={EscapeForBatchValue(stageDirectory)}\"");
+            sb.AppendLine($"set \"UPDATE_ROOT={EscapeForBatchValue(cleanupDirectory)}\"");
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
@@ -1011,7 +948,7 @@ namespace ColorVision.Update
             sb.AppendLine(":copy_application_files");
             sb.AppendLine("where robocopy >nul 2>nul");
             sb.AppendLine("if errorlevel 1 goto copy_application_files_xcopy");
-            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /IS /IT /XF update.bat ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
+            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /IS /IT /XF ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
             sb.AppendLine("if errorlevel 8 exit /b 8");
             sb.AppendLine("exit /b 0");
             sb.AppendLine(":copy_application_files_xcopy");
@@ -1023,12 +960,17 @@ namespace ColorVision.Update
             sb.AppendLine();
             sb.AppendLine(":success");
             sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" start \"\" /b \"%EXEPATH%\"");
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%STAGE%\" 2^>nul");
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
             sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+            sb.AppendLine(":schedule_cleanup");
+            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            sb.AppendLine("exit /b 0");
             return sb.ToString();
         }
 

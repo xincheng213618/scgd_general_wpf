@@ -310,7 +310,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return existingFile;
             }
 
-            DeleteInvalidPreferredPackage(request);
+            MoveInvalidPreferredPackageToRecovery(request);
             cancellationToken.ThrowIfCancellationRequested();
             _ui.ShowDownloadWindow();
             return await StartDownloadAsync(request, showFailureDialog, cancellationToken).ConfigureAwait(false);
@@ -342,7 +342,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 else
                 {
-                    DeleteInvalidPreferredPackage(request);
+                    MoveInvalidPreferredPackageToRecovery(request);
                     missingRequests.Add(request);
                 }
             }
@@ -367,7 +367,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 .ToList();
         }
 
-        private void DeleteInvalidPreferredPackage(MarketplacePackageRequest request)
+        private void MoveInvalidPreferredPackageToRecovery(MarketplacePackageRequest request)
         {
             string filePath = Path.Combine(_ui.DownloadDirectory, $"{request.PluginId}-{request.Version}.cvxp");
             if (!File.Exists(filePath))
@@ -386,9 +386,31 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (isValid)
                 return;
 
-            TryDeleteFile(filePath);
+            string? recoveryPath = TryMovePackageToRecovery(filePath);
+            if (recoveryPath == null)
+                return;
+
             TryDeleteFile(filePath + ".aria2");
-            log.Warn($"Deleted invalid marketplace package cache: {filePath}");
+            log.Warn($"Moved unreadable marketplace package cache to recovery storage: {recoveryPath}");
+        }
+
+        private static string? TryMovePackageToRecovery(string filePath)
+        {
+            try
+            {
+                string sourcePath = Path.GetFullPath(filePath);
+                string recoveryDirectory = Path.Combine(Path.GetDirectoryName(sourcePath)!, "Recovery");
+                Directory.CreateDirectory(recoveryDirectory);
+                string recoveryFileName = $"{Path.GetFileNameWithoutExtension(sourcePath)}-unreadable-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}{Path.GetExtension(sourcePath)}";
+                string recoveryPath = Path.Combine(recoveryDirectory, recoveryFileName);
+                File.Move(sourcePath, recoveryPath);
+                return recoveryPath;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to preserve unreadable marketplace package cache '{filePath}': {ex.Message}");
+                return null;
+            }
         }
 
         public async Task<bool> OpenDownloadedPackageFolderAsync(MarketplacePackageRequest request, CancellationToken cancellationToken = default)

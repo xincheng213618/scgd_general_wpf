@@ -1726,15 +1726,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 跳过此版本 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewSkipVersionButtonText {
-            get {
-                return ResourceManager.GetString("UpdatePreviewSkipVersionButtonText", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 未知 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewUnknownVersion {

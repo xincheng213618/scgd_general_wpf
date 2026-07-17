@@ -41,7 +41,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public async Task EnsurePackageAvailableAsync_DeletesInvalidPreferredPackageBeforeDownloading()
+        public async Task EnsurePackageAvailableAsync_PreservesInvalidPreferredPackageBeforeDownloading()
         {
             string stalePath = Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp");
             Directory.CreateDirectory(_downloadDirectory);
@@ -57,6 +57,9 @@ namespace ColorVision.UI.Tests
                 DownloadFactory = invocation =>
                 {
                     Assert.False(File.Exists(stalePath));
+                    string recoveryDirectory = Path.Combine(_downloadDirectory, "Recovery");
+                    string recoveryPath = Assert.Single(Directory.EnumerateFiles(recoveryDirectory, "*.cvxp"));
+                    Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(recoveryPath));
                     return new DownloadTask
                     {
                         Status = DownloadStatus.Completed,

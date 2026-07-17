@@ -25,7 +25,6 @@ namespace ColorVision.Update
     {
         None = 0,
         UpdateNow = 1,
-        SkipVersion = 2,
     }
 
     public enum ApplicationUpdateMode
@@ -435,7 +434,6 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonVisibility));
                 OnPropertyChanged(nameof(FooterInfoVisibility));
                 OnPropertyChanged(nameof(HeaderSummaryText));
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isChecking;
@@ -485,29 +483,12 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonText));
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(CanCancel));
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isUpdating;
 
         public string CancelButtonText { get => _cancelButtonText; set { _cancelButtonText = value; OnPropertyChanged(); } }
         private string _cancelButtonText = Resources.UpdatePreviewLaterButtonText;
-
-        public string? SecondaryButtonText
-        {
-            get => _secondaryButtonText;
-            set
-            {
-                _secondaryButtonText = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
-            }
-        }
-        private string? _secondaryButtonText;
-
-        public Visibility SecondaryButtonVisibility => IsChecking || IsUpdating || string.IsNullOrWhiteSpace(SecondaryButtonText)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
 
         public ObservableCollection<UpdatePreviewItem> Items { get; } = new();
 
@@ -629,7 +610,6 @@ namespace ColorVision.Update
             HostVersionValue = source.HostVersionValue;
             ConfirmButtonText = source._confirmButtonBaseText;
             CancelButtonText = source.CancelButtonText;
-            SecondaryButtonText = source.SecondaryButtonText;
             IsUpdating = source.IsUpdating;
             IsChecking = source.IsChecking;
 

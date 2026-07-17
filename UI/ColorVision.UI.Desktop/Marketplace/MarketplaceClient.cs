@@ -1,5 +1,6 @@
 #pragma warning disable CA1872
 using ColorVision.UI.Marketplace;
+using ColorVision.UI.Plugins;
 using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
@@ -262,17 +263,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         public static bool IsDownloadedFileUsable(string? filePath)
         {
-            try
-            {
-                return !string.IsNullOrWhiteSpace(filePath)
-                    && File.Exists(filePath)
-                    && !File.Exists(filePath + ".aria2")
-                    && new FileInfo(filePath).Length > 0;
-            }
-            catch
-            {
-                return false;
-            }
+            return PluginUpdater.IsPluginPackageFileReady(filePath);
         }
 
         /// <summary>

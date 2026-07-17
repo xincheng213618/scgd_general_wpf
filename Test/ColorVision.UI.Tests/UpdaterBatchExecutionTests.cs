@@ -22,18 +22,21 @@ namespace ColorVision.UI.Tests
         [Fact]
         public async Task ApplicationBatchCopiesFilesAndCleansSpecialCharacterStageDirectory()
         {
-            string stageDirectory = Path.Combine(_rootDirectory, "Application Stage");
+            string tempRoot = Path.Combine(_rootDirectory, "Application Update Root %CACHE%!");
+            string stageDirectory = Path.Combine(tempRoot, "ColorVision");
             string targetDirectory = Path.Combine(_rootDirectory, "Application Target %PATH%! & ^");
             Directory.CreateDirectory(stageDirectory);
+            Directory.CreateDirectory(Path.Combine(tempRoot, "Packages"));
             Directory.CreateDirectory(targetDirectory);
             File.WriteAllText(Path.Combine(stageDirectory, "payload.txt"), "new");
+            File.WriteAllText(Path.Combine(tempRoot, "Packages", "temporary.txt"), "temporary");
             File.WriteAllText(Path.Combine(targetDirectory, "payload.txt"), "old");
 
             string executableName = CreateProbeExecutable(stageDirectory);
-            string batchPath = Path.Combine(stageDirectory, "update.bat");
+            string batchPath = Path.Combine(tempRoot, "update.bat");
             File.WriteAllText(
                 batchPath,
-                BuildApplicationBatch(stageDirectory, targetDirectory, executableName, restartApplication: false),
+                BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, restartApplication: false),
                 new UTF8Encoding(false));
 
             BatchResult result = await RunBatchAsync(batchPath);
@@ -43,7 +46,32 @@ namespace ColorVision.UI.Tests
                 string.Equals("new", File.ReadAllText(Path.Combine(targetDirectory, "payload.txt")), StringComparison.Ordinal),
                 result.ToString());
             Assert.True(File.Exists(Path.Combine(targetDirectory, executableName)));
-            Assert.True(await WaitForDirectoryDeletionAsync(stageDirectory));
+            Assert.False(File.Exists(Path.Combine(targetDirectory, "update.bat")));
+            Assert.False(Directory.Exists(Path.Combine(targetDirectory, "Packages")));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task ApplicationBatchCleansUpdateRootWhenCopyFails()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Failed Update Root");
+            string stageDirectory = Path.Combine(tempRoot, "ColorVision");
+            string invalidTarget = Path.Combine(_rootDirectory, "Target Is A File");
+            Directory.CreateDirectory(stageDirectory);
+            File.WriteAllText(Path.Combine(stageDirectory, "payload.txt"), "new");
+            File.WriteAllText(invalidTarget, "not a directory");
+
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(
+                batchPath,
+                BuildApplicationBatch(stageDirectory, tempRoot, invalidTarget, "ColorVisionTestProbe.exe", restartApplication: false),
+                new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath);
+
+            Assert.NotEqual(0, result.ExitCode);
+            Assert.Equal("not a directory", File.ReadAllText(invalidTarget));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
         }
 
         [Fact]
@@ -72,7 +100,8 @@ namespace ColorVision.UI.Tests
         public void ElevatedApplicationBatchRepairsMissingServiceHostWithoutAclRewrite()
         {
             string batch = BuildApplicationBatch(
-                @"C:\Update Stage %PATH%! & ^",
+                @"C:\Update Root %PATH%! & ^\ColorVision",
+                @"C:\Update Root %PATH%! & ^",
                 @"D:\ColorVision Portable",
                 "ColorVision.exe",
                 repairServiceHost: true);
@@ -90,7 +119,8 @@ namespace ColorVision.UI.Tests
         public void ExitUpdateBatchDoesNotRestartApplication()
         {
             string batch = BuildApplicationBatch(
-                @"C:\Update Stage",
+                @"C:\Update Root\ColorVision",
+                @"C:\Update Root",
                 @"D:\ColorVision",
                 "ColorVision.exe",
                 restartApplication: false);
@@ -103,7 +133,8 @@ namespace ColorVision.UI.Tests
         [Fact]
         public async Task ServiceHostRepairBatchCopiesPortablePackageAndKeepsApplicationUpdateSuccessful()
         {
-            string stageDirectory = Path.Combine(_rootDirectory, "Repair Stage");
+            string tempRoot = Path.Combine(_rootDirectory, "Repair Update Root");
+            string stageDirectory = Path.Combine(tempRoot, "ColorVision");
             string servicePackageDirectory = Path.Combine(stageDirectory, "ServiceHost");
             string targetDirectory = Path.Combine(_rootDirectory, "Repair Target");
             string fakeProgramData = Path.Combine(_rootDirectory, "ProgramData");
@@ -116,10 +147,10 @@ namespace ColorVision.UI.Tests
             File.Copy(Path.Combine(Environment.SystemDirectory, "where.exe"), Path.Combine(fakeTools, "sc.exe"));
 
             string executableName = CreateProbeExecutable(stageDirectory);
-            string batchPath = Path.Combine(stageDirectory, "update.bat");
+            string batchPath = Path.Combine(tempRoot, "update.bat");
             File.WriteAllText(
                 batchPath,
-                BuildApplicationBatch(stageDirectory, targetDirectory, executableName, repairServiceHost: true),
+                BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, repairServiceHost: true),
                 new UTF8Encoding(false));
 
             BatchResult result = await RunBatchAsync(batchPath, new Dictionary<string, string>
@@ -133,11 +164,13 @@ namespace ColorVision.UI.Tests
             Assert.Equal("updated", File.ReadAllText(Path.Combine(targetDirectory, "payload.txt")));
             Assert.True(File.Exists(installedServiceHost), result.ToString());
             Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(installedServiceHost)!, "install.log")), result.ToString());
-            Assert.True(await WaitForDirectoryDeletionAsync(stageDirectory));
+            Assert.False(File.Exists(Path.Combine(targetDirectory, "update.bat")));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
         }
 
         private static string BuildApplicationBatch(
             string stageDirectory,
+            string cleanupDirectory,
             string targetDirectory,
             string executableName,
             bool repairServiceHost = false,
@@ -148,7 +181,7 @@ namespace ColorVision.UI.Tests
                 BindingFlags.NonPublic | BindingFlags.Static)
                 ?? throw new MissingMethodException(typeof(AutoUpdater).FullName, "CreateIncrementalUpdateBatch");
 
-            return (string)method.Invoke(null, [stageDirectory, targetDirectory, executableName, repairServiceHost, restartApplication])!;
+            return (string)method.Invoke(null, [stageDirectory, cleanupDirectory, targetDirectory, executableName, repairServiceHost, restartApplication])!;
         }
 
         private static string CreateProbeExecutable(string directory)

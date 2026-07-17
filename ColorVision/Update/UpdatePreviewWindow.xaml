@@ -341,12 +341,6 @@
                                TextTrimming="CharacterEllipsis"
                                TextWrapping="NoWrap"
                                Visibility="{Binding FooterInfoVisibility}" />
-                    <Button Margin="12,0,0,0"
-                            VerticalAlignment="Center"
-                            Click="SecondaryButton_Click"
-                            Content="{Binding SecondaryButtonText}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}"
-                            Visibility="{Binding SecondaryButtonVisibility}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"

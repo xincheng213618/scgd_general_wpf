@@ -66,7 +66,7 @@ namespace ColorVision.Update
                 Version version = new Version(Version);
                 if (version > AutoUpdater.CurrentVersion)
                 {
-                    AutoUpdater.Update(Version, AutoUpdater.GetApplicationPackageCacheDirectory(isIncremental: false));
+                    AutoUpdater.StartFullUpdate(version);
                 }
                 else if (version == AutoUpdater.CurrentVersion)
                 {
