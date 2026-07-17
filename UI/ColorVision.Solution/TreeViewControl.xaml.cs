@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1868
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -791,7 +792,7 @@ namespace ColorVision.Solution
             {
                 if (File.Exists(path) && SolutionManager.IsSolutionFilePath(path))
                 {
-                    if (SolutionManager.OpenSolution(path))
+                    if (ResourceOpenService.Instance.TryOpen(path))
                         return true;
                     continue;
                 }
@@ -808,7 +809,7 @@ namespace ColorVision.Solution
 
                 if (File.Exists(path) && SolutionManager.IsProjectFilePath(path))
                 {
-                    if (SolutionManager.OpenProject(path))
+                    if (ResourceOpenService.Instance.TryOpen(path))
                         return true;
                     continue;
                 }
@@ -820,7 +821,7 @@ namespace ColorVision.Solution
                     new DirectoryInfo(path),
                     SearchOption.TopDirectoryOnly))
                 {
-                    if (SolutionManager.OpenProject(projectFile.FullName))
+                    if (ResourceOpenService.Instance.TryOpen(projectFile.FullName))
                         return true;
                 }
             }

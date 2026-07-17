@@ -1877,6 +1877,33 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void OpenSolutionWindow_ShowsOnlySupportedWorkspaceHistoryEntries()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(directoryPath, "Example.cvsln");
+        string legacyFolderWorkspacePath = Path.Combine(directoryPath, SolutionManager.FolderWorkspaceFileName);
+        string ordinaryFilePath = Path.Combine(directoryPath, "notes.txt");
+        try
+        {
+            File.WriteAllText(solutionPath, "{}");
+            File.WriteAllText(legacyFolderWorkspacePath, "{}");
+            File.WriteAllText(ordinaryFilePath, "text");
+
+            Assert.True(OpenSolutionWindow.TryCreateSolutionInfo(solutionPath, out SolutionInfo solutionInfo));
+            Assert.Equal(solutionPath, solutionInfo.FullName);
+            Assert.True(OpenSolutionWindow.TryCreateSolutionInfo(
+                legacyFolderWorkspacePath,
+                out SolutionInfo folderInfo));
+            Assert.Equal(directoryPath, folderInfo.FullName);
+            Assert.False(OpenSolutionWindow.TryCreateSolutionInfo(ordinaryFilePath, out _));
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void FolderWorkspace_IsStableAndDoesNotWriteConfigurationIntoOpenedFolder()
     {
         string folderPath = CreateTemporaryDirectory();

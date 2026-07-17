@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.RecentFile
@@ -17,14 +18,16 @@ namespace ColorVision.Solution.RecentFile
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             List<MenuItemMetadata> menuItemMetas = new List<MenuItemMetadata>();
+            List<string> recentFiles = SolutionManager.GetInstance().SolutionHistory.RecentFiles
+                .Where(SolutionManager.IsSupportedOpenPath)
+                .ToList();
 
-            for (int i = 0; i < SolutionManager.GetInstance().SolutionHistory.RecentFiles.Count; i++)
+            for (int i = 0; i < recentFiles.Count; i++)
             {
-                string item = SolutionManager.GetInstance().SolutionHistory.RecentFiles[i];
-                RelayCommand relayCommand = new RelayCommand(a =>
-                {
-                    SolutionManager.GetInstance().OpenSolution(item);
-                });
+                string item = recentFiles[i];
+                RelayCommand relayCommand = new RelayCommand(
+                    _ => ResourceOpenService.Instance.TryOpen(item),
+                    _ => SolutionManager.IsSupportedOpenPath(item));
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {
                     OwnerGuid = nameof(MenuRecentFile),

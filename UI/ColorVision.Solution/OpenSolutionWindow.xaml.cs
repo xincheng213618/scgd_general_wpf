@@ -76,11 +76,14 @@ namespace ColorVision.Solution
             ListView1.Visibility = Visibility.Visible;
         }
 
-        private static bool TryCreateSolutionInfo(string path, out SolutionInfo solutionInfo)
+        internal static bool TryCreateSolutionInfo(string path, out SolutionInfo solutionInfo)
         {
             solutionInfo = null!;
 
             string normalizedPath = SolutionManager.NormalizeRecentPath(path);
+            if (!SolutionManager.IsSupportedOpenPath(normalizedPath))
+                return false;
+
             if (Directory.Exists(normalizedPath))
             {
                 DirectoryInfo directoryInfo = new(normalizedPath);
@@ -209,7 +212,7 @@ namespace ColorVision.Solution
             if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
                 return false;
 
-            if (SolutionManager.GetInstance().OpenSolution(solutionInfo.FullName))
+            if (ResourceOpenService.Instance.TryOpen(solutionInfo.FullName))
             {
                 Close();
                 return true;

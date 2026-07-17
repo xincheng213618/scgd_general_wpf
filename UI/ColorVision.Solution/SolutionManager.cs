@@ -343,7 +343,7 @@ namespace ColorVision.Solution
 
             Window? owner = WindowHelpers.GetActiveWindow();
             bool? result = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
-            return result == true && GetInstance().OpenFolder(dialog.FolderName);
+            return result == true && Editor.ResourceOpenService.Instance.TryOpen(dialog.FolderName);
         }
 
         public bool OpenSolution(string FullPath)
