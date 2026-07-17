@@ -16,7 +16,7 @@
     </base:BaseWindow.Resources>
     <Grid>
         <TextBlock Text="Color Vision" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,0,0,0"/>
-        <Grid Margin="20,40,0,0" >
+        <Grid x:Name="WorkspacePickerContent" Margin="20,40,0,0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"  MinWidth="300" />
                 <ColumnDefinition Width="300"/>
@@ -167,5 +167,34 @@
                 </Grid>
             </StackPanel>
         </Grid>
+        <Border x:Name="OpeningOverlay"
+                Panel.ZIndex="10"
+                Visibility="Collapsed"
+                Background="#99000000">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MinWidth="360"
+                    Padding="24"
+                    CornerRadius="6"
+                    Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="正在打开工作区…"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="OpeningPathText"
+                               Margin="0,8,0,12"
+                               MaxWidth="460"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <ProgressBar Height="4" IsIndeterminate="True" />
+                    <Button Margin="0,16,0,0"
+                            Padding="18,5"
+                            HorizontalAlignment="Center"
+                            Content="取消"
+                            Click="CancelOpen_Click" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </base:BaseWindow>

@@ -26,7 +26,7 @@ namespace ColorVision.Solution.RecentFile
             {
                 string item = recentFiles[i];
                 RelayCommand relayCommand = new RelayCommand(
-                    _ => ResourceOpenService.Instance.TryOpenWithFeedback(item),
+                    async _ => await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(item),
                     _ => SolutionManager.IsSupportedOpenPath(item));
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {

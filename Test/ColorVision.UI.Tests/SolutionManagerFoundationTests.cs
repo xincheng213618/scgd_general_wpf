@@ -3755,7 +3755,7 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void ImportedSolutionRefresh_ReimportsSourceAndPreservesWorkspacePreferences()
+    public async Task ImportedSolutionRefresh_ReimportsSourceAndPreservesWorkspacePreferences()
     {
         string directoryPath = CreateTemporaryDirectory();
         string appDirectory = Path.Combine(directoryPath, "src", "App");
@@ -3807,12 +3807,17 @@ public class SolutionManagerFoundationTests
             Assert.False(explorer.IsImportedSolutionSourcePath(appProjectPath));
 
             File.WriteAllText(solutionPath, "<Solution><Folder>");
-            Assert.False(explorer.TryRefreshImportedSolutionState(out string malformedError));
-            Assert.Contains(VisualStudioSolutionFileProvider.ProviderId, malformedError, StringComparison.OrdinalIgnoreCase);
+            ImportedSolutionWorkspaceResult malformedResult = await explorer.RefreshImportedSolutionStateAsync();
+            Assert.False(malformedResult.Succeeded);
+            Assert.Contains(
+                VisualStudioSolutionFileProvider.ProviderId,
+                malformedResult.ErrorMessage,
+                StringComparison.OrdinalIgnoreCase);
             Assert.Single(explorer.Config.Projects);
 
             File.WriteAllText(solutionPath, updatedContents);
-            Assert.True(explorer.TryRefreshImportedSolutionState(out string refreshError), refreshError);
+            ImportedSolutionWorkspaceResult refreshResult = await explorer.RefreshImportedSolutionStateAsync();
+            Assert.True(refreshResult.Succeeded, refreshResult.ErrorMessage);
 
             Assert.Equal(2, explorer.Config.Projects.Count);
             Assert.Equal(appReference, explorer.Config.StartupProject, ignoreCase: true);
@@ -3829,6 +3834,123 @@ public class SolutionManagerFoundationTests
                 File.Delete(importedWorkspacePath);
                 File.Delete($"{importedWorkspacePath}.bak");
                 File.Delete($"{importedWorkspacePath}.cache.db");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionFileProviderAsyncLoad_UsesAsyncContractAndPropagatesCancellation()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(directoryPath, "Cancel.asyncsln");
+        File.WriteAllText(solutionPath, string.Empty);
+        var provider = new ControlledAsyncSolutionProvider(Path.GetFileName(solutionPath));
+        SolutionFileProviderRegistry.Register(provider, priority: 1000);
+        using var cancellation = new CancellationTokenSource();
+        try
+        {
+            Task<SolutionFileLoadResult> loadTask = SolutionFileProviderRegistry.LoadSolutionAsync(
+                new FileInfo(solutionPath),
+                cancellation.Token);
+            await provider.WaitUntilStartedAsync(solutionPath);
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => loadTask);
+            Assert.Equal(0, provider.SyncLoadCount);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionFileProviderAsyncLoad_CancelsLegacySynchronousProviderPromptly()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(directoryPath, "Legacy.legacysln");
+        File.WriteAllText(solutionPath, string.Empty);
+        var provider = new BlockingLegacySolutionProvider();
+        SolutionFileProviderRegistry.Register(provider, priority: 1000);
+        using var cancellation = new CancellationTokenSource();
+        try
+        {
+            Task<SolutionFileLoadResult> loadTask = SolutionFileProviderRegistry.LoadSolutionAsync(
+                new FileInfo(solutionPath),
+                cancellation.Token);
+            await provider.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => loadTask);
+            Assert.Equal(1, provider.SyncLoadCount);
+        }
+        finally
+        {
+            provider.Release();
+            await provider.Completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task WorkspaceOpenAsync_NewerRequestCancelsOlderWithoutReplacingItLater()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string firstSolutionPath = Path.Combine(directoryPath, "First.asyncsln");
+        string secondSolutionPath = Path.Combine(directoryPath, "Second.asyncsln");
+        string projectPath = Path.Combine(directoryPath, "App.asyncproj");
+        File.WriteAllText(firstSolutionPath, string.Empty);
+        File.WriteAllText(secondSolutionPath, string.Empty);
+        File.WriteAllText(projectPath, string.Empty);
+        var provider = new ControlledAsyncSolutionProvider(
+            Path.GetFileName(firstSolutionPath),
+            Path.GetFileName(projectPath));
+        var projectProvider = new CountingProjectProvider();
+        SolutionFileProviderRegistry.Register(provider, priority: 1000);
+        ProjectProviderRegistry.Register(projectProvider, priority: 1000);
+        var manager = new SolutionManager(restoreLastWorkspace: false);
+        string? workspacePath = null;
+        try
+        {
+            Task<SolutionOpenOperationResult> firstOpen = manager.OpenSolutionAsync(firstSolutionPath);
+            await provider.WaitUntilStartedAsync(firstSolutionPath);
+            Assert.True(manager.IsOpeningWorkspace);
+            Assert.Contains("First.asyncsln", manager.WorkspaceOpenStatus, StringComparison.OrdinalIgnoreCase);
+
+            Task<SolutionOpenOperationResult> secondOpen = manager.OpenSolutionAsync(secondSolutionPath);
+            SolutionOpenOperationResult secondResult = await secondOpen;
+            SolutionOpenOperationResult firstResult = await firstOpen;
+
+            Assert.True(secondResult.Succeeded, secondResult.ErrorMessage);
+            Assert.True(firstResult.Canceled);
+            Assert.False(manager.IsOpeningWorkspace);
+            Assert.Equal(string.Empty, manager.OpeningWorkspacePath);
+            SolutionExplorer explorer = Assert.IsType<SolutionExplorer>(manager.CurrentSolutionExplorer);
+            Assert.Equal(secondSolutionPath, explorer.ImportedSolutionSourcePath, ignoreCase: true);
+            Assert.Single(explorer.VisualChildren);
+            Assert.Single(explorer.VisualChildren.GetAllVisualChildren().OfType<ProjectNode>());
+            Assert.Equal(1, projectProvider.LoadCount);
+            workspacePath = explorer.ConfigFileInfo.FullName;
+            Assert.Equal(0, provider.SyncLoadCount);
+
+            SolutionOpenOperationResult failedResult = await manager.OpenSolutionAsync(
+                Path.Combine(directoryPath, "Missing.asyncsln"));
+            Assert.False(failedResult.Succeeded);
+            Assert.Same(explorer, manager.CurrentSolutionExplorer);
+            Assert.False(manager.IsOpeningWorkspace);
+        }
+        finally
+        {
+            foreach (SolutionExplorer explorer in manager.SolutionExplorers.ToList())
+                explorer.Dispose();
+            manager.SolutionHistory.RemoveFile(firstSolutionPath);
+            manager.SolutionHistory.RemoveFile(secondSolutionPath);
+            if (!string.IsNullOrWhiteSpace(workspacePath))
+            {
+                File.Delete(workspacePath);
+                File.Delete($"{workspacePath}.bak");
+                File.Delete($"{workspacePath}.cache.db");
             }
             Directory.Delete(directoryPath, recursive: true);
         }
@@ -4924,5 +5046,163 @@ public class SolutionManagerFoundationTests
             "1.0",
             projectFile,
             RootDirectory: projectFile.Directory);
+    }
+
+    private sealed class ControlledAsyncSolutionProvider : ISolutionFileProvider
+    {
+        public const string ProviderId = "tests.controlled-async-solution";
+        private readonly string _blockedFileName;
+        private readonly string? _projectReference;
+        private readonly object _syncRoot = new();
+        private readonly Dictionary<string, TaskCompletionSource<bool>> _started =
+            new(StringComparer.OrdinalIgnoreCase);
+        private int _syncLoadCount;
+
+        public ControlledAsyncSolutionProvider(
+            string blockedFileName,
+            string? projectReference = null)
+        {
+            _blockedFileName = blockedFileName;
+            _projectReference = projectReference;
+        }
+
+        public string Id => ProviderId;
+        public IReadOnlyList<string> SolutionFilePatterns { get; } = ["*.asyncsln"];
+        public int SyncLoadCount => Volatile.Read(ref _syncLoadCount);
+
+        public bool CanLoad(FileInfo solutionFile) =>
+            solutionFile.Exists
+            && string.Equals(solutionFile.Extension, ".asyncsln", StringComparison.OrdinalIgnoreCase);
+
+        public SolutionFileDefinition Load(FileInfo solutionFile)
+        {
+            Interlocked.Increment(ref _syncLoadCount);
+            return CreateDefinition(solutionFile);
+        }
+
+        public async Task<SolutionFileDefinition> LoadAsync(
+            FileInfo solutionFile,
+            CancellationToken cancellationToken)
+        {
+            GetStartedSignal(solutionFile.FullName).TrySetResult(true);
+            if (string.Equals(solutionFile.Name, _blockedFileName, StringComparison.OrdinalIgnoreCase))
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return CreateDefinition(solutionFile);
+        }
+
+        public async Task WaitUntilStartedAsync(string solutionPath)
+        {
+            await GetStartedSignal(solutionPath).Task.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+
+        private TaskCompletionSource<bool> GetStartedSignal(string solutionPath)
+        {
+            lock (_syncRoot)
+            {
+                if (!_started.TryGetValue(solutionPath, out TaskCompletionSource<bool>? signal))
+                {
+                    signal = new TaskCompletionSource<bool>(
+                        TaskCreationOptions.RunContinuationsAsynchronously);
+                    _started[solutionPath] = signal;
+                }
+                return signal;
+            }
+        }
+
+        private SolutionFileDefinition CreateDefinition(FileInfo solutionFile)
+        {
+            IReadOnlyList<SolutionFileProject> projects = string.IsNullOrWhiteSpace(_projectReference)
+                ? Array.Empty<SolutionFileProject>()
+                :
+                [
+                    new SolutionFileProject(
+                        _projectReference,
+                        null,
+                        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Debug"] = "Debug",
+                            ["Release"] = "Release",
+                        }),
+                ];
+            return new SolutionFileDefinition(
+                Id,
+                Path.GetFileNameWithoutExtension(solutionFile.Name),
+                solutionFile,
+                solutionFile.Directory!,
+                projects,
+                Array.Empty<SolutionFileFolder>(),
+                ["Debug", "Release"]);
+        }
+    }
+
+    private sealed class CountingProjectProvider : IProjectProvider, IProjectFileFormatProvider
+    {
+        private int _loadCount;
+
+        public string Id => "tests.counting-async-project";
+        public IReadOnlyList<string> ProjectFilePatterns { get; } = ["*.asyncproj"];
+        public int LoadCount => Volatile.Read(ref _loadCount);
+
+        public bool CanLoad(FileInfo projectFile) =>
+            projectFile.Exists
+            && string.Equals(projectFile.Extension, ".asyncproj", StringComparison.OrdinalIgnoreCase);
+
+        public ProjectDefinition Load(FileInfo projectFile)
+        {
+            Interlocked.Increment(ref _loadCount);
+            return new ProjectDefinition(
+                Id,
+                Path.GetFileNameWithoutExtension(projectFile.Name),
+                "1.0",
+                projectFile,
+                RootDirectory: projectFile.Directory);
+        }
+    }
+
+    private sealed class BlockingLegacySolutionProvider : ISolutionFileProvider
+    {
+        private readonly TaskCompletionSource<bool> _release = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _syncLoadCount;
+
+        public string Id => "tests.blocking-legacy-solution";
+        public IReadOnlyList<string> SolutionFilePatterns { get; } = ["*.legacysln"];
+        public int SyncLoadCount => Volatile.Read(ref _syncLoadCount);
+        public TaskCompletionSource<bool> Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> Completed { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool CanLoad(FileInfo solutionFile) =>
+            solutionFile.Exists
+            && string.Equals(solutionFile.Extension, ".legacysln", StringComparison.OrdinalIgnoreCase);
+
+        public SolutionFileDefinition Load(FileInfo solutionFile)
+        {
+            Interlocked.Increment(ref _syncLoadCount);
+            Started.TrySetResult(true);
+            try
+            {
+                _release.Task.GetAwaiter().GetResult();
+                return new SolutionFileDefinition(
+                    Id,
+                    Path.GetFileNameWithoutExtension(solutionFile.Name),
+                    solutionFile,
+                    solutionFile.Directory!,
+                    Array.Empty<SolutionFileProject>(),
+                    Array.Empty<SolutionFileFolder>(),
+                    ["Debug", "Release"]);
+            }
+            finally
+            {
+                Completed.TrySetResult(true);
+            }
+        }
+
+        public void Release()
+        {
+            _release.TrySetResult(true);
+        }
     }
 }

@@ -41,7 +41,7 @@ namespace ColorVision.Solution
 
         public override void Execute()
         {
-            SolutionManager.OpenFolderDialog();
+            _ = SolutionManager.OpenFolderDialogAsync();
         }
     }
 
@@ -50,6 +50,9 @@ namespace ColorVision.Solution
     /// </summary>
     public partial class OpenSolutionWindow: BaseWindow
     {
+        private CancellationTokenSource? _openCancellation;
+        private bool _isOpening;
+
         public OpenSolutionWindow()
         {
             InitializeComponent();
@@ -111,7 +114,7 @@ namespace ColorVision.Solution
             return false;
         }
 
-        private void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
+        private async void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
         {
             string solutionPatterns = SolutionManager.GetSolutionFileDialogPattern();
             string projectPatterns = Explorer.ProjectProviderRegistry.GetProjectFileDialogPattern();
@@ -122,19 +125,21 @@ namespace ColorVision.Solution
                 Multiselect = false,
                 RestoreDirectory = true,
             };
-            if (openFileDialog.ShowDialog(this) == true)
-            {
-                if (ResourceOpenService.Instance.TryOpenWithFeedback(openFileDialog.FileName, this))
-                    Close();
-            }
+            if (openFileDialog.ShowDialog(this) == true
+                && await OpenPathAsync(openFileDialog.FileName))
+                Close();
         }
 
-        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        private async void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (SolutionManager.OpenFolderDialog())
+            var dialog = new Microsoft.Win32.OpenFolderDialog
             {
+                Title = ColorVision.UI.Properties.Resources.OpenFolder,
+                Multiselect = false,
+            };
+            if (dialog.ShowDialog(this) == true
+                && await OpenPathAsync(dialog.FolderName))
                 Close();
-            }
         }
 
         private void CreateSolution_Click(object sender, RoutedEventArgs e)
@@ -149,20 +154,22 @@ namespace ColorVision.Solution
 
         }
 
-        private void RecentSolutions_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void RecentSolutions_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton != MouseButton.Left
                 || sender is not ListView listView
                 || ItemsControl.ContainerFromElement(listView, e.OriginalSource as DependencyObject) is not ListViewItem)
                 return;
 
-            OpenSelectedRecentSolution();
+            await OpenSelectedRecentSolutionAsync();
         }
 
-        private void RecentSolutions_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void RecentSolutions_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter && OpenSelectedRecentSolution())
-                e.Handled = true;
+            if (e.Key != Key.Enter || ListView1.SelectedItem is not SolutionInfo)
+                return;
+            e.Handled = true;
+            await OpenSelectedRecentSolutionAsync();
         }
 
         private void RecentSolutions_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -187,9 +194,9 @@ namespace ColorVision.Solution
                 e.Handled = true;
         }
 
-        private void OpenRecentSolution_Click(object sender, RoutedEventArgs e)
+        private async void OpenRecentSolution_Click(object sender, RoutedEventArgs e)
         {
-            OpenSelectedRecentSolution();
+            await OpenSelectedRecentSolutionAsync();
         }
 
         private void CopyRecentPath_Click(object sender, RoutedEventArgs e)
@@ -208,12 +215,12 @@ namespace ColorVision.Solution
             ApplyRecentFilter();
         }
 
-        private bool OpenSelectedRecentSolution()
+        private async Task<bool> OpenSelectedRecentSolutionAsync()
         {
             if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
                 return false;
 
-            if (ResourceOpenService.Instance.TryOpenWithFeedback(solutionInfo.FullName, this))
+            if (await OpenPathAsync(solutionInfo.FullName))
             {
                 Close();
                 return true;
@@ -225,6 +232,49 @@ namespace ColorVision.Solution
                 ApplyRecentFilter();
             }
             return false;
+        }
+
+        private async Task<bool> OpenPathAsync(string path)
+        {
+            if (_isOpening)
+                return false;
+
+            var cancellation = new CancellationTokenSource();
+            _openCancellation = cancellation;
+            SetOpeningState(true, path);
+            try
+            {
+                return await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(
+                    path,
+                    this,
+                    cancellation.Token);
+            }
+            finally
+            {
+                if (ReferenceEquals(_openCancellation, cancellation))
+                    _openCancellation = null;
+                cancellation.Dispose();
+                SetOpeningState(false, string.Empty);
+            }
+        }
+
+        private void SetOpeningState(bool isOpening, string path)
+        {
+            _isOpening = isOpening;
+            WorkspacePickerContent.IsEnabled = !isOpening;
+            OpeningOverlay.Visibility = isOpening ? Visibility.Visible : Visibility.Collapsed;
+            OpeningPathText.Text = path;
+        }
+
+        private void CancelOpen_Click(object sender, RoutedEventArgs e)
+        {
+            _openCancellation?.Cancel();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _openCancellation?.Cancel();
+            base.OnClosed(e);
         }
 
 

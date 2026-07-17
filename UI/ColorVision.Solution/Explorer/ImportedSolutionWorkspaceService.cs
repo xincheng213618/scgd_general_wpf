@@ -6,12 +6,21 @@ using System.IO;
 
 namespace ColorVision.Solution.Explorer
 {
+    internal sealed record ImportedSolutionWorkspaceResult(
+        bool Succeeded,
+        string WorkspacePath = "",
+        string DisplayName = "",
+        SolutionConfig? Config = null,
+        string ErrorMessage = "",
+        bool Canceled = false);
+
     /// <summary>
     /// Projects an external, read-only solution definition into ColorVision's
     /// private workspace format. Source files are never modified.
     /// </summary>
     internal static class ImportedSolutionWorkspaceService
     {
+        private static readonly object _workspaceProjectionSync = new();
         internal const string ProviderExtensionKey = "ImportedSolutionProvider";
         internal const string SourceExtensionKey = "ImportedSolutionSource";
         internal const string ConfigurationBaselineExtensionKey = "ImportedSolutionConfigurationBaseline";
@@ -33,6 +42,75 @@ namespace ColorVision.Solution.Explorer
             {
                 return false;
             }
+
+            return TryCreateWorkspace(
+                definition,
+                out solutionPath,
+                out displayName,
+                out errorMessage);
+        }
+
+        public static async Task<ImportedSolutionWorkspaceResult> CreateAsync(
+            FileInfo sourceFile,
+            CancellationToken cancellationToken = default)
+        {
+            SolutionFileLoadResult loadResult = await SolutionFileProviderRegistry
+                .LoadSolutionAsync(sourceFile, cancellationToken)
+                .ConfigureAwait(false);
+            if (!loadResult.Succeeded || loadResult.Definition == null)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: loadResult.ErrorMessage);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<ImportedSolutionWorkspaceResult> projectionTask = Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                bool succeeded = TryCreateWorkspace(
+                    loadResult.Definition,
+                    out string solutionPath,
+                    out string displayName,
+                    out string errorMessage,
+                    cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                return new ImportedSolutionWorkspaceResult(
+                    succeeded,
+                    solutionPath,
+                    displayName,
+                    ErrorMessage: errorMessage);
+            }, CancellationToken.None);
+            return await projectionTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private static bool TryCreateWorkspace(
+            SolutionFileDefinition definition,
+            out string solutionPath,
+            out string displayName,
+            out string errorMessage,
+            CancellationToken cancellationToken = default)
+        {
+            lock (_workspaceProjectionSync)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return TryCreateWorkspaceCore(
+                    definition,
+                    out solutionPath,
+                    out displayName,
+                    out errorMessage);
+            }
+        }
+
+        private static bool TryCreateWorkspaceCore(
+            SolutionFileDefinition definition,
+            out string solutionPath,
+            out string displayName,
+            out string errorMessage)
+        {
+            solutionPath = string.Empty;
+            displayName = string.Empty;
+            errorMessage = string.Empty;
 
             try
             {
@@ -221,6 +299,67 @@ namespace ColorVision.Solution.Explorer
             {
                 errorMessage = $"重新加载导入工作区失败：{ex.Message}";
                 return false;
+            }
+        }
+
+        public static async Task<ImportedSolutionWorkspaceResult> RefreshAsync(
+            FileInfo workspaceFile,
+            SolutionConfig currentConfig,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(workspaceFile);
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            if (!TryGetSourceFile(currentConfig, out FileInfo? sourceFile) || sourceFile == null)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: "当前工作区不是外部解决方案导入工作区。");
+            }
+
+            sourceFile.Refresh();
+            if (!sourceFile.Exists)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: $"外部解决方案源文件不存在：{sourceFile.FullName}");
+            }
+
+            ImportedSolutionWorkspaceResult createResult = await CreateAsync(sourceFile, cancellationToken)
+                .ConfigureAwait(false);
+            if (!createResult.Succeeded)
+                return createResult;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!string.Equals(
+                Path.GetFullPath(workspaceFile.FullName),
+                Path.GetFullPath(createResult.WorkspacePath),
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: $"外部解决方案刷新到了意外的工作区：{createResult.WorkspacePath}");
+            }
+
+            try
+            {
+                Task<SolutionConfig> loadTask = Task.Run(
+                    () => SolutionConfigStore.Load(workspaceFile.FullName).Config,
+                    CancellationToken.None);
+                SolutionConfig refreshedConfig = await loadTask
+                    .WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return createResult with { Config = refreshedConfig };
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: $"重新加载导入工作区失败：{ex.Message}");
             }
         }
 

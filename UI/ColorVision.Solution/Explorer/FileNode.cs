@@ -113,9 +113,9 @@ namespace ColorVision.Solution.Explorer
 
         public override void Open()
         {
-            ResourceOpenResult result = ResourceOpenService.Instance.Open(FullPath);
-            if (!result.Succeeded && result.Kind == ResourceOpenKind.File)
-                ShowUserError(result.ErrorMessage);
+            _ = ResourceOpenService.Instance.TryOpenWithFeedbackAsync(
+                FullPath,
+                Application.Current?.GetActiveWindow());
         }
 
         public override void Delete()

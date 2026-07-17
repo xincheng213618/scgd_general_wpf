@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Interop;
 
 namespace ColorVision
@@ -44,15 +45,8 @@ namespace ColorVision
                             var parser = ArgumentParser.GetInstance();
                             parser.Parse(parsedArgs);
                             string inputFile = parser.GetValue("input");
-                            if (inputFile != null)
-                            {
-                                ResourceOpenService.Instance.TryOpen(inputFile);
-                            }
                             string s = parser.GetValue("solutionpath");
-                            if (s != null)
-                            {
-                                SolutionManager.GetInstance().OpenSolution(s);
-                            }
+                            _ = OpenReceivedResourcesAsync(inputFile, s);
                             string project = parser.GetValue("project");
 
                             List<IFeatureLauncher> IProjects = new List<IFeatureLauncher>();
@@ -79,6 +73,19 @@ namespace ColorVision
                 }
                 return IntPtr.Zero;
             }));
+        }
+
+        private static async Task OpenReceivedResourcesAsync(
+            string? inputPath,
+            string? solutionPath)
+        {
+            if (!string.IsNullOrWhiteSpace(solutionPath))
+                await ResourceOpenService.Instance.TryOpenAsync(solutionPath);
+            if (!string.IsNullOrWhiteSpace(inputPath)
+                && !string.Equals(inputPath, solutionPath, StringComparison.OrdinalIgnoreCase))
+            {
+                await ResourceOpenService.Instance.TryOpenAsync(inputPath);
+            }
         }
     }
 }

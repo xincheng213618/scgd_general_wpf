@@ -247,7 +247,7 @@ namespace ColorVision
             ActivateTerminalPanel();
         }
 
-        private void MainWindow_Drop(object sender, DragEventArgs e)
+        private async void MainWindow_Drop(object sender, DragEventArgs e)
         {
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
             if (b)
@@ -257,7 +257,10 @@ namespace ColorVision
                 var fn = a?.First();
 
                 if (!string.IsNullOrWhiteSpace(fn))
-                    e.Handled = ResourceOpenService.Instance.TryOpen(fn);
+                {
+                    e.Handled = true;
+                    await ResourceOpenService.Instance.TryOpenAsync(fn);
+                }
             }
         }
 

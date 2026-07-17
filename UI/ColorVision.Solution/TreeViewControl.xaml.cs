@@ -92,7 +92,7 @@ namespace ColorVision.Solution
             IniCommand();
         }
 
-        private void TreeViewControl_Drop(object sender, DragEventArgs e)
+        private async void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
             SolutionNode? targetNode = GetNodeAtPoint(e.GetPosition(SolutionTreeView))?.ResolveCommandTarget();
             ClearDropTargetVisual();
@@ -125,9 +125,10 @@ namespace ColorVision.Solution
 
             if (TryGetDropPaths(e.Data, out var paths, out bool isInternalDrag))
             {
-                if (!isInternalDrag && TryOpenDroppedSolutionFile(paths))
+                if (!isInternalDrag && ContainsDroppedSolutionFile(paths))
                 {
                     e.Handled = true;
+                    await TryOpenDroppedSolutionFileAsync(paths);
                     return;
                 }
 
@@ -156,9 +157,10 @@ namespace ColorVision.Solution
                     return;
                 }
 
-                if (!isInternalDrag && TryOpenDroppedProject(paths))
+                if (!isInternalDrag && ContainsDroppedProject(paths))
                 {
                     e.Handled = true;
+                    await TryOpenDroppedProjectAsync(paths);
                     return;
                 }
 
@@ -752,6 +754,16 @@ namespace ColorVision.Solution
             return paths.Any(path => File.Exists(path) && SolutionManager.IsSolutionFilePath(path));
         }
 
+        private static bool ContainsDroppedProject(IEnumerable<string> paths)
+        {
+            return paths.Any(path =>
+                File.Exists(path) && SolutionManager.IsProjectFilePath(path)
+                || Directory.Exists(path)
+                    && ProjectProviderRegistry.EnumerateProjectFiles(
+                        new DirectoryInfo(path),
+                        SearchOption.TopDirectoryOnly).Any());
+        }
+
         private static void ShowDropError(string errorMessage)
         {
             if (string.IsNullOrWhiteSpace(errorMessage))
@@ -788,16 +800,17 @@ namespace ColorVision.Solution
             return paths.Length > 0;
         }
 
-        private static bool TryOpenDroppedSolutionFile(IEnumerable<string> paths)
+        private static async Task<bool> TryOpenDroppedSolutionFileAsync(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {
                 if (File.Exists(path) && SolutionManager.IsSolutionFilePath(path))
                 {
-                    ResourceOpenResult result = ResourceOpenService.Instance.Open(path);
+                    ResourceOpenResult result = await ResourceOpenService.Instance.OpenAsync(path);
                     if (result.Succeeded)
                         return true;
-                    ShowDropError(result.ErrorMessage);
+                    if (!result.Canceled)
+                        ShowDropError(result.ErrorMessage);
                     continue;
                 }
 
@@ -806,17 +819,18 @@ namespace ColorVision.Solution
             return false;
         }
 
-        private static bool TryOpenDroppedProject(IEnumerable<string> paths)
+        private static async Task<bool> TryOpenDroppedProjectAsync(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {
 
                 if (File.Exists(path) && SolutionManager.IsProjectFilePath(path))
                 {
-                    ResourceOpenResult result = ResourceOpenService.Instance.Open(path);
+                    ResourceOpenResult result = await ResourceOpenService.Instance.OpenAsync(path);
                     if (result.Succeeded)
                         return true;
-                    ShowDropError(result.ErrorMessage);
+                    if (!result.Canceled)
+                        ShowDropError(result.ErrorMessage);
                     continue;
                 }
 
@@ -827,10 +841,11 @@ namespace ColorVision.Solution
                     new DirectoryInfo(path),
                     SearchOption.TopDirectoryOnly))
                 {
-                    ResourceOpenResult result = ResourceOpenService.Instance.Open(projectFile.FullName);
+                    ResourceOpenResult result = await ResourceOpenService.Instance.OpenAsync(projectFile.FullName);
                     if (result.Succeeded)
                         return true;
-                    ShowDropError(result.ErrorMessage);
+                    if (!result.Canceled)
+                        ShowDropError(result.ErrorMessage);
                 }
             }
 

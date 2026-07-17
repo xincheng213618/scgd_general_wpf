@@ -41,7 +41,19 @@ namespace ColorVision.Solution.Explorer
         bool CanLoad(FileInfo solutionFile);
 
         SolutionFileDefinition Load(FileInfo solutionFile);
+
+        Task<SolutionFileDefinition> LoadAsync(
+            FileInfo solutionFile,
+            CancellationToken cancellationToken)
+        {
+            return Task.Run(() => Load(solutionFile), cancellationToken);
+        }
     }
+
+    public sealed record SolutionFileLoadResult(
+        bool Succeeded,
+        SolutionFileDefinition? Definition,
+        string ErrorMessage = "");
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class SolutionFileProviderAttribute : Attribute
@@ -78,13 +90,19 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionFileDefinition Load(FileInfo solutionFile)
         {
+            return LoadAsync(solutionFile, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public async Task<SolutionFileDefinition> LoadAsync(
+            FileInfo solutionFile,
+            CancellationToken cancellationToken)
+        {
             ISolutionSerializer? serializer = SolutionSerializers.GetSerializerByMoniker(solutionFile.FullName);
             if (serializer == null)
                 throw new NotSupportedException($"没有可读取“{solutionFile.Name}”的 Visual Studio 解决方案序列化器。");
 
-            SolutionModel model = Task.Run(() => serializer.OpenAsync(solutionFile.FullName, CancellationToken.None))
-                .GetAwaiter()
-                .GetResult();
+            SolutionModel model = await serializer.OpenAsync(solutionFile.FullName, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             DirectoryInfo rootDirectory = solutionFile.Directory
                 ?? throw new InvalidDataException("解决方案文件没有有效的父目录。");
             string platform = model.Platforms.Count > 0 ? model.Platforms[0] : string.Empty;
@@ -224,15 +242,28 @@ namespace ColorVision.Solution.Explorer
             out SolutionFileDefinition? definition,
             out string errorMessage)
         {
+            SolutionFileLoadResult result = LoadSolutionAsync(solutionFile, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+            definition = result.Definition;
+            errorMessage = result.ErrorMessage;
+            return result.Succeeded;
+        }
+
+        public static async Task<SolutionFileLoadResult> LoadSolutionAsync(
+            FileInfo solutionFile,
+            CancellationToken cancellationToken = default)
+        {
             ArgumentNullException.ThrowIfNull(solutionFile);
             Initialize();
-            definition = null;
-            errorMessage = string.Empty;
+            cancellationToken.ThrowIfCancellationRequested();
             solutionFile.Refresh();
             if (!solutionFile.Exists)
             {
-                errorMessage = $"解决方案文件不存在：{solutionFile.FullName}";
-                return false;
+                return new SolutionFileLoadResult(
+                    false,
+                    null,
+                    $"解决方案文件不存在：{solutionFile.FullName}");
             }
 
             var providerErrors = new List<string>();
@@ -242,6 +273,7 @@ namespace ColorVision.Solution.Explorer
 
             foreach (Registration registration in providers)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 bool canLoad;
                 try
                 {
@@ -257,10 +289,19 @@ namespace ColorVision.Solution.Explorer
 
                 try
                 {
-                    definition = registration.Provider.Load(solutionFile);
+                    Task<SolutionFileDefinition> loadTask = registration.Provider
+                        .LoadAsync(solutionFile, cancellationToken);
+                    SolutionFileDefinition? definition = await loadTask
+                        .WaitAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (definition != null)
-                        return true;
+                        return new SolutionFileLoadResult(true, definition);
                     providerErrors.Add($"Provider“{registration.Provider.Id}”没有返回解决方案定义。");
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -269,12 +310,12 @@ namespace ColorVision.Solution.Explorer
                 break;
             }
 
-            errorMessage = providerErrors.Count > 0
+            string errorMessage = providerErrors.Count > 0
                 ? string.Join(Environment.NewLine, providerErrors)
                 : IsSupportedSolutionFilePath(solutionFile.FullName)
                     ? $"没有已安装的解决方案文件 Provider 能加载“{solutionFile.Name}”。"
                     : $"没有解决方案文件 Provider 声明支持“{solutionFile.Name}”。";
-            return false;
+            return new SolutionFileLoadResult(false, null, errorMessage);
         }
 
         private static void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)

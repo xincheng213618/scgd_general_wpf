@@ -421,7 +421,7 @@ namespace ColorVision
             }
         }
 
-        private void MainWindow_Drop(object sender, DragEventArgs e)
+        private async void MainWindow_Drop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
@@ -431,7 +431,8 @@ namespace ColorVision
             if (string.IsNullOrWhiteSpace(firstFile))
                 return;
 
-            e.Handled = ResourceOpenService.Instance.TryOpen(firstFile);
+            e.Handled = true;
+            await ResourceOpenService.Instance.TryOpenAsync(firstFile);
         }
 
         private void InitRightMenuItemPanel()

@@ -15,6 +15,18 @@ using System.Windows;
 
 namespace ColorVision.Solution
 {
+    internal sealed record SolutionOpenOperationResult(
+        bool Succeeded,
+        string ErrorMessage = "",
+        bool Canceled = false);
+
+    internal sealed record SolutionOpenTargetResolution(
+        bool Succeeded,
+        string SolutionPath = "",
+        string HistoryPath = "",
+        string DisplayName = "",
+        string ErrorMessage = "");
+
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -27,6 +39,9 @@ namespace ColorVision.Solution
         private static SolutionManager _instance;
         private static readonly object _locker = new();
         public static SolutionManager GetInstance() { lock (_locker) { _instance ??= new SolutionManager(); return _instance; } }
+        private readonly object _workspaceOpenSync = new();
+        private CancellationTokenSource? _workspaceOpenCancellation;
+        private int _workspaceOpenVersion;
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
@@ -58,45 +73,88 @@ namespace ColorVision.Solution
         }
         private SolutionExplorer _CurrentSolutionExplorer;
 
+        public bool IsOpeningWorkspace
+        {
+            get => _isOpeningWorkspace;
+            private set
+            {
+                if (_isOpeningWorkspace == value)
+                    return;
+                _isOpeningWorkspace = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(WorkspaceOpenStatus));
+            }
+        }
+        private bool _isOpeningWorkspace;
+
+        public string OpeningWorkspacePath
+        {
+            get => _openingWorkspacePath;
+            private set
+            {
+                if (string.Equals(_openingWorkspacePath, value, StringComparison.Ordinal))
+                    return;
+                _openingWorkspacePath = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(WorkspaceOpenStatus));
+            }
+        }
+        private string _openingWorkspacePath = string.Empty;
+        public string WorkspaceOpenStatus => IsOpeningWorkspace
+            ? $"正在打开：{Path.GetFileName(OpeningWorkspacePath)}"
+            : "就绪";
+
         public RelayCommand SettingCommand { get; set; } 
 
-        public SolutionManager()
+        public SolutionManager() : this(restoreLastWorkspace: true)
+        {
+        }
+
+        internal SolutionManager(bool restoreLastWorkspace)
         {
             ColorVision.UI.FileProcessorFactory.GetInstance().WorkspaceOpenHandler ??= Editor.ResourceOpenService.TryOpenFile;
             SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
 
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
-            bool su = false;
-            var solutionpath = ArgumentParser.GetInstance().GetValue("solutionpath");
-            Application.Current.Dispatcher.BeginInvoke(() =>
+            if (restoreLastWorkspace && Application.Current != null)
             {
-                if (solutionpath != null)
+                string? solutionPath = ArgumentParser.GetInstance().GetValue("solutionpath");
+                Application.Current.Dispatcher.BeginInvoke(async () =>
                 {
-                    su = OpenSolution(solutionpath);
-                }
-                else if (SolutionHistory.RecentFiles.Count > 0)
-                {
-                    su = OpenSolution(SolutionHistory.RecentFiles[0]);
-                }
-                JumpListManager jumpListManager = new JumpListManager();
-                jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
-                if (!su)
-                {
-                    string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                    if (!Directory.Exists(Default))
-                        Directory.CreateDirectory(Default);
-
-                    string DefaultSolution = Default + "\\" + "Default";
-                if (!Directory.Exists(DefaultSolution))
-                    Directory.CreateDirectory(DefaultSolution);
-                var SolutionPath = CreateSolution(DefaultSolution);
+                    string? restorePath = solutionPath
+                        ?? SolutionHistory.RecentFiles.FirstOrDefault();
+                    bool succeeded = false;
+                    if (!string.IsNullOrWhiteSpace(restorePath))
+                    {
+                        SolutionOpenOperationResult result = await OpenSolutionAsync(restorePath);
+                        succeeded = result.Succeeded;
+                        if (result.Canceled)
+                            return;
+                    }
+                    JumpListManager jumpListManager = new JumpListManager();
+                    jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
+                    if (!succeeded
+                        && CurrentSolutionExplorer == null
+                        && !IsOpeningWorkspace)
+                    {
+                        string defaultRoot = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                            "ColorVision");
+                        Directory.CreateDirectory(defaultRoot);
+                        string defaultSolution = Path.Combine(defaultRoot, "Default");
+                        Directory.CreateDirectory(defaultSolution);
+                        CreateSolution(defaultSolution);
+                    }
+                });
             }
-            });
 
-            SettingCommand = SolutionSetting.Instance.EditCommand;
+            SettingCommand = restoreLastWorkspace
+                ? SolutionSetting.Instance.EditCommand
+                : new RelayCommand(_ => { });
 
-            WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);
+            if (restoreLastWorkspace)
+                WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
@@ -339,6 +397,101 @@ namespace ColorVision.Solution
             return false;
         }
 
+        internal static async Task<SolutionOpenTargetResolution> ResolveOpenTargetAsync(
+            string path,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return new SolutionOpenTargetResolution(
+                    false,
+                    ErrorMessage: "要打开的资源路径为空。");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            string normalizedPath = NormalizeRecentPath(path);
+            if (Directory.Exists(normalizedPath))
+            {
+                DirectoryInfo directoryInfo = new(normalizedPath);
+                Task<string> workspaceTask = Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return ResolveDirectorySolutionPath(directoryInfo);
+                }, CancellationToken.None);
+                string solutionPath = await workspaceTask
+                    .WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return File.Exists(solutionPath)
+                    ? new SolutionOpenTargetResolution(
+                        true,
+                        solutionPath,
+                        directoryInfo.FullName,
+                        directoryInfo.Name)
+                    : new SolutionOpenTargetResolution(
+                        false,
+                        ErrorMessage: $"无法为文件夹创建工作区：{directoryInfo.FullName}");
+            }
+
+            if (File.Exists(normalizedPath) && IsNativeSolutionFilePath(normalizedPath))
+            {
+                FileInfo fileInfo = new(normalizedPath);
+                return new SolutionOpenTargetResolution(
+                    true,
+                    fileInfo.FullName,
+                    fileInfo.FullName,
+                    Path.GetFileNameWithoutExtension(fileInfo.Name));
+            }
+
+            if (File.Exists(normalizedPath)
+                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath))
+            {
+                ImportedSolutionWorkspaceResult result = await ImportedSolutionWorkspaceService
+                    .CreateAsync(new FileInfo(normalizedPath), cancellationToken)
+                    .ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                return result.Succeeded
+                    ? new SolutionOpenTargetResolution(
+                        true,
+                        result.WorkspacePath,
+                        Path.GetFullPath(normalizedPath),
+                        result.DisplayName)
+                    : new SolutionOpenTargetResolution(
+                        false,
+                        ErrorMessage: result.ErrorMessage);
+            }
+
+            if (File.Exists(normalizedPath) && IsProjectFilePath(normalizedPath))
+            {
+                Task<SolutionOpenTargetResolution> projectTask = Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    bool succeeded = TryCreateImplicitProjectSolution(
+                        new FileInfo(normalizedPath),
+                        out string solutionPath,
+                        out string displayName,
+                        out string errorMessage);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return succeeded
+                        ? new SolutionOpenTargetResolution(
+                            true,
+                            solutionPath,
+                            Path.GetFullPath(normalizedPath),
+                            displayName)
+                        : new SolutionOpenTargetResolution(
+                            false,
+                            ErrorMessage: errorMessage);
+                }, CancellationToken.None);
+                return await projectTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return new SolutionOpenTargetResolution(
+                false,
+                ErrorMessage: File.Exists(normalizedPath)
+                    ? $"不支持打开此文件：{normalizedPath}"
+                    : $"要打开的资源不存在：{normalizedPath}");
+        }
+
         internal static bool TryCreateImplicitProjectSolution(
             FileInfo projectFile,
             out string solutionPath,
@@ -453,6 +606,24 @@ namespace ColorVision.Solution
                 && Editor.ResourceOpenService.Instance.TryOpenWithFeedback(dialog.FolderName, owner);
         }
 
+        public static async Task<bool> OpenFolderDialogAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = ColorVision.UI.Properties.Resources.OpenFolder,
+                Multiselect = false,
+            };
+
+            Window? owner = WindowHelpers.GetActiveWindow();
+            bool? result = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
+            return result == true
+                && await Editor.ResourceOpenService.Instance.TryOpenWithFeedbackAsync(
+                    dialog.FolderName,
+                    owner,
+                    cancellationToken);
+        }
+
         public bool OpenSolution(string FullPath)
         {
             return TryOpenSolution(FullPath, out _);
@@ -460,6 +631,7 @@ namespace ColorVision.Solution
 
         public bool TryOpenSolution(string fullPath, out string errorMessage)
         {
+            CancelWorkspaceOpen();
             if (!TryResolveOpenTarget(
                 fullPath,
                 out string solutionPath,
@@ -515,6 +687,170 @@ namespace ColorVision.Solution
             SolutionLoaded?.Invoke(historyPath, EventArgs.Empty);
             errorMessage = string.Empty;
             return true;
+        }
+
+        internal async Task<SolutionOpenOperationResult> OpenSolutionAsync(
+            string fullPath,
+            CancellationToken cancellationToken = default)
+        {
+            CancellationTokenSource requestCancellation = BeginWorkspaceOpen(
+                fullPath,
+                cancellationToken,
+                out int requestVersion);
+            try
+            {
+                SolutionOpenTargetResolution resolution = await ResolveOpenTargetAsync(
+                    fullPath,
+                    requestCancellation.Token);
+                requestCancellation.Token.ThrowIfCancellationRequested();
+                if (!resolution.Succeeded)
+                {
+                    string normalizedPath = NormalizeRecentPath(fullPath);
+                    if (!string.IsNullOrWhiteSpace(normalizedPath)
+                        && !IsSupportedOpenPath(normalizedPath))
+                    {
+                        SolutionHistory.RemoveFile(normalizedPath);
+                        SolutionHistory.RemoveFile(fullPath);
+                    }
+                    log.Warn($"无法解析要打开的解决方案或工作区: {fullPath}, {resolution.ErrorMessage}");
+                    return new SolutionOpenOperationResult(false, resolution.ErrorMessage);
+                }
+
+                FileInfo fileInfo = new(resolution.SolutionPath);
+                var candidateEnvironment = new SolutionEnvironments
+                {
+                    SolutionDir = Directory.GetParent(fileInfo.FullName)?.FullName ?? string.Empty,
+                    SolutionPath = fileInfo.FullName,
+                    SolutionExt = fileInfo.Extension,
+                    SolutionName = fileInfo.Name,
+                    SolutionFileName = resolution.DisplayName,
+                };
+                SolutionExplorer candidateExplorer;
+                try
+                {
+                    SolutionExplorerPreparation preparation = await SolutionExplorer.PrepareAsync(
+                        candidateEnvironment,
+                        requestCancellation.Token);
+                    requestCancellation.Token.ThrowIfCancellationRequested();
+                    candidateExplorer = new SolutionExplorer(candidateEnvironment, preparation);
+                }
+                catch (Exception ex) when (ex is IOException
+                    or UnauthorizedAccessException
+                    or JsonException
+                    or InvalidDataException
+                    or ArgumentException
+                    or NotSupportedException)
+                {
+                    log.Warn($"打开解决方案失败: {resolution.SolutionPath}", ex);
+                    return new SolutionOpenOperationResult(false, $"无法打开解决方案：{ex.Message}");
+                }
+
+                if (requestCancellation.IsCancellationRequested
+                    || !IsCurrentWorkspaceOpenRequest(requestCancellation, requestVersion))
+                {
+                    candidateExplorer.Dispose();
+                    return new SolutionOpenOperationResult(false, "打开工作区已取消。", Canceled: true);
+                }
+
+                DisposeSolutionExplorers();
+                SolutionEnvironments = candidateEnvironment;
+                CurrentSolutionExplorer = candidateExplorer;
+                SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
+                SolutionExplorers.Add(candidateExplorer);
+                SolutionHistory.InsertFile(resolution.HistoryPath);
+                if (!string.Equals(fullPath, resolution.HistoryPath, StringComparison.OrdinalIgnoreCase))
+                    SolutionHistory.RemoveFile(fullPath);
+                SolutionLoaded?.Invoke(resolution.HistoryPath, EventArgs.Empty);
+                return new SolutionOpenOperationResult(true);
+            }
+            catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+            {
+                return new SolutionOpenOperationResult(false, "打开工作区已取消。", Canceled: true);
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                log.Warn($"异步打开解决方案失败: {fullPath}", ex);
+                return new SolutionOpenOperationResult(false, $"无法打开解决方案：{ex.Message}");
+            }
+            finally
+            {
+                EndWorkspaceOpen(requestCancellation, requestVersion);
+            }
+        }
+
+        public void CancelWorkspaceOpen()
+        {
+            CancellationTokenSource? cancellation;
+            lock (_workspaceOpenSync)
+                cancellation = _workspaceOpenCancellation;
+            try
+            {
+                cancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        private CancellationTokenSource BeginWorkspaceOpen(
+            string fullPath,
+            CancellationToken cancellationToken,
+            out int requestVersion)
+        {
+            CancellationTokenSource requestCancellation = CancellationTokenSource
+                .CreateLinkedTokenSource(cancellationToken);
+            CancellationTokenSource? previousCancellation;
+            lock (_workspaceOpenSync)
+            {
+                previousCancellation = _workspaceOpenCancellation;
+                _workspaceOpenCancellation = requestCancellation;
+                requestVersion = ++_workspaceOpenVersion;
+            }
+            try
+            {
+                previousCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            OpeningWorkspacePath = fullPath;
+            IsOpeningWorkspace = true;
+            return requestCancellation;
+        }
+
+        private bool IsCurrentWorkspaceOpenRequest(
+            CancellationTokenSource requestCancellation,
+            int requestVersion)
+        {
+            lock (_workspaceOpenSync)
+            {
+                return ReferenceEquals(_workspaceOpenCancellation, requestCancellation)
+                    && _workspaceOpenVersion == requestVersion;
+            }
+        }
+
+        private void EndWorkspaceOpen(
+            CancellationTokenSource requestCancellation,
+            int requestVersion)
+        {
+            bool wasCurrent;
+            lock (_workspaceOpenSync)
+            {
+                wasCurrent = ReferenceEquals(_workspaceOpenCancellation, requestCancellation)
+                    && _workspaceOpenVersion == requestVersion;
+                if (wasCurrent)
+                    _workspaceOpenCancellation = null;
+            }
+            requestCancellation.Dispose();
+            if (!wasCurrent)
+                return;
+            IsOpeningWorkspace = false;
+            OpeningWorkspacePath = string.Empty;
         }
 
         public bool OpenProject(string projectPath)

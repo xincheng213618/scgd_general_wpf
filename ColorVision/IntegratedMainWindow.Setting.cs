@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -182,15 +183,8 @@ namespace ColorVision
                         var parser = ArgumentParser.GetInstance();
                         parser.Parse(parsedArgs);
                         string inputFile = parser.GetValue("input");
-                        if (inputFile != null)
-                        {
-                            ResourceOpenService.Instance.TryOpen(inputFile);
-                        }
                         string solutionPath = parser.GetValue("solutionpath");
-                        if (solutionPath != null)
-                        {
-                            SolutionManager.GetInstance().OpenSolution(solutionPath);
-                        }
+                        _ = OpenReceivedResourcesAsync(inputFile, solutionPath);
                         string project = parser.GetValue("project");
 
                         List<IFeatureLauncher> projects = new();
@@ -217,6 +211,19 @@ namespace ColorVision
             }
 
             return IntPtr.Zero;
+        }
+
+        private static async Task OpenReceivedResourcesAsync(
+            string? inputPath,
+            string? solutionPath)
+        {
+            if (!string.IsNullOrWhiteSpace(solutionPath))
+                await ResourceOpenService.Instance.TryOpenAsync(solutionPath);
+            if (!string.IsNullOrWhiteSpace(inputPath)
+                && !string.Equals(inputPath, solutionPath, StringComparison.OrdinalIgnoreCase))
+            {
+                await ResourceOpenService.Instance.TryOpenAsync(inputPath);
+            }
         }
 
         private void ApplyMainWindowDwmAttributes()

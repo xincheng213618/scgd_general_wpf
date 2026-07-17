@@ -28,6 +28,19 @@ namespace ColorVision.Solution
                 },
                 new StatusBarMeta
                 {
+                    Id = "SolutionOpening",
+                    Name = "Workspace Opening",
+                    Description = "正在打开的工作区",
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Left,
+                    Order = 1,
+                    BindingName = nameof(SolutionManager.WorkspaceOpenStatus),
+                    Source = SolutionManager.GetInstance(),
+                    ActionType = StatusBarActionType.Popup,
+                    PopupContentFactory = CreateOpeningPopup,
+                },
+                new StatusBarMeta
+                {
                     Id = "SolutionConfiguration",
                     Name = "Solution Configuration",
                     Description = "当前解决方案配置",
@@ -40,6 +53,36 @@ namespace ColorVision.Solution
                     PopupContentFactory = CreateConfigurationPopup,
                 }
             };
+        }
+
+        private static FrameworkElement CreateOpeningPopup()
+        {
+            SolutionManager manager = SolutionManager.GetInstance();
+            var stack = new StackPanel { MinWidth = 260 };
+            var pathBlock = new TextBlock
+            {
+                Text = manager.IsOpeningWorkspace
+                    ? manager.OpeningWorkspacePath
+                    : "当前没有正在打开的工作区",
+                Margin = new Thickness(8, 6, 8, 6),
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 360,
+            };
+            pathBlock.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            stack.Children.Add(pathBlock);
+            if (!manager.IsOpeningWorkspace)
+                return stack;
+
+            var cancelButton = new Button
+            {
+                Content = "取消打开",
+                Margin = new Thickness(8, 2, 8, 8),
+                Padding = new Thickness(10, 4, 10, 4),
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            cancelButton.Click += (_, _) => manager.CancelWorkspaceOpen();
+            stack.Children.Add(cancelButton);
+            return stack;
         }
 
         private static FrameworkElement CreateSolutionPopup()

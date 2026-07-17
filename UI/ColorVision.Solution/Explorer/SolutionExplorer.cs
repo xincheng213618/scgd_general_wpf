@@ -101,6 +101,17 @@ namespace ColorVision.Solution.Explorer
         public IDictionary<string, JToken>? ExtensionData { get; set; }
     }
 
+    internal sealed record ProjectReferenceLoadResult(
+        string Reference,
+        ProjectDefinition? Project,
+        string ResolvedPath,
+        string ErrorMessage);
+
+    internal sealed record SolutionExplorerPreparation(
+        SolutionConfigLoadResult LoadResult,
+        DirectoryInfo RootDirectory,
+        Dictionary<string, ProjectReferenceLoadResult> ProjectReferences);
+
     /// <summary>
     /// 解决方案资源管理器，管理目录、配置、命令及事件
     /// </summary>
@@ -121,6 +132,7 @@ namespace ColorVision.Solution.Explorer
         private DispatcherTimer _changedDebounceTimer;
         private DispatcherTimer _projectChangedDebounceTimer;
         private DispatcherTimer? _importSourceChangedDebounceTimer;
+        private CancellationTokenSource? _importRefreshCancellation;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
         private int _cacheRebuildPending;
@@ -130,6 +142,7 @@ namespace ColorVision.Solution.Explorer
         private int _trackedMutationDepth;
         private bool _operationHistoryEnabled;
         private bool _isApplyingOperationSnapshot;
+        private Dictionary<string, ProjectReferenceLoadResult>? _preparedProjectReferences;
         public SolutionConfig Config { get; private set; }
         public FileInfo ConfigFileInfo { get; private set; }
         public SolutionEnvironments SolutionEnvironments { get; }
@@ -167,11 +180,18 @@ namespace ColorVision.Solution.Explorer
         public string ActiveConfiguration => Config.ActiveConfiguration;
 
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
+            : this(solutionEnvironments, preparation: null)
+        {
+        }
+
+        internal SolutionExplorer(
+            SolutionEnvironments solutionEnvironments,
+            SolutionExplorerPreparation? preparation)
         {
             SolutionEnvironments = solutionEnvironments ?? throw new ArgumentNullException(nameof(solutionEnvironments));
             OperationHistory.Changed += (_, _) => CommandManager.InvalidateRequerySuggested();
 
-            InitializeSolution();
+            InitializeSolution(preparation);
             FullPath = DirectoryInfo.FullName;
             CanDelete = false;
             CanReName = false;
@@ -217,7 +237,7 @@ namespace ColorVision.Solution.Explorer
             InitializeFileSystemWatcher();
 
             var stopwatch = Stopwatch.StartNew();
-            if (!HasRootProjectReference())
+            if (!IsImportedSolution && !HasRootProjectReference())
                 SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, Cache);
             ReconcileExplicitProjects();
             EnsureStartupProject();
@@ -290,7 +310,7 @@ namespace ColorVision.Solution.Explorer
         /// <summary>
         /// 初始化解决方案配置及目录
         /// </summary>
-        private void InitializeSolution()
+        private void InitializeSolution(SolutionExplorerPreparation? preparation)
         {
             string fullPath = SolutionEnvironments.SolutionPath;
             if (File.Exists(fullPath) && fullPath.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase))
@@ -299,7 +319,8 @@ namespace ColorVision.Solution.Explorer
                 Name1 = string.IsNullOrWhiteSpace(SolutionEnvironments.SolutionFileName)
                     ? Path.GetFileNameWithoutExtension(fullPath)
                     : SolutionEnvironments.SolutionFileName;
-                SolutionConfigLoadResult loadResult = SolutionConfigStore.Load(fullPath);
+                SolutionConfigLoadResult loadResult = preparation?.LoadResult
+                    ?? SolutionConfigStore.Load(fullPath);
                 Config = loadResult.Config;
                 Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
                 if (loadResult.RecoveredFromBackup)
@@ -313,7 +334,9 @@ namespace ColorVision.Solution.Explorer
                 {
                     Logger.Info($"解决方案配置已从 SchemaVersion {loadResult.SourceSchemaVersion} 迁移到 {SolutionConfigStore.CurrentSchemaVersion}: {fullPath}");
                 }
-                DirectoryInfo = ResolveRootDirectory(ConfigFileInfo, Config.RootPath);
+                DirectoryInfo = preparation?.RootDirectory
+                    ?? ResolveRootDirectory(ConfigFileInfo, Config.RootPath);
+                _preparedProjectReferences = preparation?.ProjectReferences;
                 if (DirectoryInfo.Root != null)
                     DriveInfo = new DriveInfo(DirectoryInfo.Root.FullName);
             }
@@ -321,6 +344,79 @@ namespace ColorVision.Solution.Explorer
             {
                 throw new FileNotFoundException("Solution file not found or invalid extension.", fullPath);
             }
+        }
+
+        internal static async Task<SolutionExplorerPreparation> PrepareAsync(
+            SolutionEnvironments solutionEnvironments,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(solutionEnvironments);
+            Task<SolutionExplorerPreparation> preparationTask = Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string fullPath = solutionEnvironments.SolutionPath;
+                if (!File.Exists(fullPath)
+                    || !fullPath.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new FileNotFoundException(
+                        "Solution file not found or invalid extension.",
+                        fullPath);
+                }
+
+                var configFile = new FileInfo(fullPath);
+                SolutionConfigLoadResult loadResult = SolutionConfigStore.Load(fullPath);
+                loadResult.Config.ActiveConfiguration = NormalizeConfigurationName(
+                    loadResult.Config.ActiveConfiguration);
+                DirectoryInfo rootDirectory = ResolveRootDirectory(
+                    configFile,
+                    loadResult.Config.RootPath);
+                Dictionary<string, ProjectReferenceLoadResult> projectReferences =
+                    LoadProjectReferences(rootDirectory.FullName, loadResult.Config, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                return new SolutionExplorerPreparation(
+                    loadResult,
+                    rootDirectory,
+                    projectReferences);
+            }, CancellationToken.None);
+            return await preparationTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private static async Task<Dictionary<string, ProjectReferenceLoadResult>> LoadProjectReferencesAsync(
+            string rootDirectory,
+            SolutionConfig config,
+            CancellationToken cancellationToken)
+        {
+            Task<Dictionary<string, ProjectReferenceLoadResult>> loadTask = Task.Run(
+                () => LoadProjectReferences(rootDirectory, config, cancellationToken),
+                CancellationToken.None);
+            return await loadTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private static Dictionary<string, ProjectReferenceLoadResult> LoadProjectReferences(
+            string rootDirectory,
+            SolutionConfig config,
+            CancellationToken cancellationToken)
+        {
+            var results = new Dictionary<string, ProjectReferenceLoadResult>(StringComparer.OrdinalIgnoreCase);
+            if (config.ProjectMode != SolutionProjectMode.Explicit)
+                return results;
+
+            foreach (string reference in config.Projects.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                bool succeeded = TryResolveProjectReference(
+                    rootDirectory,
+                    reference,
+                    out ProjectDefinition? project,
+                    out string resolvedPath,
+                    out string errorMessage);
+                results[reference] = new ProjectReferenceLoadResult(
+                    reference,
+                    succeeded ? project : null,
+                    resolvedPath,
+                    errorMessage);
+            }
+            return results;
         }
 
         private void NormalizeSolutionOrganization()
@@ -350,11 +446,12 @@ namespace ColorVision.Solution.Explorer
                 if (IsImportedSolution)
                 {
                     _importSourceChangedDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-                    _importSourceChangedDebounceTimer.Tick += (_, _) =>
+                    _importSourceChangedDebounceTimer.Tick += async (_, _) =>
                     {
                         _importSourceChangedDebounceTimer.Stop();
-                        if (!TryRefreshImportedSolutionState(out string errorMessage))
-                            Logger.Warn($"自动刷新外部解决方案失败: {errorMessage}");
+                        ImportedSolutionWorkspaceResult result = await RefreshImportedSolutionStateAsync();
+                        if (!result.Succeeded && !result.Canceled)
+                            Logger.Warn($"自动刷新外部解决方案失败: {result.ErrorMessage}");
                     };
                 }
 
@@ -1394,7 +1491,9 @@ namespace ColorVision.Solution.Explorer
                 return;
             }
             ProjectDefinition? startupProject = SelectStartupProject(
-                LoadProjects(),
+                VisualChildren.GetAllVisualChildren()
+                    .OfType<ProjectNode>()
+                    .Select(node => ApplyActiveConfiguration(node.Project)),
                 DirectoryInfo.FullName,
                 Config.StartupProject);
             if (startupProject != null && string.IsNullOrWhiteSpace(Config.StartupProject))
@@ -2551,23 +2650,42 @@ namespace ColorVision.Solution.Explorer
                 return;
 
             NormalizeSolutionOrganization();
+            Dictionary<string, ProjectReferenceLoadResult>? preparedProjectReferences =
+                Interlocked.Exchange(ref _preparedProjectReferences, null);
             var projects = new List<(string Reference, ProjectDefinition Project)>();
             var unavailable = new List<(string Reference, string ResolvedPath, string ErrorMessage)>();
             foreach (string reference in Config.Projects.Distinct(StringComparer.OrdinalIgnoreCase))
             {
-                if (TryResolveProjectReference(
-                    DirectoryInfo.FullName,
-                    reference,
-                    out ProjectDefinition? project,
-                    out string resolvedPath,
-                    out string loadError)
-                    && project != null)
+                ProjectReferenceLoadResult? loadResult = null;
+                bool hasPreparedResult = preparedProjectReferences != null
+                    && preparedProjectReferences.TryGetValue(reference, out loadResult);
+                if (!hasPreparedResult)
                 {
-                    projects.Add((reference, project));
+                    bool succeeded = TryResolveProjectReference(
+                        DirectoryInfo.FullName,
+                        reference,
+                        out ProjectDefinition? project,
+                        out string resolvedPath,
+                        out string loadError);
+                    loadResult = new ProjectReferenceLoadResult(
+                        reference,
+                        succeeded ? project : null,
+                        resolvedPath,
+                        loadError);
+                }
+
+                loadResult ??= new ProjectReferenceLoadResult(
+                    reference,
+                    null,
+                    string.Empty,
+                    "项目加载没有返回结果。");
+                if (loadResult.Project != null)
+                {
+                    projects.Add((reference, loadResult.Project));
                 }
                 else
                 {
-                    unavailable.Add((reference, resolvedPath, loadError));
+                    unavailable.Add((reference, loadResult.ResolvedPath, loadResult.ErrorMessage));
                 }
             }
             projects = projects
@@ -2799,9 +2917,24 @@ namespace ColorVision.Solution.Explorer
                 return false;
 
             return Config.Projects.Any(reference =>
-                TryResolveProjectReference(DirectoryInfo.FullName, reference, out ProjectDefinition? project, out _)
-                && project != null
-                && PathEquals(project.ProjectDirectory.FullName, DirectoryInfo.FullName));
+            {
+                if (_preparedProjectReferences?.TryGetValue(
+                    reference,
+                    out ProjectReferenceLoadResult? loadResult) == true)
+                {
+                    return loadResult.Project != null
+                        && PathEquals(
+                            loadResult.Project.ProjectDirectory.FullName,
+                            DirectoryInfo.FullName);
+                }
+                return TryResolveProjectReference(
+                        DirectoryInfo.FullName,
+                        reference,
+                        out ProjectDefinition? project,
+                        out _)
+                    && project != null
+                    && PathEquals(project.ProjectDirectory.FullName, DirectoryInfo.FullName);
+            });
         }
 
         internal static DirectoryInfo ResolveRootDirectory(FileInfo solutionFile, string? configuredRootPath)
@@ -2938,7 +3071,8 @@ namespace ColorVision.Solution.Explorer
 
             // A user-requested refresh must observe the current file system,
             // rather than replaying a possibly stale persisted tree cache.
-            SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache: null);
+            if (!IsImportedSolution && !HasRootProjectReference())
+                SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache: null);
             ReconcileExplicitProjects();
 
             foreach (SolutionNode node in VisualChildren.GetAllVisualChildren()
@@ -2993,6 +3127,83 @@ namespace ColorVision.Solution.Explorer
             Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
             ReloadSolutionState();
             return true;
+        }
+
+        internal async Task<ImportedSolutionWorkspaceResult> RefreshImportedSolutionStateAsync(
+            CancellationToken cancellationToken = default)
+        {
+            if (!IsImportedSolution)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: "当前解决方案不是外部导入工作区。");
+            }
+
+            _importSourceChangedDebounceTimer?.Stop();
+            var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationTokenSource? previousCancellation = Interlocked.Exchange(
+                ref _importRefreshCancellation,
+                requestCancellation);
+            try
+            {
+                previousCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            try
+            {
+                ImportedSolutionWorkspaceResult result = await ImportedSolutionWorkspaceService.RefreshAsync(
+                    ConfigFileInfo,
+                    Config,
+                    requestCancellation.Token);
+                if (!result.Succeeded || result.Config == null)
+                    return result;
+                DirectoryInfo refreshedRoot = ResolveRootDirectory(
+                    ConfigFileInfo,
+                    result.Config.RootPath);
+                Dictionary<string, ProjectReferenceLoadResult> preparedProjectReferences =
+                    await LoadProjectReferencesAsync(
+                        refreshedRoot.FullName,
+                        result.Config,
+                        requestCancellation.Token);
+                requestCancellation.Token.ThrowIfCancellationRequested();
+                if (_disposed
+                    || !ReferenceEquals(
+                        Interlocked.CompareExchange(ref _importRefreshCancellation, null, null),
+                        requestCancellation))
+                {
+                    return result with { Succeeded = false, Canceled = true };
+                }
+                _preparedProjectReferences = preparedProjectReferences;
+                Config = result.Config;
+                Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
+                ReloadSolutionState();
+                return result;
+            }
+            catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+            {
+                return new ImportedSolutionWorkspaceResult(
+                    false,
+                    ErrorMessage: "刷新外部解决方案已取消。",
+                    Canceled: true);
+            }
+            finally
+            {
+                Interlocked.CompareExchange(
+                    ref _importRefreshCancellation,
+                    null,
+                    requestCancellation);
+                requestCancellation.Dispose();
+            }
+        }
+
+        private async Task RefreshImportedSolutionStateWithFeedbackAsync()
+        {
+            ImportedSolutionWorkspaceResult result = await RefreshImportedSolutionStateAsync();
+            if (!result.Succeeded && !result.Canceled)
+                ShowUserError(result.ErrorMessage);
         }
 
         private void RefreshConfigurationCommandSurfaces()
@@ -3099,8 +3310,7 @@ namespace ColorVision.Solution.Explorer
         {
             if (IsImportedSolution)
             {
-                if (!TryRefreshImportedSolutionState(out string errorMessage))
-                    ShowUserError(errorMessage);
+                _ = RefreshImportedSolutionStateWithFeedbackAsync();
                 return;
             }
             ReloadSolutionState();
@@ -3353,6 +3563,13 @@ namespace ColorVision.Solution.Explorer
             _changedDebounceTimer?.Stop();
             _projectChangedDebounceTimer?.Stop();
             _importSourceChangedDebounceTimer?.Stop();
+            try
+            {
+                _importRefreshCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
             DisposeVisualChildren(this);
             VisualChildren.Clear();
             Cache?.Dispose();

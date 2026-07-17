@@ -17,7 +17,8 @@ namespace ColorVision.Solution.Editor
         ResourceOpenKind Kind,
         bool Succeeded,
         string ErrorMessage = "",
-        bool? DefaultEditorUpdated = null);
+        bool? DefaultEditorUpdated = null,
+        bool Canceled = false);
 
     public sealed record ResourceOpenFailure(
         string ResourcePath,
@@ -98,11 +99,94 @@ namespace ColorVision.Solution.Editor
 
         public bool TryOpen(string path) => Open(path).Succeeded;
 
+        public async Task<ResourceOpenResult> OpenAsync(
+            string? path,
+            CancellationToken cancellationToken = default)
+        {
+            ResourceOpenKind kind = Classify(path);
+            if (kind == ResourceOpenKind.Missing || string.IsNullOrWhiteSpace(path))
+                return new ResourceOpenResult(kind, false, "要打开的资源不存在。");
+
+            try
+            {
+                if (kind is ResourceOpenKind.Folder or ResourceOpenKind.Solution or ResourceOpenKind.Project)
+                {
+                    SolutionOpenOperationResult result = await SolutionManager.GetInstance()
+                        .OpenSolutionAsync(path, cancellationToken);
+                    return new ResourceOpenResult(
+                        kind,
+                        result.Succeeded,
+                        result.ErrorMessage,
+                        Canceled: result.Canceled);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                bool succeeded = _editorManager.TryOpenFile(path, out string errorMessage);
+                if (succeeded)
+                    return new ResourceOpenResult(kind, true);
+                if (string.IsNullOrWhiteSpace(errorMessage))
+                    errorMessage = $"无法打开{GetResourceKindName(kind)}。";
+                return new ResourceOpenResult(kind, false, errorMessage);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return new ResourceOpenResult(
+                    kind,
+                    false,
+                    "打开资源已取消。",
+                    Canceled: true);
+            }
+            catch (Exception ex)
+            {
+                return new ResourceOpenResult(kind, false, $"无法打开{GetResourceKindName(kind)}：{ex.Message}");
+            }
+        }
+
+        public async Task<bool> TryOpenAsync(
+            string path,
+            CancellationToken cancellationToken = default)
+        {
+            ResourceOpenResult result = await OpenAsync(path, cancellationToken);
+            return result.Succeeded;
+        }
+
         public bool TryOpenWithFeedback(string path, Window? owner = null)
         {
             ResourceOpenResult result = Open(path);
             if (result.Succeeded)
                 return true;
+
+            Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
+            if (actualOwner == null)
+            {
+                MessageBox.Show(
+                    result.ErrorMessage,
+                    "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else
+            {
+                MessageBox.Show(
+                    actualOwner,
+                    result.ErrorMessage,
+                    "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            return false;
+        }
+
+        public async Task<bool> TryOpenWithFeedbackAsync(
+            string path,
+            Window? owner = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResourceOpenResult result = await OpenAsync(path, cancellationToken);
+            if (result.Succeeded)
+                return true;
+            if (result.Canceled)
+                return false;
 
             Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
             if (actualOwner == null)
