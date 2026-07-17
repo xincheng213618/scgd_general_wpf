@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <cstring>
@@ -203,6 +204,19 @@ cvcore::ghost::GhostDetectionConfig ParseGhostConfig(const json& value, const Ro
     config.ghostOpenKernel = value.value("ghostOpenKernel", config.ghostOpenKernel);
     config.ghostCloseKernel = value.value("ghostCloseKernel", config.ghostCloseKernel);
     config.sourceMaskPadding = value.value("sourceMaskPadding", config.sourceMaskPadding);
+    config.normalizeExposure = value.value("normalizeExposure", config.normalizeExposure);
+    config.exposureLowPercentile = value.value("exposureLowPercentile", config.exposureLowPercentile);
+    config.exposureHighPercentile = value.value("exposureHighPercentile", config.exposureHighPercentile);
+    config.backgroundKernel = value.value("backgroundKernel", config.backgroundKernel);
+    config.backgroundSigma = value.value("backgroundSigma", config.backgroundSigma);
+    config.multiScaleLevels = value.value("multiScaleLevels", config.multiScaleLevels);
+    config.multiScaleFactor = value.value("multiScaleFactor", config.multiScaleFactor);
+    config.multiScaleThresholdFactor = value.value("multiScaleThresholdFactor", config.multiScaleThresholdFactor);
+    if (value.contains("opticalCenter")) {
+        config.opticalCenter = ParsePoint(value.at("opticalCenter"));
+    }
+    config.useDirectionalConfidence = value.value("useDirectionalConfidence", config.useDirectionalConfidence);
+    config.minDirectionConfidence = value.value("minDirectionConfidence", config.minDirectionConfidence);
     config.minDistanceFromBright = value.value("minDistanceFromBright", config.minDistanceFromBright);
     config.minRelativeIntensity = value.value("minRelativeIntensity", config.minRelativeIntensity);
     config.maxCandidates = value.value("maxCandidates", config.maxCandidates);
@@ -483,6 +497,18 @@ cvcore::matching::RotatedTemplateMatchingConfig ParseMatchingConfig(const json& 
     config.nmsRadius = value.value("nmsRadius", config.nmsRadius);
     config.pyramidLevels = value.value("pyramidLevels", config.pyramidLevels);
     config.subpixel = value.value("subpixel", config.subpixel);
+    config.scaleMin = value.value("scaleMin", config.scaleMin);
+    config.scaleMax = value.value("scaleMax", config.scaleMax);
+    config.scaleStep = value.value("scaleStep", config.scaleStep);
+    config.occlusionTolerance = value.value("occlusionTolerance", config.occlusionTolerance);
+    if (value.contains("featureMode")) {
+        std::string mode = value.at("featureMode").get<std::string>();
+        std::transform(mode.begin(), mode.end(), mode.begin(),
+            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        if (mode == "intensity") config.featureMode = cvcore::matching::TemplateFeatureMode::Intensity;
+        else if (mode == "gradient") config.featureMode = cvcore::matching::TemplateFeatureMode::Gradient;
+        else throw std::invalid_argument("featureMode must be intensity or gradient.");
+    }
     return config;
 }
 
@@ -501,6 +527,89 @@ cvcore::binocular::BinocularFusionConfig ParseBinocularConfig(const json& value)
     if (value.contains("opticalCenter")) {
         config.opticalCenter = ParsePoint(value.at("opticalCenter"));
     }
+    return config;
+}
+
+cv::Matx33d ParseMatrix3x3(const json& value, const char* name)
+{
+    cv::Matx33d matrix;
+    if (value.is_array() && value.size() == 9) {
+        for (int index = 0; index < 9; ++index) {
+            matrix.val[index] = value.at(static_cast<size_t>(index)).get<double>();
+        }
+        return matrix;
+    }
+    if (value.is_array() && value.size() == 3) {
+        for (int row = 0; row < 3; ++row) {
+            const json& rowValues = value.at(static_cast<size_t>(row));
+            if (!rowValues.is_array() || rowValues.size() != 3) {
+                throw std::invalid_argument(std::string(name) + " must be a flat 9-value or 3x3 array.");
+            }
+            for (int col = 0; col < 3; ++col) {
+                matrix(row, col) = rowValues.at(static_cast<size_t>(col)).get<double>();
+            }
+        }
+        return matrix;
+    }
+    throw std::invalid_argument(std::string(name) + " must be a flat 9-value or 3x3 array.");
+}
+
+cv::Vec3d ParseVector3(const json& value, const char* name)
+{
+    if (!value.is_array() || value.size() != 3) {
+        throw std::invalid_argument(std::string(name) + " must contain three values.");
+    }
+    return cv::Vec3d(value.at(0).get<double>(), value.at(1).get<double>(), value.at(2).get<double>());
+}
+
+std::vector<double> ParseDoubleArray(const json& value, const char* name)
+{
+    if (!value.is_array()) {
+        throw std::invalid_argument(std::string(name) + " must be an array.");
+    }
+    return value.get<std::vector<double>>();
+}
+
+cvcore::binocular::StereoBinocularConfig ParseStereoBinocularConfig(const json& value)
+{
+    if (!value.contains("calibration") || !value.at("calibration").is_object()) {
+        throw std::invalid_argument("calibration must be an object.");
+    }
+    const json& calibration = value.at("calibration");
+    const std::array<const char*, 4> required = {
+        "leftCameraMatrix", "rightCameraMatrix", "rotation", "translation"
+    };
+    for (const char* key : required) {
+        if (!calibration.contains(key)) {
+            throw std::invalid_argument(std::string("calibration.") + key + " is required.");
+        }
+    }
+
+    cvcore::binocular::StereoBinocularConfig config;
+    config.calibration.leftCameraMatrix = ParseMatrix3x3(
+        calibration.at("leftCameraMatrix"), "leftCameraMatrix");
+    config.calibration.rightCameraMatrix = ParseMatrix3x3(
+        calibration.at("rightCameraMatrix"), "rightCameraMatrix");
+    config.calibration.rotation = ParseMatrix3x3(calibration.at("rotation"), "rotation");
+    config.calibration.translation = ParseVector3(calibration.at("translation"), "translation");
+    if (calibration.contains("leftDistCoeffs")) {
+        config.calibration.leftDistCoeffs = ParseDoubleArray(
+            calibration.at("leftDistCoeffs"), "leftDistCoeffs");
+    }
+    if (calibration.contains("rightDistCoeffs")) {
+        config.calibration.rightDistCoeffs = ParseDoubleArray(
+            calibration.at("rightDistCoeffs"), "rightDistCoeffs");
+    }
+    if (value.contains("leftDetection")) {
+        config.leftDetection = ParseBinocularConfig(NestedObjectOrSelf(value, "leftDetection"));
+    }
+    if (value.contains("rightDetection")) {
+        config.rightDetection = ParseBinocularConfig(NestedObjectOrSelf(value, "rightDetection"));
+    }
+    config.minimumParallaxPixels = value.value("minimumParallaxPixels", config.minimumParallaxPixels);
+    config.maximumReprojectionErrorPixels = value.value(
+        "maximumReprojectionErrorPixels", config.maximumReprojectionErrorPixels);
+    config.requirePositiveDepth = value.value("requirePositiveDepth", config.requirePositiveDepth);
     return config;
 }
 
@@ -615,6 +724,30 @@ COLORVISIONCORE_API int M_CalBinocularFusion(HImage img, RoiRect roi, const char
         const auto fusion = cvcore::binocular::calculateBinocularFusion(image, ToRect(roi), ParseBinocularConfig(parsed));
         json output = cvcore::binocular::ToJson(fusion);
         AddMetadata(output, "BinocularFiveCrossFusion");
+        return CopyJsonResult(output, result);
+    });
+}
+
+COLORVISIONCORE_API int M_CalStereoBinocularFusion(
+    HImage leftImage,
+    HImage rightImage,
+    RoiRect leftRoi,
+    RoiRect rightRoi,
+    const char* config,
+    char** result)
+{
+    return GuardExport([&]() -> int {
+        if (result != nullptr) *result = nullptr;
+        cv::Mat left = HImageToMatView(leftImage);
+        cv::Mat right = HImageToMatView(rightImage);
+        json parsed;
+        if (result == nullptr || left.empty() || right.empty()) return ExportInvalidArgument;
+        if (!TryParseConfig(config, parsed)) return ExportInvalidJson;
+
+        const auto fusion = cvcore::binocular::calculateStereoBinocularFusion(
+            left, right, ToRect(leftRoi), ToRect(rightRoi), ParseStereoBinocularConfig(parsed));
+        json output = cvcore::binocular::ToJson(fusion);
+        AddMetadata(output, "StereoBinocularFiveCrossFusion");
         return CopyJsonResult(output, result);
     });
 }

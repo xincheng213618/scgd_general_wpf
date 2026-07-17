@@ -820,5 +820,310 @@ nlohmann::json ToJson(const BinocularFusionResult& result)
     };
 }
 
+namespace {
+
+bool hasSupportedDistortionSize(const std::vector<double>& coefficients)
+{
+    const size_t size = coefficients.size();
+    return size == 0 || size == 4 || size == 5 || size == 8 || size == 12 || size == 14;
+}
+
+bool isFiniteMatrix(const cv::Matx33d& matrix)
+{
+    return std::all_of(matrix.val, matrix.val + 9, [](double value) { return isFinite(value); });
+}
+
+bool validateStereoCalibration(const StereoBinocularConfig& config, std::string& message)
+{
+    const StereoCalibration& calibration = config.calibration;
+    if (!isFiniteMatrix(calibration.leftCameraMatrix) || !isFiniteMatrix(calibration.rightCameraMatrix) ||
+        calibration.leftCameraMatrix(0, 0) <= Epsilon || calibration.leftCameraMatrix(1, 1) <= Epsilon ||
+        calibration.rightCameraMatrix(0, 0) <= Epsilon || calibration.rightCameraMatrix(1, 1) <= Epsilon) {
+        message = "Stereo camera matrices must be finite and contain positive focal lengths.";
+        return false;
+    }
+    if (!hasSupportedDistortionSize(calibration.leftDistCoeffs) ||
+        !hasSupportedDistortionSize(calibration.rightDistCoeffs) ||
+        !std::all_of(calibration.leftDistCoeffs.begin(), calibration.leftDistCoeffs.end(), isFinite) ||
+        !std::all_of(calibration.rightDistCoeffs.begin(), calibration.rightDistCoeffs.end(), isFinite)) {
+        message = "Distortion vectors must be finite OpenCV 4/5/8/12/14 coefficient layouts.";
+        return false;
+    }
+    if (!isFiniteMatrix(calibration.rotation) ||
+        !isFinite(calibration.translation[0]) || !isFinite(calibration.translation[1]) ||
+        !isFinite(calibration.translation[2])) {
+        message = "Stereo rotation and translation must be finite.";
+        return false;
+    }
+
+    const cv::Matx33d orthogonality = calibration.rotation * calibration.rotation.t();
+    const double orthogonalityError = cv::norm(cv::Mat(orthogonality - cv::Matx33d::eye()), cv::NORM_L2);
+    const double determinant = cv::determinant(cv::Mat(calibration.rotation));
+    if (orthogonalityError > 1e-3 || std::abs(determinant - 1.0) > 1e-3) {
+        message = "Stereo rotation must be an orthonormal right-handed matrix.";
+        return false;
+    }
+    if (cv::norm(calibration.translation) <= Epsilon) {
+        message = "Stereo translation must define a non-zero baseline.";
+        return false;
+    }
+    if (!isFinite(config.minimumParallaxPixels) || config.minimumParallaxPixels < 0.0 ||
+        !isFinite(config.maximumReprojectionErrorPixels) || config.maximumReprojectionErrorPixels <= 0.0) {
+        message = "Stereo parallax and reprojection limits are invalid.";
+        return false;
+    }
+    return true;
+}
+
+cv::Mat distortionMat(const std::vector<double>& coefficients)
+{
+    return coefficients.empty() ? cv::Mat() : cv::Mat(coefficients, true).reshape(1, 1);
+}
+
+std::array<const BinocularCrossPoint*, 5> orderedCrossPoints(const BinocularCrossSet& points)
+{
+    return { &points.center, &points.top, &points.bottom, &points.left, &points.right };
+}
+
+cv::Mat makeProjection(const cv::Matx33d& cameraMatrix, const cv::Matx33d& rotation, const cv::Vec3d& translation)
+{
+    cv::Mat extrinsic = cv::Mat::zeros(3, 4, CV_64F);
+    cv::Mat(rotation).copyTo(extrinsic(cv::Rect(0, 0, 3, 3)));
+    cv::Mat(translation).copyTo(extrinsic(cv::Rect(3, 0, 1, 3)));
+    return cv::Mat(cameraMatrix) * extrinsic;
+}
+
+cv::Point3d homogeneousPoint(const cv::Mat& points4d, int column)
+{
+    const double w = points4d.at<double>(3, column);
+    if (!isFinite(w) || std::abs(w) <= Epsilon) {
+        return cv::Point3d(
+            std::numeric_limits<double>::quiet_NaN(),
+            std::numeric_limits<double>::quiet_NaN(),
+            std::numeric_limits<double>::quiet_NaN());
+    }
+    return cv::Point3d(
+        points4d.at<double>(0, column) / w,
+        points4d.at<double>(1, column) / w,
+        points4d.at<double>(2, column) / w);
+}
+
+bool isFinitePoint(const cv::Point3d& point)
+{
+    return isFinite(point.x) && isFinite(point.y) && isFinite(point.z);
+}
+
+double pointDistance(const cv::Point2d& first, const cv::Point2d& second)
+{
+    return std::hypot(first.x - second.x, first.y - second.y);
+}
+
+nlohmann::json point3Json(const cv::Point3d& point)
+{
+    return { { "x", point.x }, { "y", point.y }, { "z", point.z } };
+}
+
+} // namespace
+
+StereoBinocularResult calculateStereoBinocularFusion(
+    const cv::Mat& leftImage,
+    const cv::Mat& rightImage,
+    const cv::Rect& leftRoi,
+    const cv::Rect& rightRoi,
+    const StereoBinocularConfig& config)
+{
+    StereoBinocularResult result;
+    std::string validationMessage;
+    if (!validateStereoCalibration(config, validationMessage)) {
+        result.statusCode = "invalid_calibration";
+        result.message = validationMessage;
+        return result;
+    }
+
+    BinocularFusionConfig leftConfig = config.leftDetection;
+    BinocularFusionConfig rightConfig = config.rightDetection;
+    if (isDisabledOpticalCenter(leftConfig.opticalCenter)) {
+        leftConfig.opticalCenter = cv::Point2d(
+            config.calibration.leftCameraMatrix(0, 2), config.calibration.leftCameraMatrix(1, 2));
+    }
+    if (isDisabledOpticalCenter(rightConfig.opticalCenter)) {
+        rightConfig.opticalCenter = cv::Point2d(
+            config.calibration.rightCameraMatrix(0, 2), config.calibration.rightCameraMatrix(1, 2));
+    }
+
+    result.left = calculateBinocularFusion(leftImage, leftRoi, leftConfig);
+    result.right = calculateBinocularFusion(rightImage, rightRoi, rightConfig);
+    result.baselineMm = cv::norm(config.calibration.translation);
+    if (!result.left.success || !result.right.success) {
+        result.statusCode = !result.left.success ? "left_detection_failed" : "right_detection_failed";
+        result.message = !result.left.success ? result.left.message : result.right.message;
+        return result;
+    }
+
+    try {
+        const auto leftPoints = orderedCrossPoints(result.left.points);
+        const auto rightPoints = orderedCrossPoints(result.right.points);
+        std::vector<cv::Point2d> leftRaw;
+        std::vector<cv::Point2d> rightRaw;
+        leftRaw.reserve(leftPoints.size());
+        rightRaw.reserve(rightPoints.size());
+        for (size_t index = 0; index < leftPoints.size(); ++index) {
+            leftRaw.push_back(leftPoints[index]->center);
+            rightRaw.push_back(rightPoints[index]->center);
+        }
+
+        const cv::Mat leftCamera(config.calibration.leftCameraMatrix);
+        const cv::Mat rightCamera(config.calibration.rightCameraMatrix);
+        const cv::Mat leftDistortion = distortionMat(config.calibration.leftDistCoeffs);
+        const cv::Mat rightDistortion = distortionMat(config.calibration.rightDistCoeffs);
+        std::vector<cv::Point2d> leftUndistorted;
+        std::vector<cv::Point2d> rightUndistorted;
+        cv::undistortPoints(leftRaw, leftUndistorted, leftCamera, leftDistortion, cv::noArray(), leftCamera);
+        cv::undistortPoints(rightRaw, rightUndistorted, rightCamera, rightDistortion, cv::noArray(), rightCamera);
+
+        const cv::Mat projectionLeft = makeProjection(
+            config.calibration.leftCameraMatrix, cv::Matx33d::eye(), cv::Vec3d());
+        const cv::Mat projectionRight = makeProjection(
+            config.calibration.rightCameraMatrix, config.calibration.rotation, config.calibration.translation);
+        cv::Mat points4d;
+        cv::triangulatePoints(projectionLeft, projectionRight, leftUndistorted, rightUndistorted, points4d);
+        if (points4d.type() != CV_64F) {
+            points4d.convertTo(points4d, CV_64F);
+        }
+
+        std::vector<cv::Point3d> reconstructed;
+        reconstructed.reserve(leftPoints.size());
+        for (int index = 0; index < static_cast<int>(leftPoints.size()); ++index) {
+            reconstructed.push_back(homogeneousPoint(points4d, index));
+        }
+
+        std::vector<cv::Point2d> leftReprojected;
+        std::vector<cv::Point2d> rightReprojected;
+        const cv::Vec3d zeroVector(0.0, 0.0, 0.0);
+        cv::Vec3d rightRotationVector;
+        cv::Rodrigues(cv::Mat(config.calibration.rotation), rightRotationVector);
+        cv::projectPoints(reconstructed, zeroVector, zeroVector, leftCamera, leftDistortion, leftReprojected);
+        cv::projectPoints(reconstructed, rightRotationVector, config.calibration.translation,
+            rightCamera, rightDistortion, rightReprojected);
+
+        double depthSum = 0.0;
+        double errorSum = 0.0;
+        double confidenceSum = 0.0;
+        result.points.reserve(leftPoints.size());
+        for (size_t index = 0; index < leftPoints.size(); ++index) {
+            StereoCrossPoint point;
+            point.role = leftPoints[index]->role;
+            point.leftPoint = leftRaw[index];
+            point.rightPoint = rightRaw[index];
+            point.point = reconstructed[index];
+            point.parallaxPixels = pointDistance(leftUndistorted[index], rightUndistorted[index]);
+            point.leftReprojectionErrorPixels = pointDistance(leftRaw[index], leftReprojected[index]);
+            point.rightReprojectionErrorPixels = pointDistance(rightRaw[index], rightReprojected[index]);
+
+            const cv::Vec3d leftCoordinate(point.point.x, point.point.y, point.point.z);
+            const cv::Vec3d rightCoordinate = config.calibration.rotation * leftCoordinate + config.calibration.translation;
+            const double maximumError = std::max(
+                point.leftReprojectionErrorPixels, point.rightReprojectionErrorPixels);
+            const bool finite = isFinitePoint(point.point) && isFinite(maximumError);
+            const bool positiveDepth = !config.requirePositiveDepth ||
+                (finite && point.point.z > Epsilon && rightCoordinate[2] > Epsilon);
+            const bool enoughParallax = point.parallaxPixels >= config.minimumParallaxPixels;
+            const bool accurate = maximumError <= config.maximumReprojectionErrorPixels;
+
+            const double detectionScore = clamp01(0.25 * (
+                leftPoints[index]->shapeScore + rightPoints[index]->shapeScore +
+                result.left.quality + result.right.quality));
+            const double parallaxScale = std::max(1.0, config.minimumParallaxPixels * 4.0);
+            const double parallaxScore = clamp01(point.parallaxPixels / parallaxScale);
+            const double reprojectionScore = std::exp(-maximumError /
+                std::max(Epsilon, config.maximumReprojectionErrorPixels));
+            point.confidence = finite ? clamp01(
+                0.45 * detectionScore + 0.25 * parallaxScore + 0.30 * reprojectionScore) : 0.0;
+            point.valid = finite && positiveDepth && enoughParallax && accurate;
+            if (!finite) point.status = "non_finite";
+            else if (!positiveDepth) point.status = "non_positive_depth";
+            else if (!enoughParallax) point.status = "insufficient_parallax";
+            else if (!accurate) point.status = "reprojection_error";
+            else point.status = "ok";
+
+            if (point.valid) {
+                ++result.validPointCount;
+                depthSum += point.point.z;
+                errorSum += 0.5 * (
+                    point.leftReprojectionErrorPixels + point.rightReprojectionErrorPixels);
+                confidenceSum += point.confidence;
+            }
+            result.points.push_back(std::move(point));
+        }
+
+        if (result.validPointCount > 0) {
+            const double divisor = static_cast<double>(result.validPointCount);
+            result.meanDepthMm = depthSum / divisor;
+            result.meanReprojectionErrorPixels = errorSum / divisor;
+            result.confidence = confidenceSum / divisor;
+        }
+        if (result.validPointCount != static_cast<int>(result.points.size())) {
+            result.warnings.push_back("One or more stereo cross points failed triangulation quality limits.");
+        }
+        if (result.confidence < 0.60) {
+            result.warnings.push_back("Stereo reconstruction confidence is below 0.60.");
+        }
+
+        result.success = result.validPointCount == static_cast<int>(result.points.size());
+        result.statusCode = result.success
+            ? (result.warnings.empty() ? "ok" : "ok_with_warnings")
+            : (result.validPointCount > 0 ? "partial" : "triangulation_failed");
+        result.message = result.success ? "ok" : "Not all stereo points passed triangulation quality limits.";
+        return result;
+    }
+    catch (const cv::Exception& exception) {
+        result.statusCode = "opencv_error";
+        result.message = exception.what();
+    }
+    catch (const std::exception& exception) {
+        result.statusCode = "runtime_error";
+        result.message = exception.what();
+    }
+    return result;
+}
+
+nlohmann::json ToJson(const StereoCrossPoint& point)
+{
+    return {
+        { "role", point.role },
+        { "leftPoint", pointJson(point.leftPoint) },
+        { "rightPoint", pointJson(point.rightPoint) },
+        { "pointMm", point3Json(point.point) },
+        { "parallaxPixels", point.parallaxPixels },
+        { "leftReprojectionErrorPixels", point.leftReprojectionErrorPixels },
+        { "rightReprojectionErrorPixels", point.rightReprojectionErrorPixels },
+        { "confidence", point.confidence },
+        { "valid", point.valid },
+        { "status", point.status }
+    };
+}
+
+nlohmann::json ToJson(const StereoBinocularResult& result)
+{
+    nlohmann::json points = nlohmann::json::array();
+    for (const StereoCrossPoint& point : result.points) {
+        points.push_back(ToJson(point));
+    }
+    return {
+        { "success", result.success },
+        { "statusCode", result.statusCode },
+        { "message", result.message },
+        { "left", ToJson(result.left) },
+        { "right", ToJson(result.right) },
+        { "baselineMm", result.baselineMm },
+        { "validPointCount", result.validPointCount },
+        { "meanDepthMm", result.meanDepthMm },
+        { "meanReprojectionErrorPixels", result.meanReprojectionErrorPixels },
+        { "confidence", result.confidence },
+        { "points", std::move(points) },
+        { "warnings", result.warnings }
+    };
+}
+
 } // namespace binocular
 } // namespace cvcore

@@ -70,6 +70,9 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalBinocularFusion(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalStereoBinocularFusion(HImage leftImage, HImage rightImage, RoiRect leftRoi, RoiRect rightRoi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int FreeResult(IntPtr str);

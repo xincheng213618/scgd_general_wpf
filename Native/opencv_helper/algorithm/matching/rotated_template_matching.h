@@ -10,6 +10,12 @@
 namespace cvcore {
 namespace matching {
 
+enum class TemplateFeatureMode
+{
+    Intensity,
+    Gradient
+};
+
 // Angles are expressed in degrees. An empty ROI searches the complete source image.
 struct RotatedTemplateMatchingConfig
 {
@@ -21,13 +27,22 @@ struct RotatedTemplateMatchingConfig
     double nmsRadius = 12.0;
     int pyramidLevels = 1;
     bool subpixel = false;
+    double scaleMin = 1.0;
+    double scaleMax = 1.0;
+    double scaleStep = 0.05;
+    TemplateFeatureMode featureMode = TemplateFeatureMode::Intensity;
+    double occlusionTolerance = 0.0;
 };
 
 struct RotatedTemplateMatch
 {
     cv::Point2d center;
     double angle = 0.0;
+    double scale = 1.0;
     double score = 0.0;
+    double rawScore = 0.0;
+    // Fraction of active template samples retained by robust scoring.
+    double visibleFraction = 1.0;
     cv::Rect2d boundingBox;
     std::array<cv::Point2d, 4> corners{};
 };
@@ -41,6 +56,8 @@ struct RotatedTemplateMatchingResult
     cv::Size templateSize;
     cv::Rect searchRoi;
     int evaluatedAngles = 0;
+    int evaluatedScales = 0;
+    int evaluatedModels = 0;
     int skippedAngles = 0;
     int candidateCount = 0;
     std::vector<std::string> warnings;

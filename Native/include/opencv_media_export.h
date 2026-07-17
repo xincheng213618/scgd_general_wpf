@@ -106,6 +106,10 @@ extern "C" COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi
 extern "C" COLORVISIONCORE_API int M_AnalyzeLedArray(HImage img, RoiRect roi, const char* config, char** result);
 extern "C" COLORVISIONCORE_API int M_MatchRotatedTemplate(HImage img, HImage templateImage, RoiRect roi, const char* config, char** result);
 extern "C" COLORVISIONCORE_API int M_CalBinocularFusion(HImage img, RoiRect roi, const char* config, char** result);
+extern "C" COLORVISIONCORE_API int M_CalStereoBinocularFusion(
+    HImage leftImage, HImage rightImage,
+    RoiRect leftRoi, RoiRect rightRoi,
+    const char* config, char** result);
 
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 

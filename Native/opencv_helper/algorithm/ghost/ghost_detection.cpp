@@ -19,6 +19,10 @@ constexpr double Epsilon = 1e-9;
 constexpr int MaximumGridSources = 100000;
 constexpr int MaximumMorphologyKernel = 4095;
 constexpr int MaximumSourcePadding = (MaximumMorphologyKernel - 1) / 2;
+constexpr int MaximumBackgroundKernel = 511;
+constexpr int MaximumScaleLevels = 8;
+constexpr int ExposureHistogramBins = 4096;
+constexpr double Pi = 3.14159265358979323846;
 
 struct Component
 {
@@ -84,6 +88,32 @@ bool validateConfig(const GhostDetectionConfig& config, std::string& message)
         message = "Morphology, padding, distance, relative intensity, or candidate limits are invalid.";
         return false;
     }
+    if (!std::isfinite(config.exposureLowPercentile) || !std::isfinite(config.exposureHighPercentile) ||
+        config.exposureLowPercentile < 0.0 || config.exposureHighPercentile > 1.0 ||
+        config.exposureLowPercentile >= config.exposureHighPercentile) {
+        message = "Exposure percentiles must be finite, ordered, and within [0, 1].";
+        return false;
+    }
+    if (config.backgroundKernel < 0 || config.backgroundKernel > MaximumBackgroundKernel ||
+        !std::isfinite(config.backgroundSigma) || config.backgroundSigma < 0.0) {
+        message = "Background kernel and sigma are invalid.";
+        return false;
+    }
+    if (config.multiScaleLevels < 1 || config.multiScaleLevels > MaximumScaleLevels ||
+        !std::isfinite(config.multiScaleFactor) || config.multiScaleFactor <= 1.0 || config.multiScaleFactor > 4.0 ||
+        !std::isfinite(config.multiScaleThresholdFactor) ||
+        config.multiScaleThresholdFactor < 0.5 || config.multiScaleThresholdFactor > 1.0) {
+        message = "Multi-scale levels, scale factor, or threshold factor are invalid.";
+        return false;
+    }
+    const bool automaticOpticalCenter = config.opticalCenter.x < 0.0 && config.opticalCenter.y < 0.0;
+    const bool explicitOpticalCenter = config.opticalCenter.x >= 0.0 && config.opticalCenter.y >= 0.0;
+    if (!std::isfinite(config.opticalCenter.x) || !std::isfinite(config.opticalCenter.y) ||
+        (!automaticOpticalCenter && !explicitOpticalCenter) || !std::isfinite(config.minDirectionConfidence) ||
+        config.minDirectionConfidence < 0.0 || config.minDirectionConfidence > 1.0) {
+        message = "Optical center or directional confidence threshold is invalid.";
+        return false;
+    }
     if (!std::isfinite(config.minorSeverity) || !std::isfinite(config.majorSeverity) || !std::isfinite(config.criticalSeverity) ||
         config.minorSeverity < 0.0 || config.majorSeverity < config.minorSeverity || config.criticalSeverity < config.majorSeverity) {
         message = "Severity thresholds must be finite, non-negative, and ordered minor <= major <= critical.";
@@ -135,6 +165,91 @@ bool convertToNormalizedGray(const cv::Mat& image, int channel, cv::Mat& gray32)
     const double scale = gray.depth() == CV_8U ? (1.0 / 255.0) : (1.0 / 65535.0);
     gray.convertTo(gray32, CV_32F, scale);
     return !gray32.empty();
+}
+
+double clamp01(double value)
+{
+    return std::max(0.0, std::min(1.0, value));
+}
+
+double histogramPercentile(const std::array<std::uint64_t, ExposureHistogramBins>& histogram, std::uint64_t total, double percentile)
+{
+    if (total == 0) {
+        return 0.0;
+    }
+
+    const std::uint64_t rank = static_cast<std::uint64_t>(std::floor(percentile * static_cast<double>(total - 1)));
+    std::uint64_t cumulative = 0;
+    for (int bin = 0; bin < ExposureHistogramBins; ++bin) {
+        cumulative += histogram[static_cast<size_t>(bin)];
+        if (cumulative > rank) {
+            return static_cast<double>(bin) / static_cast<double>(ExposureHistogramBins - 1);
+        }
+    }
+    return 1.0;
+}
+
+bool normalizeExposureByPercentile(
+    cv::Mat& gray32,
+    double lowPercentile,
+    double highPercentile,
+    double& lowUsed,
+    double& highUsed)
+{
+    std::array<std::uint64_t, ExposureHistogramBins> histogram{};
+    std::uint64_t total = 0;
+    for (int y = 0; y < gray32.rows; ++y) {
+        const float* row = gray32.ptr<float>(y);
+        for (int x = 0; x < gray32.cols; ++x) {
+            const int bin = cvRound(clamp01(row[x]) * static_cast<double>(ExposureHistogramBins - 1));
+            histogram[static_cast<size_t>(std::max(0, std::min(ExposureHistogramBins - 1, bin)))]++;
+            total++;
+        }
+    }
+
+    lowUsed = histogramPercentile(histogram, total, lowPercentile);
+    highUsed = histogramPercentile(histogram, total, highPercentile);
+    if (highUsed - lowUsed <= Epsilon) {
+        return false;
+    }
+
+    gray32.convertTo(gray32, CV_32F, 1.0 / (highUsed - lowUsed), -lowUsed / (highUsed - lowUsed));
+    cv::max(gray32, 0.0, gray32);
+    cv::min(gray32, 1.0, gray32);
+    return true;
+}
+
+int scaledOddKernel(int baseKernel, double scale)
+{
+    int kernel = std::max(3, cvRound(static_cast<double>(baseKernel) * scale));
+    if (kernel % 2 == 0) {
+        ++kernel;
+    }
+    return std::min(MaximumBackgroundKernel, kernel);
+}
+
+cv::Mat makeAnalysisResponse(const cv::Mat& gray32, const GhostDetectionConfig& config, int level)
+{
+    const double levelScale = std::pow(config.multiScaleFactor, level);
+    if (config.backgroundKernel > 1) {
+        cv::Mat background;
+        const int kernel = scaledOddKernel(config.backgroundKernel, levelScale);
+        const double sigma = config.backgroundSigma > 0.0 ? config.backgroundSigma * levelScale : 0.0;
+        cv::GaussianBlur(gray32, background, cv::Size(kernel, kernel), sigma, sigma, cv::BORDER_REPLICATE);
+        cv::Mat response;
+        cv::subtract(gray32, background, response);
+        cv::max(response, 0.0, response);
+        return response;
+    }
+
+    if (level == 0) {
+        return gray32.clone();
+    }
+
+    cv::Mat response;
+    const int kernel = scaledOddKernel(3, levelScale);
+    cv::GaussianBlur(gray32, response, cv::Size(kernel, kernel), 0.0, 0.0, cv::BORDER_REPLICATE);
+    return response;
 }
 
 int normalizedOddKernel(int value)
@@ -388,12 +503,38 @@ std::string gradeForSeverity(double severity, const GhostDetectionConfig& config
     return "trace";
 }
 
+double componentScaleSupport(
+    const Component& component,
+    const cv::Mat& labels,
+    const std::vector<cv::Mat>& scaleMasks)
+{
+    if (scaleMasks.empty()) {
+        return 1.0;
+    }
+
+    const cv::Rect& rect = component.boundingRectInRoi;
+    cv::Mat componentMask;
+    cv::compare(labels(rect), cv::Scalar(component.label), componentMask, cv::CMP_EQ);
+    const int minimumOverlap = std::max(1, component.area / 10);
+    int supportedScales = 0;
+    for (const cv::Mat& scaleMask : scaleMasks) {
+        cv::Mat overlap;
+        cv::bitwise_and(scaleMask(rect), componentMask, overlap);
+        if (cv::countNonZero(overlap) >= minimumOverlap) {
+            supportedScales++;
+        }
+    }
+    return static_cast<double>(supportedScales) / static_cast<double>(scaleMasks.size());
+}
+
 std::vector<GhostCandidate> makeGhostCandidates(
     const std::vector<Component>& components,
     const std::vector<BrightSource>& brightSources,
     const cv::Rect& roi,
     double backgroundMean,
     double referenceBrightMean,
+    const cv::Mat& labels,
+    const std::vector<cv::Mat>& scaleMasks,
     const GhostDetectionConfig& config,
     bool& truncated)
 {
@@ -402,12 +543,12 @@ std::vector<GhostCandidate> makeGhostCandidates(
     candidates.reserve(components.size());
     for (const Component& component : components) {
         double nearestDistance = std::numeric_limits<double>::infinity();
-        int nearestId = 0;
+        const BrightSource* nearestSource = nullptr;
         for (const BrightSource& source : brightSources) {
             const double distance = cv::norm(component.centerInRoi - source.centerInRoi);
             if (distance < nearestDistance) {
                 nearestDistance = distance;
-                nearestId = source.id;
+                nearestSource = &source;
             }
         }
 
@@ -420,9 +561,29 @@ std::vector<GhostCandidate> makeGhostCandidates(
             continue;
         }
 
+        const cv::Point2d center = component.centerInRoi + cv::Point2d(roi.x, roi.y);
+        const cv::Point2d opticalCenter = config.opticalCenter.x >= 0.0
+            ? config.opticalCenter
+            : cv::Point2d(roi.x + (roi.width - 1) * 0.5, roi.y + (roi.height - 1) * 0.5);
+        const cv::Point2d candidateDirection = nearestSource == nullptr ? cv::Point2d() : center - nearestSource->center;
+        const cv::Point2d opticalDirection = nearestSource == nullptr ? cv::Point2d() : opticalCenter - nearestSource->center;
+        const double candidateNorm = cv::norm(candidateDirection);
+        const double opticalNorm = cv::norm(opticalDirection);
+        double directionAngleDegrees = 90.0;
+        double directionConfidence = 0.0;
+        if (candidateNorm > Epsilon && opticalNorm > Epsilon) {
+            const double cosine = std::max(-1.0, std::min(1.0,
+                candidateDirection.dot(opticalDirection) / (candidateNorm * opticalNorm)));
+            directionAngleDegrees = std::acos(cosine) * 180.0 / Pi;
+            directionConfidence = clamp01(cosine);
+        }
+        if (config.useDirectionalConfidence && directionConfidence < config.minDirectionConfidence) {
+            continue;
+        }
+
         GhostCandidate candidate;
         candidate.centerInRoi = component.centerInRoi;
-        candidate.center = component.centerInRoi + cv::Point2d(roi.x, roi.y);
+        candidate.center = center;
         candidate.boundingRectInRoi = component.boundingRectInRoi;
         candidate.boundingRect = offsetRect(component.boundingRectInRoi, roi.tl());
         candidate.area = component.area;
@@ -430,8 +591,17 @@ std::vector<GhostCandidate> makeGhostCandidates(
         candidate.peakIntensity = component.peakIntensity;
         candidate.relativeIntensity = relativeIntensity;
         candidate.peakRelativeIntensity = std::max(0.0, (component.peakIntensity - backgroundMean) / referenceDelta);
-        candidate.nearestBrightSourceId = nearestId;
+        candidate.nearestBrightSourceId = nearestSource == nullptr ? 0 : nearestSource->id;
         candidate.distanceToNearestBright = nearestDistance;
+        candidate.directionAngleDegrees = directionAngleDegrees;
+        candidate.directionConfidence = directionConfidence;
+        candidate.scaleSupport = componentScaleSupport(component, labels, scaleMasks);
+        const double signalConfidence = clamp01(relativeIntensity / 0.25);
+        const double peakConfidence = clamp01(candidate.peakRelativeIntensity / 0.40);
+        const double baseConfidence = 0.45 * signalConfidence + 0.25 * peakConfidence + 0.30 * candidate.scaleSupport;
+        candidate.confidence = config.useDirectionalConfidence
+            ? clamp01(0.75 * baseConfidence + 0.25 * directionConfidence)
+            : clamp01(baseConfidence);
         candidate.severity = relativeIntensity * std::sqrt(static_cast<double>(component.area));
         candidate.severityGrade = gradeForSeverity(candidate.severity, config);
         candidates.push_back(std::move(candidate));
@@ -463,11 +633,15 @@ GhostDetectionSummary summarize(const std::vector<BrightSource>& sources, const 
     summary.brightSourceCount = static_cast<int>(sources.size());
     summary.candidateCount = static_cast<int>(candidates.size());
     double totalSeverity = 0.0;
+    double totalConfidence = 0.0;
     for (const GhostCandidate& candidate : candidates) {
         summary.maxSeverity = std::max(summary.maxSeverity, candidate.severity);
+        summary.maxConfidence = std::max(summary.maxConfidence, candidate.confidence);
         totalSeverity += candidate.severity;
+        totalConfidence += candidate.confidence;
     }
     summary.meanSeverity = candidates.empty() ? 0.0 : totalSeverity / static_cast<double>(candidates.size());
+    summary.meanConfidence = candidates.empty() ? 0.0 : totalConfidence / static_cast<double>(candidates.size());
     summary.grade = candidates.empty() ? "ok" : candidates.front().severityGrade;
     if (!candidates.empty()) {
         summary.grade = std::max_element(candidates.begin(), candidates.end(), [](const GhostCandidate& a, const GhostCandidate& b) {
@@ -536,6 +710,10 @@ nlohmann::json ToJson(const GhostCandidate& candidate)
         { "peakRelativeIntensity", candidate.peakRelativeIntensity },
         { "nearestBrightSourceId", candidate.nearestBrightSourceId },
         { "distanceToNearestBright", candidate.distanceToNearestBright },
+        { "directionAngleDegrees", candidate.directionAngleDegrees },
+        { "directionConfidence", candidate.directionConfidence },
+        { "scaleSupport", candidate.scaleSupport },
+        { "confidence", candidate.confidence },
         { "severity", candidate.severity },
         { "severityGrade", candidate.severityGrade }
     };
@@ -552,6 +730,11 @@ nlohmann::json ToJson(const GhostDetectionResult& result)
         { "roi", rectToJson(result.roi) },
         { "brightThresholdUsed", result.brightThresholdUsed },
         { "ghostThresholdUsed", result.ghostThresholdUsed },
+        { "exposureNormalized", result.exposureNormalized },
+        { "exposureLowUsed", result.exposureLowUsed },
+        { "exposureHighUsed", result.exposureHighUsed },
+        { "backgroundModelUsed", result.backgroundModelUsed },
+        { "analyzedScaleLevels", result.analyzedScaleLevels },
         { "backgroundMeanIntensity", result.backgroundMeanIntensity },
         { "referenceBrightMeanIntensity", result.referenceBrightMeanIntensity },
         { "summary", {
@@ -559,6 +742,8 @@ nlohmann::json ToJson(const GhostDetectionResult& result)
             { "candidateCount", result.summary.candidateCount },
             { "maxSeverity", result.summary.maxSeverity },
             { "meanSeverity", result.summary.meanSeverity },
+            { "maxConfidence", result.summary.maxConfidence },
+            { "meanConfidence", result.summary.meanConfidence },
             { "grade", result.summary.grade }
         } },
         { "brightSources", nlohmann::json::array() },
@@ -600,11 +785,31 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             return result;
         }
 
-        const cv::Mat grayRoi = gray32(result.roi);
+        cv::Mat grayRoi = gray32(result.roi).clone();
+        if (config.normalizeExposure) {
+            result.exposureNormalized = normalizeExposureByPercentile(
+                grayRoi,
+                config.exposureLowPercentile,
+                config.exposureHighPercentile,
+                result.exposureLowUsed,
+                result.exposureHighUsed);
+            if (!result.exposureNormalized) {
+                result.warnings.push_back("Exposure normalization was skipped because the selected percentile range has no contrast.");
+            }
+        }
+
+        std::vector<cv::Mat> scaleResponses;
+        scaleResponses.reserve(static_cast<size_t>(config.multiScaleLevels));
+        for (int level = 0; level < config.multiScaleLevels; ++level) {
+            scaleResponses.push_back(makeAnalysisResponse(grayRoi, config, level));
+        }
+        const cv::Mat& analysisGray = scaleResponses.front();
+        result.backgroundModelUsed = config.backgroundKernel > 1;
+        result.analyzedScaleLevels = static_cast<int>(scaleResponses.size());
         result.brightThresholdUsed = config.brightThresholdMode == ThresholdMode::Fixed
             ? config.brightThreshold
-            : automaticOtsuThreshold(grayRoi, {});
-        cv::Mat brightMask = thresholdMask(grayRoi, result.brightThresholdUsed, config.brightOpenKernel, config.brightCloseKernel);
+            : automaticOtsuThreshold(analysisGray, {});
+        cv::Mat brightMask = thresholdMask(analysisGray, result.brightThresholdUsed, config.brightOpenKernel, config.brightCloseKernel);
 
         const ComponentLimits brightLimits = {
             config.brightMinArea,
@@ -613,7 +818,7 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             config.brightMaxSize
         };
         cv::Mat brightLabels;
-        const std::vector<Component> allBrightComponents = findComponents(grayRoi, brightMask, brightLimits, brightLabels);
+        const std::vector<Component> allBrightComponents = findComponents(analysisGray, brightMask, brightLimits, brightLabels);
         if (allBrightComponents.empty()) {
             result.statusCode = "no_bright_sources";
             result.message = "No bright source matched the configured threshold and size limits.";
@@ -631,13 +836,26 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
         const cv::Mat exclusionMask = makeSourceExclusionMask(brightLabels, allBrightComponents, config.sourceMaskPadding);
         cv::Mat validGhostMask;
         cv::bitwise_not(exclusionMask, validGhostMask);
-        result.backgroundMeanIntensity = cv::mean(grayRoi, validGhostMask)[0];
+        result.backgroundMeanIntensity = cv::mean(analysisGray, validGhostMask)[0];
         result.ghostThresholdUsed = config.ghostThresholdMode == ThresholdMode::Fixed
             ? config.ghostThreshold
-            : automaticOtsuThreshold(grayRoi, validGhostMask);
+            : automaticOtsuThreshold(analysisGray, validGhostMask);
 
-        cv::Mat ghostMask = thresholdMask(grayRoi, result.ghostThresholdUsed, config.ghostOpenKernel, config.ghostCloseKernel);
-        cv::bitwise_and(ghostMask, validGhostMask, ghostMask);
+        cv::Mat ghostMask = cv::Mat::zeros(analysisGray.size(), CV_8U);
+        std::vector<cv::Mat> scaleMasks;
+        scaleMasks.reserve(scaleResponses.size());
+        for (int level = 0; level < static_cast<int>(scaleResponses.size()); ++level) {
+            const double levelThreshold = result.ghostThresholdUsed *
+                std::pow(config.multiScaleThresholdFactor, level);
+            cv::Mat scaleMask = thresholdMask(
+                scaleResponses[static_cast<size_t>(level)],
+                levelThreshold,
+                config.ghostOpenKernel,
+                config.ghostCloseKernel);
+            cv::bitwise_and(scaleMask, validGhostMask, scaleMask);
+            cv::bitwise_or(ghostMask, scaleMask, ghostMask);
+            scaleMasks.push_back(std::move(scaleMask));
+        }
 
         const ComponentLimits ghostLimits = {
             config.ghostMinArea,
@@ -646,7 +864,7 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             config.ghostMaxSize
         };
         cv::Mat ghostLabels;
-        const std::vector<Component> ghostComponents = findComponents(grayRoi, ghostMask, ghostLimits, ghostLabels);
+        const std::vector<Component> ghostComponents = findComponents(analysisGray, ghostMask, ghostLimits, ghostLabels);
         bool truncated = false;
         result.candidates = makeGhostCandidates(
             ghostComponents,
@@ -654,6 +872,8 @@ GhostDetectionResult detectGhosts(const cv::Mat& image, const GhostDetectionConf
             result.roi,
             result.backgroundMeanIntensity,
             result.referenceBrightMeanIntensity,
+            ghostLabels,
+            scaleMasks,
             config,
             truncated);
         if (truncated) {

@@ -43,6 +43,24 @@ struct GhostDetectionConfig
     int ghostCloseKernel = 3;
     int sourceMaskPadding = 2;
 
+    // Optional HDR/exposure stabilization. Percentiles are measured inside ROI
+    // after conversion to the normalized [0, 1] input range.
+    bool normalizeExposure = false;
+    double exposureLowPercentile = 0.01;
+    double exposureHighPercentile = 0.995;
+    // A kernel <= 1 disables local-background subtraction. Multi-scale levels
+    // expand this kernel to preserve weak ghosts of different spatial sizes.
+    int backgroundKernel = 0;
+    double backgroundSigma = 0.0;
+    int multiScaleLevels = 1;
+    double multiScaleFactor = 1.6;
+    double multiScaleThresholdFactor = 0.85;
+
+    // Full-image coordinates. Negative values select the ROI center.
+    cv::Point2d opticalCenter = { -1.0, -1.0 };
+    bool useDirectionalConfidence = false;
+    double minDirectionConfidence = 0.0;
+
     double minDistanceFromBright = 10.0;
     double minRelativeIntensity = 0.0;
     int maxCandidates = 128;
@@ -80,6 +98,10 @@ struct GhostCandidate
     double peakRelativeIntensity = 0.0;
     int nearestBrightSourceId = 0;
     double distanceToNearestBright = 0.0;
+    double directionAngleDegrees = 0.0;
+    double directionConfidence = 0.0;
+    double scaleSupport = 1.0;
+    double confidence = 0.0;
     double severity = 0.0;
     std::string severityGrade = "trace";
 };
@@ -90,6 +112,8 @@ struct GhostDetectionSummary
     int candidateCount = 0;
     double maxSeverity = 0.0;
     double meanSeverity = 0.0;
+    double maxConfidence = 0.0;
+    double meanConfidence = 0.0;
     std::string grade = "ok";
 };
 
@@ -103,6 +127,11 @@ struct GhostDetectionResult
     cv::Rect roi;
     double brightThresholdUsed = 0.0;
     double ghostThresholdUsed = 0.0;
+    bool exposureNormalized = false;
+    double exposureLowUsed = 0.0;
+    double exposureHighUsed = 1.0;
+    bool backgroundModelUsed = false;
+    int analyzedScaleLevels = 1;
     double backgroundMeanIntensity = 0.0;
     double referenceBrightMeanIntensity = 0.0;
     std::vector<BrightSource> brightSources;

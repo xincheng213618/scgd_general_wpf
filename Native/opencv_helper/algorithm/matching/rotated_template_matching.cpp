@@ -12,6 +12,7 @@ namespace {
 
 constexpr double Epsilon = 1e-9;
 constexpr int MaxAngleCount = 10000;
+constexpr int MaxModelCount = 10000;
 constexpr double MaxNmsRadius = 1000000.0;
 constexpr double MinimumRelativeDynamicRange = 1e-3;
 constexpr double MinimumNormalizedRoiDynamicRange = 1e-2;
@@ -132,6 +133,45 @@ bool hasUsefulNormalizedDynamicRange(const cv::Mat& image)
     double maximum = 0.0;
     cv::minMaxLoc(image, &minimum, &maximum);
     return maximum - minimum > MinimumNormalizedRoiDynamicRange;
+}
+
+bool makeFeatureImage(const cv::Mat& gray, TemplateFeatureMode mode, cv::Mat& feature)
+{
+    if (mode == TemplateFeatureMode::Intensity) {
+        feature = gray.clone();
+        return !feature.empty();
+    }
+    if (mode != TemplateFeatureMode::Gradient) {
+        return false;
+    }
+
+    cv::Mat gradientX;
+    cv::Mat gradientY;
+    cv::Sobel(gray, gradientX, CV_32F, 1, 0, 3);
+    cv::Sobel(gray, gradientY, CV_32F, 0, 1, 3);
+    cv::magnitude(gradientX, gradientY, feature);
+    double maximum = 0.0;
+    cv::minMaxLoc(feature, nullptr, &maximum);
+    if (!isFinite(maximum) || maximum <= Epsilon) {
+        feature.release();
+        return false;
+    }
+    feature *= 1.0 / maximum;
+    return true;
+}
+
+bool makeScaledTemplate(
+    const cv::Mat& templateGray,
+    double scale,
+    TemplateFeatureMode mode,
+    cv::Mat& feature)
+{
+    const int width = std::max(2, cvRound(templateGray.cols * scale));
+    const int height = std::max(2, cvRound(templateGray.rows * scale));
+    cv::Mat scaled;
+    cv::resize(templateGray, scaled, cv::Size(width, height), 0.0, 0.0,
+        scale < 1.0 ? cv::INTER_AREA : cv::INTER_LINEAR);
+    return makeFeatureImage(scaled, mode, feature);
 }
 
 cv::Point2d transformPoint(const cv::Mat& matrix, const cv::Point2d& point)
@@ -332,15 +372,89 @@ bool refineAtFullResolution(
     return true;
 }
 
+bool robustCandidateScore(
+    const cv::Mat& searchImage,
+    const RotatedTemplateModel& model,
+    const ResponsePeak& peak,
+    double occlusionTolerance,
+    double& score,
+    double& visibleFraction)
+{
+    score = peak.score;
+    visibleFraction = 1.0;
+    if (occlusionTolerance <= Epsilon) {
+        return isFinite(score);
+    }
+
+    const int x = std::clamp(cvRound(peak.location.x), 0, searchImage.cols - model.image.cols);
+    const int y = std::clamp(cvRound(peak.location.y), 0, searchImage.rows - model.image.rows);
+    const cv::Mat sourcePatch = searchImage(cv::Rect(x, y, model.image.cols, model.image.rows));
+
+    struct Sample
+    {
+        float residual = 0.0f;
+        float source = 0.0f;
+        float templ = 0.0f;
+    };
+    std::vector<Sample> samples;
+    samples.reserve(static_cast<size_t>(cv::countNonZero(model.mask)));
+    for (int row = 0; row < model.image.rows; ++row) {
+        const float* sourceRow = sourcePatch.ptr<float>(row);
+        const float* templateRow = model.image.ptr<float>(row);
+        const uchar* maskRow = model.mask.ptr<uchar>(row);
+        for (int col = 0; col < model.image.cols; ++col) {
+            if (maskRow[col] == 0 || std::abs(templateRow[col]) <= 0.05f) {
+                continue;
+            }
+            samples.push_back({
+                std::abs(sourceRow[col] - templateRow[col]), sourceRow[col], templateRow[col]
+            });
+        }
+    }
+    if (samples.size() < 16) {
+        return false;
+    }
+
+    const size_t keepCount = std::max<size_t>(16,
+        static_cast<size_t>(std::ceil(samples.size() * (1.0 - occlusionTolerance))));
+    if (keepCount < samples.size()) {
+        std::nth_element(samples.begin(), samples.begin() + static_cast<std::ptrdiff_t>(keepCount), samples.end(),
+            [](const Sample& first, const Sample& second) { return first.residual < second.residual; });
+    }
+
+    double dotProduct = 0.0;
+    double sourceEnergy = 0.0;
+    double templateEnergy = 0.0;
+    for (size_t index = 0; index < keepCount; ++index) {
+        dotProduct += static_cast<double>(samples[index].source) * samples[index].templ;
+        sourceEnergy += static_cast<double>(samples[index].source) * samples[index].source;
+        templateEnergy += static_cast<double>(samples[index].templ) * samples[index].templ;
+    }
+    const double denominator = std::sqrt(sourceEnergy * templateEnergy);
+    if (!isFinite(denominator) || denominator <= Epsilon) {
+        return false;
+    }
+
+    score = std::clamp(dotProduct / denominator, 0.0, 1.0);
+    visibleFraction = static_cast<double>(keepCount) / samples.size();
+    return isFinite(score);
+}
+
 RotatedTemplateMatch buildMatch(
     const ResponsePeak& peak,
     const RotatedTemplateModel& model,
     double angle,
+    double scale,
+    double score,
+    double visibleFraction,
     const cv::Point& roiOffset)
 {
     RotatedTemplateMatch match;
     match.angle = angle;
-    match.score = peak.score;
+    match.scale = scale;
+    match.score = score;
+    match.rawScore = peak.score;
+    match.visibleFraction = visibleFraction;
     const cv::Point2d origin(peak.location.x + roiOffset.x, peak.location.y + roiOffset.y);
     match.center = origin + model.centerOffset;
 
@@ -369,6 +483,18 @@ std::vector<double> makeAngles(const RotatedTemplateMatchingConfig& config)
         angles.push_back(config.angleMin + i * config.angleStep);
     }
     return angles;
+}
+
+std::vector<double> makeScales(const RotatedTemplateMatchingConfig& config)
+{
+    const double range = config.scaleMax - config.scaleMin;
+    const int count = static_cast<int>(std::floor(range / config.scaleStep + Epsilon)) + 1;
+    std::vector<double> scales;
+    scales.reserve(static_cast<size_t>(std::max(0, count)));
+    for (int index = 0; index < count; ++index) {
+        scales.push_back(config.scaleMin + index * config.scaleStep);
+    }
+    return scales;
 }
 
 int buildPyramids(
@@ -418,10 +544,32 @@ bool validateConfig(const RotatedTemplateMatchingConfig& config, std::string& me
         message = "pyramidLevels must be within [1, 8].";
         return false;
     }
+    if (!isFinite(config.scaleMin) || !isFinite(config.scaleMax) || !isFinite(config.scaleStep) ||
+        config.scaleMin <= 0.0 || config.scaleMax < config.scaleMin || config.scaleMax > 20.0 ||
+        config.scaleStep <= 0.0) {
+        message = "scaleMin/scaleMax/scaleStep must define a positive ascending range no greater than 20x.";
+        return false;
+    }
+    if (config.featureMode != TemplateFeatureMode::Intensity &&
+        config.featureMode != TemplateFeatureMode::Gradient) {
+        message = "featureMode is invalid.";
+        return false;
+    }
+    if (!isFinite(config.occlusionTolerance) || config.occlusionTolerance < 0.0 ||
+        config.occlusionTolerance > 0.75) {
+        message = "occlusionTolerance must be within [0, 0.75].";
+        return false;
+    }
 
     const double angleCount = std::floor((config.angleMax - config.angleMin) / config.angleStep + Epsilon) + 1.0;
     if (!isFinite(angleCount) || angleCount <= 0.0 || angleCount > MaxAngleCount) {
         message = "The configured angle range contains too many samples.";
+        return false;
+    }
+    const double scaleCount = std::floor((config.scaleMax - config.scaleMin) / config.scaleStep + Epsilon) + 1.0;
+    if (!isFinite(scaleCount) || scaleCount <= 0.0 || scaleCount > MaxModelCount ||
+        angleCount * scaleCount > MaxModelCount) {
+        message = "The configured angle/scale search contains too many model samples.";
         return false;
     }
     return true;
@@ -499,93 +647,131 @@ RotatedTemplateMatchingResult matchRotatedTemplate(
         result.message = "The effective search ROI has insufficient dynamic range for normalized correlation.";
         return result;
     }
-    if (result.searchRoi.width < templateGray.cols || result.searchRoi.height < templateGray.rows) {
+    const int minimumTemplateWidth = std::max(2, cvRound(templateGray.cols * config.scaleMin));
+    const int minimumTemplateHeight = std::max(2, cvRound(templateGray.rows * config.scaleMin));
+    if (result.searchRoi.width < minimumTemplateWidth || result.searchRoi.height < minimumTemplateHeight) {
         result.statusCode = "template_larger_than_roi";
-        result.message = "The unrotated template is larger than the effective search ROI.";
+        result.message = "The minimum configured template scale is larger than the effective search ROI.";
         return result;
     }
 
     try {
-        cv::Mat searchImage = sourceGray(result.searchRoi).clone();
-        std::vector<cv::Mat> searchPyramid;
-        std::vector<cv::Mat> templatePyramid;
-        const int effectiveLevels = buildPyramids(
-            searchImage, templateGray, config.pyramidLevels, searchPyramid, templatePyramid);
-        if (effectiveLevels < config.pyramidLevels) {
-            result.warnings.push_back("pyramidLevels was reduced because the template became too small or no longer fit the search image.");
+        cv::Mat searchImage;
+        if (!makeFeatureImage(sourceGray(result.searchRoi), config.featureMode, searchImage)) {
+            result.statusCode = "invalid_source";
+            result.message = "The selected source feature representation has insufficient dynamic range.";
+            return result;
         }
-
         const std::vector<double> angles = makeAngles(config);
+        const std::vector<double> scales = makeScales(config);
         const long long requestedCandidates = static_cast<long long>(config.maxMatches) * 8LL;
         const int candidateLimit = static_cast<int>(std::clamp(requestedCandidates, 32LL, 512LL));
+        const double preliminaryThreshold = std::max(
+            0.0, config.scoreThreshold - 0.75 * config.occlusionTolerance);
         std::vector<RotatedTemplateMatch> candidates;
+        bool pyramidReduced = false;
 
-        for (double angle : angles) {
-            const RotatedTemplateModel fullModel = rotateTemplate(templatePyramid.front(), angle);
-            if (!fullModel.valid() || fullModel.image.cols > searchImage.cols || fullModel.image.rows > searchImage.rows) {
-                ++result.skippedAngles;
+        for (double templateScale : scales) {
+            cv::Mat templateFeature;
+            if (!makeScaledTemplate(templateGray, templateScale, config.featureMode, templateFeature)) {
+                result.skippedAngles += static_cast<int>(angles.size());
                 continue;
             }
-
-            ++result.evaluatedAngles;
-            int level = effectiveLevels - 1;
-            RotatedTemplateModel coarseModel;
-            while (level > 0) {
-                coarseModel = rotateTemplate(templatePyramid[static_cast<size_t>(level)], angle);
-                if (coarseModel.valid() &&
-                    coarseModel.image.cols <= searchPyramid[static_cast<size_t>(level)].cols &&
-                    coarseModel.image.rows <= searchPyramid[static_cast<size_t>(level)].rows) {
-                    break;
-                }
-                --level;
+            if (templateFeature.cols > searchImage.cols || templateFeature.rows > searchImage.rows) {
+                result.skippedAngles += static_cast<int>(angles.size());
+                continue;
             }
+            ++result.evaluatedScales;
 
-            if (level == 0) {
-                cv::Mat response;
-                if (!calculateResponse(searchImage, fullModel, response)) {
+            std::vector<cv::Mat> searchPyramid;
+            std::vector<cv::Mat> templatePyramid;
+            const int effectiveLevels = buildPyramids(
+                searchImage, templateFeature, config.pyramidLevels, searchPyramid, templatePyramid);
+            pyramidReduced = pyramidReduced || effectiveLevels < config.pyramidLevels;
+
+            for (double angle : angles) {
+                const RotatedTemplateModel fullModel = rotateTemplate(templatePyramid.front(), angle);
+                if (!fullModel.valid() || fullModel.image.cols > searchImage.cols || fullModel.image.rows > searchImage.rows) {
+                    ++result.skippedAngles;
                     continue;
                 }
-                const std::vector<ResponsePeak> peaks = extractPeaks(
-                    response, config.scoreThreshold, candidateLimit, std::max(1.0, config.nmsRadius), config.subpixel);
-                for (const ResponsePeak& peak : peaks) {
-                    candidates.push_back(buildMatch(peak, fullModel, angle, result.searchRoi.tl()));
+
+                ++result.evaluatedAngles;
+                ++result.evaluatedModels;
+                const auto addCandidate = [&](const ResponsePeak& peak) {
+                    double score = 0.0;
+                    double visibleFraction = 1.0;
+                    if (robustCandidateScore(
+                        searchImage, fullModel, peak, config.occlusionTolerance, score, visibleFraction) &&
+                        score >= config.scoreThreshold) {
+                        candidates.push_back(buildMatch(
+                            peak, fullModel, angle, templateScale, score, visibleFraction, result.searchRoi.tl()));
+                    }
+                };
+
+                int level = effectiveLevels - 1;
+                RotatedTemplateModel coarseModel;
+                while (level > 0) {
+                    coarseModel = rotateTemplate(templatePyramid[static_cast<size_t>(level)], angle);
+                    if (coarseModel.valid() &&
+                        coarseModel.image.cols <= searchPyramid[static_cast<size_t>(level)].cols &&
+                        coarseModel.image.rows <= searchPyramid[static_cast<size_t>(level)].rows) {
+                        break;
+                    }
+                    --level;
                 }
-                continue;
-            }
 
-            cv::Mat coarseResponse;
-            if (!calculateResponse(searchPyramid[static_cast<size_t>(level)], coarseModel, coarseResponse)) {
-                continue;
-            }
+                if (level == 0) {
+                    cv::Mat response;
+                    if (!calculateResponse(searchImage, fullModel, response)) {
+                        continue;
+                    }
+                    const std::vector<ResponsePeak> peaks = extractPeaks(
+                        response, preliminaryThreshold, candidateLimit,
+                        std::max(1.0, config.nmsRadius), config.subpixel);
+                    for (const ResponsePeak& peak : peaks) {
+                        addCandidate(peak);
+                    }
+                    continue;
+                }
 
-            const double scale = static_cast<double>(1 << level);
-            const std::vector<ResponsePeak> coarsePeaks = extractPeaks(
-                coarseResponse, 0.0, candidateLimit, std::max(1.0, config.nmsRadius / scale), false);
-            if (coarsePeaks.empty()) {
-                continue;
-            }
+                cv::Mat coarseResponse;
+                if (!calculateResponse(searchPyramid[static_cast<size_t>(level)], coarseModel, coarseResponse)) {
+                    continue;
+                }
 
-            const int refinementRadius = std::max(4, static_cast<int>(std::ceil(scale * 2.0)));
-            for (const ResponsePeak& coarsePeak : coarsePeaks) {
-                const cv::Point2d predictedCenter = (coarsePeak.location + coarseModel.centerOffset) * scale;
-                const cv::Point2d predictedTopLeft = predictedCenter - fullModel.centerOffset;
-                ResponsePeak refined;
-                if (refineAtFullResolution(
-                    searchImage, fullModel, predictedTopLeft, refinementRadius, config.subpixel, refined) &&
-                    refined.score >= config.scoreThreshold) {
-                    candidates.push_back(buildMatch(refined, fullModel, angle, result.searchRoi.tl()));
+                const double pyramidScale = static_cast<double>(1 << level);
+                const std::vector<ResponsePeak> coarsePeaks = extractPeaks(
+                    coarseResponse, 0.0, candidateLimit,
+                    std::max(1.0, config.nmsRadius / pyramidScale), false);
+                const int refinementRadius = std::max(4, static_cast<int>(std::ceil(pyramidScale * 2.0)));
+                for (const ResponsePeak& coarsePeak : coarsePeaks) {
+                    const cv::Point2d predictedCenter =
+                        (coarsePeak.location + coarseModel.centerOffset) * pyramidScale;
+                    const cv::Point2d predictedTopLeft = predictedCenter - fullModel.centerOffset;
+                    ResponsePeak refined;
+                    if (refineAtFullResolution(
+                        searchImage, fullModel, predictedTopLeft, refinementRadius, config.subpixel, refined) &&
+                        refined.score >= preliminaryThreshold) {
+                        addCandidate(refined);
+                    }
                 }
             }
+        }
+
+        if (pyramidReduced) {
+            result.warnings.push_back(
+                "pyramidLevels was reduced for one or more template scales because the model became too small or no longer fit.");
         }
 
         result.candidateCount = static_cast<int>(candidates.size());
         if (result.skippedAngles > 0) {
             result.warnings.push_back(std::to_string(result.skippedAngles) +
-                " angle sample(s) were skipped because the rotated template did not fit the effective search ROI.");
+                " angle/scale model sample(s) were skipped because the transformed template did not fit.");
         }
-        if (result.evaluatedAngles == 0) {
+        if (result.evaluatedModels == 0) {
             result.statusCode = "template_larger_than_roi";
-            result.message = "The rotated template did not fit the effective search ROI at any configured angle.";
+            result.message = "The template did not fit the effective search ROI at any configured angle and scale.";
             return result;
         }
 
@@ -595,6 +781,9 @@ RotatedTemplateMatchingResult matchRotatedTemplate(
             }
             if (lhs.angle != rhs.angle) {
                 return lhs.angle < rhs.angle;
+            }
+            if (lhs.scale != rhs.scale) {
+                return lhs.scale < rhs.scale;
             }
             if (lhs.center.y != rhs.center.y) {
                 return lhs.center.y < rhs.center.y;
@@ -646,7 +835,10 @@ nlohmann::json ToJson(const RotatedTemplateMatch& match)
     return {
         { "center", pointJson(match.center) },
         { "angleDegrees", match.angle },
+        { "scale", match.scale },
         { "score", match.score },
+        { "rawScore", match.rawScore },
+        { "visibleFraction", match.visibleFraction },
         { "boundingBox", rectJson(match.boundingBox) },
         { "corners", std::move(corners) }
     };
@@ -666,6 +858,8 @@ nlohmann::json ToJson(const RotatedTemplateMatchingResult& result)
         { "templateSize", { { "width", result.templateSize.width }, { "height", result.templateSize.height } } },
         { "searchRoi", rectJson(result.searchRoi) },
         { "evaluatedAngles", result.evaluatedAngles },
+        { "evaluatedScales", result.evaluatedScales },
+        { "evaluatedModels", result.evaluatedModels },
         { "skippedAngles", result.skippedAngles },
         { "candidateCount", result.candidateCount },
         { "warnings", result.warnings },

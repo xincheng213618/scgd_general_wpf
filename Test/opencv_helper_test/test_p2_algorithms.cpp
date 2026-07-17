@@ -165,6 +165,82 @@ bool TestGhostExport()
     return success;
 }
 
+bool TestEnhancedGhostExport()
+{
+    cv::Mat image(192, 256, CV_16UC1);
+    for (int y = 0; y < image.rows; ++y) {
+        std::uint16_t* row = image.ptr<std::uint16_t>(y);
+        for (int x = 0; x < image.cols; ++x) {
+            row[x] = static_cast<std::uint16_t>(5000 + x * 20 + y * 5);
+        }
+    }
+
+    const cv::Point brightCenter(45, 96);
+    const cv::Point ghostCenter(180, 96);
+    const cv::Point directionalDecoy(45, 30);
+    cv::circle(image, brightCenter, 11, cv::Scalar(60000), cv::FILLED, cv::LINE_AA);
+    cv::circle(image, ghostCenter, 11, cv::Scalar(19000), cv::FILLED, cv::LINE_AA);
+    cv::circle(image, directionalDecoy, 9, cv::Scalar(19000), cv::FILLED, cv::LINE_AA);
+
+    const json config = {
+        { "brightThresholdMode", "fixed" },
+        { "ghostThresholdMode", "fixed" },
+        { "brightThreshold", 0.55 },
+        { "ghostThreshold", 0.07 },
+        { "brightMinArea", 80 },
+        { "brightMaxArea", 1000 },
+        { "brightMinSize", 7 },
+        { "brightMaxSize", 40 },
+        { "ghostMinArea", 30 },
+        { "ghostMaxArea", 2000 },
+        { "ghostMinSize", 4 },
+        { "ghostMaxSize", 50 },
+        { "brightOpenKernel", 1 },
+        { "brightCloseKernel", 1 },
+        { "ghostOpenKernel", 1 },
+        { "ghostCloseKernel", 3 },
+        { "sourceMaskPadding", 5 },
+        { "minDistanceFromBright", 30.0 },
+        { "normalizeExposure", true },
+        { "exposureLowPercentile", 0.01 },
+        { "exposureHighPercentile", 0.995 },
+        { "backgroundKernel", 41 },
+        { "multiScaleLevels", 3 },
+        { "multiScaleFactor", 1.6 },
+        { "multiScaleThresholdFactor", 0.85 },
+        { "opticalCenter", { { "x", 128.0 }, { "y", 96.0 } } },
+        { "useDirectionalConfidence", true },
+        { "minDirectionConfidence", 0.75 },
+        { "maxCandidates", 8 }
+    };
+    const std::string configText = config.dump();
+    HImage view = MakeImageView(image);
+
+    json output;
+    if (!InvokeJsonExport("M_DetectGhosts enhanced", [&](char** result) {
+        return M_DetectGhosts(view, RoiRect{}, configText.c_str(), result);
+    }, output)) {
+        return false;
+    }
+
+    bool success = true;
+    Expect(output.value("success", false), "Enhanced Ghost detection did not succeed.", success);
+    Expect(output.value("exposureNormalized", false), "Exposure normalization was not applied.", success);
+    Expect(output.value("backgroundModelUsed", false), "Background model was not applied.", success);
+    Expect(output.value("analyzedScaleLevels", 0) == 3, "Ghost scale-level count is incorrect.", success);
+    Expect(output.contains("candidates") && output.at("candidates").is_array() && output.at("candidates").size() == 1,
+        "Directional filtering did not retain exactly the aligned ghost.", success);
+    if (output.contains("candidates") && output.at("candidates").size() == 1) {
+        const json& candidate = output.at("candidates").front();
+        Expect(PointDistance(candidate.at("center"), ghostCenter) <= 2.0, "Enhanced Ghost center is inaccurate.", success);
+        Expect(candidate.value("directionConfidence", 0.0) > 0.95, "Aligned Ghost direction confidence is too low.", success);
+        Expect(candidate.value("directionAngleDegrees", 180.0) < 5.0, "Aligned Ghost direction angle is too large.", success);
+        Expect(candidate.value("scaleSupport", 0.0) >= 2.0 / 3.0, "Ghost is not supported across enough scales.", success);
+        Expect(candidate.value("confidence", 0.0) > 0.50, "Enhanced Ghost confidence is unexpectedly low.", success);
+    }
+    return success;
+}
+
 bool TestKeyboardHaloExport()
 {
     cv::Mat image = cv::Mat::zeros(160, 160, CV_8UC1);
@@ -346,6 +422,16 @@ struct RotatedFixture
     cv::Point2d centerOffset;
 };
 
+cv::Mat CreateAsymmetricTemplate()
+{
+    cv::Mat templ = cv::Mat::zeros(35, 45, CV_8UC1);
+    cv::rectangle(templ, cv::Rect(5, 5, 8, 25), cv::Scalar(255), cv::FILLED);
+    cv::rectangle(templ, cv::Rect(5, 23, 29, 7), cv::Scalar(255), cv::FILLED);
+    cv::circle(templ, cv::Point(35, 8), 4, cv::Scalar(145), cv::FILLED, cv::LINE_8);
+    cv::rectangle(templ, cv::Rect(19, 10, 7, 6), cv::Scalar(80), cv::FILLED);
+    return templ;
+}
+
 RotatedFixture RotateFixture(const cv::Mat& templ, double angleDegrees)
 {
     const cv::Point2d rotationCenter(templ.cols * 0.5, templ.rows * 0.5);
@@ -390,11 +476,7 @@ RotatedFixture RotateFixture(const cv::Mat& templ, double angleDegrees)
 
 bool TestRotatedTemplateExport()
 {
-    cv::Mat templ = cv::Mat::zeros(35, 45, CV_8UC1);
-    cv::rectangle(templ, cv::Rect(5, 5, 8, 25), cv::Scalar(255), cv::FILLED);
-    cv::rectangle(templ, cv::Rect(5, 23, 29, 7), cv::Scalar(255), cv::FILLED);
-    cv::circle(templ, cv::Point(35, 8), 4, cv::Scalar(145), cv::FILLED, cv::LINE_8);
-    cv::rectangle(templ, cv::Rect(19, 10, 7, 6), cv::Scalar(80), cv::FILLED);
+    cv::Mat templ = CreateAsymmetricTemplate();
 
     constexpr double EmbeddedAngle = 20.0;
     const RotatedFixture fixture = RotateFixture(templ, EmbeddedAngle);
@@ -451,6 +533,62 @@ bool TestRotatedTemplateExport()
     Expect(!rejectedOutput.value("success", true), "Constant template produced a false-positive match.", success);
     Expect(rejectedOutput.value("statusCode", std::string()) == "invalid_template",
         "Constant template did not return invalid_template.", success);
+    return success;
+}
+
+bool TestScaledOccludedTemplateExport()
+{
+    cv::Mat templ = CreateAsymmetricTemplate();
+    constexpr double EmbeddedScale = 1.30;
+    constexpr double EmbeddedAngle = 16.0;
+    cv::Mat scaledTemplate;
+    cv::resize(templ, scaledTemplate, cv::Size(), EmbeddedScale, EmbeddedScale, cv::INTER_LINEAR);
+    const RotatedFixture fixture = RotateFixture(scaledTemplate, EmbeddedAngle);
+
+    cv::Mat source = cv::Mat::zeros(260, 380, CV_8UC1);
+    const cv::Point topLeft(150, 95);
+    fixture.image.copyTo(source(cv::Rect(topLeft, fixture.image.size())), fixture.mask);
+    const cv::Rect occlusion(
+        topLeft.x + fixture.image.cols * 2 / 3,
+        topLeft.y + fixture.image.rows / 4,
+        std::max(2, fixture.image.cols / 4),
+        std::max(2, fixture.image.rows / 2));
+    source(occlusion).setTo(cv::Scalar(0));
+    const cv::Point2d expectedCenter = cv::Point2d(topLeft) + fixture.centerOffset;
+
+    const json config = {
+        { "angleMin", 10.0 }, { "angleMax", 22.0 }, { "angleStep", 2.0 },
+        { "scaleMin", 1.10 }, { "scaleMax", 1.40 }, { "scaleStep", 0.10 },
+        { "featureMode", "gradient" }, { "occlusionTolerance", 0.35 },
+        { "scoreThreshold", 0.78 }, { "maxMatches", 1 }, { "nmsRadius", 24.0 },
+        { "pyramidLevels", 1 }, { "subpixel", true }
+    };
+    const std::string configText = config.dump();
+    HImage sourceView = MakeImageView(source);
+    HImage templateView = MakeImageView(templ);
+    json output;
+    if (!InvokeJsonExport("M_MatchRotatedTemplate scale/gradient/occlusion", [&](char** result) {
+        return M_MatchRotatedTemplate(sourceView, templateView, RoiRect{}, configText.c_str(), result);
+    }, output)) {
+        return false;
+    }
+
+    bool success = true;
+    Expect(output.value("success", false), "Scaled occluded gradient template was not matched.", success);
+    Expect(output.contains("matches") && !output.at("matches").empty(),
+        "Scaled template search returned no matches.", success);
+    if (output.contains("matches") && !output.at("matches").empty()) {
+        const json& match = output.at("matches").front();
+        Expect(PointDistance(match.at("center"), expectedCenter) <= 3.0,
+            "Scaled template center is outside tolerance.", success);
+        Expect(std::abs(match.value("angleDegrees", -999.0) - EmbeddedAngle) <= 2.1,
+            "Scaled template angle is outside one search step.", success);
+        Expect(std::abs(match.value("scale", 0.0) - EmbeddedScale) <= 0.11,
+            "Scaled template factor is outside one search step.", success);
+        Expect(match.value("score", 0.0) >= 0.78, "Robust template score is below threshold.", success);
+        Expect(match.value("visibleFraction", 1.0) < 0.90,
+            "Occlusion-tolerant result did not report trimmed visibility.", success);
+    }
     return success;
 }
 
@@ -547,6 +685,90 @@ bool TestBinocularFusionExport()
     return success;
 }
 
+cv::Point ProjectStereoPoint(
+    const cv::Point3d& point,
+    const cv::Matx33d& camera,
+    const cv::Vec3d& translation)
+{
+    const cv::Vec3d cameraPoint(point.x + translation[0], point.y + translation[1], point.z + translation[2]);
+    return cv::Point(
+        cvRound(camera(0, 0) * cameraPoint[0] / cameraPoint[2] + camera(0, 2)),
+        cvRound(camera(1, 1) * cameraPoint[1] / cameraPoint[2] + camera(1, 2)));
+}
+
+bool TestStereoBinocularFusionExport()
+{
+    const cv::Matx33d camera(
+        600.0, 0.0, 320.0,
+        0.0, 600.0, 240.0,
+        0.0, 0.0, 1.0);
+    const cv::Vec3d rightTranslation(-80.0, 0.0, 0.0);
+    const std::array<cv::Point3d, 5> worldPoints = {
+        cv::Point3d(0.0, 0.0, 1200.0),
+        cv::Point3d(0.0, -120.0, 1200.0),
+        cv::Point3d(0.0, 120.0, 1200.0),
+        cv::Point3d(-120.0, 0.0, 1200.0),
+        cv::Point3d(120.0, 0.0, 1200.0)
+    };
+
+    cv::Mat left = cv::Mat::zeros(480, 640, CV_8UC1);
+    cv::Mat right = cv::Mat::zeros(480, 640, CV_8UC1);
+    for (const cv::Point3d& point : worldPoints) {
+        DrawCross(left, ProjectStereoPoint(point, camera, cv::Vec3d()), 11, 5);
+        DrawCross(right, ProjectStereoPoint(point, camera, rightTranslation), 11, 5);
+    }
+
+    const json detection = {
+        { "threshold", 128.0 }, { "blurKernel", 1 }, { "morphKernel", 1 },
+        { "minArea", 80 }, { "maxArea", 800 }, { "maxCandidates", 16 }
+    };
+    const json config = {
+        { "leftDetection", detection },
+        { "rightDetection", detection },
+        { "minimumParallaxPixels", 5.0 },
+        { "maximumReprojectionErrorPixels", 1.5 },
+        { "calibration", {
+            { "leftCameraMatrix", { 600.0, 0.0, 320.0, 0.0, 600.0, 240.0, 0.0, 0.0, 1.0 } },
+            { "rightCameraMatrix", { 600.0, 0.0, 320.0, 0.0, 600.0, 240.0, 0.0, 0.0, 1.0 } },
+            { "leftDistCoeffs", { 0.0, 0.0, 0.0, 0.0, 0.0 } },
+            { "rightDistCoeffs", { 0.0, 0.0, 0.0, 0.0, 0.0 } },
+            { "rotation", { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 } },
+            { "translation", { -80.0, 0.0, 0.0 } }
+        } }
+    };
+    const std::string configText = config.dump();
+    HImage leftView = MakeImageView(left);
+    HImage rightView = MakeImageView(right);
+    json output;
+    if (!InvokeJsonExport("M_CalStereoBinocularFusion", [&](char** result) {
+        return M_CalStereoBinocularFusion(
+            leftView, rightView, RoiRect{}, RoiRect{}, configText.c_str(), result);
+    }, output)) {
+        return false;
+    }
+
+    bool success = true;
+    Expect(output.value("success", false), "Calibrated stereo fusion did not succeed.", success);
+    Expect(output.value("validPointCount", 0) == 5, "Stereo fusion did not triangulate all five crosses.", success);
+    Expect(std::abs(output.value("baselineMm", 0.0) - 80.0) <= 1e-6,
+        "Stereo baseline is incorrect.", success);
+    Expect(std::abs(output.value("meanDepthMm", 0.0) - 1200.0) <= 5.0,
+        "Stereo mean depth is outside tolerance.", success);
+    Expect(output.value("meanReprojectionErrorPixels", 99.0) <= 0.25,
+        "Stereo reprojection error is unexpectedly high.", success);
+    Expect(output.value("confidence", 0.0) >= 0.70, "Stereo confidence is unexpectedly low.", success);
+    Expect(output.contains("points") && output.at("points").is_array() && output.at("points").size() == 5,
+        "Stereo result does not contain five point records.", success);
+    if (output.contains("points") && output.at("points").is_array()) {
+        for (const json& point : output.at("points")) {
+            Expect(point.value("valid", false), "A stereo point failed quality limits.", success);
+            Expect(point.contains("pointMm") && IsFiniteNumber(point.at("pointMm").at("z")),
+                "Stereo point depth is not finite.", success);
+        }
+    }
+    return success;
+}
+
 bool TestFailureResultClearing()
 {
     cv::Mat image(32, 32, CV_8UC1, cv::Scalar(32));
@@ -586,6 +808,20 @@ bool TestFailureResultClearing()
         Expect(emptyImageReturn < 0, item.first + " accepted an empty image.", success);
         Expect(emptyImageResult == nullptr, item.first + " did not clear result for an empty image.", success);
     }
+
+    char* invalidStereoJsonResult = reinterpret_cast<char*>(static_cast<std::uintptr_t>(1));
+    const int invalidStereoJsonReturn = M_CalStereoBinocularFusion(
+        imageView, imageView, RoiRect{}, RoiRect{}, "{not-json", &invalidStereoJsonResult);
+    Expect(invalidStereoJsonReturn < 0, "M_CalStereoBinocularFusion accepted invalid JSON.", success);
+    Expect(invalidStereoJsonResult == nullptr,
+        "M_CalStereoBinocularFusion did not clear result for invalid JSON.", success);
+
+    char* emptyStereoImageResult = reinterpret_cast<char*>(static_cast<std::uintptr_t>(1));
+    const int emptyStereoImageReturn = M_CalStereoBinocularFusion(
+        emptyImage, imageView, RoiRect{}, RoiRect{}, "{}", &emptyStereoImageResult);
+    Expect(emptyStereoImageReturn < 0, "M_CalStereoBinocularFusion accepted an empty image.", success);
+    Expect(emptyStereoImageResult == nullptr,
+        "M_CalStereoBinocularFusion did not clear result for an empty image.", success);
     return success;
 }
 
@@ -613,10 +849,13 @@ bool RunP2AlgorithmTests()
 {
     bool success = true;
     success = RunCase("Ghost", TestGhostExport) && success;
+    success = RunCase("EnhancedGhost", TestEnhancedGhostExport) && success;
     success = RunCase("KeyboardHalo", TestKeyboardHaloExport) && success;
     success = RunCase("LedArray", TestLedArrayExport) && success;
     success = RunCase("RotatedTemplate", TestRotatedTemplateExport) && success;
+    success = RunCase("ScaledOccludedTemplate", TestScaledOccludedTemplateExport) && success;
     success = RunCase("BinocularFusion", TestBinocularFusionExport) && success;
+    success = RunCase("StereoBinocularFusion", TestStereoBinocularFusionExport) && success;
     success = RunCase("FailureResultClearing", TestFailureResultClearing) && success;
     return success;
 }
