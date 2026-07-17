@@ -256,7 +256,19 @@ namespace ColorVision.Solution.Explorer
         bool CanLoad(FileInfo projectFile);
 
         ProjectDefinition Load(FileInfo projectFile);
+
+        Task<ProjectDefinition> LoadAsync(
+            FileInfo projectFile,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() => Load(projectFile), cancellationToken);
+        }
     }
+
+    public sealed record ProjectLoadResult(
+        bool Succeeded,
+        ProjectDefinition? Project = null,
+        string ErrorMessage = "");
 
     /// <summary>
     /// Declares the file-name patterns owned by a project provider. Open
@@ -1003,26 +1015,43 @@ namespace ColorVision.Solution.Explorer
             out ProjectDefinition? project,
             out string errorMessage)
         {
-            project = null;
-            errorMessage = string.Empty;
-            if (!directory.Exists)
-            {
-                errorMessage = $"项目目录不存在：{directory.FullName}";
-                return false;
-            }
+            ProjectLoadResult result = LoadProjectAsync(directory).GetAwaiter().GetResult();
+            project = result.Project;
+            errorMessage = result.ErrorMessage;
+            return result.Succeeded;
+        }
 
+        public static async Task<ProjectLoadResult> LoadProjectAsync(
+            DirectoryInfo directory,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(directory);
+            directory.Refresh();
+            if (!directory.Exists)
+                return new ProjectLoadResult(false, ErrorMessage: $"项目目录不存在：{directory.FullName}");
+
+            Task<List<FileInfo>> enumerationTask = Task.Run(
+                () => EnumerateProjectFiles(directory, SearchOption.TopDirectoryOnly).ToList(),
+                CancellationToken.None);
+            List<FileInfo> projectFiles = await enumerationTask
+                .WaitAsync(cancellationToken)
+                .ConfigureAwait(false);
             var errors = new List<string>();
-            foreach (FileInfo projectFile in EnumerateProjectFiles(directory, SearchOption.TopDirectoryOnly))
+            foreach (FileInfo projectFile in projectFiles)
             {
-                if (TryLoadProject(projectFile, out project, out string loadError))
-                    return true;
-                if (!string.IsNullOrWhiteSpace(loadError))
-                    errors.Add(loadError);
+                cancellationToken.ThrowIfCancellationRequested();
+                ProjectLoadResult result = await LoadProjectAsync(projectFile, cancellationToken)
+                    .ConfigureAwait(false);
+                if (result.Succeeded)
+                    return result;
+                if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+                    errors.Add(result.ErrorMessage);
             }
-            errorMessage = errors.Count > 0
-                ? string.Join(Environment.NewLine, errors)
-                : $"目录“{directory.FullName}”中没有已注册 Provider 支持的项目文件。";
-            return false;
+            return new ProjectLoadResult(
+                false,
+                ErrorMessage: errors.Count > 0
+                    ? string.Join(Environment.NewLine, errors)
+                    : $"目录“{directory.FullName}”中没有已注册 Provider 支持的项目文件。");
         }
 
         public static bool TryLoadProject(FileInfo projectFile, out ProjectDefinition? project)
@@ -1035,58 +1064,81 @@ namespace ColorVision.Solution.Explorer
             out ProjectDefinition? project,
             out string errorMessage)
         {
+            ProjectLoadResult result = LoadProjectAsync(projectFile).GetAwaiter().GetResult();
+            project = result.Project;
+            errorMessage = result.ErrorMessage;
+            return result.Succeeded;
+        }
+
+        public static async Task<ProjectLoadResult> LoadProjectAsync(
+            FileInfo projectFile,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(projectFile);
             Initialize();
-            project = null;
-            errorMessage = string.Empty;
             projectFile.Refresh();
             if (!projectFile.Exists)
-            {
-                errorMessage = $"项目文件不存在：{projectFile.FullName}";
-                return false;
-            }
+                return new ProjectLoadResult(false, ErrorMessage: $"项目文件不存在：{projectFile.FullName}");
+
+            Registration[] providers;
+            lock (_syncRoot)
+                providers = _providers.ToArray();
 
             var providerErrors = new List<string>();
-            lock (_syncRoot)
+            foreach (Registration registration in providers)
             {
-                foreach (Registration registration in _providers)
+                cancellationToken.ThrowIfCancellationRequested();
+                bool canLoad;
+                try
                 {
-                    bool canLoad;
-                    try
-                    {
-                        canLoad = registration.Provider.CanLoad(projectFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        providerErrors.Add($"Provider“{registration.Provider.Id}”识别失败：{ex.Message}");
-                        continue;
-                    }
-                    if (!canLoad)
-                        continue;
-
-                    try
-                    {
-                        project = registration.Provider.Load(projectFile);
-                        if (project != null)
-                            return true;
-                        providerErrors.Add($"Provider“{registration.Provider.Id}”没有返回项目定义。");
-                    }
-                    catch (Exception ex)
-                    {
-                        providerErrors.Add($"Provider“{registration.Provider.Id}”加载失败：{ex.Message}");
-                    }
-                    break;
+                    Task<bool> canLoadTask = Task.Run(
+                        () => registration.Provider.CanLoad(projectFile),
+                        CancellationToken.None);
+                    canLoad = await canLoadTask.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    providerErrors.Add($"Provider“{registration.Provider.Id}”识别失败：{ex.Message}");
+                    continue;
+                }
+                if (!canLoad)
+                    continue;
+
+                try
+                {
+                    ProjectDefinition project = await registration.Provider
+                        .LoadAsync(projectFile, cancellationToken)
+                        .WaitAsync(cancellationToken)
+                        .ConfigureAwait(false);
+                    if (project != null)
+                        return new ProjectLoadResult(true, project);
+                    providerErrors.Add($"Provider“{registration.Provider.Id}”没有返回项目定义。");
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    providerErrors.Add($"Provider“{registration.Provider.Id}”加载失败：{ex.Message}");
+                }
+                break;
             }
 
             string? declaredProviderId = GetDeclaredProviderId(projectFile);
-            errorMessage = providerErrors.Count > 0
-                ? string.Join(Environment.NewLine, providerErrors)
-                : IsSupportedProjectFilePath(projectFile.FullName)
-                    ? $"没有已安装的项目 Provider 能加载“{projectFile.Name}”。"
-                        + (declaredProviderId == null ? string.Empty : $"项目声明需要 Provider“{declaredProviderId}”；")
-                        + "可能缺少对应插件，或项目类型标识不受支持。"
-                    : $"没有项目 Provider 声明支持文件“{projectFile.Name}”。";
-            return false;
+            return new ProjectLoadResult(
+                false,
+                ErrorMessage: providerErrors.Count > 0
+                    ? string.Join(Environment.NewLine, providerErrors)
+                    : IsSupportedProjectFilePath(projectFile.FullName)
+                        ? $"没有已安装的项目 Provider 能加载“{projectFile.Name}”。"
+                            + (declaredProviderId == null ? string.Empty : $"项目声明需要 Provider“{declaredProviderId}”；")
+                            + "可能缺少对应插件，或项目类型标识不受支持。"
+                        : $"没有项目 Provider 声明支持文件“{projectFile.Name}”。");
         }
 
         /// <summary>

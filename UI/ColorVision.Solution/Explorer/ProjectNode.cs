@@ -62,7 +62,12 @@ namespace ColorVision.Solution.Explorer
         public override void Refresh()
         {
             if (SolutionExplorer != null)
-                SolutionExplorer.ReloadSolutionState();
+            {
+                if (SolutionExplorer.IsExplicitProjectMode)
+                    _ = SolutionExplorer.RefreshExplicitProjectStateWithFeedbackAsync();
+                else
+                    SolutionExplorer.ReloadSolutionState();
+            }
             else
                 base.Refresh();
         }
@@ -527,7 +532,7 @@ namespace ColorVision.Solution.Explorer
 
         public override void Refresh()
         {
-            _solutionExplorer.ReloadSolutionState();
+            _ = _solutionExplorer.RefreshExplicitProjectStateWithFeedbackAsync();
         }
 
         internal override bool TryDelete(bool showConfirmation)

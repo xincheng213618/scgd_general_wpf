@@ -107,6 +107,11 @@ namespace ColorVision.Solution.Explorer
         string ResolvedPath,
         string ErrorMessage);
 
+    internal sealed record ProjectRefreshResult(
+        bool Succeeded,
+        string ErrorMessage = "",
+        bool Canceled = false);
+
     internal sealed record SolutionExplorerPreparation(
         SolutionConfigLoadResult LoadResult,
         DirectoryInfo RootDirectory,
@@ -132,6 +137,7 @@ namespace ColorVision.Solution.Explorer
         private DispatcherTimer _changedDebounceTimer;
         private DispatcherTimer _projectChangedDebounceTimer;
         private DispatcherTimer? _importSourceChangedDebounceTimer;
+        private CancellationTokenSource? _projectRefreshCancellation;
         private CancellationTokenSource? _importRefreshCancellation;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
@@ -321,7 +327,7 @@ namespace ColorVision.Solution.Explorer
                 if (_disposed)
                     return;
                 if (IsExplicitProjectMode)
-                    ReconcileExplicitProjects(reloadLoadedProjects: true);
+                    RefreshExplicitProjectState();
                 else
                     ReloadSolutionState();
             }
@@ -380,7 +386,7 @@ namespace ColorVision.Solution.Explorer
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(solutionEnvironments);
-            Task<SolutionExplorerPreparation> preparationTask = Task.Run(() =>
+            Task<(SolutionConfigLoadResult LoadResult, DirectoryInfo RootDirectory)> preparationTask = Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string fullPath = solutionEnvironments.SolutionPath;
@@ -399,15 +405,19 @@ namespace ColorVision.Solution.Explorer
                 DirectoryInfo rootDirectory = ResolveRootDirectory(
                     configFile,
                     loadResult.Config.RootPath);
-                Dictionary<string, ProjectReferenceLoadResult> projectReferences =
-                    LoadProjectReferences(rootDirectory.FullName, loadResult.Config, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                return new SolutionExplorerPreparation(
-                    loadResult,
-                    rootDirectory,
-                    projectReferences);
+                return (loadResult, rootDirectory);
             }, CancellationToken.None);
-            return await preparationTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var preparation = await preparationTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            Dictionary<string, ProjectReferenceLoadResult> projectReferences =
+                await LoadProjectReferencesAsync(
+                    preparation.RootDirectory.FullName,
+                    preparation.LoadResult.Config,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return new SolutionExplorerPreparation(
+                preparation.LoadResult,
+                preparation.RootDirectory,
+                projectReferences);
         }
 
         private static async Task<Dictionary<string, ProjectReferenceLoadResult>> LoadProjectReferencesAsync(
@@ -415,10 +425,76 @@ namespace ColorVision.Solution.Explorer
             SolutionConfig config,
             CancellationToken cancellationToken)
         {
-            Task<Dictionary<string, ProjectReferenceLoadResult>> loadTask = Task.Run(
-                () => LoadProjectReferences(rootDirectory, config, cancellationToken),
-                CancellationToken.None);
-            return await loadTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var results = new Dictionary<string, ProjectReferenceLoadResult>(StringComparer.OrdinalIgnoreCase);
+            if (config.ProjectMode != SolutionProjectMode.Explicit)
+                return results;
+
+            List<string> references = config.Projects
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (string reference in references)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                results[reference] = await LoadProjectReferenceAsync(
+                    rootDirectory,
+                    reference,
+                    cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            return results;
+        }
+
+        private static async Task<ProjectReferenceLoadResult> LoadProjectReferenceAsync(
+            string rootDirectory,
+            string reference,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(reference))
+                return new ProjectReferenceLoadResult(reference, null, string.Empty, "项目引用为空。");
+
+            try
+            {
+                string resolvedPath = Path.GetFullPath(Path.IsPathRooted(reference)
+                    ? reference
+                    : Path.Combine(rootDirectory, reference));
+                ProjectLoadResult loadResult;
+                if (File.Exists(resolvedPath))
+                {
+                    loadResult = await ProjectProviderRegistry.LoadProjectAsync(
+                        new FileInfo(resolvedPath),
+                        cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else if (Directory.Exists(resolvedPath))
+                {
+                    loadResult = await ProjectProviderRegistry.LoadProjectAsync(
+                        new DirectoryInfo(resolvedPath),
+                        cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    return new ProjectReferenceLoadResult(
+                        reference,
+                        null,
+                        resolvedPath,
+                        $"项目路径不存在：{resolvedPath}");
+                }
+
+                return new ProjectReferenceLoadResult(
+                    reference,
+                    loadResult.Succeeded ? loadResult.Project : null,
+                    resolvedPath,
+                    loadResult.ErrorMessage);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return new ProjectReferenceLoadResult(
+                    reference,
+                    null,
+                    string.Empty,
+                    $"项目引用无效：{ex.Message}");
+            }
         }
 
         private static Dictionary<string, ProjectReferenceLoadResult> LoadProjectReferences(
@@ -467,10 +543,12 @@ namespace ColorVision.Solution.Explorer
                     VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
                 };
                 _projectChangedDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-                _projectChangedDebounceTimer.Tick += (_, _) =>
+                _projectChangedDebounceTimer.Tick += async (_, _) =>
                 {
                     _projectChangedDebounceTimer.Stop();
-                    ReconcileExplicitProjects(reloadLoadedProjects: true);
+                    ProjectRefreshResult result = await RefreshExplicitProjectStateAsync();
+                    if (!result.Succeeded && !result.Canceled)
+                        Logger.Warn($"自动刷新项目失败: {result.ErrorMessage}");
                 };
                 if (IsImportedSolution)
                 {
@@ -3055,9 +3133,12 @@ namespace ColorVision.Solution.Explorer
             if (!IsExplicitProjectMode)
                 return;
 
+            CancelActiveProjectRefresh();
             var dispatcher = Application.Current?.Dispatcher;
             void QueueRefresh()
             {
+                if (_disposed)
+                    return;
                 _projectChangedDebounceTimer.Stop();
                 _projectChangedDebounceTimer.Start();
             }
@@ -3066,6 +3147,104 @@ namespace ColorVision.Solution.Explorer
                 QueueRefresh();
             else
                 dispatcher.BeginInvoke(QueueRefresh);
+        }
+
+        internal async Task<ProjectRefreshResult> RefreshExplicitProjectStateAsync(
+            bool reloadSolutionState = false,
+            CancellationToken cancellationToken = default)
+        {
+            if (!IsExplicitProjectMode)
+            {
+                return new ProjectRefreshResult(
+                    false,
+                    ErrorMessage: "当前解决方案没有使用显式项目引用。");
+            }
+
+            _projectChangedDebounceTimer.Stop();
+            var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationTokenSource? previousCancellation = Interlocked.Exchange(
+                ref _projectRefreshCancellation,
+                requestCancellation);
+            try
+            {
+                previousCancellation?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            try
+            {
+                Dictionary<string, ProjectReferenceLoadResult> preparedProjectReferences =
+                    await LoadProjectReferencesAsync(
+                        DirectoryInfo.FullName,
+                        Config,
+                        requestCancellation.Token);
+                requestCancellation.Token.ThrowIfCancellationRequested();
+                if (_disposed
+                    || !ReferenceEquals(
+                        Interlocked.CompareExchange(ref _projectRefreshCancellation, null, null),
+                        requestCancellation))
+                {
+                    return new ProjectRefreshResult(false, Canceled: true);
+                }
+
+                _preparedProjectReferences = preparedProjectReferences;
+                if (reloadSolutionState)
+                {
+                    ReloadSolutionState();
+                }
+                else
+                {
+                    ReconcileExplicitProjects(reloadLoadedProjects: true);
+                    EnsureStartupProject();
+                    InvalidateMenuItems();
+                    RefreshConfigurationCommandSurfaces();
+                }
+                return new ProjectRefreshResult(true);
+            }
+            catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
+            {
+                return new ProjectRefreshResult(
+                    false,
+                    ErrorMessage: "刷新项目已取消。",
+                    Canceled: true);
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                return new ProjectRefreshResult(false, ErrorMessage: ex.Message);
+            }
+            finally
+            {
+                Interlocked.CompareExchange(
+                    ref _projectRefreshCancellation,
+                    null,
+                    requestCancellation);
+                requestCancellation.Dispose();
+            }
+        }
+
+        internal async Task RefreshExplicitProjectStateWithFeedbackAsync(
+            bool reloadSolutionState = false)
+        {
+            ProjectRefreshResult result = await RefreshExplicitProjectStateAsync(reloadSolutionState);
+            if (!result.Succeeded && !result.Canceled)
+                ShowUserError(result.ErrorMessage);
+        }
+
+        private void CancelActiveProjectRefresh()
+        {
+            try
+            {
+                Interlocked.CompareExchange(ref _projectRefreshCancellation, null, null)?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
 
         internal void ApplyProjectMutation(ProjectDefinition updatedProject)
@@ -3342,6 +3521,11 @@ namespace ColorVision.Solution.Explorer
                 _ = RefreshImportedSolutionStateWithFeedbackAsync();
                 return;
             }
+            if (IsExplicitProjectMode)
+            {
+                _ = RefreshExplicitProjectStateWithFeedbackAsync(reloadSolutionState: true);
+                return;
+            }
             ReloadSolutionState();
         }
 
@@ -3592,6 +3776,7 @@ namespace ColorVision.Solution.Explorer
             _changedDebounceTimer?.Stop();
             _projectChangedDebounceTimer?.Stop();
             _importSourceChangedDebounceTimer?.Stop();
+            CancelActiveProjectRefresh();
             try
             {
                 _importRefreshCancellation?.Cancel();

@@ -2103,7 +2103,7 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void RegisteringProjectProvider_ReplacesUnavailableProjectInOpenSolution()
+    public async Task RegisteringProjectProvider_ReplacesUnavailableProjectInOpenSolution()
     {
         string solutionDirectory = CreateTemporaryDirectory();
         string projectPath = Path.Combine(solutionDirectory, "Example.lateproj");
@@ -2140,6 +2140,8 @@ public class SolutionManagerFoundationTests
                 && string.Equals(item.Header?.ToString(), "从解决方案中移除(_V)", StringComparison.Ordinal));
 
             ProjectProviderRegistry.Register(new LateProjectProvider(), priority: 1000);
+            ProjectRefreshResult refreshResult = await explorer.RefreshExplicitProjectStateAsync();
+            Assert.True(refreshResult.Succeeded, refreshResult.ErrorMessage);
 
             ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
             Assert.Equal(LateProjectProvider.ProviderId, projectNode.Project.ProviderId);
@@ -3894,6 +3896,90 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public async Task ProjectProviderAsyncLoad_UsesAsyncContractAndPropagatesCancellation()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string extension = $".cancelproj{Guid.NewGuid():N}";
+        string projectPath = Path.Combine(directoryPath, $"Cancel{extension}");
+        File.WriteAllText(projectPath, string.Empty);
+        var provider = new ControlledAsyncProjectProvider(extension, "Cancel");
+        ProjectProviderRegistry.Register(provider, priority: 1000);
+        Task loadStarted = provider.BlockNextLoad(ignoreCancellation: false);
+        using var cancellation = new CancellationTokenSource();
+        try
+        {
+            Task<ProjectLoadResult> loadTask = ProjectProviderRegistry.LoadProjectAsync(
+                new FileInfo(projectPath),
+                cancellation.Token);
+            await loadStarted.WaitAsync(TimeSpan.FromSeconds(10));
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => loadTask);
+            await provider.CancellationObserved.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(0, provider.SyncLoadCount);
+        }
+        finally
+        {
+            await provider.ReleaseBlockedLoadAsync();
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExplicitProjectRefreshAsync_NewerRequestCancelsOlderAndAppliesLatest()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string extension = $".refreshproj{Guid.NewGuid():N}";
+        string projectPath = Path.Combine(directoryPath, $"App{extension}");
+        string solutionPath = Path.Combine(directoryPath, "Example.cvsln");
+        File.WriteAllText(projectPath, string.Empty);
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetFileName(projectPath)],
+        });
+        var provider = new ControlledAsyncProjectProvider(extension, "Initial");
+        ProjectProviderRegistry.Register(provider, priority: 1000);
+        var manager = new SolutionManager(restoreLastWorkspace: false);
+        try
+        {
+            SolutionOpenOperationResult openResult = await manager.OpenSolutionAsync(solutionPath);
+            Assert.True(openResult.Succeeded, openResult.ErrorMessage);
+            SolutionExplorer explorer = Assert.IsType<SolutionExplorer>(manager.CurrentSolutionExplorer);
+            ProjectNode originalNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            Assert.Equal("Initial", originalNode.Project.Name);
+
+            provider.ProjectName = "Stale";
+            Task staleLoadStarted = provider.BlockNextLoad(ignoreCancellation: true);
+            Task<ProjectRefreshResult> staleRefresh = explorer.RefreshExplicitProjectStateAsync();
+            await staleLoadStarted.WaitAsync(TimeSpan.FromSeconds(10));
+
+            provider.ProjectName = "Latest";
+            Task<ProjectRefreshResult> latestRefresh = explorer.RefreshExplicitProjectStateAsync();
+            ProjectRefreshResult latestResult = await latestRefresh;
+            ProjectRefreshResult staleResult = await staleRefresh;
+
+            Assert.True(latestResult.Succeeded, latestResult.ErrorMessage);
+            Assert.True(staleResult.Canceled);
+            ProjectNode refreshedNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            Assert.Same(originalNode, refreshedNode);
+            Assert.Equal("Latest", refreshedNode.Project.Name);
+            Assert.Equal(0, provider.SyncLoadCount);
+        }
+        finally
+        {
+            await provider.ReleaseBlockedLoadAsync();
+            foreach (SolutionExplorer explorer in manager.SolutionExplorers.ToList())
+                explorer.Dispose();
+            manager.SolutionHistory.RemoveFile(solutionPath);
+            File.Delete(SolutionConfigStore.GetBackupPath(solutionPath));
+            File.Delete($"{solutionPath}.cache.db");
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task WorkspaceOpenAsync_NewerRequestCancelsOlderWithoutReplacingItLater()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -5274,6 +5360,134 @@ public class SolutionManagerFoundationTests
                 projectFile,
                 RootDirectory: projectFile.Directory);
         }
+    }
+
+    private sealed class ControlledAsyncProjectProvider : IProjectProvider, IProjectFileFormatProvider
+    {
+        private sealed record LoadGate(
+            bool IgnoreCancellation,
+            TaskCompletionSource<bool> Started,
+            TaskCompletionSource<bool> Release,
+            TaskCompletionSource<bool> Completed);
+
+        private readonly string _extension;
+        private readonly object _syncRoot = new();
+        private readonly TaskCompletionSource<bool> _cancellationObserved = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        private LoadGate? _nextGate;
+        private LoadGate? _activeGate;
+        private string _projectName;
+        private int _syncLoadCount;
+
+        public ControlledAsyncProjectProvider(string extension, string projectName)
+        {
+            _extension = extension;
+            _projectName = projectName;
+            Id = $"tests.controlled-async-project.{Guid.NewGuid():N}";
+            ProjectFilePatterns = [$"*{extension}"];
+        }
+
+        public string Id { get; }
+        public IReadOnlyList<string> ProjectFilePatterns { get; }
+        public int SyncLoadCount => Volatile.Read(ref _syncLoadCount);
+        public Task CancellationObserved => _cancellationObserved.Task;
+        public string ProjectName
+        {
+            get => Volatile.Read(ref _projectName);
+            set => Volatile.Write(ref _projectName, value);
+        }
+
+        public bool CanLoad(FileInfo projectFile) =>
+            projectFile.Exists
+            && projectFile.Name.EndsWith(_extension, StringComparison.OrdinalIgnoreCase);
+
+        public ProjectDefinition Load(FileInfo projectFile)
+        {
+            Interlocked.Increment(ref _syncLoadCount);
+            return CreateDefinition(projectFile, ProjectName);
+        }
+
+        public async Task<ProjectDefinition> LoadAsync(
+            FileInfo projectFile,
+            CancellationToken cancellationToken = default)
+        {
+            LoadGate? gate;
+            string projectName = ProjectName;
+            lock (_syncRoot)
+            {
+                gate = _nextGate;
+                _nextGate = null;
+                if (gate != null)
+                    _activeGate = gate;
+            }
+
+            if (gate != null)
+            {
+                gate.Started.TrySetResult(true);
+                try
+                {
+                    if (gate.IgnoreCancellation)
+                        await gate.Release.Task;
+                    else
+                        await gate.Release.Task.WaitAsync(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    _cancellationObserved.TrySetResult(true);
+                    throw;
+                }
+                finally
+                {
+                    gate.Completed.TrySetResult(true);
+                }
+            }
+
+            if (gate?.IgnoreCancellation != true)
+                cancellationToken.ThrowIfCancellationRequested();
+            return CreateDefinition(projectFile, projectName);
+        }
+
+        public Task<bool> BlockNextLoad(bool ignoreCancellation)
+        {
+            lock (_syncRoot)
+            {
+                if (_nextGate != null)
+                    throw new InvalidOperationException("已有等待中的项目加载门闩。");
+                _nextGate = new LoadGate(
+                    ignoreCancellation,
+                    new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously),
+                    new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously),
+                    new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+                return _nextGate.Started.Task;
+            }
+        }
+
+        public async Task ReleaseBlockedLoadAsync()
+        {
+            LoadGate? gate;
+            lock (_syncRoot)
+            {
+                gate = _activeGate ?? _nextGate;
+                _nextGate = null;
+            }
+            if (gate == null)
+                return;
+
+            gate.Release.TrySetResult(true);
+            await gate.Completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            lock (_syncRoot)
+            {
+                if (ReferenceEquals(_activeGate, gate))
+                    _activeGate = null;
+            }
+        }
+
+        private ProjectDefinition CreateDefinition(FileInfo projectFile, string projectName) => new(
+            Id,
+            projectName,
+            "1.0",
+            projectFile,
+            RootDirectory: projectFile.Directory);
     }
 
     private sealed class BlockingLegacySolutionProvider : ISolutionFileProvider
