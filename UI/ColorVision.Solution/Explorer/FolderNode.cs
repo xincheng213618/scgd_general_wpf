@@ -21,7 +21,6 @@ namespace ColorVision.Solution.Explorer
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
-        FileSystemWatcher? FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand OpenMethodCommand { get; set; }
@@ -226,58 +225,6 @@ namespace ColorVision.Solution.Explorer
                 VisualChildren.Add(new LazyLoadingNode { Parent = this });
         }
 
-        private void InitializeFileSystemWatcher()
-        {
-            if (DirectoryInfo != null && DirectoryInfo.Exists)
-            {
-                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
-
-                FileSystemWatcher.Created += (s, e) =>
-                {
-                    // Update cache
-                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
-                    if (cache != null)
-                    {
-                        if (File.Exists(e.FullPath))
-                            cache.AddFile(e.FullPath, DirectoryInfo.FullName);
-                        else if (Directory.Exists(e.FullPath))
-                            cache.AddDirectory(e.FullPath, DirectoryInfo.FullName);
-                    }
-
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        // Duplicate protection
-                        if (VisualChildren.Any(c => c.FullPath == e.FullPath))
-                            return;
-
-                        if (File.Exists(e.FullPath))
-                        {
-                            SolutionNodeFactory.AddFileNode(this, new FileInfo(e.FullPath));
-                        }
-                        else if (Directory.Exists(e.FullPath))
-                        {
-                            SolutionNodeFactory.AddFolderNode(this, new DirectoryInfo(e.FullPath));
-                        }
-                    });
-                };
-                FileSystemWatcher.Deleted += (s, e) =>
-                {
-                    // Update cache
-                    SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache?.Remove(e.FullPath);
-
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
-                        if (child != null)
-                        {
-                            VisualChildren.Remove(child);
-                        }
-                    });
-                };
-                FileSystemWatcher.EnableRaisingEvents = true;
-            }
-        }
-
         private void InitializeCommands()
         {
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
@@ -467,7 +414,6 @@ namespace ColorVision.Solution.Explorer
 
             string? originalPath = null;
             DirectoryInfo? originalDirectoryInfo = null;
-            bool fileSystemWatcherWasEnabled = false;
 
             try
             {
@@ -489,21 +435,6 @@ namespace ColorVision.Solution.Explorer
                     if (!EditorDocumentService.TryPrepareResourceRename(originalPath))
                         return false;
 
-                    // 临时禁用文件系统监视器
-                    if (FileSystemWatcher?.EnableRaisingEvents == true)
-                    {
-                        fileSystemWatcherWasEnabled = true;
-                        FileSystemWatcher.EnableRaisingEvents = false;
-                    }
-
-                    foreach (var item in VisualChildren)
-                    {
-                        if (item is FolderNode folder && folder.FileSystemWatcher?.EnableRaisingEvents == true)
-                        {
-                            folder.FileSystemWatcher.EnableRaisingEvents = false;
-                        }
-                    }
-
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
                     EditorDocumentService.NotifyResourceRenamed(originalPath, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
@@ -512,15 +443,6 @@ namespace ColorVision.Solution.Explorer
                     ResetChildrenForReload();
                     if (IsExpanded)
                         _ = EnsureChildrenLoadedAsync();
-
-                    if (FileSystemWatcher != null)
-                    {
-                        FileSystemWatcher.Path = DirectoryInfo.FullName;
-                        if (fileSystemWatcherWasEnabled)
-                        {
-                            FileSystemWatcher.EnableRaisingEvents = true;
-                        }
-                    }
 
                     LogOperation($"成功重命名文件夹: {originalPath} -> {destinationDirectoryPath}");
                     return true;
@@ -535,7 +457,7 @@ namespace ColorVision.Solution.Explorer
             {
                 LogError($"重命名文件夹失败 - 权限不足: {ex.Message}", ex);
                 ShowUserError("权限不足，无法重命名文件夹");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
             catch (DirectoryNotFoundException ex)
             {
@@ -547,17 +469,17 @@ namespace ColorVision.Solution.Explorer
             {
                 LogError($"重命名文件夹失败 - IO错误: {ex.Message}", ex);
                 ShowUserError($"文件夹重命名失败: {ex.Message}");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
             catch (Exception ex)
             {
                 LogError($"重命名文件夹失败 - 未知错误: {ex.Message}", ex);
                 ShowUserError($"重命名失败: {ex.Message}");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
         }
 
-        private bool RollbackRename(string? originalPath, DirectoryInfo? originalDirectoryInfo, bool fileSystemWatcherWasEnabled)
+        private bool RollbackRename(string? originalPath, DirectoryInfo? originalDirectoryInfo)
         {
             try
             {
@@ -566,15 +488,6 @@ namespace ColorVision.Solution.Explorer
                     LogOperation($"尝试回滚重命名操作: {originalPath}");
                     DirectoryInfo = originalDirectoryInfo;
                     FullPath = originalPath;
-
-                    if (FileSystemWatcher != null)
-                    {
-                        FileSystemWatcher.Path = originalPath;
-                        if (fileSystemWatcherWasEnabled)
-                        {
-                            FileSystemWatcher.EnableRaisingEvents = true;
-                        }
-                    }
 
                     ResetChildrenForReload();
                     if (IsExpanded)
@@ -662,7 +575,6 @@ namespace ColorVision.Solution.Explorer
                 foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
                     child.Dispose();
                 VisualChildren.Clear();
-                FileSystemWatcher?.Dispose();
             }
         }
 

@@ -365,6 +365,140 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SolutionCache_AddDirectoryTreeIndexesExistingDescendants()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string importedDirectory = Path.Combine(rootPath, "Imported");
+        string nestedFilePath = Path.Combine(importedDirectory, "Nested", "indexed-needle.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(nestedFilePath)!);
+        File.WriteAllText(nestedFilePath, "indexed");
+        string solutionPath = Path.Combine(rootPath, "Example.cvsln");
+
+        try
+        {
+            using var cache = new SolutionCache(solutionPath);
+
+            cache.AddDirectoryTree(importedDirectory, rootPath);
+            List<FileTreeCacheEntry> results = cache.Search(["indexed-needle"], rootPath: rootPath);
+
+            Assert.Contains(results, entry =>
+                !entry.IsDirectory
+                && string.Equals(entry.FullPath, nestedFilePath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SolutionCache_SearchPrunesStaleEntriesBeforeApplyingLimit()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string staleDirectory = Path.Combine(rootPath, "aaa-needle-stale");
+        string validFilePath = Path.Combine(rootPath, "zzz-needle-valid.txt");
+        Directory.CreateDirectory(staleDirectory);
+        File.WriteAllText(validFilePath, "valid");
+        string solutionPath = Path.Combine(rootPath, "Example.cvsln");
+
+        try
+        {
+            using var cache = new SolutionCache(solutionPath);
+            cache.AddDirectory(staleDirectory, rootPath);
+            cache.AddFile(validFilePath, rootPath);
+            Directory.Delete(staleDirectory);
+
+            FileTreeCacheEntry result = Assert.Single(cache.Search(
+                ["needle"],
+                maxResults: 1,
+                rootPath: rootPath));
+
+            Assert.Equal(validFilePath, result.FullPath, ignoreCase: true);
+            Assert.DoesNotContain(cache.Search(["needle"], rootPath: rootPath), entry =>
+                string.Equals(entry.FullPath, staleDirectory, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DirectoryIndexBatchKeepsOnlyTopLevelPendingRoots()
+    {
+        string rootPath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "SolutionIndexRoot"));
+        string nestedPath = Path.Combine(rootPath, "Nested");
+        string deeplyNestedPath = Path.Combine(nestedPath, "Deep");
+        string siblingPath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "SolutionIndexSibling"));
+        var pendingIndexes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [deeplyNestedPath] = nestedPath,
+            [rootPath] = Path.GetDirectoryName(rootPath)!,
+            [nestedPath] = rootPath,
+            [siblingPath] = Path.GetDirectoryName(siblingPath)!,
+        };
+
+        List<KeyValuePair<string, string>> roots = SolutionExplorer.ReduceDirectoryIndexRoots(pendingIndexes);
+
+        Assert.Equal(2, roots.Count);
+        Assert.Contains(roots, entry => string.Equals(entry.Key, rootPath, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(roots, entry => string.Equals(entry.Key, siblingPath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task ExternalProjectChangesUpdateLoadedTreeIncrementally()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string externalDirectory = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(externalDirectory, "ExternalProject");
+        string sourceDirectory = Path.Combine(projectDirectory, "Source");
+        string projectPath = Path.Combine(projectDirectory, "ExternalProject.cvproj");
+        Directory.CreateDirectory(sourceDirectory);
+        FolderProjectProvider.CreateProjectFile(projectPath, "ExternalProject");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetRelativePath(solutionDirectory, projectPath)],
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            await projectNode.EnsureChildrenLoadedAsync();
+            FolderNode sourceNode = Assert.Single(projectNode.VisualChildren.OfType<FolderNode>(), node =>
+                string.Equals(node.FullPath, sourceDirectory, StringComparison.OrdinalIgnoreCase));
+            await sourceNode.EnsureChildrenLoadedAsync();
+            string createdPath = Path.Combine(sourceDirectory, "created.txt");
+            string renamedPath = Path.Combine(sourceDirectory, "renamed.txt");
+
+            File.WriteAllText(createdPath, "created");
+            projectNode.ApplyExternalCreated(createdPath);
+            Assert.Contains(sourceNode.VisualChildren, node =>
+                string.Equals(node.FullPath, createdPath, StringComparison.OrdinalIgnoreCase));
+
+            File.Move(createdPath, renamedPath);
+            projectNode.ApplyExternalRenamed(createdPath, renamedPath);
+            Assert.DoesNotContain(sourceNode.VisualChildren, node =>
+                string.Equals(node.FullPath, createdPath, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(sourceNode.VisualChildren, node =>
+                string.Equals(node.FullPath, renamedPath, StringComparison.OrdinalIgnoreCase));
+
+            File.Delete(renamedPath);
+            projectNode.ApplyExternalDeleted(renamedPath);
+            Assert.DoesNotContain(sourceNode.VisualChildren, node =>
+                string.Equals(node.FullPath, renamedPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+            Directory.Delete(externalDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionSearch_ParseKeywordsSupportsPhrasesAndRemovesDuplicates()
     {
         IReadOnlyList<string> keywords = SolutionSearchService.ParseKeywords(

@@ -14,6 +14,9 @@ namespace ColorVision.Solution.Explorer
     public sealed class ProjectNode : FolderNode
     {
         private FileSystemWatcher? _externalProjectWatcher;
+        private FileSystemWatcher? _externalProjectFileWatcher;
+        private readonly object _externalChangeSync = new();
+        private bool _projectDisposed;
 
         public ProjectDefinition Project { get; private set; }
         public IReadOnlyList<ProjectCapabilityDescriptor> Capabilities { get; private set; }
@@ -287,32 +290,214 @@ namespace ColorVision.Solution.Explorer
 
         private void InitializeExternalProjectWatcher()
         {
-            if (SolutionExplorer?.IsExplicitProjectMode != true
-                || SolutionExplorer.IsPathWithinSolution(Project.ProjectFile.FullName)
-                || Project.ProjectFile.Directory is not { Exists: true } projectDirectory)
+            if (SolutionExplorer?.IsExplicitProjectMode != true)
             {
                 return;
             }
 
-            _externalProjectWatcher = new FileSystemWatcher(projectDirectory.FullName, Project.ProjectFile.Name)
+            DirectoryInfo projectDirectory = Project.ProjectDirectory;
+            if (projectDirectory.Exists
+                && !SolutionExplorer.IsPathWithinSolution(projectDirectory.FullName))
             {
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
-                EnableRaisingEvents = true,
+                _externalProjectWatcher = CreateExternalWatcher(projectDirectory.FullName);
+            }
+
+            if (!SolutionExplorer.IsPathWithinSolution(Project.ProjectFile.FullName)
+                && Project.ProjectFile.Directory is { Exists: true } projectFileDirectory
+                && !IsPathWithin(projectDirectory.FullName, Project.ProjectFile.FullName))
+            {
+                _externalProjectFileWatcher = CreateExternalWatcher(
+                    projectFileDirectory.FullName,
+                    Project.ProjectFile.Name);
+            }
+        }
+
+        private FileSystemWatcher CreateExternalWatcher(string path, string filter = "*")
+        {
+            var watcher = new FileSystemWatcher(path, filter)
+            {
+                IncludeSubdirectories = string.Equals(filter, "*", StringComparison.Ordinal),
+                InternalBufferSize = 64 * 1024,
+                NotifyFilter = NotifyFilters.FileName
+                    | NotifyFilters.DirectoryName
+                    | NotifyFilters.LastWrite
+                    | NotifyFilters.Size,
             };
-            FileSystemEventHandler refreshHandler = (_, _) => SolutionExplorer.RefreshExplicitProjectState();
-            RenamedEventHandler renameHandler = (_, _) => SolutionExplorer.RefreshExplicitProjectState();
-            _externalProjectWatcher.Created += refreshHandler;
-            _externalProjectWatcher.Changed += refreshHandler;
-            _externalProjectWatcher.Deleted += refreshHandler;
-            _externalProjectWatcher.Renamed += renameHandler;
+            watcher.Created += ExternalProjectWatcher_Created;
+            watcher.Changed += ExternalProjectWatcher_Changed;
+            watcher.Deleted += ExternalProjectWatcher_Deleted;
+            watcher.Renamed += ExternalProjectWatcher_Renamed;
+            watcher.Error += ExternalProjectWatcher_Error;
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+
+        private void ExternalProjectWatcher_Created(object sender, FileSystemEventArgs e)
+        {
+            if (IsProjectDefinitionPath(e.FullPath))
+            {
+                SolutionExplorer?.RefreshExplicitProjectState();
+                return;
+            }
+            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
+                return;
+            InvokeExternalChange(() => ApplyExternalCreated(e.FullPath));
+        }
+
+        private void ExternalProjectWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            if (IsProjectDefinitionPath(e.FullPath))
+                SolutionExplorer?.RefreshExplicitProjectState();
+        }
+
+        private void ExternalProjectWatcher_Deleted(object sender, FileSystemEventArgs e)
+        {
+            if (IsProjectDefinitionPath(e.FullPath))
+            {
+                SolutionExplorer?.RefreshExplicitProjectState();
+                return;
+            }
+            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
+                return;
+            InvokeExternalChange(() => ApplyExternalDeleted(e.FullPath));
+        }
+
+        private void ExternalProjectWatcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            if (IsProjectDefinitionPath(e.FullPath) || IsProjectDefinitionPath(e.OldFullPath))
+            {
+                SolutionExplorer?.RefreshExplicitProjectState();
+                return;
+            }
+            InvokeExternalChange(() => ApplyExternalRenamed(e.OldFullPath, e.FullPath));
+        }
+
+        private void ExternalProjectWatcher_Error(object sender, ErrorEventArgs e)
+        {
+            LogError("外部项目文件监视器发生错误，将重新加载项目树。", e.GetException());
+            InvokeExternalChange(() =>
+            {
+                lock (_externalChangeSync)
+                {
+                    if (_projectDisposed)
+                        return;
+                    ReloadChildren();
+                    SolutionExplorer?.NotifyVisualTreeChanged();
+                }
+            });
+        }
+
+        internal void ApplyExternalCreated(string fullPath)
+        {
+            lock (_externalChangeSync)
+            {
+                if (_projectDisposed || !IncludesPath(fullPath))
+                    return;
+                string? parentPath = Path.GetDirectoryName(fullPath);
+                SolutionNode? parentNode = FindLoadedNode(parentPath);
+                if (parentNode == null)
+                {
+                    SolutionExplorer?.NotifyVisualTreeChanged();
+                    return;
+                }
+                if (parentNode is FolderNode unloadedFolder && !unloadedFolder.AreChildrenLoaded)
+                {
+                    unloadedFolder.MarkChildrenChanged();
+                    SolutionExplorer?.NotifyVisualTreeChanged();
+                    return;
+                }
+                if (!parentNode.VisualChildren.Any(child => PathEquals(child.FullPath, fullPath)))
+                {
+                    if (File.Exists(fullPath))
+                        SolutionNodeFactory.AddFileNode(parentNode, new FileInfo(fullPath));
+                    else if (Directory.Exists(fullPath))
+                        SolutionNodeFactory.AddFolderNode(parentNode, new DirectoryInfo(fullPath));
+                }
+                SolutionExplorer?.NotifyVisualTreeChanged();
+            }
+        }
+
+        internal void ApplyExternalDeleted(string fullPath)
+        {
+            lock (_externalChangeSync)
+            {
+                if (_projectDisposed)
+                    return;
+                SolutionNode? node = FindLoadedNode(fullPath);
+                if (node != null && !ReferenceEquals(node, this))
+                {
+                    node.Parent?.RemoveChild(node);
+                    if (node is IDisposable disposable)
+                        disposable.Dispose();
+                }
+                SolutionExplorer?.NotifyVisualTreeChanged();
+            }
+        }
+
+        internal void ApplyExternalRenamed(string oldFullPath, string newFullPath)
+        {
+            ApplyExternalDeleted(oldFullPath);
+            ApplyExternalCreated(newFullPath);
+        }
+
+        private SolutionNode? FindLoadedNode(string? fullPath)
+        {
+            if (string.IsNullOrWhiteSpace(fullPath))
+                return null;
+            if (PathEquals(FullPath, fullPath))
+                return this;
+            return VisualChildren
+                .GetAllVisualChildren()
+                .FirstOrDefault(node => PathEquals(node.FullPath, fullPath));
+        }
+
+        private bool IsProjectDefinitionPath(string fullPath)
+        {
+            return PathEquals(Project.ProjectFile.FullName, fullPath);
+        }
+
+        private void InvokeExternalChange(Action action)
+        {
+            if (_projectDisposed)
+                return;
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                action();
+            else
+                _ = dispatcher.BeginInvoke(action);
+        }
+
+        private static bool IsPathWithin(string rootPath, string fullPath)
+        {
+            try
+            {
+                string relativePath = Path.GetRelativePath(rootPath, fullPath);
+                return !Path.IsPathRooted(relativePath)
+                    && !string.Equals(relativePath, "..", StringComparison.Ordinal)
+                    && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                    && !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
+        }
+
+        private static bool PathEquals(string? left, string? right)
+        {
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                lock (_externalChangeSync)
+                    _projectDisposed = true;
                 _externalProjectWatcher?.Dispose();
                 _externalProjectWatcher = null;
+                _externalProjectFileWatcher?.Dispose();
+                _externalProjectFileWatcher = null;
             }
             base.Dispose(disposing);
         }

@@ -119,6 +119,10 @@ namespace ColorVision.Solution.Explorer
         private DispatcherTimer _projectChangedDebounceTimer;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
+        private int _cacheRebuildPending;
+        private readonly object _directoryIndexSync = new();
+        private readonly Dictionary<string, string> _pendingDirectoryIndexes = new(StringComparer.OrdinalIgnoreCase);
+        private bool _directoryIndexWorkerRunning;
         private int _trackedMutationDepth;
         private bool _operationHistoryEnabled;
         private bool _isApplyingOperationSnapshot;
@@ -323,20 +327,19 @@ namespace ColorVision.Solution.Explorer
                 _fileSystemWatcher.Created += FileSystemWatcher_Created;
                 _fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
                 _fileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
-                _fileSystemWatcher.Changed += (s, e) => Application.Current?.Dispatcher.BeginInvoke(() =>
+                _fileSystemWatcher.Changed += (_, e) =>
                 {
                     if (SolutionManager.IsProjectFilePath(e.FullPath))
                         RefreshProjectFileState(e.FullPath);
-                    _changedDebounceTimer.Stop();
-                    _changedDebounceTimer.Start();
-                });
+                };
+                _fileSystemWatcher.Error += FileSystemWatcher_Error;
             }
         }
 
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
             // Skip internal solution files (e.g. .cvsln, .cache.db)
-                if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
+            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
             {
                 if (SolutionManager.IsProjectFilePath(e.FullPath))
                     RefreshProjectFileState(e.FullPath);
@@ -349,6 +352,7 @@ namespace ColorVision.Solution.Explorer
                 if (!string.IsNullOrWhiteSpace(registeredItemParent))
                     Cache?.AddFile(e.FullPath, registeredItemParent);
                 Application.Current?.Dispatcher.BeginInvoke(() => ReconcileExplicitProjects(reloadLoadedProjects: true));
+                NotifyVisualTreeChanged();
                 return;
             }
 
@@ -362,8 +366,10 @@ namespace ColorVision.Solution.Explorer
                 if (File.Exists(e.FullPath))
                     Cache.AddFile(e.FullPath, parentPath);
                 else if (Directory.Exists(e.FullPath))
-                    Cache.AddDirectory(e.FullPath, parentPath);
+                    QueueDirectoryIndex(e.FullPath, parentPath);
             }
+
+            NotifyVisualTreeChanged();
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
@@ -395,6 +401,7 @@ namespace ColorVision.Solution.Explorer
             {
                 Cache?.Remove(e.FullPath);
                 Application.Current?.Dispatcher.BeginInvoke(() => ReconcileExplicitProjects(reloadLoadedProjects: true));
+                NotifyVisualTreeChanged();
                 return;
             }
             if (SolutionManager.IsProjectFilePath(e.FullPath))
@@ -405,6 +412,7 @@ namespace ColorVision.Solution.Explorer
 
             // Update cache
             Cache?.Remove(e.FullPath);
+            NotifyVisualTreeChanged();
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
@@ -421,7 +429,6 @@ namespace ColorVision.Solution.Explorer
                     if (!string.IsNullOrWhiteSpace(parentPath) && FindNodeByFullPath(parentPath) is FolderNode unloadedFolder)
                         unloadedFolder.MarkChildrenChanged();
                 }
-                VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
             });
         }
 
@@ -435,6 +442,7 @@ namespace ColorVision.Solution.Explorer
                 if (!string.IsNullOrWhiteSpace(registeredItemParent))
                     Cache?.AddFile(e.FullPath, registeredItemParent);
                 Application.Current?.Dispatcher.BeginInvoke(() => ReconcileExplicitProjects(reloadLoadedProjects: true));
+                NotifyVisualTreeChanged();
                 return;
             }
             if (SolutionManager.IsProjectFilePath(e.FullPath) || SolutionManager.IsProjectFilePath(e.OldFullPath))
@@ -452,7 +460,9 @@ namespace ColorVision.Solution.Explorer
             if (File.Exists(e.FullPath))
                 Cache?.AddFile(e.FullPath, parentPath);
             else if (Directory.Exists(e.FullPath))
-                Cache?.AddDirectory(e.FullPath, parentPath);
+                QueueDirectoryIndex(e.FullPath, parentPath);
+
+            NotifyVisualTreeChanged();
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
@@ -482,6 +492,148 @@ namespace ColorVision.Solution.Explorer
                 if (oldPathIsSolutionItem)
                     ReconcileExplicitProjects(reloadLoadedProjects: true);
             });
+        }
+
+        private void FileSystemWatcher_Error(object sender, ErrorEventArgs e)
+        {
+            Logger.Warn("解决方案文件监视器发生错误，将重建搜索缓存。", e.GetException());
+            QueueCacheRebuild();
+        }
+
+        private void QueueDirectoryIndex(string directoryPath, string parentPath)
+        {
+            SolutionCache? cache = Cache;
+            if (_disposed || cache == null)
+                return;
+
+            string normalizedDirectoryPath;
+            try
+            {
+                normalizedDirectoryPath = Path.GetFullPath(directoryPath)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                Logger.Warn($"无法索引目录: {directoryPath}, {ex.Message}");
+                return;
+            }
+
+            lock (_directoryIndexSync)
+            {
+                _pendingDirectoryIndexes[normalizedDirectoryPath] = parentPath;
+                if (_directoryIndexWorkerRunning)
+                    return;
+                _directoryIndexWorkerRunning = true;
+            }
+
+            _ = Task.Run(ProcessPendingDirectoryIndexesAsync);
+        }
+
+        private async Task ProcessPendingDirectoryIndexesAsync()
+        {
+            while (!_disposed)
+            {
+                await Task.Delay(150).ConfigureAwait(false);
+                List<KeyValuePair<string, string>> pendingIndexes;
+                lock (_directoryIndexSync)
+                {
+                    pendingIndexes = ReduceDirectoryIndexRoots(_pendingDirectoryIndexes);
+                    _pendingDirectoryIndexes.Clear();
+                }
+
+                SolutionCache? cache = Cache;
+                if (cache != null)
+                {
+                    foreach ((string directoryPath, string parentPath) in pendingIndexes)
+                        cache.AddDirectoryTree(directoryPath, parentPath);
+                    NotifyVisualTreeChanged();
+                }
+
+                lock (_directoryIndexSync)
+                {
+                    if (_pendingDirectoryIndexes.Count > 0)
+                        continue;
+                    _directoryIndexWorkerRunning = false;
+                    return;
+                }
+            }
+
+            lock (_directoryIndexSync)
+                _directoryIndexWorkerRunning = false;
+        }
+
+        internal static List<KeyValuePair<string, string>> ReduceDirectoryIndexRoots(
+            IReadOnlyDictionary<string, string> pendingIndexes)
+        {
+            var roots = new List<KeyValuePair<string, string>>();
+            foreach (KeyValuePair<string, string> candidate in pendingIndexes.OrderBy(entry => entry.Key.Length))
+            {
+                if (!roots.Any(root => IsSameOrDescendantPath(root.Key, candidate.Key)))
+                    roots.Add(candidate);
+            }
+            return roots;
+        }
+
+        private static bool IsSameOrDescendantPath(string rootPath, string candidatePath)
+        {
+            if (string.Equals(rootPath, candidatePath, StringComparison.OrdinalIgnoreCase))
+                return true;
+            try
+            {
+                string relativePath = Path.GetRelativePath(rootPath, candidatePath);
+                return !Path.IsPathRooted(relativePath)
+                    && !string.Equals(relativePath, "..", StringComparison.Ordinal)
+                    && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                    && !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
+        }
+
+        private void QueueCacheRebuild()
+        {
+            SolutionCache? cache = Cache;
+            if (_disposed || cache == null || Interlocked.Exchange(ref _cacheRebuildPending, 1) != 0)
+                return;
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    cache.RebuildCache(DirectoryInfo.FullName);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"文件监视器恢复时重建缓存失败: {ex.Message}", ex);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _cacheRebuildPending, 0);
+                    NotifyVisualTreeChanged();
+                }
+            });
+        }
+
+        internal void NotifyVisualTreeChanged()
+        {
+            if (_disposed)
+                return;
+
+            var dispatcher = _changedDebounceTimer.Dispatcher;
+            void QueueNotification()
+            {
+                if (_disposed)
+                    return;
+                _changedDebounceTimer.Stop();
+                _changedDebounceTimer.Start();
+            }
+
+            if (dispatcher.CheckAccess())
+                QueueNotification();
+            else
+                _ = dispatcher.BeginInvoke(QueueNotification);
         }
 
         public override void InitMenuItem()
