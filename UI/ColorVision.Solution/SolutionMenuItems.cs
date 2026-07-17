@@ -1,9 +1,27 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Explorer;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Menus.Base;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+    public static class SolutionWorkspaceCommands
+    {
+        public static RoutedUICommand CloseSolution { get; } = new(
+            "关闭解决方案",
+            nameof(CloseSolution),
+            typeof(SolutionWorkspaceCommands));
+    }
+
+    public sealed class MenuCloseSolution : MenuItemFileBase
+    {
+        public override string GuidId => nameof(MenuCloseSolution);
+        public override string Header => "关闭解决方案(_L)";
+        public override int Order => 21;
+        public override ICommand Command => SolutionWorkspaceCommands.CloseSolution;
+    }
+
     internal static class SolutionMenuIds
     {
         public const string Build = "Solution.BuildMenu";

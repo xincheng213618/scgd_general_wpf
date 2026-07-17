@@ -179,6 +179,35 @@ namespace ColorVision.Solution.Explorer
         internal bool CanModifySolutionStructure => !IsImportedSolution;
         public string ActiveConfiguration => Config.ActiveConfiguration;
 
+        internal IReadOnlyList<string> GetDocumentResourceRoots()
+        {
+            var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                DirectoryInfo.FullName,
+                ConfigFileInfo.FullName,
+            };
+            if (ImportedSolutionSourcePath is { } importedSourcePath)
+                roots.Add(importedSourcePath);
+
+            foreach (SolutionNode node in VisualChildren.GetAllVisualChildren())
+            {
+                switch (node)
+                {
+                    case ProjectNode projectNode:
+                        roots.Add(projectNode.Project.ProjectDirectory.FullName);
+                        roots.Add(projectNode.Project.ProjectFile.FullName);
+                        break;
+                    case SolutionItemNode itemNode:
+                        roots.Add(itemNode.FullPath);
+                        break;
+                    case UnavailableProjectNode unavailableNode when !string.IsNullOrWhiteSpace(unavailableNode.ResolvedPath):
+                        roots.Add(unavailableNode.ResolvedPath);
+                        break;
+                }
+            }
+            return roots.ToList();
+        }
+
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
             : this(solutionEnvironments, preparation: null)
         {

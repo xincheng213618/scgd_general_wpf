@@ -27,6 +27,16 @@ namespace ColorVision.Solution
         string DisplayName = "",
         string ErrorMessage = "");
 
+    public sealed class SolutionWorkspaceEventArgs : EventArgs
+    {
+        public string WorkspacePath { get; }
+
+        public SolutionWorkspaceEventArgs(string workspacePath)
+        {
+            WorkspacePath = workspacePath ?? string.Empty;
+        }
+    }
+
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -40,6 +50,7 @@ namespace ColorVision.Solution
         private static readonly object _locker = new();
         public static SolutionManager GetInstance() { lock (_locker) { _instance ??= new SolutionManager(); return _instance; } }
         private readonly object _workspaceOpenSync = new();
+        private readonly Func<SolutionExplorer, bool> _tryCloseWorkspaceDocuments;
         private CancellationTokenSource? _workspaceOpenCancellation;
         private int _workspaceOpenVersion;
 
@@ -55,9 +66,13 @@ namespace ColorVision.Solution
         /// 工程打开的时候
         /// </summary>
         public event EventHandler SolutionLoaded;
+        /// <summary>
+        /// 当前工作区关闭的时候；事件参数包含用户打开的文件夹、项目或解决方案路径。
+        /// </summary>
+        public event EventHandler<SolutionWorkspaceEventArgs>? SolutionClosed;
 
         public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
-        public SolutionExplorer CurrentSolutionExplorer
+        public SolutionExplorer? CurrentSolutionExplorer
         {
             get => _CurrentSolutionExplorer;
             set
@@ -66,12 +81,29 @@ namespace ColorVision.Solution
                     return;
 
                 _CurrentSolutionExplorer = value;
+                if (value == null)
+                    CurrentWorkspacePath = string.Empty;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CanCloseSolution));
                 MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Configuration);
                 System.Windows.Input.CommandManager.InvalidateRequerySuggested();
             }
         }
-        private SolutionExplorer _CurrentSolutionExplorer;
+        private SolutionExplorer? _CurrentSolutionExplorer;
+
+        public string CurrentWorkspacePath
+        {
+            get => _currentWorkspacePath;
+            private set
+            {
+                if (string.Equals(_currentWorkspacePath, value, StringComparison.OrdinalIgnoreCase))
+                    return;
+                _currentWorkspacePath = value;
+                OnPropertyChanged();
+            }
+        }
+        private string _currentWorkspacePath = string.Empty;
+        public bool CanCloseSolution => CurrentSolutionExplorer != null || IsOpeningWorkspace;
 
         public bool IsOpeningWorkspace
         {
@@ -83,6 +115,8 @@ namespace ColorVision.Solution
                 _isOpeningWorkspace = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(WorkspaceOpenStatus));
+                OnPropertyChanged(nameof(CanCloseSolution));
+                System.Windows.Input.CommandManager.InvalidateRequerySuggested();
             }
         }
         private bool _isOpeningWorkspace;
@@ -106,12 +140,16 @@ namespace ColorVision.Solution
 
         public RelayCommand SettingCommand { get; set; } 
 
-        public SolutionManager() : this(restoreLastWorkspace: true)
+        public SolutionManager() : this(restoreLastWorkspace: true, tryCloseWorkspaceDocuments: null)
         {
         }
 
-        internal SolutionManager(bool restoreLastWorkspace)
+        internal SolutionManager(
+            bool restoreLastWorkspace,
+            Func<SolutionExplorer, bool>? tryCloseWorkspaceDocuments = null)
         {
+            _tryCloseWorkspaceDocuments = tryCloseWorkspaceDocuments
+                ?? TryCloseWorkspaceDocumentsCore;
             ColorVision.UI.FileProcessorFactory.GetInstance().WorkspaceOpenHandler ??= Editor.ResourceOpenService.TryOpenFile;
             SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
 
@@ -631,6 +669,12 @@ namespace ColorVision.Solution
 
         public bool TryOpenSolution(string fullPath, out string errorMessage)
         {
+            if (IsCurrentWorkspacePath(fullPath))
+            {
+                CancelWorkspaceOpen();
+                errorMessage = string.Empty;
+                return true;
+            }
             CancelWorkspaceOpen();
             if (!TryResolveOpenTarget(
                 fullPath,
@@ -676,8 +720,16 @@ namespace ColorVision.Solution
                 return false;
             }
 
+            if (!TryCloseCurrentWorkspaceDocuments())
+            {
+                candidateExplorer.Dispose();
+                errorMessage = "切换工作区已取消。";
+                return false;
+            }
+
             DisposeSolutionExplorers();
             SolutionEnvironments = candidateEnvironment;
+            CurrentWorkspacePath = historyPath;
             CurrentSolutionExplorer = candidateExplorer;
             SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
             SolutionExplorers.Add(candidateExplorer);
@@ -693,6 +745,11 @@ namespace ColorVision.Solution
             string fullPath,
             CancellationToken cancellationToken = default)
         {
+            if (IsCurrentWorkspacePath(fullPath))
+            {
+                CancelWorkspaceOpen();
+                return new SolutionOpenOperationResult(true);
+            }
             CancellationTokenSource requestCancellation = BeginWorkspaceOpen(
                 fullPath,
                 cancellationToken,
@@ -752,8 +809,21 @@ namespace ColorVision.Solution
                     return new SolutionOpenOperationResult(false, "打开工作区已取消。", Canceled: true);
                 }
 
+                if (!TryCloseCurrentWorkspaceDocuments())
+                {
+                    candidateExplorer.Dispose();
+                    return new SolutionOpenOperationResult(false, "切换工作区已取消。", Canceled: true);
+                }
+                if (requestCancellation.IsCancellationRequested
+                    || !IsCurrentWorkspaceOpenRequest(requestCancellation, requestVersion))
+                {
+                    candidateExplorer.Dispose();
+                    return new SolutionOpenOperationResult(false, "打开工作区已取消。", Canceled: true);
+                }
+
                 DisposeSolutionExplorers();
                 SolutionEnvironments = candidateEnvironment;
+                CurrentWorkspacePath = resolution.HistoryPath;
                 CurrentSolutionExplorer = candidateExplorer;
                 SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
                 SolutionExplorers.Add(candidateExplorer);
@@ -851,6 +921,58 @@ namespace ColorVision.Solution
                 return;
             IsOpeningWorkspace = false;
             OpeningWorkspacePath = string.Empty;
+        }
+
+        public bool TryCloseSolution()
+        {
+            CancelWorkspaceOpen();
+            SolutionExplorer? explorer = CurrentSolutionExplorer;
+            if (explorer == null)
+                return true;
+            if (!_tryCloseWorkspaceDocuments(explorer))
+                return false;
+
+            string workspacePath = CurrentWorkspacePath;
+            DisposeSolutionExplorers();
+            CurrentSolutionExplorer = null;
+            SolutionEnvironments = new SolutionEnvironments();
+            SolutionClosed?.Invoke(this, new SolutionWorkspaceEventArgs(workspacePath));
+            return true;
+        }
+
+        private bool TryCloseCurrentWorkspaceDocuments()
+        {
+            return CurrentSolutionExplorer is not { } explorer
+                || _tryCloseWorkspaceDocuments(explorer);
+        }
+
+        private static bool TryCloseWorkspaceDocumentsCore(SolutionExplorer explorer)
+        {
+            return EditorDocumentService.TryCloseDocumentsForResources(
+                explorer.GetDocumentResourceRoots());
+        }
+
+        private bool IsCurrentWorkspacePath(string? path)
+        {
+            if (CurrentSolutionExplorer == null
+                || string.IsNullOrWhiteSpace(CurrentWorkspacePath)
+                || string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                string requestedPath = Path.TrimEndingDirectorySeparator(
+                    Path.GetFullPath(NormalizeRecentPath(path)));
+                string currentPath = Path.TrimEndingDirectorySeparator(
+                    Path.GetFullPath(CurrentWorkspacePath));
+                return string.Equals(requestedPath, currentPath, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
         }
 
         public bool OpenProject(string projectPath)

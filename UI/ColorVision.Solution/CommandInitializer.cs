@@ -43,6 +43,12 @@ namespace ColorVision.Solution
 
             AddCommandBinding(
                 mainWindow,
+                SolutionWorkspaceCommands.CloseSolution,
+                (_, _) => SolutionManager.GetInstance().TryCloseSolution(),
+                (_, e) => e.CanExecute = SolutionManager.GetInstance().CanCloseSolution);
+
+            AddCommandBinding(
+                mainWindow,
                 ApplicationCommands.Save,
                 (_, _) => EditorDocumentService.TrySaveActiveDocument(),
                 (_, e) => e.CanExecute = EditorDocumentService.CanSaveActiveDocument());

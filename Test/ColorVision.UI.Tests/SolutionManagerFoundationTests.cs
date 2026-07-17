@@ -3957,6 +3957,122 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public async Task WorkspaceLifecycle_CanceledTransitionKeepsCurrentAndCloseClearsState()
+    {
+        string containerPath = CreateTemporaryDirectory();
+        string firstRoot = Path.Combine(containerPath, "First");
+        string secondRoot = Path.Combine(containerPath, "Second");
+        string externalRoot = Path.Combine(containerPath, "External");
+        string firstSolutionPath = Path.Combine(firstRoot, "First.cvsln");
+        string secondSolutionPath = Path.Combine(secondRoot, "Second.cvsln");
+        string projectPath = Path.Combine(externalRoot, "App.mockproj");
+        string solutionItemPath = Path.Combine(externalRoot, "Notes.txt");
+        Directory.CreateDirectory(firstRoot);
+        Directory.CreateDirectory(secondRoot);
+        Directory.CreateDirectory(externalRoot);
+        File.WriteAllText(projectPath, string.Empty);
+        File.WriteAllText(solutionItemPath, "notes");
+
+        var firstConfig = new SolutionConfig
+        {
+            RootPath = firstRoot,
+            ProjectMode = SolutionProjectMode.Explicit,
+        };
+        firstConfig.Projects.Add(Path.GetRelativePath(firstRoot, projectPath));
+        firstConfig.SolutionItems.Add(new SolutionItemDefinition
+        {
+            Path = Path.GetRelativePath(firstRoot, solutionItemPath),
+        });
+        SolutionConfigStore.Save(firstSolutionPath, firstConfig);
+        SolutionConfigStore.Save(secondSolutionPath, new SolutionConfig
+        {
+            RootPath = secondRoot,
+            ProjectMode = SolutionProjectMode.Explicit,
+        });
+        ProjectProviderRegistry.Register(new MockProjectProvider(), priority: 1000);
+
+        bool allowClose = false;
+        int closeAttempts = 0;
+        IReadOnlyList<string> documentRoots = Array.Empty<string>();
+        var manager = new SolutionManager(
+            restoreLastWorkspace: false,
+            tryCloseWorkspaceDocuments: explorer =>
+            {
+                closeAttempts++;
+                documentRoots = explorer.GetDocumentResourceRoots();
+                return allowClose;
+            });
+        object? closedSender = null;
+        SolutionWorkspaceEventArgs? closedArgs = null;
+        int closedCount = 0;
+        manager.SolutionClosed += (sender, args) =>
+        {
+            closedSender = sender;
+            closedArgs = args;
+            closedCount++;
+        };
+
+        try
+        {
+            SolutionOpenOperationResult firstResult = await manager.OpenSolutionAsync(firstSolutionPath);
+            Assert.True(firstResult.Succeeded, firstResult.ErrorMessage);
+            SolutionExplorer firstExplorer = Assert.IsType<SolutionExplorer>(manager.CurrentSolutionExplorer);
+            Assert.Equal(firstSolutionPath, manager.CurrentWorkspacePath, ignoreCase: true);
+            Assert.True(manager.CanCloseSolution);
+
+            SolutionOpenOperationResult sameWorkspaceResult = await manager.OpenSolutionAsync(firstSolutionPath);
+            Assert.True(sameWorkspaceResult.Succeeded, sameWorkspaceResult.ErrorMessage);
+            Assert.Same(firstExplorer, manager.CurrentSolutionExplorer);
+            Assert.Equal(0, closeAttempts);
+
+            SolutionOpenOperationResult secondResult = await manager.OpenSolutionAsync(secondSolutionPath);
+            Assert.False(secondResult.Succeeded);
+            Assert.True(secondResult.Canceled);
+            Assert.Same(firstExplorer, manager.CurrentSolutionExplorer);
+            Assert.Equal(firstSolutionPath, manager.CurrentWorkspacePath, ignoreCase: true);
+            Assert.Equal(1, closeAttempts);
+            Assert.Contains(firstRoot, documentRoots, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(firstSolutionPath, documentRoots, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(externalRoot, documentRoots, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(projectPath, documentRoots, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains(solutionItemPath, documentRoots, StringComparer.OrdinalIgnoreCase);
+
+            Assert.False(manager.TryCloseSolution());
+            Assert.Same(firstExplorer, manager.CurrentSolutionExplorer);
+            Assert.Equal(2, closeAttempts);
+            Assert.Equal(0, closedCount);
+
+            allowClose = true;
+            Assert.True(manager.TryCloseSolution());
+            Assert.Null(manager.CurrentSolutionExplorer);
+            Assert.Empty(manager.SolutionExplorers);
+            Assert.Equal(string.Empty, manager.CurrentWorkspacePath);
+            Assert.False(manager.CanCloseSolution);
+            Assert.Equal(3, closeAttempts);
+            Assert.Equal(1, closedCount);
+            Assert.Same(manager, closedSender);
+            Assert.Equal(firstSolutionPath, closedArgs?.WorkspacePath, ignoreCase: true);
+            Assert.True(File.Exists(firstSolutionPath));
+
+            Assert.True(manager.TryCloseSolution());
+            Assert.Equal(1, closedCount);
+        }
+        finally
+        {
+            foreach (SolutionExplorer explorer in manager.SolutionExplorers.ToList())
+                explorer.Dispose();
+            manager.SolutionHistory.RemoveFile(firstSolutionPath);
+            manager.SolutionHistory.RemoveFile(secondSolutionPath);
+            foreach (string solutionPath in new[] { firstSolutionPath, secondSolutionPath })
+            {
+                File.Delete(SolutionConfigStore.GetBackupPath(solutionPath));
+                File.Delete($"{solutionPath}.cache.db");
+            }
+            Directory.Delete(containerPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ImportedSolutionRefresh_ThreeWayMergesProjectConfigurationOverrides()
     {
         string directoryPath = CreateTemporaryDirectory();
