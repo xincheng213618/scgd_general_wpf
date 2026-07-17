@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.ServiceHost;
 using ColorVision.UI.Shell;
 using ColorVision.UI.LogImp;
 using Dm.util;
@@ -473,6 +474,7 @@ namespace ColorVision
                     Window mainWindow = CreatePrimaryMainWindow();
                     mainWindow.Show();
                 }
+                ScheduleServiceHostStartupUpdate();
                 Close();
             }
             catch (Exception ex)
@@ -487,6 +489,12 @@ namespace ColorVision
             return MainWindowConfig.Instance.UseIntegratedMainWindowChrome
                 ? new IntegratedMainWindow()
                 : new MainWindow();
+        }
+
+        private static void ScheduleServiceHostStartupUpdate()
+        {
+            Dispatcher dispatcher = Application.Current.Dispatcher;
+            _ = dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndUpdateAsync().ConfigureAwait(true), DispatcherPriority.ApplicationIdle);
         }
 
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)

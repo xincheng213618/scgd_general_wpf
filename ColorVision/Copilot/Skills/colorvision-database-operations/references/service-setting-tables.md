@@ -1,6 +1,6 @@
 # Service setting tables
 
-The authoritative core list is `MySqlLocalServicesManager.ServiceSettingTableNames`. These rows contain templates and behavior settings selected by services. They follow the application version: database reset/update loads the native definitions from versioned SQL instead of exporting and restoring old rows.
+The authoritative core list is `MySqlLocalServicesManager.ServiceSettingTableNames`. These rows contain customer templates and behavior settings selected by services. Database reset/update loads the versioned schema and defaults first, then restores these field rows from the migration backup so customer flows and templates remain available.
 
 Copilot may query these tables but must never mutate them. `ExecuteDatabaseSql` enforces this boundary even if an approval was attempted.
 

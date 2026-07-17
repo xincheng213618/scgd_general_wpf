@@ -5,15 +5,14 @@ namespace ColorVision.UI.Tests;
 public class MySqlMigrationBackupTableTests
 {
     [Fact]
-    public void MigrationBackupTableNames_ContainOnlyServiceConfiguration()
+    public void MigrationBackupTableNames_ContainServiceSettingsAndConfiguration()
     {
-        Assert.Contains("t_scgd_algorithm_poi_template_master", MySqlLocalServicesManager.ServiceSettingTableNames);
-        Assert.Contains("t_scgd_sys_resource", MySqlLocalServicesManager.ServiceConfigurationTableNames);
-        Assert.Contains("t_scgd_camera_license", MySqlLocalServicesManager.ServiceConfigurationTableNames);
-        Assert.Equal(MySqlLocalServicesManager.ServiceConfigurationTableNames, MySqlLocalServicesManager.MigrationBackupTableNames);
-        Assert.Empty(MySqlLocalServicesManager.ServiceSettingTableNames.Intersect(
-            MySqlLocalServicesManager.MigrationBackupTableNames,
-            StringComparer.OrdinalIgnoreCase));
+        string[] expectedTables = MySqlLocalServicesManager.ServiceSettingTableNames
+            .Concat(MySqlLocalServicesManager.ServiceConfigurationTableNames)
+            .ToArray();
+
+        Assert.Equal(expectedTables, MySqlLocalServicesManager.MigrationBackupTableNames);
+        Assert.Equal(9, MySqlLocalServicesManager.MigrationBackupTableNames.Count);
     }
 
     [Fact]

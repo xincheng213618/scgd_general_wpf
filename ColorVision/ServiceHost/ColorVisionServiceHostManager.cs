@@ -23,6 +23,8 @@ namespace ColorVision.ServiceHost
 
     public sealed class ServiceHostStatus
     {
+        private static readonly Version MinimumSelfUpdateVersion = new(1, 4, 10, 5);
+
         public ServiceHostInstallState State { get; init; }
 
         public string RawOutput { get; init; } = string.Empty;
@@ -49,7 +51,8 @@ namespace ColorVision.ServiceHost
 
         public bool CanSelfUpdate => State == ServiceHostInstallState.Running
             && NeedsUpdate
-            && RunningVersion != null;
+            && RunningVersion != null
+            && RunningVersion.CompareTo(MinimumSelfUpdateVersion) >= 0;
 
         public string DisplayText => State switch
         {

@@ -8,7 +8,7 @@ Use the three categories defined by the application's reset, export, and cleanup
 | Service configuration | `MySqlLocalServicesManager.ServiceConfigurationTableNames` | Service/device resources, hierarchy, identity, and licenses | `service-configuration-tables.md` |
 | Results | `MySqlResultCleanupProvider.ResultTableNames` | Workflow, device measurement, and algorithm output data | `result-tables.md` |
 
-`MigrationBackupTableNames` contains only service configuration tables. `WindowsServicePlugin.ServiceManager.MySqlServiceManager` uses it to back up field configuration before a database reset and restore it afterward. Service setting tables are deliberately not preserved: reset/update applies the native settings from the versioned SQL. Result tables are also not preserved and a fresh update database starts with empty result data.
+`MigrationBackupTableNames` contains both service setting and service configuration tables. `WindowsServicePlugin.ServiceManager.MySqlServiceManager` uses the same list as the manual resource backup to preserve field templates and configuration before a database reset and restore them afterward. Result tables are not preserved and a fresh update database starts with empty result data.
 
 The lists in code are authoritative for reset/export/cleanup behavior. Customer projects and plugins can add tables, so inspect the live schema when a requested table is not in these core lists.
 
