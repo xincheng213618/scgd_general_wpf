@@ -4042,12 +4042,82 @@ public class SolutionManagerFoundationTests
             Assert.Contains("*.csproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
             Assert.Contains("*.fsproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
             Assert.Contains("*.vbproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("*.vcxproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
             Assert.True(ProjectProviderRegistry.TryLoadProject(new FileInfo(projectPath), out ProjectDefinition? registeredProject));
             Assert.Equal(MsBuildProjectProvider.ProviderId, registeredProject?.ProviderId);
             Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
         }
         finally
         {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MsBuildProjectProvider_LoadsVisualCppProjectAndPrefersX64Configuration()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectPath = Path.Combine(directoryPath, "NativeLibrary.vcxproj");
+        string? workspacePath = null;
+        try
+        {
+            File.WriteAllText(projectPath, """
+                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                      <Configuration>Debug</Configuration>
+                      <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Debug|x64">
+                      <Configuration>Debug</Configuration>
+                      <Platform>x64</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|x64">
+                      <Configuration>Release</Configuration>
+                      <Platform>x64</Platform>
+                    </ProjectConfiguration>
+                  </ItemGroup>
+                  <PropertyGroup Label="Globals">
+                    <RootNamespace>Native.Library</RootNamespace>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\Dependency\Dependency.vcxproj" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var provider = new MsBuildProjectProvider();
+            ProjectDefinition project = provider.Load(new FileInfo(projectPath));
+            ProjectDefinition debugProject = project.ForConfiguration("Debug");
+
+            Assert.True(provider.CanLoad(new FileInfo(projectPath)));
+            Assert.Equal("Native.Library", project.Name);
+            Assert.Equal(["..\\Dependency\\Dependency.vcxproj"], project.Dependencies);
+            Assert.Equal(["Debug", "Release"], project.Configurations!.Keys);
+            Assert.True(provider.TryCreateInvocation(
+                debugProject,
+                ProjectCapabilityIds.Build,
+                out ProjectCommandInvocation? invocation));
+            Assert.Equal(
+                $"msbuild \"{projectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"x64\"",
+                invocation?.Command);
+            Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
+            Assert.True(SolutionManager.TryCreateImplicitProjectSolution(
+                new FileInfo(projectPath),
+                out workspacePath,
+                out string displayName));
+            Assert.Equal("Native.Library", displayName);
+            SolutionConfig config = SolutionConfigStore.Load(workspacePath).Config;
+            Assert.Equal(SolutionProjectMode.Explicit, config.ProjectMode);
+            Assert.Contains("NativeLibrary.vcxproj", config.Projects, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(workspacePath))
+            {
+                File.Delete(workspacePath);
+                File.Delete(SolutionConfigStore.GetBackupPath(workspacePath));
+            }
             Directory.Delete(directoryPath, recursive: true);
         }
     }
