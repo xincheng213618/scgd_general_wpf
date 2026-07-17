@@ -9,6 +9,14 @@ using System.Windows.Media;
 
 namespace ColorVision.UI
 {
+    public sealed record FileOpenRouteResult(
+        bool Handled,
+        bool Succeeded,
+        string ErrorMessage = "")
+    {
+        public static FileOpenRouteResult NotHandled { get; } = new(false, false);
+    }
+
     public class MenuFileOpen : MenuItemBase
     {
         public override int Order => 1;
@@ -44,9 +52,12 @@ namespace ColorVision.UI
                 {
                     return;
                 }
-                if (!FileProcessorFactory.GetInstance().HandleFile(selectedFilePath))
+                FileOpenRouteResult result = FileProcessorFactory.GetInstance().OpenFile(selectedFilePath);
+                if (!result.Succeeded)
                 {
-                    MessageBox.Show(Properties.Resources.UnsupportedFileFormat);
+                    MessageBox.Show(string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? Properties.Resources.UnsupportedFileFormat
+                        : result.ErrorMessage);
                 }
             }
         }
@@ -64,7 +75,7 @@ namespace ColorVision.UI
         /// Optional workspace-aware handler installed by the solution module.
         /// The legacy processor path remains available for standalone file mode.
         /// </summary>
-        public Func<string, bool>? WorkspaceOpenHandler { get; set; }
+        public Func<string, FileOpenRouteResult>? WorkspaceOpenHandler { get; set; }
 
         private FileProcessorFactory()
         {
@@ -128,17 +139,28 @@ namespace ColorVision.UI
 
         public bool HandleFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
-            if (WorkspaceOpenHandler?.Invoke(filePath) == true)
-                return true;
+            return OpenFile(filePath).Succeeded;
+        }
+
+        public FileOpenRouteResult OpenFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return new FileOpenRouteResult(true, false, $"文件不存在：{filePath}");
+
+            FileOpenRouteResult? routedResult = WorkspaceOpenHandler?.Invoke(filePath);
+            if (routedResult?.Handled == true)
+                return routedResult;
 
             var processor = GetFileProcessor(filePath);
             if (processor != null)
             {
                 bool result = processor.Process(filePath);
-                return result;
+                return new FileOpenRouteResult(
+                    true,
+                    result,
+                    result ? string.Empty : Properties.Resources.UnsupportedFileFormat);
             }
-            return false;
+            return new FileOpenRouteResult(true, false, Properties.Resources.UnsupportedFileFormat);
         }
 
         public bool ExportFile(string filePath)

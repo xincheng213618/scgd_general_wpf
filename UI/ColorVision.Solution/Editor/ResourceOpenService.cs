@@ -108,6 +108,27 @@ namespace ColorVision.Solution.Editor
 
         public bool TryOpen(string path) => Open(path).Succeeded;
 
+        internal FileOpenRouteResult RouteFileProcessorOpen(string path)
+        {
+            return ToFileOpenRouteResult(Open(path));
+        }
+
+        internal static FileOpenRouteResult ToFileOpenRouteResult(ResourceOpenResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            if (result.Kind is ResourceOpenKind.Solution or ResourceOpenKind.Project)
+            {
+                return new FileOpenRouteResult(
+                    true,
+                    result.Succeeded,
+                    result.ErrorMessage);
+            }
+
+            return result.Succeeded
+                ? new FileOpenRouteResult(true, true)
+                : FileOpenRouteResult.NotHandled;
+        }
+
         public async Task<ResourceOpenResult> OpenAsync(
             string? path,
             CancellationToken cancellationToken = default)

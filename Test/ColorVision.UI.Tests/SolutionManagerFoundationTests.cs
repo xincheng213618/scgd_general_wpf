@@ -2048,6 +2048,24 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ResourceOpenService_PreservesWorkspaceFailuresAcrossLegacyFileRoute()
+    {
+        FileOpenRouteResult projectFailure = ResourceOpenService.ToFileOpenRouteResult(
+            new ResourceOpenResult(ResourceOpenKind.Project, false, "项目加载失败"));
+        FileOpenRouteResult fileFailure = ResourceOpenService.ToFileOpenRouteResult(
+            new ResourceOpenResult(ResourceOpenKind.File, false, "没有可用编辑器"));
+        FileOpenRouteResult fileSuccess = ResourceOpenService.ToFileOpenRouteResult(
+            new ResourceOpenResult(ResourceOpenKind.File, true));
+
+        Assert.True(projectFailure.Handled);
+        Assert.False(projectFailure.Succeeded);
+        Assert.Equal("项目加载失败", projectFailure.ErrorMessage);
+        Assert.False(fileFailure.Handled);
+        Assert.True(fileSuccess.Handled);
+        Assert.True(fileSuccess.Succeeded);
+    }
+
+    [Fact]
     public void OpenSolutionWindow_ShowsOnlySupportedWorkspaceHistoryEntries()
     {
         string directoryPath = CreateTemporaryDirectory();
