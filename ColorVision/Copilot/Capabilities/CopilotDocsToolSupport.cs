@@ -43,6 +43,7 @@ namespace ColorVision.Copilot
         private const int MaxReturnedPages = 3;
         private const int MaxHitsPerPage = 2;
         private const int MaxExcerptChars = 360;
+        private const int MaxSearchIndexBytes = 32 * 1024 * 1024;
         private static readonly TimeSpan SearchIndexCacheDuration = TimeSpan.FromMinutes(10);
 
         private static readonly string[] DirectIntentKeywords =
@@ -272,12 +273,19 @@ namespace ColorVision.Copilot
                 if (_cachedSearchIndex != null && DateTimeOffset.UtcNow - _cachedSearchIndexUtc < SearchIndexCacheDuration)
                     return _cachedSearchIndex;
 
-                using var response = await HttpClient.GetAsync(DocsSearchIndexUrl, cancellationToken);
+                using var response = await HttpClient.GetAsync(
+                    DocsSearchIndexUrl,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                     throw new InvalidOperationException("The online documentation index has not been published yet. Confirm that the latest GitHub Pages deployment has completed.");
 
                 response.EnsureSuccessStatusCode();
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var json = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                    response.Content,
+                    MaxSearchIndexBytes,
+                    "Documentation search index",
+                    cancellationToken);
                 CopilotDocsSearchIndex? searchIndex;
                 try
                 {
@@ -453,7 +461,10 @@ namespace ColorVision.Copilot
 
         private static HttpClient CreateHttpClient()
         {
-            var client = new HttpClient
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            })
             {
                 Timeout = TimeSpan.FromSeconds(15),
             };

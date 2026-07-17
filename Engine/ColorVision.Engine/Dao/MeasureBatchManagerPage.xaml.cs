@@ -11,6 +11,11 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Specialized;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -173,6 +178,9 @@ namespace ColorVision.Engine
         private IBatchProcess _selectedProcess;
         private INotifyPropertyChanged _currentProcessConfig;
         private PropertyChangedEventHandler _configChangedHandler;
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private Window? _copilotHostWindow;
+        private bool _copilotPublishQueued;
 
         public MeasureBatchManagerPage() { }
         public MeasureBatchManagerPage(Frame MainFrame)
@@ -182,6 +190,8 @@ namespace ColorVision.Engine
         }
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            ViewResults.CollectionChanged -= ViewResults_CollectionChanged;
+            ViewResults.CollectionChanged += ViewResults_CollectionChanged;
             MeasureBatchManager.Load();
             this.DataContext = MeasureBatchManager;
             
@@ -192,6 +202,25 @@ namespace ColorVision.Engine
             {
                 ProcessComboBox.SelectedIndex = 0;
             }
+            EnsureCopilotContextRegistered();
+            PublishCopilotContext();
+        }
+        private void Page_Unloaded(object sender, RoutedEventArgs e)
+        {
+            ViewResults.CollectionChanged -= ViewResults_CollectionChanged;
+            ReleaseCopilotContext();
+        }
+        private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (_copilotPublishQueued)
+                return;
+
+            _copilotPublishQueued = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _copilotPublishQueued = false;
+                PublishCopilotContext();
+            }));
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -224,7 +253,6 @@ namespace ColorVision.Engine
                     ViewResults.Add(new ViewBatchResult(item));
                 }
             }
-
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
@@ -253,6 +281,8 @@ namespace ColorVision.Engine
         {
             UpdateExecuteButtonState();
             UpdateSelectedBatchText();
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
         }
         
         private void UpdateSelectedBatchText()
@@ -465,6 +495,108 @@ namespace ColorVision.Engine
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             DB.Dispose();
+            PublishCopilotContext();
+        }
+
+        private void EnsureCopilotContextRegistered()
+        {
+            if (_copilotContextSession != null)
+                return;
+
+            try
+            {
+                _copilotContextSession = CopilotMeasurementResultContextHub.Shared.Register(
+                    CaptureCopilotMeasurementResultSnapshotAsync,
+                    typeof(MeasureBatchManagerPage).Assembly.GetName().Version?.ToString());
+                _copilotHostWindow = Window.GetWindow(this);
+                if (_copilotHostWindow != null)
+                {
+                    _copilotHostWindow.Activated += CopilotHostWindow_Activated;
+                    _copilotHostWindow.Closed += CopilotHostWindow_Closed;
+                }
+                _copilotContextSession.Activate();
+            }
+            catch (Exception ex)
+            {
+                log4net.LogManager.GetLogger(typeof(MeasureBatchManagerPage)).Warn("注册检测批次历史 Copilot 上下文失败，结果页面将继续运行", ex);
+            }
+        }
+
+        private void CopilotHostWindow_Activated(object? sender, EventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void CopilotHostWindow_Closed(object? sender, EventArgs e)
+        {
+            ReleaseCopilotContext();
+        }
+
+        private void ReleaseCopilotContext()
+        {
+            if (_copilotHostWindow != null)
+            {
+                _copilotHostWindow.Activated -= CopilotHostWindow_Activated;
+                _copilotHostWindow.Closed -= CopilotHostWindow_Closed;
+                _copilotHostWindow = null;
+            }
+
+            var wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(CopilotMeasurementResultAgentExtension.SourceId);
+        }
+
+        private async Task<CopilotMeasurementResultContextSnapshot?> CaptureCopilotMeasurementResultSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CaptureCopilotMeasurementResultSnapshot();
+                });
+            }
+
+            return CaptureCopilotMeasurementResultSnapshot();
+        }
+
+        private CopilotMeasurementResultContextSnapshot CaptureCopilotMeasurementResultSnapshot()
+        {
+            var batch = (listView1.SelectedItem as ViewBatchResult)?.MeasureBatchModel;
+            var templateName = batch?.TId is int templateId
+                ? TemplateFlow.Params.FirstOrDefault(item => item.Id == templateId)?.Key ?? string.Empty
+                : string.Empty;
+            return new CopilotMeasurementResultContextSnapshot
+            {
+                SourceId = CopilotMeasurementResultAgentExtension.SourceId,
+                Surface = "Measurement result history",
+                LoadedBatchCount = ViewResults.Count,
+                IsFilterActive = !string.IsNullOrWhiteSpace(SearchBox.Text),
+                BatchId = batch?.Id,
+                TemplateId = batch?.TId,
+                TemplateName = templateName,
+                BatchStatus = batch?.FlowStatus.ToString() ?? string.Empty,
+                CreatedAt = batch?.CreateDate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
+                TotalTimeMilliseconds = batch?.TotalTime ?? 0,
+                ArchiveStatus = batch?.ArchiveStatus.ToString() ?? string.Empty,
+                HasResultMessage = !string.IsNullOrWhiteSpace(batch?.Result),
+            };
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_copilotContextSession?.IsCurrent != true || _copilotHostWindow?.IsActive != true)
+                return;
+
+            var snapshot = CaptureCopilotMeasurementResultSnapshot();
+            var item = CopilotBusinessContextBuilder.BuildMeasurementResultContextItem(snapshot);
+            CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                CopilotMeasurementResultAgentExtension.SourceId,
+                item));
         }
     }
 }

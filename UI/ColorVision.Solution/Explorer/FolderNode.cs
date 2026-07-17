@@ -1,51 +1,65 @@
 #pragma warning disable CA1805,CS4014,CS8602,CS8603,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.Solution.Explorer
 {
-    public class FolderNode : SolutionNode, IDisposable
+    public class FolderNode : SolutionNode, ISolutionContainerNode, ISolutionPhysicalContainer, IDisposable
     {
+        internal override string? PhysicalDeletePath => DirectoryInfo.FullName;
+        public override bool CanOpen => DirectoryInfo.Exists;
+        public override bool CanRefresh => DirectoryInfo.Exists;
+        public override bool CanShowProperties => DirectoryInfo.Exists;
+        public override string? EditorResourcePath => DirectoryInfo.FullName;
+        public override string? ClipboardResourcePath => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
+        public override string? ExplorerResourcePath => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
+        public override string? TerminalWorkingDirectory => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
+        public string PhysicalContainerPath => DirectoryInfo.FullName;
+        public virtual SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
+            ? SolutionContainerAction.AddNewItem
+                | SolutionContainerAction.AddExistingItem
+                | SolutionContainerAction.CreateFolder
+            : SolutionContainerAction.None;
+
         public IFolderMeta FolderMeta { get; set; }
 
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
-        public RelayCommand OpenFileInExplorerCommand { get; set; }
-        public RelayCommand AddDirCommand { get; set; }
-        FileSystemWatcher? FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
-        public RelayCommand OpenInCmdCommand { get; set; }
-        public RelayCommand OpenMethodCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
+        public RelayCommand OpenFusionCommand { get; set; }
         private bool _childrenLoaded;
         private bool _childrenLoading;
         private bool _isExpanded;
+        private readonly object _childrenLoadLock = new();
+        private int _childrenLoadGeneration;
+        private CancellationTokenSource? _childrenLoadCancellation;
+        private Task _childrenLoadTask = Task.CompletedTask;
 
         public bool AreChildrenLoaded => _childrenLoaded;
+        internal bool AreChildrenLoading => _childrenLoading;
 
         public FolderNode(IFolderMeta folder) : base()
         {
             FolderMeta = folder;
             FullPath = DirectoryInfo.FullName;
             Name1 = DirectoryInfo.Name;
-            Initialize();
-            AddLazyPlaceholderIfNeeded();
-        }
-
-        public override void Initialize()
-        {
-            base.Initialize();
-
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
+            AddLazyPlaceholderIfNeeded();
         }
 
         public override bool IsExpanded
@@ -59,31 +73,124 @@ namespace ColorVision.Solution.Explorer
                 _isExpanded = value;
                 NotifyPropertyChanged();
                 if (value)
-                    EnsureChildrenLoaded();
+                    _ = EnsureChildrenLoadedAsync();
             }
         }
 
         public void EnsureChildrenLoaded()
         {
-            if (_childrenLoaded || _childrenLoading || !DirectoryInfo.Exists)
-                return;
+            _ = EnsureChildrenLoadedAsync();
+        }
 
-            _childrenLoading = true;
-            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, async () =>
+        public Task EnsureChildrenLoadedAsync()
+        {
+            lock (_childrenLoadLock)
             {
+                if (_disposed || _childrenLoaded || !DirectoryInfo.Exists)
+                    return Task.CompletedTask;
+                if (_childrenLoading)
+                    return _childrenLoadTask;
+
+                int generation = ++_childrenLoadGeneration;
+                var cancellation = new CancellationTokenSource();
+                _childrenLoadCancellation = cancellation;
+                _childrenLoading = true;
+                _childrenLoadTask = LoadChildrenAsync(generation, cancellation);
+                return _childrenLoadTask;
+            }
+        }
+
+        private async Task LoadChildrenAsync(int generation, CancellationTokenSource cancellation)
+        {
+            bool completed = false;
+            IReadOnlyList<SolutionNode>? loadedChildren = null;
+            bool childrenAttached = false;
+            try
+            {
+                SolutionCache? cache = SolutionNodeFactory.FindSolutionExplorer(this)?.Cache;
+                IReadOnlyList<SolutionDirectoryEntrySnapshot> entries = await SolutionNodeFactory.CreateChildrenSnapshotAsync(
+                    DirectoryInfo,
+                    cache,
+                    cancellation.Token).ConfigureAwait(false);
+                IReadOnlyList<SolutionNode> materializedChildren = await SolutionNodeFactory.CreateNodesFromSnapshotAsync(
+                    this,
+                    entries,
+                    cancellation.Token).ConfigureAwait(false);
+                loadedChildren = materializedChildren;
+                await InvokeOnDispatcherAsync(() =>
+                {
+                    lock (_childrenLoadLock)
+                    {
+                        if (!IsCurrentChildrenLoad(generation, cancellation))
+                            return;
+                        ReplaceLazyChildren(materializedChildren, loadedChildrenAreSorted: true);
+                        childrenAttached = true;
+                        _childrenLoaded = true;
+                        completed = true;
+                    }
+                }, cancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                LogError($"加载文件夹失败: {DirectoryInfo.FullName}", ex);
+            }
+            finally
+            {
+                if (!childrenAttached && loadedChildren != null)
+                {
+                    foreach (IDisposable disposable in loadedChildren.OfType<IDisposable>())
+                        disposable.Dispose();
+                }
                 try
                 {
-                    VisualChildren.Clear();
-                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
-                    await SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache);
-                    _childrenLoaded = true;
+                    await InvokeOnDispatcherAsync(() =>
+                    {
+                        lock (_childrenLoadLock)
+                        {
+                            if (!IsCurrentChildrenLoad(generation, cancellation))
+                                return;
+                            _childrenLoading = false;
+                            if (!completed)
+                                _childrenLoaded = false;
+                            _childrenLoadCancellation = null;
+                            _childrenLoadTask = Task.CompletedTask;
+                            NotifyPropertyChanged(nameof(HasFile));
+                        }
+                    }, CancellationToken.None).ConfigureAwait(false);
                 }
-                finally
+                catch (Exception ex) when (ex is TaskCanceledException or InvalidOperationException)
                 {
-                    _childrenLoading = false;
-                    NotifyPropertyChanged(nameof(HasFile));
+                    LogError($"完成文件夹加载状态更新失败: {DirectoryInfo.FullName}", ex);
                 }
-            });
+                cancellation.Dispose();
+            }
+        }
+
+        private bool IsCurrentChildrenLoad(int generation, CancellationTokenSource cancellation)
+        {
+            return !_disposed
+                && generation == _childrenLoadGeneration
+                && ReferenceEquals(_childrenLoadCancellation, cancellation)
+                && !cancellation.IsCancellationRequested;
+        }
+
+        private static async Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                action();
+                return;
+            }
+
+            await dispatcher.InvokeAsync(
+                action,
+                System.Windows.Threading.DispatcherPriority.Background,
+                cancellationToken).Task.ConfigureAwait(false);
         }
 
         public void MarkChildrenChanged()
@@ -91,127 +198,56 @@ namespace ColorVision.Solution.Explorer
             if (_childrenLoaded)
                 return;
 
-            VisualChildren.Clear();
-            AddLazyPlaceholderIfNeeded();
+            ResetChildrenForReload();
+            if (IsExpanded)
+                _ = EnsureChildrenLoadedAsync();
+        }
+
+        public void ReloadChildren()
+        {
+            ResetChildrenForReload();
+            if (IsExpanded)
+                _ = EnsureChildrenLoadedAsync();
+        }
+
+        public override void Refresh()
+        {
+            ReloadChildren();
+        }
+
+        private void ResetChildrenForReload()
+        {
+            lock (_childrenLoadLock)
+            {
+                _childrenLoadGeneration++;
+                _childrenLoadCancellation?.Cancel();
+                _childrenLoadCancellation?.Dispose();
+                _childrenLoadCancellation = null;
+                _childrenLoadTask = Task.CompletedTask;
+                _childrenLoaded = false;
+                _childrenLoading = false;
+                foreach (IDisposable disposable in VisualChildren.OfType<IDisposable>().ToList())
+                    disposable.Dispose();
+                VisualChildren.Clear();
+                AddLazyPlaceholderIfNeeded();
+            }
         }
 
         private void AddLazyPlaceholderIfNeeded()
         {
-            if (SolutionNodeFactory.HasVisibleChildren(DirectoryInfo))
-            {
+            if (DirectoryInfo.Exists && VisualChildren.Count == 0)
                 VisualChildren.Add(new LazyLoadingNode { Parent = this });
-            }
-        }
-
-        private void InitializeFileSystemWatcher()
-        {
-            if (DirectoryInfo != null && DirectoryInfo.Exists)
-            {
-                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
-
-                FileSystemWatcher.Created += (s, e) =>
-                {
-                    // Update cache
-                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
-                    if (cache != null)
-                    {
-                        if (File.Exists(e.FullPath))
-                            cache.AddFile(e.FullPath, DirectoryInfo.FullName);
-                        else if (Directory.Exists(e.FullPath))
-                            cache.AddDirectory(e.FullPath, DirectoryInfo.FullName);
-                    }
-
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        // Duplicate protection
-                        if (VisualChildren.Any(c => c.FullPath == e.FullPath))
-                            return;
-
-                        if (File.Exists(e.FullPath))
-                        {
-                            SolutionNodeFactory.AddFileNode(this, new FileInfo(e.FullPath));
-                        }
-                        else if (Directory.Exists(e.FullPath))
-                        {
-                            SolutionNodeFactory.AddFolderNode(this, new DirectoryInfo(e.FullPath));
-                        }
-                    });
-                };
-                FileSystemWatcher.Deleted += (s, e) =>
-                {
-                    // Update cache
-                    SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache?.Remove(e.FullPath);
-
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
-                        if (child != null)
-                        {
-                            VisualChildren.Remove(child);
-                        }
-                    });
-                };
-                FileSystemWatcher.EnableRaisingEvents = true;
-            }
         }
 
         private void InitializeCommands()
         {
-            OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            AddDirCommand = new RelayCommand(a => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
-            OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
-            OpenMethodCommand = new RelayCommand(a => OpenMethod());
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
-        }
-
-        public void OpenMethod()
-        {
-            var types = EditorManager.Instance.GetFolderEditors();
-            var current = EditorManager.Instance.GetDefaultFolderEditorType();
-
-            if (types.Count == 0) return;
-
-            var window = new FolderEditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            if (window.ShowDialog() == true)
-            {
-                var selectedType = window.SelectedEditorType;
-                EditorManager.Instance.SetDefaultFolderEditor(selectedType);
-            }
+            OpenFusionCommand = new RelayCommand(_ => OpenFusionWithFolderImages(), _ => DirectoryInfo.Exists);
         }
 
         public override void Open()
         {
-            var editor = EditorManager.Instance.OpenFolder(FullPath);
-            editor?.Open(FullPath);
-        }
-
-        public override void InitContextMenu()
-        {
-            base.InitContextMenu();
-        }
-
-        public override void InitMenuItem()
-        {
-            base.InitMenuItem();
-            MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "Open",
-                Order = 1,
-                Header = Resources.MenuOpen,
-                Command = OpenCommand
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddExistingItem", Order = 2, Header = "现有项(_E)...", Command = new RelayCommand(_ => AddExistingItem()) });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 10, Header = "新建文件夹", Command = AddDirCommand });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Fusion", Order = 50, Header = "景深融合(_F)", Command = new RelayCommand(_ => OpenFusionWithFolderImages()) });
-
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
+            IsExpanded = !IsExpanded;
         }
 
         private void AskCopilotAboutFolder()
@@ -295,18 +331,19 @@ namespace ColorVision.Solution.Explorer
             };
             if (window.ShowDialog() == true && window.SelectedTemplate != null && window.NewFileName != null)
             {
-                string fullPath = System.IO.Path.Combine(DirectoryInfo.FullName, window.NewFileName);
-                string? content = window.SelectedTemplate.GetDefaultContent(window.NewFileName);
-                if (content != null)
-                    System.IO.File.WriteAllText(fullPath, content);
-                else
-                    System.IO.File.Create(fullPath).Dispose();
+                string targetPath = Path.Combine(DirectoryInfo.FullName, window.NewFileName);
+                if (window.OverwriteExisting
+                    && !EditorDocumentService.TryCloseDocumentsForResources([targetPath]))
+                {
+                    return;
+                }
 
-                var fileInfo = new FileInfo(fullPath);
-                var fileNode = SolutionNodeFactory.CreateFileNode(fileInfo);
-                AddChild(fileNode);
-                if (!IsExpanded) IsExpanded = true;
-                fileNode.IsSelected = true;
+                SolutionPhysicalItemResult result = SolutionPhysicalItemOperations.CreateFromTemplate(
+                    window.SelectedTemplate,
+                    DirectoryInfo.FullName,
+                    window.NewFileName,
+                    window.OverwriteExisting);
+                ApplyPhysicalItemResult(result, "新建项失败");
             }
         }
 
@@ -320,15 +357,117 @@ namespace ColorVision.Solution.Explorer
             };
             if (dialog.ShowDialog() == true)
             {
-                foreach (var sourcePath in dialog.FileNames)
+                IReadOnlyList<string> conflicts = SolutionPhysicalItemOperations.GetImportConflictPaths(
+                    dialog.FileNames,
+                    DirectoryInfo.FullName);
+                bool overwrite = false;
+                if (conflicts.Count > 0)
                 {
-                    string destPath = System.IO.Path.Combine(DirectoryInfo.FullName, System.IO.Path.GetFileName(sourcePath));
-                    if (!System.IO.File.Exists(destPath))
-                    {
-                        System.IO.File.Copy(sourcePath, destPath);
-                    }
+                    MessageBoxResult choice = MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"目标文件夹中已有 {conflicts.Count} 个同名文件。是否覆盖这些文件？",
+                        "添加现有项",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Question);
+                    if (choice == MessageBoxResult.Cancel)
+                        return;
+                    overwrite = choice == MessageBoxResult.Yes;
+                    if (overwrite && !EditorDocumentService.TryCloseDocumentsForResources(conflicts))
+                        return;
                 }
-                if (!IsExpanded) IsExpanded = true;
+
+                SolutionPhysicalItemResult result = SolutionPhysicalItemOperations.ImportFiles(
+                    dialog.FileNames,
+                    DirectoryInfo.FullName,
+                    overwrite);
+                ApplyPhysicalItemResult(result, "添加现有项失败");
+            }
+        }
+
+        private void ApplyPhysicalItemResult(
+            SolutionPhysicalItemResult result,
+            string failureTitle)
+        {
+            bool projectReloaded = TryIncludeExplicitlyAddedProjectItems(
+                result.SuccessfulPaths,
+                out string membershipError);
+            if (!projectReloaded)
+                SynchronizePhysicalItems(result.SuccessfulPaths);
+
+            if (result.Failures.Count > 0)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    SolutionPhysicalItemOperations.BuildFailureMessage(result),
+                    failureTitle,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            if (!string.IsNullOrWhiteSpace(membershipError))
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"文件已经写入磁盘，但未能包括到项目中：{membershipError}",
+                    "更新项目失败",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private bool TryIncludeExplicitlyAddedProjectItems(
+            IReadOnlyList<string> paths,
+            out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            ProjectNode? projectNode = ProjectNode.FindOwningProject(this);
+            if (projectNode == null)
+                return false;
+
+            List<string> excludedPaths = paths
+                .Where(path => !projectNode.IsPathIncludedByProjectRules(path))
+                .ToList();
+            if (excludedPaths.Count == 0)
+                return false;
+            if (!ProjectProviderRegistry.TrySetProjectItemMembership(
+                projectNode.Project,
+                excludedPaths,
+                included: true,
+                out ProjectDefinition? updatedProject,
+                out errorMessage)
+                || updatedProject == null)
+            {
+                return false;
+            }
+
+            if (projectNode.SolutionExplorer != null)
+                projectNode.SolutionExplorer.ApplyProjectMutation(updatedProject);
+            else
+                projectNode.UpdateProjectDefinition(updatedProject);
+            return true;
+        }
+
+        private void SynchronizePhysicalItems(IReadOnlyList<string> paths)
+        {
+            SolutionExplorer? explorer = SolutionNodeFactory.FindSolutionExplorer(this);
+            foreach (string path in paths)
+            {
+                explorer?.Cache?.AddFile(path, DirectoryInfo.FullName);
+                if (!VisualChildren.Any(node => string.Equals(
+                    node.FullPath,
+                    path,
+                    StringComparison.OrdinalIgnoreCase)))
+                {
+                    SolutionNodeFactory.AddFileNode(this, new FileInfo(path));
+                }
+            }
+
+            if (paths.Count > 0)
+            {
+                IsExpanded = true;
+                VisualChildren.FirstOrDefault(node => paths.Contains(
+                    node.FullPath,
+                    StringComparer.OrdinalIgnoreCase))?.IsSelected = true;
+                explorer?.NotifyVisualTreeChanged();
             }
         }
 
@@ -349,7 +488,6 @@ namespace ColorVision.Solution.Explorer
 
             string? originalPath = null;
             DirectoryInfo? originalDirectoryInfo = null;
-            bool fileSystemWatcherWasEnabled = false;
 
             try
             {
@@ -360,21 +498,6 @@ namespace ColorVision.Solution.Explorer
 
                     LogOperation($"开始重命名文件夹: {originalPath} -> {name}");
 
-                    // 临时禁用文件系统监视器
-                    if (FileSystemWatcher?.EnableRaisingEvents == true)
-                    {
-                        fileSystemWatcherWasEnabled = true;
-                        FileSystemWatcher.EnableRaisingEvents = false;
-                    }
-
-                    foreach (var item in VisualChildren)
-                    {
-                        if (item is FolderNode folder && folder.FileSystemWatcher?.EnableRaisingEvents == true)
-                        {
-                            folder.FileSystemWatcher.EnableRaisingEvents = false;
-                        }
-                    }
-
                     string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
 
                     if (Directory.Exists(destinationDirectoryPath))
@@ -383,24 +506,17 @@ namespace ColorVision.Solution.Explorer
                         return false;
                     }
 
+                    if (!EditorDocumentService.TryPrepareResourceRename(originalPath))
+                        return false;
+
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
+                    EditorDocumentService.NotifyResourceRenamed(originalPath, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
                     FullPath = destinationDirectoryPath;
 
-                    VisualChildren.Clear();
-                    _childrenLoaded = false;
-                    AddLazyPlaceholderIfNeeded();
+                    ResetChildrenForReload();
                     if (IsExpanded)
-                        EnsureChildrenLoaded();
-
-                    if (FileSystemWatcher != null)
-                    {
-                        FileSystemWatcher.Path = DirectoryInfo.FullName;
-                        if (fileSystemWatcherWasEnabled)
-                        {
-                            FileSystemWatcher.EnableRaisingEvents = true;
-                        }
-                    }
+                        _ = EnsureChildrenLoadedAsync();
 
                     LogOperation($"成功重命名文件夹: {originalPath} -> {destinationDirectoryPath}");
                     return true;
@@ -415,7 +531,7 @@ namespace ColorVision.Solution.Explorer
             {
                 LogError($"重命名文件夹失败 - 权限不足: {ex.Message}", ex);
                 ShowUserError("权限不足，无法重命名文件夹");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
             catch (DirectoryNotFoundException ex)
             {
@@ -427,17 +543,17 @@ namespace ColorVision.Solution.Explorer
             {
                 LogError($"重命名文件夹失败 - IO错误: {ex.Message}", ex);
                 ShowUserError($"文件夹重命名失败: {ex.Message}");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
             catch (Exception ex)
             {
                 LogError($"重命名文件夹失败 - 未知错误: {ex.Message}", ex);
                 ShowUserError($"重命名失败: {ex.Message}");
-                return RollbackRename(originalPath, originalDirectoryInfo, fileSystemWatcherWasEnabled);
+                return RollbackRename(originalPath, originalDirectoryInfo);
             }
         }
 
-        private bool RollbackRename(string? originalPath, DirectoryInfo? originalDirectoryInfo, bool fileSystemWatcherWasEnabled)
+        private bool RollbackRename(string? originalPath, DirectoryInfo? originalDirectoryInfo)
         {
             try
             {
@@ -447,20 +563,9 @@ namespace ColorVision.Solution.Explorer
                     DirectoryInfo = originalDirectoryInfo;
                     FullPath = originalPath;
 
-                    if (FileSystemWatcher != null)
-                    {
-                        FileSystemWatcher.Path = originalPath;
-                        if (fileSystemWatcherWasEnabled)
-                        {
-                            FileSystemWatcher.EnableRaisingEvents = true;
-                        }
-                    }
-
-                    VisualChildren.Clear();
-                    _childrenLoaded = false;
-                    AddLazyPlaceholderIfNeeded();
+                    ResetChildrenForReload();
                     if (IsExpanded)
-                        EnsureChildrenLoaded();
+                        _ = EnsureChildrenLoadedAsync();
                     LogOperation("成功回滚重命名操作");
                 }
             }
@@ -475,23 +580,53 @@ namespace ColorVision.Solution.Explorer
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            TryDelete(showConfirmation: true);
+        }
+
+        public virtual void ExecuteContainerAction(SolutionContainerAction action)
+        {
+            if (!CanAdd || !this.Supports(action))
+                return;
+
+            switch (action)
             {
-                try
+                case SolutionContainerAction.AddNewItem:
+                    ShowAddNewItemDialog();
+                    break;
+                case SolutionContainerAction.AddExistingItem:
+                    AddExistingItem();
+                    break;
+                case SolutionContainerAction.CreateFolder:
+                    SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName);
+                    break;
+            }
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (showConfirmation
+                && MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
+                return false;
+
+            if (!EditorDocumentService.TryCloseDocumentsForResources([DirectoryInfo.FullName]))
+                return false;
+
+            try
+            {
+                int result = ShellFileOperations.DeleteToRecycleBin(DirectoryInfo.FullName);
+                if (result != 0)
                 {
-                    int result = ShellFileOperations.DeleteToRecycleBin(DirectoryInfo.FullName);
-                    if (result != 0)
-                    {
-                        ShowUserError($"删除文件夹失败，Shell 返回代码: {result}");
-                        return;
-                    }
-                    base.Delete();
+                    ShowUserError($"删除文件夹失败，Shell 返回代码: {result}");
+                    return false;
                 }
-                catch (Exception ex)
-                {
-                    LogError($"删除文件夹失败: {DirectoryInfo.FullName}", ex);
-                    ShowUserError($"删除文件夹失败: {ex.Message}");
-                }
+                base.TryDelete(showConfirmation: false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"删除文件夹失败: {DirectoryInfo.FullName}", ex);
+                ShowUserError($"删除文件夹失败: {ex.Message}");
+                return false;
             }
         }
 
@@ -501,14 +636,8 @@ namespace ColorVision.Solution.Explorer
         public override bool CanDelete { get => _CanDelete; set { _CanDelete = value; NotifyPropertyChanged(); } }
         private bool _CanDelete = true;
 
-        public override bool CanAdd { get => _CanAdd; set { _CanAdd = value; NotifyPropertyChanged(); } }
-        private bool _CanAdd = true;
-
         public override bool CanCopy { get => _CanCopy; set { _CanCopy = value; NotifyPropertyChanged(); } }
         private bool _CanCopy = true;
-
-        public override bool CanPaste { get => _CanPaste; set { _CanPaste = value; NotifyPropertyChanged(); } }
-        private bool _CanPaste = true;
 
         public override bool CanCut { get => _CanCut; set { _CanCut = value; NotifyPropertyChanged(); } }
         private bool _CanCut = true;
@@ -518,16 +647,21 @@ namespace ColorVision.Solution.Explorer
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            lock (_childrenLoadLock)
             {
-                if (disposing)
-                {
-                    foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
-                        child.Dispose();
-                    VisualChildren.Clear();
-                    FileSystemWatcher?.Dispose();
-                }
+                if (_disposed)
+                    return;
                 _disposed = true;
+                if (!disposing)
+                    return;
+
+                _childrenLoadGeneration++;
+                _childrenLoadCancellation?.Cancel();
+                _childrenLoadCancellation?.Dispose();
+                _childrenLoadCancellation = null;
+                foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
+                    child.Dispose();
+                VisualChildren.Clear();
             }
         }
 

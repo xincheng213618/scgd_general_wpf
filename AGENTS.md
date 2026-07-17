@@ -140,8 +140,6 @@ cd Web/Backend
 python test_app.py
 python test_app_releases.py
 
-# Release/script tests
-$env:PYTHONPATH='Scripts'; python -m unittest Scripts.test.test_backend_client Scripts.test.test_build Scripts.test.test_build_update Scripts.test.test_file_manager
 ```
 
 ## Release Rules
@@ -175,6 +173,7 @@ Must exist at runtime:
 5. **Plugins**: Class Library `net8.0-windows`; add `<UseWPF>true</UseWPF>` if UI needed
 6. **Professional code over line count**: More lines are not a KPI. Keep code concise, direct, and maintainable.
 7. **Formatting discipline**: Prefer single-line calls for simple method invocations and short argument lists. Split calls across lines only when it materially improves readability, such as long expressions, nested lambdas, object initializers, or complex conditionals.
+8. **Overload discipline**: Do not add a forwarding overload solely so one or two internal callers can omit an optional result or replace an `out` value with `out _`. Call the complete method directly. Keep a forwarding overload only when it represents a genuinely common public API shape with multiple callers; when retained, write simple forwarding bodies as a concise expression-bodied member or single-line call.
 
 ## Windows / PowerShell Command Rules
 

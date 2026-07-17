@@ -23,6 +23,7 @@ using ProjectARVRPro.Services;
 using ProjectARVRPro.SocketRelay;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -158,6 +159,8 @@ namespace ProjectARVRPro
 
         private LogOutput? logOutput;
         private bool _isDisposed;
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private int _copilotPublishQueued;
         private EventHandler? _activeGroupChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -198,7 +201,90 @@ namespace ProjectARVRPro
 
             // 构建 ListView 统一的右键菜单（替代原先每个实体各自创建 ContextMenu 的方案）
             BuildListViewContextMenu();
+            ViewResluts.CollectionChanged += ViewResults_CollectionChanged;
+            RegisterCopilotContext();
 
+        }
+
+        private void RegisterCopilotContext()
+        {
+            try
+            {
+                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
+                    CaptureCopilotSnapshotAsync,
+                    typeof(ARVRWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Could not register the ARVRPro result Copilot context; the inspection window will continue to operate.", ex);
+            }
+        }
+
+        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_isDisposed)
+                return null;
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return _isDisposed ? null : CaptureCopilotSnapshot();
+                });
+            }
+
+            return CaptureCopilotSnapshot();
+        }
+
+        private CopilotProjectResultContextSnapshot CaptureCopilotSnapshot()
+        {
+            return ProjectARVRCopilotSnapshotFactory.CreateForResultList(
+                "ARVRPro module inspection result list",
+                ViewResluts,
+                listView1.SelectedItem as ProjectARVRReuslt);
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            QueueCopilotContextPublish();
+        }
+
+        private void QueueCopilotContextPublish()
+        {
+            if (_isDisposed || Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Interlocked.Exchange(ref _copilotPublishQueued, 0);
+                PublishCopilotContext();
+            }));
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_isDisposed || _copilotContextSession?.IsCurrent != true || !IsActive)
+                return;
+
+            try
+            {
+                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(CaptureCopilotSnapshot());
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    ProjectARVRCopilotAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Could not publish the active ARVRPro result context to Copilot: {ex.Message}");
+            }
         }
 
         private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
@@ -1127,6 +1213,9 @@ namespace ProjectARVRPro
                     }
                 });
 
+                _copilotContextSession?.Activate();
+                QueueCopilotContextPublish();
+
             }
         }
 
@@ -1550,6 +1639,12 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
+            ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
+            var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrentCopilotSession)
+                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
             if (_activeGroupChangedHandler != null)
             {

@@ -1,12 +1,10 @@
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
-using ColorVision.Solution.Properties;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 
@@ -14,14 +12,23 @@ namespace ColorVision.Solution.Explorer
 {
     public class FileNode : SolutionNode
     {
+        internal override string? PhysicalDeletePath => FileInfo.FullName;
+        public override bool CanOpen => FileInfo.Exists;
+        public override bool CanShowProperties => FileInfo.Exists;
+        public override string? EditorResourcePath => FileInfo.FullName;
+        public override string? ClipboardResourcePath => FileInfo.Exists
+            ? FileInfo.FullName
+            : null;
+        public override string? ExplorerResourcePath => FileInfo.Exists
+            ? FileInfo.FullName
+            : null;
+        public override bool CanReName { get; set; } = true;
+
         public IFileMeta FileMeta { get; set; }
-        public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand AskCopilotExplainFileCommand { get; set; }
         public RelayCommand AskCopilotDiagnoseFileCommand { get; set; }
 
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
-
-        public RelayCommand OpenMethodCommand { get; set; }
 
         public FileNode(IFileMeta fileMeta) : base()
         {
@@ -29,43 +36,15 @@ namespace ColorVision.Solution.Explorer
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
             FullPath = FileInfo.FullName;
-            Initialize();
+            CanCopy = true;
+            CanCut = true;
+            InitializeCommands();
         }
 
-        public override void Initialize()
+        private void InitializeCommands()
         {
-            base.Initialize();
-            OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
-            OpenMethodCommand = new RelayCommand(a => OpenMethod());
             AskCopilotExplainFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Code, false), a => FileInfo.Exists);
             AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);
-        }
-
-        public void OpenMethod()
-        {
-            var ext = Path.GetExtension(FullPath);
-            var types = EditorManager.Instance.GetEditorsForExt(ext);
-            var current = EditorManager.Instance.GetDefaultEditorType(ext);
-
-            if (types.Count == 0) return;
-
-            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            if (window.ShowDialog() == true)
-            {
-                var selectedType = window.SelectedEditorType;
-                EditorManager.Instance.SetDefaultEditor(ext, selectedType);
-            }
-        }
-
-        public override void InitMenuItem()
-        {
-            base.InitMenuItem();
-            MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotExplainFile", Order = 20, Header = "问 AI 解释此文件", Command = AskCopilotExplainFileCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotDiagnoseFile", Order = 21, Header = "问 AI 诊断此文件/日志", Command = AskCopilotDiagnoseFileCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
         }
 
         private void AskCopilotAboutFile(CopilotPromptMode mode, bool diagnose)
@@ -122,12 +101,32 @@ namespace ColorVision.Solution.Explorer
 
         public override void Open()
         {
-            var editor = EditorManager.Instance.OpenFile(FullPath);
-            editor?.Open(FullPath);
+            _ = ResourceOpenService.Instance.TryOpenWithFeedbackAsync(
+                FullPath,
+                Application.Current?.GetActiveWindow());
         }
 
         public override void Delete()
         {
+            TryDelete(showConfirmation: true);
+        }
+
+        internal override bool TryDelete(bool showConfirmation)
+        {
+            if (showConfirmation
+                && MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"确定将“{Name}”移到回收站吗？",
+                    "ColorVision",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning) != MessageBoxResult.OK)
+            {
+                return false;
+            }
+
+            if (!EditorDocumentService.TryCloseDocumentsForResources([FileInfo.FullName]))
+                return false;
+
             try
             {
                 LogOperation($"开始删除文件到回收站: {FileInfo.FullName}");
@@ -135,31 +134,36 @@ namespace ColorVision.Solution.Explorer
                 if (result != 0)
                 {
                     ShowUserError($"删除文件失败，Shell 返回代码: {result}");
-                    return;
+                    return false;
                 }
                 LogOperation($"成功删除文件到回收站: {FileInfo.FullName}");
-                base.Delete();
+                base.TryDelete(showConfirmation: false);
+                return true;
             }
             catch (UnauthorizedAccessException ex)
             {
                 LogError($"删除文件失败 - 权限不足: {ex.Message}", ex);
                 ShowUserError("权限不足，无法删除文件");
+                return false;
             }
             catch (FileNotFoundException ex)
             {
                 LogError($"删除文件失败 - 文件未找到: {ex.Message}", ex);
                 ShowUserError("文件不存在，可能已被删除");
-                base.Delete();
+                base.TryDelete(showConfirmation: false);
+                return true;
             }
             catch (IOException ex)
             {
                 LogError($"删除文件失败 - IO错误: {ex.Message}", ex);
                 ShowUserError($"删除文件失败: {ex.Message}");
+                return false;
             }
             catch (Exception ex)
             {
                 LogError($"删除文件失败 - 未知错误: {ex.Message}", ex);
                 ShowUserError($"删除失败: {ex.Message}");
+                return false;
             }
         }
 
@@ -191,7 +195,11 @@ namespace ColorVision.Solution.Explorer
                         return false;
                     }
 
+                    if (!EditorDocumentService.TryPrepareResourceRename(originalPath))
+                        return false;
+
                     File.Move(FileInfo.FullName, destinationFilePath);
+                    EditorDocumentService.NotifyResourceRenamed(originalPath, destinationFilePath);
                     FileInfo = new FileInfo(destinationFilePath);
                     FullPath = destinationFilePath;
 

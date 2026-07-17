@@ -75,24 +75,7 @@ internal static class ServiceHostCallerIdentity
             string runningHost = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, ServiceHostConstants.ExecutableName);
             return string.Equals(Path.GetFullPath(processPath), Path.GetFullPath(runningHost), StringComparison.OrdinalIgnoreCase);
         }
-        if (!string.Equals(name, "ColorVision.exe", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        string fullPath = Path.GetFullPath(processPath);
-        string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        if (IsUnder(fullPath, programFiles))
-            return true;
-
-        string normalized = fullPath.Replace('/', '\\');
-        return normalized.Contains("\\ColorVision\\bin\\", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsUnder(string path, string root)
-    {
-        if (string.IsNullOrWhiteSpace(root))
-            return false;
-        string normalizedRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        return path.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(name, "ColorVision.exe", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ComputeSha256(string path)

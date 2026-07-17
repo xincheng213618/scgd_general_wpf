@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Database"
         xmlns:properties="clr-namespace:ColorVision.Database.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.DB_Browser_Title}" Height="720" Width="1180" MinHeight="560" MinWidth="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+        Title="{x:Static properties:Resources.DB_Browser_Title}" Height="720" Width="1180" MinHeight="560" MinWidth="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Activated="Window_Activated" Closed="Window_Closed">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

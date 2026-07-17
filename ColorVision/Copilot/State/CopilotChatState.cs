@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 5;
+        public const int CurrentSchemaVersion = 8;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -21,7 +21,19 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(config);
 
             var changed = false;
-            Conversations ??= new ObservableCollection<CopilotConversationRecord>();
+            if (Conversations == null)
+            {
+                Conversations = new ObservableCollection<CopilotConversationRecord>();
+                changed = true;
+            }
+            for (var index = Conversations.Count - 1; index >= 0; index--)
+            {
+                if (Conversations[index] != null)
+                    continue;
+
+                Conversations.RemoveAt(index);
+                changed = true;
+            }
             var preferredDefaultProfile = config.GetPreferredDefaultProfile();
 
             if (config.Profiles.Count > 0 && (
@@ -38,6 +50,13 @@ namespace ColorVision.Copilot
 
             foreach (var conversation in Conversations)
             {
+                var interruptedAssistantMessage = conversation.Messages?
+                    .LastOrDefault(message => message?.IsUser == false
+                        && (message.IsResponsePending || message.IsThinkingInProgress));
+                var recoveredAgentRun = CopilotInterruptedAgentRunRecovery.Normalize(conversation, interruptedAssistantMessage);
+                changed |= recoveredAgentRun;
+                if (!recoveredAgentRun)
+                    changed |= CopilotInterruptedResponseRecovery.Normalize(conversation, interruptedAssistantMessage);
                 changed |= conversation.EnsureValid();
 
                 if (string.IsNullOrWhiteSpace(conversation.ProfileId) || config.Profiles.All(profile => profile.Id != conversation.ProfileId))

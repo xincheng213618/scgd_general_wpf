@@ -15,16 +15,11 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Templates.Flow
 {
     [FileExtension(".stn", ".cvflow")]
-    public class FileProcessorFlow : IFileProcessor
+    public class FileProcessorFlow : IFileOpenActionProcessor
     {
         public int Order => 1;
 
-        public void Export(string filePath)
-        {
-          
-        }
-
-        public bool Process(string filePath)
+        public FileOpenRouteResult OpenFile(string filePath)
         {
             FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
 
@@ -53,7 +48,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             flowEngineToolWindow.Show();
-            return true;
+            return new FileOpenRouteResult(true, true);
         }
     }
 

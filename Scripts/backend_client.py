@@ -290,6 +290,38 @@ def upload_file(
     return False
 
 
+def upload_file_to_folder(
+    file_path: str | Path,
+    folder_name: str,
+    *,
+    base_url: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    session: Any | None = None,
+    progress_factory: Callable[..., Any] = tqdm,
+) -> bool:
+    """Preflight and upload one file using the repository's default backend configuration."""
+    resolved_username, resolved_password = resolve_upload_credentials(username, password)
+    if not resolved_username or not resolved_password:
+        print(
+            "Remote upload requires Basic Auth credentials. "
+            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD."
+        )
+        return False
+
+    settings = RemoteUploadSettings(
+        base_url=resolve_upload_base_url(base_url),
+        folder_name=folder_name,
+        username=resolved_username,
+        password=resolved_password,
+    )
+    if not preflight_remote_upload(settings, session=session):
+        print("Remote upload preflight failed; skipping upload.")
+        return False
+
+    return upload_file(file_path, settings, session=session, progress_factory=progress_factory)
+
+
 def post_multipart_with_auth(
     url: str,
     *,

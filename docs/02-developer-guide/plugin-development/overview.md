@@ -33,6 +33,8 @@ public interface IPlugin
 
 其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
 
+插件还可通过可选的 `copilot_agents` 数组声明专用只读 Agent 角色。角色只在插件启用且 DLL 成功加载后注册；禁用或移除插件会同步注销。插件只能选择 `WorkspaceReadOnly`（`SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory`）或 `PublicWeb`（`WebSearch`、`FetchUrl`）之一，不能混合两个信任域，也不能声明 Shell、数据库、写入或递归委派能力。示例与全部字段见 [Copilot Agent Runtime](../core-concepts/copilot-agent-runtime.md)。
+
 ### 3. 装载流程
 
 主程序启动后，`PluginLoader` 会：
@@ -42,6 +44,7 @@ public interface IPlugin
 3. 根据清单计算 DLL 路径。
 4. 校验依赖与版本。
 5. 装载程序集，并把插件信息写入内部缓存。
+6. 对启用且程序集加载成功的插件，同步其声明式 Copilot Agent 角色。
 
 如果插件目录没有清单，平台仍会尝试按“目录名同名 DLL”的方式装载，但这不再是推荐形态。
 
@@ -56,6 +59,25 @@ Plugins/
     ├── Assets/
     └── Sources/ 或 *.cs/*.xaml
 ```
+
+## 插件包格式
+
+`.cvxp` 本质上是 ZIP。安装器同时接受下面两种结构，并统一安装到 `Plugins/<manifest.id>/`：
+
+```text
+# 官方打包器生成的结构
+MyPlugin/
+├── manifest.json
+└── MyPlugin.dll
+
+# 第三方手工打包也可使用的结构
+manifest.json
+MyPlugin.dll
+```
+
+包内只能有一个位于根目录或第一层目录的 `manifest.json`。`manifest.id` 必须是单个目录名，不能包含 `..`、斜杠或绝对路径；`dllpath` 指向插件目录内的主 DLL。项目名、程序集名和插件 ID 可以不同：市场发布与安装目录使用 `manifest.id`，主程序集使用 `dllpath`。
+
+没有 `manifest.json` 的旧包仍按原目录结构安装，但不推荐第三方插件继续使用这种兼容格式。
 
 ## 开发建议
 

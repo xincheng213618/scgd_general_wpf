@@ -2,7 +2,6 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Properties;
-using ColorVision.ServiceHost;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
@@ -38,10 +37,13 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
+        private bool _isSessionEnding;
+
         public App()
         {
             Startup += Application_Startup;
             Exit += Application_Exit;
+            SessionEnding += (_, _) => _isSessionEnding = true;
             #if(DEBUG == false)
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
@@ -76,6 +78,12 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
+            {
+                Environment.Exit(0);
+                return;
+            }
+
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -120,57 +128,46 @@ namespace ColorVision
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
-                bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
+                FileExportResult exportResult = FileProcessorFactory.GetInstance().TryExportFile(exportFile);
                 ProgramTimer.StopAndReport();
-                if (isok)
+                if (exportResult.Succeeded)
                 {
                     return;
                 }
                 else
                 {
-                    MessageBox.Show(ColorVision.Properties.Resources.UnsupportedFileFormat);
+                    MessageBox.Show(string.IsNullOrWhiteSpace(exportResult.ErrorMessage)
+                        ? ColorVision.Properties.Resources.UnsupportedFileFormat
+                        : exportResult.ErrorMessage);
                     Environment.Exit(0);
                     return;
                 }
             }
-            string inputFile = parser.GetValue("input");
-            if (inputFile != null)
-            {
-                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
-                if (isok)
-                {
-                    ProgramTimer.StopAndReport();
-                    return;
-                }
-                else
-                {
-
-                }
-            }
-
             ConfigHandler.GetInstance().IsAutoSave = true;
 
-            //单独处理文件的进程不需要关闭当前进程
-            mutex = new Mutex(true, "ColorVision", out bool ret);
-            if (!ret && !Debugger.IsAttached)
+            mutex = new Mutex(true, "ColorVision", out bool ownsMutex);
+            bool allowMultipleInstances = ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute;
+            if (SingleInstanceStartupPolicy.Decide(
+                ownsMutex,
+                Debugger.IsAttached,
+                allowMultipleInstances) == SingleInstanceStartupAction.ActivateExistingInstance)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
                     if (ArgumentParser.GetInstance().CommandLineArgs.Length > 0)
                     {
-                        char separator = '\u0001';
-                        string combinedArgs = string.Join(separator.ToString(), ArgumentParser.GetInstance().CommandLineArgs);
-                        ushort atom = GlobalAddAtom(combinedArgs);
-                        //这里反了，不过没必要改了，都一样
-                        SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, (IntPtr)atom);  // 发送消息
+                        if (!SingleInstanceCommandLineTransport.TrySend(
+                            hWnd,
+                            ArgumentParser.GetInstance().CommandLineArgs))
+                        {
+                            log.Warn("无法将启动参数转发到现有 ColorVision 实例。");
+                        }
                     }
                     log.Info("程序已经打开");
-                    if (!ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute)
-                        Environment.Exit(0);
+                    Environment.Exit(0);
+                    return;
                 }
-                ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
-                //Environment.Exit(0);
             }
 
             CopilotMcpServer.Instance.ApplyConfig();
@@ -202,7 +199,12 @@ namespace ColorVision
             if (shouldLoadPlugins)
             {
                 PluginLoader.LoadPlugins();
+                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(
+                    PluginLoader.Config.Plugins.Values,
+                    ColorVision.Copilot.CopilotConfig.Instance.DisabledPluginSubagentRoles);
             }
+            else
+                ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(Array.Empty<PluginInfo>());
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
@@ -219,7 +221,6 @@ namespace ColorVision
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
-                ScheduleServiceHostStartupCheck(wizardWindow, DispatcherPriority.Send);
             }
             else 
             {
@@ -229,17 +230,15 @@ namespace ColorVision
             }
         }
 
-        private static void ScheduleServiceHostStartupCheck(Window owner, DispatcherPriority priority)
-        {
-            _ = owner.Dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(owner).ConfigureAwait(true), priority);
-        }
-
         /// <summary>
         /// Application DelayClose
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
+            if (!_isSessionEnding)
+                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
+            ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Dispose();
             CopilotMcpServer.Instance.Stop();
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位

@@ -51,6 +51,7 @@ namespace ColorVision.Copilot
             Idempotency = Idempotency,
             ConcurrencyMode = ConcurrencyMode,
             ExecutionTimeout = ExecutionTimeout,
+            EvidenceMode = EvidenceMode,
         };
 
         CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
@@ -64,6 +65,10 @@ namespace ColorVision.Copilot
         CopilotToolConcurrencyMode ConcurrencyMode => Access == CopilotToolAccess.ReadOnly && Idempotency == CopilotToolIdempotency.Idempotent
             ? CopilotToolConcurrencyMode.SharedRead
             : CopilotToolConcurrencyMode.Exclusive;
+
+        CopilotToolEvidenceMode EvidenceMode => Access == CopilotToolAccess.ReadOnly
+            ? CopilotToolEvidenceMode.Summary
+            : CopilotToolEvidenceMode.None;
 
         string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
         {
@@ -87,6 +92,16 @@ namespace ColorVision.Copilot
     }
 
     /// <summary>
+    /// Marks a tool whose presence in the Agent toolset is determined by runtime capability,
+    /// not by matching words in the current user message. The model receives the tool schema
+    /// and decides whether to issue a structured function call.
+    /// </summary>
+    public interface ICopilotAgentDrivenTool : ICopilotTool
+    {
+        bool IsAvailable(CopilotAgentRequest request);
+    }
+
+    /// <summary>
     /// Implemented by tools whose side effect can run after Microsoft Agent Framework has
     /// already collected an explicit approval for the exact function call.
     /// </summary>
@@ -96,5 +111,19 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken);
+    }
+
+    public sealed record CopilotToolApprovalPresentation(string Title, string Description);
+
+    public interface ICopilotFrameworkApprovalPresentation
+    {
+        CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput);
+    }
+
+    public interface ICopilotFrameworkContextualApprovalPresentation : ICopilotFrameworkApprovalPresentation
+    {
+        CopilotToolApprovalPresentation CreateApprovalPresentation(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput);
     }
 }

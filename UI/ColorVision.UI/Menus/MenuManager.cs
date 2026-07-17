@@ -231,6 +231,7 @@ namespace ColorVision.UI.Menus
                 InputGestureText = mi.InputGestureText,
                 Command = mi.Command,
                 Tag = mi,
+                IsCheckable = mi.IsChecked.HasValue,
                 IsChecked = mi.IsChecked ?? false,
                 Visibility = mi.Visibility,
             };

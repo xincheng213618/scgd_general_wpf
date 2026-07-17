@@ -65,8 +65,8 @@
   <data name="RecentUsedContent" xml:space="preserve">
     <value>Недавно использованный контент</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Недавно использованные файлы(F)</value>
+  <data name="RecentWorkspaces" xml:space="preserve">
+    <value>Недавние рабочие области (W)</value>
   </data>
   <data name="SearchProjectFiles" xml:space="preserve">
     <value>Поиск файлов проекта</value>

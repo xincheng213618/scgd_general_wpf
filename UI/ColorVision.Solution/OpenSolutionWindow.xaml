@@ -16,7 +16,7 @@
     </base:BaseWindow.Resources>
     <Grid>
         <TextBlock Text="Color Vision" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,0,0,0"/>
-        <Grid Margin="20,40,0,0" >
+        <Grid x:Name="WorkspacePickerContent" Margin="20,40,0,0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"  MinWidth="300" />
                 <ColumnDefinition Width="300"/>
@@ -31,11 +31,20 @@
                     <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </DockPanel>
                 <Grid  Grid.Row="1" Margin="-10,0,0,0">
-                    <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged"  PreviewMouseRightButtonDown="ListView1_MouseRightButtonDown">
+                    <ListView x:Name="ListView1" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" MouseDoubleClick="RecentSolutions_MouseDoubleClick" PreviewKeyDown="RecentSolutions_PreviewKeyDown" PreviewMouseRightButtonDown="RecentSolutions_PreviewMouseRightButtonDown" ContextMenuOpening="RecentSolutions_ContextMenuOpening">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{x:Static properties:Resources.Open}" Click="OpenRecentSolution_Click" />
+                                <MenuItem Header="{x:Static properties:Resources.CopyPath}" Click="CopyRecentPath_Click" />
+                                <MenuItem x:Name="TogglePinMenuItem" Header="固定到最近列表" Click="TogglePinRecentSolution_Click" />
+                                <Separator />
+                                <MenuItem Header="从最近列表中移除" Click="RemoveRecentSolution_Click" />
+                                <MenuItem Header="清空最近列表" Click="ClearRecentSolutions_Click" />
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle}">
                                 <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
@@ -51,19 +60,20 @@
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SolutionInfo}" >
                                             <Border x:Name="border1"  Height="45" Background="Transparent" Margin="0,2,0,2" BorderThickness="0" Width="450">
-                                                <Border.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="Delete" />
-                                                    </ContextMenu>
-                                                </Border.ContextMenu>
                                                 <Grid Margin="0,2,50,2">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <Grid Grid.Column="1" Margin="0,2">
-                                                        <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                            <TextBlock Text="{Binding PinIndicator}" Margin="0,0,5,0" />
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="Bold" />
+                                                            <Border Margin="8,0,0,0" Padding="5,0" CornerRadius="2" Background="#227F8FA4">
+                                                                <TextBlock Text="{Binding KindName}" FontSize="11" VerticalAlignment="Center" />
+                                                            </Border>
+                                                        </StackPanel>
                                                         <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
-                                                        <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                                        <TextBlock Text="{Binding LastUsedTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                                                     </Grid>
                                                 </Grid>
                                             </Border>
@@ -165,5 +175,34 @@
                 </Grid>
             </StackPanel>
         </Grid>
+        <Border x:Name="OpeningOverlay"
+                Panel.ZIndex="10"
+                Visibility="Collapsed"
+                Background="#99000000">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MinWidth="360"
+                    Padding="24"
+                    CornerRadius="6"
+                    Background="{DynamicResource GlobalBackground}">
+                <StackPanel>
+                    <TextBlock Text="正在打开工作区…"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="OpeningPathText"
+                               Margin="0,8,0,12"
+                               MaxWidth="460"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <ProgressBar Height="4" IsIndeterminate="True" />
+                    <Button Margin="0,16,0,0"
+                            Padding="18,5"
+                            HorizontalAlignment="Center"
+                            Content="取消"
+                            Click="CancelOpen_Click" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </base:BaseWindow>

@@ -10,6 +10,16 @@ namespace ColorVision.Copilot
 
     public static class CopilotWorkspaceSearchSupport
     {
+        private const long MaxTextSearchFileBytes = 8L * 1024 * 1024;
+
+        private static readonly EnumerationOptions SearchEnumerationOptions = new()
+        {
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = false,
+            ReturnSpecialDirectories = false,
+        };
+
         private static readonly HashSet<string> IgnoredDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
         {
             ".git",
@@ -104,6 +114,92 @@ namespace ColorVision.Copilot
             return !string.IsNullOrWhiteSpace(extension) && TextFileExtensions.Contains(extension);
         }
 
+        public static bool IsPathWithinRoots(string? path, IEnumerable<string>? roots)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                return false;
+            }
+
+            foreach (var root in NormalizeSearchRoots(roots))
+            {
+                if (!string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase)
+                    && !IsSubPathOf(fullPath, root))
+                {
+                    continue;
+                }
+
+                return !CrossesReparsePoint(root, fullPath);
+            }
+
+            return false;
+        }
+
+        public static bool TryResolveExistingFileWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(path, roots, File.Exists, "file", out fullPath, out errorMessage);
+        }
+
+        public static bool TryResolveExistingPathWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(
+                path,
+                roots,
+                candidate => File.Exists(candidate) || Directory.Exists(candidate),
+                "target",
+                out fullPath,
+                out errorMessage);
+        }
+
+        public static bool TryResolveExistingDirectoryWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            out string fullPath,
+            out string errorMessage)
+        {
+            return TryResolveExistingPathWithinRoots(path, roots, Directory.Exists, "directory", out fullPath, out errorMessage);
+        }
+
+        public static bool TryResolveDirectoryScope(
+            string? path,
+            IEnumerable<string>? roots,
+            out IReadOnlyList<string> scopedRoots,
+            out string errorMessage)
+        {
+            var normalizedRoots = NormalizeSearchRoots(roots);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                scopedRoots = normalizedRoots;
+                errorMessage = normalizedRoots.Count == 0 ? "No searchable workspace root is available." : string.Empty;
+                return normalizedRoots.Count > 0;
+            }
+
+            if (TryResolveExistingDirectoryWithinRoots(path, normalizedRoots, out var directoryPath, out errorMessage))
+            {
+                scopedRoots = [directoryPath];
+                return true;
+            }
+
+            scopedRoots = Array.Empty<string>();
+            return false;
+        }
+
         public static string GetDisplayPath(string rootPath, string fullPath)
         {
             try
@@ -138,20 +234,10 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var currentDirectory = pendingDirectories.Pop();
-                IEnumerable<string> subDirectories;
-                IEnumerable<string> files;
 
-                try
-                {
-                    subDirectories = Directory.EnumerateDirectories(currentDirectory);
-                    files = Directory.EnumerateFiles(currentDirectory);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                foreach (var subDirectory in subDirectories)
+                foreach (var subDirectory in EnumerateSafely(
+                    () => Directory.EnumerateDirectories(currentDirectory, "*", SearchEnumerationOptions),
+                    cancellationToken))
                 {
                     if (ShouldIgnoreDirectory(subDirectory))
                         continue;
@@ -159,14 +245,175 @@ namespace ColorVision.Copilot
                     pendingDirectories.Push(subDirectory);
                 }
 
-                foreach (var file in files)
+                foreach (var file in EnumerateSafely(
+                    () => Directory.EnumerateFiles(currentDirectory, "*", SearchEnumerationOptions),
+                    cancellationToken))
                 {
-                    if (textFilesOnly && !IsTextLikeFile(file))
+                    if (textFilesOnly && !IsSearchableTextFile(file))
                         continue;
 
                     yield return file;
                 }
             }
+        }
+
+        private static IEnumerable<string> EnumerateSafely(
+            Func<IEnumerable<string>> createEntries,
+            CancellationToken cancellationToken)
+        {
+            IEnumerator<string>? enumerator;
+            try
+            {
+                enumerator = createEntries().GetEnumerator();
+            }
+            catch
+            {
+                yield break;
+            }
+
+            using (enumerator)
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    string current;
+                    try
+                    {
+                        if (!enumerator.MoveNext())
+                            yield break;
+
+                        current = enumerator.Current;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        yield break;
+                    }
+
+                    yield return current;
+                }
+            }
+        }
+
+        private static bool IsSearchableTextFile(string filePath)
+        {
+            if (!IsTextLikeFile(filePath))
+                return false;
+
+            try
+            {
+                return new FileInfo(filePath).Length <= MaxTextSearchFileBytes;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryResolveExistingPathWithinRoots(
+            string? path,
+            IEnumerable<string>? roots,
+            Func<string, bool> exists,
+            string pathKind,
+            out string fullPath,
+            out string errorMessage)
+        {
+            fullPath = string.Empty;
+            errorMessage = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                errorMessage = $"The {pathKind} path is empty.";
+                return false;
+            }
+
+            var searchRoots = NormalizeSearchRoots(roots);
+            if (searchRoots.Count == 0)
+            {
+                errorMessage = $"No workspace root is available to resolve the {pathKind} path.";
+                return false;
+            }
+
+            var requestedPath = path.Trim();
+            if (Path.IsPathRooted(requestedPath) && !Path.IsPathFullyQualified(requestedPath))
+            {
+                errorMessage = $"The {pathKind} path must be workspace-relative or fully qualified: {requestedPath}";
+                return false;
+            }
+
+            if (Path.IsPathFullyQualified(requestedPath))
+            {
+                try
+                {
+                    var candidate = Path.GetFullPath(requestedPath);
+                    if (!IsPathWithinRoots(candidate, searchRoots))
+                    {
+                        errorMessage = $"The {pathKind} path is outside the allowed workspace roots: {candidate}";
+                        return false;
+                    }
+
+                    if (!exists(candidate))
+                    {
+                        errorMessage = $"The {pathKind} does not exist: {candidate}";
+                        return false;
+                    }
+
+                    fullPath = candidate;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Invalid {pathKind} path: {ex.Message}";
+                    return false;
+                }
+            }
+
+            var matches = new List<string>();
+            var escapedWorkspace = false;
+            foreach (var root in searchRoots)
+            {
+                string candidate;
+                try
+                {
+                    candidate = Path.GetFullPath(requestedPath, root);
+                }
+                catch (Exception ex)
+                {
+                    errorMessage = $"Invalid {pathKind} path: {ex.Message}";
+                    return false;
+                }
+
+                if (!IsPathWithinRoots(candidate, [root]))
+                {
+                    escapedWorkspace = true;
+                    continue;
+                }
+
+                if (exists(candidate))
+                    matches.Add(candidate);
+            }
+
+            var distinctMatches = matches.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (distinctMatches.Length == 1)
+            {
+                fullPath = distinctMatches[0];
+                return true;
+            }
+
+            if (distinctMatches.Length > 1)
+            {
+                errorMessage = $"The workspace-relative {pathKind} path is ambiguous across multiple roots: {requestedPath}";
+                return false;
+            }
+
+            errorMessage = escapedWorkspace
+                ? $"The workspace-relative {pathKind} path escapes the allowed workspace roots: {requestedPath}"
+                : $"The {pathKind} does not exist in the allowed workspace roots: {requestedPath}";
+            return false;
         }
 
         private static string NormalizeToExistingDirectory(string? path)
@@ -191,7 +438,47 @@ namespace ColorVision.Copilot
         private static bool ShouldIgnoreDirectory(string directoryPath)
         {
             var name = Path.GetFileName(directoryPath);
-            return IgnoredDirectoryNames.Contains(name);
+            if (IgnoredDirectoryNames.Contains(name))
+                return true;
+
+            return IsReparsePoint(directoryPath);
+        }
+
+        private static bool CrossesReparsePoint(string rootPath, string fullPath)
+        {
+            if (File.Exists(fullPath) && IsReparsePoint(fullPath))
+                return true;
+
+            var current = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath);
+            while (!string.IsNullOrWhiteSpace(current)
+                && !string.Equals(current, rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                        return true;
+                }
+                catch
+                {
+                    return true;
+                }
+
+                current = Path.GetDirectoryName(current);
+            }
+
+            return false;
+        }
+
+        private static bool IsReparsePoint(string path)
+        {
+            try
+            {
+                return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         private static bool IsSubPathOf(string path, string parentPath)

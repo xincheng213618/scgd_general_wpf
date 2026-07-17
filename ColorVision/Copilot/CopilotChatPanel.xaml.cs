@@ -1,12 +1,19 @@
+using ColorVision.Themes;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision.Copilot
 {
@@ -24,15 +31,20 @@ namespace ColorVision.Copilot
         private const uint KeyEventKeyUp = 0x0002;
 
         private CopilotChatViewModel? _attachedViewModel;
-        private INotifyCollectionChanged? _attachedMessages;
+        private ObservableCollection<CopilotChatMessage>? _attachedMessages;
+        private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
+        private bool _isScrollToBottomPending;
+        private bool _isThemeSubscriptionActive;
 
         public CopilotChatPanel()
         {
             InitializeComponent();
+            BindPromptCaretToThemeResource(PromptTextBox);
             DataContextChanged += CopilotChatPanel_DataContextChanged;
             Loaded += CopilotChatPanel_Loaded;
+            PreviewKeyDown += CopilotChatPanel_PreviewKeyDown;
             SizeChanged += CopilotChatPanel_SizeChanged;
             Unloaded += CopilotChatPanel_Unloaded;
             DataObject.AddPastingHandler(PromptTextBox, PromptTextBox_Pasting);
@@ -40,7 +52,137 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Loaded(object sender, RoutedEventArgs e)
         {
+            if (!_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged += ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = true;
+            }
+
+            SchedulePromptCaretBrushRefresh(ThemeManager.Current.CurrentUITheme);
+            AttachViewModel(DataContext as CopilotChatViewModel);
             UpdateResponsiveLayout();
+        }
+
+        private static void BindPromptCaretToThemeResource(TextBox promptTextBox)
+        {
+            promptTextBox.SetResourceReference(TextBoxBase.CaretBrushProperty, "GlobalTextBrush");
+        }
+
+        private void ThemeManager_CurrentUIThemeChanged(Theme theme)
+        {
+            SchedulePromptCaretBrushRefresh(theme);
+        }
+
+        private void SchedulePromptCaretBrushRefresh(Theme theme)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Render, () => ApplyPromptCaretBrush(PromptTextBox, theme));
+        }
+
+        private static void ApplyPromptCaretBrush(TextBox promptTextBox, Theme theme)
+        {
+            promptTextBox.CaretBrush = theme == Theme.Dark ? Brushes.White : Brushes.Black;
+            promptTextBox.InvalidateVisual();
+        }
+
+        private void PromptTextBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            ApplyPromptCaretBrush(PromptTextBox, ThemeManager.Current.CurrentUITheme);
+        }
+
+        private void CopilotChatPanel_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                FocusConversationSearch();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (DataContext is CopilotChatViewModel viewModel && viewModel.NewChatCommand.CanExecute(null))
+                {
+                    CloseProfileSelectorPopup();
+                    viewModel.NewChatCommand.Execute(null);
+                    FocusPromptInput();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key != Key.Escape)
+                return;
+
+            if (ProfileSelectorPopup.IsOpen)
+            {
+                CloseProfileSelectorPopup();
+                e.Handled = true;
+                return;
+            }
+
+            if (ConversationSearchTextBox.IsKeyboardFocusWithin)
+            {
+                if (DataContext is CopilotChatViewModel searchViewModel
+                    && searchViewModel.ClearConversationSearchCommand.CanExecute(null))
+                {
+                    searchViewModel.ClearConversationSearchCommand.Execute(null);
+                }
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (DataContext is CopilotChatViewModel historyViewModel
+                && historyViewModel.CancelPromptHistoryNavigation())
+            {
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (DataContext is CopilotChatViewModel editViewModel
+                && editViewModel.CancelMessageEditCommand.CanExecute(null))
+            {
+                editViewModel.CancelMessageEditCommand.Execute(null);
+                FocusPromptInput();
+                e.Handled = true;
+                return;
+            }
+
+            if (_isCompactSidebar && _isConversationSidebarExpanded)
+            {
+                _isConversationSidebarExpanded = false;
+                UpdateResponsiveLayout();
+                FocusPromptInput();
+                e.Handled = true;
+            }
+        }
+
+        private void FocusConversationSearch()
+        {
+            CloseProfileSelectorPopup();
+            if (_isCompactSidebar && !_isConversationSidebarExpanded)
+            {
+                _isConversationSidebarExpanded = true;
+                UpdateResponsiveLayout();
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                ConversationSearchTextBox.Focus();
+                Keyboard.Focus(ConversationSearchTextBox);
+                ConversationSearchTextBox.SelectAll();
+            });
+        }
+
+        private void FocusPromptInput()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                PromptTextBox.Focus();
+                Keyboard.Focus(PromptTextBox);
+                MovePromptCaretToEnd();
+            });
         }
 
         private void CopilotChatPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -57,6 +199,12 @@ namespace ColorVision.Copilot
 
         private void CopilotChatPanel_Unloaded(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (_isThemeSubscriptionActive)
+            {
+                ThemeManager.Current.CurrentUIThemeChanged -= ThemeManager_CurrentUIThemeChanged;
+                _isThemeSubscriptionActive = false;
+            }
+
             CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
         }
@@ -65,6 +213,14 @@ namespace ColorVision.Copilot
         {
             if (viewModel == null)
                 return;
+            if (ReferenceEquals(_attachedViewModel, viewModel))
+            {
+                if (!ReferenceEquals(_attachedMessages, viewModel.Messages))
+                    ResetMessageSubscriptions(viewModel.Messages);
+                return;
+            }
+
+            DetachViewModel(_attachedViewModel);
 
             _attachedViewModel = viewModel;
             viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -74,12 +230,13 @@ namespace ColorVision.Copilot
 
         private void DetachViewModel(CopilotChatViewModel? viewModel)
         {
-            if (viewModel == null)
+            if (_attachedViewModel == null
+                || viewModel != null && !ReferenceEquals(_attachedViewModel, viewModel))
                 return;
 
-            viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            _attachedViewModel = null;
+            _attachedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ResetMessageSubscriptions(null);
+            _attachedViewModel = null;
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -102,54 +259,52 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ResetMessageSubscriptions(INotifyCollectionChanged? messages)
+        private void ResetMessageSubscriptions(ObservableCollection<CopilotChatMessage>? messages)
         {
             if (_attachedMessages != null)
                 _attachedMessages.CollectionChanged -= Messages_CollectionChanged;
 
-            if (_attachedViewModel != null)
-            {
-                foreach (var message in _attachedViewModel.Messages)
-                {
-                    message.PropertyChanged -= Message_PropertyChanged;
-                }
-            }
+            foreach (var message in _attachedMessageItems)
+                message.PropertyChanged -= Message_PropertyChanged;
+            _attachedMessageItems.Clear();
 
             _attachedMessages = messages;
             if (_attachedMessages != null)
                 _attachedMessages.CollectionChanged += Messages_CollectionChanged;
 
-            if (_attachedViewModel == null)
-                return;
-
-            foreach (var message in _attachedViewModel.Messages)
-            {
-                message.PropertyChanged += Message_PropertyChanged;
-            }
+            SynchronizeMessageSubscriptions();
         }
 
         private void Messages_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.NewItems != null)
-            {
-                foreach (var item in e.NewItems)
-                {
-                    if (item is CopilotChatMessage message)
-                        message.PropertyChanged += Message_PropertyChanged;
-                }
-            }
-
-            if (e.OldItems != null)
-            {
-                foreach (var item in e.OldItems)
-                {
-                    if (item is CopilotChatMessage message)
-                        message.PropertyChanged -= Message_PropertyChanged;
-                }
-            }
-
-            ScrollToBottom();
+            var shouldFollowNewMessage = _isScrollToBottomPending
+                || IsNearBottom()
+                || e.NewItems?.OfType<CopilotChatMessage>().Any(message => message.IsUser) == true;
+            SynchronizeMessageSubscriptions();
+            if (shouldFollowNewMessage)
+                ScrollToBottom();
+            else if (e.Action == NotifyCollectionChangedAction.Add)
+                ShowScrollToLatestButton();
             UpdateEmptyStateVisibility();
+        }
+
+        private void SynchronizeMessageSubscriptions()
+        {
+            var currentMessages = _attachedMessages == null
+                ? new HashSet<CopilotChatMessage>()
+                : new HashSet<CopilotChatMessage>(_attachedMessages);
+            foreach (var message in _attachedMessageItems)
+            {
+                if (!currentMessages.Contains(message))
+                    message.PropertyChanged -= Message_PropertyChanged;
+            }
+
+            _attachedMessageItems.RemoveWhere(message => !currentMessages.Contains(message));
+            foreach (var message in currentMessages)
+            {
+                if (_attachedMessageItems.Add(message))
+                    message.PropertyChanged += Message_PropertyChanged;
+            }
         }
 
         private void Message_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -158,7 +313,10 @@ namespace ColorVision.Copilot
                 || e.PropertyName == nameof(CopilotChatMessage.ExecutionContent)
                 || e.PropertyName == nameof(CopilotChatMessage.ReasoningContent))
             {
-                ScrollToBottom(forceIfNearBottomOnly: true);
+                if (_isScrollToBottomPending || IsNearBottom())
+                    ScrollToBottom();
+                else
+                    ShowScrollToLatestButton();
             }
         }
 
@@ -174,28 +332,23 @@ namespace ColorVision.Copilot
 
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
         }
 
         private void ProfileSelectorPopup_Closed(object sender, EventArgs e)
         {
             ProfileSelectorButton.IsChecked = false;
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
         }
 
         private void ModelSelectorRowButton_Click(object sender, RoutedEventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false, advancedSettingsVisible: false);
+            SetProfileSelectorSubmenu(modelVisible: ModelSelectorRowButton.IsChecked == true, reasoningVisible: false);
         }
 
         private void ReasoningSelectorRowButton_Click(object sender, RoutedEventArgs e)
         {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true, advancedSettingsVisible: false);
-        }
-
-        private void AdvancedSettingsSelectorRowButton_Click(object sender, RoutedEventArgs e)
-        {
-            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false, advancedSettingsVisible: AdvancedSettingsSelectorRowButton.IsChecked == true);
+            SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: ReasoningSelectorRowButton.IsChecked == true);
         }
 
         private void ProfileListBox_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -225,15 +378,13 @@ namespace ColorVision.Copilot
             CloseProfileSelectorPopup();
         }
 
-        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible, bool advancedSettingsVisible)
+        private void SetProfileSelectorSubmenu(bool modelVisible, bool reasoningVisible)
         {
             ModelSelectorRowButton.IsChecked = modelVisible;
             ReasoningSelectorRowButton.IsChecked = reasoningVisible;
-            AdvancedSettingsSelectorRowButton.IsChecked = advancedSettingsVisible;
             ModelSubmenuBorder.Visibility = modelVisible ? Visibility.Visible : Visibility.Collapsed;
             ReasoningSubmenuBorder.Visibility = reasoningVisible ? Visibility.Visible : Visibility.Collapsed;
-            AdvancedSettingsSubmenuBorder.Visibility = advancedSettingsVisible ? Visibility.Visible : Visibility.Collapsed;
-            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible || advancedSettingsVisible ? ProfileSelectorPopupSubmenuWidth : 0);
+            var popupWidth = ProfileSelectorPopupMainWidth + (modelVisible || reasoningVisible ? ProfileSelectorPopupSubmenuWidth : 0);
             ProfileSelectorPopup.HorizontalOffset = ProfileSelectorButton.ActualWidth - popupWidth - ProfileSelectorPopupShadowInset;
         }
 
@@ -245,46 +396,146 @@ namespace ColorVision.Copilot
             ProfileSelectorPopup.IsOpen = false;
         }
 
-        private async void VoiceInputButton_Click(object sender, RoutedEventArgs e)
+        private void VoiceInputButton_Click(object sender, RoutedEventArgs e)
         {
             PromptTextBox.Focus();
             Keyboard.Focus(PromptTextBox);
+            CopilotUiTaskObserver.Run(
+                ActivateVoiceInputAsync,
+                "启动 Windows 语音输入",
+                message => MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "无法启动语音输入：" + message,
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning));
+        }
+
+        private static async Task ActivateVoiceInputAsync()
+        {
             await Task.Delay(80);
             SendWindowsVoiceTypingShortcut();
         }
 
-        private void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (Keyboard.Modifiers == ModifierKeys.None
+                && e.Key is Key.Up or Key.Down
+                && DataContext is CopilotChatViewModel historyViewModel
+                && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
+                && historyViewModel.TryNavigatePromptHistory(previous: e.Key == Key.Up))
+            {
+                MovePromptCaretToEnd();
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.V && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
-                if (DataContext is CopilotChatViewModel pasteViewModel && pasteViewModel.TryPasteClipboardImageAttachment())
+                if (DataContext is CopilotChatViewModel pasteViewModel
+                    && pasteViewModel.TryBeginPasteClipboardImageAttachment(out var operation))
                 {
                     e.Handled = true;
+                    await operation;
                     return;
                 }
+            }
+
+            if (DataContext is CopilotChatViewModel completionViewModel
+                && e.Key == Key.Tab
+                && completionViewModel.TryCompleteLocalCommand())
+            {
+                MovePromptCaretToEnd();
+                e.Handled = true;
+                return;
             }
 
             if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 return;
 
             if (DataContext is CopilotChatViewModel viewModel)
+            {
+                viewModel.TryCompleteLocalCommand();
                 viewModel.SendCommand.Execute(null);
+            }
 
             e.Handled = true;
         }
 
-        private void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+        }
+
+        private void EditMessageButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+        }
+
+        private void MovePromptCaretToEnd()
+        {
+            PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            PromptTextBox.CaretIndex = PromptTextBox.Text.Length;
+        }
+
+        private async void PromptTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (DataContext is not CopilotChatViewModel viewModel)
                 return;
 
-            if (!e.SourceDataObject.GetDataPresent(DataFormats.Bitmap) && !Clipboard.ContainsImage())
-                return;
-
-            if (!viewModel.TryPasteClipboardImageAttachment())
+            if (!viewModel.TryBeginPasteClipboardImageAttachment(out var operation))
                 return;
 
             e.CancelCommand();
+            await operation;
+        }
+
+        private void ComposerShellBorder_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            var canAttach = DataContext is CopilotChatViewModel { IsBusy: false }
+                && TryGetDroppedFiles(e.Data, out _);
+            FileDropOverlay.Visibility = canAttach ? Visibility.Visible : Visibility.Collapsed;
+            e.Effects = canAttach ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void ComposerShellBorder_PreviewDragLeave(object sender, DragEventArgs e)
+        {
+            FileDropOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private async void ComposerShellBorder_PreviewDrop(object sender, DragEventArgs e)
+        {
+            FileDropOverlay.Visibility = Visibility.Collapsed;
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+
+            if (DataContext is not CopilotChatViewModel { IsBusy: false } viewModel
+                || !TryGetDroppedFiles(e.Data, out var filePaths))
+            {
+                return;
+            }
+
+            e.Effects = DragDropEffects.Copy;
+            if (await viewModel.AddFileAttachmentsAsync(filePaths) == 0)
+                return;
+
+            FocusPromptInput();
+        }
+
+        private static bool TryGetDroppedFiles(IDataObject data, out string[] filePaths)
+        {
+            filePaths = Array.Empty<string>();
+            if (!data.GetDataPresent(DataFormats.FileDrop)
+                || data.GetData(DataFormats.FileDrop) is not string[] droppedPaths)
+            {
+                return false;
+            }
+
+            filePaths = droppedPaths
+                .Where(filePath => !string.IsNullOrWhiteSpace(filePath))
+                .ToArray();
+            return filePaths.Length > 0;
         }
 
         private bool IsNearBottom()
@@ -293,18 +544,65 @@ namespace ColorVision.Copilot
             return MessagesScrollViewer.ScrollableHeight - MessagesScrollViewer.VerticalOffset <= threshold;
         }
 
-        private void ScrollToBottom(bool forceIfNearBottomOnly = false)
+        private void ScrollToBottom()
         {
-            if (forceIfNearBottomOnly && !IsNearBottom())
+            if (_isScrollToBottomPending)
                 return;
 
-            Dispatcher.BeginInvoke(() => MessagesScrollViewer.ScrollToEnd(), System.Windows.Threading.DispatcherPriority.Background);
+            _isScrollToBottomPending = true;
+            HideScrollToLatestButton();
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+            {
+                try
+                {
+                    MessagesScrollViewer.ScrollToEnd();
+                }
+                finally
+                {
+                    _isScrollToBottomPending = false;
+                    HideScrollToLatestButton();
+                }
+            });
+        }
+
+        private void ShowScrollToLatestButton()
+        {
+            if (!_isScrollToBottomPending && !IsNearBottom())
+                ScrollToLatestButton.Visibility = Visibility.Visible;
+        }
+
+        private void HideScrollToLatestButton()
+        {
+            ScrollToLatestButton.Visibility = Visibility.Collapsed;
+        }
+
+        private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            if (IsNearBottom())
+                HideScrollToLatestButton();
+        }
+
+        private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)
+        {
+            ScrollToBottom();
         }
 
         private void ToggleConversationSidebarButton_Click(object sender, RoutedEventArgs e)
         {
             _isConversationSidebarExpanded = !_isConversationSidebarExpanded;
             UpdateResponsiveLayout();
+        }
+
+        private void ConversationListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ConversationListBox.SelectedItem is not CopilotConversationRecord conversation
+                || DataContext is not CopilotChatViewModel viewModel
+                || !viewModel.SelectConversationCommand.CanExecute(conversation))
+            {
+                return;
+            }
+
+            viewModel.SelectConversationCommand.Execute(conversation);
         }
 
         private void UpdateResponsiveLayout()
@@ -346,7 +644,11 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var showCompactHistory = _isCompactSidebar && viewModel.IsConversationEmpty && viewModel.CanShowCompactHistory;
+            var showCompactHistory = CopilotResponsiveLayout.ShouldShowCompactHistory(
+                _isCompactSidebar,
+                _isConversationSidebarExpanded,
+                viewModel.IsConversationEmpty,
+                viewModel.CanShowCompactHistory);
             CompactHistoryPanel.Visibility = showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
             EmptyStateTextBlock.Visibility = viewModel.IsConversationEmpty && !showCompactHistory ? Visibility.Visible : Visibility.Collapsed;
         }

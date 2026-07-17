@@ -9,53 +9,29 @@ using System.Windows;
 namespace ColorVision.Solution.Editor
 {
     // 声明支持的图片扩展名，设置为默认编辑器
-    [EditorForExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff|.cvraw|.cvcie", "图片编辑器", isDefault: true, resourceKey: "Sol_Editor_Image")]
+    [EditorForExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff|.cvraw|.cvcie", "图片编辑器", isDefault: true, resourceKey: "Sol_Editor_Image", editorId: "colorvision.image", priority: 100)]
     public class ImageEditor : EditorBase
     {
         public override void Open(string filePath)
         {
+            if (!File.Exists(filePath))
+                return;
 
-            string GuidId = Tool.GetMD5(filePath);
-            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
-
-            if (existingDocument != null)
-            {
-                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+            EditorDocumentService.Open(
+                filePath,
+                GetType(),
+                Path.GetFileName(filePath),
+                () =>
                 {
-                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
-                }
-                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
-                {
-                    var window = Window.GetWindow(layoutFloatingWindow);
-                    if (window != null)
-                    {
-                        window.Activate();
-                    }
-                }
-            }
-            else
-            {
-                ImageView imageView = new ImageView();
-                imageView.OpenImage(filePath);
-
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
-                layoutDocument.Content = imageView;
-                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
-                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
-                layoutDocument.IsActiveChanged += (s, e) =>
-                {
-                    if (layoutDocument.IsActive)
-                    {
-                        WorkspaceManager.OnContentIdSelected(filePath);
-                    }
-                };
-                layoutDocument.Closing += async (s, e) =>
+                    var imageView = new ImageView();
+                    imageView.OpenImage(filePath);
+                    return imageView;
+                },
+                imageView =>
                 {
                     imageView.Clear();
-                    await Task.Delay(10);
                     imageView.Dispose();
-                };
-            }
+                });
         }
     }
 

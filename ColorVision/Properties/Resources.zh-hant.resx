@@ -271,9 +271,6 @@
   <data name="UpdatePreviewCloseButtonText" xml:space="preserve">
     <value>關閉</value>
   </data>
-  <data name="UpdatePreviewSkipVersionButtonText" xml:space="preserve">
-    <value>跳過此版本</value>
-  </data>
   <data name="UpdatePreviewRequiredBadge" xml:space="preserve">
     <value>必選</value>
   </data>
@@ -310,9 +307,6 @@
   <data name="UpdatePreviewNoPluginUpdates" xml:space="preserve">
     <value>沒有可更新的外掛。</value>
   </data>
-  <data name="UpdatePreviewCombinedPackageIncomplete" xml:space="preserve">
-    <value>聯合更新套件下載不完整，請稍後再試。</value>
-  </data>
   <data name="UpdatePreviewShowNoUpdatesLatestMessage" xml:space="preserve">
     <value>目前主程式與外掛都已是最新版本。</value>
   </data>
@@ -334,17 +328,11 @@
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>程式備份</value>
   </data>
-  <data name="UpdatePreviewIncrementalBackupOption" xml:space="preserve">
-    <value>建立備份</value>
-  </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>包含必選更新</value>
   </data>
   <data name="UpdatePreviewSelectionRestartRequired" xml:space="preserve">
     <value>更新完成後將重新啟動應用程式</value>
-  </data>
-  <data name="UpdatePreviewSelectionBackupAndRestart" xml:space="preserve">
-    <value>更新前會自動建立備份，完成後可能需要重新啟動應用程式</value>
   </data>
   <data name="UpdatePreviewHostRequirementFormat" xml:space="preserve">
     <value>宿主要求：{0}</value>

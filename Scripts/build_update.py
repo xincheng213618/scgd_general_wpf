@@ -1,12 +1,15 @@
 import ctypes
 import os
 import filecmp
+import re
 import zipfile
 import time
 from pathlib import PurePosixPath
 
-from file_manager import FileManager
-
+try:
+    from .backend_client import upload_file_to_folder
+except ImportError:
+    from backend_client import upload_file_to_folder
 
 ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
@@ -14,7 +17,22 @@ ALLOWED_RUNTIME_PREFIXES = (
 )
 EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
-
+REQUIRED_SERVICE_HOST_RUNTIME_PATHS = (
+    'ServiceHost/ColorVisionServiceHost.exe',
+    'ServiceHost/ColorVisionServiceHost.dll',
+    'ServiceHost/ColorVisionServiceHost.deps.json',
+    'ServiceHost/ColorVisionServiceHost.runtimeconfig.json',
+    'ServiceHost/Newtonsoft.Json.dll',
+    'ServiceHost/System.ServiceProcess.ServiceController.dll',
+    'ServiceHost/runtimes/win/lib/net10.0/System.ServiceProcess.ServiceController.dll',
+    'ServiceHost/Tasks/RegisterFileAssociations.ps1',
+    'ServiceHost/Tasks/RegisterThumbnail.ps1',
+    'ServiceHost/Tasks/UnregisterThumbnail.ps1',
+)
+FULL_RELEASE_ZIP_RE = re.compile(
+    r'^ColorVision-\[(\d+)\.(\d+)\.(\d+)\.(\d+)]\.zip$',
+    re.IGNORECASE,
+)
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
 # ----------------------
@@ -30,7 +48,6 @@ exe_path = os.path.join(new_version_dir, 'ColorVision.exe')
 # 输出历史与增量包目录（基于当前用户桌面）
 history_dir = os.path.join(desktop_dir, 'History')
 update_dir = os.path.join(history_dir, 'update')
-file_manager = FileManager()
 
 
 def normalize_archive_relative_path(path_value: str) -> str:
@@ -52,40 +69,23 @@ def is_root_service_host_file(path_value: str) -> bool:
     normalized = normalize_archive_relative_path(path_value).lower()
     return '/' not in normalized and os.path.basename(normalized).startswith('colorvisionservicehost.')
 
+
+def validate_service_host_runtime(version_directory: str) -> None:
+    missing_paths = []
+    for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS:
+        path = os.path.join(version_directory, *PurePosixPath(relative_path).parts)
+        if not os.path.isfile(path):
+            missing_paths.append(relative_path)
+
+    if missing_paths:
+        raise FileNotFoundError(
+            'ServiceHost runtime is incomplete: ' + ', '.join(missing_paths)
+        )
+
 def upload_file(file_path, folder_name):
-    return file_manager.upload_file(file_path, folder_name)
+    return upload_file_to_folder(file_path, folder_name)
 
 
-
-def copy_with_progress(src, dst):
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    file_size = os.path.getsize(src)
-    copied = 0
-    chunk_size = 1024 * 1024
-
-    with open(src, 'rb') as fsrc, open(dst, 'wb') as fdst:
-        start_time = time.time()
-        while True:
-            chunk = fsrc.read(chunk_size)
-            if not chunk:
-                break
-            fdst.write(chunk)
-            copied += len(chunk)
-
-            elapsed_time = time.time() - start_time
-            progress = copied / file_size * 100
-            speed = copied / elapsed_time
-
-            remaining_bytes = file_size - copied
-            remaining_time = remaining_bytes / speed if speed > 0 else 0
-            remaining_time_hms = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
-
-            print(f"\rCopied {copied / (1024 * 1024):.2f} MB of {file_size / (1024 * 1024):.2f} MB "
-                  f"({progress:.2f}%) at {speed / (1024 * 1024):.2f} MB/s, "
-                  f"remaining time {remaining_time_hms}", end='')
-
-        print()
 def get_file_version_from_pefile(file_path):
     try:
         import pefile
@@ -263,6 +263,7 @@ def create_full_zip(version_dir, output_zip):
         for file in all_files:
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
 
+
 def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
     """清理临时目录；短暂文件占用不应阻断增量包上传。"""
     if not os.path.exists(directory):
@@ -286,73 +287,66 @@ def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
     print(f"Warning: could not remove temporary directory {directory}: {last_error}")
     return False
 
+
 def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
     """制作增量更新包"""
     if not os.path.exists(old_zip):
-        # 如果旧版本 ZIP 不存在，创建全量更新包
         create_full_zip(new_version_dir, incremental_zip.replace('Update', ''))
         return
 
-    # 解压旧版本 ZIP 文件
     old_version_dir = f'temp_old_version_{os.getpid()}_{int(time.time())}'
     with zipfile.ZipFile(old_zip, 'r') as zipf:
         zipf.extractall(old_version_dir)
 
-    # 获取文件列表
     old_files = get_all_files(old_version_dir, include_shell_extension=False)
     new_files = get_all_files(new_version_dir, include_shell_extension=False)
-
-    # 创建一个相对路径的字典
     old_files_dict = {os.path.relpath(file, old_version_dir): file for file in old_files}
     new_files_dict = {os.path.relpath(file, new_version_dir): file for file in new_files}
-
-    # 找出新增或修改的文件
-    files_to_zip = []
+    files_to_zip = {}
 
     for rel_path, new_file in new_files_dict.items():
         old_file = old_files_dict.get(rel_path)
         if not old_file or not filecmp.cmp(old_file, new_file, shallow=False):
-            files_to_zip.append(new_file)
+            files_to_zip[rel_path] = new_file
 
-    # 创建增量 ZIP 包
+    service_host_prefix = f'ServiceHost{os.sep}'.lower()
+    for rel_path, new_file in new_files_dict.items():
+        if rel_path.lower().startswith(service_host_prefix):
+            files_to_zip[rel_path] = new_file
+
     with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for file in files_to_zip:
-            zipf.write(str(file), str(os.path.relpath(file, new_version_dir)))
+        for rel_path, file in sorted(files_to_zip.items()):
+            zipf.write(str(file), str(rel_path))
 
     remove_directory_best_effort(old_version_dir)
 
-def find_latest_zip(directory, version):
-    """在目录中找到指定版本的最新 ZIP 文件"""
-    target_version_parts = version.split('.')
-    target_major_version = int(target_version_parts[2])  # 获取第三位版本号
-    target_minor_version = int(target_version_parts[3])  # 获取第四位版本号
 
-    # 调整基准版本号
-    if target_minor_version == 1:
-        target_major_version -= 1
-
-    zip_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.zip')]
-    if not zip_files:
+def find_incremental_baseline(directory, version):
+    """Find the deterministic cumulative baseline for an incremental package."""
+    target_version = tuple(int(part) for part in version.split('.'))
+    if len(target_version) != 4:
+        raise ValueError(f'Expected a four-part version, got: {version}')
+    if not os.path.isdir(directory):
         return None
 
-    # 过滤出符合目标版本的 ZIP 文件
-    matching_files = []
-    for file in zip_files:
-        filename = os.path.basename(file)
-        parts = filename.split('.')
+    candidates = []
+    for filename in os.listdir(directory):
+        match = FULL_RELEASE_ZIP_RE.fullmatch(filename)
+        if not match:
+            continue
 
-        if len(parts) >= 4:
-            major_version = int(parts[2])
-            if major_version == target_major_version:
-                matching_files.append(file)
+        candidate_version = tuple(int(part) for part in match.groups())
+        if candidate_version[:2] != target_version[:2] or candidate_version >= target_version:
+            continue
+        candidates.append((candidate_version, os.path.join(directory, filename)))
 
-    # 如果没有匹配的文件，返回最新的文件
-    if not matching_files:
-        return max(zip_files, key=os.path.getmtime)
+    if not candidates:
+        return None
 
-    # 返回匹配的文件中最新的一个
-    latest_zip = min(matching_files, key=os.path.getmtime)
-    return latest_zip
+    baseline_build = target_version[2] if target_version[3] > 1 else target_version[2] - 1
+    same_branch = [item for item in candidates if item[0][2] == baseline_build]
+    baseline_candidates = same_branch or candidates
+    return min(baseline_candidates, key=lambda item: item[0])[1]
 
 
 def main() -> int:
@@ -361,15 +355,20 @@ def main() -> int:
         print(f"无法从 {exe_path} 读取版本号，终止。")
         return 1
 
+    try:
+        validate_service_host_runtime(new_version_dir)
+    except FileNotFoundError as exc:
+        print(str(exc))
+        return 1
+
     print("打包版本: " + version)
 
     # 创建目录
     create_directory_if_not_exists(history_dir)
     create_directory_if_not_exists(update_dir)
 
-    # 查找最新的全量包
-    old_zip = find_latest_zip(history_dir, version)
-    print(f"baseline Version{old_zip}")
+    old_zip = find_incremental_baseline(history_dir, version)
+    print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
     incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
 
     if old_zip:
@@ -378,8 +377,6 @@ def main() -> int:
         if not upload_file(incremental_zip, "ColorVision/Update"):
             print("增量包上传失败，终止发布。")
             return 1
-        # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update")
-
     print("创建全量包")
     full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
     create_full_zip(new_version_dir, full_zip)

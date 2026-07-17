@@ -8,6 +8,7 @@ using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
+using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
 using System.Collections.ObjectModel;
@@ -64,6 +65,12 @@ namespace ProjectARVRPro
         /// 用于动态添加 POI_XYZ 关注点结果，无需静态声明属性。
         /// </summary>
         public Dictionary<string, ObservableCollection<PoixyuvData>> DynamicPoixyuvDatas { get; set; } = new Dictionary<string, ObservableCollection<PoixyuvData>>();
+
+        /// <summary>
+        /// 动态屏幕缺陷检测结果，Key为测试画面名称，Value为已清理的缺陷汇总与缺陷框参数。
+        /// 该结果仅用于展示、绘制和客户JSON输出，不参与上下限或总结果判定。
+        /// </summary>
+        public Dictionary<string, ScreenDefectsData> DynamicScreenDefectResults { get; set; } = new Dictionary<string, ScreenDefectsData>();
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）

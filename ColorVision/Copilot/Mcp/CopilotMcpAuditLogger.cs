@@ -109,6 +109,8 @@ namespace ColorVision.Copilot.Mcp
 
         public static void ActionRejected(ConfirmableAction action) => RecordActionEvent("action_rejected", action, false, "Rejected by ColorVision user.");
 
+        public static void ActionCancelled(ConfirmableAction action) => RecordActionEvent("action_cancelled", action, false, "Cancelled before the approved action completed.");
+
         public static void ActionExpired(ConfirmableAction action) => RecordActionEvent("action_expired", action, false, "The confirmable action expired.");
 
         public static void ActionExecuted(ConfirmableAction action, bool success, string message) => RecordActionEvent("action_executed", action, success, message);
@@ -168,6 +170,7 @@ namespace ColorVision.Copilot.Mcp
 
             var toolName = entry.ToolName ?? string.Empty;
             if (string.Equals(toolName, "action_rejected", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(toolName, "action_cancelled", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(toolName, "action_expired", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
@@ -181,6 +184,7 @@ namespace ColorVision.Copilot.Mcp
                 || error.Contains("action_pending", StringComparison.OrdinalIgnoreCase)
                 || error.Contains("action_not_approved", StringComparison.OrdinalIgnoreCase)
                 || error.Contains("action_rejected", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("action_cancelled", StringComparison.OrdinalIgnoreCase)
                 || error.Contains("action_expired", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -204,6 +208,8 @@ namespace ColorVision.Copilot.Mcp
 
         public static string RedactText(string? value) => Redact(value);
 
+        internal static bool IsSensitiveArgumentName(string? name) => IsSensitiveKey(name);
+
         private static string Redact(string? value)
         {
             var text = value ?? string.Empty;
@@ -216,15 +222,19 @@ namespace ColorVision.Copilot.Mcp
             if (string.IsNullOrWhiteSpace(key))
                 return false;
 
-            return key.Contains("password", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("passwd", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("secret", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("token", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("authorization", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("api_key", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("apikey", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("access_key", StringComparison.OrdinalIgnoreCase)
-                || key.Contains("private_key", StringComparison.OrdinalIgnoreCase);
+            var normalized = key.Replace("_", string.Empty, StringComparison.Ordinal)
+                .Replace("-", string.Empty, StringComparison.Ordinal)
+                .Replace(" ", string.Empty, StringComparison.Ordinal);
+            return normalized.Contains("password", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("passwd", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("pwd", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("secret", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("token", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("authorization", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("bearer", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("apikey", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("accesskey", StringComparison.OrdinalIgnoreCase)
+                || normalized.Contains("privatekey", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string Sanitize(string? value)

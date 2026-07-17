@@ -10,13 +10,14 @@
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
+| 只校验插件清单 | `py Scripts\package_cvxp.py --project-file <插件.csproj> --validate-only` | 不构建、不打包、不上传 |
 | 刷新共享文件表 | `py Scripts\generate_shared_files.py` | 只有宿主输出目录共享 DLL 明显变化时才需要 |
 
 `build.py` 和 `build_update.py` 是 `release.bat` 的内部步骤。正式发布不要绕过 `release.bat` 单独跑它们；`build_update.py` 没有安全的 `--help` 查询模式，直接执行会进入增量包生成和上传流程。
 
 ## 正式发布
 
-发布前先提升仓库根目录 `Directory.Build.props` 的版本号，然后只运行：
+主程序和 ServiceHost 共用仓库根目录 `Directory.Build.props` 中的 `VersionPrefix`。每个增量包都必须携带完整的 `ServiceHost/` 运行时，确保 ZIP 部署机器可从空的 ProgramData 目录完成首次安装。发布前只提升这个版本号，然后运行：
 
 ```powershell
 Scripts\release.bat
@@ -32,7 +33,9 @@ Scripts\release.bat
 | 仓库内项目包 | `Scripts\package_project.bat ProjectLUX` |
 | 外部编译产物 | `py Scripts\package_cvxp.py --src-dir C:\path\to\MyPlugin\bin\x64\Release\net10.0-windows` |
 
-插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。打包会读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，再生成 `.cvxp`。
+插件和项目包默认上传，并在上传流程结束后删除本地 `.cvxp`。构建和上传前会先校验 `manifest.json`；若声明 `copilot_agents`，还会检查角色 ID、工具名、作用域、只读能力、模式、预算、重复项，以及单插件最多 16 个角色和 8,000 个常驻名称/说明字符的上限。需要在 CI 或发布前单独检查时使用 `--validate-only`。校验通过后，打包再读取 `Scripts/shared_files.json`，剔除宿主已共享文件和 `.pdb`，生成 `.cvxp`。
+
+存在清单时，`manifest.id` 是唯一的发布身份：它决定服务器目录、`.cvxp` 文件名前缀、包内根目录和最终的 `Plugins/<id>/` 安装目录；`dllpath` 只决定用于读取版本并启动插件的主 DLL。因此第三方插件不需要让项目名、程序集名和插件 ID 完全相同。
 
 ## 上传配置
 
@@ -58,7 +61,7 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | `package_project.bat` | 是 | 仓库内项目包打包快捷入口 |
 | `clear-bin.ps1`、`clear-artifacts.ps1` | 是 | 清理本地构建产物 |
 | `build.py`、`build_update.py` | 否 | `release.bat` 内部构建、上传和增量更新步骤 |
-| `backend_client.py`、`file_manager.py` | 否 | 上传认证、预检、流式上传和路径辅助 |
+| `backend_client.py` | 否 | 统一处理上传认证、预检、重试、流式上传和路径编码 |
 | `generate_shared_files.py` | 偶尔 | 生成宿主共享文件清单 |
 | `build_spectrum.py` | 特殊 | Spectrum 插件专用构建入口 |
 
@@ -75,15 +78,4 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 | 上传 401 或连接失败 | 环境变量、后端是否运行、URL 是否正确、代理是否需要启用 |
 | 构建失败 | 先单独跑对应 `dotnet build`，再看 MSBuild、Advanced Installer 或外部 DLL |
 
-## 脚本测试
-
-```powershell
-$env:PYTHONPATH='Scripts'
-python -m unittest `
-  Scripts.test.test_backend_client `
-  Scripts.test.test_build `
-  Scripts.test.test_build_update `
-  Scripts.test.test_file_manager
-```
-
-如果改了上传、打包、版本读取或发布顺序，至少跑相关脚本测试；改正式发布路径时，还要做一次测试环境发布演练。
+改正式发布路径时，需要做一次测试环境发布演练。

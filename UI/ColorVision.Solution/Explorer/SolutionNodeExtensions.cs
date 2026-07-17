@@ -2,6 +2,14 @@ namespace ColorVision.Solution.Explorer
 {
     public static class SolutionNodeExtensions
     {
+        public static SolutionNode ResolveCommandTarget(this SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            return node is SolutionSearchResultNode searchResultNode
+                ? searchResultNode.TargetNode
+                : node;
+        }
+
         public static T? GetAncestor<T>(this SolutionNode node) where T : SolutionNode
         {
             if (node is T t)
@@ -11,6 +19,22 @@ namespace ColorVision.Solution.Explorer
                 return null;
 
             return node.Parent.GetAncestor<T>();
+        }
+
+        internal static SolutionExplorer? FindSolutionExplorer(this SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            for (SolutionNode? current = node; current != null; current = current.Parent)
+            {
+                if (current is SolutionExplorer explorer)
+                    return explorer;
+            }
+            return node switch
+            {
+                ProjectNode projectNode => projectNode.SolutionExplorer,
+                UnavailableProjectNode unavailableProjectNode => unavailableProjectNode.SolutionExplorer,
+                _ => null,
+            };
         }
 
         public static bool HasFile(this SolutionNode node)

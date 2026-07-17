@@ -330,7 +330,7 @@ namespace ProjectARVRPro.Process.Demura
         private async Task BurnDemuraBinAsync(DemuraViewTestResult testResult, ILog? log)
         {
             testResult.BurnEnabled = true;
-            testResult.BurnTargetFileName = string.IsNullOrWhiteSpace(Config.BurnTargetFileName) ? "DemuraMerged.bin" : Config.BurnTargetFileName.Trim();
+            testResult.BurnTargetFileName = GecsProtocol.ResolveDemuraTargetFileName(Config.BurnTargetFileName);
             testResult.BurnSourceFile = ResolveBurnSourceFile(testResult);
 
             try
@@ -386,28 +386,17 @@ namespace ProjectARVRPro.Process.Demura
 
         private async Task<TcpBurnResult> SendBurnCommandAsync(string address, int port, string sourceFile, string targetFileName, ILog? log)
         {
-            string powerOnBody = "PG,1,POWER,ON";
-            string powerOnFrame = BuildLengthPrefixedBody(powerOnBody);
-            byte[] powerOnBytes = BuildBurnCommandBytes(powerOnBody);
-            string powerOnText = $"[02][FF]{powerOnFrame}[03]";
-            string powerOnHex = ToHex(powerOnBytes);
-
             string pgChannel = string.IsNullOrWhiteSpace(Config.BurnPgChannel) ? "01" : Config.BurnPgChannel.Trim();
-            string sendFileBody = $"PG,{pgChannel},SENDFILE,START,{Config.BurnFileIndex},{sourceFile},{targetFileName}";
-            string sendFileFrame = BuildLengthPrefixedBody(sendFileBody);
-            byte[] sendFileBytes = BuildBurnCommandBytes(sendFileBody);
-            string sendFileText = $"[02][FF]{sendFileFrame}[03]";
-            string sendFileHex = ToHex(sendFileBytes);
-            string powerOffBody = "PG,1,POWER,OFF";
-            string powerOffFrame = BuildLengthPrefixedBody(powerOffBody);
-            byte[] powerOffBytes = BuildBurnCommandBytes(powerOffBody);
-            string powerOffText = $"[02][FF]{powerOffFrame}[03]";
-            string powerOffHex = ToHex(powerOffBytes);
-            string commandText = $"PowerOn={powerOnText};SendFile={sendFileText};PowerOff={powerOffText}";
-            string commandHex = $"PowerOn={powerOnHex};SendFile={sendFileHex};PowerOff={powerOffHex}";
             string successResponse = string.IsNullOrWhiteSpace(Config.BurnSuccessResponse) ? "SENDFILE,END,OK" : Config.BurnSuccessResponse;
+            GecsCommand sendFileCommand = GecsProtocol.SendFile(pgChannel, Config.BurnFileIndex, sourceFile, targetFileName, successResponse);
+            GecsCommand powerStateCommand = GecsProtocol.QueryPowerState();
+            GecsCommand powerOnCommand = GecsProtocol.PowerOn();
+            GecsCommand eraseCommand = GecsProtocol.DemuraErase();
+            GecsCommand writeCommand = GecsProtocol.DemuraWrite();
+            string commandText = $"SendFile={sendFileCommand.PacketText};PowerState={powerStateCommand.PacketText};PowerOnIfOff={powerOnCommand.PacketText};Erase={eraseCommand.PacketText};Write={writeCommand.PacketText}";
+            string commandHex = $"SendFile={ToHex(sendFileCommand.Packet)};PowerState={ToHex(powerStateCommand.Packet)};PowerOnIfOff={ToHex(powerOnCommand.Packet)};Erase={ToHex(eraseCommand.Packet)};Write={ToHex(writeCommand.Packet)}";
 
-            log?.Info($"Demura烧录TCP连接PG: {address}:{port}, commands={commandText}, hex={commandHex}");
+            log?.Info($"Demura烧录TCP连接PG: {address}:{port}, flow=SendFile -> PowerState -> PowerOn(仅OFF时) -> Erase -> Write, commands={commandText}, hex={commandHex}");
             using TcpClient tcpClient = new();
             try
             {
@@ -423,24 +412,45 @@ namespace ProjectARVRPro.Process.Demura
             using NetworkStream stream = tcpClient.GetStream();
             List<CommandExchange> exchanges = new();
             CommandExchange? failure = null;
-            bool powerOnAccepted = false;
-            bool powerOffAttempted = false;
 
             try
             {
-                CommandExchange powerOn = await SendCommandAndWaitAsync(stream, "PowerOn", powerOnText, powerOnBytes, "POWER,ON,END,OK", log).ConfigureAwait(false);
-                exchanges.Add(powerOn);
-                if (powerOn.Success)
-                    powerOnAccepted = true;
-                else
-                    failure = powerOn;
+                CommandExchange sendFile = await SendCommandAndWaitAsync(stream, sendFileCommand, log).ConfigureAwait(false);
+                exchanges.Add(sendFile);
+                if (!sendFile.Success)
+                    failure = sendFile;
 
+                CommandExchange? powerState = null;
                 if (failure == null)
                 {
-                    CommandExchange sendFile = await SendCommandAndWaitAsync(stream, "SendFile", sendFileText, sendFileBytes, successResponse, log).ConfigureAwait(false);
-                    exchanges.Add(sendFile);
-                    if (!sendFile.Success)
-                        failure = sendFile;
+                    powerState = await SendCommandAndWaitAsync(stream, powerStateCommand, log).ConfigureAwait(false);
+                    exchanges.Add(powerState);
+                    if (!powerState.Success)
+                        failure = powerState;
+                }
+
+                if (failure == null && powerState != null)
+                {
+                    if (!GecsProtocol.TryGetPowerState(powerState.Text, out bool isPowerOn))
+                    {
+                        failure = CommandExchange.FromFailure("PowerState", powerState.Text, powerState.Hex, $"无法解析PG上电状态：{powerState.Text}");
+                    }
+                    else
+                    {
+                        if (isPowerOn)
+                            log?.Info("Demura烧录检测到PG已经上电，跳过PowerOn。");
+
+                        foreach (GecsCommand command in GecsProtocol.DemuraBurnAfterPowerState(isPowerOn))
+                        {
+                            CommandExchange exchange = await SendCommandAndWaitAsync(stream, command, log).ConfigureAwait(false);
+                            exchanges.Add(exchange);
+                            if (!exchange.Success)
+                            {
+                                failure = exchange;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -450,45 +460,18 @@ namespace ProjectARVRPro.Process.Demura
                 failure ??= exception;
                 log?.Error("Demura烧录指令执行异常", ex);
             }
-            finally
-            {
-                if (powerOnAccepted)
-                {
-                    powerOffAttempted = true;
-                    try
-                    {
-                        CommandExchange powerOff = await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
-                        exchanges.Add(powerOff);
-                        if (!powerOff.Success && failure == null)
-                            failure = powerOff;
-                    }
-                    catch (Exception ex)
-                    {
-                        CommandExchange powerOff = CommandExchange.FromFailure("PowerOff", string.Empty, string.Empty, ex.Message);
-                        exchanges.Add(powerOff);
-                        failure ??= powerOff;
-                        log?.Error("Demura烧录下电异常", ex);
-                    }
-                }
-            }
 
             string responseText = BuildExchangeText(exchanges);
             string responseHex = BuildExchangeHex(exchanges);
             if (failure != null)
-            {
-                string powerOffSuffix = powerOnAccepted && powerOffAttempted ? "，已尝试下电" : string.Empty;
-                return TcpBurnResult.FromFailure(commandText, commandHex, responseText, responseHex, $"PG指令失败({failure.Name})：{failure.Message}{powerOffSuffix}");
-            }
+                return TcpBurnResult.FromFailure(commandText, commandHex, responseText, responseHex, $"PG指令失败({failure.Name})：{failure.Message}");
 
-            return TcpBurnResult.FromSuccess(commandText, commandHex, responseText, responseHex, "烧录成功，上电、烧录、下电均收到回包。");
+            return TcpBurnResult.FromSuccess(commandText, commandHex, responseText, responseHex, "烧录成功，文件下发、上电状态确认、FLASH擦除和写入均完成。");
         }
 
         private async Task<CommandExchange> SendPowerOffCommandAsync(string address, int port, ILog? log)
         {
-            string powerOffBody = "PG,1,POWER,OFF";
-            string powerOffFrame = BuildLengthPrefixedBody(powerOffBody);
-            byte[] powerOffBytes = BuildBurnCommandBytes(powerOffBody);
-            string powerOffText = $"[02][FF]{powerOffFrame}[03]";
+            GecsCommand powerOffCommand = GecsProtocol.PowerOff();
 
             using TcpClient tcpClient = new();
             try
@@ -502,14 +485,16 @@ namespace ProjectARVRPro.Process.Demura
 
             tcpClient.NoDelay = true;
             using NetworkStream stream = tcpClient.GetStream();
-            return await SendCommandAndWaitAsync(stream, "PowerOff", powerOffText, powerOffBytes, "POWER,OFF,END,OK", log).ConfigureAwait(false);
+            return await SendCommandAndWaitAsync(stream, powerOffCommand, log).ConfigureAwait(false);
         }
 
-        private async Task<CommandExchange> SendCommandAndWaitAsync(NetworkStream stream, string name, string commandText, byte[] commandBytes, string expectedResponse, ILog? log)
+        private async Task<CommandExchange> SendCommandAndWaitAsync(NetworkStream stream, GecsCommand command, ILog? log)
         {
+            byte[] commandBytes = command.Packet;
             await stream.WriteAsync(commandBytes.AsMemory(0, commandBytes.Length)).ConfigureAwait(false);
             await stream.FlushAsync().ConfigureAwait(false);
-            log?.Info($"Demura烧录指令已发送: step={name}, command={commandText}, hex={ToHex(commandBytes)}, bytes={commandBytes.Length}, expected={expectedResponse}");
+            string expectedResponse = string.Join("/", command.SuccessResponses);
+            log?.Info($"Demura PG指令已发送: step={command.Name}, command={command.PacketText}, hex={ToHex(commandBytes)}, bytes={commandBytes.Length}, expected={expectedResponse}");
 
             List<byte> received = new();
             byte[] buffer = new byte[1024];
@@ -534,20 +519,20 @@ namespace ProjectARVRPro.Process.Demura
                 for (int i = 0; i < read; i++)
                     received.Add(buffer[i]);
 
-                string responseText = DecodeAscii(received);
+                string responseText = DecodeResponse(received);
                 string responseHex = ToHex(received);
-                log?.Info($"Demura烧录收到PG回包片段: step={name}, text={responseText}, hex={responseHex}");
-                if (responseText.Contains(expectedResponse, StringComparison.OrdinalIgnoreCase))
-                    return CommandExchange.FromSuccess(name, responseText, responseHex);
+                log?.Info($"Demura烧录收到PG回包片段: step={command.Name}, text={responseText}, hex={responseHex}");
+                if (command.SuccessResponses.Any(response => responseText.Contains(response, StringComparison.OrdinalIgnoreCase)))
+                    return CommandExchange.FromSuccess(command.Name, responseText, responseHex);
 
                 if (ContainsBurnFailureResponse(responseText))
-                    return CommandExchange.FromFailure(name, responseText, responseHex, $"PG返回失败：{responseText}");
+                    return CommandExchange.FromFailure(command.Name, responseText, responseHex, $"PG返回失败：{responseText}");
             }
 
-            string finalText = DecodeAscii(received);
+            string finalText = DecodeResponse(received);
             string finalHex = ToHex(received);
-            string message = string.IsNullOrWhiteSpace(finalText) ? $"等待{name}回包超时，未收到数据。" : $"等待{name}期望回包超时：{finalText}";
-            return CommandExchange.FromFailure(name, finalText, finalHex, message);
+            string message = string.IsNullOrWhiteSpace(finalText) ? $"等待{command.Name}回包超时，未收到数据。" : $"等待{command.Name}期望回包超时：{finalText}";
+            return CommandExchange.FromFailure(command.Name, finalText, finalHex, message);
         }
 
         private string ResolveBurnSourceFile(DemuraTestResult testResult)
@@ -613,24 +598,6 @@ namespace ProjectARVRPro.Process.Demura
             return sensor;
         }
 
-        private static byte[] BuildBurnCommandBytes(string commandBody)
-        {
-            string framedBody = BuildLengthPrefixedBody(commandBody);
-            byte[] bodyBytes = Encoding.ASCII.GetBytes(framedBody);
-            byte[] bytes = new byte[bodyBytes.Length + 3];
-            bytes[0] = 0x02;
-            bytes[1] = 0xFF;
-            Array.Copy(bodyBytes, 0, bytes, 2, bodyBytes.Length);
-            bytes[^1] = 0x03;
-            return bytes;
-        }
-
-        private static string BuildLengthPrefixedBody(string commandBody)
-        {
-            int length = Encoding.ASCII.GetByteCount(commandBody);
-            return $"{length:X4}{commandBody}";
-        }
-
         private static bool ContainsBurnFailureResponse(string responseText)
         {
             return responseText.Contains("END,NG", StringComparison.OrdinalIgnoreCase) ||
@@ -638,9 +605,9 @@ namespace ProjectARVRPro.Process.Demura
                    responseText.Contains("ERROR", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string DecodeAscii(IEnumerable<byte> bytes)
+        private static string DecodeResponse(IEnumerable<byte> bytes)
         {
-            return Encoding.ASCII.GetString(bytes.ToArray()).Replace("\u0002", "[02]").Replace("\u0003", "[03]");
+            return Encoding.UTF8.GetString(bytes.ToArray()).Replace("\u0002", "[02]").Replace("\u0003", "[03]");
         }
 
         private static string ToHex(IEnumerable<byte> bytes)

@@ -1,8 +1,10 @@
 #pragma warning disable CA1859
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -36,6 +38,14 @@ namespace ColorVision.Copilot
 
         public int ScannedFileCount { get; init; }
 
+        public int MatchedFileCount { get; init; }
+
+        public bool ScanComplete { get; init; }
+
+        public bool ResultsComplete { get; init; }
+
+        public string NextCursor { get; init; } = string.Empty;
+
         public IReadOnlyList<CopilotFileSearchMatch> Matches { get; init; } = Array.Empty<CopilotFileSearchMatch>();
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
@@ -57,6 +67,7 @@ namespace ColorVision.Copilot
     {
         private const int MaxFilesToScan = 20000;
         private const int MaxResults = 15;
+        private const int MaxExplicitQueryCharacters = 256;
 
         private static readonly string[] FileSearchKeywords =
         {
@@ -79,7 +90,49 @@ namespace ColorVision.Copilot
             bool allowPlainSearchTerms,
             CancellationToken cancellationToken)
         {
+            return SearchWithinScope(
+                searchRootPaths,
+                searchRootPaths,
+                query,
+                fallbackText,
+                allowPlainSearchTerms,
+                cancellationToken);
+        }
+
+        public static CopilotFileSearchResult SearchWithinScope(
+            IEnumerable<string> searchRootPaths,
+            IEnumerable<string> displayRootPaths,
+            string? query,
+            string? fallbackText,
+            bool allowPlainSearchTerms,
+            CancellationToken cancellationToken)
+        {
+            return SearchWithinScope(
+                searchRootPaths,
+                displayRootPaths,
+                query,
+                fallbackText,
+                allowPlainSearchTerms,
+                cursor: null,
+                cancellationToken);
+        }
+
+        public static CopilotFileSearchResult SearchWithinScope(
+            IEnumerable<string> searchRootPaths,
+            IEnumerable<string> displayRootPaths,
+            string? query,
+            string? fallbackText,
+            bool allowPlainSearchTerms,
+            string? cursor,
+            CancellationToken cancellationToken)
+        {
             var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
+            var displayRootMap = searchRoots.ToDictionary(
+                root => root,
+                root => displayRoots.FirstOrDefault(displayRoot =>
+                    CopilotWorkspaceSearchSupport.IsPathWithinRoots(root, [displayRoot])) ?? root,
+                StringComparer.OrdinalIgnoreCase);
             var terms = ResolveSearchTerms(query, fallbackText, allowPlainSearchTerms);
             if (searchRoots.Count == 0 || terms.Count == 0)
             {
@@ -89,38 +142,45 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Terms = terms,
                     Summary = "Missing searchable roots or file-name keywords.",
-                    ErrorMessage = "No search root is available, or no file-name keyword could be extracted from the message.",
+                    ErrorMessage = searchRoots.Count == 0
+                        ? "No search root is available."
+                        : !string.IsNullOrWhiteSpace(query)
+                            ? $"The explicit file query must be a single-line literal of at most {MaxExplicitQueryCharacters} characters."
+                            : "No file-name keyword could be extracted from the message.",
                 };
             }
 
             var scannedFiles = 0;
             var matches = new List<CopilotFileSearchMatch>();
+            var scanComplete = true;
 
             foreach (var entry in CopilotWorkspaceSearchSupport.EnumerateFiles(searchRoots, textFilesOnly: false, cancellationToken))
             {
-                scannedFiles++;
-                if (scannedFiles > MaxFilesToScan)
+                if (scannedFiles >= MaxFilesToScan)
+                {
+                    scanComplete = false;
                     break;
+                }
+                scannedFiles++;
 
-                var score = ScoreCandidate(entry, terms);
+                var displayEntry = new CopilotSearchFileEntry(displayRootMap[entry.RootPath], entry.FullPath);
+                var score = ScoreCandidate(displayEntry, terms);
                 if (score > 0)
                 {
                     matches.Add(new CopilotFileSearchMatch
                     {
                         Score = score,
-                        RootPath = entry.RootPath,
+                        RootPath = displayEntry.RootPath,
                         FullPath = entry.FullPath,
                     });
                 }
             }
 
-            var topMatches = matches
+            var orderedMatches = matches
                 .OrderByDescending(item => item.Score)
                 .ThenBy(item => item.FullPath, StringComparer.OrdinalIgnoreCase)
-                .Take(MaxResults)
                 .ToArray();
-
-            if (topMatches.Length == 0)
+            if (!scanComplete && !string.IsNullOrWhiteSpace(cursor))
             {
                 return new CopilotFileSearchResult
                 {
@@ -128,23 +188,76 @@ namespace ColorVision.Copilot
                     SearchRoots = searchRoots,
                     Terms = terms,
                     ScannedFileCount = scannedFiles,
-                    Matches = topMatches,
-                    Summary = $"Scanned {scannedFiles} files, but no candidate files were found.",
-                    ErrorMessage = $"Search terms: {string.Join(", ", terms)}",
+                    MatchedFileCount = orderedMatches.Length,
+                    ScanComplete = false,
+                    Summary = "The incomplete file scan cannot safely continue from a cursor.",
+                    ErrorMessage = "Narrow the search path and restart without a cursor before requesting later file matches.",
                 };
             }
+
+            var revision = BuildSearchRevision(searchRoots, terms, orderedMatches);
+            if (!TryResolveCursor(cursor, revision, orderedMatches.Length, out var offset, out var cursorError))
+            {
+                return new CopilotFileSearchResult
+                {
+                    Success = false,
+                    SearchRoots = searchRoots,
+                    Terms = terms,
+                    ScannedFileCount = scannedFiles,
+                    MatchedFileCount = orderedMatches.Length,
+                    ScanComplete = scanComplete,
+                    Summary = "The file-search continuation cursor is invalid or stale.",
+                    ErrorMessage = cursorError,
+                };
+            }
+
+            var pageMatches = orderedMatches.Skip(offset).Take(MaxResults).ToArray();
+            var nextOffset = offset + pageMatches.Length;
+            var nextCursor = scanComplete && nextOffset < orderedMatches.Length
+                ? $"{revision}:{nextOffset.ToString(CultureInfo.InvariantCulture)}"
+                : string.Empty;
+            var resultsComplete = scanComplete && nextOffset >= orderedMatches.Length;
 
             var builder = new StringBuilder();
             builder.AppendLine($"[Search Terms] {string.Join(", ", terms)}");
             builder.AppendLine($"[Search Roots] {string.Join("; ", searchRoots)}");
             builder.AppendLine($"[Scanned Files] {scannedFiles}");
+            builder.AppendLine($"[Matched Files] {orderedMatches.Length}");
+            builder.AppendLine($"[Page Offset] {offset}");
+            builder.AppendLine($"[Results Shown] {pageMatches.Length}");
+            builder.AppendLine($"[Scan Complete] {scanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"[Results Complete] {resultsComplete.ToString().ToLowerInvariant()}");
+            if (!string.IsNullOrWhiteSpace(nextCursor))
+                builder.AppendLine($"next_cursor: {nextCursor}");
             builder.AppendLine();
 
-            for (var index = 0; index < topMatches.Length; index++)
+            if (pageMatches.Length == 0)
             {
-                builder.Append(index + 1)
+                return new CopilotFileSearchResult
+                {
+                    Success = false,
+                    SearchRoots = searchRoots,
+                    Terms = terms,
+                    ScannedFileCount = scannedFiles,
+                    MatchedFileCount = orderedMatches.Length,
+                    ScanComplete = scanComplete,
+                    ResultsComplete = resultsComplete,
+                    Matches = pageMatches,
+                    Summary = scanComplete
+                        ? $"Scanned {scannedFiles} files, but no candidate files were found."
+                        : $"Scanned the first {scannedFiles} files without a match, but the search scope was not exhausted.",
+                    Content = builder.ToString().TrimEnd(),
+                    ErrorMessage = scanComplete
+                        ? $"Search terms: {string.Join(", ", terms)}"
+                        : "The file scan limit was reached. Narrow the path before concluding that no matching file exists.",
+                };
+            }
+
+            for (var index = 0; index < pageMatches.Length; index++)
+            {
+                builder.Append(offset + index + 1)
                     .Append(". ")
-                    .AppendLine(topMatches[index].DisplayPath);
+                    .AppendLine(pageMatches[index].DisplayPath);
             }
 
             return new CopilotFileSearchResult
@@ -153,10 +266,18 @@ namespace ColorVision.Copilot
                 SearchRoots = searchRoots,
                 Terms = terms,
                 ScannedFileCount = scannedFiles,
-                Matches = topMatches,
-                Summary = $"Scanned {scannedFiles} files and found {topMatches.Length} candidate files.",
+                MatchedFileCount = orderedMatches.Length,
+                ScanComplete = scanComplete,
+                ResultsComplete = resultsComplete,
+                NextCursor = nextCursor,
+                Matches = pageMatches,
+                Summary = resultsComplete
+                    ? $"Scanned {scannedFiles} files and returned the final {pageMatches.Length} of {orderedMatches.Length} candidate files."
+                    : !string.IsNullOrWhiteSpace(nextCursor)
+                        ? $"Found {orderedMatches.Length} candidate files; showing a stable page of {pageMatches.Length}."
+                        : $"Found {orderedMatches.Length}+ candidate files in an incomplete search; showing {pageMatches.Length}.",
                 Content = builder.ToString().TrimEnd(),
-                SuggestedReadableLocalFilePaths = topMatches
+                SuggestedReadableLocalFilePaths = pageMatches
                     .Select(item => item.FullPath)
                     .Where(CopilotWorkspaceSearchSupport.IsTextLikeFile)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -165,13 +286,68 @@ namespace ColorVision.Copilot
             };
         }
 
+        private static string BuildSearchRevision(
+            IReadOnlyList<string> searchRoots,
+            IReadOnlyList<string> terms,
+            IReadOnlyList<CopilotFileSearchMatch> matches)
+        {
+            var builder = new StringBuilder(matches.Count * 48);
+            foreach (var root in searchRoots)
+                builder.Append("R|").Append(root.ToUpperInvariant()).Append('\n');
+            foreach (var term in terms)
+                builder.Append("Q|").Append(term.ToUpperInvariant()).Append('\n');
+            foreach (var match in matches)
+            {
+                builder.Append("M|")
+                    .Append(match.Score)
+                    .Append('|')
+                    .Append(match.FullPath.ToUpperInvariant())
+                    .Append('\n');
+            }
+
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))[..16].ToLowerInvariant();
+        }
+
+        private static bool TryResolveCursor(string? cursor, string revision, int matchCount, out int offset, out string error)
+        {
+            offset = 0;
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(cursor))
+                return true;
+
+            var parts = cursor.Trim().Split(':', 2, StringSplitOptions.None);
+            if (parts.Length != 2
+                || parts[0].Length != revision.Length
+                || !int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out offset)
+                || offset < 1
+                || offset >= matchCount)
+            {
+                error = "The file-search cursor format or offset is invalid. Restart the search without a cursor.";
+                return false;
+            }
+            if (!string.Equals(parts[0], revision, StringComparison.OrdinalIgnoreCase))
+            {
+                error = "The search query, scope, or matching file set changed after the previous page. Restart the search without a cursor.";
+                return false;
+            }
+
+            return true;
+        }
+
         public static IReadOnlyList<string> ResolveSearchTerms(string? query, string? fallbackText, bool allowPlainSearchTerms)
         {
             if (!string.IsNullOrWhiteSpace(query))
-                return ExtractSearchTerms(query, allowPlainSearchTerms);
+            {
+                var literal = query.Trim().Replace('\\', '/');
+                return literal.Length <= MaxExplicitQueryCharacters && !ContainsLineBreak(literal)
+                    ? [literal]
+                    : Array.Empty<string>();
+            }
 
             return ExtractSearchTerms(fallbackText, allowPlainSearchTerms: false);
         }
+
+        private static bool ContainsLineBreak(string value) => value.Contains('\r') || value.Contains('\n');
 
         private static bool HasFileSearchIntent(string text)
         {

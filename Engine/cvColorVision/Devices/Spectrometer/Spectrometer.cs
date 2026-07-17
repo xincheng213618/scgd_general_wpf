@@ -44,6 +44,8 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateEmission", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern IntPtr CM_CreateEmission(int nType, Emission_CallBack lpCallBack);
 
+        public static IntPtr CM_CreateEmission(SpectrometerType type, Emission_CallBack lpCallBack) => CM_CreateEmission((int)type, lpCallBack);
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseEmission", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_ReleaseEmission(IntPtr handle);
 
@@ -75,6 +77,8 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAllSN", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetAllSN(int nType, int nComPort, StringBuilder sn, int len);
+
+        public static int CM_Emission_GetAllSN(SpectrometerType type, int nComPort, StringBuilder sn, int len) => CM_Emission_GetAllSN((int)type, nComPort, sn, len);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_AutoDarkStorage", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_AutoDarkStorage(IntPtr handle, float fIntTime, int iAveNum, int iFilterBW, float[] fDarkData);

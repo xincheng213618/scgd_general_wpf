@@ -4,26 +4,22 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotGetRecentLogTool : ICopilotTool
+    public sealed class CopilotGetRecentLogTool : ICopilotAgentDrivenTool
     {
         private const int MaxLogLines = 300;
         private const int MaxLogChars = 20000;
 
         public string Name => "GetRecentLog";
 
-        public string Description => "Read recent application logs for failure or exception diagnosis.";
+        public string Description => "Read recent ColorVision application logs for failure or exception diagnosis. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.";
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Optional error text, exception name, or keyword used to filter recent logs.");
 
-        public bool CanHandle(CopilotAgentRequest request)
-        {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
-                return false;
+        public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
-            return CopilotRecentLogCapability.HasAvailableLogFile();
-        }
+        public bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsRecentLogs(request);
 
-        public Task<CopilotToolResult> ExecuteAsync(
+        public async Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
@@ -31,8 +27,13 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var query = (toolInput?.Query ?? string.Empty).Trim();
-            var result = CopilotRecentLogCapability.Capture(query, CopilotRecentLogMode.RecentLines, MaxLogLines, MaxLogChars);
-            return Task.FromResult(result.ToToolResult(Name));
+            var result = await CopilotRecentLogCapability.CaptureAsync(
+                query,
+                CopilotRecentLogMode.RecentLines,
+                MaxLogLines,
+                MaxLogChars,
+                cancellationToken);
+            return result.ToToolResult(Name);
         }
     }
 }

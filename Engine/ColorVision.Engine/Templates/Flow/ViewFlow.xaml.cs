@@ -374,17 +374,32 @@ namespace ColorVision.Engine.Services.Flow
             SetCanvasDragLock(true);
 
             // Hide the property panel when this view loses focus to another view
-            this.Loaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
-            this.Unloaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
+            this.Loaded += (s, e) =>
+            {
+                DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
+                FlowEngineManager.PublishCopilotContext();
+            };
+            this.Unloaded += (s, e) =>
+            {
+                DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
+                CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
+            };
         }
 
         private void OnActiveViewChanged(System.Windows.Controls.Control? activeView)
         {
+            if (activeView == this)
+            {
+                FlowEngineManager.PublishCopilotContext();
+                return;
+            }
+
             // Only hide when another registered view becomes active.
             // If activeView is null it means focus moved to a non-view control
             // (e.g. the embedded WinForms STNodeEditor) — don't hide in that case.
             if (activeView != null && activeView != this)
             {
+                CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
                 // Hide the property panel when another view becomes active
                 if (WorkspaceManager.LayoutManager?.IsPanelVisible(FlowNodePropertyPanel.PanelId) == true)
                     WorkspaceManager.LayoutManager?.TogglePanel(FlowNodePropertyPanel.PanelId);

@@ -16,7 +16,11 @@ namespace ColorVision.Copilot
         string Content,
         string ErrorMessage,
         int StartLine,
-        int EndLine);
+        int StartColumn,
+        int EndLine,
+        int EndColumn,
+        int ContinuationStartLine,
+        int ContinuationStartColumn);
 
     public static class CopilotLocalFileToolSupport
     {
@@ -40,12 +44,22 @@ namespace ColorVision.Copilot
 
         public static Task<CopilotLocalFileReadResult> ReadTextFileAsync(string path, CancellationToken cancellationToken)
         {
-            return ReadTextFileAsync(path, null, null, cancellationToken);
+            return ReadTextFileAsync(path, null, null, null, cancellationToken);
+        }
+
+        public static Task<CopilotLocalFileReadResult> ReadTextFileAsync(
+            string path,
+            int? startLine,
+            int? endLine,
+            CancellationToken cancellationToken)
+        {
+            return ReadTextFileAsync(path, startLine, startColumn: null, endLine, cancellationToken);
         }
 
         public static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(
             string path,
             int? startLine,
+            int? startColumn,
             int? endLine,
             CancellationToken cancellationToken)
         {
@@ -57,6 +71,10 @@ namespace ColorVision.Copilot
                     false,
                     string.Empty,
                     "File path is empty.",
+                    0,
+                    0,
+                    0,
+                    0,
                     0,
                     0);
             }
@@ -75,6 +93,10 @@ namespace ColorVision.Copilot
                     string.Empty,
                     $"Invalid path format: {ex.Message}",
                     0,
+                    0,
+                    0,
+                    0,
+                    0,
                     0);
             }
 
@@ -87,6 +109,10 @@ namespace ColorVision.Copilot
                     string.Empty,
                     "The target path is a directory, not a file.",
                     0,
+                    0,
+                    0,
+                    0,
+                    0,
                     0);
             }
 
@@ -98,6 +124,10 @@ namespace ColorVision.Copilot
                     false,
                     string.Empty,
                     "File does not exist.",
+                    0,
+                    0,
+                    0,
+                    0,
                     0,
                     0);
             }
@@ -118,51 +148,28 @@ namespace ColorVision.Copilot
                         string.Empty,
                         "The target file does not appear to be a directly readable text file.",
                         0,
+                        0,
+                        0,
+                        0,
+                        0,
                         0);
                 }
 
                 stream.Position = 0;
-                using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
                 var normalizedStartLine = Math.Max(1, startLine ?? 1);
+                var normalizedStartColumn = Math.Max(1, startColumn ?? 1);
                 var normalizedEndLine = endLine.HasValue
                     ? Math.Max(normalizedStartLine, endLine.Value)
                     : int.MaxValue;
-                var wasTruncated = false;
-                var builder = new System.Text.StringBuilder();
-                var currentLine = 0;
-                var actualStartLine = 0;
-                var actualEndLine = 0;
+                using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+                var range = await ReadBoundedRangeAsync(
+                    reader,
+                    normalizedStartLine,
+                    normalizedStartColumn,
+                    normalizedEndLine,
+                    cancellationToken);
 
-                while (!reader.EndOfStream)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var line = await reader.ReadLineAsync() ?? string.Empty;
-                    currentLine++;
-
-                    if (currentLine < normalizedStartLine)
-                        continue;
-
-                    if (currentLine > normalizedEndLine)
-                        break;
-
-                    actualStartLine = actualStartLine == 0 ? currentLine : actualStartLine;
-                    actualEndLine = currentLine;
-
-                    var lineWithBreak = line + Environment.NewLine;
-                    if (builder.Length + lineWithBreak.Length > MaxReadCharacters)
-                    {
-                        var remaining = Math.Max(0, MaxReadCharacters - builder.Length);
-                        if (remaining > 0)
-                            builder.Append(lineWithBreak[..Math.Min(remaining, lineWithBreak.Length)]);
-
-                        wasTruncated = true;
-                        break;
-                    }
-
-                    builder.Append(lineWithBreak);
-                }
-
-                if (actualStartLine == 0 && currentLine < normalizedStartLine)
+                if (range.ActualStartLine == 0 && range.TotalLineCount < normalizedStartLine)
                 {
                     return new CopilotLocalFileReadResult(
                         fullPath,
@@ -171,12 +178,32 @@ namespace ColorVision.Copilot
                         string.Empty,
                         $"Requested start line {normalizedStartLine} is beyond the total file line count.",
                         0,
+                        0,
+                        0,
+                        0,
+                        0,
                         0);
                 }
 
-                var content = builder.ToString().TrimEnd();
+                if (range.ActualStartLine == 0 && normalizedStartColumn > 1)
+                {
+                    return new CopilotLocalFileReadResult(
+                        fullPath,
+                        false,
+                        false,
+                        string.Empty,
+                        $"Requested start column {normalizedStartColumn} is beyond line {normalizedStartLine}.",
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
+                }
 
-                if (wasTruncated)
+                var content = range.Content.TrimEnd();
+
+                if (range.WasTruncated)
                 {
                     content += Environment.NewLine + $"...<content truncated; kept the first {MaxReadCharacters} characters.>";
                 }
@@ -184,11 +211,15 @@ namespace ColorVision.Copilot
                 return new CopilotLocalFileReadResult(
                     fullPath,
                     true,
-                    wasTruncated,
+                    range.WasTruncated,
                     content.TrimEnd(),
                     string.Empty,
-                    actualStartLine,
-                    actualEndLine);
+                    range.ActualStartLine,
+                    range.ActualStartColumn,
+                    range.ActualEndLine,
+                    range.ActualEndColumn,
+                    range.ContinuationStartLine,
+                    range.ContinuationStartColumn);
             }
             catch (OperationCanceledException)
             {
@@ -203,9 +234,111 @@ namespace ColorVision.Copilot
                     string.Empty,
                     $"Read failed: {ex.Message}",
                     0,
+                    0,
+                    0,
+                    0,
+                    0,
                     0);
             }
         }
+
+        private static async Task<BoundedTextRange> ReadBoundedRangeAsync(
+            StreamReader reader,
+            int startLine,
+            int startColumn,
+            int endLine,
+            CancellationToken cancellationToken)
+        {
+            var builder = new System.Text.StringBuilder(MaxReadCharacters);
+            var buffer = new char[4096];
+            var currentLine = 1;
+            var currentColumn = 1;
+            var totalLineCount = 0;
+            var actualStartLine = 0;
+            var actualStartColumn = 0;
+            var actualEndLine = 0;
+            var actualEndColumn = 0;
+            var continuationStartLine = 0;
+            var continuationStartColumn = 0;
+            var hasCharactersSinceLastLineFeed = false;
+            var wasTruncated = false;
+            var reachedRequestedEnd = false;
+
+            while (!wasTruncated && !reachedRequestedEnd)
+            {
+                var read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
+                if (read == 0)
+                    break;
+
+                for (var index = 0; index < read; index++)
+                {
+                    var character = buffer[index];
+                    hasCharactersSinceLastLineFeed = true;
+                    var isWithinRequestedRange = currentLine >= startLine
+                        && currentLine <= endLine
+                        && (currentLine > startLine || currentColumn >= startColumn);
+                    if (isWithinRequestedRange)
+                    {
+                        if (builder.Length >= MaxReadCharacters)
+                        {
+                            wasTruncated = true;
+                            continuationStartLine = currentLine;
+                            continuationStartColumn = currentColumn;
+                            break;
+                        }
+                        if (actualStartLine == 0)
+                        {
+                            actualStartLine = currentLine;
+                            actualStartColumn = currentColumn;
+                        }
+                        actualEndLine = currentLine;
+                        actualEndColumn = currentColumn;
+                        builder.Append(character);
+                    }
+
+                    if (character != '\n')
+                    {
+                        currentColumn++;
+                        continue;
+                    }
+
+                    totalLineCount = currentLine;
+                    hasCharactersSinceLastLineFeed = false;
+                    currentLine++;
+                    currentColumn = 1;
+                    if (currentLine > endLine)
+                    {
+                        reachedRequestedEnd = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!reachedRequestedEnd && !wasTruncated && hasCharactersSinceLastLineFeed)
+                totalLineCount = currentLine;
+
+            return new BoundedTextRange(
+                builder.ToString(),
+                wasTruncated,
+                actualStartLine,
+                actualStartColumn,
+                actualEndLine,
+                actualEndColumn,
+                totalLineCount,
+                continuationStartLine,
+                continuationStartColumn);
+        }
+
+        private readonly record struct BoundedTextRange(
+            string Content,
+            bool WasTruncated,
+            int ActualStartLine,
+            int ActualStartColumn,
+            int ActualEndLine,
+            int ActualEndColumn,
+            int TotalLineCount,
+            int ContinuationStartLine,
+            int ContinuationStartColumn);
 
         private static void AddMatches(List<string> results, MatchCollection matches)
         {

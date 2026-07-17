@@ -19,7 +19,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpToolDispatcher
+    public sealed class CopilotMcpToolDispatcher : ICopilotApplicationCapabilityInvoker
     {
         private const int MaxSearchResults = 30;
         private const int MaxGrepMatches = 40;
@@ -39,7 +39,8 @@ namespace ColorVision.Copilot.Mcp
         private const string AuditSummaryResourceUri = "colorvision://mcp/audit-summary";
         private const string AuditLogResourceUri = "colorvision://mcp/audit-log";
         private const string CapabilityCatalogResourceUri = "colorvision://copilot/capabilities";
-        private static readonly JsonSerializerOptions CapabilityCatalogJsonOptions = new(JsonSerializerDefaults.Web)
+        private const string TaskEventJournalResourceUri = "colorvision://copilot/task-events";
+        private static readonly JsonSerializerOptions StructuredJsonOptions = new(JsonSerializerDefaults.Web)
         {
             WriteIndented = true,
             Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
@@ -102,6 +103,30 @@ namespace ColorVision.Copilot.Mcp
                     ["max_entries"] = IntegerProperty("Maximum recent audit entries to summarize. Defaults to 50.", 1, 200),
                 }), "audit", "read-only", "Call get_audit_summary with { \"max_entries\": 50 }."),
                 Tool("get_last_tool_error", "Return the most recent failed MCP tool call, if one is recorded.", EmptySchema(), "audit", "read-only", "Call get_last_tool_error with no arguments."),
+                Tool("get_agent_task_events", "Query the latest saved Agent task event journal. Use only when the user asks to inspect Agent execution, tools, approvals, steering, replanning, or stop reasons.", Schema(new Dictionary<string, object>
+                {
+                    ["event_types"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Optional event type filters, for example toolCompleted, approvalDenied, or runStopped.",
+                        ["items"] = new Dictionary<string, object>
+                        {
+                            ["type"] = "string",
+                            ["enum"] = Enum.GetNames<CopilotAgentTaskEventType>().Select(JsonNamingPolicy.CamelCase.ConvertName).ToArray(),
+                        },
+                        ["maxItems"] = Enum.GetValues<CopilotAgentTaskEventType>().Length,
+                    },
+                    ["run_id"] = StringProperty("Optional exact run: identifier."),
+                    ["tool"] = StringProperty("Optional exact tool name filter."),
+                    ["related_id"] = StringProperty("Optional exact subject or related identifier."),
+                    ["before_sequence"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "integer",
+                        ["description"] = "Return events with a sequence lower than this cursor.",
+                        ["minimum"] = 1L,
+                    },
+                    ["max_events"] = IntegerProperty("Maximum events to return. Defaults to 50.", 1, CopilotAgentTaskEventJournal.MaxQueryLimit),
+                }), "audit", "read-only", "Call get_agent_task_events with { \"event_types\": [\"toolCompleted\", \"runStopped\"], \"max_events\": 50 }."),
                 Tool("get_runtime_environment_summary", "Return a safe summary of the MCP runtime environment, workspace roots, live context, logs, and flow availability.", EmptySchema(), "status", "read-only", "Call get_runtime_environment_summary before diagnostics."),
                 Tool("get_diagnostic_bundle", "Return a size-limited redacted diagnostic bundle with server status, runtime, last error, recent log, live context, and flow summary.", Schema(new Dictionary<string, object>
                 {
@@ -118,26 +143,73 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["query"] = StringProperty("Documentation query text."),
                 }, "query"), "search", "read-only", "Call search_docs with { \"query\": \"plugin development\" }."),
-                Tool("search_files", "Search file names and relative paths under allowed ColorVision workspace roots. Required argument: query.", Schema(new Dictionary<string, object>
+                Tool("search_files", "Search one stable bounded page of file names and relative paths under allowed ColorVision workspace roots. Required argument: query. Optional: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["query"] = StringProperty("File name or path fragment."),
-                }, "query"), "search", "read-only", "Call search_files with { \"query\": \"DeviceCamera\" }."),
-                Tool("grep_text", "Search text under allowed ColorVision workspace roots using a literal case-insensitive query. Required argument: query.", Schema(new Dictionary<string, object>
+                    ["path"] = StringProperty("Optional directory relative to an allowed root, or an absolute allowed directory."),
+                    ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it."),
+                }, "query"), "search", "read-only", "Call search_files with { \"query\": \"DeviceCamera\", \"path\": \"ColorVision\" }; pass its next_cursor unchanged for another page."),
+                Tool("grep_text", "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. Required argument: query. Optional: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["query"] = StringProperty("Literal text to search for."),
-                }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\" }."),
-                Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, end_line.", Schema(new Dictionary<string, object>
+                    ["path"] = StringProperty("Optional directory relative to an allowed root, or an absolute allowed directory."),
+                    ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it."),
+                }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\", \"path\": \"ColorVision/Copilot\" }; pass its next_cursor unchanged for another page."),
+                Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root."),
                     ["start_line"] = IntegerProperty("1-based start line.", 1, int.MaxValue),
+                    ["start_column"] = IntegerProperty("1-based character column within start_line. Use the exact continuation cursor returned by a truncated read.", 1, int.MaxValue),
                     ["end_line"] = IntegerProperty("1-based end line.", 1, int.MaxValue),
-                }, "path"), "file", "read-only", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"end_line\": 40 }."),
-                Tool("list_allowed_directory", "List a directory only if it is under an allowed ColorVision workspace root. Optional argument: path.", Schema(new Dictionary<string, object>
+                }, "path"), "file", "read-only", "Call read_allowed_file with { \"path\": \"README.md\", \"start_line\": 1, \"start_column\": 1, \"end_line\": 40 }."),
+                Tool("list_allowed_directory", "List one stable bounded directory page only if it is under an allowed ColorVision workspace root. Optional arguments: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["path"] = StringProperty("Absolute path, or a path relative to an allowed root. If omitted, allowed roots are listed."),
-                }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }."),
+                    ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it."),
+                }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }; pass its next_cursor unchanged to request another page."),
                 Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."),
                 Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."),
+                Tool("get_flow_graph", "Return the active ColorVision flow as a bounded structured graph with a revision, stable node ids, runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema(new Dictionary<string, object>
+                {
+                    ["node_id"] = StringProperty("Optional stable node instance id or node id to focus."),
+                    ["include_properties"] = BooleanProperty("Include redacted node property values. Defaults to false."),
+                    ["max_nodes"] = IntegerProperty("Maximum nodes to return. Defaults to 80.", 1, 200),
+                }), "context", "read-only", "Call get_flow_graph with { \"max_nodes\": 80 } before planning a flow edit."),
+                Tool("get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact runtime type keys, categories, default device codes, and writable property schemas; do not guess a camera node type.", Schema(new Dictionary<string, object>
+                {
+                    ["query"] = StringProperty("Optional title, category, type, or device-code search text, for example 相机 or camera."),
+                    ["max_results"] = IntegerProperty("Maximum node types to return. Defaults to 30.", 1, 100),
+                }), "context", "read-only", "Call get_flow_node_catalog with { \"query\": \"相机\", \"max_results\": 30 }."),
+                Tool("preview_flow_patch", "Validate one bounded Flow graph change without editing: add_node, set_property, or connect. Use exact ids/type keys from the Flow graph and node catalog.", Schema(new Dictionary<string, object>
+                {
+                    ["operation"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = new[] { "add_node", "set_property", "connect" }, ["description"] = "Bounded graph operation." },
+                    ["expected_revision"] = StringProperty("Current revision returned by get_flow_graph."),
+                    ["type_key"] = StringProperty("add_node: exact typeKey returned by get_flow_node_catalog."),
+                    ["left"] = IntegerProperty("add_node: canvas X coordinate.", -100000, 100000),
+                    ["top"] = IntegerProperty("add_node: canvas Y coordinate.", -100000, 100000),
+                    ["node_id"] = StringProperty("set_property: stable node instance id."),
+                    ["property_name"] = StringProperty("set_property: exact writable propertyName returned by get_flow_node_catalog."),
+                    ["value"] = StringProperty("set_property: new string representation accepted by the node's existing STNodeProperty descriptor."),
+                    ["source_node_id"] = StringProperty("connect: stable source node instance id."),
+                    ["source_port_id"] = StringProperty("connect: structured source output port id such as out:0."),
+                    ["target_node_id"] = StringProperty("connect: stable target node instance id."),
+                    ["target_port_id"] = StringProperty("connect: structured target input port id such as in:0."),
+                }, "operation", "expected_revision"), "context", "read-only", "Call preview_flow_patch with one exact operation and the current graph revision."),
+                Tool("apply_flow_patch", "Apply one previously previewed add_node, set_property, or connect change after explicit approval. Rechecks the graph revision and never saves or runs the flow.", Schema(new Dictionary<string, object>
+                {
+                    ["operation"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = new[] { "add_node", "set_property", "connect" }, ["description"] = "Bounded graph operation." },
+                    ["expected_revision"] = StringProperty("Exact revision returned by preview_flow_patch."),
+                    ["type_key"] = StringProperty("add_node: exact loaded type key."),
+                    ["left"] = IntegerProperty("add_node: canvas X coordinate.", -100000, 100000),
+                    ["top"] = IntegerProperty("add_node: canvas Y coordinate.", -100000, 100000),
+                    ["node_id"] = StringProperty("set_property: stable node instance id."),
+                    ["property_name"] = StringProperty("set_property: exact writable property name."),
+                    ["value"] = StringProperty("set_property: previewed value."),
+                    ["source_node_id"] = StringProperty("connect: stable source node instance id."),
+                    ["source_port_id"] = StringProperty("connect: source output port id."),
+                    ["target_node_id"] = StringProperty("connect: stable target node instance id."),
+                    ["target_port_id"] = StringProperty("connect: target input port id."),
+                }, "operation", "expected_revision"), "app-control", "confirmation-required", "Call apply_flow_patch with the exact operation and values used by preview_flow_patch, then wait for approval."),
                 Tool("diagnose_flow_failure", "Build a read-only failure diagnosis from the active flow, matched node, template context, and recent logs. This never runs a flow.", Schema(new Dictionary<string, object>
                 {
                     ["node_id"] = StringProperty("Optional flow node id to focus the diagnosis."),
@@ -218,6 +290,7 @@ namespace ColorVision.Copilot.Mcp
                 Resource(AuditSummaryResourceUri, "MCP audit summary", "Compact ColorVision MCP audit and pending approval summary."),
                 Resource(AuditLogResourceUri, "MCP audit log", "Recent ColorVision MCP tool-call audit entries."),
                 Resource(CapabilityCatalogResourceUri, "Copilot capability catalog", "Versioned read-only catalog of built-in and discovered Copilot capabilities.", "application/json"),
+                Resource(TaskEventJournalResourceUri, "Copilot Agent task events", "Latest saved bounded and redacted Agent task event journal.", "application/json"),
             };
         }
 
@@ -235,12 +308,13 @@ namespace ColorVision.Copilot.Mcp
             {
                 LiveContextResourceUri => GetLiveContext(),
                 WorkspaceResourceUri => GetWorkspaceContext(),
-                LogsResourceUri => GetRecentLog(null),
+                LogsResourceUri => await GetRecentLogAsync(null, cancellationToken),
                 TemplateResourceUri => GetActiveTemplateContext(),
                 FlowResourceUri => await GetFlowSummaryAsync(cancellationToken),
                 AuditSummaryResourceUri => GetAuditSummary(null),
                 AuditLogResourceUri => GetAuditLog(null),
                 CapabilityCatalogResourceUri => GetCapabilityCatalog(),
+                TaskEventJournalResourceUri => GetAgentTaskEvents(null, CopilotAgentTaskEventJournal.MaxQueryLimit),
                 _ => CopilotMcpToolCallResult.Fail("resource_not_found", $"Unknown ColorVision MCP resource: {uri}"),
             };
         }
@@ -248,7 +322,92 @@ namespace ColorVision.Copilot.Mcp
         private static CopilotMcpToolCallResult GetCapabilityCatalog()
         {
             var snapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
-            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(snapshot, CapabilityCatalogJsonOptions));
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(snapshot, StructuredJsonOptions));
+        }
+
+        private CopilotMcpToolCallResult GetAgentTaskEvents(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            int defaultMaxEvents = 50)
+        {
+            var context = SafeInvoke(_environment.TaskEventJournalProvider);
+            if (context?.IsStructurallyValid() != true)
+            {
+                return CopilotMcpToolCallResult.Fail(
+                    "agent_task_events_unavailable",
+                    "No saved Agent task event journal is available for the selected conversation.");
+            }
+
+            if (!TryGetTaskEventTypes(arguments, out var eventTypes, out var eventTypesError))
+                return CopilotMcpToolCallResult.Fail("invalid_arguments", eventTypesError);
+
+            var beforeSequence = GetLong(arguments, "before_sequence");
+            if (arguments?.ContainsKey("before_sequence") == true && beforeSequence is null or <= 0)
+                return CopilotMcpToolCallResult.Fail("invalid_arguments", "before_sequence must be a positive integer cursor.");
+            var maxEvents = GetInt(arguments, "max_events");
+            if (arguments?.ContainsKey("max_events") == true
+                && (maxEvents is null or <= 0 || maxEvents > CopilotAgentTaskEventJournal.MaxQueryLimit))
+            {
+                return CopilotMcpToolCallResult.Fail(
+                    "invalid_arguments",
+                    $"max_events must be between 1 and {CopilotAgentTaskEventJournal.MaxQueryLimit}.");
+            }
+
+            var query = new CopilotAgentTaskEventQuery
+            {
+                Types = eventTypes,
+                RunId = GetString(arguments, "run_id"),
+                ToolName = GetString(arguments, "tool"),
+                SubjectOrRelatedId = GetString(arguments, "related_id"),
+                BeforeSequence = beforeSequence ?? long.MaxValue,
+                Limit = maxEvents ?? defaultMaxEvents,
+            };
+            var result = CopilotAgentTaskEventJournal.Query(context.Journal, query);
+            var payload = new
+            {
+                context.ConversationId,
+                context.PublishedAtUtc,
+                context.Journal.SchemaVersion,
+                Events = result.Events,
+                result.HasMore,
+                result.NextBeforeSequence,
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private static bool TryGetTaskEventTypes(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            out IReadOnlyCollection<CopilotAgentTaskEventType> eventTypes,
+            out string error)
+        {
+            eventTypes = Array.Empty<CopilotAgentTaskEventType>();
+            error = string.Empty;
+            if (arguments == null || !arguments.TryGetValue("event_types", out var value))
+                return true;
+            if (value.ValueKind != JsonValueKind.Array)
+            {
+                error = "event_types must be an array of Agent task event type names.";
+                return false;
+            }
+            if (value.GetArrayLength() > Enum.GetValues<CopilotAgentTaskEventType>().Length)
+            {
+                error = "event_types contains more entries than the supported Agent task event type set.";
+                return false;
+            }
+
+            var parsed = new HashSet<CopilotAgentTaskEventType>();
+            foreach (var item in value.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.String
+                    || !Enum.TryParse<CopilotAgentTaskEventType>(item.GetString(), ignoreCase: true, out var eventType)
+                    || !Enum.IsDefined(eventType))
+                {
+                    error = $"Unknown Agent task event type: {item}.";
+                    return false;
+                }
+                parsed.Add(eventType);
+            }
+            eventTypes = parsed;
+            return true;
         }
 
         public async Task<CopilotMcpToolCallResult> CallAsync(string toolName, IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken, string callerSource = "")
@@ -276,6 +435,38 @@ namespace ColorVision.Copilot.Mcp
             }
         }
 
+        public async Task<CopilotApplicationCapabilityCallResult> InvokeAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotApplicationCapabilityCaller caller,
+            CancellationToken cancellationToken)
+        {
+            var callerSource = caller switch
+            {
+                CopilotApplicationCapabilityCaller.InAppAgent => InAppAgentCallerSource,
+                CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved => InAppAgentFrameworkApprovedCallerSource,
+                _ => throw new ArgumentOutOfRangeException(nameof(caller)),
+            };
+            var result = await CallAsync(capabilityName, arguments, cancellationToken, callerSource);
+            return new CopilotApplicationCapabilityCallResult
+            {
+                Success = result.Success,
+                Content = result.Text,
+                ErrorCode = result.ErrorCode,
+                FailureKind = result.FailureKind,
+                Approval = result.RequiresApproval && !string.IsNullOrWhiteSpace(result.ApprovalActionId)
+                    ? new CopilotToolApprovalInfo
+                    {
+                        ActionId = result.ApprovalActionId,
+                        Title = result.ApprovalTitle,
+                        RiskLevel = result.ApprovalRiskLevel,
+                        ExpiresAtUtc = result.ApprovalExpiresAtUtc,
+                        ExecuteOnApproval = result.ExecuteOnApproval,
+                    }
+                    : null,
+            };
+        }
+
         private CopilotMcpToolRouter CreateRouter()
         {
             return new CopilotMcpToolRouter()
@@ -284,11 +475,12 @@ namespace ColorVision.Copilot.Mcp
                 .Register("get_audit_log", (arguments, _, _) => Task.FromResult(GetAuditLog(arguments)))
                 .Register("get_audit_summary", (arguments, _, _) => Task.FromResult(GetAuditSummary(arguments)))
                 .Register("get_last_tool_error", (_, _, _) => Task.FromResult(GetLastToolError()))
+                .Register("get_agent_task_events", (arguments, _, _) => Task.FromResult(GetAgentTaskEvents(arguments)))
                 .Register("get_runtime_environment_summary", (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token))
                 .Register("get_diagnostic_bundle", (arguments, caller, token) => GetDiagnosticBundleAsync(arguments, caller, token))
                 .Register("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
                 .Register("get_workspace_context", (_, _, _) => Task.FromResult(GetWorkspaceContext()))
-                .Register("get_recent_log", (arguments, _, _) => Task.FromResult(GetRecentLog(arguments)))
+                .Register("get_recent_log", (arguments, _, token) => GetRecentLogAsync(arguments, token))
                 .Register("search_docs", (arguments, _, token) => SearchDocsAsync(arguments, token))
                 .Register("search_files", (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)))
                 .Register("grep_text", (arguments, _, token) => Task.FromResult(GrepText(arguments, token)))
@@ -296,6 +488,10 @@ namespace ColorVision.Copilot.Mcp
                 .Register("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
                 .Register("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
                 .Register("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
+                .Register("get_flow_graph", (arguments, _, token) => GetFlowGraphAsync(arguments, token))
+                .Register("get_flow_node_catalog", (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token))
+                .Register("preview_flow_patch", (arguments, _, token) => PreviewFlowPatchAsync(arguments, token))
+                .Register("apply_flow_patch", (arguments, caller, token) => ApplyFlowPatchAsync(arguments, caller, token))
                 .Register("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
                 .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
                 .Register("execute_menu", (arguments, caller, token) => ExecuteMenuAsync(arguments, caller, token))
@@ -486,7 +682,7 @@ namespace ColorVision.Copilot.Mcp
             var workspace = GetWorkspaceSnapshot();
             var liveContext = _environment.LiveContextProvider();
             var flowSnapshot = await _environment.FlowSnapshotProvider(cancellationToken);
-            var logResult = _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000);
+            var logResult = await _environment.RecentLogProvider(null, CopilotRecentLogMode.RecentLines, 20, 4000, cancellationToken);
             using var process = Process.GetCurrentProcess();
             var appDataDirectory = SafeInvoke(() => Environments.DirAppData) ?? string.Empty;
             var configDirectory = string.IsNullOrWhiteSpace(appDataDirectory) ? string.Empty : Path.Combine(appDataDirectory, "Config");
@@ -535,10 +731,10 @@ namespace ColorVision.Copilot.Mcp
         private async Task<CopilotMcpToolCallResult> GetDiagnosticBundleAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
         {
             var maxChars = Math.Clamp(GetInt(arguments, "max_chars") ?? DefaultDiagnosticBundleChars, 1000, MaxDiagnosticBundleChars);
-            var recentLog = GetRecentLog(new Dictionary<string, JsonElement>
+            var recentLog = await GetRecentLogAsync(new Dictionary<string, JsonElement>
             {
                 ["max_lines"] = JsonSerializer.SerializeToElement(120),
-            });
+            }, cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision MCP diagnostic bundle");
@@ -578,11 +774,18 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
 
-        private CopilotMcpToolCallResult GetRecentLog(IReadOnlyDictionary<string, JsonElement>? arguments)
+        private async Task<CopilotMcpToolCallResult> GetRecentLogAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             var maxLines = Math.Clamp(GetInt(arguments, "max_lines") ?? MaxLogLines, 1, 1000);
-            var result = _environment.RecentLogProvider(query, CopilotRecentLogMode.RecentLines, maxLines, MaxLogChars);
+            var result = await _environment.RecentLogProvider(
+                query,
+                CopilotRecentLogMode.RecentLines,
+                maxLines,
+                MaxLogChars,
+                cancellationToken);
             return ToMcpResult(result, "log_unavailable");
         }
 
@@ -606,14 +809,38 @@ namespace ColorVision.Copilot.Mcp
             if (roots.Count == 0)
                 return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
 
-            var result = CopilotSearchFilesCapability.Search(roots, query, null, allowPlainSearchTerms: true, cancellationToken);
+            IReadOnlyList<string> searchRoots = roots;
+            var path = GetString(arguments, "path");
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
+                    return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
+                if (!Directory.Exists(fullPath))
+                    return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
+                searchRoots = [fullPath];
+            }
+
+            var cursor = GetString(arguments, "cursor");
+            var result = CopilotSearchFilesCapability.SearchWithinScope(
+                searchRoots,
+                roots,
+                query,
+                fallbackText: null,
+                allowPlainSearchTerms: true,
+                cursor,
+                cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision file search results");
             builder.AppendLine($"Query: {query}");
             builder.AppendLine($"Allowed roots: {roots.Count}");
             builder.AppendLine($"Scanned files: {result.ScannedFileCount}");
-            builder.AppendLine($"Matches: {result.Matches.Count}");
+            builder.AppendLine($"Matched files: {result.MatchedFileCount}");
+            builder.AppendLine($"Matches shown: {result.Matches.Count}");
+            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
+            if (!string.IsNullOrWhiteSpace(result.NextCursor))
+                builder.AppendLine($"Next cursor: {result.NextCursor}");
             builder.AppendLine();
 
             foreach (var match in result.Matches.Take(MaxSearchResults))
@@ -634,14 +861,30 @@ namespace ColorVision.Copilot.Mcp
             if (roots.Count == 0)
                 return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
 
-            var result = CopilotGrepTextCapability.Search(roots, query, null, cancellationToken);
+            IReadOnlyList<string> searchRoots = roots;
+            var path = GetString(arguments, "path");
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
+                    return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
+                if (!Directory.Exists(fullPath))
+                    return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
+                searchRoots = [fullPath];
+            }
+
+            var cursor = GetString(arguments, "cursor");
+            var result = CopilotGrepTextCapability.SearchWithinScope(searchRoots, roots, query, null, cursor, cancellationToken);
 
             var builder = new StringBuilder();
             builder.AppendLine("ColorVision text search results");
             builder.AppendLine($"Query: {query}");
             builder.AppendLine($"Allowed roots: {roots.Count}");
             builder.AppendLine($"Scanned text files: {result.ScannedTextFileCount}");
-            builder.AppendLine($"Matches: {result.Matches.Count}");
+            builder.AppendLine($"Matches shown: {result.Matches.Count}");
+            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
+            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
+            if (!string.IsNullOrWhiteSpace(result.NextCursor))
+                builder.AppendLine($"Next cursor: {result.NextCursor}");
             builder.AppendLine();
             foreach (var match in result.Matches.Take(MaxGrepMatches))
                 builder.AppendLine($"- {match.DisplayPath}:{match.LineNumber}: {CopilotWorkspaceSearchSupport.TruncateLine(match.LineText, 220)}");
@@ -667,20 +910,28 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Fail("unsupported_file_type", "The file extension is not in the ColorVision MCP text allow-list.");
 
             var startLine = GetInt(arguments, "start_line");
+            var startColumn = GetInt(arguments, "start_column");
             var endLine = GetInt(arguments, "end_line");
-            var result = await CopilotReadLocalFileCapability.ReadAsync(new[] { fullPath }, fullPath, false, startLine, endLine, cancellationToken);
+            if (startColumn.HasValue && !startLine.HasValue)
+                return CopilotMcpToolCallResult.Fail("invalid_range", "The start_column argument requires start_line.");
+
+            var result = await CopilotReadLocalFileCapability.ReadAsync(new[] { fullPath }, fullPath, false, startLine, startColumn, endLine, cancellationToken);
             return ToMcpResult(result, "read_failed");
         }
 
         private CopilotMcpToolCallResult ListAllowedDirectory(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var path = GetString(arguments, "path");
+            var cursor = GetString(arguments, "cursor");
             var roots = GetAllowedRoots();
             if (roots.Count == 0)
                 return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
 
             if (string.IsNullOrWhiteSpace(path))
             {
+                if (!string.IsNullOrWhiteSpace(cursor))
+                    return CopilotMcpToolCallResult.Fail("missing_path", "A directory cursor requires the same non-empty path used for the preceding page.");
+
                 var rootBuilder = new StringBuilder();
                 rootBuilder.AppendLine("ColorVision allowed directory roots");
                 foreach (var root in roots)
@@ -694,7 +945,7 @@ namespace ColorVision.Copilot.Mcp
             if (!Directory.Exists(fullPath))
                 return CopilotMcpToolCallResult.Fail("directory_not_found", $"The directory does not exist: {fullPath}");
 
-            var result = CopilotListDirectoryCapability.List(new[] { fullPath }, fullPath, cancellationToken);
+            var result = CopilotListDirectoryCapability.List(new[] { fullPath }, fullPath, cursor, cancellationToken);
             return ToMcpResult(result, "list_failed");
         }
 
@@ -719,13 +970,208 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(FormatFlowSnapshot(snapshot));
         }
 
+        private async Task<CopilotMcpToolCallResult> GetFlowGraphAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
+            if (snapshot == null)
+                return CopilotMcpToolCallResult.Ok("No active flow is available.");
+
+            var nodeId = GetString(arguments, "node_id");
+            var includeProperties = GetBool(arguments, "include_properties") ?? false;
+            var maxNodes = Math.Clamp(GetInt(arguments, "max_nodes") ?? 80, 1, 200);
+            var candidates = string.IsNullOrWhiteSpace(nodeId)
+                ? snapshot.Nodes
+                : snapshot.Nodes.Where(node => string.Equals(node.InstanceId, nodeId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(node.NodeId, nodeId, StringComparison.OrdinalIgnoreCase)).ToArray();
+            var nodes = candidates.Take(maxNodes).ToArray();
+            var nodeIds = nodes.Select(node => node.InstanceId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var edges = snapshot.Edges.Where(edge => nodeIds.Contains(edge.SourceNodeId) && nodeIds.Contains(edge.TargetNodeId)).ToArray();
+            var payload = new
+            {
+                format = "colorvision.flow-graph.v1",
+                snapshot.Revision,
+                snapshot.FlowName,
+                snapshot.TemplateId,
+                snapshot.Status,
+                snapshot.IsRunning,
+                totalNodeCount = snapshot.Nodes.Count,
+                returnedNodeCount = nodes.Length,
+                isTruncated = candidates.Count > nodes.Length,
+                nodes = nodes.Select(node => new
+                {
+                    node.InstanceId,
+                    node.NodeId,
+                    node.TypeKey,
+                    node.RuntimeType,
+                    node.CategoryPath,
+                    node.Title,
+                    node.NodeName,
+                    node.NodeType,
+                    node.DeviceCode,
+                    position = new { node.Left, node.Top, node.Width, node.Height },
+                    node.Mark,
+                    node.IsActive,
+                    node.IsSelected,
+                    inputs = node.InputPorts,
+                    outputs = node.OutputPorts,
+                    properties = includeProperties
+                        ? node.Parameters.Select(property => new { property.Name, Value = CopilotMcpAuditLogger.RedactArgument(property.Name, property.Value) }).ToArray()
+                        : Array.Empty<object>(),
+                }),
+                edges,
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private async Task<CopilotMcpToolCallResult> GetFlowNodeCatalogAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            var query = GetString(arguments, "query");
+            var maxResults = Math.Clamp(GetInt(arguments, "max_results") ?? 30, 1, 100);
+            var catalog = await _environment.FlowNodeCatalogProvider(query, maxResults, cancellationToken);
+            if (catalog == null)
+                return CopilotMcpToolCallResult.Ok("No active Flow node catalog is available.");
+
+            var payload = new
+            {
+                format = "colorvision.flow-node-catalog.v1",
+                catalog.Query,
+                catalog.TotalMatches,
+                catalog.IsTruncated,
+                nodeTypes = catalog.NodeTypes,
+                guidance = "Choose an exact typeKey. If several camera nodes match, ask which camera/device behavior is intended before proposing a mutation.",
+            };
+            return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(payload, StructuredJsonOptions));
+        }
+
+        private async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        {
+            if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
+                return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
+            return await _environment.PreviewFlowPatchHandler(request, cancellationToken);
+        }
+
+        private async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, string callerSource, CancellationToken cancellationToken)
+        {
+            if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
+                return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
+
+            if (IsInAppAgentFrameworkApproved(callerSource))
+                return await _environment.ApplyFlowPatchHandler(request, cancellationToken);
+
+            var preview = await _environment.PreviewFlowPatchHandler(request, cancellationToken);
+            if (!preview.Success)
+                return preview;
+
+            var normalizedArguments = BuildFlowPatchArguments(request);
+            return CreateConfirmableActionResult(
+                "Confirm Flow graph change",
+                DescribeFlowPatch(request),
+                "apply_flow_patch",
+                normalizedArguments,
+                preview.Text + Environment.NewLine + "Does not save or run the flow.",
+                token => _environment.ApplyFlowPatchHandler(request, token),
+                executeOnApproval: IsInAppAgent(callerSource));
+        }
+
+        private static bool TryBuildFlowPatchRequest(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            out CopilotFlowPatchRequest request,
+            out string error)
+        {
+            request = new CopilotFlowPatchRequest();
+            var operation = GetString(arguments, "operation").Trim().ToLowerInvariant();
+            var expectedRevision = GetString(arguments, "expected_revision").Trim();
+            if (string.IsNullOrWhiteSpace(expectedRevision))
+            {
+                error = "A current expected_revision from get_flow_graph is required.";
+                return false;
+            }
+
+            request = new CopilotFlowPatchRequest
+            {
+                Operation = operation,
+                ExpectedRevision = expectedRevision,
+                TypeKey = GetString(arguments, "type_key").Trim(),
+                Left = GetInt(arguments, "left") ?? 0,
+                Top = GetInt(arguments, "top") ?? 0,
+                NodeId = GetString(arguments, "node_id").Trim(),
+                PropertyName = GetString(arguments, "property_name").Trim(),
+                Value = GetString(arguments, "value"),
+                SourceNodeId = GetString(arguments, "source_node_id").Trim(),
+                SourcePortId = GetString(arguments, "source_port_id").Trim(),
+                TargetNodeId = GetString(arguments, "target_node_id").Trim(),
+                TargetPortId = GetString(arguments, "target_port_id").Trim(),
+            };
+
+            error = operation switch
+            {
+                "add_node" when string.IsNullOrWhiteSpace(request.TypeKey) => "add_node requires type_key.",
+                "add_node" when GetInt(arguments, "left") == null || GetInt(arguments, "top") == null => "add_node requires integer left and top coordinates.",
+                "set_property" when string.IsNullOrWhiteSpace(request.NodeId) => "set_property requires node_id.",
+                "set_property" when string.IsNullOrWhiteSpace(request.PropertyName) => "set_property requires property_name.",
+                "set_property" when arguments == null || !arguments.ContainsKey("value") => "set_property requires value; an empty string is allowed.",
+                "connect" when string.IsNullOrWhiteSpace(request.SourceNodeId) => "connect requires source_node_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.SourcePortId) => "connect requires source_port_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.TargetNodeId) => "connect requires target_node_id.",
+                "connect" when string.IsNullOrWhiteSpace(request.TargetPortId) => "connect requires target_port_id.",
+                "add_node" or "set_property" or "connect" => string.Empty,
+                _ => "operation must be add_node, set_property, or connect.",
+            };
+            return string.IsNullOrEmpty(error);
+        }
+
+        private static IReadOnlyDictionary<string, JsonElement> BuildFlowPatchArguments(CopilotFlowPatchRequest request)
+        {
+            var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["operation"] = JsonSerializer.SerializeToElement(request.Operation),
+                ["expected_revision"] = JsonSerializer.SerializeToElement(request.ExpectedRevision),
+            };
+            if (request.Operation == "add_node")
+            {
+                arguments["type_key"] = JsonSerializer.SerializeToElement(request.TypeKey);
+                arguments["left"] = JsonSerializer.SerializeToElement(request.Left);
+                arguments["top"] = JsonSerializer.SerializeToElement(request.Top);
+            }
+            else if (request.Operation == "set_property")
+            {
+                arguments["node_id"] = JsonSerializer.SerializeToElement(request.NodeId);
+                arguments["property_name"] = JsonSerializer.SerializeToElement(request.PropertyName);
+                arguments["value"] = JsonSerializer.SerializeToElement(request.Value);
+            }
+            else
+            {
+                arguments["source_node_id"] = JsonSerializer.SerializeToElement(request.SourceNodeId);
+                arguments["source_port_id"] = JsonSerializer.SerializeToElement(request.SourcePortId);
+                arguments["target_node_id"] = JsonSerializer.SerializeToElement(request.TargetNodeId);
+                arguments["target_port_id"] = JsonSerializer.SerializeToElement(request.TargetPortId);
+            }
+            return arguments;
+        }
+
+        private static string DescribeFlowPatch(CopilotFlowPatchRequest request)
+        {
+            return request.Operation switch
+            {
+                "add_node" => $"Add Flow node {request.TypeKey} at ({request.Left}, {request.Top}).",
+                "set_property" => $"Set Flow node {request.NodeId} property {request.PropertyName} to the previewed value.",
+                "connect" => $"Connect {request.SourceNodeId}/{request.SourcePortId} to {request.TargetNodeId}/{request.TargetPortId}.",
+                _ => "Apply Flow graph change.",
+            };
+        }
+
         private async Task<CopilotMcpToolCallResult> DiagnoseFlowFailureAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             var snapshot = await _environment.FlowSnapshotProvider(cancellationToken);
             var nodeQuery = FirstNonEmpty(GetString(arguments, "node_id"), GetString(arguments, "node_name"), GetString(arguments, "node"));
             var logQuery = FirstNonEmpty(GetString(arguments, "query"), GetString(arguments, "log_query"), "error");
             var maxLogLines = Math.Clamp(GetInt(arguments, "max_log_lines") ?? 120, 1, 300);
-            var logResult = _environment.RecentLogProvider(logQuery, CopilotRecentLogMode.RecentLines, maxLogLines, 12000);
+            var logResult = await _environment.RecentLogProvider(
+                logQuery,
+                CopilotRecentLogMode.RecentLines,
+                maxLogLines,
+                12000,
+                cancellationToken);
             var liveContext = _environment.LiveContextProvider();
             var templateJson = ExtractCurrentTemplateJson();
             var matchedNode = snapshot == null ? null : FindFlowNode(snapshot, nodeQuery);
@@ -1628,7 +2074,7 @@ namespace ColorVision.Copilot.Mcp
             foreach (var property in proposedObject)
                 currentObject[property.Key] = property.Value?.DeepClone();
 
-            return currentObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            return currentObject.ToJsonString(StructuredJsonOptions);
         }
 
         private static string BuildTemplatePatchPreviewText(TemplatePatchComputation computation, CopilotMcpTemplatePatchPreview? storedPreview)
@@ -2071,7 +2517,8 @@ namespace ColorVision.Copilot.Mcp
 
             return CopilotMcpToolCallResult.Fail(
                 errorCode,
-                string.IsNullOrWhiteSpace(result.ErrorMessage) ? text : result.ErrorMessage);
+                string.IsNullOrWhiteSpace(result.ErrorMessage) ? text : result.ErrorMessage,
+                result.FailureKind);
         }
 
         private static string FormatFlowSnapshot(CopilotFlowContextSnapshot snapshot)
@@ -2371,7 +2818,7 @@ namespace ColorVision.Copilot.Mcp
                 ["proposed_changes"] = JsonNode.Parse(proposedChanges.GetRawText()),
             };
 
-            return payload.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            return payload.ToJsonString(StructuredJsonOptions);
         }
 
         private static string EscapeForInlineJson(string? value)
@@ -2583,6 +3030,20 @@ namespace ColorVision.Copilot.Mcp
                 return number;
 
             if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
+                return number;
+
+            return null;
+        }
+
+        private static long? GetLong(IReadOnlyDictionary<string, JsonElement>? arguments, string name)
+        {
+            if (arguments == null || !arguments.TryGetValue(name, out var value))
+                return null;
+
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number))
+                return number;
+
+            if (value.ValueKind == JsonValueKind.String && long.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
                 return number;
 
             return null;

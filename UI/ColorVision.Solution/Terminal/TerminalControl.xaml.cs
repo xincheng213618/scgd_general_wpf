@@ -231,6 +231,62 @@ namespace ColorVision.Solution.Terminal
             ResetTrackedInput();
         }
 
+        public void SendCommand(string command, string workingDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(workingDirectory))
+            {
+                SendCommand(command);
+                return;
+            }
+
+            string changeDirectoryCommand = _currentShell == "cmd"
+                ? $"cd /d \"{workingDirectory.Replace("\"", "\"\"")}\" && {command}"
+                : $"Set-Location -LiteralPath '{workingDirectory.Replace("'", "''")}'; {command}";
+            SendCommand(changeDirectoryCommand);
+        }
+
+        public void SendCommandBatch(IReadOnlyList<TerminalCommandRequest> commands)
+        {
+            if (commands.Count == 0)
+                return;
+
+            SendCommand(BuildBatchCommand(commands, _currentShell));
+        }
+
+        internal static string BuildBatchCommand(IReadOnlyList<TerminalCommandRequest> commands, string shell)
+        {
+            if (string.Equals(shell, "cmd", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Join(" && ", commands.Select(command =>
+                    $"cd /d \"{command.WorkingDirectory.Replace("\"", "\"\"")}\"" +
+                    $" && echo ==== {EscapeCmdEcho(command.DisplayName)} ====" +
+                    $" && call {command.Command}"));
+            }
+
+            var commandBuilder = new StringBuilder("& { $ErrorActionPreference = 'Stop'; ");
+            foreach (TerminalCommandRequest command in commands)
+            {
+                string displayName = command.DisplayName.Replace("'", "''");
+                string workingDirectory = command.WorkingDirectory.Replace("'", "''");
+                commandBuilder.Append($"Write-Host '==== {displayName} ===='; ");
+                commandBuilder.Append($"Set-Location -LiteralPath '{workingDirectory}'; ");
+                commandBuilder.Append($"& {{ {command.Command} }}; ");
+                commandBuilder.Append($"if (-not $?) {{ throw '命令失败: {displayName}' }}; ");
+            }
+            commandBuilder.Append("}");
+            return commandBuilder.ToString();
+        }
+
+        private static string EscapeCmdEcho(string value)
+        {
+            return value
+                .Replace("^", "^^")
+                .Replace("&", "^&")
+                .Replace("|", "^|")
+                .Replace("<", "^<")
+                .Replace(">", "^>");
+        }
+
         public void RunScript(string filePath)
         {
             if (!File.Exists(filePath))

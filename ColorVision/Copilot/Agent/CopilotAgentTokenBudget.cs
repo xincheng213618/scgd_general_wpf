@@ -3,15 +3,39 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotAgentTokenBudgetExceededException : Exception
+    {
+        public CopilotAgentTokenBudgetExceededException()
+            : base("This Agent run reached its bounded cumulative token budget; the next provider call was not sent. Reduce context, continue with a new message, or increase the Agent request-token budget.")
+        {
+        }
+    }
+
+    internal sealed class CopilotAgentContextWindowExceededException : Exception
+    {
+        public CopilotAgentContextWindowExceededException(int estimatedInputTokens, int inputBudgetTokens)
+            : base($"This Agent request exceeds its configured context window (estimated input {estimatedInputTokens:N0} tokens; maximum {inputBudgetTokens:N0}). Reduce conversation or attachment context, or increase the Agent context-window setting only when the configured model supports it.")
+        {
+            EstimatedInputTokens = estimatedInputTokens;
+            InputBudgetTokens = inputBudgetTokens;
+        }
+
+        public int EstimatedInputTokens { get; }
+
+        public int InputBudgetTokens { get; }
+    }
+
     public sealed class CopilotAgentTokenBudget
     {
-        public const int DefaultContextWindowTokens = 32768;
-        public const int DefaultRequestWindowMultiplier = 2;
+        public const int MinimumContextWindowTokens = 32_768;
+        public const int MaximumContextWindowTokens = 1_048_576;
+        public const int DefaultContextWindowTokens = MaximumContextWindowTokens;
 
         public int ContextWindowTokens { get; init; }
 
@@ -21,24 +45,22 @@ namespace ColorVision.Copilot
 
         public int RequestTokenBudget { get; init; }
 
-        public static CopilotAgentTokenBudget Create(CopilotProfileConfig profile)
+        public static CopilotAgentTokenBudget Create(CopilotProfileConfig profile, CopilotAgentRunBudget runBudget)
         {
             ArgumentNullException.ThrowIfNull(profile);
+            ArgumentNullException.ThrowIfNull(runBudget);
             var maxOutputTokens = Math.Clamp(profile.MaxTokens, 32, CopilotProfileConfig.DefaultMaxTokens);
-            var contextWindowTokens = Math.Max(DefaultContextWindowTokens, maxOutputTokens * 4);
             return new CopilotAgentTokenBudget
             {
-                ContextWindowTokens = contextWindowTokens,
+                ContextWindowTokens = Math.Clamp(runBudget.ContextWindowTokens, MinimumContextWindowTokens, MaximumContextWindowTokens),
                 MaxOutputTokens = maxOutputTokens,
-                RequestTokenBudget = checked(contextWindowTokens * DefaultRequestWindowMultiplier),
+                RequestTokenBudget = runBudget.RequestTokenBudget,
             };
         }
     }
 
     internal sealed class CopilotTokenBudgetChatClient : DelegatingChatClient
     {
-        private const string BudgetExhaustedAnswer = "This Agent run reached its bounded token budget after completing the recorded tool calls. Continue in a new message if additional work is needed.";
-
         private readonly CopilotAgentTokenBudget _budget;
         private readonly Action<CopilotAgentBudgetSnapshot>? _onBudgetExhausted;
         private readonly object _syncRoot = new();
@@ -68,18 +90,48 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal void RecordDelegatedRunUsage(CopilotDelegatedRunUsage delegatedRun)
+        {
+            ArgumentNullException.ThrowIfNull(delegatedRun);
+            lock (_syncRoot)
+            {
+                _usage = _usage.Add(delegatedRun.Usage);
+                _providerCalls += Math.Max(0, delegatedRun.ProviderCalls);
+                _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
+                _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
+                if (_consumedTokens >= _budget.RequestTokenBudget)
+                    _budgetExhausted = true;
+            }
+        }
+
         public override async Task<ChatResponse> GetResponseAsync(
             IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall())
-                return new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, BudgetExhaustedAnswer));
+            var estimatedInputTokens = EstimateInputTokens(materializedMessages, options);
+            EnsureWithinContextWindow(estimatedInputTokens);
+            if (!TryBeginProviderCall(estimatedInputTokens))
+                throw new CopilotAgentTokenBudgetExceededException();
 
-            var response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+            ChatResponse response;
+            try
+            {
+                response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
+            }
+            catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
+            {
+                throw;
+            }
+            catch
+            {
+                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                throw;
+            }
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
-            CommitUsage(usage, EstimateTokens(materializedMessages, options, response.Text?.Length ?? 0));
+            CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageWeight(response.Messages)));
             return response;
         }
 
@@ -88,31 +140,109 @@ namespace ColorVision.Copilot
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var materializedMessages = messages?.ToArray() ?? Array.Empty<Microsoft.Extensions.AI.ChatMessage>();
-            if (!TryBeginProviderCall())
+            var estimatedInputTokens = EstimateInputTokens(materializedMessages, options);
+            EnsureWithinContextWindow(estimatedInputTokens);
+            if (!TryBeginProviderCall(estimatedInputTokens))
+                throw new CopilotAgentTokenBudgetExceededException();
+
+            var usage = CopilotTokenUsage.Empty;
+            long responseWeight = 0;
+            var completed = false;
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator;
+            try
             {
-                yield return new ChatResponseUpdate(ChatRole.Assistant, BudgetExhaustedAnswer);
+                enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
+            }
+            catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
+            {
+                throw;
+            }
+            catch
+            {
+                CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
+                throw;
+            }
+
+            if (enumerator == null)
+            {
+                CommitUsage(
+                    usage,
+                    EstimateTokens(materializedMessages, options, responseWeight));
                 yield break;
             }
 
-            var usage = CopilotTokenUsage.Empty;
-            var responseCharacters = 0;
-            await foreach (var update in base.GetStreamingResponseAsync(materializedMessages, options, cancellationToken))
+            await using (enumerator)
             {
-                responseCharacters += update.Text?.Length ?? 0;
-                usage = usage.MergeProgress(ExtractUsage(update.Contents));
-                yield return update;
+                try
+                {
+                    while (true)
+                    {
+                        var update = enumerator.Current;
+                        responseWeight += EstimateContentWeight(update.Contents);
+                        usage = usage.MergeProgress(ExtractUsage(update.Contents));
+                        yield return update;
+                        if (!await enumerator.MoveNextAsync())
+                            break;
+                    }
+                    completed = true;
+                }
+                finally
+                {
+                    CommitUsage(
+                        usage,
+                        EstimateTokens(materializedMessages, options, responseWeight),
+                        requireEstimatedFloor: !completed);
+                }
             }
-
-            CommitUsage(usage, EstimateTokens(materializedMessages, options, responseCharacters));
         }
 
-        private bool TryBeginProviderCall()
+        private async Task<IAsyncEnumerator<ChatResponseUpdate>?> OpenStreamingAttemptAsync(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options,
+            CancellationToken cancellationToken)
+        {
+            var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            try
+            {
+                if (await enumerator.MoveNextAsync())
+                    return enumerator;
+
+                await enumerator.DisposeAsync();
+                return null;
+            }
+            catch
+            {
+                try
+                {
+                    await enumerator.DisposeAsync();
+                }
+                catch
+                {
+                    // Preserve the provider failure used by context recovery.
+                }
+                throw;
+            }
+        }
+
+        private void EnsureWithinContextWindow(int estimatedInputTokens)
+        {
+            if (estimatedInputTokens <= _budget.InputBudgetTokens)
+                return;
+
+            lock (_syncRoot)
+                _usedEstimatedUsage = true;
+            throw new CopilotAgentContextWindowExceededException(estimatedInputTokens, _budget.InputBudgetTokens);
+        }
+
+        private bool TryBeginProviderCall(int estimatedInputTokens)
         {
             CopilotAgentBudgetSnapshot? notification = null;
             lock (_syncRoot)
             {
-                if (_consumedTokens >= _budget.RequestTokenBudget)
+                var wouldExceedBudget = _consumedTokens + Math.Max(1, estimatedInputTokens) > _budget.RequestTokenBudget;
+                if (_consumedTokens >= _budget.RequestTokenBudget || wouldExceedBudget)
                 {
                     _budgetExhausted = true;
                     if (!_budgetNotificationPublished)
@@ -133,20 +263,25 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private void CommitUsage(CopilotTokenUsage actualUsage, int estimatedTokens)
+        private void CommitUsage(CopilotTokenUsage actualUsage, int estimatedTokens, bool requireEstimatedFloor = false)
         {
             lock (_syncRoot)
             {
+                var consumedTokens = Math.Max(1, estimatedTokens);
                 if (actualUsage.HasAny)
                 {
                     _usage = _usage.Add(actualUsage);
-                    _consumedTokens += Math.Max(1, actualUsage.EffectiveTotalTokens);
+                    var actualTokens = Math.Max(1, actualUsage.EffectiveTotalTokens);
+                    if (requireEstimatedFloor && actualTokens < consumedTokens)
+                        _usedEstimatedUsage = true;
+                    else
+                        consumedTokens = actualTokens;
                 }
                 else
                 {
                     _usedEstimatedUsage = true;
-                    _consumedTokens += Math.Max(1, estimatedTokens);
                 }
+                _consumedTokens += consumedTokens;
 
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
@@ -187,13 +322,139 @@ namespace ColorVision.Copilot
         private static int EstimateTokens(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options,
-            int responseCharacters)
+            long responseWeight)
         {
-            long characters = options?.Instructions?.Length ?? 0;
-            foreach (var message in messages)
-                characters += message.Text?.Length ?? 0;
-            characters += Math.Max(0, responseCharacters);
-            return (int)Math.Clamp((characters + 3) / 4, 1, int.MaxValue);
+            var weight = EstimateInputWeight(messages, options) + Math.Max(0, responseWeight);
+            return WeightToTokenEstimate(weight);
         }
+
+        private static int EstimateInputTokens(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options)
+        {
+            return WeightToTokenEstimate(EstimateInputWeight(messages, options));
+        }
+
+        internal static int EstimateMessageTokens(Microsoft.Extensions.AI.ChatMessage[] messages)
+        {
+            return WeightToTokenEstimate(EstimateMessageWeight(messages));
+        }
+
+        private static long EstimateInputWeight(
+            IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
+            ChatOptions? options)
+        {
+            var weight = EstimateTextWeight(options?.Instructions);
+            weight += EstimateToolsWeight(options?.Tools);
+            weight += EstimateMessageWeight(messages);
+            return weight;
+        }
+
+        private static long EstimateMessageWeight(IEnumerable<Microsoft.Extensions.AI.ChatMessage>? messages)
+        {
+            long weight = 0;
+            foreach (var message in messages ?? Enumerable.Empty<Microsoft.Extensions.AI.ChatMessage>())
+            {
+                weight += 16;
+                weight += EstimateContentWeight(message.Contents);
+            }
+            return weight;
+        }
+
+        private static long EstimateContentWeight(IEnumerable<AIContent>? contents)
+        {
+            long weight = 0;
+            foreach (var content in contents ?? Enumerable.Empty<AIContent>())
+                weight += EstimateContentWeight(content);
+            return weight;
+        }
+
+        private static long EstimateContentWeight(AIContent? content)
+        {
+            return content switch
+            {
+                null => 0,
+                TextContent text => EstimateTextWeight(text.Text),
+                TextReasoningContent reasoning => EstimateTextWeight(reasoning.Text) + EstimateTextWeight(reasoning.ProtectedData),
+                FunctionCallContent functionCall => EstimateTextWeight(functionCall.CallId)
+                    + EstimateTextWeight(functionCall.Name)
+                    + EstimateValueWeight(functionCall.Arguments)
+                    + EstimateTextWeight(functionCall.Exception?.Message),
+                FunctionResultContent functionResult => EstimateTextWeight(functionResult.CallId)
+                    + EstimateValueWeight(functionResult.Result)
+                    + EstimateTextWeight(functionResult.Exception?.Message),
+                ToolApprovalRequestContent approvalRequest => EstimateTextWeight(approvalRequest.RequestId)
+                    + EstimateContentWeight(approvalRequest.ToolCall),
+                ToolApprovalResponseContent approvalResponse => EstimateTextWeight(approvalResponse.RequestId)
+                    + EstimateTextWeight(approvalResponse.Reason)
+                    + EstimateContentWeight(approvalResponse.ToolCall),
+                ErrorContent error => EstimateTextWeight(error.Message)
+                    + EstimateTextWeight(error.ErrorCode)
+                    + EstimateTextWeight(error.Details),
+                DataContent data => EstimateDataContentWeight(data),
+                UriContent uri => EstimateTextWeight(uri.Uri?.OriginalString) + EstimateTextWeight(uri.MediaType),
+                _ => EstimateTextWeight(content.ToString()),
+            };
+        }
+
+        private static long EstimateToolsWeight(IEnumerable<AITool>? tools)
+        {
+            long weight = 0;
+            foreach (var tool in tools ?? Enumerable.Empty<AITool>())
+            {
+                weight += EstimateTextWeight(tool.Name);
+                weight += EstimateTextWeight(tool.Description);
+                if (tool is AIFunction function)
+                {
+                    weight += function.JsonSchema.ValueKind == JsonValueKind.Undefined
+                        ? 0
+                        : EstimateTextWeight(function.JsonSchema.GetRawText());
+                    if (function.ReturnJsonSchema is JsonElement returnSchema
+                        && returnSchema.ValueKind != JsonValueKind.Undefined)
+                    {
+                        weight += EstimateTextWeight(returnSchema.GetRawText());
+                    }
+                }
+            }
+            return weight;
+        }
+
+        private static long EstimateValueWeight(object? value)
+        {
+            if (value == null)
+                return 4;
+            if (value is string text)
+                return EstimateTextWeight(text);
+            if (value is JsonElement element)
+                return EstimateTextWeight(element.GetRawText());
+
+            try
+            {
+                return EstimateTextWeight(JsonSerializer.Serialize(value, value.GetType()));
+            }
+            catch (Exception ex) when (ex is NotSupportedException or JsonException)
+            {
+                return EstimateTextWeight(value.ToString());
+            }
+        }
+
+        private static long EstimateDataContentWeight(DataContent data)
+        {
+            var encodedWeight = EstimateEncodedDataWeight(data.Data.Length);
+            if (encodedWeight == 0)
+                encodedWeight = EstimateTextWeight(data.Uri);
+            return encodedWeight + EstimateTextWeight(data.MediaType) + EstimateTextWeight(data.Name);
+        }
+
+        private static long EstimateEncodedDataWeight(int byteCount)
+        {
+            return byteCount <= 0 ? 0 : ((long)byteCount + 2) / 3 * 4;
+        }
+
+        private static long EstimateTextWeight(string? value)
+            => CopilotTokenEstimator.EstimateTextWeight(value);
+
+        private static int WeightToTokenEstimate(long weight)
+            => CopilotTokenEstimator.WeightToTokenEstimate(weight);
     }
 }

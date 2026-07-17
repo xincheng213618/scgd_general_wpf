@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -10,16 +9,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotApplyTemplatePatchTool : ICopilotFrameworkApprovedTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotApplyTemplatePatchTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotApplyTemplatePatchTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotApplyTemplatePatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "ApplyTemplatePatch";
@@ -48,18 +47,18 @@ namespace ColorVision.Copilot
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
         }
 
         public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            string callerSource,
+            CopilotApplicationCapabilityCaller caller,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -73,16 +72,18 @@ namespace ColorVision.Copilot
             {
                 ["preview_id"] = JsonSerializer.SerializeToElement(previewId),
             };
-            var result = await _dispatcher.CallAsync("apply_template_patch", arguments, cancellationToken, callerSource);
-            var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
+            var result = await _capabilityInvoker.InvokeAsync("apply_template_patch", arguments, caller, cancellationToken);
+            var isWaitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = result.Success || isWaitingForApproval,
                 Summary = isWaitingForApproval ? "Template patch is waiting for explicit ColorVision approval." : result.Success ? "Template patch applied to the active editor." : "Template patch application failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
-                Approval = result.ToApprovalInfo(),
+                Content = result.Content,
+                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
+                FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
+                Approval = result.Approval,
             };
         }
 

@@ -6,6 +6,16 @@ using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
+    [Flags]
+    internal enum CopilotAgentHarnessFeatures
+    {
+        None = 0,
+        TaskLedger = 1,
+        AgentMode = 2,
+        Skills = 4,
+        Full = TaskLedger | AgentMode | Skills,
+    }
+
     public enum CopilotAgentMode
     {
         Chat,
@@ -13,6 +23,7 @@ namespace ColorVision.Copilot
         Explain,
         Web,
         Code,
+        Review,
         Diagnose,
     }
 
@@ -26,7 +37,11 @@ namespace ColorVision.Copilot
 
         public string Path { get; init; } = string.Empty;
 
+        public string Cursor { get; init; } = string.Empty;
+
         public int? StartLine { get; init; }
+
+        public int? StartColumn { get; init; }
 
         public int? EndLine { get; init; }
 
@@ -58,19 +73,64 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
+        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
+
         public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> WritableLocalRootPaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> WritableLocalFilePaths { get; init; } = Array.Empty<string>();
+
         public bool PreferBatchReadLocalFiles { get; init; }
+
+        public CopilotShellKind PreferredShell { get; init; } = CopilotShellKind.Auto;
 
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
+        public CopilotAgentRecoveryRequest? Recovery { get; init; }
+
+        public CopilotAgentRunControl? RunControl { get; init; }
+
+        public CopilotAgentRunBudgetDefaults? RunBudgetDefaults { get; init; }
+
+        public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
+
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
+
+        internal string RuntimeRoleInstructions { get; init; } = string.Empty;
+
+        internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;
+    }
+
+    public sealed class CopilotDelegatedRunUsage
+    {
+        public string RoleId { get; init; } = string.Empty;
+
+        public string RunId { get; init; } = string.Empty;
+
+        public int RequestTokenBudget { get; init; }
+
+        public long QueueDurationMs { get; init; }
+
+        public CopilotAgentStopReason StopReason { get; init; }
+
+        public int ToolCalls { get; init; }
+
+        public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
+
+        public long ConsumedTokens { get; init; }
+
+        public int ProviderCalls { get; init; }
+
+        public bool UsedEstimatedUsage { get; init; }
     }
 
     public sealed class CopilotToolResult
@@ -87,9 +147,17 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> AttemptedLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
     }
 
     public sealed class CopilotToolApprovalInfo
@@ -114,19 +182,6 @@ namespace ColorVision.Copilot
         public string Reason { get; init; } = string.Empty;
 
         public bool IsFallback { get; init; }
-
-        public static CopilotToolCall FromPlan(CopilotAgentPlan? plan, string? toolNameOverride = null)
-        {
-            return new CopilotToolCall
-            {
-                ToolName = string.IsNullOrWhiteSpace(toolNameOverride)
-                    ? plan?.ToolName ?? string.Empty
-                    : toolNameOverride,
-                ToolInput = plan?.ToolInput ?? CopilotAgentToolInput.Empty,
-                Reason = plan?.Reason ?? string.Empty,
-                IsFallback = plan?.IsFallback ?? false,
-            };
-        }
     }
 
     public sealed class CopilotToolObservation
@@ -141,9 +196,17 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public CopilotToolApprovalInfo? Approval { get; init; }
 
         public IReadOnlyList<string> SuggestedReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> AttemptedLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
+
+        public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
 
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
@@ -154,8 +217,12 @@ namespace ColorVision.Copilot
                 Content = result?.Content ?? string.Empty,
                 ErrorMessage = result?.ErrorMessage ?? string.Empty,
                 FailureKind = result?.FailureKind ?? CopilotToolFailureKind.None,
+                FailureCode = result?.Success == false ? CopilotToolFailureCode.Normalize(result.FailureCode) : string.Empty,
                 Approval = result?.Approval,
                 SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
+                AttemptedLocalFilePaths = result?.AttemptedLocalFilePaths ?? Array.Empty<string>(),
+                SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
+                DelegatedRunUsage = result?.DelegatedRunUsage,
             };
         }
     }
@@ -249,11 +316,15 @@ namespace ColorVision.Copilot
         Status,
         RuntimeDiagnostic,
         ToolStarted,
+        ToolProgress,
         ToolResult,
         ReasoningDelta,
         AnswerDelta,
+        AnswerReset,
         Error,
         Completed,
+        CheckpointReady,
+        CheckpointUpdated,
     }
 
     public sealed class CopilotAgentEvent
@@ -265,6 +336,10 @@ namespace ColorVision.Copilot
         public CopilotToolResult? ToolResult { get; init; }
 
         public CopilotToolExecutionInfo? ToolExecution { get; init; }
+
+        public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
 
         public static CopilotAgentEvent Status(string text)
         {
@@ -281,6 +356,17 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.ToolStarted,
                 Text = execution?.ToolName ?? string.Empty,
+                ToolExecution = execution,
+            };
+        }
+
+        public static CopilotAgentEvent ToolProgress(CopilotToolExecutionInfo execution, string text)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.ToolProgress,
+                Text = text ?? string.Empty,
                 ToolExecution = execution,
             };
         }
@@ -339,6 +425,36 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.Completed,
             };
         }
+
+        public static CopilotAgentEvent AnswerReset()
+        {
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.AnswerReset,
+            };
+        }
+
+        public static CopilotAgentEvent CheckpointReady()
+        {
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.CheckpointReady,
+            };
+        }
+
+        public static CopilotAgentEvent CheckpointUpdated(
+            CopilotAgentSessionCheckpoint sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot taskLedger)
+        {
+            ArgumentNullException.ThrowIfNull(sessionCheckpoint);
+            ArgumentNullException.ThrowIfNull(taskLedger);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.CheckpointUpdated,
+                SessionCheckpoint = sessionCheckpoint,
+                TaskLedger = taskLedger,
+            };
+        }
     }
 
     public sealed class CopilotAgentPreparedPrompt
@@ -368,6 +484,10 @@ namespace ColorVision.Copilot
 
         public CopilotAgentStopReason StopReason { get; init; }
 
+        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers { get; init; } = Array.Empty<CopilotAgentBlockerSnapshot>();
+
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
+
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
     }
 
@@ -379,6 +499,12 @@ namespace ColorVision.Copilot
         ApprovalDenied,
         BudgetExhausted,
         TaskPassLimit,
+        Blocked,
+        Paused,
+        Cancelled,
+        IncompleteOutput,
+        ProviderFailure,
+        Interrupted,
     }
 
     public sealed class CopilotAgentTaskLedgerSnapshot
@@ -417,6 +543,7 @@ namespace ColorVision.Copilot
             Items = normalizedItems;
             return changed || originalItems?.Count != Items.Count;
         }
+
     }
 
     public sealed class CopilotAgentTaskItem
@@ -460,5 +587,19 @@ namespace ColorVision.Copilot
         public bool UsedEstimatedUsage { get; init; }
 
         public bool BudgetExhausted { get; init; }
+
+        public int MaxToolCalls { get; init; }
+
+        public int ToolCalls { get; init; }
+
+        public bool ToolBudgetExhausted { get; init; }
+
+        public int MaxAgentPasses { get; init; }
+
+        public long TotalDurationMs { get; init; }
+
+        public long ElapsedMs { get; init; }
+
+        public bool TimeBudgetExhausted { get; init; }
     }
 }

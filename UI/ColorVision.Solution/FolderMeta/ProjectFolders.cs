@@ -1,5 +1,4 @@
 using ColorVision.Common.NativeMethods;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
@@ -66,29 +65,6 @@ namespace ColorVision.Solution.FolderMeta
             Icon = GetProjectIcon();
         }
 
-        public override IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            var menuItems = base.GetMenuItems().ToList();
-            
-            // Add project-specific menu items
-            menuItems.Add(new MenuItemMetadata 
-            { 
-                GuidId = "BuildProject", 
-                Order = 1, 
-                Header = "构建项目", 
-                Icon = MenuItemIcon.TryFindResource("DIBuild") 
-            });
-            
-            menuItems.Add(new MenuItemMetadata 
-            { 
-                GuidId = "OpenInIDE", 
-                Order = 2, 
-                Header = "在IDE中打开", 
-                Icon = MenuItemIcon.TryFindResource("DICode") 
-            });
-            
-            return menuItems;
-        }
     }
 
     /// <summary>
@@ -106,28 +82,5 @@ namespace ColorVision.Solution.FolderMeta
             Icon = FileIcon.GetDirectoryIconImageSource();
         }
 
-        public override IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            var menuItems = base.GetMenuItems().ToList();
-            
-            // Add solution-specific menu items
-            menuItems.Add(new MenuItemMetadata 
-            { 
-                GuidId = "BuildSolution", 
-                Order = 1, 
-                Header = "构建解决方案", 
-                Icon = MenuItemIcon.TryFindResource("DIBuildAll") 
-            });
-            
-            menuItems.Add(new MenuItemMetadata 
-            { 
-                GuidId = "ManageNuget", 
-                Order = 2, 
-                Header = "管理NuGet包", 
-                Icon = MenuItemIcon.TryFindResource("DINuGet") 
-            });
-            
-            return menuItems;
-        }
     }
 }

@@ -7,9 +7,10 @@
              xmlns:local="clr-namespace:ColorVision.Solution"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+             xmlns:explorer="clr-namespace:ColorVision.Solution.Explorer"
              d:DataContext="{d:DesignInstance local:SolutionManager}"
              mc:Ignorable="d" 
-             d:DesignWidth="300" d:DesignHeight="600"  Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded">
+             d:DesignWidth="300" d:DesignHeight="600" Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -22,6 +23,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
             <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Visibility="Collapsed" Orientation="Horizontal" Margin="3">
@@ -70,7 +72,7 @@
             </DockPanel>
         </Grid>
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible">
+            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="SolutionTreeView_ContextMenuOpening" SelectedItemChanged="SolutionTreeView_SelectedItemChanged" PreviewKeyDown="SolutionTreeView_PreviewKeyDown">
                 <TreeView.Resources>
                     <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
                     <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
@@ -104,7 +106,9 @@
                         <Setter Property="MinHeight" Value="19"/>
 
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
-                        <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
+                        <EventSetter Event="Expanded" Handler="TreeViewItem_ExpansionChanged"/>
+                        <EventSetter Event="Collapsed" Handler="TreeViewItem_ExpansionChanged"/>
+                        <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{x:Static explorer:SolutionResourceCommands.Open}" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="{x:Type TreeViewItem}">
@@ -139,6 +143,11 @@
                                             <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
                                             <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsDropTarget}" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SecondaryRegionBrush}" />
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                                        </DataTrigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />
                                         </Trigger>
@@ -151,6 +160,13 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </Border>
+        <TextBlock x:Name="SearchStatusText"
+                   Grid.Row="3"
+                   Margin="8,2,5,4"
+                   FontSize="11"
+                   Opacity="0.7"
+                   Visibility="Collapsed"
+                   AutomationProperties.LiveSetting="Polite"/>
     </Grid>
 
 </UserControl>

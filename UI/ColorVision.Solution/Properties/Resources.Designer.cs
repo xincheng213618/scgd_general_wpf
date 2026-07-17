@@ -457,20 +457,20 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 最近使用过的文件(_F) 的本地化字符串。
-        /// </summary>
-        public static string RecentFiles {
-            get {
-                return ResourceManager.GetString("RecentFiles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 最近使用的内容 的本地化字符串。
         /// </summary>
         public static string RecentUsedContent {
             get {
                 return ResourceManager.GetString("RecentUsedContent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最近使用的工作区(_W) 的本地化字符串。
+        /// </summary>
+        public static string RecentWorkspaces {
+            get {
+                return ResourceManager.GetString("RecentWorkspaces", resourceCulture);
             }
         }
         

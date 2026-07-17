@@ -94,6 +94,7 @@ namespace ProjectARVRPro
                 // Skip dynamic dictionaries - handled separately below
                 if (prop.Name == nameof(ObjectiveTestResult.DynamicTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
+                    prop.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults))
                     continue;

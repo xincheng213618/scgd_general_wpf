@@ -38,6 +38,8 @@ namespace ColorVision.Database
             new("t_scgd_measure_result_third_party_algorithm", CleanupTableKind.MeasureDetail),
         };
 
+        public static IReadOnlyList<string> ResultTableNames { get; } = CleanupTables.Select(item => item.TableName).ToArray();
+
         public string Id => "mysql-results";
         public string DisplayName => "MySQL 结果表";
         public int Order => 10;

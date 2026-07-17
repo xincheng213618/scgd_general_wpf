@@ -1,6 +1,9 @@
 #pragma warning disable CA1863
 using ColorVision.Scheduler.Data;
 using ColorVision.Themes;
+using ColorVision.UI;
+using log4net;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,8 +11,12 @@ namespace ColorVision.Scheduler
 {
     public partial class ExecutionHistoryWindow : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(ExecutionHistoryWindow));
         private readonly string? _jobName;
         private readonly string? _groupName;
+        private IReadOnlyList<JobExecutionRecord> _currentRecords = Array.Empty<JobExecutionRecord>();
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private bool _isClosed;
         private int _pageIndex = 1;
         private const int PageSize = 100;
         private string _filter = Properties.Resources.Sched_All;
@@ -23,6 +30,8 @@ namespace ColorVision.Scheduler
             this.ApplyCaption();
             TextBlockTaskName.Text = Properties.Resources.Sched_AllTasks;
             LoadData();
+            Activated += ExecutionHistoryWindow_Activated;
+            EnsureCopilotContextRegistered();
         }
 
         /// <summary>
@@ -30,12 +39,14 @@ namespace ColorVision.Scheduler
         /// </summary>
         public ExecutionHistoryWindow(string jobName, string groupName)
         {
-            this.ApplyCaption();
+            InitializeComponent();
             this.ApplyCaption();
             _jobName = jobName;
             _groupName = groupName;
             TextBlockTaskName.Text = $"{jobName} ({groupName})";
             LoadData();
+            Activated += ExecutionHistoryWindow_Activated;
+            EnsureCopilotContextRegistered();
         }
 
         private void LoadData()
@@ -58,11 +69,13 @@ namespace ColorVision.Scheduler
             else if (_filter == Properties.Resources.Sched_FailFilter)
                 records = records.Where(r => !r.Success).ToList();
 
-            ListViewHistory.ItemsSource = records;
+            _currentRecords = records;
+            ListViewHistory.ItemsSource = _currentRecords;
             TextBlockPage.Text = string.Format(Properties.Resources.Sched_PageInfo, _pageIndex);
 
             // 更新统计
             UpdateStats();
+            PublishCopilotContext();
         }
 
         private void UpdateStats()
@@ -131,6 +144,112 @@ namespace ColorVision.Scheduler
                 _pageIndex = 1;
                 LoadData();
             }
+        }
+
+        private void ListViewHistory_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void ExecutionHistoryWindow_Activated(object? sender, EventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void EnsureCopilotContextRegistered()
+        {
+            if (_copilotContextSession != null)
+                return;
+
+            try
+            {
+                QuartzSchedulerManager.GetInstance();
+                _copilotContextSession = CopilotSchedulerContextHub.Shared.Register(
+                    CaptureCopilotSchedulerSnapshotAsync,
+                    typeof(ExecutionHistoryWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not register the execution-history Copilot context; the history window will continue to operate.", ex);
+            }
+        }
+
+        private async Task<CopilotSchedulerContextSnapshot?> CaptureCopilotSchedulerSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_isClosed)
+                return null;
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return _isClosed ? null : CaptureCopilotSchedulerSnapshot();
+                });
+            }
+
+            return CaptureCopilotSchedulerSnapshot();
+        }
+
+        private CopilotSchedulerContextSnapshot CaptureCopilotSchedulerSnapshot()
+        {
+            var manager = QuartzSchedulerManager.GetInstance();
+            var selectedTask = _jobName != null && _groupName != null
+                ? manager.TaskInfos.FirstOrDefault(task => task.JobName == _jobName && task.GroupName == _groupName)
+                : null;
+            return manager.CaptureCopilotSchedulerSnapshot(
+                surface: "Scheduled task execution history",
+                selectedTask: selectedTask,
+                selectedTaskCount: selectedTask == null ? 0 : 1,
+                historyRecords: _currentRecords,
+                historyPageIndex: _pageIndex,
+                historyFilter: GetCopilotHistoryFilter(),
+                historyScope: _jobName == null ? "All scheduled tasks" : "Selected scheduled task",
+                historyTaskName: _jobName ?? string.Empty,
+                historyGroupName: _groupName ?? string.Empty,
+                selectedHistoryRecord: ListViewHistory.SelectedItem as JobExecutionRecord);
+        }
+
+        private string GetCopilotHistoryFilter()
+        {
+            if (_filter == Properties.Resources.Sched_SuccessFilter)
+                return "Success only";
+            if (_filter == Properties.Resources.Sched_FailFilter)
+                return "Failure only";
+            return "All results";
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_isClosed || _copilotContextSession?.IsCurrent != true || !IsActive)
+                return;
+
+            try
+            {
+                var snapshot = CaptureCopilotSchedulerSnapshot();
+                var item = CopilotBusinessContextBuilder.BuildSchedulerContextItem(snapshot);
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    CopilotSchedulerAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not publish the active scheduler-history context to Copilot: {ex.Message}");
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosed = true;
+            Activated -= ExecutionHistoryWindow_Activated;
+            var wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(CopilotSchedulerAgentExtension.SourceId);
+            base.OnClosed(e);
         }
     }
 }

@@ -13,6 +13,7 @@ namespace ColorVision.Solution.Explorer
 
         public INewItemTemplate? SelectedTemplate { get; private set; }
         public string? NewFileName { get; private set; }
+        public bool OverwriteExisting { get; private set; }
 
         public AddNewItemWindow(string targetDirectory)
         {
@@ -67,20 +68,16 @@ namespace ColorVision.Solution.Explorer
         {
             if (TemplateListView.SelectedItem is INewItemTemplate template)
             {
-                string baseName = template.GetDefaultFileName() ?? template.Name;
-                string ext = template.Extension ?? "";
-
-                // Auto-number if file exists
-                string fileName = baseName + ext;
-                string fullPath = Path.Combine(_targetDirectory, fileName);
-                int count = 2;
-                while (File.Exists(fullPath))
+                if (!SolutionPhysicalItemOperations.TryGetAvailableFileName(
+                    template,
+                    _targetDirectory,
+                    out string fileName,
+                    out string errorMessage))
                 {
-                    fileName = $"{baseName}({count}){ext}";
-                    fullPath = Path.Combine(_targetDirectory, fileName);
-                    count++;
+                    FileNameTextBox.Clear();
+                    MessageBox.Show(this, errorMessage, "读取模板失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
-
                 FileNameTextBox.Text = fileName;
                 FileNameTextBox.SelectAll();
                 FileNameTextBox.Focus();
@@ -132,12 +129,19 @@ namespace ColorVision.Solution.Explorer
             }
 
             string fullPath = Path.Combine(_targetDirectory, fileName);
+            if (Directory.Exists(fullPath))
+            {
+                MessageBox.Show(this, $"同名文件夹 \"{fileName}\" 已存在", "添加新建项", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            OverwriteExisting = false;
             if (File.Exists(fullPath))
             {
                 var result = MessageBox.Show(this, $"文件 \"{fileName}\" 已存在，是否覆盖？", "添加新建项",
                     MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result != MessageBoxResult.Yes)
                     return;
+                OverwriteExisting = true;
             }
 
             SelectedTemplate = template;

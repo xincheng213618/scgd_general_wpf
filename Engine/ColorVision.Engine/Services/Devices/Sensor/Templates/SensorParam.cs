@@ -22,8 +22,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     public class TemplateSensor : ITemplate<SensorParam>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSensor));
-        private const string DefaultCommandSymbol = "defaultcommand";
-        private const string DefaultCommandValue = "\n,,Ascii,1000/0,0";
 
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
@@ -125,97 +123,15 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         internal static void EnsureDefaultCommandDefinition(int templateDicId)
         {
-            GetOrCreateCommandDefinitions(templateDicId);
+            SensorTemplateDictionaryService.GetOrCreateCommandDefinitions(templateDicId);
         }
 
         private static void AddDefaultCommandDetails(List<ModDetailModel> details, int modMasterId, int templateDicId)
         {
-            foreach (var item in GetOrCreateCommandDefinitions(templateDicId))
+            foreach (var item in SensorTemplateDictionaryService.GetOrCreateCommandDefinitions(templateDicId))
             {
                 details.Add(new ModDetailModel() { SysPid = item.Id, Pid = modMasterId, ValueA = item.DefaultValue });
             }
-        }
-
-        private static List<SysDictionaryModDetaiModel> GetOrCreateCommandDefinitions(int templateDicId)
-        {
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            RepairMissingCommandDefinitions(Db, templateDicId);
-
-            var definitions = Db.Queryable<SysDictionaryModDetaiModel>().Where(x => x.PId == templateDicId).ToList();
-            if (definitions.Count > 0)
-            {
-                return definitions;
-            }
-
-            int id = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
-            var defaultCommand = new SysDictionaryModDetaiModel()
-            {
-                Id = id,
-                AddressCode = id,
-                PId = templateDicId,
-                Symbol = DefaultCommandSymbol,
-                Name = DefaultCommandSymbol,
-                DefaultValue = DefaultCommandValue,
-                ValueType = SValueType.String,
-                CreateDate = DateTime.Now,
-                IsEnable = true,
-                IsDelete = false
-            };
-            InsertCommandDefinition(Db, defaultCommand);
-            return new List<SysDictionaryModDetaiModel>() { defaultCommand };
-        }
-
-        private static void RepairMissingCommandDefinitions(SqlSugarClient db, int templateDicId)
-        {
-            var missingIds = db.Ado.SqlQuery<int>(
-                @"SELECT DISTINCT d.cc_pid
-                  FROM t_scgd_mod_param_detail d
-                  INNER JOIN t_scgd_mod_param_master m ON d.pid = m.id
-                  LEFT JOIN t_scgd_sys_dictionary_mod_item i ON i.id = d.cc_pid
-                  WHERE m.mm_id = @templateDicId
-                    AND d.cc_pid > 0
-                    AND i.id IS NULL",
-                new { templateDicId });
-
-            foreach (int missingId in missingIds)
-            {
-                var commandDefinition = new SysDictionaryModDetaiModel()
-                {
-                    Id = missingId,
-                    AddressCode = missingId,
-                    PId = templateDicId,
-                    Symbol = DefaultCommandSymbol,
-                    Name = DefaultCommandSymbol,
-                    DefaultValue = DefaultCommandValue,
-                    ValueType = SValueType.String,
-                    CreateDate = DateTime.Now,
-                    IsEnable = true,
-                    IsDelete = false
-                };
-                InsertCommandDefinition(db, commandDefinition);
-                SymbolCache.Instance.Cache.TryAdd(commandDefinition.Id, commandDefinition);
-                log.Warn($"已自动修复传感器模板缺失字典项: templateDicId={templateDicId}, cc_pid={missingId}");
-            }
-        }
-
-        private static void InsertCommandDefinition(SqlSugarClient db, SysDictionaryModDetaiModel commandDefinition)
-        {
-            db.Ado.ExecuteCommand(
-                @"INSERT IGNORE INTO t_scgd_sys_dictionary_mod_item
-                  (id, pid, address_code, symbol, name, default_val, val_type, create_date, is_enable, is_delete)
-                  VALUES
-                  (@id, @pid, @addressCode, @symbol, @name, @defaultValue, @valueType, @createDate, @isEnable, @isDelete)",
-                new SugarParameter("@id", commandDefinition.Id),
-                new SugarParameter("@pid", commandDefinition.PId),
-                new SugarParameter("@addressCode", commandDefinition.AddressCode),
-                new SugarParameter("@symbol", commandDefinition.Symbol),
-                new SugarParameter("@name", commandDefinition.Name),
-                new SugarParameter("@defaultValue", commandDefinition.DefaultValue),
-                new SugarParameter("@valueType", (int)commandDefinition.ValueType),
-                new SugarParameter("@createDate", commandDefinition.CreateDate),
-                new SugarParameter("@isEnable", commandDefinition.IsEnable ? 1 : 0),
-                new SugarParameter("@isDelete", commandDefinition.IsDelete ? 1 : 0));
         }
 
         public override string Title { get => Code + Properties.Resources.Edit; set { } }

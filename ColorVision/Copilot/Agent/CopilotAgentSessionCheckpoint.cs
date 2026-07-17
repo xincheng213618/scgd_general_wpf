@@ -14,6 +14,10 @@ namespace ColorVision.Copilot
         ProfileChanged,
         CapabilitySnapshotMissing,
         CapabilityDrift,
+        ToolSurfaceSnapshotMissing,
+        ToolSurfaceDrift,
+        EnvironmentSnapshotMissing,
+        EnvironmentDrift,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -37,16 +41,29 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> ChangedCapabilityIds { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> RemovedToolNames { get; init; } = Array.Empty<string>();
+
         public bool CanResume => Kind == CopilotAgentCheckpointCompatibilityKind.Compatible;
 
         public bool RequiresReplan => Kind is CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift;
+            or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift
+            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift
+            or CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
     {
         public const int MaxSerializedSessionCharacters = 4_000_000;
         public const int MaxCheckpointCapabilities = 2_048;
+        public const int MaxAvailableToolNames = 2_048;
+        public const int MaxAvailableToolNameLength = 256;
+        public const int MaxConversationMemoryMessages = 16;
+        public const int MaxConversationMemoryContentLength = 8_000;
+        public const int MaxConversationMemoryCharacters = 64_000;
+        public const int CurrentToolSurfaceVersion = 1;
+        public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
 
         public string ProfileKey { get; init; } = string.Empty;
 
@@ -55,6 +72,20 @@ namespace ColorVision.Copilot
         public long CapabilityCatalogRevision { get; init; }
 
         public IReadOnlyList<CopilotAgentCheckpointCapability> Capabilities { get; init; } = Array.Empty<CopilotAgentCheckpointCapability>();
+
+        public int ToolSurfaceVersion { get; init; }
+
+        public IReadOnlyList<string> AvailableToolNames { get; init; } = Array.Empty<string>();
+
+        public int EnvironmentVersion { get; init; }
+
+        public string EnvironmentFingerprint { get; init; } = string.Empty;
+
+        public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
+
+        public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
+
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
         public DateTimeOffset UpdatedAtUtc { get; init; }
 
@@ -70,7 +101,9 @@ namespace ColorVision.Copilot
 
         public CopilotAgentCheckpointCompatibility EvaluateFor(
             CopilotProfileConfig profile,
-            CopilotCapabilityCatalogSnapshot capabilitySnapshot)
+            CopilotCapabilityCatalogSnapshot capabilitySnapshot,
+            IReadOnlyCollection<string>? availableToolNames = null,
+            CopilotAgentEnvironmentContext? environmentContext = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -95,9 +128,39 @@ namespace ColorVision.Copilot
                 }
             }
 
-            return removed.Count == 0 && changed.Count == 0
-                ? CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot)
-                : CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, capabilitySnapshot, removed, changed);
+            if (removed.Count > 0 || changed.Count > 0)
+                return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilityDrift, capabilitySnapshot, removed, changed);
+
+            if (availableToolNames != null)
+            {
+                if (ToolSurfaceVersion != CurrentToolSurfaceVersion)
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing, capabilitySnapshot);
+
+                var currentToolNames = availableToolNames
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name.Trim())
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var removedToolNames = AvailableToolNames
+                    .Where(name => !currentToolNames.Contains(name))
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                if (removedToolNames.Length > 0)
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift, capabilitySnapshot, removedTools: removedToolNames);
+            }
+
+            if (environmentContext != null)
+            {
+                if (!environmentContext.IsStructurallyValid()
+                    || EnvironmentVersion != CurrentEnvironmentVersion
+                    || string.IsNullOrWhiteSpace(EnvironmentFingerprint))
+                {
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing, capabilitySnapshot);
+                }
+                if (!string.Equals(EnvironmentFingerprint, environmentContext.Fingerprint, StringComparison.OrdinalIgnoreCase))
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift, capabilitySnapshot);
+            }
+
+            return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
         public bool IsStructurallyValid()
@@ -106,7 +169,20 @@ namespace ColorVision.Copilot
                 || string.IsNullOrWhiteSpace(SerializedSessionJson)
                 || SerializedSessionJson.Length > MaxSerializedSessionCharacters
                 || CapabilityCatalogRevision < 0
+                || Capabilities == null
                 || Capabilities?.Count > MaxCheckpointCapabilities
+                || ToolSurfaceVersion is < 0 or > CurrentToolSurfaceVersion
+                || AvailableToolNames == null
+                || AvailableToolNames?.Count > MaxAvailableToolNames
+                || (AvailableToolNames?.Any(name => string.IsNullOrWhiteSpace(name)
+                    || !string.Equals(name, name.Trim(), StringComparison.Ordinal)
+                    || name.Length > MaxAvailableToolNameLength
+                    || name.Any(char.IsControl)) ?? false)
+                || (AvailableToolNames?.Distinct(StringComparer.OrdinalIgnoreCase).Count() != AvailableToolNames?.Count)
+                || (ToolSurfaceVersion == 0 && AvailableToolNames?.Count > 0)
+                || EnvironmentVersion is < 0 or > CurrentEnvironmentVersion
+                || (EnvironmentVersion == 0 && !string.IsNullOrEmpty(EnvironmentFingerprint))
+                || (EnvironmentVersion == CurrentEnvironmentVersion && !IsSha256(EnvironmentFingerprint))
                 || (Capabilities?.Any(capability => capability == null
                     || string.IsNullOrWhiteSpace(capability.Id)
                     || capability.Id.Length > 200
@@ -114,7 +190,19 @@ namespace ColorVision.Copilot
                     || string.IsNullOrWhiteSpace(capability.Fingerprint)
                     || capability.Fingerprint.Length != 64
                     || capability.Fingerprint.Any(character => !Uri.IsHexDigit(character))) ?? false)
-                || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count))
+                || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
+                || EvidenceArtifacts == null
+                || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || ConversationMemory == null
+                || ConversationMemory.Count > MaxConversationMemoryMessages
+                || ConversationMemory.Sum(message => message.Content?.Length ?? 0) > MaxConversationMemoryCharacters
+                || ConversationMemory.Any(message => message.Role is not ("user" or "assistant")
+                    || string.IsNullOrWhiteSpace(message.Content)
+                    || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
+                    || message.Content.Length > MaxConversationMemoryContentLength
+                    || message.Content.Contains('\0'))
+                || TaskEventJournal == null
+                || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
             {
                 return false;
             }
@@ -133,7 +221,12 @@ namespace ColorVision.Copilot
         public static CopilotAgentSessionCheckpoint? Create(
             CopilotProfileConfig profile,
             string serializedSessionJson,
-            CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null)
+            CopilotCapabilityCatalogSnapshot? capabilitySnapshot = null,
+            IReadOnlyList<CopilotAgentEvidenceArtifact>? evidenceArtifacts = null,
+            CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
+            IReadOnlyCollection<string>? availableToolNames = null,
+            IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
+            CopilotAgentEnvironmentContext? environmentContext = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -141,6 +234,29 @@ namespace ColorVision.Copilot
                 return null;
             capabilitySnapshot ??= CopilotCapabilityCatalog.Shared.GetSnapshot();
             if (capabilitySnapshot.Capabilities.Count == 0 || capabilitySnapshot.Capabilities.Count > MaxCheckpointCapabilities)
+                return null;
+            var persistedEvidence = (evidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray();
+            if (persistedEvidence.Length > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || persistedEvidence.Any(artifact => artifact?.IsStructurallyValid() != true))
+            {
+                return null;
+            }
+            taskEventJournal ??= new CopilotAgentTaskEventJournalSnapshot();
+            if (!taskEventJournal.IsStructurallyValid())
+                return null;
+            var persistedToolNames = (availableToolNames ?? Array.Empty<string>())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (persistedToolNames.Length > MaxAvailableToolNames
+                || persistedToolNames.Any(name => name.Length > MaxAvailableToolNameLength || name.Any(char.IsControl)))
+            {
+                return null;
+            }
+            var persistedConversationMemory = (conversationMemory ?? Array.Empty<CopilotRequestMessage>()).ToArray();
+            if (environmentContext?.IsStructurallyValid() == false)
                 return null;
 
             var checkpoint = new CopilotAgentSessionCheckpoint
@@ -156,6 +272,34 @@ namespace ColorVision.Copilot
                         Fingerprint = capability.Fingerprint,
                     })
                     .ToArray(),
+                ToolSurfaceVersion = availableToolNames == null ? 0 : CurrentToolSurfaceVersion,
+                AvailableToolNames = persistedToolNames,
+                EnvironmentVersion = environmentContext == null ? 0 : CurrentEnvironmentVersion,
+                EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
+                EvidenceArtifacts = persistedEvidence,
+                ConversationMemory = persistedConversationMemory,
+                TaskEventJournal = taskEventJournal,
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            };
+            return checkpoint.IsStructurallyValid() ? checkpoint : null;
+        }
+
+        internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
+        {
+            ArgumentNullException.ThrowIfNull(taskEventJournal);
+            var checkpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = ProfileKey,
+                SerializedSessionJson = SerializedSessionJson,
+                CapabilityCatalogRevision = CapabilityCatalogRevision,
+                Capabilities = Capabilities,
+                ToolSurfaceVersion = ToolSurfaceVersion,
+                AvailableToolNames = AvailableToolNames,
+                EnvironmentVersion = EnvironmentVersion,
+                EnvironmentFingerprint = EnvironmentFingerprint,
+                EvidenceArtifacts = EvidenceArtifacts,
+                ConversationMemory = ConversationMemory,
+                TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
             return checkpoint.IsStructurallyValid() ? checkpoint : null;
@@ -165,7 +309,8 @@ namespace ColorVision.Copilot
             CopilotAgentCheckpointCompatibilityKind kind,
             CopilotCapabilityCatalogSnapshot currentSnapshot,
             IReadOnlyList<string>? removed = null,
-            IReadOnlyList<string>? changed = null)
+            IReadOnlyList<string>? changed = null,
+            IReadOnlyList<string>? removedTools = null)
         {
             return new CopilotAgentCheckpointCompatibility
             {
@@ -174,6 +319,7 @@ namespace ColorVision.Copilot
                 CurrentCatalogRevision = currentSnapshot.Revision,
                 RemovedCapabilityIds = removed ?? Array.Empty<string>(),
                 ChangedCapabilityIds = changed ?? Array.Empty<string>(),
+                RemovedToolNames = removedTools ?? Array.Empty<string>(),
             };
         }
 
@@ -191,5 +337,7 @@ namespace ColorVision.Copilot
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
             return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
         }
+
+        private static bool IsSha256(string value) => value?.Length == 64 && value.All(Uri.IsHexDigit);
     }
 }

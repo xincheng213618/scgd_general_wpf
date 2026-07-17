@@ -1,11 +1,11 @@
 #pragma warning disable CA1822
+using ColorVision.UI;
 using ColorVision.Solution.Editor.AvalonEditor;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
+using log4net;
 using Microsoft.Win32;
-using Newtonsoft.Json;
-using ProjectARVRPro.Process;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -53,6 +53,9 @@ namespace ProjectARVRPro
     /// </summary>
     public partial class TestResultViewWindow : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(TestResultViewWindow));
+        private CopilotDynamicContextSession? _copilotContextSession;
+
         public ObservableCollection<ObjectiveTestItem> TestItems { get; set; } = new ObservableCollection<ObjectiveTestItem>();
 
         public string ViewResultJson { get; set; } = string.Empty;
@@ -62,6 +65,7 @@ namespace ProjectARVRPro
             InitializeComponent();
             ParseAndDisplayTestResult(viewResultJson);
             dataGrid.ItemsSource = TestItems;
+            RegisterCopilotContext();
         }
         private void OpenJson_Click(object sender, RoutedEventArgs e)
         {
@@ -82,11 +86,8 @@ namespace ProjectARVRPro
                 return;
             try
             {
-                var obj = JsonConvert.DeserializeObject<object>(viewResultJson);
-                if (obj != null)
-                {
-                    CollectTestItems(obj, TestItems);
-                }
+                foreach (var item in ObjectiveTestItemCollector.CollectFromJson(viewResultJson))
+                    TestItems.Add(item);
             }
             catch (Exception ex)
             {
@@ -94,155 +95,75 @@ namespace ProjectARVRPro
             }
         }
 
-        private void AddPoixyuvDataAsTestItems(PoixyuvData poiData, ObservableCollection<ObjectiveTestItem> items)
+        private void RegisterCopilotContext()
         {
-            items.Add(new ObjectiveTestItem
+            try
             {
-                Name = $"{poiData.Name}(Lv)",
-                Value = poiData.Y,
-                TestValue = poiData.Y.ToString("F4"),
-                Unit = "cd/m2",
-                LowLimit = 0,
-                UpLimit = 0
-            });
-            items.Add(new ObjectiveTestItem
+                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
+                    CaptureCopilotSnapshotAsync,
+                    typeof(TestResultViewWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
             {
-                Name = $"{poiData.Name}(Cx)",
-                Value = poiData.x,
-                TestValue = poiData.x.ToString("F4"),
-                LowLimit = 0,
-                UpLimit = 0
-            });
-            items.Add(new ObjectiveTestItem
-            {
-                Name = $"{poiData.Name}(Cy)",
-                Value = poiData.y,
-                TestValue = poiData.y.ToString("F4"),
-                LowLimit = 0,
-                UpLimit = 0
-            });
-            items.Add(new ObjectiveTestItem
-            {
-                Name = $"{poiData.Name}(u')",
-                Value = poiData.u,
-                TestValue = poiData.u.ToString("F4"),
-                LowLimit = 0,
-                UpLimit = 0
-            });
-            items.Add(new ObjectiveTestItem
-            {
-                Name = $"{poiData.Name}(v')",
-                Value = poiData.v,
-                TestValue = poiData.v.ToString("F4"),
-                LowLimit = 0,
-                UpLimit = 0
-            });
+                Log.Warn("Could not register the ARVRPro result-detail Copilot context; the result window will continue to operate.", ex);
+            }
         }
 
-        private void CollectTestItems(object obj, ObservableCollection<ObjectiveTestItem> items)
+        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
         {
-            if (obj == null) return;
-
-            // Handle JObject from JSON deserialization
-            if (obj is Newtonsoft.Json.Linq.JObject jObject)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!Dispatcher.CheckAccess())
             {
-                // Check if this looks like an ObjectiveTestItem
-                if (jObject.ContainsKey("Name") && jObject.ContainsKey("Value"))
+                return await Dispatcher.InvokeAsync(() =>
                 {
-                    try
-                    {
-                        var testItem = jObject.ToObject<ObjectiveTestItem>();
-                        if (testItem != null)
-                        {
-                            items.Add(testItem);
-                        }
-                    }
-                    catch
-                    {
-
-                    }
-                }
-                else if (jObject.ContainsKey("Name") && jObject.ContainsKey("Y"))
-                {
-                    try
-                    {
-                        var poiData = jObject.ToObject<PoixyuvData>();
-                        if (poiData != null)
-                        {
-                            // Convert PoixyuvData to multiple ObjectiveTestItem entries
-                            AddPoixyuvDataAsTestItems(poiData, items);
-                        }
-                    }
-                    catch
-                    {
-                        // Not a PoixyuvData, continue processing
-                    }
-                }
-                else
-                {
-                    foreach (var property in jObject.Properties())
-                    {
-                        if (property.Value is Newtonsoft.Json.Linq.JArray jArray)
-                        {
-                            // Handle arrays
-                            foreach (var arrayItem in jArray)
-                            {
-                                CollectTestItems(arrayItem, items);
-                            }
-                        }
-                        else if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
-                        {
-                            bool handled = false;
-                            // Check if this looks like a PoixyuvData object
-                            if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y"))
-                            {
-                                try
-                                {
-                                    var poiData = childObj.ToObject<PoixyuvData>();
-                                    if (poiData != null)
-                                    {
-                                        // Convert PoixyuvData to multiple ObjectiveTestItem entries
-                                        AddPoixyuvDataAsTestItems(poiData, items);
-                                        handled = true;
-                                    }
-                                }
-                                catch
-                                {
-                                    // Not a PoixyuvData, continue processing
-                                }
-                            }
-
-                            // Check if this looks like an ObjectiveTestItem
-                            if (childObj.ContainsKey("Name") && childObj.ContainsKey("Value"))
-                            {
-                                try
-                                {
-                                    var testItem = childObj.ToObject<ObjectiveTestItem>();
-                                    if (testItem != null)
-                                    {
-                                        items.Add(testItem);
-                                        handled = true;
-                                    }
-                                }
-                                catch
-                                {
-                                    // Not an ObjectiveTestItem, try to recurse
-                                    CollectTestItems(childObj, items);
-                                    handled = true;
-                                }
-                            }
-
-                            if (!handled)
-                            {
-                                CollectTestItems(childObj, items);
-                            }
-                        }
-
-                    }
-                }
-
-
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
+                        "ARVRPro objective test result details",
+                        TestItems.ToArray());
+                });
             }
+
+            return ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
+                "ARVRPro objective test result details",
+                TestItems.ToArray());
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_copilotContextSession?.IsCurrent != true)
+                return;
+
+            try
+            {
+                var snapshot = ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
+                    "ARVRPro objective test result details",
+                    TestItems.ToArray());
+                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(snapshot);
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    ProjectARVRCopilotAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not publish the active ARVRPro result-detail context to Copilot: {ex.Message}");
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            var wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
+            base.OnClosed(e);
         }
 
         private void ExportCsv_Click(object sender, RoutedEventArgs e)

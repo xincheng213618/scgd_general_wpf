@@ -8,6 +8,7 @@ using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -37,7 +38,9 @@ namespace ColorVision.Scheduler
 
     public class QuartzSchedulerManager : ISchedulerService
     {
+        private const int MaxCopilotTaskSnapshots = 30;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(QuartzSchedulerManager));
+        private CopilotDynamicContextSession? _copilotContextSession;
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
@@ -57,7 +60,147 @@ namespace ColorVision.Scheduler
         {
             Load();
             RestoreStatsFromDb();
+            EnsureCopilotContextRegistered();
             Task.Run(() => Start());
+        }
+
+        internal CopilotSchedulerContextSnapshot CaptureCopilotSchedulerSnapshot(
+            string surface = "Scheduler overview",
+            SchedulerInfo? selectedTask = null,
+            int selectedTaskCount = 0,
+            IReadOnlyList<JobExecutionRecord>? historyRecords = null,
+            int historyPageIndex = 0,
+            string historyFilter = "",
+            string historyScope = "",
+            string historyTaskName = "",
+            string historyGroupName = "",
+            JobExecutionRecord? selectedHistoryRecord = null)
+        {
+            var tasks = TaskInfos.ToArray();
+            historyRecords ??= Array.Empty<JobExecutionRecord>();
+            var taskSnapshots = tasks
+                .OrderBy(task => task.Status == SchedulerStatus.Running ? 0 : task.FailureCount > 0 ? 1 : task.Status == SchedulerStatus.Paused ? 2 : 3)
+                .ThenByDescending(task => task.FailureCount)
+                .ThenBy(task => task.JobName, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(task => task.GroupName, StringComparer.CurrentCultureIgnoreCase)
+                .Take(MaxCopilotTaskSnapshots)
+                .Select(task => new CopilotSchedulerTaskContextSnapshot
+                {
+                    TaskName = task.JobName,
+                    GroupName = task.GroupName,
+                    Status = task.Status.ToString(),
+                    JobType = task.JobType?.Name ?? string.Empty,
+                    ExecutionMode = task.Mode.ToString(),
+                    Priority = task.Priority,
+                    RunCount = task.RunCount,
+                    SuccessCount = task.SuccessCount,
+                    FailureCount = task.FailureCount,
+                    LastExecutionTimeMilliseconds = task.LastExecutionTimeMs,
+                    LastExecutionResult = task.LastExecutionResult,
+                    HasLastExecutionMessage = !string.IsNullOrWhiteSpace(task.LastExecutionMessage),
+                    NextFireTime = task.NextFireTime,
+                })
+                .ToArray();
+            var schedulerState = Scheduler == null
+                ? "Initializing"
+                : Scheduler.IsShutdown
+                    ? "Shutdown"
+                    : Scheduler.InStandbyMode
+                        ? "Standby"
+                        : Scheduler.IsStarted ? "Started" : "Ready";
+
+            return new CopilotSchedulerContextSnapshot
+            {
+                SourceId = CopilotSchedulerAgentExtension.SourceId,
+                Surface = surface,
+                SchedulerState = schedulerState,
+                TotalTaskCount = tasks.Length,
+                ReadyTaskCount = tasks.Count(task => task.Status == SchedulerStatus.Ready),
+                RunningTaskCount = tasks.Count(task => task.Status == SchedulerStatus.Running),
+                PausedTaskCount = tasks.Count(task => task.Status == SchedulerStatus.Paused),
+                TotalRunCount = tasks.Sum(task => task.RunCount),
+                TotalSuccessCount = tasks.Sum(task => task.SuccessCount),
+                TotalFailureCount = tasks.Sum(task => task.FailureCount),
+                IsTaskListTruncated = tasks.Length > taskSnapshots.Length,
+                Tasks = taskSnapshots,
+                SelectedTaskCount = selectedTaskCount,
+                HasSelectedTask = selectedTask != null,
+                SelectedTaskName = selectedTask?.JobName ?? string.Empty,
+                SelectedGroupName = selectedTask?.GroupName ?? string.Empty,
+                SelectedTaskStatus = selectedTask?.Status.ToString() ?? string.Empty,
+                SelectedJobType = selectedTask?.JobType?.Name ?? string.Empty,
+                SelectedExecutionMode = selectedTask?.Mode.ToString() ?? string.Empty,
+                SelectedRepeatMode = selectedTask?.RepeatMode.ToString() ?? string.Empty,
+                SelectedPriority = selectedTask?.Priority ?? 0,
+                SelectedTimeoutSeconds = selectedTask?.TimeoutSeconds ?? 0,
+                SelectedRunCount = selectedTask?.RunCount ?? 0,
+                SelectedSuccessCount = selectedTask?.SuccessCount ?? 0,
+                SelectedFailureCount = selectedTask?.FailureCount ?? 0,
+                SelectedLastExecutionTimeMilliseconds = selectedTask?.LastExecutionTimeMs ?? 0,
+                SelectedAverageExecutionTimeMilliseconds = selectedTask?.AverageExecutionTimeMs ?? 0,
+                SelectedLastExecutionResult = selectedTask?.LastExecutionResult ?? string.Empty,
+                SelectedHasLastExecutionMessage = !string.IsNullOrWhiteSpace(selectedTask?.LastExecutionMessage),
+                SelectedNextFireTime = selectedTask?.NextFireTime ?? string.Empty,
+                SelectedPreviousFireTime = selectedTask?.PreviousFireTime ?? string.Empty,
+                SelectedCreatedAt = selectedTask?.CreateTime.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
+                SelectedHasConfiguration = selectedTask?.Config != null,
+                SelectedHasCronExpression = selectedTask?.Mode == JobExecutionMode.Cron && !string.IsNullOrWhiteSpace(selectedTask.CronExpression),
+                HasLoadedHistory = historyPageIndex > 0,
+                HistoryScope = historyScope,
+                HistoryTaskName = historyTaskName,
+                HistoryGroupName = historyGroupName,
+                HistoryPageIndex = historyPageIndex,
+                HistoryFilter = historyFilter,
+                LoadedHistoryCount = historyRecords.Count,
+                LoadedHistorySuccessCount = historyRecords.Count(record => record.Success),
+                LoadedHistoryFailureCount = historyRecords.Count(record => !record.Success),
+                LoadedHistoryAverageExecutionTimeMilliseconds = historyRecords.Count > 0
+                    ? (long)historyRecords.Average(record => record.ExecutionTimeMs)
+                    : 0,
+                HasSelectedHistoryRecord = selectedHistoryRecord != null,
+                SelectedHistoryRecordId = selectedHistoryRecord?.Id,
+                SelectedHistoryTaskName = selectedHistoryRecord?.JobName ?? string.Empty,
+                SelectedHistoryGroupName = selectedHistoryRecord?.GroupName ?? string.Empty,
+                SelectedHistoryStartTime = selectedHistoryRecord?.StartTime.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
+                SelectedHistoryEndTime = selectedHistoryRecord?.EndTime.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
+                SelectedHistoryExecutionTimeMilliseconds = selectedHistoryRecord?.ExecutionTimeMs ?? 0,
+                SelectedHistorySucceeded = selectedHistoryRecord?.Success == true,
+                SelectedHistoryResult = selectedHistoryRecord?.Result ?? string.Empty,
+                SelectedHistoryHasMessage = !string.IsNullOrWhiteSpace(selectedHistoryRecord?.Message),
+            };
+        }
+
+        private async Task<CopilotSchedulerContextSnapshot?> CaptureCopilotSchedulerSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                return await dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return CaptureCopilotSchedulerSnapshot();
+                });
+            }
+
+            return CaptureCopilotSchedulerSnapshot();
+        }
+
+        private void EnsureCopilotContextRegistered()
+        {
+            if (_copilotContextSession != null)
+                return;
+
+            try
+            {
+                _copilotContextSession = CopilotSchedulerContextHub.Shared.Register(
+                    CaptureCopilotSchedulerSnapshotAsync,
+                    GetType().Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("Could not register the Task Scheduler Copilot Agent extension.", ex);
+            }
         }
 
         public void Save()

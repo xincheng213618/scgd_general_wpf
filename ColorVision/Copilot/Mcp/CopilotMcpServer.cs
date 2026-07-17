@@ -1,4 +1,4 @@
-#pragma warning disable CA1861
+#pragma warning disable CA1001,CA1861 // The client gate has the same process-wide lifetime as the singleton server.
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -15,12 +15,15 @@ namespace ColorVision.Copilot.Mcp
 {
     public sealed class CopilotMcpServer : IDisposable
     {
-        private const int MaxRequestBytes = 1024 * 1024;
+        public const int MaximumConcurrentClients = 16;
+        private const int MaxRequestHeaderBytes = 64 * 1024;
+        private const int MaxRequestBodyBytes = 1024 * 1024;
         private static readonly ILog Log = LogManager.GetLogger(typeof(CopilotMcpServer));
         private static readonly Lazy<CopilotMcpServer> LazyInstance = new(() => new CopilotMcpServer());
 
         private readonly object _syncRoot = new();
         private readonly CopilotMcpRequestHandler _requestHandler;
+        private readonly SemaphoreSlim _clientSlots = new(MaximumConcurrentClients, MaximumConcurrentClients);
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
         private Task? _acceptLoopTask;
@@ -34,6 +37,8 @@ namespace ColorVision.Copilot.Mcp
         public static CopilotMcpServer Instance => LazyInstance.Value;
 
         public bool IsRunning { get; private set; }
+
+        public int ActiveClientCount => MaximumConcurrentClients - _clientSlots.CurrentCount;
 
         public string LastStatusMessage { get; private set; } = "ColorVision MCP server is stopped.";
 
@@ -106,14 +111,14 @@ namespace ColorVision.Copilot.Mcp
             catch (SocketException ex)
             {
                 IsRunning = false;
-                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {ex.Message}";
+                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
                 Log.Error(LastStatusMessage, ex);
                 StopNoLock(LastStatusMessage);
             }
             catch (Exception ex)
             {
                 IsRunning = false;
-                LastStatusMessage = $"ColorVision MCP server failed to start: {ex.Message}";
+                LastStatusMessage = $"ColorVision MCP server failed to start: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
                 Log.Error(LastStatusMessage, ex);
                 StopNoLock(LastStatusMessage);
             }
@@ -151,7 +156,18 @@ namespace ColorVision.Copilot.Mcp
                         return;
 
                     client = await _listener.AcceptTcpClientAsync(cancellationToken);
-                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), cancellationToken);
+                    if (!_clientSlots.Wait(0, CancellationToken.None))
+                    {
+                        client.Dispose();
+                        client = null;
+                        continue;
+                    }
+
+                    // Always enter the handler so its using scope disposes the accepted socket.
+                    // Passing an already-cancelled token to Task.Run can skip the delegate entirely.
+                    var acceptedClient = client;
+                    client = null;
+                    _ = Task.Run(() => HandleClientWithLeaseAsync(acceptedClient, cancellationToken), CancellationToken.None);
                 }
                 catch (OperationCanceledException)
                 {
@@ -168,6 +184,18 @@ namespace ColorVision.Copilot.Mcp
                     client?.Dispose();
                     Log.Warn("ColorVision MCP accept loop error.", ex);
                 }
+            }
+        }
+
+        private async Task HandleClientWithLeaseAsync(TcpClient client, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await HandleClientAsync(client, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _clientSlots.Release();
             }
         }
 
@@ -201,16 +229,25 @@ namespace ColorVision.Copilot.Mcp
             using var memory = new MemoryStream();
             var headerEnd = -1;
 
-            while (memory.Length < MaxRequestBytes)
+            while (memory.Length <= MaxRequestHeaderBytes)
             {
-                var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
+                var remainingHeaderBytes = MaxRequestHeaderBytes - (int)memory.Length;
+                var readLength = Math.Min(buffer.Length, Math.Max(1, remainingHeaderBytes + 1));
+                var read = await stream.ReadAsync(buffer.AsMemory(0, readLength), cancellationToken);
                 if (read <= 0)
                     break;
 
                 memory.Write(buffer, 0, read);
                 headerEnd = FindHeaderEnd(memory.GetBuffer(), (int)memory.Length);
                 if (headerEnd >= 0)
+                {
+                    if (headerEnd + 4 > MaxRequestHeaderBytes)
+                        return null;
                     break;
+                }
+
+                if (memory.Length > MaxRequestHeaderBytes)
+                    return null;
             }
 
             if (headerEnd < 0)
@@ -238,18 +275,22 @@ namespace ColorVision.Copilot.Mcp
 
             var contentLength = 0;
             if (headers.TryGetValue("Content-Length", out var contentLengthText)
-                && !int.TryParse(contentLengthText, out contentLength))
+                && (!int.TryParse(contentLengthText, NumberStyles.None, CultureInfo.InvariantCulture, out contentLength)
+                    || contentLength < 0))
             {
                 return null;
             }
 
-            if (contentLength > MaxRequestBytes)
+            if (contentLength > MaxRequestBodyBytes)
                 return null;
 
             var bodyStart = headerEnd + 4;
             var alreadyRead = (int)memory.Length - bodyStart;
             var isChunked = headers.TryGetValue("Transfer-Encoding", out var transferEncoding)
                 && transferEncoding.Split(',').Any(value => string.Equals(value.Trim(), "chunked", StringComparison.OrdinalIgnoreCase));
+            if (isChunked && headers.ContainsKey("Content-Length"))
+                return null;
+
             string body;
             if (isChunked)
             {
@@ -299,7 +340,7 @@ namespace ColorVision.Copilot.Mcp
                 encoded.Write(initialBytes.Span);
 
             var buffer = new byte[8192];
-            while (encoded.Length <= MaxRequestBytes)
+            while (encoded.Length <= MaxRequestBodyBytes)
             {
                 var data = encoded.ToArray();
                 if (TryDecodeChunkedBody(data, out var decoded, out var invalid))
@@ -335,7 +376,7 @@ namespace ColorVision.Copilot.Mcp
                     sizeText = sizeText[..extensionIndex];
                 if (!int.TryParse(sizeText.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var chunkSize)
                     || chunkSize < 0
-                    || output.Length + chunkSize > MaxRequestBytes)
+                    || output.Length + chunkSize > MaxRequestBodyBytes)
                 {
                     invalid = true;
                     return false;

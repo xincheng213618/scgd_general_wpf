@@ -39,6 +39,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolFailureKind FailureKind { get; init; }
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public bool RetryEligible { get; init; }
 
         public DateTimeOffset StartedAtUtc { get; init; }
@@ -82,6 +84,7 @@ namespace ColorVision.Copilot
                 ApprovalActionId = Sanitize(execution.ApprovalActionId),
                 State = execution.State,
                 FailureKind = execution.FailureKind,
+                FailureCode = outcome.Result.Success ? string.Empty : CopilotToolFailureCode.Normalize(outcome.Result.FailureCode),
                 RetryEligible = execution.RetryEligible,
                 StartedAtUtc = execution.StartedAtUtc,
                 CompletedAtUtc = execution.CompletedAtUtc,
@@ -98,7 +101,7 @@ namespace ColorVision.Copilot
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"Agent tool completed. CallId={entry.CallId} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"Agent tool completed. CallId={entry.CallId} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
         }
 
         public static IReadOnlyList<CopilotToolExecutionAuditEntry> GetRecentEntries(int maxEntries = 50)
@@ -133,8 +136,12 @@ namespace ColorVision.Copilot
                 parts.Add("query=" + input.Query.Trim());
             if (!string.IsNullOrWhiteSpace(input.Path))
                 parts.Add("path=" + input.Path.Trim());
+            if (!string.IsNullOrWhiteSpace(input.Cursor))
+                parts.Add("cursor=" + input.Cursor.Trim());
             if (input.StartLine.HasValue)
                 parts.Add("startLine=" + input.StartLine.Value);
+            if (input.StartColumn.HasValue)
+                parts.Add("startColumn=" + input.StartColumn.Value);
             if (input.EndLine.HasValue)
                 parts.Add("endLine=" + input.EndLine.Value);
 
@@ -166,8 +173,12 @@ namespace ColorVision.Copilot
                 names.Add("query");
             if (!string.IsNullOrWhiteSpace(input.Path))
                 names.Add("path");
+            if (!string.IsNullOrWhiteSpace(input.Cursor))
+                names.Add("cursor");
             if (input.StartLine.HasValue)
                 names.Add("startLine");
+            if (input.StartColumn.HasValue)
+                names.Add("startColumn");
             if (input.EndLine.HasValue)
                 names.Add("endLine");
             foreach (var name in input.Arguments.Keys.Where(name => !string.IsNullOrWhiteSpace(name)))
@@ -182,7 +193,9 @@ namespace ColorVision.Copilot
         {
             return string.Equals(name, "query", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "path", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "cursor", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "startLine", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "startColumn", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "endLine", StringComparison.OrdinalIgnoreCase);
         }
 

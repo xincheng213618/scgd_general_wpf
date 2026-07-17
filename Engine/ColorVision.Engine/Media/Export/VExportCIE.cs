@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.FileIO;
-using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Mru;
 using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;
@@ -290,12 +290,10 @@ namespace ColorVision.Engine.Media
                 IsChannelOne = CVCIEFile.Channels == 0;
             }
 
-            if (RecentImage.RecentFiles.Count == 0)
-            {
-                RecentImage.InsertFile(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
-            }
-            SavePath = RecentImage.RecentFiles[0];
-            RecentImageSaveList = new ObservableCollection<string>(RecentImage.RecentFiles);
+            RefreshRecentExportLocations();
+            if (RecentImageSaveList.Count == 0)
+                RememberExportLocation(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+            SavePath = RecentImageSaveList[0];
 
             Name = Path.GetFileNameWithoutExtension(FilePath);
         }
@@ -316,9 +314,26 @@ namespace ColorVision.Engine.Media
         public CVCIEFile CVCIEFile { get => _CVCIEFile; }
         private CVCIEFile _CVCIEFile;
 
-        public RecentFileList RecentImage { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentImageSaveList") };
+        public MruPathService RecentExportLocations { get; } = MruPathService.CreateLocal("recent-image-export-locations.json");
 
-        public ObservableCollection<string> RecentImageSaveList { get; set; }
+        public ObservableCollection<string> RecentImageSaveList { get; } = new();
+
+        public void RememberExportLocation(string path)
+        {
+            if (!RecentExportLocations.Touch(path))
+                return;
+            RefreshRecentExportLocations();
+        }
+
+        private void RefreshRecentExportLocations()
+        {
+            RecentImageSaveList.Clear();
+            foreach (MruPathEntry entry in RecentExportLocations.Items)
+            {
+                if (Directory.Exists(entry.Path))
+                    RecentImageSaveList.Add(entry.Path);
+            }
+        }
 
 
         public bool IsCVRaw { get => FileExtType == CVType.Raw; }

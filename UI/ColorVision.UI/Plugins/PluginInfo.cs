@@ -14,7 +14,12 @@ namespace ColorVision.UI.Plugins
 
         [JsonIgnore]
         public DepsJson DepsJson { get; set; }
-        public bool Enabled { get; set; } = true;
+        public bool Enabled
+        {
+            get => _enabled;
+            set => SetProperty(ref _enabled, value);
+        }
+        private bool _enabled = true;
         public string? Name { get; set; }
         public string Description { get; set; }
         public Version? AssemblyVersion { get; set; }

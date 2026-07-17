@@ -56,6 +56,7 @@ namespace ColorVision.Engine.Templates.Jsons
         private static readonly object CopilotEditorSyncRoot = new();
         private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
         private readonly string _copilotContextSourceId = $"template-json-editor:{Guid.NewGuid():N}";
+        private IDisposable? _copilotAgentExtensionRegistration;
 
         private bool _isInPropertyEditorMode = false;
         private bool _isSyncingFromPropertyEditor = false;
@@ -90,11 +91,13 @@ namespace ColorVision.Engine.Templates.Jsons
         private void EditTemplateJson_Loaded(object sender, RoutedEventArgs e)
         {
             RegisterCopilotEditor();
+            RegisterCopilotAgentExtension();
             PublishCopilotContext();
         }
 
         private void EditTemplateJson_Unloaded(object sender, RoutedEventArgs e)
         {
+            UnregisterCopilotAgentExtension();
             UnregisterCopilotEditor();
             CopilotLiveContextRegistry.Clear(_copilotContextSourceId);
         }
@@ -603,6 +606,26 @@ namespace ColorVision.Engine.Templates.Jsons
             }
         }
 
+        private void RegisterCopilotAgentExtension()
+        {
+            if (_copilotAgentExtensionRegistration != null)
+                return;
+
+            _copilotAgentExtensionRegistration = CopilotAgentExtensionRegistry.Shared.Register(new CopilotAgentExtensionRegistration
+            {
+                SourceId = _copilotContextSourceId,
+                SourceName = "Template JSON editor",
+                SourceVersion = GetType().Assembly.GetName().Version?.ToString() ?? string.Empty,
+                ContextProviders = new ICopilotContextProvider[] { new TemplateJsonEditorContextProvider(this) },
+            });
+        }
+
+        private void UnregisterCopilotAgentExtension()
+        {
+            var registration = Interlocked.Exchange(ref _copilotAgentExtensionRegistration, null);
+            registration?.Dispose();
+        }
+
         private CopilotTemplateJsonPatchApplyResult ApplyCopilotJsonPatch(string expectedCurrentJson, string patchedJson, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -805,6 +828,37 @@ namespace ColorVision.Engine.Templates.Jsons
 
             var normalized = json.Replace("\r\n", "\n").Replace('\r', '\n');
             return normalized.Split('\n').Length;
+        }
+
+        private sealed class TemplateJsonEditorContextProvider : ICopilotContextProvider
+        {
+            private readonly WeakReference<EditTemplateJson> _editorReference;
+
+            public TemplateJsonEditorContextProvider(EditTemplateJson editor)
+            {
+                _editorReference = new WeakReference<EditTemplateJson>(editor);
+            }
+
+            public int Order => 20;
+
+            public bool CanProvide(CopilotContextScope scope)
+            {
+                return scope == CopilotContextScope.Agent || scope == CopilotContextScope.Diagnose;
+            }
+
+            public async Task<CopilotContextItem?> CaptureAsync(CopilotContextRequest request, CancellationToken cancellationToken)
+            {
+                ArgumentNullException.ThrowIfNull(request);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!_editorReference.TryGetTarget(out var editor) || !editor.IsLoaded)
+                    return null;
+                if (editor.Dispatcher.CheckAccess())
+                    return editor.BuildCopilotSnapshotContextItem();
+
+                var item = await editor.Dispatcher.InvokeAsync(editor.BuildCopilotSnapshotContextItem);
+                cancellationToken.ThrowIfCancellationRequested();
+                return item;
+            }
         }
 
         private sealed class TemplateJsonSchemaInfo

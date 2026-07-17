@@ -1,13 +1,17 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI;
+using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,8 +23,14 @@ namespace ColorVision.Scheduler
     /// </summary>
     public partial class TaskViewerWindow : Window
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(TaskViewerWindow));
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
         private ICollectionView _taskInfosView;
+        private readonly HashSet<SchedulerInfo> _copilotTrackedTasks = new();
+        private readonly TaskExecutionListener? _listener;
+        private CopilotDynamicContextSession? _copilotContextSession;
+        private int _copilotPublishQueued;
+        private bool _isClosed;
 
         public static QuartzSchedulerManager QuartzSchedulerManager => QuartzSchedulerManager.GetInstance();
 
@@ -40,11 +50,15 @@ namespace ColorVision.Scheduler
                 LoadTasks();
             }
 
-            var listener = QuartzSchedulerManager.GetInstance().Listener;
-            if (listener != null)
+            _listener = QuartzSchedulerManager.GetInstance().Listener;
+            if (_listener != null)
             {
-                listener.JobExecutedEvent += OnJobExecuted;
+                _listener.JobExecutedEvent += OnJobExecuted;
             }
+            TaskInfos.CollectionChanged += TaskInfos_CollectionChanged;
+            RefreshCopilotTaskSubscriptions();
+            Activated += TaskViewerWindow_Activated;
+            EnsureCopilotContextRegistered();
             this.ApplyCaption();
 
             // 添加右键菜单
@@ -86,8 +100,16 @@ namespace ColorVision.Scheduler
             await Dispatcher.InvokeAsync(async () =>
             {
                 await UpdateChangedTask(context);
+                QueueCopilotContextPublish();
             });
         }
+
+        private void ListViewTask_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
         private async Task GetScheduledTasks()
         {
             var scheduler = QuartzSchedulerManager.Scheduler;
@@ -590,6 +612,129 @@ namespace ColorVision.Scheduler
             {
                 MessageBox.Show($"批量删除失败: {ex.Message}", Properties.Resources.Sched_Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void TaskViewerWindow_Activated(object? sender, EventArgs e)
+        {
+            _copilotContextSession?.Activate();
+            PublishCopilotContext();
+        }
+
+        private void TaskInfos_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshCopilotTaskSubscriptions();
+            QueueCopilotContextPublish();
+        }
+
+        private void RefreshCopilotTaskSubscriptions()
+        {
+            var currentTasks = TaskInfos.ToHashSet();
+            foreach (var task in _copilotTrackedTasks.Where(task => !currentTasks.Contains(task)).ToArray())
+            {
+                task.PropertyChanged -= SchedulerInfo_PropertyChanged;
+                _copilotTrackedTasks.Remove(task);
+            }
+
+            foreach (var task in currentTasks.Where(task => _copilotTrackedTasks.Add(task)))
+                task.PropertyChanged += SchedulerInfo_PropertyChanged;
+        }
+
+        private void SchedulerInfo_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            QueueCopilotContextPublish();
+        }
+
+        private void EnsureCopilotContextRegistered()
+        {
+            if (_copilotContextSession != null)
+                return;
+
+            try
+            {
+                _copilotContextSession = CopilotSchedulerContextHub.Shared.Register(
+                    CaptureCopilotSchedulerSnapshotAsync,
+                    typeof(TaskViewerWindow).Assembly.GetName().Version?.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not register the Task Viewer Copilot context; the scheduler window will continue to operate.", ex);
+            }
+        }
+
+        private async Task<CopilotSchedulerContextSnapshot?> CaptureCopilotSchedulerSnapshotAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_isClosed)
+                return null;
+            if (!Dispatcher.CheckAccess())
+            {
+                return await Dispatcher.InvokeAsync(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return _isClosed ? null : CaptureCopilotSchedulerSnapshot();
+                });
+            }
+
+            return CaptureCopilotSchedulerSnapshot();
+        }
+
+        private CopilotSchedulerContextSnapshot CaptureCopilotSchedulerSnapshot()
+        {
+            return QuartzSchedulerManager.CaptureCopilotSchedulerSnapshot(
+                surface: "Scheduled task viewer",
+                selectedTask: ListViewTask.SelectedItem as SchedulerInfo,
+                selectedTaskCount: ListViewTask.SelectedItems.Count);
+        }
+
+        private void QueueCopilotContextPublish()
+        {
+            if (_isClosed || Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Interlocked.Exchange(ref _copilotPublishQueued, 0);
+                PublishCopilotContext();
+            }));
+        }
+
+        private void PublishCopilotContext()
+        {
+            if (_isClosed || _copilotContextSession?.IsCurrent != true || !IsActive)
+                return;
+
+            try
+            {
+                var snapshot = CaptureCopilotSchedulerSnapshot();
+                var item = CopilotBusinessContextBuilder.BuildSchedulerContextItem(snapshot);
+                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
+                    CopilotSchedulerAgentExtension.SourceId,
+                    item));
+            }
+            catch (Exception ex)
+            {
+                Log.Debug($"Could not publish the active Task Viewer context to Copilot: {ex.Message}");
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosed = true;
+            Activated -= TaskViewerWindow_Activated;
+            TaskInfos.CollectionChanged -= TaskInfos_CollectionChanged;
+            if (_listener != null)
+                _listener.JobExecutedEvent -= OnJobExecuted;
+            foreach (var task in _copilotTrackedTasks)
+                task.PropertyChanged -= SchedulerInfo_PropertyChanged;
+            _copilotTrackedTasks.Clear();
+
+            var wasCurrent = _copilotContextSession?.IsCurrent == true;
+            _copilotContextSession?.Dispose();
+            _copilotContextSession = null;
+            if (wasCurrent)
+                CopilotLiveContextRegistry.Clear(CopilotSchedulerAgentExtension.SourceId);
+
+            base.OnClosed(e);
         }
     }
 }

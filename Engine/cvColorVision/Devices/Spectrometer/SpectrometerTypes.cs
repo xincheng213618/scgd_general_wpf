@@ -4,6 +4,16 @@ using System.Text;
 
 namespace cvColorVision
 {
+    /// <summary>
+    /// Spectrometer implementation selected by <see cref="Spectrometer.CM_CreateEmission(SpectrometerType, Spectrometer.Emission_CallBack)"/>.
+    /// </summary>
+    public enum SpectrometerType
+    {
+        CMvSpectra = 0,
+        LightModule = 1,
+        Gaolitong = 2,
+    }
+
     [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct COLOR_PARA
     {

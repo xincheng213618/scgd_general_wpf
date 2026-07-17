@@ -1,4 +1,3 @@
-using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -10,16 +9,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotCreateFlowTool : ICopilotFrameworkApprovedTool
     {
-        private readonly CopilotMcpToolDispatcher _dispatcher;
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotCreateFlowTool()
-            : this(new CopilotMcpToolDispatcher())
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
-        public CopilotCreateFlowTool(CopilotMcpToolDispatcher dispatcher)
+        public CopilotCreateFlowTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name => "CreateFlow";
@@ -49,7 +48,7 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
         }
 
         public async Task<CopilotToolResult> ExecuteApprovedAsync(
@@ -57,13 +56,13 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotMcpToolDispatcher.InAppAgentFrameworkApprovedCallerSource, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            string callerSource,
+            CopilotApplicationCapabilityCaller caller,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -73,8 +72,8 @@ namespace ColorVision.Copilot
             {
                 ["name"] = JsonSerializer.SerializeToElement(flowName),
             };
-            var result = await _dispatcher.CallAsync("create_flow", arguments, cancellationToken, callerSource);
-            var isWaitingForApproval = string.Equals(result.ErrorCode, "confirmation_required", StringComparison.OrdinalIgnoreCase);
+            var result = await _capabilityInvoker.InvokeAsync("create_flow", arguments, caller, cancellationToken);
+            var isWaitingForApproval = result.IsApprovalRequired;
 
             return new CopilotToolResult
             {
@@ -83,9 +82,11 @@ namespace ColorVision.Copilot
                 Summary = isWaitingForApproval
                     ? $"Flow {flowName} is waiting for explicit ColorVision approval."
                     : result.Success ? $"Created flow {flowName}." : "Flow creation failed.",
-                Content = result.Text,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Text,
-                Approval = result.ToApprovalInfo(),
+                Content = result.Content,
+                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
+                FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
+                Approval = result.Approval,
             };
         }
     }

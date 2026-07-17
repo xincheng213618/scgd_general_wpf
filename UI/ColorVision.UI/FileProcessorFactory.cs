@@ -44,13 +44,13 @@ namespace ColorVision.UI
                 {
                     return;
                 }
-                IFileProcessor fileProcessor = FileProcessorFactory.GetInstance().GetFileProcessor(selectedFilePath);
-                if (fileProcessor == null)
+                FileOpenRouteResult result = FileProcessorFactory.GetInstance().OpenFile(selectedFilePath);
+                if (!result.Succeeded && !result.Canceled)
                 {
-                    MessageBox.Show(Properties.Resources.UnsupportedFileFormat);
-                    return;
+                    MessageBox.Show(string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? Properties.Resources.UnsupportedFileFormat
+                        : result.ErrorMessage);
                 }
-                fileProcessor.Process(selectedFilePath);
             }
         }
     }
@@ -60,120 +60,194 @@ namespace ColorVision.UI
         private static readonly Lazy<FileProcessorFactory> _instance = new(() => new FileProcessorFactory());
         public static FileProcessorFactory GetInstance() => _instance.Value;
 
-        private readonly Dictionary<string, List<Type>> _extTypeMap = new();
-        private Type? _genericType;
+        private readonly Dictionary<string, List<Type>> _openActionTypeMap = new();
+        private readonly Dictionary<string, List<Type>> _exporterTypeMap = new();
+        private readonly HashSet<Assembly> _registeredAssemblies = new();
+        private readonly object _syncRoot = new();
+        private Type? _genericExporterType;
+
+        /// <summary>
+        /// Optional resource-aware handler installed by the solution module.
+        /// Registered file actions remain available for standalone file mode.
+        /// </summary>
+        public Func<string, FileOpenRouteResult>? ResourceOpenHandler { get; set; }
 
         private FileProcessorFactory()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+            foreach (Assembly assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                RegisterAssembly(assembly);
+        }
+
+        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+        {
+            RegisterAssembly(e.LoadedAssembly);
+        }
+
+        private void RegisterAssembly(Assembly assembly)
+        {
+            lock (_syncRoot)
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IFileProcessor).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface))
+                if (!_registeredAssemblies.Add(assembly))
+                    return;
+
+                foreach (Type type in GetLoadableTypes(assembly).Where(type =>
+                    !type.IsAbstract
+                    && !type.IsInterface
+                    && (typeof(IFileOpenActionProcessor).IsAssignableFrom(type)
+                        || typeof(IFileExporter).IsAssignableFrom(type))))
                 {
-                    // 检查是否是兜底处理器
-                    if (type.GetCustomAttribute<GenericFileAttribute>() != null)
+                    bool isOpenAction = typeof(IFileOpenActionProcessor).IsAssignableFrom(type);
+                    bool isExporter = typeof(IFileExporter).IsAssignableFrom(type);
+                    if (isExporter && type.GetCustomAttribute<GenericFileAttribute>() != null)
                     {
-                        _genericType = type;
+                        _genericExporterType = type;
                         continue;
                     }
                     var extAttr = type.GetCustomAttribute<FileExtensionAttribute>();
                     if (extAttr != null)
                     {
-                        foreach (var ext in extAttr.Extensions)
+                        foreach (string extKey in extAttr.Extensions
+                            .Where(extension => !string.IsNullOrWhiteSpace(extension))
+                            .Select(extension => extension.ToLowerInvariant())
+                            .Distinct(StringComparer.OrdinalIgnoreCase))
                         {
-                            var extKey = ext.ToLowerInvariant();
-                            if (!_extTypeMap.ContainsKey(extKey))
-                                _extTypeMap[extKey] = new List<Type>();
-                            _extTypeMap[extKey].Add(type);
+                            if (isOpenAction)
+                            {
+                                if (!_openActionTypeMap.ContainsKey(extKey))
+                                    _openActionTypeMap[extKey] = new List<Type>();
+                                _openActionTypeMap[extKey].Add(type);
+                            }
+                            if (isExporter)
+                            {
+                                if (!_exporterTypeMap.ContainsKey(extKey))
+                                    _exporterTypeMap[extKey] = new List<Type>();
+                                _exporterTypeMap[extKey].Add(type);
+                            }
                         }
                     }
                 }
             }
         }
 
-        public IFileProcessor? GetFileProcessor(string filePath)
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
         {
-            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
-            List<Type>? typeList = null;
-            if (!string.IsNullOrWhiteSpace(ext))
-                _extTypeMap.TryGetValue(ext, out typeList);
-
-            var candidates = new List<IFileProcessor>();
-
-            if (typeList != null && typeList.Count > 0)
+            try
             {
-                foreach (var t in typeList)
-                {
-                    if (Activator.CreateInstance(t) is IFileProcessor processor )
-                    {
-                        candidates.Add(processor);
-                    }
-                }
+                return assembly.GetTypes();
             }
-
-            // 如果有候选，取 Order 最大的
-            if (candidates.Count > 0)
-                return candidates.OrderByDescending(p => p.Order).First();
-
-            // 如果没有，尝试 fallback
-            if (_genericType != null)
+            catch (ReflectionTypeLoadException ex)
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
-                    return fallback;
+                return ex.Types.OfType<Type>();
             }
-            return null;
+            catch
+            {
+                return Array.Empty<Type>();
+            }
         }
 
-        public bool HandleFile(string filePath)
+        public FileOpenRouteResult OpenFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
-            var processor = GetFileProcessor(filePath);
-            if (processor != null)
-            {
-                bool result = processor.Process(filePath);
-                return result;
-            }
-            return false;
+            if (!File.Exists(filePath))
+                return new FileOpenRouteResult(true, false, $"文件不存在：{filePath}");
+
+            FileOpenRouteResult? routedResult = ResourceOpenHandler?.Invoke(filePath);
+            if (routedResult?.Handled == true)
+                return routedResult;
+
+            FileOpenRouteResult actionResult = TryOpenFileAction(filePath);
+            if (actionResult.Handled)
+                return actionResult;
+            return new FileOpenRouteResult(true, false, Properties.Resources.UnsupportedFileFormat);
         }
 
-        public bool ExportFile(string filePath)
+        public FileOpenRouteResult TryOpenFileAction(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
-            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
-            List<Type>? typeList = null;
-            if (!string.IsNullOrWhiteSpace(ext))
-                _extTypeMap.TryGetValue(ext, out typeList);
-
-            var candidates = new List<IFileProcessor>();
-
-            if (typeList != null && typeList.Count > 0)
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Type[] actionTypes;
+            lock (_syncRoot)
             {
-                foreach (var t in typeList)
+                actionTypes = _openActionTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
+                    ? registeredTypes.ToArray()
+                    : [];
+            }
+            if (actionTypes.Length == 0)
+                return FileOpenRouteResult.NotHandled;
+
+            return SelectFileOpenAction(actionTypes
+                .Select(type => Activator.CreateInstance(type))
+                .OfType<IFileOpenActionProcessor>(), filePath);
+        }
+
+        internal static FileOpenRouteResult SelectFileOpenAction(
+            IEnumerable<IFileOpenActionProcessor> processors,
+            string filePath)
+        {
+            foreach (IFileOpenActionProcessor processor in processors
+                .OrderByDescending(processor => processor.Order))
+            {
+                FileOpenRouteResult result = processor.OpenFile(filePath);
+                if (result.Handled)
+                    return result;
+            }
+            return FileOpenRouteResult.NotHandled;
+        }
+
+        public bool ExportFile(string filePath) => TryExportFile(filePath).Succeeded;
+
+        public FileExportResult TryExportFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return new FileExportResult(true, false, $"文件不存在：{filePath}");
+
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Type[] exporterTypes;
+            Type? genericExporterType;
+            lock (_syncRoot)
+            {
+                exporterTypes = _exporterTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
+                    ? registeredTypes.ToArray()
+                    : [];
+                genericExporterType = _genericExporterType;
+            }
+
+            try
+            {
+                FileExportResult result = SelectFileExporter(
+                    exporterTypes
+                        .Select(type => Activator.CreateInstance(type))
+                        .OfType<IFileExporter>(),
+                    filePath);
+                if (result.Handled)
+                    return result;
+
+                if (genericExporterType != null
+                    && Activator.CreateInstance(genericExporterType) is IFileExporter fallback)
                 {
-                    if (Activator.CreateInstance(t) is IFileProcessor processor )
-                    {
-                        candidates.Add(processor);
-                    }
+                    result = fallback.Export(filePath);
+                    if (result.Handled)
+                        return result;
                 }
             }
-
-            // 先取 Order 最大的能导出的
-            if (candidates.Count > 0)
+            catch (Exception ex)
             {
-                var best = candidates.OrderByDescending(p => p.Order).First();
-                best.Export(filePath);
-                return true;
+                return new FileExportResult(true, false, $"导出文件失败：{ex.Message}");
             }
 
-            // fallback
-            if (_genericType != null)
+            return new FileExportResult(true, false, Properties.Resources.UnsupportedFileFormat);
+        }
+
+        internal static FileExportResult SelectFileExporter(
+            IEnumerable<IFileExporter> exporters,
+            string filePath)
+        {
+            foreach (IFileExporter exporter in exporters.OrderByDescending(exporter => exporter.Order))
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
-                {
-                    fallback.Export(filePath);
-                    return true;
-                }
+                FileExportResult result = exporter.Export(filePath);
+                if (result.Handled)
+                    return result;
             }
-            return false;
+            return FileExportResult.NotHandled;
         }
     }
 }

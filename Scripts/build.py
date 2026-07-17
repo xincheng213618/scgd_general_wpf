@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+from xml.etree import ElementTree
 
 from backend_client import (
     DEFAULT_CONNECT_TIMEOUT,
@@ -50,6 +51,41 @@ class ProjectConfig:
     wechat_target_directory: Path
 
 
+def validate_installer_runtime_dlls(
+    runtime_directory: str | Path,
+    aip_path: str | Path,
+    *,
+    report: Callable[[str], None] = print,
+) -> bool:
+    runtime_path = Path(runtime_directory)
+    if not runtime_path.is_dir():
+        report(f"Release runtime directory does not exist: {runtime_path}")
+        return False
+
+    try:
+        root = ElementTree.parse(aip_path).getroot()
+    except (ElementTree.ParseError, OSError) as exc:
+        report(f"Could not read Advanced Installer project: {exc}")
+        return False
+
+    installer_sources = {
+        source_path.replace("\\", "/").rsplit("/", 1)[-1].casefold()
+        for element in root.iter()
+        if (source_path := element.attrib.get("SourcePath"))
+    }
+    missing_dlls = sorted(
+        file_path.name
+        for file_path in runtime_path.glob("*.dll")
+        if file_path.is_file() and file_path.name.casefold() not in installer_sources
+    )
+    if missing_dlls:
+        report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
+        return False
+
+    report("Verified all root release runtime DLLs are included by Advanced Installer.")
+    return True
+
+
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
@@ -57,6 +93,10 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
             [str(msbuild_path), str(solution_path), "/p:Configuration=Release", "/p:Platform=x64"],
             check=True,
         )
+
+        runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
+        if not validate_installer_runtime_dlls(runtime_directory, aip_path):
+            return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")
         subprocess.run([str(advanced_installer_path), "/rebuild", str(aip_path)], check=True)

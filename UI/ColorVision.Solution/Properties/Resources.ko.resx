@@ -65,8 +65,8 @@
   <data name="RecentUsedContent" xml:space="preserve">
     <value>최근 사용한 콘텐츠</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>최근 파일(_F)</value>
+  <data name="RecentWorkspaces" xml:space="preserve">
+    <value>최근 작업 영역(_W)</value>
   </data>
   <data name="SearchProjectFiles" xml:space="preserve">
     <value>프로젝트 파일 검색</value>

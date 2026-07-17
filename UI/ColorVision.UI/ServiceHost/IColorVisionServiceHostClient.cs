@@ -17,6 +17,8 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> SelfUpdateAsync(string packageDirectory, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> PrepareApplicationUpdateAsync(string? serviceHostPackageDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> RegisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -97,6 +99,14 @@ namespace ColorVision.UI.ServiceHost
                 new { packageDirectory },
                 timeout ?? TimeSpan.FromSeconds(10),
                 cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> PrepareApplicationUpdateAsync(string? serviceHostPackageDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            TimeSpan requestTimeout = timeout ?? TimeSpan.FromMinutes(2);
+            return string.IsNullOrWhiteSpace(serviceHostPackageDirectory)
+                ? SendAsync("prepare-application-update", requestTimeout, cancellationToken)
+                : SendAsync("prepare-application-update", new { serviceHostPackageDirectory }, requestTimeout, cancellationToken);
         }
 
         public Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
@@ -307,11 +317,13 @@ namespace ColorVision.UI.ServiceHost
                 ?? throw new InvalidOperationException("ColorVisionServiceHost returned an invalid response.");
         }
 
-        private static bool RequiresBrokerTicket(string command)
+        internal static bool RequiresBrokerTicket(string command)
         {
             return !command.Equals("ping", StringComparison.OrdinalIgnoreCase)
                 && !command.Equals("status", StringComparison.OrdinalIgnoreCase)
-                && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase);
+                && !command.Equals("issue-broker-ticket", StringComparison.OrdinalIgnoreCase)
+                && !command.Equals("self-update", StringComparison.OrdinalIgnoreCase)
+                && !command.Equals("prepare-application-update", StringComparison.OrdinalIgnoreCase);
         }
 
         private static JToken? CreateDataToken(object? data)

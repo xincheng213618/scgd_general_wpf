@@ -313,7 +313,15 @@ namespace ColorVision
             AllowDrop = true;
             Drop += MainWindow_Drop;
 
-            Closing += (_, _) => WorkspaceManager.LayoutManager?.SaveLayout();
+            Closing += (_, e) =>
+            {
+                if (!EditorDocumentService.TryCloseAllDocuments())
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                WorkspaceManager.LayoutManager?.SaveLayout();
+            };
         }
 
         private void HookAcquirePanelActivation()
@@ -413,21 +421,17 @@ namespace ColorVision
             }
         }
 
-        private void MainWindow_Drop(object sender, DragEventArgs e)
+        private async void MainWindow_Drop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
 
             var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-            var firstFile = files?.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(firstFile))
+            if (files is not { Length: > 0 })
                 return;
 
-            if (File.Exists(firstFile))
-            {
-                FileProcessorFactory.GetInstance().HandleFile(firstFile);
-                e.Handled = true;
-            }
+            e.Handled = true;
+            await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(files, this);
         }
 
         private void InitRightMenuItemPanel()

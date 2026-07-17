@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,6 +62,8 @@ namespace ColorVision.Copilot.Mcp
 
         public string ErrorCode { get; init; } = string.Empty;
 
+        public CopilotToolFailureKind FailureKind { get; init; }
+
         public bool RequiresApproval { get; init; }
 
         public string ApprovalActionId { get; init; } = string.Empty;
@@ -79,11 +82,17 @@ namespace ColorVision.Copilot.Mcp
             Text = text ?? string.Empty,
         };
 
-        public static CopilotMcpToolCallResult Fail(string errorCode, string message) => new()
+        public static CopilotMcpToolCallResult Fail(
+            string errorCode,
+            string message,
+            CopilotToolFailureKind failureKind = CopilotToolFailureKind.None) => new()
         {
             Success = false,
             ErrorCode = errorCode ?? string.Empty,
             Text = message ?? string.Empty,
+            FailureKind = failureKind == CopilotToolFailureKind.None
+                ? CopilotMcpToolFailureClassifier.Classify(errorCode)
+                : failureKind,
         };
 
         public static CopilotMcpToolCallResult ApprovalRequired(string message, ConfirmableAction action) => new()
@@ -135,6 +144,33 @@ namespace ColorVision.Copilot.Mcp
         public string PatchedJson { get; init; } = string.Empty;
     }
 
+    public sealed class CopilotFlowPatchRequest
+    {
+        public string Operation { get; init; } = string.Empty;
+
+        public string ExpectedRevision { get; init; } = string.Empty;
+
+        public string TypeKey { get; init; } = string.Empty;
+
+        public int Left { get; init; }
+
+        public int Top { get; init; }
+
+        public string NodeId { get; init; } = string.Empty;
+
+        public string PropertyName { get; init; } = string.Empty;
+
+        public string Value { get; init; } = string.Empty;
+
+        public string SourceNodeId { get; init; } = string.Empty;
+
+        public string SourcePortId { get; init; } = string.Empty;
+
+        public string TargetNodeId { get; init; } = string.Empty;
+
+        public string TargetPortId { get; init; } = string.Empty;
+    }
+
     public sealed class CopilotMcpHttpRequest
     {
         public string Method { get; init; } = string.Empty;
@@ -161,6 +197,9 @@ namespace ColorVision.Copilot.Mcp
 
     public sealed class CopilotMcpToolEnvironment
     {
+        private static readonly JsonSerializerOptions FlowPatchPreviewJsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+        private static readonly string[] FlowPatchPreviewEffects = ["Changes only the active Flow editor after approval", "Does not save or run the flow"];
+
         public Func<CopilotMcpWorkspaceSnapshot> WorkspaceSnapshotProvider { get; init; } = CreateDefaultWorkspaceSnapshot;
 
         public Func<CopilotMcpRuntimeSettings> RuntimeSettingsProvider { get; init; } = CreateDefaultRuntimeSettings;
@@ -171,13 +210,21 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<CopilotLiveContext?> LiveContextProvider { get; init; } = () => CopilotLiveContextRegistry.Current;
 
+        public Func<CopilotAgentTaskEventJournalContext?> TaskEventJournalProvider { get; init; } = () => CopilotAgentTaskEventJournalRegistry.Current;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
-        public Func<string?, CopilotRecentLogMode, int, int, CopilotCapabilityResult> RecentLogProvider { get; init; } = CopilotRecentLogCapability.Capture;
+        public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
+
+        public Func<string?, CopilotRecentLogMode, int, int, CancellationToken, Task<CopilotCapabilityResult>> RecentLogProvider { get; init; } = CopilotRecentLogCapability.CaptureAsync;
 
         public Func<CopilotTemplatePatchApplyRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyTemplatePatchHandler { get; init; } = ApplyTemplatePatchToActiveEditorAsync;
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>> CreateFlowHandler { get; init; } = CreateDefaultFlowAsync;
+
+        public Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>> PreviewFlowPatchHandler { get; init; } = PreviewDefaultFlowPatchAsync;
+
+        public Func<CopilotFlowPatchRequest, CancellationToken, Task<CopilotMcpToolCallResult>> ApplyFlowPatchHandler { get; init; } = ApplyDefaultFlowPatchAsync;
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? OpenPanelHandler { get; init; }
 
@@ -233,6 +280,89 @@ namespace ColorVision.Copilot.Mcp
             catch (Exception ex)
             {
                 return CopilotMcpToolCallResult.Fail("flow_creation_failed", $"Failed to create the flow: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
+            }
+        }
+
+        private static Task<CopilotMcpToolCallResult> PreviewDefaultFlowPatchAsync(CopilotFlowPatchRequest request, CancellationToken cancellationToken)
+        {
+            return InvokeFlowManagerAsync(manager =>
+            {
+                var currentRevision = manager.CaptureCopilotFlowSnapshot().Revision;
+                object change = request.Operation switch
+                {
+                    "add_node" => new
+                    {
+                        operation = request.Operation,
+                        node = manager.PreviewCopilotFlowNodeAddition(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                    },
+                    "set_property" => BuildPropertyPreview(manager, request),
+                    "connect" => new
+                    {
+                        operation = request.Operation,
+                        edge = manager.PreviewCopilotFlowConnection(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
+                    },
+                    _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),
+                };
+                return CopilotMcpToolCallResult.Ok(JsonSerializer.Serialize(new
+                {
+                    format = "colorvision.flow-patch-preview.v1",
+                    expectedRevision = currentRevision,
+                    change,
+                    effects = FlowPatchPreviewEffects,
+                }, FlowPatchPreviewJsonOptions));
+            }, cancellationToken);
+        }
+
+        private static object BuildPropertyPreview(FlowEngineManager manager, CopilotFlowPatchRequest request)
+        {
+            var preview = manager.PreviewCopilotFlowNodePropertyChange(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision);
+            return new
+            {
+                operation = request.Operation,
+                nodeId = preview.Node.InstanceId,
+                nodeTitle = preview.Node.Title,
+                preview.PropertyName,
+                preview.OldValue,
+                preview.NewValue,
+            };
+        }
+
+        private static Task<CopilotMcpToolCallResult> ApplyDefaultFlowPatchAsync(CopilotFlowPatchRequest request, CancellationToken cancellationToken)
+        {
+            return InvokeFlowManagerAsync(manager =>
+            {
+                var snapshot = request.Operation switch
+                {
+                    "add_node" => manager.AddCopilotFlowNode(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                    "set_property" => manager.SetCopilotFlowNodeProperty(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision),
+                    "connect" => manager.ConnectCopilotFlowNodes(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
+                    _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),
+                };
+                return CopilotMcpToolCallResult.Ok($"Applied Flow patch operation={request.Operation}; revision={snapshot.Revision}. The flow was not saved or run.");
+            }, cancellationToken);
+        }
+
+        private static async Task<CopilotMcpToolCallResult> InvokeFlowManagerAsync(Func<FlowEngineManager, CopilotMcpToolCallResult> action, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var manager = FlowEngineManager.Current;
+            if (manager == null)
+                return CopilotMcpToolCallResult.Fail("flow_unavailable", "No active Flow editor is available.");
+
+            try
+            {
+                if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+                    return await Application.Current.Dispatcher.InvokeAsync(() => action(manager));
+
+                return action(manager);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return CopilotMcpToolCallResult.Fail("flow_patch_failed", CopilotMcpAuditLogger.RedactText(ex.Message));
             }
         }
 
@@ -348,6 +478,33 @@ namespace ColorVision.Copilot.Mcp
                 }
 
                 return manager.CaptureCopilotFlowSnapshot();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static async Task<CopilotFlowNodeCatalogSnapshot?> CreateDefaultFlowNodeCatalogAsync(string? query, int maxResults, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var manager = FlowEngineManager.Current;
+                if (manager == null)
+                    return null;
+
+                if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
+                {
+                    return await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return manager.CaptureCopilotFlowNodeCatalog(query, maxResults);
+                    });
+                }
+
+                return manager.CaptureCopilotFlowNodeCatalog(query, maxResults);
             }
             catch
             {

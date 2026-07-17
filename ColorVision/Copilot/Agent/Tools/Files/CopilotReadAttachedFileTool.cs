@@ -10,13 +10,14 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotReadAttachedFileTool : ICopilotTool
     {
-        private const int MaxFileContentChars = 20000;
+        private const int MaxAttachmentsPerBatch = 3;
+        private const int MaxReportedOmittedAttachments = 8;
 
         public string Name => "ReadAttachedFile";
 
-        public string Description => "Read text file attachments from the current session.";
+        public string Description => "Read up to three text file attachments from the current session, or one selected attachment with an optional line-and-column continuation range.";
 
-        public CopilotToolInputSchema InputSchema => CopilotToolInputSchema.Empty;
+        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -31,13 +32,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var attachments = request.Attachments
+            var attachmentPaths = request.Attachments
                 .Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value))
-                .GroupBy(item => item.Value, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
+                .Select(item => NormalizePath(item.Value))
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            if (attachments.Length == 0)
+            if (attachmentPaths.Length == 0)
             {
                 return new CopilotToolResult
                 {
@@ -48,61 +50,129 @@ namespace ColorVision.Copilot
                 };
             }
 
-            var builder = new StringBuilder();
-            var successCount = 0;
-            var errors = new List<string>();
-
-            foreach (var attachment in attachments)
+            if (!TryResolveSelectedPath(toolInput?.Path, attachmentPaths, out var selectedPath, out var selectionError))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                try
+                return new CopilotToolResult
                 {
-                    if (!File.Exists(attachment.Value))
-                    {
-                        var missingMessage = $"File does not exist: {attachment.Value}";
-                        builder.AppendLine($"[File] {attachment.Value}");
-                        builder.AppendLine(missingMessage);
-                        builder.AppendLine();
-                        errors.Add(missingMessage);
-                        continue;
-                    }
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "The selected file is not an attachment in the current session.",
+                    ErrorMessage = selectionError,
+                    FailureKind = CopilotToolFailureKind.Validation,
+                };
+            }
 
-                    await using var stream = new FileStream(attachment.Value, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(stream, Encoding.UTF8, true);
-                    var content = await reader.ReadToEndAsync(cancellationToken);
-
-                    if (content.Length > MaxFileContentChars)
-                        content = content[..MaxFileContentChars] + Environment.NewLine + $"...<content truncated; kept the first {MaxFileContentChars} characters.>";
-
-                    builder.AppendLine($"[File] {attachment.Value}");
-                    builder.AppendLine(content.TrimEnd());
-                    builder.AppendLine();
-                    successCount++;
-                }
-                catch (OperationCanceledException)
+            if (string.IsNullOrWhiteSpace(selectedPath)
+                && (toolInput?.StartLine.HasValue == true || toolInput?.StartColumn.HasValue == true || toolInput?.EndLine.HasValue == true))
+            {
+                return new CopilotToolResult
                 {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    builder.AppendLine($"[File] {attachment.Value}");
-                    builder.AppendLine($"Read failed: {ex.Message}");
-                    builder.AppendLine();
-                    errors.Add($"{attachment.Value}: {ex.Message}");
-                }
+                    ToolName = Name,
+                    Success = false,
+                    Summary = "An attachment path is required for a line or column range.",
+                    ErrorMessage = "Select one attached file with path before supplying startLine, startColumn, or endLine.",
+                    FailureKind = CopilotToolFailureKind.Validation,
+                };
+            }
+
+            var attemptedPaths = string.IsNullOrWhiteSpace(selectedPath)
+                ? attachmentPaths.Take(MaxAttachmentsPerBatch).ToArray()
+                : [selectedPath];
+            var omittedPaths = string.IsNullOrWhiteSpace(selectedPath)
+                ? attachmentPaths.Skip(attemptedPaths.Length).ToArray()
+                : Array.Empty<string>();
+            var reportedOmittedPaths = omittedPaths.Take(MaxReportedOmittedAttachments).ToArray();
+            var result = await CopilotReadLocalFileCapability.ReadAsync(
+                attachmentPaths,
+                selectedPath,
+                preferBatchReadAll: false,
+                toolInput?.StartLine,
+                toolInput?.StartColumn,
+                toolInput?.EndLine,
+                cancellationToken);
+
+            var builder = new StringBuilder();
+            builder.AppendLine("[Attachment Read Scope]");
+            builder.AppendLine($"selection_mode: {(string.IsNullOrWhiteSpace(selectedPath) ? "batch" : "selected")}");
+            builder.AppendLine($"attachment_files_total: {attachmentPaths.Length}");
+            builder.AppendLine($"attachment_files_attempted: {attemptedPaths.Length}");
+            builder.AppendLine($"attachment_files_omitted: {omittedPaths.Length}");
+            builder.AppendLine($"attachment_set_complete: {(omittedPaths.Length == 0).ToString().ToLowerInvariant()}");
+            builder.AppendLine($"omitted_attachment_paths_listed: {reportedOmittedPaths.Length}");
+            builder.AppendLine($"omitted_attachment_list_complete: {(reportedOmittedPaths.Length == omittedPaths.Length).ToString().ToLowerInvariant()}");
+            foreach (var omittedPath in reportedOmittedPaths)
+                builder.AppendLine($"omitted_attachment_path: {omittedPath}");
+            if (!string.IsNullOrWhiteSpace(result.Content))
+            {
+                builder.AppendLine();
+                builder.Append(result.Content);
             }
 
             return new CopilotToolResult
             {
                 ToolName = Name,
-                Success = successCount > 0,
-                Summary = successCount > 0
-                    ? $"Read {successCount}/{attachments.Length} attached files."
-                    : $"Failed to read any attached files from {attachments.Length} attachments.",
+                Success = result.Success,
+                Summary = omittedPaths.Length == 0
+                    ? result.Summary
+                    : $"{result.Summary} {omittedPaths.Length} additional attachment(s) were not read in this batch.",
                 Content = builder.ToString().TrimEnd(),
-                ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
+                ErrorMessage = result.ErrorMessage,
+                FailureKind = result.FailureKind,
+                SuggestedReadableLocalFilePaths = result.SuggestedReadableLocalFilePaths,
+                AttemptedLocalFilePaths = result.AttemptedLocalFilePaths,
+                SuccessfullyReadLocalFilePaths = result.SuccessfullyReadLocalFilePaths,
             };
+        }
+
+        private static bool TryResolveSelectedPath(
+            string? requestedPath,
+            IReadOnlyList<string> attachmentPaths,
+            out string selectedPath,
+            out string error)
+        {
+            selectedPath = string.Empty;
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(requestedPath))
+                return true;
+
+            var normalized = NormalizePath(requestedPath);
+            var exactMatch = attachmentPaths.FirstOrDefault(path => string.Equals(path, normalized, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(exactMatch))
+            {
+                selectedPath = exactMatch;
+                return true;
+            }
+
+            var fileName = Path.GetFileName(requestedPath.Trim());
+            var fileNameMatches = attachmentPaths
+                .Where(path => string.Equals(Path.GetFileName(path), fileName, StringComparison.OrdinalIgnoreCase))
+                .Take(2)
+                .ToArray();
+            if (fileNameMatches.Length == 1)
+            {
+                selectedPath = fileNameMatches[0];
+                return true;
+            }
+
+            error = fileNameMatches.Length > 1
+                ? $"More than one current attachment is named {fileName}; use the exact attached path."
+                : $"The selected path is not a current file attachment: {requestedPath.Trim()}";
+            return false;
+        }
+
+        private static string NormalizePath(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+
+            try
+            {
+                return Path.GetFullPath(path);
+            }
+            catch
+            {
+                return path.Trim();
+            }
         }
     }
 }

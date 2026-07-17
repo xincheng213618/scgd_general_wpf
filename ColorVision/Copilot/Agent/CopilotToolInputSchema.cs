@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
     {
         private const int MaximumSerializedArgumentsLength = 65_536;
         private static readonly StringComparer NameComparer = StringComparer.OrdinalIgnoreCase;
-        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "startLine", "endLine" }, NameComparer);
+        private static readonly HashSet<string> SupportedNames = new(new[] { "query", "path", "cursor", "startLine", "startColumn", "endLine" }, NameComparer);
 
         public static CopilotToolInputSchema Empty { get; } = new(Array.Empty<CopilotToolParameter>());
 
@@ -80,6 +80,7 @@ namespace ColorVision.Copilot
             {
                 new CopilotToolParameter { Name = "path", Description = "Allowed local text file path. Omit only when the current request should read all selected files.", Type = CopilotToolParameterType.Text, Required = requirePath },
                 new CopilotToolParameter { Name = "startLine", Description = "Optional one-based first line to read.", Type = CopilotToolParameterType.WholeNumber },
+                new CopilotToolParameter { Name = "startColumn", Description = "Optional one-based character column within startLine. Use the exact continuation cursor returned by a truncated read.", Type = CopilotToolParameterType.WholeNumber },
                 new CopilotToolParameter { Name = "endLine", Description = "Optional one-based last line to read; must not precede startLine.", Type = CopilotToolParameterType.WholeNumber },
             });
         }
@@ -111,7 +112,9 @@ namespace ColorVision.Copilot
 
             if (!TryReadString(arguments, "query", out var query, out error)
                 || !TryReadString(arguments, "path", out var path, out error)
+                || !TryReadString(arguments, "cursor", out var cursor, out error)
                 || !TryReadPositiveInt(arguments, "startLine", out var startLine, out error)
+                || !TryReadPositiveInt(arguments, "startColumn", out var startColumn, out error)
                 || !TryReadPositiveInt(arguments, "endLine", out var endLine, out error))
             {
                 input = CopilotAgentToolInput.Empty;
@@ -124,13 +127,21 @@ namespace ColorVision.Copilot
                 error = "Argument 'endLine' must be greater than or equal to 'startLine'.";
                 return false;
             }
+            if (startColumn.HasValue && !startLine.HasValue)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = "Argument 'startColumn' requires 'startLine'.";
+                return false;
+            }
 
             input = new CopilotAgentToolInput
             {
                 Arguments = new Dictionary<string, object?>(arguments, NameComparer),
                 Query = query,
                 Path = path,
+                Cursor = cursor,
                 StartLine = startLine,
+                StartColumn = startColumn,
                 EndLine = endLine,
             };
             error = string.Empty;
@@ -139,6 +150,7 @@ namespace ColorVision.Copilot
 
         private bool TryBindArbitraryArguments(IReadOnlyDictionary<string, object?> arguments, out CopilotAgentToolInput input, out string error)
         {
+            error = string.Empty;
             var copiedArguments = new Dictionary<string, object?>(arguments, NameComparer);
             string serialized;
             try
@@ -190,16 +202,175 @@ namespace ColorVision.Copilot
                 }
             }
 
+            if (JsonSchema.TryGetProperty("properties", out var validationProperties)
+                && validationProperties.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var argument in copiedArguments)
+                {
+                    var property = validationProperties.EnumerateObject()
+                        .FirstOrDefault(candidate => NameComparer.Equals(candidate.Name, argument.Key));
+                    if (string.IsNullOrWhiteSpace(property.Name))
+                        continue;
+                    if (TryValidateTopLevelValue(argument.Key, argument.Value, property.Value, out error))
+                        continue;
+                    input = CopilotAgentToolInput.Empty;
+                    return false;
+                }
+            }
+
             input = new CopilotAgentToolInput
             {
                 Arguments = copiedArguments,
                 Query = TryReadCompatibleString(copiedArguments, "query"),
                 Path = TryReadCompatibleString(copiedArguments, "path"),
+                Cursor = TryReadCompatibleString(copiedArguments, "cursor"),
                 StartLine = TryReadCompatibleInt(copiedArguments, "startLine"),
+                StartColumn = TryReadCompatibleInt(copiedArguments, "startColumn"),
                 EndLine = TryReadCompatibleInt(copiedArguments, "endLine"),
             };
             error = string.Empty;
             return true;
+        }
+
+        private static bool TryValidateTopLevelValue(
+            string name,
+            object? value,
+            JsonElement schema,
+            out string error)
+        {
+            error = string.Empty;
+            if (value == null || value is JsonElement { ValueKind: JsonValueKind.Null or JsonValueKind.Undefined })
+                return true;
+            if (schema.TryGetProperty("type", out var typeElement)
+                && typeElement.ValueKind == JsonValueKind.String)
+            {
+                var expectedType = typeElement.GetString() ?? string.Empty;
+                if (!MatchesJsonType(value, expectedType))
+                {
+                    error = $"Argument '{name}' must be a JSON {expectedType}.";
+                    return false;
+                }
+            }
+            if (schema.TryGetProperty("enum", out var enumElement)
+                && enumElement.ValueKind == JsonValueKind.Array
+                && TryGetStringValue(value, out var textValue))
+            {
+                var allowed = enumElement.EnumerateArray()
+                    .Where(item => item.ValueKind == JsonValueKind.String)
+                    .Select(item => item.GetString() ?? string.Empty)
+                    .ToArray();
+                if (allowed.Length > 0 && !allowed.Contains(textValue, StringComparer.Ordinal))
+                {
+                    error = $"Argument '{name}' must be one of: {string.Join(", ", allowed)}.";
+                    return false;
+                }
+            }
+            if (TryGetStringValue(value, out var stringValue))
+            {
+                if (schema.TryGetProperty("minLength", out var minimumLengthElement)
+                    && minimumLengthElement.TryGetInt32(out var minimumLength)
+                    && stringValue.Length < minimumLength)
+                {
+                    error = $"Argument '{name}' must contain at least {minimumLength} characters.";
+                    return false;
+                }
+                if (schema.TryGetProperty("maxLength", out var maximumLengthElement)
+                    && maximumLengthElement.TryGetInt32(out var maximumLength)
+                    && stringValue.Length > maximumLength)
+                {
+                    error = $"Argument '{name}' must contain at most {maximumLength} characters.";
+                    return false;
+                }
+            }
+            if (TryGetNumberValue(value, out var numberValue))
+            {
+                if (schema.TryGetProperty("minimum", out var minimumElement)
+                    && minimumElement.TryGetDouble(out var minimum)
+                    && numberValue < minimum)
+                {
+                    error = $"Argument '{name}' must be at least {minimum}.";
+                    return false;
+                }
+                if (schema.TryGetProperty("maximum", out var maximumElement)
+                    && maximumElement.TryGetDouble(out var maximum)
+                    && numberValue > maximum)
+                {
+                    error = $"Argument '{name}' must be at most {maximum}.";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool MatchesJsonType(object value, string expectedType)
+        {
+            return expectedType switch
+            {
+                "string" => TryGetStringValue(value, out _),
+                "integer" => TryGetIntegerValue(value, out _),
+                "number" => TryGetNumberValue(value, out _),
+                "boolean" => value is bool || value is JsonElement { ValueKind: JsonValueKind.True or JsonValueKind.False },
+                "object" => value is IReadOnlyDictionary<string, object?>
+                    || value is IDictionary<string, object?>
+                    || value is JsonElement { ValueKind: JsonValueKind.Object },
+                "array" => value is System.Collections.IEnumerable and not string
+                    || value is JsonElement { ValueKind: JsonValueKind.Array },
+                _ => true,
+            };
+        }
+
+        private static bool TryGetStringValue(object value, out string text)
+        {
+            if (value is string stringValue)
+            {
+                text = stringValue;
+                return true;
+            }
+            if (value is JsonElement { ValueKind: JsonValueKind.String } element)
+            {
+                text = element.GetString() ?? string.Empty;
+                return true;
+            }
+            text = string.Empty;
+            return false;
+        }
+
+        private static bool TryGetIntegerValue(object value, out long number)
+        {
+            switch (value)
+            {
+                case byte byteValue: number = byteValue; return true;
+                case short shortValue: number = shortValue; return true;
+                case int intValue: number = intValue; return true;
+                case long longValue: number = longValue; return true;
+                case JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetInt64(out var jsonValue):
+                    number = jsonValue;
+                    return true;
+                default:
+                    number = 0;
+                    return false;
+            }
+        }
+
+        private static bool TryGetNumberValue(object value, out double number)
+        {
+            if (TryGetIntegerValue(value, out var integer))
+            {
+                number = integer;
+                return true;
+            }
+            switch (value)
+            {
+                case float floatValue: number = floatValue; return true;
+                case double doubleValue: number = doubleValue; return true;
+                case decimal decimalValue: number = (double)decimalValue; return true;
+                case JsonElement { ValueKind: JsonValueKind.Number } element when element.TryGetDouble(out var jsonValue):
+                    number = jsonValue;
+                    return true;
+                default:
+                    number = 0;
+                    return false;
+            }
         }
 
         private string FormatAllowedParameters()

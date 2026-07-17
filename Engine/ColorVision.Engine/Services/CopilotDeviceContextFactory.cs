@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Engine.Services
 {
@@ -11,11 +12,15 @@ namespace ColorVision.Engine.Services
     {
         private const int MaxConfigProperties = 60;
 
+        public const string SourceIdPrefix = "device-service:";
+
+        public const string FleetSourceId = "device-services:fleet";
+
         public static CopilotBusinessContextBundle Capture(DeviceService device)
         {
             ArgumentNullException.ThrowIfNull(device);
 
-            var sourceId = $"device-service:{device.SysResourceModel?.Id}:{device.Code}";
+            var sourceId = GetSourceId(device);
             var snapshot = new CopilotDeviceContextSnapshot
             {
                 SourceId = sourceId,
@@ -37,7 +42,45 @@ namespace ColorVision.Engine.Services
             return CopilotBusinessContextBundle.FromItem(sourceId, item);
         }
 
-        private static IReadOnlyList<CopilotContextProperty> BuildRuntimeProperties(DeviceService device)
+        public static CopilotBusinessContextBundle? CaptureFleet(IEnumerable<DeviceService> devices)
+        {
+            ArgumentNullException.ThrowIfNull(devices);
+            var currentDevices = devices.Where(device => device != null).ToArray();
+            if (currentDevices.Length == 0)
+                return null;
+
+            var snapshot = new CopilotDeviceFleetContextSnapshot
+            {
+                SourceId = FleetSourceId,
+                TotalDevices = currentDevices.Length,
+                OnlineDevices = currentDevices.Count(device => device.IsAlive),
+                OfflineDevices = currentDevices.Count(device => !device.IsAlive),
+                Devices = currentDevices.Take(MaxConfigProperties).Select(device => new CopilotDeviceHealthContextSnapshot
+                {
+                    ServiceName = device.Name ?? string.Empty,
+                    ServiceCode = device.Code ?? string.Empty,
+                    ServiceType = device.ServiceTypes.ToString(),
+                    IsAlive = device.IsAlive,
+                    OperationalStatus = device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty,
+                    LastAliveTime = device.LastAliveTime == default
+                        ? string.Empty
+                        : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture),
+                }).ToArray(),
+            };
+            var item = CopilotBusinessContextBuilder.BuildDeviceFleetContextItem(snapshot);
+            return CopilotBusinessContextBundle.FromItem(FleetSourceId, item);
+        }
+
+        public static string GetSourceId(DeviceService device)
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            var resourceId = device.SysResourceModel?.Id ?? 0;
+            return resourceId > 0
+                ? $"{SourceIdPrefix}{resourceId}"
+                : $"{SourceIdPrefix}runtime-{RuntimeHelpers.GetHashCode(device):x}";
+        }
+
+        private static CopilotContextProperty[] BuildRuntimeProperties(DeviceService device)
         {
             return new[]
             {
@@ -45,6 +88,7 @@ namespace ColorVision.Engine.Services
                 new CopilotContextProperty { Name = "LastAliveTime", Value = device.LastAliveTime == default ? string.Empty : device.LastAliveTime.ToString("O", CultureInfo.InvariantCulture) },
                 new CopilotContextProperty { Name = "HeartbeatTime", Value = device.HeartbeatTime.ToString(CultureInfo.InvariantCulture) },
                 new CopilotContextProperty { Name = "ServiceType", Value = device.ServiceTypes.ToString() },
+                new CopilotContextProperty { Name = "OperationalStatus", Value = device.GetMQTTService()?.DeviceStatus.ToString() ?? string.Empty },
             };
         }
 
@@ -61,10 +105,13 @@ namespace ColorVision.Engine.Services
 
                 try
                 {
+                    var rawValue = Convert.ToString(property.GetValue(configuration), CultureInfo.InvariantCulture) ?? string.Empty;
                     properties.Add(new CopilotContextProperty
                     {
                         Name = property.DisplayName ?? property.Name,
-                        Value = Convert.ToString(property.GetValue(configuration), CultureInfo.InvariantCulture) ?? string.Empty,
+                        // Use the CLR property name for the security decision. DisplayName can be
+                        // localized and must not make SN/token/license fields look non-sensitive.
+                        Value = CopilotBusinessContextBuilder.MaskIfSensitive(property.Name, rawValue),
                     });
                 }
                 catch

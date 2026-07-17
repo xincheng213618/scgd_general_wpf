@@ -160,25 +160,31 @@ namespace ColorVision.Database
         public string BackupPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
         public ObservableCollection<MysqlBack> Backups { get; set; } = new ObservableCollection<MysqlBack>();
         public ObservableCollection<MySqlCleanupTableInfo> CleanupTables { get; } = new ObservableCollection<MySqlCleanupTableInfo>();
-        public static IReadOnlyList<string> MigrationBackupTableNames { get; } =
+        public static IReadOnlyList<string> ServiceSettingTableNames { get; } =
         [
             "t_scgd_algorithm_poi_template_detail",
             "t_scgd_algorithm_poi_template_master",
             "t_scgd_buz_product_detail",
             "t_scgd_buz_product_master",
-            "t_scgd_camera_license",
             "t_scgd_mod_param_detail",
-            "t_scgd_mod_param_master",
+            "t_scgd_mod_param_master"
+        ];
+
+        public static IReadOnlyList<string> ServiceConfigurationTableNames { get; } =
+        [
+            "t_scgd_camera_license",
             "t_scgd_sys_resource",
             "t_scgd_sys_resource_group"
         ];
+
+        public static IReadOnlyList<string> MigrationBackupTableNames { get; } = ServiceSettingTableNames
+            .Concat(ServiceConfigurationTableNames)
+            .ToArray();
 
         private const string DictionaryMasterTableName = "t_scgd_sys_dictionary_mod_master";
         private const string DictionaryItemTableName = "t_scgd_sys_dictionary_mod_item";
         private const string ModParamMasterTableName = "t_scgd_mod_param_master";
         private const string ModParamDetailTableName = "t_scgd_mod_param_detail";
-        private const string SensorDefaultCommandSymbol = "defaultcommand";
-        private const string SensorDefaultCommandValue = "\n,,Ascii,1000/0,0";
 
 
         public static MySqlLocalConfig Config => MySqlLocalConfig.Instance;
@@ -982,7 +988,8 @@ namespace ColorVision.Database
                     $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamMasterTableName)} m
-                           WHERE m.{QuoteIdentifier("mm_id")} = {QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("id")})");
+                           WHERE m.{QuoteIdentifier("mm_id")} = {QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("id")})
+                       AND COALESCE({QuoteIdentifier(DictionaryMasterTableName)}.{QuoteIdentifier("mod_type")}, 0) <> 5");
                 AppendReferencedRowsSql(
                     db,
                     sql,
@@ -990,8 +997,13 @@ namespace ColorVision.Database
                     $@"EXISTS (
                            SELECT 1
                            FROM {QuoteIdentifier(ModParamDetailTableName)} d
-                           WHERE d.{QuoteIdentifier("cc_pid")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("id")})");
-                AppendMissingSensorCommandDefinitionSql(db, sql);
+                           WHERE d.{QuoteIdentifier("cc_pid")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("id")})
+                       AND NOT EXISTS (
+                           SELECT 1
+                           FROM {QuoteIdentifier(DictionaryMasterTableName)} dm
+                           WHERE dm.{QuoteIdentifier("id")} = {QuoteIdentifier(DictionaryItemTableName)}.{QuoteIdentifier("pid")}
+                             AND dm.{QuoteIdentifier("mod_type")} = 5)");
+                sql.Append(SensorTemplateMigrationSqlBuilder.Build(db));
 
                 if (sql.Length == 0)
                 {
@@ -1005,33 +1017,6 @@ namespace ColorVision.Database
             {
                 logCallback?.Invoke(string.Format(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAddFailed, ex.Message));
                 return string.Empty;
-            }
-        }
-
-        private static void AppendMissingSensorCommandDefinitionSql(SqlSugarClient db, StringBuilder sql)
-        {
-            var missingDefinitions = db.Ado.SqlQuery<MissingSensorCommandDefinitionRow>(
-                $@"SELECT DISTINCT d.{QuoteIdentifier("cc_pid")} AS Id,
-                                   m.{QuoteIdentifier("mm_id")} AS Pid
-                   FROM {QuoteIdentifier(ModParamDetailTableName)} d
-                   INNER JOIN {QuoteIdentifier(ModParamMasterTableName)} m ON d.{QuoteIdentifier("pid")} = m.{QuoteIdentifier("id")}
-                   INNER JOIN {QuoteIdentifier(DictionaryMasterTableName)} dm ON dm.{QuoteIdentifier("id")} = m.{QuoteIdentifier("mm_id")}
-                   LEFT JOIN {QuoteIdentifier(DictionaryItemTableName)} i ON i.{QuoteIdentifier("id")} = d.{QuoteIdentifier("cc_pid")}
-                   WHERE dm.{QuoteIdentifier("mod_type")} = 5
-                     AND d.{QuoteIdentifier("cc_pid")} > 0
-                     AND i.{QuoteIdentifier("id")} IS NULL");
-
-            if (missingDefinitions.Count == 0)
-            {
-                return;
-            }
-
-            sql.AppendLine($"-- {DictionaryItemTableName}: {missingDefinitions.Count} missing sensor command definition(s)");
-            foreach (var definition in missingDefinitions)
-            {
-                sql.AppendLine($@"INSERT IGNORE INTO {QuoteIdentifier(DictionaryItemTableName)}
-({QuoteIdentifier("id")}, {QuoteIdentifier("pid")}, {QuoteIdentifier("address_code")}, {QuoteIdentifier("symbol")}, {QuoteIdentifier("name")}, {QuoteIdentifier("default_val")}, {QuoteIdentifier("val_type")}, {QuoteIdentifier("create_date")}, {QuoteIdentifier("is_enable")}, {QuoteIdentifier("is_delete")})
-VALUES ({definition.Id}, {definition.Pid}, {definition.Id}, {FormatSqlValue(SensorDefaultCommandSymbol)}, {FormatSqlValue(SensorDefaultCommandSymbol)}, {FormatSqlValue(SensorDefaultCommandValue)}, 3, NOW(), 1, 0);");
             }
         }
 
@@ -1130,12 +1115,6 @@ VALUES ({definition.Id}, {definition.Pid}, {definition.Id}, {FormatSqlValue(Sens
         private sealed class TableColumnNameRow
         {
             public string ColumnName { get; set; } = string.Empty;
-        }
-
-        private sealed class MissingSensorCommandDefinitionRow
-        {
-            public int Id { get; set; }
-            public int Pid { get; set; }
         }
 
         private sealed class TimeRangeRow

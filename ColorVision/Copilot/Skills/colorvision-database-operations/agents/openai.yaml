@@ -1,0 +1,4 @@
+interface:
+  display_name: "ColorVision 数据库操作"
+  short_description: "查询三类业务表、解释字段并安全执行数据清理"
+  default_prompt: "使用 $colorvision-database-operations 按服务配置、服务设置、结果三类查询 ColorVision 数据库。"

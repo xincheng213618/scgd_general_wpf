@@ -109,9 +109,12 @@ namespace ColorVision.Solution.Workspace
 
         public static event  EventHandler<string>? ContentIdSelected;
 
+        public static string SelectedContentId { get; private set; } = string.Empty;
+
         public static void OnContentIdSelected(string contentId)
         {
-            ContentIdSelected?.Invoke(null, contentId);
+            SelectedContentId = contentId ?? string.Empty;
+            ContentIdSelected?.Invoke(null, SelectedContentId);
         }
 
         public static List <Action> DealyLoad { get; set; } = new List<Action>();

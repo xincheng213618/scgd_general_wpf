@@ -98,7 +98,7 @@ namespace ColorVision.Update
                 if (TryReadSnapshotInfo(DefaultSnapshotPath, out ApplicationSnapshotInfo? snapshotInfo) && snapshotInfo != null)
                     return Task.FromResult(snapshotInfo);
 
-                TryDeleteCorruptedSnapshot(DefaultSnapshotPath);
+                MoveUnreadableSnapshotToRecovery(DefaultSnapshotPath);
             }
 
             return CreateDefaultSnapshotAsync(force: true, cancellationToken);
@@ -149,7 +149,7 @@ namespace ColorVision.Update
         {
             Directory.CreateDirectory(SnapshotDirectory);
             return Directory.EnumerateFiles(SnapshotDirectory, "*.zip", SearchOption.TopDirectoryOnly)
-                .Select(TryReadSnapshotInfoOrDelete)
+                .Select(TryReadSnapshotInfoOrIgnore)
                 .OfType<ApplicationSnapshotInfo>()
                 .OrderByDescending(item => item.IsDefault)
                 .ThenByDescending(item => item.CreatedAt)
@@ -184,13 +184,9 @@ namespace ColorVision.Update
             {
                 if (!overwrite)
                     return ReadSnapshotInfo(snapshotPath);
-
-                File.Delete(snapshotPath);
             }
 
-            string tempPath = snapshotPath + ".tmp";
-            if (File.Exists(tempPath))
-                File.Delete(tempPath);
+            string tempPath = $"{snapshotPath}.{Guid.NewGuid():N}.tmp";
 
             string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             ApplicationSnapshotManifest manifest = new()
@@ -203,22 +199,30 @@ namespace ColorVision.Update
                 IsDefault = kind == SnapshotKind.Default,
             };
 
-            using (FileStream zipStream = new(tempPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
-            using (ZipArchive archive = new(zipStream, ZipArchiveMode.Create))
+            try
             {
-                foreach (string filePath in Directory.EnumerateFiles(programDirectory, "*", SearchOption.AllDirectories))
+                using (FileStream zipStream = new(tempPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+                using (ZipArchive archive = new(zipStream, ZipArchiveMode.Create))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    AddFileEntry(archive, programDirectory, filePath);
+                    foreach (string filePath in Directory.EnumerateFiles(programDirectory, "*", SearchOption.AllDirectories))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        AddFileEntry(archive, programDirectory, filePath);
+                    }
+
+                    ZipArchiveEntry manifestEntry = archive.CreateEntry(ManifestFileName, CompressionLevel.Optimal);
+                    using Stream manifestStream = manifestEntry.Open();
+                    JsonSerializer.Serialize(manifestStream, manifest, JsonOptions);
                 }
 
-                ZipArchiveEntry manifestEntry = archive.CreateEntry(ManifestFileName, CompressionLevel.Optimal);
-                using Stream manifestStream = manifestEntry.Open();
-                JsonSerializer.Serialize(manifestStream, manifest, JsonOptions);
+                PromoteCompletedSnapshot(tempPath, snapshotPath);
+                return ReadSnapshotInfo(snapshotPath);
             }
-
-            File.Move(tempPath, snapshotPath);
-            return ReadSnapshotInfo(snapshotPath);
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
         }
 
         private static void AddFileEntry(ZipArchive archive, string rootDirectory, string filePath)
@@ -255,12 +259,11 @@ namespace ColorVision.Update
             };
         }
 
-        private static ApplicationSnapshotInfo? TryReadSnapshotInfoOrDelete(string snapshotPath)
+        private static ApplicationSnapshotInfo? TryReadSnapshotInfoOrIgnore(string snapshotPath)
         {
             if (TryReadSnapshotInfo(snapshotPath, out ApplicationSnapshotInfo? snapshotInfo))
                 return snapshotInfo;
 
-            TryDeleteCorruptedSnapshot(snapshotPath);
             return null;
         }
 
@@ -286,20 +289,38 @@ namespace ColorVision.Update
             _ = archive.Entries.Count;
         }
 
-        private static void TryDeleteCorruptedSnapshot(string snapshotPath)
+        internal static string MoveUnreadableSnapshotToRecovery(string snapshotPath)
         {
+            return MoveSnapshotToRecovery(snapshotPath, "unreadable");
+        }
+
+        internal static void PromoteCompletedSnapshot(string completedSnapshotPath, string snapshotPath)
+        {
+            string? recoveryPath = File.Exists(snapshotPath)
+                ? MoveSnapshotToRecovery(snapshotPath, "replaced")
+                : null;
+
             try
             {
-                if (!File.Exists(snapshotPath))
-                    return;
-
-                File.Delete(snapshotPath);
-                log.Warn($"Deleted corrupted snapshot file: {snapshotPath}");
+                File.Move(completedSnapshotPath, snapshotPath);
             }
-            catch (Exception ex)
+            catch
             {
-                log.Warn($"Failed to delete corrupted snapshot file: {snapshotPath}", ex);
+                if (recoveryPath != null && !File.Exists(snapshotPath) && File.Exists(recoveryPath))
+                    File.Move(recoveryPath, snapshotPath);
+                throw;
             }
+        }
+
+        private static string MoveSnapshotToRecovery(string snapshotPath, string reason)
+        {
+            string recoveryDirectory = Path.Combine(Path.GetDirectoryName(snapshotPath)!, "Recovery");
+            Directory.CreateDirectory(recoveryDirectory);
+            string recoveryFileName = $"{Path.GetFileNameWithoutExtension(snapshotPath)}-{reason}-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}{Path.GetExtension(snapshotPath)}";
+            string recoveryPath = Path.Combine(recoveryDirectory, recoveryFileName);
+            File.Move(snapshotPath, recoveryPath);
+            log.Warn($"Moved snapshot to recovery storage: {recoveryPath}");
+            return recoveryPath;
         }
 
         private static ApplicationSnapshotManifest? TryReadManifest(string snapshotPath)

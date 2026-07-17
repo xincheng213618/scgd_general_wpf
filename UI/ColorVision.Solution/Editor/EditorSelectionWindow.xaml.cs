@@ -5,21 +5,20 @@ using System.Windows;
 
 namespace ColorVision.Solution.Editor
 {
-    public class EditorTypeViewModel
+    public class EditorDescriptorViewModel
     {
         public string Name { get; set; }
-        public Type Type { get; set; }
+        public EditorDescriptor Descriptor { get; }
 
-        public EditorTypeViewModel(Type type,string ext)
+        public EditorDescriptorViewModel(EditorDescriptor descriptor, string resourcePath)
         {
-            Type = type;
-            Name = EditorManager.GetEditorName(type); // 你已实现的 Name 获取逻辑
-            if (type == typeof(SystemEditor))
+            Descriptor = descriptor;
+            Name = EditorManager.GetEditorName(descriptor);
+            if (descriptor.ResourceKind == EditorResourceKind.File
+                && descriptor.EditorType == typeof(SystemEditor))
             {
-                string friendlyName = FileAssociation.GetFriendlyAppName(ext);
-
+                string friendlyName = FileAssociation.GetFriendlyAppName(Path.GetExtension(resourcePath));
                 Name = $"{Name} ({friendlyName})";
-
             }
         }
         public override string ToString() => Name;
@@ -30,42 +29,57 @@ namespace ColorVision.Solution.Editor
     /// </summary>
     public partial class EditorSelectionWindow : Window
     {
-        public Type SelectedEditorType { get; private set; }
+        public EditorDescriptor? SelectedEditor { get; private set; }
 
-        public List<EditorTypeViewModel> EditorTypes { get; private set; }
+        public bool AlwaysUseSelectedEditor => AlwaysUseCheckBox.IsChecked == true;
 
-        public string FilePath { get; set; }
+        public List<EditorDescriptorViewModel> EditorTypes { get; private set; }
 
-        public EditorSelectionWindow(List<Type> types, Type currentType,string filepath)
+        public EditorSelectionWindow(
+            IReadOnlyList<EditorDescriptor> descriptors,
+            string? currentEditorId,
+            string resourcePath)
         {
             InitializeComponent();
             this.ApplyCaption();
-            string ext = Path.GetExtension(filepath);
-            EditorTypes = types.Select(t => new EditorTypeViewModel(t, ext)).ToList();
+            bool isFolder = descriptors.Count > 0
+                && descriptors[0].ResourceKind == EditorResourceKind.Folder;
+            OpenHintText.Text = isFolder
+                ? ColorVision.Solution.Properties.Resources.Sol_OpenFolderHint
+                : ColorVision.Solution.Properties.Resources.Sol_OpenFileHint;
+            AlwaysUseCheckBox.Content = isFolder
+                ? "始终使用此编辑器打开文件夹"
+                : "始终使用此编辑器打开此类文件";
+            EditorTypes = descriptors.Select(descriptor =>
+                new EditorDescriptorViewModel(descriptor, resourcePath)).ToList();
             ListEditorSelection.ItemsSource = EditorTypes;
-            ListEditorSelection.SelectedIndex = types.IndexOf(currentType);
-            FilePath = filepath;
-
+            int selectedIndex = currentEditorId == null
+                ? -1
+                : EditorTypes.FindIndex(item => string.Equals(
+                    item.Descriptor.Id,
+                    currentEditorId,
+                    StringComparison.OrdinalIgnoreCase));
+            ListEditorSelection.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectedEditorType = EditorTypes[ListEditorSelection.SelectedIndex].Type;
-            this.DialogResult = true;
-            this.Close();
+            ConfirmSelection();
         }
 
         private void ListEditorSelection_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (ListEditorSelection.SelectedItem is EditorTypeViewModel selected)
-            {
-                if (Activator.CreateInstance(selected.Type) is IEditor editor)
-                {
-                    editor.Open(FilePath);
-                } 
-                this.DialogResult = false;
-                this.Close();
-            }
+            ConfirmSelection();
+        }
+
+        private void ConfirmSelection()
+        {
+            if (ListEditorSelection.SelectedItem is not EditorDescriptorViewModel selected)
+                return;
+
+            SelectedEditor = selected.Descriptor;
+            DialogResult = true;
+            Close();
         }
     }
 }

@@ -78,6 +78,11 @@ internal sealed class ServiceHostPipeServer
             try
             {
                 ServiceHostLog.Write("Reading pipe request.");
+                string? requestJson = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(requestJson))
+                    return;
+
+                // Windows requires the server to read from the pipe before impersonating its client.
                 if (!ServiceHostCallerIdentity.TryResolve(pipe, out ServiceHostRequestContext context, out string identityError))
                 {
                     ServiceHostLog.Write($"Pipe caller rejected: {identityError}");
@@ -85,9 +90,6 @@ internal sealed class ServiceHostPipeServer
                         ServiceHostResponse.FromObject(string.Empty, false, "untrusted_pipe_client"), ServiceHostJson.Settings));
                     return;
                 }
-                string? requestJson = reader.ReadLine();
-                if (string.IsNullOrWhiteSpace(requestJson))
-                    return;
 
                 ServiceHostRequest? request = JsonConvert.DeserializeObject<ServiceHostRequest>(requestJson, ServiceHostJson.Settings);
                 ServiceHostResponse response = request == null || string.IsNullOrWhiteSpace(request.Command)

@@ -201,6 +201,11 @@ namespace ColorVision
             // 窗口关闭时自动保存布局
             this.Closing += (s, e) =>
             {
+                if (!EditorDocumentService.TryCloseAllDocuments())
+                {
+                    e.Cancel = true;
+                    return;
+                }
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
         }
@@ -242,23 +247,17 @@ namespace ColorVision
             ActivateTerminalPanel();
         }
 
-        private void MainWindow_Drop(object sender, DragEventArgs e)
+        private async void MainWindow_Drop(object sender, DragEventArgs e)
         {
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
             if (b)
             {
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
-                var fn = a?.First();
-
-                if (File.Exists(fn))
-                { 
-                    FileProcessorFactory.GetInstance().HandleFile(fn);
-                    e.Handled = true;
-                }
-                else if (Directory.Exists(fn))
+                if (a is { Length: > 0 })
                 {
-                    DirectoryInfo directoryInfo = new DirectoryInfo(fn);
+                    e.Handled = true;
+                    await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(a, this);
                 }
             }
         }

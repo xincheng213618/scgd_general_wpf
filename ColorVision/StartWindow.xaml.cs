@@ -467,15 +467,14 @@ namespace ColorVision
                         log.Info($"Feature '{feature}' not found, starting configured main window.");
                         Window mainWindow = CreatePrimaryMainWindow();
                         mainWindow.Show();
-                        ScheduleServiceHostStartupCheck(mainWindow);
                     }
                 }
                 else
                 {
                     Window mainWindow = CreatePrimaryMainWindow();
                     mainWindow.Show();
-                    ScheduleServiceHostStartupCheck(mainWindow);
                 }
+                ScheduleServiceHostStartupUpdate();
                 Close();
             }
             catch (Exception ex)
@@ -492,12 +491,10 @@ namespace ColorVision
                 : new MainWindow();
         }
 
-        private static void ScheduleServiceHostStartupCheck(Window mainWindow)
+        private static void ScheduleServiceHostStartupUpdate()
         {
-            _ = mainWindow.Dispatcher.BeginInvoke(async () =>
-            {
-                await ServiceHostStartupUpdateChecker.CheckAndPromptAsync(mainWindow).ConfigureAwait(true);
-            }, DispatcherPriority.ApplicationIdle);
+            Dispatcher dispatcher = Application.Current.Dispatcher;
+            _ = dispatcher.BeginInvoke(async () => await ServiceHostStartupUpdateChecker.CheckAndUpdateAsync().ConfigureAwait(true), DispatcherPriority.ApplicationIdle);
         }
 
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)

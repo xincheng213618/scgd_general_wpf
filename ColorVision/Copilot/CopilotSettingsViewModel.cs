@@ -20,6 +20,19 @@ using System.Windows.Input;
 
 namespace ColorVision.Copilot
 {
+    public sealed class CopilotExternalMcpClientStatusItem
+    {
+        public string ServerName { get; init; } = string.Empty;
+
+        public string Endpoint { get; init; } = string.Empty;
+
+        public string StateText { get; init; } = string.Empty;
+
+        public string DetailText { get; init; } = string.Empty;
+
+        public string CheckedText { get; init; } = string.Empty;
+    }
+
     public sealed class CopilotConnectProviderOption
     {
         public string GroupName { get; init; } = string.Empty;
@@ -51,12 +64,115 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotSettingsViewModel : ViewModelBase
+    public sealed class CopilotPluginSubagentRoleSetting : ViewModelBase
     {
-        private static readonly HttpClient McpHttpClient = new()
+        private readonly Action _changed;
+
+        public CopilotPluginSubagentRoleSetting(
+            CopilotPluginSubagentRoleInfo role,
+            bool isEnabled,
+            string permissionSummary,
+            string budgetSummary,
+            Action changed)
         {
-            Timeout = TimeSpan.FromSeconds(5),
-        };
+            Key = role.Key;
+            DisplayName = role.DisplayName;
+            SourceText = $"{role.SourceName} · {role.ToolName}";
+            PermissionSummary = permissionSummary;
+            BudgetSummary = budgetSummary;
+            _isEnabled = isEnabled;
+            _changed = changed ?? throw new ArgumentNullException(nameof(changed));
+        }
+
+        public string Key { get; }
+
+        public string DisplayName { get; }
+
+        public string SourceText { get; }
+
+        public string PermissionSummary { get; }
+
+        public string BudgetSummary { get; }
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (SetProperty(ref _isEnabled, value))
+                    _changed();
+            }
+        }
+        private bool _isEnabled;
+    }
+
+    public sealed record CopilotAgentSkillOverrideOption(
+        CopilotAgentSkillOverrideState State,
+        string Label);
+
+    public sealed class CopilotAgentSkillSetting : ViewModelBase
+    {
+        private readonly Action _changed;
+
+        public CopilotAgentSkillSetting(
+            string name,
+            CopilotAgentSkillOverrideState state,
+            CopilotAgentSkillUsageEntry? usage,
+            bool isHistoricalExplicitOnly,
+            Action changed)
+        {
+            Name = name;
+            _state = state;
+            _changed = changed ?? throw new ArgumentNullException(nameof(changed));
+            UpdateUsage(usage, isHistoricalExplicitOnly);
+        }
+
+        public string Name { get; }
+
+        public CopilotAgentSkillOverrideState State
+        {
+            get => _state;
+            set
+            {
+                var normalized = Enum.IsDefined(value) ? value : CopilotAgentSkillOverrideState.Auto;
+                if (SetProperty(ref _state, normalized))
+                    _changed();
+            }
+        }
+        private CopilotAgentSkillOverrideState _state;
+
+        public bool IsTracked
+        {
+            get => _isTracked;
+            private set => SetProperty(ref _isTracked, value);
+        }
+        private bool _isTracked;
+
+        public string UsageSummary
+        {
+            get => _usageSummary;
+            private set => SetProperty(ref _usageSummary, value ?? string.Empty);
+        }
+        private string _usageSummary = string.Empty;
+
+        public void UpdateUsage(CopilotAgentSkillUsageEntry? usage, bool isHistoricalExplicitOnly)
+        {
+            IsTracked = usage != null;
+            if (usage == null)
+            {
+                UsageSummary = "No local usage evidence yet; the override applies when this skill is discovered.";
+                return;
+            }
+
+            UsageSummary = $"Loaded {usage.LoadedRuns}/{usage.SelectedRuns} selected run(s) ({usage.LoadRate:P0}); consecutive misses {usage.ConsecutiveSelectedWithoutLoad}/{CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold}"
+                + (isHistoricalExplicitOnly ? " · Auto currently resolves to explicit-only" : string.Empty);
+        }
+    }
+
+    public sealed class CopilotSettingsViewModel : ViewModelBase, IDisposable
+    {
+        private const int MaximumMcpStatusResponseBytes = 512 * 1024;
+        private static readonly HttpClient McpHttpClient = CopilotMcpHttpTransport.CreateClient(TimeSpan.FromSeconds(5));
 
         private static readonly Regex SensitiveErrorRegex = new(
             "(Bearer\\s+)[^,;\\s]+|(?<name>token|api[_-]?key|authorization)\\s*[:=]\\s*[^,;\\s]+",
@@ -163,9 +279,11 @@ namespace ColorVision.Copilot
             });
 
         private readonly CopilotChatService _chatService = new();
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
         private bool _isApplyingPreset;
         private bool _isReadyForUserChanges;
         private bool _isSavingSettings;
+        private bool _disposed;
         private string _activeProfileId = string.Empty;
 
         public CopilotSettingsViewModel()
@@ -178,6 +296,19 @@ namespace ColorVision.Copilot
             {
                 new CopilotProviderOption { Label = "OpenAI Compatible", Value = CopilotProviderType.OpenAICompatible },
                 new CopilotProviderOption { Label = "Anthropic Compatible", Value = CopilotProviderType.AnthropicCompatible },
+            });
+            ShellOptions = new ReadOnlyCollection<CopilotShellOption>(new[]
+            {
+                new CopilotShellOption { Label = "自动（PowerShell）", Value = CopilotShellKind.Auto },
+                new CopilotShellOption { Label = "PowerShell", Value = CopilotShellKind.PowerShell },
+                new CopilotShellOption { Label = "CMD", Value = CopilotShellKind.CommandPrompt },
+            });
+            AgentSkillOverrideOptions = new ReadOnlyCollection<CopilotAgentSkillOverrideOption>(new[]
+            {
+                new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.Auto, "Auto"),
+                new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.NameOnly, "Name only"),
+                new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.UserInvocableOnly, "Explicit only"),
+                new CopilotAgentSkillOverrideOption(CopilotAgentSkillOverrideState.Off, "Off"),
             });
             VendorOptions = CopilotVendorCatalog.VendorOptions;
             QuickAddVendorOptions = VendorOptions
@@ -212,19 +343,30 @@ namespace ColorVision.Copilot
             ToggleMcpBearerTokenVisibilityCommand = new RelayCommand(_ => IsMcpBearerTokenVisible = !IsMcpBearerTokenVisible);
             CopyCodexMcpConfigCommand = new RelayCommand(_ => CopyCodexMcpConfig());
             CopyMcpTokenEnvironmentCommand = new RelayCommand(_ => CopyMcpTokenEnvironmentCommandToClipboard());
-            TestMcpConnectionCommand = new RelayCommand(_ => _ = TestMcpConnectionAsync());
+            TestMcpConnectionCommand = new RelayCommand(_ => RunUiOperation(TestMcpConnectionAsync, "测试 MCP 连接"));
             RefreshMcpDiagnosticsCommand = new RelayCommand(_ => RefreshMcpDiagnostics());
-            RefreshExternalMcpClientsCommand = new RelayCommand(_ => _ = RefreshExternalMcpClientsAsync(), _ => !IsRefreshingExternalMcpClients);
+            RefreshAgentSkillDiagnosticsCommand = new RelayCommand(_ => RefreshAgentSkillDiagnostics());
+            RefreshExternalMcpClientsCommand = new RelayCommand(_ => RunUiOperation(RefreshExternalMcpClientsAsync, "刷新外部 MCP"), _ => !IsRefreshingExternalMcpClients);
+            CopyExternalMcpClientsStatusCommand = new RelayCommand(_ => CopyExternalMcpClientsStatus());
             CopyMcpDiagnosticsCommand = new RelayCommand(_ => CopyMcpDiagnostics());
-            TestSelectedProfileCommand = new RelayCommand(_ => _ = TestSelectedProfileConnectionAsync(), _ => CanTestSelectedProfile);
+            TestSelectedProfileCommand = new RelayCommand(_ => RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接"), _ => CanTestSelectedProfile);
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
             ToggleNewProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsNewProfileApiKeyVisible = !IsNewProfileApiKeyVisible);
             ToggleSelectedProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsSelectedProfileApiKeyVisible = !IsSelectedProfileApiKeyVisible);
             SelectConnectProviderCommand = new RelayCommand(parameter => SelectConnectProvider(parameter as CopilotConnectProviderOption));
             BackToConnectProviderPickerCommand = new RelayCommand(_ => IsConnectProviderPickerVisible = true);
             ClearConnectProviderSearchCommand = new RelayCommand(_ => ConnectProviderSearchText = string.Empty);
+            AddAgentSkillOverrideCommand = new RelayCommand(_ => AddAgentSkillOverride(), _ => CanAddAgentSkillOverride);
+            RemoveAgentSkillOverrideCommand = new RelayCommand<CopilotAgentSkillSetting>(RemoveAgentSkillOverride, setting => setting != null);
 
             McpEnabled = config.McpEnabled;
+            AgentContextWindowTokens = config.AgentDefaults.ContextWindowTokens;
+            AgentRequestTokenBudget = config.AgentDefaults.RequestTokenBudget;
+            MaxAgentToolCalls = config.AgentDefaults.MaxToolCalls;
+            MaxAgentPasses = config.AgentDefaults.MaxAgentPasses;
+            AgentTimeoutSeconds = config.AgentDefaults.TimeoutSeconds;
+            PreferredShell = config.AgentDefaults.PreferredShell;
+            LoadAgentSkillSettings(config.AgentDefaults.SkillOverrides);
             McpPort = config.McpPort;
             McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
             McpEndpoint = BuildMcpEndpoint();
@@ -232,12 +374,23 @@ namespace ColorVision.Copilot
             ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
+            RefreshAgentSkillDiagnostics();
             _isReadyForUserChanges = true;
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
 
+        public ObservableCollection<CopilotPluginSubagentRoleSetting> PluginSubagentRoles { get; } = new();
+
+        public ObservableCollection<CopilotAgentSkillSetting> AgentSkillSettings { get; } = new();
+
+        public ObservableCollection<CopilotExternalMcpClientStatusItem> ExternalMcpClientStatuses { get; } = new();
+
         public IReadOnlyList<CopilotProviderOption> ProviderOptions { get; }
+
+        public IReadOnlyList<CopilotShellOption> ShellOptions { get; }
+
+        public IReadOnlyList<CopilotAgentSkillOverrideOption> AgentSkillOverrideOptions { get; }
 
         public IReadOnlyList<CopilotVendorOption> VendorOptions { get; }
 
@@ -247,6 +400,101 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotConnectProviderOption> VisibleConnectProviderOptions =>
             ConnectProviderOptions.Where(option => option.Matches(ConnectProviderSearchText)).ToArray();
+
+        public CopilotShellKind PreferredShell
+        {
+            get => _preferredShell;
+            set
+            {
+                if (SetProperty(ref _preferredShell, value) && _isReadyForUserChanges)
+                    MarkSettingsPending("Default Agent shell changed. Click Apply or Save to use it.");
+            }
+        }
+        private CopilotShellKind _preferredShell = CopilotShellKind.Auto;
+
+        public int AgentContextWindowTokens
+        {
+            get => _agentContextWindowTokens;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentTokenBudget.MinimumContextWindowTokens, CopilotAgentTokenBudget.MaximumContextWindowTokens);
+                if (SetProperty(ref _agentContextWindowTokens, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent context-window budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentContextWindowTokens = CopilotAgentDefaultsConfig.DefaultContextWindowTokens;
+
+        public int AgentRequestTokenBudget
+        {
+            get => _agentRequestTokenBudget;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumRequestTokenBudget, CopilotAgentRunBudget.MaximumRequestTokenBudget);
+                if (SetProperty(ref _agentRequestTokenBudget, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent request-token budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentRequestTokenBudget = CopilotAgentDefaultsConfig.DefaultRequestTokenBudget;
+
+        public int MaxAgentToolCalls
+        {
+            get => _maxAgentToolCalls;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumToolCalls, CopilotAgentRunBudget.MaximumToolCalls);
+                if (SetProperty(ref _maxAgentToolCalls, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent tool-call budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _maxAgentToolCalls = CopilotAgentDefaultsConfig.DefaultMaxToolCalls;
+
+        public int MaxAgentPasses
+        {
+            get => _maxAgentPasses;
+            set
+            {
+                var normalized = Math.Clamp(value, CopilotAgentRunBudget.MinimumAgentPasses, CopilotAgentRunBudget.MaximumAgentPasses);
+                if (SetProperty(ref _maxAgentPasses, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent pass budget changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _maxAgentPasses = CopilotAgentDefaultsConfig.DefaultMaxAgentPasses;
+
+        public int AgentTimeoutSeconds
+        {
+            get => _agentTimeoutSeconds;
+            set
+            {
+                var normalized = Math.Clamp(value, (int)CopilotAgentRunBudget.MinimumTotalDuration.TotalSeconds, (int)CopilotAgentRunBudget.MaximumTotalDuration.TotalSeconds);
+                if (SetProperty(ref _agentTimeoutSeconds, normalized) && _isReadyForUserChanges)
+                    MarkSettingsPending("Agent timeout changed. Click Apply or Save to use it.");
+            }
+        }
+        private int _agentTimeoutSeconds = CopilotAgentDefaultsConfig.DefaultTimeoutSeconds;
+
+        public string NewAgentSkillName
+        {
+            get => _newAgentSkillName;
+            set
+            {
+                if (!SetProperty(ref _newAgentSkillName, value ?? string.Empty))
+                    return;
+                OnPropertyChanged(nameof(CanAddAgentSkillOverride));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private string _newAgentSkillName = string.Empty;
+
+        public bool CanAddAgentSkillOverride
+        {
+            get
+            {
+                var name = CopilotAgentSkillOverrideConfig.NormalizeName(NewAgentSkillName);
+                return name.Length > 0
+                    && AgentSkillSettings.Count(setting => setting.State != CopilotAgentSkillOverrideState.Auto) < CopilotAgentSkillOverrideConfig.MaxEntries
+                    && !AgentSkillSettings.Any(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase));
+            }
+        }
 
         public RelayCommand AddProfileCommand { get; }
 
@@ -270,7 +518,11 @@ namespace ColorVision.Copilot
 
         public RelayCommand RefreshMcpDiagnosticsCommand { get; }
 
+        public RelayCommand RefreshAgentSkillDiagnosticsCommand { get; }
+
         public RelayCommand RefreshExternalMcpClientsCommand { get; }
+
+        public RelayCommand CopyExternalMcpClientsStatusCommand { get; }
 
         public RelayCommand CopyMcpDiagnosticsCommand { get; }
 
@@ -287,6 +539,10 @@ namespace ColorVision.Copilot
         public RelayCommand BackToConnectProviderPickerCommand { get; }
 
         public RelayCommand ClearConnectProviderSearchCommand { get; }
+
+        public RelayCommand AddAgentSkillOverrideCommand { get; }
+
+        public ICommand RemoveAgentSkillOverrideCommand { get; }
 
         public bool McpEnabled
         {
@@ -505,7 +761,7 @@ namespace ColorVision.Copilot
         }
         private bool _isTestingMcpConnection;
 
-        public bool CanTestMcpConnection => !IsTestingMcpConnection && IsMcpPortValid;
+        public bool CanTestMcpConnection => !_disposed && !IsTestingMcpConnection && IsMcpPortValid;
 
         public string SelectedProfileConnectionTestText
         {
@@ -528,7 +784,7 @@ namespace ColorVision.Copilot
         }
         private bool _isTestingSelectedProfileConnection;
 
-        public bool CanTestSelectedProfile => SelectedProfile?.IsConfigured == true && !IsTestingSelectedProfileConnection;
+        public bool CanTestSelectedProfile => !_disposed && SelectedProfile?.IsConfigured == true && !IsTestingSelectedProfileConnection;
 
         public bool IsSelectedProfileActiveInChat => SelectedProfile != null
             && string.Equals(SelectedProfile.Id, _activeProfileId, StringComparison.Ordinal);
@@ -659,6 +915,34 @@ namespace ColorVision.Copilot
         }
         private string _mcpRecentAuditText = string.Empty;
 
+        public string SubagentRolesSummaryText
+        {
+            get => _subagentRolesSummaryText;
+            private set => SetProperty(ref _subagentRolesSummaryText, value ?? string.Empty);
+        }
+        private string _subagentRolesSummaryText = string.Empty;
+
+        public string SubagentRolesDiagnosticsText
+        {
+            get => _subagentRolesDiagnosticsText;
+            private set => SetProperty(ref _subagentRolesDiagnosticsText, value ?? string.Empty);
+        }
+        private string _subagentRolesDiagnosticsText = string.Empty;
+
+        public string AgentSkillsSummaryText
+        {
+            get => _agentSkillsSummaryText;
+            private set => SetProperty(ref _agentSkillsSummaryText, value ?? string.Empty);
+        }
+        private string _agentSkillsSummaryText = string.Empty;
+
+        public string AgentSkillsDiagnosticsText
+        {
+            get => _agentSkillsDiagnosticsText;
+            private set => SetProperty(ref _agentSkillsDiagnosticsText, value ?? string.Empty);
+        }
+        private string _agentSkillsDiagnosticsText = string.Empty;
+
         public CopilotVendorType NewProfileVendorType
         {
             get => _newProfileVendorType;
@@ -783,6 +1067,8 @@ namespace ColorVision.Copilot
             private set => SetProperty(ref _hasAppliedChanges, value);
         }
         private bool _hasAppliedChanges;
+
+        public string ActiveProfileId => _activeProfileId;
 
         public string NewProfileCredentialStatusText
         {
@@ -920,6 +1206,19 @@ namespace ColorVision.Copilot
                 }
 
                 config.McpEnabled = McpEnabled;
+                config.AgentDefaults.ContextWindowTokens = AgentContextWindowTokens;
+                config.AgentDefaults.RequestTokenBudget = AgentRequestTokenBudget;
+                config.AgentDefaults.MaxToolCalls = MaxAgentToolCalls;
+                config.AgentDefaults.MaxAgentPasses = MaxAgentPasses;
+                config.AgentDefaults.TimeoutSeconds = AgentTimeoutSeconds;
+                config.AgentDefaults.PreferredShell = PreferredShell;
+                config.AgentDefaults.SkillOverrides.Clear();
+                foreach (var item in CopilotAgentSkillOverrideConfig.Normalize(AgentSkillSettings
+                    .Where(setting => setting.State != CopilotAgentSkillOverrideState.Auto)
+                    .Select(setting => new CopilotAgentSkillOverrideConfig { Name = setting.Name, State = setting.State })))
+                {
+                    config.AgentDefaults.SkillOverrides.Add(item);
+                }
                 config.McpPort = McpPort;
                 config.McpBearerToken = string.IsNullOrWhiteSpace(McpBearerToken)
                     ? CopilotConfig.GenerateMcpBearerToken()
@@ -928,22 +1227,26 @@ namespace ColorVision.Copilot
                 foreach (var server in externalMcpServers)
                     config.ExternalMcpServers.Add(server.Clone());
 
+                var visibleRoleKeys = PluginSubagentRoles.Select(role => role.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var disabledRoleKeys = config.DisabledPluginSubagentRoles
+                    .Where(roleKey => !visibleRoleKeys.Contains(roleKey))
+                    .Concat(PluginSubagentRoles.Where(role => !role.IsEnabled).Select(role => role.Key))
+                    .ToArray();
+                config.DisabledPluginSubagentRoles.Clear();
+                foreach (var roleKey in CopilotPluginSubagentRolePreference.NormalizeKeys(disabledRoleKeys))
+                    config.DisabledPluginSubagentRoles.Add(roleKey);
+
                 config.EnsureInitialized();
                 McpPort = config.McpPort;
                 McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
                 McpEndpoint = BuildMcpEndpoint();
                 McpBearerToken = config.McpBearerToken;
                 ConfigHandler.GetInstance().Save<CopilotConfig>();
+                CopilotPluginSubagentRoleLoader.Shared.SetDisabledRoleKeys(config.DisabledPluginSubagentRoles);
                 CopilotMcpServer.Instance.ApplyConfig();
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
-
-                var stateStore = CopilotChatStateStore.Instance;
-                var state = stateStore.Load();
-                state.ActiveProfileId = SelectedProfile?.Id ?? state.ActiveProfileId;
-                state.EnsureInitialized(config);
-                _activeProfileId = state.ActiveProfileId;
-                stateStore.Save(state);
+                _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
             }
             finally
             {
@@ -1119,7 +1422,7 @@ namespace ColorVision.Copilot
 
         private async Task TestSelectedProfileConnectionAsync()
         {
-            if (IsTestingSelectedProfileConnection)
+            if (_disposed || IsTestingSelectedProfileConnection)
                 return;
 
             var sourceProfile = SelectedProfile;
@@ -1149,7 +1452,8 @@ namespace ColorVision.Copilot
             SetSettingsNotice($"Testing {profile.DisplayLabel}...");
             try
             {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+                timeout.CancelAfter(TimeSpan.FromSeconds(30));
                 await _chatService.StreamReplyAsync(
                     profile,
                     ModelConnectionTestMessages,
@@ -1158,6 +1462,9 @@ namespace ColorVision.Copilot
 
                 SelectedProfileConnectionTestText = "Connected. The model returned a response.";
                 SetSettingsNotice($"Model test succeeded for {profile.DisplayLabel}.");
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (OperationCanceledException)
             {
@@ -1251,7 +1558,7 @@ namespace ColorVision.Copilot
 
         public async Task TestMcpConnectionAsync()
         {
-            if (IsTestingMcpConnection)
+            if (_disposed || IsTestingMcpConnection)
                 return;
 
             if (!ApplyMcpPortText(updateNotice: true))
@@ -1293,7 +1600,10 @@ namespace ColorVision.Copilot
                 });
                 request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                using var response = await McpHttpClient.SendAsync(request, CancellationToken.None);
+                using var response = await McpHttpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    _lifetimeCancellation.Token);
                 if (!response.IsSuccessStatusCode)
                 {
                     McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
@@ -1303,7 +1613,11 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                var body = await response.Content.ReadAsStringAsync();
+                var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                    response.Content,
+                    MaximumMcpStatusResponseBytes,
+                    "MCP status response",
+                    _lifetimeCancellation.Token);
                 using var document = JsonDocument.Parse(body);
                 var root = document.RootElement;
                 if (root.TryGetProperty("error", out var errorElement))
@@ -1329,6 +1643,9 @@ namespace ColorVision.Copilot
                 SetSettingsNotice("MCP connection test succeeded.");
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (Exception ex)
             {
@@ -1385,6 +1702,17 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private void RunUiOperation(Func<Task> operation, string operationName)
+        {
+            if (_disposed)
+                return;
+
+            CopilotUiTaskObserver.Run(
+                operation,
+                operationName,
+                message => SetSettingsNotice($"{operationName}失败：{message}"));
+        }
+
         private bool ValidateExternalMcpServers(bool updateNotice)
         {
             if (CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
@@ -1393,11 +1721,14 @@ namespace ColorVision.Copilot
                 ExternalMcpServersValidationText = servers.Count == 0
                     ? "Optional. Add an exact tool list in the fifth field to limit what Copilot can discover."
                     : $"{servers.Count} external MCP server(s) configured. Exact tool lists are recommended; tokens are read only from environment variables.";
+                RefreshExternalMcpClientsStatus(servers);
                 return true;
             }
 
             IsExternalMcpServersValid = false;
             ExternalMcpServersValidationText = error;
+            ExternalMcpClientsStatusText = "Fix the external MCP configuration before refreshing discovery.";
+            ExternalMcpClientStatuses.Clear();
             if (updateNotice)
                 SetSettingsNotice(error);
             return false;
@@ -1410,25 +1741,101 @@ namespace ColorVision.Copilot
             if (configuredServers.Length == 0)
             {
                 ExternalMcpClientsStatusText = "No external MCP servers configured.";
+                ExternalMcpClientStatuses.Clear();
                 return;
             }
 
-            ExternalMcpClientsStatusText = string.Join(" · ", configuredServers.Select(server =>
+            ExternalMcpClientStatuses.Clear();
+            var connectedCount = 0;
+            var unavailableCount = 0;
+            var changedCount = 0;
+            foreach (var server in configuredServers)
             {
                 if (!CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health))
-                    return $"{server.Name}: not checked";
-                if (health.CacheInvalidated)
-                    return $"{server.Name}: tools changed (live refresh required)";
+                {
+                    ExternalMcpClientStatuses.Add(new CopilotExternalMcpClientStatusItem
+                    {
+                        ServerName = server.Name,
+                        Endpoint = server.Endpoint,
+                        StateText = "Not checked",
+                        DetailText = "Run Refresh Discovery to validate the connection and inspect the exposed tools.",
+                        CheckedText = "Not checked",
+                    });
+                    continue;
+                }
 
-                return health.State == CopilotMcpClientHealthState.Connected
-                    ? $"{server.Name}: connected ({health.ExposedToolCount}/{health.DiscoveredToolCount} tools, {(health.UsedCachedDiscovery ? "cached" : "live")}{(health.CapabilitiesChanged ? ", updated" : string.Empty)})"
-                    : $"{server.Name}: unavailable";
-            }));
+                if (health.CacheInvalidated)
+                    changedCount++;
+                else if (health.State == CopilotMcpClientHealthState.Connected)
+                    connectedCount++;
+                else
+                    unavailableCount++;
+
+                ExternalMcpClientStatuses.Add(CreateExternalMcpClientStatusItem(server, health));
+            }
+
+            var notCheckedCount = configuredServers.Length - connectedCount - unavailableCount - changedCount;
+            ExternalMcpClientsStatusText = $"{connectedCount}/{configuredServers.Length} connected"
+                + (unavailableCount > 0 ? $" · {unavailableCount} unavailable" : string.Empty)
+                + (changedCount > 0 ? $" · {changedCount} tool list changed" : string.Empty)
+                + (notCheckedCount > 0 ? $" · {notCheckedCount} not checked" : string.Empty);
+        }
+
+        private static CopilotExternalMcpClientStatusItem CreateExternalMcpClientStatusItem(
+            CopilotMcpClientServerConfig server,
+            CopilotMcpClientHealthSnapshot health)
+        {
+            var stateText = health.CacheInvalidated
+                ? "Tool list changed"
+                : health.State == CopilotMcpClientHealthState.Connected
+                    ? $"Connected · {health.ExposedToolCount}/{health.DiscoveredToolCount} tools"
+                    : "Unavailable";
+            var detailText = string.IsNullOrWhiteSpace(health.Message)
+                ? health.State == CopilotMcpClientHealthState.Connected ? "Connection succeeded." : "Connection unavailable."
+                : health.Message;
+            return new CopilotExternalMcpClientStatusItem
+            {
+                ServerName = server.Name,
+                Endpoint = server.Endpoint,
+                StateText = stateText,
+                DetailText = detailText,
+                CheckedText = "Checked " + health.CheckedAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture),
+            };
+        }
+
+        private void CopyExternalMcpClientsStatus()
+        {
+            if (ExternalMcpClientStatuses.Count == 0)
+            {
+                SetSettingsNotice("No external MCP client status is available to copy.");
+                return;
+            }
+
+            var builder = new StringBuilder();
+            foreach (var status in ExternalMcpClientStatuses)
+            {
+                if (builder.Length > 0)
+                    builder.AppendLine();
+                builder.Append(status.ServerName).Append(" · ").AppendLine(status.StateText);
+                builder.Append("Endpoint: ").AppendLine(status.Endpoint);
+                builder.Append("Status: ").AppendLine(status.DetailText);
+                builder.AppendLine(status.CheckedText);
+            }
+
+            try
+            {
+                Clipboard.SetText(builder.ToString().TrimEnd());
+                SetSettingsNotice("External MCP client status copied.");
+            }
+            catch (Exception ex)
+            {
+                SetSettingsNotice("Copy failed: " + SanitizeError(ex.Message));
+            }
         }
 
         private async Task RefreshExternalMcpClientsAsync()
         {
-            if (IsRefreshingExternalMcpClients)
+            if (_disposed || IsRefreshingExternalMcpClients)
                 return;
             if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
             {
@@ -1453,13 +1860,16 @@ namespace ColorVision.Copilot
                 {
                     ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
                     ForceExternalMcpToolRefresh = true,
-                }, CancellationToken.None);
+                }, _lifetimeCancellation.Token);
 
                 RefreshExternalMcpClientsStatus(servers);
                 var connectedCount = servers.Count(server =>
                     CopilotMcpClientHealthRegistry.TryGetSnapshot(server, out var health)
                     && health.State == CopilotMcpClientHealthState.Connected);
                 SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
+            }
+            catch (OperationCanceledException) when (_disposed)
+            {
             }
             catch (Exception ex)
             {
@@ -1471,6 +1881,25 @@ namespace ColorVision.Copilot
             {
                 IsRefreshingExternalMcpClients = false;
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            try
+            {
+                _lifetimeCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            _lifetimeCancellation.Dispose();
+            OnPropertyChanged(nameof(CanTestMcpConnection));
+            OnPropertyChanged(nameof(CanTestSelectedProfile));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private string BuildCodexMcpConfigSnippet()
@@ -1495,6 +1924,9 @@ namespace ColorVision.Copilot
             var failureCount = entries.Count(CopilotMcpAuditLogger.IsRealFailureEntry);
             var approvalFlowCount = entries.Count(CopilotMcpAuditLogger.IsApprovalFlowEntry);
             var capabilityCatalog = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            var subagentCatalog = CopilotSubagentRoleCatalog.Default;
+            var pluginSubagents = CopilotPluginSubagentRoleLoader.Shared.GetSnapshot();
+            RefreshSubagentRoleDiagnostics(subagentCatalog, pluginSubagents);
 
             var server = CopilotMcpServer.Instance;
             var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
@@ -1504,7 +1936,7 @@ namespace ColorVision.Copilot
                 : $"{FormatAuditEntryForSummary(lastEntry)}.";
 
             McpDiagnosticsSummaryText =
-                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
+                $"Capabilities: {capabilityCatalog.Capabilities.Count} (revision {capabilityCatalog.Revision}); subagent roles: {subagentCatalog.Roles.Count}; recent calls: {entries.Count}; failures: {failureCount}; approval events: {approvalFlowCount}; pending actions: {pendingCount}. {lastActivity}";
 
             var lastError = CopilotMcpAuditLogger.GetLastError();
             McpLastErrorText = lastError == null
@@ -1534,6 +1966,175 @@ namespace ColorVision.Copilot
                 McpErrorSummaryText = "None";
                 McpDiagnosticsHeaderText = "Diagnostics";
             }
+        }
+
+        private void RefreshSubagentRoleDiagnostics(
+            CopilotSubagentRoleCatalog catalog,
+            CopilotPluginSubagentRoleLoaderSnapshot pluginSnapshot)
+        {
+            var builtInCount = catalog.Roles.Count(role => string.Equals(role.SourceId, "builtin", StringComparison.OrdinalIgnoreCase));
+            var disabledPluginCount = pluginSnapshot.DeclaredRoles.Count(role => !role.IsEnabled);
+            var advertisedCharacters = pluginSnapshot.DeclaredRoles.Sum(role => role.AdvertisedCharacters);
+            SubagentRolesSummaryText =
+                $"{builtInCount} built-in; {pluginSnapshot.LoadedRoleCount}/{pluginSnapshot.DeclaredRoles.Count} plugin roles enabled; {disabledPluginCount} disabled; {advertisedCharacters:N0} advertised characters; registry revision {catalog.Revision}; manifest issues: {pluginSnapshot.Issues.Count}.";
+
+            var lines = new List<string>();
+            foreach (var role in catalog.Roles.Where(role => string.Equals(role.SourceId, "builtin", StringComparison.OrdinalIgnoreCase)).OrderBy(role => role.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                lines.Add($"[built-in] {role.DisplayName} ({role.ToolName})");
+                lines.Add($"  source={role.SourceName} [{role.SourceId}] version={role.SourceVersion}");
+                lines.Add($"  domain={role.ContextScope}; tools={FormatSubagentCapabilities(role.ReadCapabilities)}; child={role.ChildMode}; parents={string.Join(",", role.ParentModes)}");
+                lines.Add($"  fingerprint={role.CapabilityFingerprint}");
+            }
+            foreach (var role in pluginSnapshot.DeclaredRoles)
+            {
+                lines.Add($"[{(role.IsEnabled ? "enabled" : "disabled")}] {role.DisplayName} ({role.ToolName})");
+                lines.Add($"  source={role.SourceName} [{role.SourceId}]; role={role.RoleId}; domain={role.ContextScope}; tools={FormatSubagentCapabilities(role.ReadCapabilities)}");
+                lines.Add($"  budget={role.MaximumToolCalls} tools/{role.MaximumAgentPasses} passes/{role.MaximumDuration.TotalSeconds:0}s/{role.MaximumAnswerCharacters:N0} answer chars; advertised={role.AdvertisedCharacters:N0} chars");
+            }
+            foreach (var issue in pluginSnapshot.Issues)
+            {
+                var roleLabel = string.IsNullOrWhiteSpace(issue.RoleId) ? string.Empty : "/" + issue.RoleId;
+                lines.Add($"! {issue.SourceId}{roleLabel}: {issue.Message}");
+            }
+            SubagentRolesDiagnosticsText = lines.Count == 0 ? "No subagent roles registered." : string.Join(Environment.NewLine, lines);
+            SynchronizePluginSubagentRoleSettings(pluginSnapshot.DeclaredRoles);
+        }
+
+        private void SynchronizePluginSubagentRoleSettings(IReadOnlyList<CopilotPluginSubagentRoleInfo> roles)
+        {
+            var pendingValues = PluginSubagentRoles.ToDictionary(role => role.Key, role => role.IsEnabled, StringComparer.OrdinalIgnoreCase);
+            PluginSubagentRoles.Clear();
+            foreach (var role in roles)
+            {
+                var isEnabled = pendingValues.TryGetValue(role.Key, out var pendingValue) ? pendingValue : role.IsEnabled;
+                PluginSubagentRoles.Add(new CopilotPluginSubagentRoleSetting(
+                    role,
+                    isEnabled,
+                    $"Read access: {role.ContextScope} · {FormatSubagentCapabilities(role.ReadCapabilities)}",
+                    $"Limit: {role.MaximumToolCalls} tool calls · {role.MaximumAgentPasses} passes · {role.MaximumDuration.TotalSeconds:0}s · {role.MaximumAnswerCharacters:N0} answer chars · {role.AdvertisedCharacters:N0} prompt chars",
+                    OnPluginSubagentRoleSettingChanged));
+            }
+        }
+
+        private void OnPluginSubagentRoleSettingChanged()
+        {
+            MarkSettingsPending("Plugin subagent role selection changed. Click Apply or Save to update the model tool list.");
+        }
+
+        private void LoadAgentSkillSettings(IEnumerable<CopilotAgentSkillOverrideConfig> overrides)
+        {
+            AgentSkillSettings.Clear();
+            foreach (var item in CopilotAgentSkillOverrideConfig.Normalize(overrides))
+            {
+                AgentSkillSettings.Add(new CopilotAgentSkillSetting(
+                    item.Name,
+                    item.State,
+                    usage: null,
+                    isHistoricalExplicitOnly: false,
+                    OnAgentSkillSettingChanged));
+            }
+        }
+
+        private void SynchronizeAgentSkillSettings(CopilotAgentSkillUsageSnapshot snapshot)
+        {
+            var pendingStates = AgentSkillSettings.ToDictionary(setting => setting.Name, setting => setting.State, StringComparer.OrdinalIgnoreCase);
+            var usageByName = snapshot.Entries.ToDictionary(entry => entry.Name, StringComparer.OrdinalIgnoreCase);
+            var historicalNames = snapshot.HistoricalExplicitOnlySkills.Select(entry => entry.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var names = pendingStates.Keys.Concat(usageByName.Keys).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+
+            AgentSkillSettings.Clear();
+            foreach (var name in names)
+            {
+                usageByName.TryGetValue(name, out var usage);
+                AgentSkillSettings.Add(new CopilotAgentSkillSetting(
+                    name,
+                    pendingStates.GetValueOrDefault(name, CopilotAgentSkillOverrideState.Auto),
+                    usage,
+                    historicalNames.Contains(name),
+                    OnAgentSkillSettingChanged));
+            }
+            OnPropertyChanged(nameof(CanAddAgentSkillOverride));
+        }
+
+        private void AddAgentSkillOverride()
+        {
+            var name = CopilotAgentSkillOverrideConfig.NormalizeName(NewAgentSkillName);
+            if (name.Length == 0 || AgentSkillSettings.Any(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            AgentSkillSettings.Add(new CopilotAgentSkillSetting(
+                name,
+                CopilotAgentSkillOverrideState.UserInvocableOnly,
+                usage: null,
+                isHistoricalExplicitOnly: false,
+                OnAgentSkillSettingChanged));
+            NewAgentSkillName = string.Empty;
+            OnAgentSkillSettingChanged();
+        }
+
+        private void RemoveAgentSkillOverride(CopilotAgentSkillSetting? setting)
+        {
+            if (setting == null)
+                return;
+            if (setting.IsTracked)
+            {
+                setting.State = CopilotAgentSkillOverrideState.Auto;
+                return;
+            }
+
+            if (AgentSkillSettings.Remove(setting))
+            {
+                OnPropertyChanged(nameof(CanAddAgentSkillOverride));
+                OnAgentSkillSettingChanged();
+            }
+        }
+
+        private void OnAgentSkillSettingChanged()
+        {
+            RefreshAgentSkillSummaryText();
+            MarkSettingsPending("Agent Skill policy changed. Click Apply or Save to update the model Skill catalog.");
+        }
+
+        private void RefreshAgentSkillSummaryText()
+        {
+            var snapshot = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+            var overrideCount = AgentSkillSettings.Count(setting => setting.State != CopilotAgentSkillOverrideState.Auto);
+            AgentSkillsSummaryText = CopilotAgentSkillDiagnostics.FormatSummary(snapshot) + $" {overrideCount} manual override(s).";
+        }
+
+        private void RefreshAgentSkillDiagnostics()
+        {
+            try
+            {
+                var snapshot = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
+                SynchronizeAgentSkillSettings(snapshot);
+                RefreshAgentSkillSummaryText();
+                AgentSkillsDiagnosticsText = CopilotAgentSkillDiagnostics.FormatEntries(snapshot);
+            }
+            catch (Exception ex)
+            {
+                AgentSkillsSummaryText = "Skill usage history is unavailable.";
+                AgentSkillsDiagnosticsText = SanitizeError(ex.Message);
+            }
+        }
+
+        private static string FormatSubagentCapabilities(CopilotSubagentReadCapabilities capabilities)
+        {
+            var names = new List<string>();
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.SearchFiles))
+                names.Add(nameof(CopilotSubagentReadCapabilities.SearchFiles));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.GrepText))
+                names.Add(nameof(CopilotSubagentReadCapabilities.GrepText));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ReadLocalFile))
+                names.Add(nameof(CopilotSubagentReadCapabilities.ReadLocalFile));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ListDirectory))
+                names.Add(nameof(CopilotSubagentReadCapabilities.ListDirectory));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.WebSearch))
+                names.Add(nameof(CopilotSubagentReadCapabilities.WebSearch));
+            if (capabilities.HasFlag(CopilotSubagentReadCapabilities.FetchUrl))
+                names.Add(nameof(CopilotSubagentReadCapabilities.FetchUrl));
+            return names.Count == 0 ? "None" : string.Join(",", names);
         }
 
         private void CopyMcpDiagnostics()
@@ -1571,6 +2172,10 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Capability catalog: {capabilityCatalog.Capabilities.Count} item(s) from {capabilityCatalog.SourceCount} source(s), revision {capabilityCatalog.Revision}");
             builder.AppendLine(McpDiagnosticsSummaryText);
             builder.AppendLine(McpLastErrorText);
+            builder.AppendLine();
+            builder.AppendLine("Subagent roles:");
+            builder.AppendLine(SubagentRolesSummaryText);
+            builder.AppendLine(SubagentRolesDiagnosticsText);
             builder.AppendLine();
             builder.AppendLine("Recent audit entries:");
             builder.AppendLine(McpRecentAuditText);

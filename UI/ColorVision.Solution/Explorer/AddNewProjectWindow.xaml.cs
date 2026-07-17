@@ -8,8 +8,8 @@ namespace ColorVision.Solution.Explorer
     public partial class AddNewProjectWindow : Window
     {
         private readonly string _targetDirectory;
-        private readonly List<IProjectTemplate> _allTemplates;
-        private List<IProjectTemplate> _filteredTemplates;
+        private readonly List<IProjectTemplate> _allTemplates = new();
+        private List<IProjectTemplate> _filteredTemplates = new();
 
         public IProjectTemplate? SelectedTemplate { get; private set; }
         public string? ProjectName { get; private set; }
@@ -18,39 +18,79 @@ namespace ColorVision.Solution.Explorer
         {
             InitializeComponent();
             _targetDirectory = targetDirectory;
-            _allTemplates = ProjectTemplateRegistry.GetTemplates().ToList();
-
-            InitializeCategories();
-            ApplyFilter();
+            RefreshTemplates();
+            ProjectTemplateRegistry.TemplatesChanged += ProjectTemplateRegistry_TemplatesChanged;
         }
 
-        private void InitializeCategories()
+        protected override void OnClosed(EventArgs e)
+        {
+            ProjectTemplateRegistry.TemplatesChanged -= ProjectTemplateRegistry_TemplatesChanged;
+            base.OnClosed(e);
+        }
+
+        private void ProjectTemplateRegistry_TemplatesChanged(object? sender, EventArgs e)
+        {
+            if (Dispatcher.CheckAccess())
+                RefreshTemplates();
+            else
+                Dispatcher.BeginInvoke(RefreshTemplates);
+        }
+
+        private void RefreshTemplates()
+        {
+            string? selectedTemplateId = (TemplateListView.SelectedItem as IProjectTemplate)?.Id;
+            string? selectedCategory = CategoryComboBox.SelectedItem as string;
+            string existingProjectName = ProjectNameTextBox.Text;
+            _allTemplates.Clear();
+            _allTemplates.AddRange(ProjectTemplateRegistry.GetTemplates());
+            InitializeCategories(selectedCategory);
+            ApplyFilter(selectedTemplateId);
+            if (!string.IsNullOrWhiteSpace(existingProjectName))
+            {
+                ProjectNameTextBox.Text = existingProjectName;
+                ProjectNameTextBox.CaretIndex = existingProjectName.Length;
+            }
+        }
+
+        private void InitializeCategories(string? selectedCategory = null)
         {
             var categories = new List<string> { "全部" };
-            categories.AddRange(_allTemplates.Select(t => t.Category).Distinct().OrderBy(c => c));
+            categories.AddRange(_allTemplates
+                .Select(template => template.Category)
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(category => category, StringComparer.CurrentCultureIgnoreCase));
             CategoryComboBox.ItemsSource = categories;
-            CategoryComboBox.SelectedIndex = 0;
+            CategoryComboBox.SelectedItem = categories.FirstOrDefault(category => string.Equals(
+                category,
+                selectedCategory,
+                StringComparison.OrdinalIgnoreCase)) ?? "全部";
         }
 
-        private void ApplyFilter()
+        private void ApplyFilter(string? preferredTemplateId = null)
         {
+            preferredTemplateId ??= (TemplateListView.SelectedItem as IProjectTemplate)?.Id;
             string selectedCategory = CategoryComboBox.SelectedItem as string ?? "全部";
             string searchText = SearchBar.Text?.Trim() ?? "";
 
-            _filteredTemplates = _allTemplates.Where(t =>
+            _filteredTemplates = _allTemplates.Where(template =>
             {
-                if (selectedCategory != "全部" && t.Category != selectedCategory)
+                if (selectedCategory != "全部"
+                    && !string.Equals(template.Category, selectedCategory, StringComparison.OrdinalIgnoreCase))
                     return false;
                 if (!string.IsNullOrEmpty(searchText) &&
-                    !t.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) &&
-                    !t.Description.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                    !template.Name.Contains(searchText, StringComparison.CurrentCultureIgnoreCase) &&
+                    !template.Description.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
                     return false;
                 return true;
             }).ToList();
 
             TemplateListView.ItemsSource = _filteredTemplates;
-            if (_filteredTemplates.Count > 0)
-                TemplateListView.SelectedIndex = 0;
+            TemplateListView.SelectedItem = preferredTemplateId == null
+                ? _filteredTemplates.FirstOrDefault()
+                : _filteredTemplates.FirstOrDefault(template => string.Equals(
+                    template.Id,
+                    preferredTemplateId,
+                    StringComparison.OrdinalIgnoreCase)) ?? _filteredTemplates.FirstOrDefault();
         }
 
         private void CategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -91,7 +131,11 @@ namespace ColorVision.Solution.Explorer
 
         private void TemplateListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            TryCreate();
+            if (sender is ListView listView
+                && ItemsControl.ContainerFromElement(listView, e.OriginalSource as DependencyObject) is ListViewItem)
+            {
+                TryCreate();
+            }
         }
 
         private void ProjectNameTextBox_KeyDown(object sender, KeyEventArgs e)

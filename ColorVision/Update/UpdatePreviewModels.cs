@@ -25,7 +25,6 @@ namespace ColorVision.Update
     {
         None = 0,
         UpdateNow = 1,
-        SkipVersion = 2,
     }
 
     public enum ApplicationUpdateMode
@@ -191,29 +190,10 @@ namespace ColorVision.Update
                 if (SetProperty(ref _applicationUpdateMode, value))
                 {
                     ApplyApplicationUpdateModePresentation();
-                    OnPropertyChanged(nameof(IncrementalBackupVisibility));
                 }
             }
         }
         private ApplicationUpdateMode _applicationUpdateMode;
-
-        public bool CanChooseIncrementalBackup
-        {
-            get => _canChooseIncrementalBackup;
-            set
-            {
-                SetProperty(ref _canChooseIncrementalBackup, value);
-                OnPropertyChanged(nameof(IncrementalBackupVisibility));
-            }
-        }
-        private bool _canChooseIncrementalBackup;
-
-        public bool CreateBackupBeforeIncrementalUpdate
-        {
-            get => _createBackupBeforeIncrementalUpdate;
-            set => SetProperty(ref _createBackupBeforeIncrementalUpdate, value);
-        }
-        private bool _createBackupBeforeIncrementalUpdate = true;
 
         private int _incrementalPackageCount;
         private string _incrementalSummary = string.Empty;
@@ -242,10 +222,6 @@ namespace ColorVision.Update
         public Visibility CategoryBadgeVisibility => CanChooseApplicationUpdateMode
             ? Visibility.Collapsed
             : Visibility.Visible;
-
-        public Visibility IncrementalBackupVisibility => CanChooseIncrementalBackup && ApplicationUpdateMode == ApplicationUpdateMode.Incremental
-            ? Visibility.Visible
-            : Visibility.Collapsed;
 
         public Visibility SecondaryLabelVisibility => !string.IsNullOrWhiteSpace(SecondaryLabel)
             && !string.Equals(SecondaryLabel, Name, StringComparison.OrdinalIgnoreCase)
@@ -350,10 +326,6 @@ namespace ColorVision.Update
             else if (e.PropertyName == nameof(UpdatePreviewItem.ApplicationUpdateMode))
             {
                 RefreshApplicationUpdateModeState();
-            }
-            else if (e.PropertyName == nameof(UpdatePreviewItem.CreateBackupBeforeIncrementalUpdate))
-            {
-                RefreshSelectionState();
             }
             else if (e.PropertyName == nameof(UpdatePreviewItem.IsSelectionLocked))
             {
@@ -462,7 +434,6 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonVisibility));
                 OnPropertyChanged(nameof(FooterInfoVisibility));
                 OnPropertyChanged(nameof(HeaderSummaryText));
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isChecking;
@@ -512,29 +483,12 @@ namespace ColorVision.Update
                 OnPropertyChanged(nameof(ConfirmButtonText));
                 OnPropertyChanged(nameof(CanConfirm));
                 OnPropertyChanged(nameof(CanCancel));
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
             }
         }
         private bool _isUpdating;
 
         public string CancelButtonText { get => _cancelButtonText; set { _cancelButtonText = value; OnPropertyChanged(); } }
         private string _cancelButtonText = Resources.UpdatePreviewLaterButtonText;
-
-        public string? SecondaryButtonText
-        {
-            get => _secondaryButtonText;
-            set
-            {
-                _secondaryButtonText = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(SecondaryButtonVisibility));
-            }
-        }
-        private string? _secondaryButtonText;
-
-        public Visibility SecondaryButtonVisibility => IsChecking || IsUpdating || string.IsNullOrWhiteSpace(SecondaryButtonText)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
 
         public ObservableCollection<UpdatePreviewItem> Items { get; } = new();
 
@@ -616,7 +570,7 @@ namespace ColorVision.Update
                 }
 
                 if (HasSelectableItems || HasAlwaysIncludedItems)
-                    segments.Add(Resources.UpdatePreviewSelectionBackupAndRestart);
+                    segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
 
                 return string.Join(" · ", segments);
             }
@@ -656,7 +610,6 @@ namespace ColorVision.Update
             HostVersionValue = source.HostVersionValue;
             ConfirmButtonText = source._confirmButtonBaseText;
             CancelButtonText = source.CancelButtonText;
-            SecondaryButtonText = source.SecondaryButtonText;
             IsUpdating = source.IsUpdating;
             IsChecking = source.IsChecking;
 

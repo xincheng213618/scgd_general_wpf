@@ -9,99 +9,78 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.CalFile
 {
-    public static class CVXFileProcess
+    internal static class CVCalImporter
     {
-        public static string FilePath { get; set; }
-    }
+        private static readonly ILog log = LogManager.GetLogger(typeof(CVCalImporter));
 
-    public class CVCalInitialized : MainWindowInitializedBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(CVCalInitialized));
-
-        public CVCalInitialized()
+        internal static bool TryImport(string targetFile, out string errorMessage)
         {
-            Order = -1;
-        }
-
-        public override Task Initialize()
-        {
-            if (string.IsNullOrWhiteSpace(CVXFileProcess.FilePath)) return Task.CompletedTask;
-            if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;
-
-            string targetFile = CVXFileProcess.FilePath;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            errorMessage = string.Empty;
+            try
             {
+                using ZipArchive archive = ZipFile.OpenRead(targetFile);
+                ZipArchiveEntry? entry = archive.GetEntry("CameraConfig.cfg");
+                if (entry == null)
+                {
+                    errorMessage = "校准文件中缺少 CameraConfig.cfg。";
+                    return false;
+                }
+
+                using Stream stream = entry.Open();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                string jsonContent = reader.ReadToEnd();
+                ConfigCamera? configCamera;
                 try
                 {
-                    string jsonContent = null;
-
-                    ConfigCamera configCamera = null;
-
-                    // 1. 解压读取 JSON 字符串
-                    using (ZipArchive archive = ZipFile.OpenRead(targetFile))
-                    {
-
-                        var entry = archive.GetEntry("CameraConfig.cfg");
-                        if (entry != null)
-                        {
-                            using (var stream = entry.Open())
-                            using (var reader = new StreamReader(stream, Encoding.UTF8))
-                            {
-                                jsonContent = reader.ReadToEnd();
-                                try
-                                {
-                                    configCamera = JsonConvert.DeserializeObject<ConfigCamera>(jsonContent);
-                                }
-                                catch (Exception jsonEx)
-                                {
-                                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError}: {jsonEx.Message}", ColorVision.Engine.Properties.Resources.Engine_Msg_ParseError);
-                                    return;
-                                }
-
-                                PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configCamera);
-                                propertyEditorWindow.Submited += (s, e) =>
-                                {
-                                    PhyCameraManagerWindow phyCameraManagerWindow = new PhyCameraManagerWindow();
-                                    phyCameraManagerWindow.Show();
-                                };
-                                propertyEditorWindow.ShowDialog();
-                                return;
-                            }
-                        }
-                    }
-
+                    configCamera = JsonConvert.DeserializeObject<ConfigCamera>(jsonContent);
                 }
-                catch (Exception ex)
+                catch (Exception jsonException)
                 {
-                    log.Error($"导入流程异常: {ex.Message}");
-                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_FileProcessError}: {ex.Message}");
+                    errorMessage = $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError}: {jsonException.Message}";
+                    return false;
                 }
-                finally
+                if (configCamera == null)
                 {
-                    CVXFileProcess.FilePath = null;
+                    errorMessage = ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError;
+                    return false;
                 }
-            });
 
-            return Task.CompletedTask;
+                var propertyEditorWindow = new PropertyEditorWindow(configCamera);
+                propertyEditorWindow.Submited += (s, e) => new PhyCameraManagerWindow().Show();
+                propertyEditorWindow.ShowDialog();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"导入流程异常: {ex.Message}");
+                errorMessage = $"{ColorVision.Engine.Properties.Resources.Engine_Msg_FileProcessError}: {ex.Message}";
+                return false;
+            }
         }
-
     }
 
     [FileExtension(".cvcal")]
-    public class CVCalFileProcess : IFileProcessor
+    public class CVCalFileProcess : IFileOpenActionProcessor
     {
         public int Order => 1;
-        public void Export(string filePath) { }
-        public bool Process(string filePath)
+
+        public FileOpenRouteResult OpenFile(string filePath)
         {
-            CVXFileProcess.FilePath = filePath;
-            return false;
+            if (Application.Current?.Dispatcher is not { } dispatcher)
+                return new FileOpenRouteResult(true, false, "应用程序尚未完成初始化，无法导入校准文件。");
+
+            bool succeeded = false;
+            string errorMessage = string.Empty;
+            void Import() => succeeded = CVCalImporter.TryImport(filePath, out errorMessage);
+            if (dispatcher.CheckAccess())
+                Import();
+            else
+                dispatcher.Invoke(Import);
+            return new FileOpenRouteResult(true, succeeded, errorMessage);
         }
     }
 }

@@ -3,53 +3,43 @@ using System.Windows.Shell;
 
 namespace ColorVision.UI.Shell
 {
-    public class JumpListManager
+    public sealed class JumpListManager
     {
-        private static JumpListManager _instance;
-        private static readonly object _locker = new();
-        public static JumpListManager GetInstance() { lock (_locker) { return _instance ??= new JumpListManager(); } }
-
+        private const int ItemLimit = 10;
         private readonly JumpList _jumpList;
         private readonly string? _applicationPath;
 
         public JumpListManager()
         {
-            _jumpList = new JumpList();
-            _jumpList.ShowRecentCategory = true;
-            _jumpList.ShowFrequentCategory = true;
-            JumpList.SetJumpList(Application.Current, _jumpList);
-            _applicationPath = System.Reflection.Assembly.GetEntryAssembly()?.Location.Replace(".dll", ".exe");
-        }
-
-        public void AddRecentFile(string filePath)
-        {
-            if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
-
-            var jumpTask = new JumpTask
+            _jumpList = new JumpList
             {
-                ApplicationPath = _applicationPath,
-                Arguments = $"-s \"{filePath}\"",
-                Title = System.IO.Path.GetFileName(filePath),
-                Description = filePath,
-                CustomCategory = "Recent Projects",
+                ShowRecentCategory = false,
+                ShowFrequentCategory = false,
             };
-
-            _jumpList.JumpItems.Add(jumpTask);
-            _jumpList.Apply();
+            JumpList.SetJumpList(Application.Current, _jumpList);
+            _applicationPath = Environment.ProcessPath;
         }
 
-        public void AddRecentFiles(IEnumerable<string> filePaths)
+        public void SetRecentWorkspaces(IEnumerable<string> paths)
         {
-            foreach (var filePath in filePaths)
-            {
-                AddRecentFile(filePath);
-            }
-        }
-
-        public void ClearRecentFiles()
-        {
+            ArgumentNullException.ThrowIfNull(paths);
             _jumpList.JumpItems.Clear();
+            foreach (string path in paths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(ItemLimit))
+            {
+                string title = System.IO.Path.GetFileName(
+                    System.IO.Path.TrimEndingDirectorySeparator(path));
+                _jumpList.JumpItems.Add(new JumpTask
+                {
+                    ApplicationPath = _applicationPath,
+                    Arguments = $"-s \"{path}\"",
+                    Title = string.IsNullOrWhiteSpace(title) ? path : title,
+                    Description = path,
+                    CustomCategory = "Recent Workspaces",
+                });
+            }
             _jumpList.Apply();
         }
     }

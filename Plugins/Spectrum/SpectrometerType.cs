@@ -8,5 +8,7 @@ namespace Spectrum
         CMvSpectra = 0,
         [Description("SP10")]
         LightModule = 1,
+        [Description("高利通")]
+        Gaolitong = 2,
     }
 }

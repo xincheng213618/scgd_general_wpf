@@ -1,0 +1,6 @@
+interface:
+  display_name: "ColorVision Flow Authoring"
+  short_description: "Inspect and safely edit ColorVision flow graphs"
+  default_prompt: "Use $colorvision-flow-authoring to inspect this flow and safely preview the requested graph change."
+policy:
+  allow_implicit_invocation: true

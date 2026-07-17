@@ -1,10 +1,12 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
@@ -27,6 +29,156 @@ ALLOWED_RUNTIME_PREFIXES = (
     "runtimes/win/",
     "runtimes/win-x64/",
 )
+MAX_MANIFEST_BYTES = 1024 * 1024
+MAX_COPILOT_AGENT_ROLES = 16
+MAX_COPILOT_AGENT_METADATA_CHARACTERS = 8_000
+PLUGIN_ID_PATTERN = re.compile(r"^[a-z][a-z0-9._-]{1,63}$")
+PACKAGE_ID_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
+ROLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]{1,47}$")
+TOOL_NAME_PATTERN = re.compile(r"^Delegate[A-Z][A-Za-z0-9]{1,55}$")
+WORKSPACE_CAPABILITIES = {"searchfiles", "greptext", "readlocalfile", "listdirectory"}
+WEB_CAPABILITIES = {"websearch", "fetchurl"}
+AGENT_MODES = {"auto", "explain", "web", "code", "diagnose", "chat"}
+
+
+@dataclass(frozen=True)
+class CopilotAgentManifestSummary:
+    manifest_present: bool
+    plugin_id: str = ""
+    dll_path: str = ""
+    role_count: int = 0
+    metadata_characters: int = 0
+
+
+def _manifest_error(manifest_path: Path, field: str, message: str) -> ValueError:
+    return ValueError(f"Invalid plugin manifest '{manifest_path}' at {field}: {message}")
+
+
+def _require_manifest(condition: bool, manifest_path: Path, field: str, message: str) -> None:
+    if not condition:
+        raise _manifest_error(manifest_path, field, message)
+
+
+def _read_string(data: dict, key: str, manifest_path: Path, field: str, *, required: bool, maximum: int) -> str:
+    value = data.get(key, "")
+    _require_manifest(isinstance(value, str), manifest_path, field, "must be a string")
+    value = value.strip()
+    if required:
+        _require_manifest(bool(value), manifest_path, field, "must not be empty")
+    _require_manifest(len(value) <= maximum, manifest_path, field, f"must not exceed {maximum:,} characters")
+    return value
+
+
+def _read_string_list(data: dict, key: str, manifest_path: Path, field: str, *, required: bool) -> list[str]:
+    value = data.get(key, [])
+    _require_manifest(isinstance(value, list), manifest_path, field, "must be an array")
+    _require_manifest(all(isinstance(item, str) and item.strip() for item in value), manifest_path, field, "must contain non-empty strings")
+    if required:
+        _require_manifest(bool(value), manifest_path, field, "must not be empty")
+    return [item.strip() for item in value]
+
+
+def _read_budget(data: dict, key: str, manifest_path: Path, field: str, default: int, minimum: int, maximum: int) -> int:
+    value = data.get(key, 0)
+    _require_manifest(isinstance(value, int) and not isinstance(value, bool), manifest_path, field, "must be an integer")
+    value = default if value == 0 else value
+    _require_manifest(minimum <= value <= maximum, manifest_path, field, f"must be 0 or between {minimum:,} and {maximum:,}")
+    return value
+
+
+def _normalize_token(value: str) -> str:
+    return "".join(character.lower() for character in value if character.isalnum())
+
+
+def _default_tool_name(role_id: str) -> str:
+    return "Delegate" + "".join(segment[:1].upper() + segment[1:] for segment in re.split(r"[-_.]+", role_id) if segment)
+
+
+def validate_plugin_manifest(manifest_path: Path) -> CopilotAgentManifestSummary:
+    if not manifest_path.is_file():
+        return CopilotAgentManifestSummary(False)
+
+    raw_manifest = manifest_path.read_bytes()
+    _require_manifest(len(raw_manifest) <= MAX_MANIFEST_BYTES, manifest_path, "$", f"file must not exceed {MAX_MANIFEST_BYTES:,} bytes")
+    try:
+        manifest = json.loads(raw_manifest.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise _manifest_error(manifest_path, "$", f"invalid UTF-8 JSON: {exc}") from exc
+
+    _require_manifest(isinstance(manifest, dict), manifest_path, "$", "must be a JSON object")
+    manifest_fields = {str(key).lower(): value for key, value in manifest.items()}
+    plugin_id = _read_string(manifest_fields, "id", manifest_path, "id", required=True, maximum=64)
+    _require_manifest(PACKAGE_ID_PATTERN.fullmatch(plugin_id) is not None, manifest_path, "id", "must be a single 1-64 character directory name using ASCII letters, digits, '.', '_' or '-'")
+
+    dll_path = _read_string(manifest_fields, "dllpath", manifest_path, "dllpath", required=False, maximum=260)
+    if dll_path:
+        normalized_dll_path = PurePosixPath(dll_path.replace("\\", "/"))
+        _require_manifest(not normalized_dll_path.is_absolute() and ".." not in normalized_dll_path.parts and ":" not in dll_path, manifest_path, "dllpath", "must stay inside the plugin directory")
+        _require_manifest(normalized_dll_path.suffix.lower() == ".dll", manifest_path, "dllpath", "must point to a .dll file")
+        dll_path = normalized_dll_path.as_posix()
+
+    if "copilot_agents" not in manifest_fields:
+        return CopilotAgentManifestSummary(True, plugin_id, dll_path)
+
+    roles = manifest_fields["copilot_agents"]
+    _require_manifest(isinstance(roles, list), manifest_path, "copilot_agents", "must be an array")
+    _require_manifest(len(roles) <= MAX_COPILOT_AGENT_ROLES, manifest_path, "copilot_agents", f"must contain at most {MAX_COPILOT_AGENT_ROLES} roles")
+    if not roles:
+        return CopilotAgentManifestSummary(True, plugin_id, dll_path)
+
+    _require_manifest(PLUGIN_ID_PATTERN.fullmatch(plugin_id.lower()) is not None, manifest_path, "id", "must contain 2-64 ASCII letters, digits, '.', '_' or '-'")
+
+    role_ids: set[str] = set()
+    tool_names: set[str] = set()
+    metadata_characters = 0
+    for index, role in enumerate(roles):
+        prefix = f"copilot_agents[{index}]"
+        _require_manifest(isinstance(role, dict), manifest_path, prefix, "must be an object")
+
+        role_id = _read_string(role, "id", manifest_path, f"{prefix}.id", required=True, maximum=48).lower()
+        _require_manifest(ROLE_ID_PATTERN.fullmatch(role_id) is not None, manifest_path, f"{prefix}.id", "must contain 2-48 lowercase ASCII letters, digits or '-'")
+        _require_manifest(role_id not in role_ids, manifest_path, f"{prefix}.id", "duplicates another role id in this plugin")
+        role_ids.add(role_id)
+
+        tool_name = _read_string(role, "tool", manifest_path, f"{prefix}.tool", required=False, maximum=64) or _default_tool_name(role_id)
+        _require_manifest(TOOL_NAME_PATTERN.fullmatch(tool_name) is not None, manifest_path, f"{prefix}.tool", "must use the form DelegateName with ASCII letters or digits")
+        _require_manifest(tool_name.lower() not in tool_names, manifest_path, f"{prefix}.tool", "duplicates another role tool name in this plugin")
+        tool_names.add(tool_name.lower())
+
+        display_name = _read_string(role, "name", manifest_path, f"{prefix}.name", required=False, maximum=80) or role_id
+        description = _read_string(role, "description", manifest_path, f"{prefix}.description", required=True, maximum=1_200)
+        _read_string(role, "instructions", manifest_path, f"{prefix}.instructions", required=True, maximum=8_000)
+
+        scope_value = _read_string(role, "scope", manifest_path, f"{prefix}.scope", required=True, maximum=32)
+        scope = _normalize_token(scope_value)
+        _require_manifest(scope in {"workspace", "workspacereadonly", "web", "publicweb"}, manifest_path, f"{prefix}.scope", "must be WorkspaceReadOnly or PublicWeb")
+        is_workspace = scope in {"workspace", "workspacereadonly"}
+
+        capabilities = {_normalize_token(value) for value in _read_string_list(role, "capabilities", manifest_path, f"{prefix}.capabilities", required=True)}
+        known_capabilities = WORKSPACE_CAPABILITIES | WEB_CAPABILITIES
+        unknown_capabilities = capabilities - known_capabilities
+        _require_manifest(not unknown_capabilities, manifest_path, f"{prefix}.capabilities", f"contains unknown values: {', '.join(sorted(unknown_capabilities))}")
+        allowed_capabilities = WORKSPACE_CAPABILITIES if is_workspace else WEB_CAPABILITIES
+        _require_manifest(capabilities <= allowed_capabilities, manifest_path, f"{prefix}.capabilities", "cannot mix workspace and public-web capabilities")
+
+        child_mode_value = _read_string(role, "child_mode", manifest_path, f"{prefix}.child_mode", required=False, maximum=16)
+        child_mode = child_mode_value.lower() if child_mode_value else ("code" if is_workspace else "web")
+        _require_manifest(child_mode in AGENT_MODES, manifest_path, f"{prefix}.child_mode", "contains an unknown Agent mode")
+        _require_manifest(not is_workspace or child_mode not in {"chat", "web"}, manifest_path, f"{prefix}.child_mode", "a workspace role cannot use Chat or Web mode")
+        _require_manifest(is_workspace or child_mode == "web", manifest_path, f"{prefix}.child_mode", "a public-web role must use Web mode")
+
+        parent_modes = _read_string_list(role, "parent_modes", manifest_path, f"{prefix}.parent_modes", required=False)
+        normalized_parent_modes = {value.lower() for value in parent_modes} if parent_modes else {"auto", "explain", "web", "code", "diagnose"}
+        _require_manifest(normalized_parent_modes <= AGENT_MODES and "chat" not in normalized_parent_modes, manifest_path, f"{prefix}.parent_modes", "must contain only defined non-Chat Agent modes")
+
+        _read_budget(role, "maximum_tool_calls", manifest_path, f"{prefix}.maximum_tool_calls", 6, 1, 12)
+        _read_budget(role, "maximum_agent_passes", manifest_path, f"{prefix}.maximum_agent_passes", 2, 1, 3)
+        _read_budget(role, "maximum_duration_seconds", manifest_path, f"{prefix}.maximum_duration_seconds", 90, 10, 120)
+        _read_budget(role, "maximum_answer_characters", manifest_path, f"{prefix}.maximum_answer_characters", 12_000, 1_000, 20_000)
+        metadata_characters += len(tool_name) + len(display_name) + len(description)
+
+    _require_manifest(metadata_characters <= MAX_COPILOT_AGENT_METADATA_CHARACTERS, manifest_path, "copilot_agents", f"role names and descriptions must not exceed {MAX_COPILOT_AGENT_METADATA_CHARACTERS:,} characters in total")
+    return CopilotAgentManifestSummary(True, plugin_id, dll_path, len(roles), metadata_characters)
 
 
 def get_requests_module():
@@ -301,10 +453,20 @@ def find_extra_files(plugin_root: Path) -> list[Path]:
     return extra_files
 
 
-def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], output_file: Path, project_name: str) -> tuple[Path, int]:
+def resolve_primary_dll_path(src_dir: Path, project_name: str, manifest_summary: CopilotAgentManifestSummary) -> Path:
+    relative_path = manifest_summary.dll_path or f"{project_name}.dll"
+    candidate = (src_dir / Path(relative_path)).resolve()
+    try:
+        candidate.relative_to(src_dir.resolve())
+    except ValueError as exc:
+        raise ValueError(f"Plugin DLL must stay inside the output directory: {relative_path}") from exc
+    return candidate
+
+
+def package_plugin(src_dir: Path, plugin_root: Path, shared_files: set[str], output_file: Path, package_id: str) -> tuple[Path, int, int]:
     with tempfile.TemporaryDirectory(prefix="package_cvxp_") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
-        project_path = temp_dir / project_name
+        project_path = temp_dir / package_id
         project_path.mkdir(parents=True, exist_ok=True)
 
         stripped_files: list[str] = []
@@ -349,6 +511,7 @@ def main() -> None:
     parser.add_argument("-c", "--configuration", default="Release", help="Build configuration used with --project-file")
     parser.add_argument("-f", "--framework", default="net10.0-windows", help="Target framework used with --project-file")
     parser.add_argument("--build", action="store_true", help="Run dotnet build before packaging. Requires --project-file.")
+    parser.add_argument("--validate-only", action="store_true", help="Validate manifest.json and copilot_agents without building, packaging, or uploading.")
     parser.add_argument("--dotnet", default=os.environ.get("DOTNET_EXE", "dotnet"), help="dotnet executable used with --build")
     parser.add_argument("--upload-url", default=os.environ.get("COLORVISION_UPLOAD_URL", DEFAULT_UPLOAD_URL), help="Upload server base URL")
     parser.add_argument("--username", default=os.environ.get("COLORVISION_UPLOAD_USERNAME", DEFAULT_UPLOAD_USERNAME), help="Upload username")
@@ -356,22 +519,33 @@ def main() -> None:
     args = parser.parse_args()
 
     project_file = Path(args.project_file).expanduser().resolve() if args.project_file else None
+    explicit_src_dir = Path(args.src_dir).expanduser().resolve() if args.src_dir else None
+    if not project_file and not explicit_src_dir and not args.plugin_root:
+        raise ValueError("Provide --project-file, --src-dir, or --plugin-root.")
+
+    inferred_src_dir = explicit_src_dir or (project_file.parent if project_file else Path(args.plugin_root).expanduser().resolve())
+    plugin_root = resolve_plugin_root(
+        inferred_src_dir,
+        project_file,
+        Path(args.plugin_root).expanduser().resolve() if args.plugin_root else None,
+    )
+    manifest_summary = validate_plugin_manifest(plugin_root / "manifest.json")
+    if manifest_summary.manifest_present:
+        print(f"Manifest validation passed: {plugin_root / 'manifest.json'}")
+        print(f"Copilot role count: {manifest_summary.role_count}/{MAX_COPILOT_AGENT_ROLES}")
+        print(f"Copilot advertised metadata: {manifest_summary.metadata_characters:,}/{MAX_COPILOT_AGENT_METADATA_CHARACTERS:,} characters")
+    else:
+        print(f"Manifest not present; legacy packaging compatibility remains active: {plugin_root / 'manifest.json'}")
+
+    if args.validate_only:
+        return
+
     if args.build:
         if not project_file:
             raise ValueError("--build requires --project-file.")
         build_project(project_file, args.configuration, args.framework, args.dotnet)
 
-    src_dir = resolve_src_dir(
-        Path(args.src_dir).expanduser() if args.src_dir else None,
-        project_file,
-        args.configuration,
-        args.framework,
-    )
-    plugin_root = resolve_plugin_root(
-        src_dir,
-        project_file,
-        Path(args.plugin_root).expanduser().resolve() if args.plugin_root else None,
-    )
+    src_dir = resolve_src_dir(explicit_src_dir, project_file, args.configuration, args.framework)
     shared_files_path = resolve_shared_files_path(Path(args.shared_files) if args.shared_files else None)
     output_dir = Path(args.output_dir).expanduser().resolve()
 
@@ -379,7 +553,8 @@ def main() -> None:
         raise FileNotFoundError(f"Plugin output directory not found: {src_dir}")
 
     project_name = infer_project_name(src_dir, project_file, args.plugin_name)
-    dll_path = src_dir / f"{project_name}.dll"
+    package_id = manifest_summary.plugin_id or project_name
+    dll_path = resolve_primary_dll_path(src_dir, project_name, manifest_summary)
     if not dll_path.is_file():
         raise FileNotFoundError(f"Plugin DLL not found: {dll_path}")
 
@@ -388,18 +563,20 @@ def main() -> None:
         raise RuntimeError(f"Cannot read version from: {dll_path}")
 
     shared_files = load_shared_files_manifest(shared_files_path)
-    output_file = output_dir / f"{project_name}-{version}.cvxp"
-    output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, project_name)
+    output_file = output_dir / f"{package_id}-{version}.cvxp"
+    output_file, stripped_count, skipped_runtime_count = package_plugin(src_dir, plugin_root, shared_files, output_file, package_id)
 
     print(f"Source directory: {src_dir}")
     print(f"Plugin root: {plugin_root}")
+    print(f"Package ID: {package_id}")
+    print(f"Primary DLL: {dll_path}")
     print(f"Shared files manifest: {shared_files_path}")
     print(f"Shared file count: {len(shared_files)}")
     print(f"Stripped file count: {stripped_count}")
     print(f"Skipped runtime file count: {skipped_runtime_count}")
     print(f"Packaged: {output_file}")
 
-    plugin_folder = f"Plugins/{project_name}"
+    plugin_folder = f"Plugins/{package_id}"
     try:
         if not upload_file(output_file, plugin_folder, args.upload_url, args.username, args.password):
             raise RuntimeError("Package upload failed.")

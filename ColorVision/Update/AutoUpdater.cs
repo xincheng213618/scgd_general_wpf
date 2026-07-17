@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Marketplace;
+using ColorVision.UI.Plugins;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -31,13 +31,10 @@ namespace ColorVision.Update
         public required Version LatestVersion { get; init; }
         public required IReadOnlyList<Version> VersionsToApply { get; init; }
         public required bool IsIncremental { get; init; }
-        public bool CreateBackupBeforeUpdate { get; init; } = true;
 
         public Version TargetVersion => VersionsToApply.Count > 0
             ? VersionsToApply[VersionsToApply.Count - 1]
             : LatestVersion;
-
-        public bool HasMultipleSteps => VersionsToApply.Count > 1;
     }
 
     public class AutoUpdateConfig:ViewModelBase, IConfig
@@ -51,24 +48,6 @@ namespace ColorVision.Update
         [DisplayName("CheckUpdatesOnStartup")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
-
-        /// <summary>
-        /// 用户选择跳过的版本
-        /// </summary>
-        public string SkippedVersion { get => _SkippedVersion; set { _SkippedVersion = value; OnPropertyChanged(); } }
-        private string _SkippedVersion = string.Empty;
-
-        /// <summary>
-        /// 增量更新前是否创建程序备份
-        /// </summary>
-        public bool CreateBackupBeforeIncrementalUpdate { get => _CreateBackupBeforeIncrementalUpdate; set { _CreateBackupBeforeIncrementalUpdate = value; OnPropertyChanged(); } }
-        private bool _CreateBackupBeforeIncrementalUpdate = true;
-
-        public string CachedPendingStartupApplicationVersion { get => _CachedPendingStartupApplicationVersion; set { _CachedPendingStartupApplicationVersion = value; OnPropertyChanged(); } }
-        private string _CachedPendingStartupApplicationVersion = string.Empty;
-
-        public string CachedPendingStartupApplicationDetectedAtUtc { get => _CachedPendingStartupApplicationDetectedAtUtc; set { _CachedPendingStartupApplicationDetectedAtUtc = value; OnPropertyChanged(); } }
-        private string _CachedPendingStartupApplicationDetectedAtUtc = string.Empty;
 
     }
 
@@ -91,18 +70,8 @@ namespace ColorVision.Update
 
         public static string UpdateUrl => BuildAppApiUrl("latest-version");
 
-        public static string CHANGELOGUrl => BuildAppApiUrl("changelog");
-
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; OnPropertyChanged(); } }
         private Version _LatestVersion;
-
-
-        public AutoUpdater()
-        {
-            UpdateCommand = new RelayCommand( async (e) => await CheckAndUpdate(false));
-        }
-
-        public RelayCommand UpdateCommand { get; set; }
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
@@ -117,37 +86,13 @@ namespace ColorVision.Update
                 : Environments.DirApplicationFullPackageCache;
         }
 
-        public static void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
-
-        public static void Update(Version Version, string DownloadPath,bool IsIncrement = false, Action? downloadFailedAction = null)
-        {
-            string downloadUrl = IsIncrement
-                ? GetIncrementalPackageDownloadUrl(Version)
-                : GetReleasePackageDownloadUrl(Version);
-            Action<DownloadTask>? taskCallback;
-            taskCallback = task =>
-            {
-                if (task.Status == DownloadStatus.Completed)
-                {
-                    UpdateApplication(task.SavePath, IsIncrement, Version);
-                }
-                else
-                {
-                    log.Error($"Download failed via IDownloadService: {downloadUrl}");
-                    PostToUiThread(() => downloadFailedAction?.Invoke());
-                }
-            };
-            DownloadWindow.ShowInstance();
-            Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, DownloadPath, "1:1", taskCallback);
-        }
-
         public async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
             if (LatestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                Update(LatestVersion, GetApplicationPackageCacheDirectory(isIncremental: false));
+                StartFullUpdate(LatestVersion);
             });
         }
 
@@ -187,224 +132,7 @@ namespace ColorVision.Update
             }
         }
 
-        public async Task CheckAndUpdateV1(bool detection = true, bool skipped = false, CancellationToken cancellationToken = default)
-        {
-            // 获取本地版本
-            try
-            {
-                // 获取服务器版本
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
-                log.Info(LatestVersion);
-                if (LatestVersion == new Version()) return;
-
-                var Version = Assembly.GetExecutingAssembly().GetName().Version;
-                if (LatestVersion > Version)
-                {
-                    // 检查是否是用户已跳过的版本
-                    if (skipped)
-                    {
-                        if (!string.IsNullOrEmpty(AutoUpdateConfig.Instance.SkippedVersion))
-                        {
-                            try
-                            {
-                                Version skippedVersion = new Version(AutoUpdateConfig.Instance.SkippedVersion);
-                                if (LatestVersion == skippedVersion)
-                                {
-                                    return;
-                                }
-                            }
-                            catch
-                            {
-                                AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
-                            }
-                        }
-
-                    }
-
-
-
-                    bool IsIncrement = false;
-                    if (LatestVersion.Minor == Version.Minor)
-                        IsIncrement = true;
-                    if (IsIncrement)
-                    {
-                        if (LatestVersion.Build != Version.Build)
-                            LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
-                    }
-
-
-
-                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl, cancellationToken);
-                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                    Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
-                    string msg = string.Empty;
-                    if (match.Success)
-                    {
-                        // 如果找到匹配项，提取变更日志
-                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
-                    }
-                    else
-                    {
-                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
-                    }
-
-                    await InvokeOnUiThreadAsync(() =>
-                    {
-                        MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
-                        }
-                        else if (result == MessageBoxResult.No)
-                        {
-                            // 用户选择跳过该版本
-                            AutoUpdateConfig.Instance.SkippedVersion = LatestVersion.ToString();
-                        }
-                    });
-                }
-                else
-                {
-                    if (detection)
-                    {
-                        await InvokeOnUiThreadAsync(() =>
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, Version?.ToString() ?? string.Empty, MessageBoxButton.OK);
-                        });
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                log.Debug("CheckAndUpdateV1 canceled.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                LatestVersion = CurrentVersion ?? new Version();
-                MessageBox.Show(ex.Message);
-                log.Info(ex);
-            }
-        }
-
-
-        public async Task CheckAndUpdate(bool detection = true, bool IsIncrement = false, CancellationToken cancellationToken = default)
-        {
-            // 获取本地版本
-            try
-            {
-                // 获取服务器版本
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, allowStaleFallback: false, cancellationToken: cancellationToken);
-                if (LatestVersion == new Version()) return;
-
-                var Version = Assembly.GetExecutingAssembly().GetName().Version;
-                if (LatestVersion > Version)
-                {
-                    if (IsIncrement && LatestVersion.Build != Version.Build)
-                    {
-                        LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
-                    }
-
-                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl, cancellationToken);
-                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                    Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
-                    if (match.Success)
-                    {
-                        // 如果找到匹配项，提取变更日志
-                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-
-                        await InvokeOnUiThreadAsync(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
-                            }
-                        });
-                    }
-                    else
-                    {
-                        await InvokeOnUiThreadAsync(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, GetApplicationPackageCacheDirectory(IsIncrement), IsIncrement);
-                            }
-                        });
-                    }
-                }
-                else
-                {
-                    await InvokeOnUiThreadAsync(() =>
-                    {
-                        if (detection)
-                            MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
-                    });
-
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                log.Debug("CheckAndUpdate canceled.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                LatestVersion = CurrentVersion??new Version();
-                log.Info(ex);
-            }
-        }
-
-        public static async Task<string?> GetChangeLog(string url, CancellationToken cancellationToken = default)
-        {
-            string? versionString = null;
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                log.Warn("Failed to fetch changelog: update service URL is empty.");
-                return null;
-            }
-
-            try
-            {
-                using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeoutSource.CancelAfter(MetadataRequestTimeout);
-                using HttpRequestMessage request = new(HttpMethod.Get, url);
-                ApplyAuthorizationHeader(request);
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token);
-                response.EnsureSuccessStatusCode();
-                versionString = await response.Content.ReadAsStringAsync(timeoutSource.Token);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (HttpRequestException ex)
-            {
-                log.Warn($"Failed to fetch changelog from {url}: {ex.GetBaseException().Message}");
-            }
-            catch (OperationCanceledException ex)
-            {
-                log.Warn($"Timed out fetching changelog from {url}: {ex.GetBaseException().Message}");
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Unexpected failure fetching changelog from {url}.", ex);
-            }
-            if (versionString == null)
-            {
-                return null;
-            }
-
-            return versionString;
-        }
-
-
-
-        public static Task<Version> GetLatestVersionNumber(string url, CancellationToken cancellationToken = default)
-        {
-            return GetLatestVersionNumber(url, forceRefresh: false, allowStaleFallback: true, cancellationToken: cancellationToken);
-        }
-
-        public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, bool allowStaleFallback, CancellationToken cancellationToken = default)
+        public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, CancellationToken cancellationToken = default)
         {
             string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
@@ -456,9 +184,7 @@ namespace ColorVision.Update
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
                     log.Warn($"Invalid update version payload from {url}: {versionString}");
-                    return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
-                        ? fallbackVersion
-                        : new Version();
+                    return new Version();
                 }
 
                 SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
@@ -471,23 +197,17 @@ namespace ColorVision.Update
             catch (HttpRequestException ex)
             {
                 log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
-                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
-                    ? fallbackVersion
-                    : new Version();
+                return new Version();
             }
             catch (OperationCanceledException ex)
             {
                 log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
-                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
-                    ? fallbackVersion
-                    : new Version();
+                return new Version();
             }
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return allowStaleFallback && TryGetAnyCachedLatestVersion(url, out Version fallbackVersion)
-                    ? fallbackVersion
-                    : new Version();
+                return new Version();
             }
             finally
             {
@@ -560,30 +280,31 @@ namespace ColorVision.Update
             }
         }
 
-        public Task<AutoUpdatePlan?> GetUpdatePlanAsync(CancellationToken cancellationToken = default)
+        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            return GetUpdatePlanAsync(forceRefresh: false, allowStaleFallback: true, cancellationToken: cancellationToken);
-        }
-
-        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, bool allowStaleFallback, CancellationToken cancellationToken = default)
-        {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, allowStaleFallback, cancellationToken);
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, cancellationToken);
             if (LatestVersion == new Version())
                 return null;
 
             Version? currentVersion = CurrentVersion;
-            if (currentVersion == null || LatestVersion <= currentVersion)
+            return currentVersion == null ? null : BuildUpdatePlan(currentVersion, LatestVersion);
+        }
+
+        internal static AutoUpdatePlan? BuildUpdatePlan(Version currentVersion, Version latestVersion)
+        {
+            if (latestVersion <= currentVersion)
                 return null;
 
-            bool isIncrement = LatestVersion.Minor == currentVersion.Minor;
+            bool isIncrement = latestVersion.Major == currentVersion.Major
+                && latestVersion.Minor == currentVersion.Minor;
             IReadOnlyList<Version> versionsToApply = isIncrement
-                ? BuildIncrementalUpdateChain(currentVersion, LatestVersion)
-                : new[] { LatestVersion };
+                ? BuildIncrementalUpdateChain(currentVersion, latestVersion)
+                : new[] { latestVersion };
 
             return new AutoUpdatePlan
             {
                 CurrentVersion = currentVersion,
-                LatestVersion = LatestVersion,
+                LatestVersion = latestVersion,
                 VersionsToApply = versionsToApply,
                 IsIncremental = isIncrement,
             };
@@ -591,117 +312,249 @@ namespace ColorVision.Update
 
         public static void StartUpdatePlan(AutoUpdatePlan plan, Action? downloadFailedAction = null)
         {
-            string downloadPath = GetApplicationPackageCacheDirectory(plan.IsIncremental);
+            _ = StartUpdatePlanAsync(plan, downloadFailedAction);
+        }
+
+        public static void StartFullUpdate(Version version, Action? downloadFailedAction = null)
+        {
+            string? cachedInstaller = GetCachedFullInstallerPath(version);
+            if (cachedInstaller != null)
+            {
+                UpdateApplication(cachedInstaller, isIncrement: false);
+                return;
+            }
+
+            AutoUpdatePlan plan = new()
+            {
+                CurrentVersion = CurrentVersion ?? version,
+                LatestVersion = version,
+                VersionsToApply = new[] { version },
+                IsIncremental = false,
+            };
+            _ = StartUpdatePlanAsync(plan, downloadFailedAction);
+        }
+
+        private static async Task StartUpdatePlanAsync(AutoUpdatePlan plan, Action? downloadFailedAction)
+        {
+            try
+            {
+                IReadOnlyList<string> packagePaths = await EnsureUpdatePlanPackagesAsync(
+                    plan,
+                    showDownloadWindow: true,
+                    CancellationToken.None).ConfigureAwait(false);
+
+                if (plan.IsIncremental)
+                {
+                    int expectedCount = plan.VersionsToApply.Distinct().Count();
+                    if (RequiresFullInstallerFallback(expectedCount, packagePaths.Count))
+                    {
+                        log.Warn($"Incremental update chain is incomplete; falling back to the full installer for {plan.LatestVersion}.");
+                        PostToUiThread(() => StartFullUpdate(plan.LatestVersion, downloadFailedAction));
+                        return;
+                    }
+
+                    UpdateIncrementalApplications(packagePaths);
+                    return;
+                }
+
+                if (packagePaths.Count == 1)
+                {
+                    UpdateApplication(packagePaths[0], isIncrement: false);
+                    return;
+                }
+
+                log.Error($"Full installer download failed for {plan.TargetVersion}.");
+                PostToUiThread(() => downloadFailedAction?.Invoke());
+            }
+            catch (Exception ex)
+            {
+                log.Error("Application update download failed.", ex);
+                PostToUiThread(() => downloadFailedAction?.Invoke());
+            }
+        }
+
+        internal static async Task<bool> PrefetchUpdatePlanAsync(AutoUpdatePlan plan, CancellationToken cancellationToken)
+        {
+            IReadOnlyList<string> packagePaths = await EnsureUpdatePlanPackagesAsync(plan, showDownloadWindow: false, cancellationToken).ConfigureAwait(false);
+            int expectedCount = plan.IsIncremental ? plan.VersionsToApply.Distinct().Count() : 1;
+            return packagePaths.Count == expectedCount;
+        }
+
+        internal static async Task<IReadOnlyList<string>> EnsureUpdatePlanPackagesAsync(AutoUpdatePlan plan, bool showDownloadWindow, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            List<Task<bool>> downloads = new();
+            string downloadDirectory = GetApplicationPackageCacheDirectory(plan.IsIncremental);
+            IEnumerable<Version> versions = plan.IsIncremental
+                ? plan.VersionsToApply.Distinct()
+                : new[] { plan.TargetVersion };
+
+            foreach (Version version in versions)
+            {
+                string fileName = plan.IsIncremental
+                    ? GetIncrementalPackageFileName(version)
+                    : GetReleasePackageFileName(version);
+                if (FindReadyApplicationPackagePath(downloadDirectory, fileName, plan.IsIncremental) != null)
+                    continue;
+
+                string canonicalPath = Path.Combine(downloadDirectory, fileName);
+                _ = MoveInvalidApplicationPackageToRecovery(canonicalPath, plan.IsIncremental);
+
+                string downloadUrl = plan.IsIncremental
+                    ? GetIncrementalPackageDownloadUrl(version)
+                    : GetReleasePackageDownloadUrl(version);
+                downloads.Add(DownloadPackageAsync(downloadUrl, downloadDirectory, fileName, plan.IsIncremental, cancellationToken));
+            }
+
+            if (downloads.Count > 0)
+            {
+                if (showDownloadWindow)
+                    PostToUiThread(DownloadWindow.ShowInstance);
+                await Task.WhenAll(downloads).ConfigureAwait(false);
+            }
 
             if (plan.IsIncremental)
-            {
-                UpdateIncrementalChain(plan.VersionsToApply, downloadPath, plan.CreateBackupBeforeUpdate, downloadFailedAction);
-                return;
-            }
+                return TryGetCachedIncrementalPackagePaths(plan, out IReadOnlyList<string> packagePaths) ? packagePaths : Array.Empty<string>();
 
-            Update(plan.TargetVersion, downloadPath, false, downloadFailedAction);
+            string? installerPath = GetCachedFullInstallerPath(plan.TargetVersion);
+            return installerPath == null ? Array.Empty<string>() : new[] { installerPath };
         }
 
-        private static void UpdateIncrementalChain(IReadOnlyList<Version> versions, string downloadPath, bool createBackupBeforeUpdate, Action? downloadFailedAction)
+        internal static bool TryGetCachedIncrementalPackagePaths(AutoUpdatePlan plan, out IReadOnlyList<string> packagePaths)
         {
-            if (versions.Count == 0)
-                return;
-
-            List<Version> orderedVersions = versions.Distinct().ToList();
-            Dictionary<string, string> downloadedPaths = new(StringComparer.OrdinalIgnoreCase);
-            object lockObj = new();
-            int totalCount = orderedVersions.Count;
-            int completedCount = 0;
-            bool hasFailure = false;
-            List<Version> versionsToDownload = new();
-
-            foreach (Version version in orderedVersions)
+            List<string> paths = new();
+            if (!plan.IsIncremental)
             {
-                string packageFileName = GetIncrementalPackageFileName(version);
-                string cachedPath = Path.Combine(downloadPath, packageFileName);
-                if (IsIncrementalPackageFileReady(cachedPath))
-                {
-                    downloadedPaths[version.ToString()] = cachedPath;
-                    completedCount++;
-                }
-                else
-                {
-                    versionsToDownload.Add(version);
-                }
+                packagePaths = paths;
+                return false;
             }
 
-            if (versionsToDownload.Count == 0)
+            string downloadDirectory = GetApplicationPackageCacheDirectory(isIncremental: true);
+            foreach (Version version in plan.VersionsToApply.Distinct())
             {
-                UpdateIncrementalApplications(orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList(), createBackupBeforeUpdate);
-                return;
-            }
-
-            void FinalizeIfCompleted()
-            {
-                bool readyToFinalize;
-                List<string>? orderedPaths = null;
-                bool failed;
-
-                lock (lockObj)
+                string? packagePath = FindReadyApplicationPackagePath(downloadDirectory, GetIncrementalPackageFileName(version), isIncremental: true);
+                if (packagePath == null)
                 {
-                    readyToFinalize = completedCount == totalCount;
-                    failed = hasFailure || downloadedPaths.Count != totalCount;
-                    if (readyToFinalize && !failed)
-                    {
-                        orderedPaths = orderedVersions.Select(version => downloadedPaths[version.ToString()]).ToList();
-                    }
+                    packagePaths = Array.Empty<string>();
+                    return false;
                 }
 
-                if (!readyToFinalize)
-                    return;
-
-                if (failed || orderedPaths == null)
-                {
-                    PostToUiThread(() =>
-                    {
-                        downloadFailedAction?.Invoke();
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.UpdateFailed, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    });
-                    return;
-                }
-
-                UpdateIncrementalApplications(orderedPaths, createBackupBeforeUpdate);
+                paths.Add(packagePath);
             }
 
-            DownloadWindow.ShowInstance();
+            packagePaths = paths;
+            return paths.Count > 0;
+        }
 
-            foreach (Version version in versionsToDownload)
+        internal static string? GetCachedFullInstallerPath(Version version)
+        {
+            return FindReadyApplicationPackagePath(
+                GetApplicationPackageCacheDirectory(isIncremental: false),
+                GetReleasePackageFileName(version),
+                isIncremental: false);
+        }
+
+        internal static string? FindReadyApplicationPackagePath(string directory, string canonicalFileName, bool isIncremental)
+        {
+            try
             {
-                string versionKey = version.ToString();
-                string packageFileName = GetIncrementalPackageFileName(version);
-                string downloadUrl = GetIncrementalPackageDownloadUrl(version);
+                if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(canonicalFileName) || !Directory.Exists(directory))
+                    return null;
 
-                Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, downloadPath, "1:1", task =>
-                {
-                    lock (lockObj)
-                    {
-                        if (task.Status == DownloadStatus.Completed && IsIncrementalPackageFileReady(task.SavePath))
-                        {
-                            downloadedPaths[versionKey] = task.SavePath;
-                        }
-                        else
-                        {
-                            hasFailure = true;
-                            log.Error($"Download failed via IDownloadService: {downloadUrl}");
-                        }
+                string canonicalPath = Path.Combine(directory, canonicalFileName);
+                if (IsApplicationPackageFileReady(canonicalPath, isIncremental))
+                    return canonicalPath;
 
-                        completedCount++;
-                    }
-
-                    FinalizeIfCompleted();
-                }, packageFileName);
+                string canonicalStem = Path.GetFileNameWithoutExtension(canonicalFileName);
+                string extension = Path.GetExtension(canonicalFileName);
+                return Directory.EnumerateFiles(directory, $"*{extension}", SearchOption.TopDirectoryOnly)
+                    .Where(path => IsUniqueDownloadVariant(Path.GetFileNameWithoutExtension(path), canonicalStem))
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault(path => IsApplicationPackageFileReady(path, isIncremental));
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Failed to inspect application update cache '{directory}': {ex.Message}");
+                return null;
             }
         }
 
-        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths, bool createBackupBeforeUpdate)
+        private static bool IsUniqueDownloadVariant(string candidateStem, string canonicalStem)
+        {
+            if (!candidateStem.StartsWith(canonicalStem, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string suffix = candidateStem[canonicalStem.Length..];
+            if (suffix.StartsWith(" (", StringComparison.Ordinal))
+                suffix = suffix[1..];
+
+            if (suffix.Length > 2
+                && suffix.StartsWith('(')
+                && suffix.EndsWith(')')
+                && int.TryParse(suffix.AsSpan(1, suffix.Length - 2), out _))
+            {
+                return true;
+            }
+
+            return suffix.Length == 15
+                && suffix.StartsWith('_')
+                && long.TryParse(suffix.AsSpan(1), out _);
+        }
+
+        private static async Task<bool> DownloadPackageAsync(
+            string url,
+            string downloadDirectory,
+            string fileName,
+            bool isIncremental,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Aria2cDownloadManager manager = Aria2cDownloadManager.GetInstance();
+            DownloadTask? downloadTask = null;
+            using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+            {
+                if (downloadTask != null)
+                    manager.CancelDownload(downloadTask);
+                completion.TrySetCanceled(cancellationToken);
+            });
+
+            downloadTask = manager.AddDownload(url, downloadDirectory, "1:1", task =>
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                bool ready = task.Status == DownloadStatus.Completed
+                    && IsApplicationPackageFileReady(task.SavePath, isIncremental);
+                if (!ready && task.Status == DownloadStatus.Completed)
+                {
+                    _ = MoveInvalidApplicationPackageToRecovery(task.SavePath, isIncremental);
+                }
+
+                completion.TrySetResult(ready);
+            }, fileName);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                manager.CancelDownload(downloadTask);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            return await completion.Task.ConfigureAwait(false);
+        }
+
+        internal static bool RequiresFullInstallerFallback(int expectedPackageCount, int availablePackageCount)
+        {
+            return availablePackageCount != expectedPackageCount;
+        }
+
+        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            RestartIsIncrementApplication(downloadPaths, null, createBackupBeforeUpdate);
+            RestartIsIncrementApplication(downloadPaths, null);
         }
 
         private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
@@ -725,6 +578,8 @@ namespace ColorVision.Update
         }
 
         public static string GetIncrementalPackageFileName(Version version) => $"ColorVision-Update-[{version}].cvx";
+
+        public static string GetReleasePackageFileName(Version version) => $"ColorVision-{version}.exe";
 
         private static void ApplyAuthorizationHeader(HttpRequestMessage request)
         {
@@ -771,10 +626,17 @@ namespace ColorVision.Update
         {
             try
             {
-                return !string.IsNullOrWhiteSpace(filePath)
-                    && File.Exists(filePath)
-                    && !File.Exists(filePath + ".aria2")
-                    && new FileInfo(filePath).Length > 0;
+                if (string.IsNullOrWhiteSpace(filePath)
+                    || !File.Exists(filePath)
+                    || File.Exists(filePath + ".aria2")
+                    || !string.Equals(Path.GetExtension(filePath), ".cvx", StringComparison.OrdinalIgnoreCase)
+                    || new FileInfo(filePath).Length == 0)
+                {
+                    return false;
+                }
+
+                using ZipArchive archive = ZipFile.OpenRead(filePath);
+                return archive.Entries.Count > 0;
             }
             catch
             {
@@ -782,7 +644,76 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateApplication(string downloadPath, bool isIncrement, Version? targetVersion = null)
+        public static bool IsFullInstallerFileReady(string? filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath)
+                    || !File.Exists(filePath)
+                    || File.Exists(filePath + ".aria2")
+                    || !string.Equals(Path.GetExtension(filePath), ".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                using FileStream stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                if (stream.Length < 68)
+                    return false;
+
+                using BinaryReader reader = new(stream);
+                if (reader.ReadUInt16() != 0x5A4D)
+                    return false;
+
+                stream.Position = 0x3C;
+                int peHeaderOffset = reader.ReadInt32();
+                if (peHeaderOffset < 64 || peHeaderOffset > stream.Length - sizeof(uint))
+                    return false;
+
+                stream.Position = peHeaderOffset;
+                return reader.ReadUInt32() == 0x00004550;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        internal static bool IsApplicationPackageFileReady(string? filePath, bool isIncremental)
+        {
+            return isIncremental
+                ? IsIncrementalPackageFileReady(filePath)
+                : IsFullInstallerFileReady(filePath);
+        }
+
+        internal static string? MoveInvalidApplicationPackageToRecovery(string? filePath, bool isIncremental)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath)
+                    || !File.Exists(filePath)
+                    || File.Exists(filePath + ".aria2")
+                    || IsApplicationPackageFileReady(filePath, isIncremental))
+                {
+                    return null;
+                }
+
+                string sourcePath = Path.GetFullPath(filePath);
+                string recoveryDirectory = Path.Combine(Path.GetDirectoryName(sourcePath)!, "Recovery");
+                Directory.CreateDirectory(recoveryDirectory);
+                string recoveryFileName = $"{Path.GetFileNameWithoutExtension(sourcePath)}-unreadable-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}{Path.GetExtension(sourcePath)}";
+                string recoveryPath = Path.Combine(recoveryDirectory, recoveryFileName);
+                File.Move(sourcePath, recoveryPath);
+                log.Warn($"Moved unreadable application package cache to recovery storage: {recoveryPath}");
+                return recoveryPath;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to preserve unreadable application package cache '{filePath}': {ex.Message}");
+                return null;
+            }
+        }
+
+        private static void UpdateApplication(string downloadPath, bool isIncrement)
         {
             ConfigHandler.GetInstance().SaveConfigs();
 
@@ -792,101 +723,109 @@ namespace ColorVision.Update
             }
             else
             {
-                RestartApplication(downloadPath, targetVersion);
+                RestartApplication(downloadPath);
             }
         }
 
 
         public static void RestartIsIncrementApplication(string downloadPath)
         {
-            RestartIsIncrementApplication(new[] { downloadPath });
-        }
-
-        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths)
-        {
-            RestartIsIncrementApplication(downloadPaths, null, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
+            RestartIsIncrementApplication(new[] { downloadPath }, null);
         }
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
         {
-            RestartIsIncrementApplication(downloadPaths, pluginDownloadPaths, AutoUpdateConfig.Instance.CreateBackupBeforeIncrementalUpdate);
+            TryStartIncrementalApplicationUpdate(
+                downloadPaths,
+                pluginDownloadPaths,
+                restartApplication: true,
+                allowElevationFallback: true,
+                showErrors: true);
         }
 
-        public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths, bool createBackupBeforeUpdate)
+        internal static bool TryStartIncrementalApplicationUpdate(
+            IEnumerable<string> downloadPaths,
+            IEnumerable<string>? pluginDownloadPaths,
+            bool restartApplication,
+            bool allowElevationFallback,
+            bool showErrors)
         {
-            // 保存数据库配置
-            UpdateBackupPrepareResult? backupPrepareResult = null;
+            string? tempRoot = null;
+            ExitUpdateHandoffState? handoffState = null;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
-                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList() ?? new List<string>();
                 List<string> pluginPackagePaths = pluginDownloadPaths?
-                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Where(path => !string.IsNullOrWhiteSpace(path))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList() ?? new List<string>();
 
-                // 解压缩 ZIP 文件到临时目录
-                string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
-                if (Directory.Exists(tempDirectory))
-                {
-                    Directory.Delete(tempDirectory, true);
-                }
+                if (applicationPackagePaths.Any(path => !IsIncrementalPackageFileReady(path)))
+                    throw new InvalidDataException("One or more incremental application packages are incomplete or invalid.");
+
+                // 更新脚本、解包中间文件和最终待复制文件相互隔离。
+                tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionUpdate-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(tempRoot);
+                string batchFilePath = Path.Combine(tempRoot, "update.bat");
+                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
+                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                File.WriteAllText(batchFilePath, string.Empty);
+                handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
+
+                string stageDirectory = Path.Combine(tempRoot, "ColorVision");
+                Directory.CreateDirectory(stageDirectory);
 
                 bool hasAnyPackage = false;
                 foreach (string downloadPath in applicationPackagePaths)
                 {
-                    ZipFile.ExtractToDirectory(downloadPath, tempDirectory, true);
+                    ZipFile.ExtractToDirectory(downloadPath, stageDirectory, true);
                     hasAnyPackage = true;
                 }
 
                 if (pluginPackagePaths.Count > 0)
                 {
-                    string pluginsDirectory = Path.Combine(tempDirectory, "Plugins");
-                    Directory.CreateDirectory(pluginsDirectory);
-
-                    foreach (string pluginDownloadPath in pluginPackagePaths)
-                    {
-                        ZipFile.ExtractToDirectory(pluginDownloadPath, pluginsDirectory, true);
-                        hasAnyPackage = true;
-                    }
+                    string pluginsDirectory = Path.Combine(stageDirectory, "Plugins");
+                    PluginUpdater.StagePluginPackages(pluginPackagePaths, pluginsDirectory, Path.Combine(tempRoot, "Packages"));
+                    hasAnyPackage = true;
                 }
 
                 if (!hasAnyPackage)
                     throw new InvalidOperationException("Unable to locate incremental update package.");
 
-                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(tempDirectory);
+                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(stageDirectory);
                 if (skippedShellExtensionFiles > 0)
                 {
                     log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
                 }
 
-                // 创建批处理文件内容
-                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
-                Version? targetVersion = TryGetTargetVersionFromPackagePaths(applicationPackagePaths);
-                if (createBackupBeforeUpdate)
+                TimeSpan? privilegeTimeout = allowElevationFallback ? null : TimeSpan.FromSeconds(3);
+                string serviceHostPackageDirectory = Path.Combine(stageDirectory, "ServiceHost");
+                string? availableServiceHostPackageDirectory = File.Exists(Path.Combine(serviceHostPackageDirectory, ServiceHostProtocol.ExecutableName))
+                    ? serviceHostPackageDirectory
+                    : null;
+                bool canUpdateWithoutElevation = ApplicationUpdatePrivilegeBroker.TryPrepareApplicationDirectory(
+                    availableServiceHostPackageDirectory,
+                    privilegeTimeout);
+                if (!canUpdateWithoutElevation && !allowElevationFallback)
                 {
-                    ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
-                    log.Info($"Created update snapshot before incremental update: {updateSnapshot.FilePath}");
-                    backupPrepareResult = UpdateRecoveryService.Instance.PrepareBackup(
-                        tempDirectory,
-                        programDirectory,
-                        CurrentVersion,
-                        targetVersion,
-                        applicationPackagePaths,
-                        pluginPackagePaths,
-                        updateSnapshot.FilePath);
-                }
-                else
-                {
-                    log.Info("Skipping backup before incremental update by user choice.");
+                    log.Info("Skipped exit-time update because ColorVisionServiceHost could not prepare the application directory silently.");
+                    ExitUpdateHandoff.Clear(handoffState);
+                    TryDeleteUpdateStage(tempRoot);
+                    return false;
                 }
 
-                string batchContent = CreateIncrementalUpdateBatch(tempDirectory, programDirectory, executableName, backupPrepareResult);
-
+                string batchContent = CreateIncrementalUpdateBatch(
+                    stageDirectory,
+                    tempRoot,
+                    programDirectory,
+                    executableName,
+                    Environment.ProcessId,
+                    handoffState,
+                    repairServiceHost: !canUpdateWithoutElevation,
+                    restartApplication: restartApplication);
                 File.WriteAllText(batchFilePath, batchContent);
 
                 // 设置批处理文件的启动信息
@@ -894,35 +833,58 @@ namespace ColorVision.Update
                 {
                     FileName = batchFilePath,
                     UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = tempRoot,
                 };
 
-                if (!Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
+                if (!canUpdateWithoutElevation && allowElevationFallback)
                 {
                     startInfo.Verb = "runas"; // 请求管理员权限
                     startInfo.WindowStyle = ProcessWindowStyle.Normal;
                 }
                 try
                 {
-                    Process p = Process.Start(startInfo);
-                    Environment.Exit(0);
+                    using Process updateProcess = Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Failed to start incremental update batch.");
+                    if (!ExitUpdateHandoff.TryActivate(handoffState, updateProcess.Id))
+                        log.Debug("The incremental update started, but its handoff process ID could not be recorded.");
+                    if (restartApplication)
+                        Environment.Exit(0);
+                    return true;
                 }
                 catch (Exception ex)
                 {
-                    if (backupPrepareResult != null)
-                        UpdateRecoveryService.Instance.MarkFailed($"Failed to start update batch: {ex.Message}");
-
                     log.Error("Failed to start incremental update batch.", ex);
-                    MessageBox.Show(ex.Message);
+                    if (showErrors)
+                        MessageBox.Show(ex.Message);
+                    ExitUpdateHandoff.Clear(handoffState);
+                    TryDeleteUpdateStage(tempRoot);
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                if (backupPrepareResult != null)
-                    UpdateRecoveryService.Instance.MarkFailed($"Failed to prepare update batch: {ex.Message}");
-
                 log.Error("Failed to prepare incremental update.", ex);
-                MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
+                if (showErrors)
+                    MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
+                ExitUpdateHandoff.Clear(handoffState);
+                TryDeleteUpdateStage(tempRoot);
+                return false;
+            }
+        }
+
+        private static void TryDeleteUpdateStage(string? tempDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(tempDirectory) || !Directory.Exists(tempDirectory))
+                return;
+
+            try
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Failed to delete unused update stage '{tempDirectory}': {ex.Message}");
             }
         }
 
@@ -947,52 +909,62 @@ namespace ColorVision.Update
             return removedCount;
         }
 
-        private static string CreateIncrementalUpdateBatch(string tempDirectory, string programDirectory, string executableName, UpdateBackupPrepareResult? backupPrepareResult)
+        private static string CreateIncrementalUpdateBatch(
+            string stageDirectory,
+            string cleanupDirectory,
+            string programDirectory,
+            string executableName,
+            int originalProcessId,
+            ExitUpdateHandoffState handoffState,
+            bool repairServiceHost,
+            bool restartApplication)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
             sb.AppendLine("@echo off");
-            sb.AppendLine("setlocal enabledelayedexpansion");
+            sb.AppendLine("setlocal DisableDelayedExpansion");
             sb.AppendLine("title ColorVision Incremental Updater");
-            sb.AppendLine($"set \"STAGE={EscapeForBatchValue(tempDirectory)}\"");
+            sb.AppendLine($"set \"STAGE={EscapeForBatchValue(stageDirectory)}\"");
+            sb.AppendLine($"set \"UPDATE_ROOT={EscapeForBatchValue(cleanupDirectory)}\"");
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            if (backupPrepareResult != null)
-            {
-                sb.AppendLine($"set \"UPDATE_STATE_PATH={EscapeForBatchValue(backupPrepareResult.StateFilePath)}\"");
-                sb.AppendLine($"set \"STATE_APPLYING={EscapeForBatchValue(backupPrepareResult.ApplyingStatePath)}\"");
-                sb.AppendLine($"set \"STATE_APPLIED={EscapeForBatchValue(backupPrepareResult.AppliedStatePath)}\"");
-                sb.AppendLine($"set \"STATE_FAILED={EscapeForBatchValue(backupPrepareResult.FailedStatePath)}\"");
-                sb.AppendLine($"set \"BACKUP={EscapeForBatchValue(backupPrepareResult.BackupPath)}\"");
-            }
-            else
-            {
-                sb.AppendLine("set \"UPDATE_STATE_PATH=\"");
-                sb.AppendLine("set \"STATE_APPLYING=\"");
-                sb.AppendLine("set \"STATE_APPLIED=\"");
-                sb.AppendLine("set \"STATE_FAILED=\"");
-                sb.AppendLine("set \"BACKUP=\"");
-            }
+            sb.AppendLine($"set \"ORIGINAL_PID={originalProcessId}\"");
+            sb.AppendLine($"set \"UPDATE_MARKER={EscapeForBatchValue(handoffState.MarkerPath)}\"");
+            sb.AppendLine($"set \"REOPEN_REQUEST={EscapeForBatchValue(handoffState.ReopenRequestPath)}\"");
+            sb.AppendLine($"set \"UPDATE_TOKEN={handoffState.LaunchToken}\"");
+            sb.AppendLine($"set \"REPAIR_SERVICE_HOST={(repairServiceHost ? "1" : "0")}\"");
+            sb.AppendLine($"set \"RESTART_APPLICATION={(restartApplication ? "1" : "0")}\"");
+            sb.AppendLine($"set \"SERVICE_NAME={ServiceHostProtocol.ServiceName}\"");
+            sb.AppendLine($"set \"SERVICE_DISPLAY_NAME={ServiceHostProtocol.DisplayName}\"");
+            sb.AppendLine($"set \"SERVICE_EXE_NAME={ServiceHostProtocol.ExecutableName}\"");
+            sb.AppendLine("set \"SERVICE_SOURCE=%STAGE%\\ServiceHost\"");
+            sb.AppendLine("set \"SERVICE_DEST=%ProgramData%\\ColorVision\\ServiceHost\"");
+            sb.AppendLine("set \"SERVICE_EXE=%SERVICE_DEST%\\%SERVICE_EXE_NAME%\"");
+            sb.AppendLine("set \"SERVICE_LOG=%SERVICE_DEST%\\install.log\"");
             sb.AppendLine();
-            sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
-            sb.AppendLine("timeout /t 2 /nobreak >nul");
-            sb.AppendLine("call :mark_state \"%STATE_APPLYING%\"");
-            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine();
+            sb.AppendLine("call :wait_for_original_process");
             sb.AppendLine("call :skip_shell_extension_files");
-            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
+            sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine();
             sb.AppendLine("call :copy_application_files");
-            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
+            sb.AppendLine("if errorlevel 1 goto fail");
+            sb.AppendLine("call :repair_service_host");
             sb.AppendLine("goto success");
             sb.AppendLine();
-            sb.AppendLine(":mark_state");
-            sb.AppendLine("if \"%UPDATE_STATE_PATH%\"==\"\" exit /b 0");
-            sb.AppendLine("if \"%~1\"==\"\" exit /b 1");
-            sb.AppendLine("if not exist \"%~1\" exit /b 1");
-            sb.AppendLine("copy /y \"%~1\" \"%UPDATE_STATE_PATH%\" >nul");
-            sb.AppendLine("exit /b !ERRORLEVEL!");
+            sb.AppendLine(":wait_for_original_process");
+            sb.AppendLine("set \"WAIT_ATTEMPTS=0\"");
+            sb.AppendLine(":wait_for_original_process_loop");
+            sb.AppendLine("tasklist /fi \"PID eq %ORIGINAL_PID%\" /nh 2>nul | findstr /r /c:\"[ ]%ORIGINAL_PID%[ ]\" >nul");
+            sb.AppendLine("if errorlevel 1 exit /b 0");
+            sb.AppendLine("set /a WAIT_ATTEMPTS+=1");
+            sb.AppendLine("if %WAIT_ATTEMPTS% GEQ 15 goto wait_for_original_process_timeout");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("goto wait_for_original_process_loop");
+            sb.AppendLine(":wait_for_original_process_timeout");
+            sb.AppendLine("taskkill /f /pid \"%ORIGINAL_PID%\" >nul 2>nul");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":skip_shell_extension_files");
             sb.AppendLine("for /r \"%STAGE%\" %%F in (ColorVision.ShellExtension*) do (");
@@ -1003,92 +975,111 @@ namespace ColorVision.Update
             sb.AppendLine();
             sb.AppendLine(":copy_application_files");
             sb.AppendLine("where robocopy >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /XF update.bat ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
-            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
-            sb.AppendLine("  if !RC! LSS 8 exit /b 0");
-            sb.AppendLine("  exit /b !RC!");
-            sb.AppendLine(")");
+            sb.AppendLine("if errorlevel 1 goto copy_application_files_xcopy");
+            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /IS /IT /XF ColorVision.ShellExtension* /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
+            sb.AppendLine("if errorlevel 8 exit /b 8");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":copy_application_files_xcopy");
             sb.AppendLine("xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
-            sb.AppendLine("exit /b !ERRORLEVEL!");
-            sb.AppendLine();
-            sb.AppendLine(":rollback");
-            sb.AppendLine("if \"%BACKUP%\"==\"\" exit /b 0");
-            sb.AppendLine("where robocopy >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  if exist \"%BACKUP%\\App\" robocopy \"%BACKUP%\\App\" \"%TARGET%\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
-            sb.AppendLine("  if exist \"%BACKUP%\\Plugins\" robocopy \"%BACKUP%\\Plugins\" \"%TARGET%\\Plugins\" *.* /E /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
-            sb.AppendLine("  exit /b 0");
-            sb.AppendLine(")");
-            sb.AppendLine("if exist \"%BACKUP%\\App\" xcopy /y /e /i \"%BACKUP%\\App\\*\" \"%TARGET%\\\" >nul");
-            sb.AppendLine("if exist \"%BACKUP%\\Plugins\" xcopy /y /e /i \"%BACKUP%\\Plugins\\*\" \"%TARGET%\\Plugins\\\" >nul");
+            sb.AppendLine("if errorlevel 1 exit /b 1");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
+            AppendServiceHostRepairBatch(sb);
+            sb.AppendLine();
             sb.AppendLine(":success");
-            sb.AppendLine("call :mark_state \"%STATE_APPLIED%\"");
-            sb.AppendLine("if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine("start \"\" \"%EXEPATH%\"");
-            sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
+            sb.AppendLine("call :complete_handoff");
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
-            sb.AppendLine("call :mark_state \"%STATE_FAILED%\"");
-            sb.AppendLine("call :rollback");
-            sb.AppendLine("start \"\" \"%EXEPATH%\"");
+            sb.AppendLine("call :complete_handoff");
+            sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+            sb.AppendLine(":complete_handoff");
+            sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" goto launch_after_update");
+            sb.AppendLine("del /f /q \"%UPDATE_MARKER%\" >nul 2>nul");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("if exist \"%REOPEN_REQUEST%\" start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("del /f /q \"%REOPEN_REQUEST%\" >nul 2>nul");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":launch_after_update");
+            sb.AppendLine($"set \"{ExitUpdateHandoff.LaunchTokenEnvironmentVariable}=%UPDATE_TOKEN%\"");
+            sb.AppendLine("start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("ping -n 4 127.0.0.1 >nul");
+            sb.AppendLine("del /f /q \"%UPDATE_MARKER%\" >nul 2>nul");
+            sb.AppendLine("del /f /q \"%REOPEN_REQUEST%\" >nul 2>nul");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+            sb.AppendLine(":schedule_cleanup");
+            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            sb.AppendLine("exit /b 0");
             return sb.ToString();
         }
 
-        private static Version? TryGetTargetVersionFromPackagePaths(IEnumerable<string> packagePaths)
+        private static void AppendServiceHostRepairBatch(StringBuilder sb)
         {
-            return packagePaths
-                .Select(TryParseIncrementalPackageVersion)
-                .Where(version => version != null)
-                .OrderBy(version => version)
-                .LastOrDefault();
-        }
-
-        private static Version? TryParseIncrementalPackageVersion(string packagePath)
-        {
-            string fileName = Path.GetFileName(packagePath);
-            Match match = Regex.Match(fileName, @"ColorVision-Update-\[(?<version>[^\]]+)\]\.(cvx|zip)$", RegexOptions.IgnoreCase);
-            return match.Success && Version.TryParse(match.Groups["version"].Value, out Version? version)
-                ? version
-                : null;
+            sb.AppendLine(":repair_service_host");
+            sb.AppendLine("if not \"%REPAIR_SERVICE_HOST%\"==\"1\" exit /b 0");
+            sb.AppendLine("if not exist \"%SERVICE_SOURCE%\\%SERVICE_EXE_NAME%\" exit /b 0");
+            sb.AppendLine("if not exist \"%SERVICE_DEST%\" mkdir \"%SERVICE_DEST%\" >nul 2>nul");
+            sb.AppendLine("if not exist \"%SERVICE_DEST%\" exit /b 0");
+            sb.AppendLine("call :service_host_log \"Repair started.\"");
+            sb.AppendLine("sc.exe stop \"%SERVICE_NAME%\" >nul 2>nul");
+            sb.AppendLine("ping -n 4 127.0.0.1 >nul");
+            sb.AppendLine("where robocopy >nul 2>nul");
+            sb.AppendLine("if errorlevel 1 goto repair_service_host_xcopy");
+            sb.AppendLine("robocopy \"%SERVICE_SOURCE%\" \"%SERVICE_DEST%\" *.* /E /IS /IT /XF install.log /NFL /NDL /NP /NJH /NJS /R:2 /W:1 >nul");
+            sb.AppendLine("if errorlevel 8 goto repair_service_host_failed");
+            sb.AppendLine("goto repair_service_host_configure");
+            sb.AppendLine(":repair_service_host_xcopy");
+            sb.AppendLine("xcopy /y /e /i \"%SERVICE_SOURCE%\\*\" \"%SERVICE_DEST%\\\" >nul");
+            sb.AppendLine("if errorlevel 1 goto repair_service_host_failed");
+            sb.AppendLine(":repair_service_host_configure");
+            sb.AppendLine("sc.exe query \"%SERVICE_NAME%\" >nul 2>nul");
+            sb.AppendLine("if errorlevel 1 goto repair_service_host_create");
+            sb.AppendLine("sc.exe config \"%SERVICE_NAME%\" binPath= \"\\\"%SERVICE_EXE%\\\"\" start= auto DisplayName= \"%SERVICE_DISPLAY_NAME%\" >nul");
+            sb.AppendLine("if errorlevel 1 goto repair_service_host_failed");
+            sb.AppendLine("goto repair_service_host_description");
+            sb.AppendLine(":repair_service_host_create");
+            sb.AppendLine("sc.exe create \"%SERVICE_NAME%\" binPath= \"\\\"%SERVICE_EXE%\\\"\" start= auto DisplayName= \"%SERVICE_DISPLAY_NAME%\" >nul");
+            sb.AppendLine("if errorlevel 1 goto repair_service_host_failed");
+            sb.AppendLine(":repair_service_host_description");
+            sb.AppendLine($"sc.exe description \"%SERVICE_NAME%\" \"{ServiceHostProtocol.Description}\" >nul 2>nul");
+            sb.AppendLine("sc.exe start \"%SERVICE_NAME%\" >nul 2>nul");
+            sb.AppendLine("if not errorlevel 1 goto repair_service_host_completed");
+            sb.AppendLine("set \"SERVICE_ERROR=%ERRORLEVEL%\"");
+            sb.AppendLine("if \"%SERVICE_ERROR%\"==\"1056\" goto repair_service_host_completed");
+            sb.AppendLine("goto repair_service_host_failed");
+            sb.AppendLine(":repair_service_host_completed");
+            sb.AppendLine("call :service_host_log \"Repair completed.\"");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":repair_service_host_failed");
+            sb.AppendLine("sc.exe start \"%SERVICE_NAME%\" >nul 2>nul");
+            sb.AppendLine("call :service_host_log \"Repair failed with error %ERRORLEVEL%. The application update will continue.\"");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":service_host_log");
+            sb.AppendLine(">>\"%SERVICE_LOG%\" echo [%date% %time%] %~1");
+            sb.AppendLine("exit /b 0");
         }
 
         private static string EscapeForBatchValue(string value)
         {
-            return value
-                .Replace("^", "^^")
-                .Replace("&", "^&")
-                .Replace("|", "^|")
-                .Replace("<", "^<")
-                .Replace(">", "^>");
+            return value.Replace("%", "%%");
         }
 
         public static void RestartApplication(string downloadPath)
         {
-            RestartApplication(downloadPath, null);
-        }
-
-        public static void RestartApplication(string downloadPath, Version? targetVersion)
-        {
-            ProcessStartInfo startInfo = new();
-            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-            startInfo.WorkingDirectory = Environment.CurrentDirectory;
-            startInfo.FileName = downloadPath;
-
-            if (!Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
+            ProcessStartInfo startInfo = new()
             {
-                startInfo.Verb = "runas"; // 请求管理员权限
-                startInfo.WindowStyle = ProcessWindowStyle.Normal;
-            }
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = downloadPath,
+            };
+
             try
             {
-                ApplicationSnapshotInfo updateSnapshot = ApplicationSnapshotService.Instance.CreateUpdateSnapshot(CurrentVersion, targetVersion);
-                log.Info($"Created update snapshot before full installer: {updateSnapshot.FilePath}");
-                Process p = Process.Start(startInfo);
+                Process.Start(startInfo);
                 Environment.Exit(0);
             }
             catch (Exception ex)

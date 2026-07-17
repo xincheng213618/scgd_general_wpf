@@ -8,6 +8,13 @@ namespace ColorVision.Copilot
         NamesOnly,
     }
 
+    public enum CopilotToolEvidenceMode
+    {
+        None,
+        Summary,
+        RedactedExcerpt,
+    }
+
     public sealed record CopilotToolCapabilityDescriptor
     {
         public static readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromSeconds(30);
@@ -27,6 +34,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; } = CopilotToolAuditArgumentMode.RedactedSummary;
 
+        public CopilotToolEvidenceMode EvidenceMode { get; init; }
+
         public CopilotToolConcurrencyMode EffectiveConcurrencyMode => Access == CopilotToolAccess.Write
             || Idempotency != CopilotToolIdempotency.Idempotent
                 ? CopilotToolConcurrencyMode.Exclusive
@@ -40,7 +49,8 @@ namespace ColorVision.Copilot
 
         public static CopilotToolCapabilityDescriptor ReadOnly(
             TimeSpan? executionTimeout = null,
-            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary)
+            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary,
+            CopilotToolEvidenceMode evidenceMode = CopilotToolEvidenceMode.Summary)
         {
             return new CopilotToolCapabilityDescriptor
             {
@@ -51,6 +61,7 @@ namespace ColorVision.Copilot
                 ConcurrencyMode = CopilotToolConcurrencyMode.SharedRead,
                 ExecutionTimeout = executionTimeout ?? DefaultExecutionTimeout,
                 AuditArgumentMode = auditArgumentMode,
+                EvidenceMode = evidenceMode,
             };
         }
 
@@ -68,6 +79,7 @@ namespace ColorVision.Copilot
                 ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
                 ExecutionTimeout = executionTimeout ?? DefaultExecutionTimeout,
                 AuditArgumentMode = auditArgumentMode,
+                EvidenceMode = CopilotToolEvidenceMode.None,
             };
         }
 
@@ -78,7 +90,8 @@ namespace ColorVision.Copilot
                 || !Enum.IsDefined(ApprovalMode)
                 || !Enum.IsDefined(Idempotency)
                 || !Enum.IsDefined(ConcurrencyMode)
-                || !Enum.IsDefined(AuditArgumentMode))
+                || !Enum.IsDefined(AuditArgumentMode)
+                || !Enum.IsDefined(EvidenceMode))
             {
                 throw new ArgumentException($"Copilot tool '{toolName}' has invalid capability metadata.");
             }
@@ -88,6 +101,11 @@ namespace ColorVision.Copilot
                 && ApprovalMode == CopilotToolApprovalMode.Never)
             {
                 throw new ArgumentException($"Copilot tool '{toolName}' is a high-risk write capability without approval.");
+            }
+
+            if (Access == CopilotToolAccess.Write && EvidenceMode != CopilotToolEvidenceMode.None)
+            {
+                throw new ArgumentException($"Copilot write tool '{toolName}' cannot persist evidence artifacts.");
             }
         }
     }

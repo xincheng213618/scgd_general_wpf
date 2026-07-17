@@ -7,7 +7,6 @@ namespace ColorVision.Update
     {
         public override async Task Initialize()
         {
-            await CombinedUpdateCoordinator.ResumeIfNeededAsync();
             await CombinedUpdateCoordinator.CheckForUpdatesOnStartupAsync();
         }
     }

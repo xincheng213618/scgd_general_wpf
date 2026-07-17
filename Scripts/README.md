@@ -10,9 +10,14 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 | Publish plugin package | `Scripts\package_plugin.bat <PluginName>` |
 | Publish project package | `Scripts\package_project.bat <ProjectName>` |
 | Publish an existing output directory | `py Scripts\package_cvxp.py --src-dir <output-dir>` |
+| Validate plugin manifest only | `py Scripts\package_cvxp.py --project-file <plugin.csproj> --validate-only` |
 | Refresh host shared-file manifest | `py Scripts\generate_shared_files.py` |
 
 `build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
+
+The main application and ServiceHost inherit the same `VersionPrefix` from `Directory.Build.props`; a normal release has only this one core version source. Every incremental package carries the complete `ServiceHost/` runtime so ZIP deployments can install the service into an empty ProgramData directory.
+
+For manifest-based packages, `manifest.id` is the marketplace/package/install identity and `dllpath` identifies the primary assembly. The project name, assembly name, and plugin ID do not need to match.
 
 ## Upload environment
 
@@ -40,23 +45,11 @@ Do not put real credentials in docs or checked-in command examples.
 | `release.bat` | Normal release wrapper |
 | `build.py` | Release internal: main installer build/upload |
 | `build_update.py` | Release internal: incremental package build/upload |
-| `package_cvxp.py` | `.cvxp` package creation, upload, and cleanup |
+| `package_cvxp.py` | Plugin manifest validation plus `.cvxp` package creation, upload, and cleanup |
 | `package_plugin.bat` | Repo plugin wrapper around `package_cvxp.py --build` |
 | `package_project.bat` | Repo project wrapper around `package_cvxp.py --build` |
 | `generate_shared_files.py` | Generate `shared_files.json` from a host output directory |
 | `build_spectrum.py` | Spectrum-specific build path |
-| `backend_client.py` | Shared upload/auth/preflight helper |
-| `file_manager.py` | Legacy upload/path helper |
+| `backend_client.py` | Shared upload/auth/preflight client |
 
 If a file is not present in `Scripts/`, do not document it as an active entry point.
-
-## Tests
-
-```powershell
-$env:PYTHONPATH='Scripts'
-python -m unittest `
-  Scripts.test.test_backend_client `
-  Scripts.test.test_build `
-  Scripts.test.test_build_update `
-  Scripts.test.test_file_manager
-```

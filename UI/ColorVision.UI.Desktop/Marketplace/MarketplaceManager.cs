@@ -341,7 +341,38 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return false;
             }
 
-            List<MarketplacePackageRequest> requests = plan.Updates
+            List<MarketplacePackageRequest> requests = CreateCombinedUpdateRequests(plan);
+
+            _packageDownloadService.StartBackgroundBatchInstall(requests, restartArguments, noRestartAction, cancellationToken);
+
+            return true;
+        }
+
+        public async Task<bool> PrefetchCombinedUpdateAsync(CombinedPluginUpdatePlan plan, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<string> packagePaths = await EnsureCombinedUpdatePackagesAsync(plan, showDownloadWindow: false, cancellationToken).ConfigureAwait(false);
+            return packagePaths.Count == plan.Updates.Count;
+        }
+
+        public async Task<IReadOnlyList<string>> EnsureCombinedUpdatePackagesAsync(CombinedPluginUpdatePlan plan, bool showDownloadWindow, CancellationToken cancellationToken = default)
+        {
+            if (!plan.HasUpdates)
+                return Array.Empty<string>();
+
+            List<MarketplacePackageRequest> requests = CreateCombinedUpdateRequests(plan);
+            if (requests.Count != plan.Updates.Count)
+                return Array.Empty<string>();
+
+            return await _packageDownloadService.EnsurePackagesAvailableAsync(
+                requests,
+                showFailureDialog: false,
+                showDownloadWindow: showDownloadWindow,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        private static List<MarketplacePackageRequest> CreateCombinedUpdateRequests(CombinedPluginUpdatePlan plan)
+        {
+            return plan.Updates
                 .Where(item => !string.IsNullOrWhiteSpace(item.Plugin.PackageName) && !string.IsNullOrWhiteSpace(item.VersionInfo.Version))
                 .Select(item => new MarketplacePackageRequest
                 {
@@ -350,10 +381,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                     ExpectedHash = item.VersionInfo.FileHash,
                 })
                 .ToList();
-
-            _packageDownloadService.StartBackgroundBatchInstall(requests, restartArguments, noRestartAction, cancellationToken);
-
-            return true;
         }
 
         public async Task UpdateAllAsync(CancellationToken cancellationToken = default)
@@ -406,6 +433,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (!_packageDownloadService.TryApproveBatchInstall(packagePaths, requests))
+                return;
+
             await Application.Current!.Dispatcher.InvokeAsync(() => PluginUpdater.UpdatePlugin(packagePaths.ToArray()));
         }
 

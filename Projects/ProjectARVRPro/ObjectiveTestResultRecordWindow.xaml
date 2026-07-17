@@ -30,6 +30,7 @@
                   HeadersVisibility="Column"
                   IsReadOnly="True"
                   SelectionMode="Single"
+                  SelectionChanged="RecordDataGrid_SelectionChanged"
                   GridLinesVisibility="All">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="64"/>

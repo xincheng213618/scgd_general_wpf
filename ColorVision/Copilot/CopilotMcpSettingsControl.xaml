@@ -189,6 +189,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -198,13 +199,62 @@
                                Margin="0,8,0,10"
                                Style="{StaticResource McpHintTextStyle}"
                                Text="{Binding McpLastErrorText}"/>
-                    <TextBox Grid.Row="2"
+                    <Expander Grid.Row="2"
+                              Margin="0,0,0,10"
+                              Header="{Binding SubagentRolesSummaryText}"
+                              Foreground="{DynamicResource GlobalTextBrush}">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Margin="0,0,0,8"
+                                       Style="{StaticResource McpHintTextStyle}"
+                                       Text="Plugin roles are opt-out individually. Disabled roles are removed from the model tool list after Apply, reducing prompt metadata and preventing execution."/>
+                            <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding PluginSubagentRoles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,6"
+                                                    Padding="10,8"
+                                                    Background="{DynamicResource GlobalBorderBrush}"
+                                                    BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Margin="0,2,10,0"
+                                                              VerticalAlignment="Top"
+                                                              IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}"/>
+                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding SourceText}"/>
+                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding PermissionSummary}"/>
+                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding BudgetSummary}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <TextBox Height="104"
+                                     Margin="0,8,0,0"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     IsReadOnly="True"
+                                     Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
+                                     TextWrapping="NoWrap"
+                                     VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </Expander>
+                    <TextBox Grid.Row="3"
                              Height="116"
                              IsReadOnly="True"
                              Text="{Binding McpRecentAuditText, Mode=OneWay}"
                              TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"/>
-                    <WrapPanel Grid.Row="3" Margin="0,10,0,0">
+                    <WrapPanel Grid.Row="4" Margin="0,10,0,0">
                         <Button Margin="0,0,8,0" Padding="10,4" Command="{Binding RefreshMcpDiagnosticsCommand}" Content="Refresh"/>
                         <Button Padding="10,4" Command="{Binding CopyMcpDiagnosticsCommand}" Content="Copy Diagnostics"/>
                     </WrapPanel>
@@ -212,30 +262,96 @@
             </Expander>
         </Border>
 
-        <Border Margin="0,12,0,0" Padding="12,10" Style="{StaticResource McpSurfaceBorderStyle}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock VerticalAlignment="Center"
-                           Style="{StaticResource McpFooterStatusTextStyle}"
-                           Text="{Binding SettingsStatusText}"/>
-                <Button Grid.Column="1"
-                        Margin="0,0,8,0"
-                        Padding="14,6"
-                        Click="ApplyButton_Click"
-                        Content="Apply"
-                        IsEnabled="{Binding CanApplySettings}"/>
-                <Button Grid.Column="2"
-                        Padding="14,6"
-                        Click="SaveButton_Click"
-                        Content="{x:Static properties:Resources.Save}"
-                        IsEnabled="{Binding CanSaveSettings}"
-                        Style="{StaticResource CopilotPrimaryButtonStyle}"/>
-            </Grid>
+        <Border Margin="0,12,0,0" Padding="16,14" Style="{StaticResource McpSurfaceBorderStyle}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource McpPanelTitleStyle}" Text="Copilot MCP clients"/>
+                <TextBlock Margin="0,6,0,10"
+                           Style="{StaticResource McpHintTextStyle}"
+                           Text="Connect Copilot to explicit Streamable HTTP MCP servers. One server per line: name | endpoint | token environment variable | default policy | optional tool=policy,... Use an exact tool list when possible; blank or * exposes every discovered tool."/>
+                <TextBox MinHeight="104"
+                         AcceptsReturn="True"
+                         Text="{Binding ExternalMcpServersText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"/>
+                <TextBlock Margin="0,6,0,0"
+                           FontSize="11"
+                           Text="{Binding ExternalMcpServersValidationText}"
+                           TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource McpHintTextStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsExternalMcpServersValid}" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource McpValidationErrorBrush}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Opacity" Value="0.95"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <DockPanel Margin="0,8,0,0" LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Margin="10,0,0,0"
+                            Padding="10,4"
+                            Command="{Binding RefreshExternalMcpClientsCommand}"
+                            Content="Refresh Discovery"/>
+                    <Button DockPanel.Dock="Right"
+                            Margin="10,0,0,0"
+                            Padding="10,4"
+                            Command="{Binding CopyExternalMcpClientsStatusCommand}"
+                            Content="Copy Status"/>
+                    <TextBlock VerticalAlignment="Center"
+                               Style="{StaticResource McpHintTextStyle}"
+                               Text="{Binding ExternalMcpClientsStatusText}"/>
+                </DockPanel>
+                <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding ExternalMcpClientStatuses}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,6"
+                                    Padding="10,8"
+                                    Background="{DynamicResource GlobalBorderBrush}"
+                                    BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Text="{Binding ServerName}"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="12,0,0,0"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryBrush}"
+                                                   Text="{Binding StateText}"/>
+                                    </Grid>
+                                    <TextBlock Grid.Row="1"
+                                               Margin="0,4,0,0"
+                                               Style="{StaticResource McpHintTextStyle}"
+                                               Text="{Binding DetailText}"/>
+                                    <DockPanel Grid.Row="2" Margin="0,4,0,0" LastChildFill="True">
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Margin="12,0,0,0"
+                                                   Style="{StaticResource McpHintTextStyle}"
+                                                   Text="{Binding CheckedText}"/>
+                                        <TextBlock Style="{StaticResource McpHintTextStyle}"
+                                                   Text="{Binding Endpoint}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
     </StackPanel>
 </UserControl>

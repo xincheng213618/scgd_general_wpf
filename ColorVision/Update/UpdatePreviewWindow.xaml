@@ -311,17 +311,6 @@
                                                           SelectedValue="{Binding ApplicationUpdateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectedValuePath="Mode"
                                                           Visibility="{Binding ApplicationUpdateModeSelectorVisibility}" />
-                                                <CheckBox Margin="0,10,0,0"
-                                                          VerticalAlignment="Center"
-                                                          FontSize="12"
-                                                          Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                                          IsChecked="{Binding CreateBackupBeforeIncrementalUpdate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                          Visibility="{Binding IncrementalBackupVisibility}">
-                                                    <TextBlock MaxWidth="148"
-                                                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                                                               Text="{x:Static properties:Resources.UpdatePreviewIncrementalBackupOption}"
-                                                               TextWrapping="Wrap" />
-                                                </CheckBox>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -352,12 +341,6 @@
                                TextTrimming="CharacterEllipsis"
                                TextWrapping="NoWrap"
                                Visibility="{Binding FooterInfoVisibility}" />
-                    <Button Margin="12,0,0,0"
-                            VerticalAlignment="Center"
-                            Click="SecondaryButton_Click"
-                            Content="{Binding SecondaryButtonText}"
-                            Style="{StaticResource UpdateDialogTextButtonStyle}"
-                            Visibility="{Binding SecondaryButtonVisibility}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"

@@ -5,6 +5,8 @@ using ColorVision.UI.Marketplace;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,7 +41,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public async Task EnsurePackageAvailableAsync_DeletesInvalidPreferredPackageBeforeDownloading()
+        public async Task EnsurePackageAvailableAsync_PreservesInvalidPreferredPackageBeforeDownloading()
         {
             string stalePath = Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp");
             Directory.CreateDirectory(_downloadDirectory);
@@ -55,6 +57,9 @@ namespace ColorVision.UI.Tests
                 DownloadFactory = invocation =>
                 {
                     Assert.False(File.Exists(stalePath));
+                    string recoveryDirectory = Path.Combine(_downloadDirectory, "Recovery");
+                    string recoveryPath = Assert.Single(Directory.EnumerateFiles(recoveryDirectory, "*.cvxp"));
+                    Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(recoveryPath));
                     return new DownloadTask
                     {
                         Status = DownloadStatus.Completed,
@@ -129,6 +134,140 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task InstallPackageAsync_InstallsOrdinaryPackageWithoutAdditionalReview()
+        {
+            string packagePath = CreatePackage("PluginA", "1.0.0", """
+                {
+                  "id": "PluginA",
+                  "name": "Plugin A",
+                  "version": "1.0.0"
+                }
+                """);
+            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            bool installed = await service.InstallPackageAsync(CreateRequest("PluginA", "1.0.0"));
+
+            Assert.True(installed);
+            Assert.Single(installer.InstallCalls);
+            Assert.Empty(ui.Confirmations);
+            Assert.Empty(ui.Errors);
+        }
+
+        [Fact]
+        public async Task InstallPackageAsync_ReviewsDeclaredCopilotPermissionsAndBudgets()
+        {
+            string packagePath = CreateCopilotPackage();
+            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory) { ConfirmInstallResult = true };
+            var service = CreateService(client, downloader, installer, ui);
+
+            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
+
+            Assert.True(installed);
+            Assert.Single(installer.InstallCalls);
+            string confirmation = Assert.Single(ui.Confirmations);
+            Assert.Contains("DelegatePluginReviewer", confirmation, StringComparison.Ordinal);
+            Assert.Contains("GrepText", confirmation, StringComparison.Ordinal);
+            Assert.Contains("ReadLocalFile", confirmation, StringComparison.Ordinal);
+            Assert.Contains("5", confirmation, StringComparison.Ordinal);
+            Assert.Contains("8,000", confirmation, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task InstallPackageAsync_DoesNotInstallWhenCopilotPermissionReviewIsDeclined()
+        {
+            string packagePath = CreateCopilotPackage();
+            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory) { ConfirmInstallResult = false };
+            var service = CreateService(client, downloader, installer, ui);
+
+            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
+
+            Assert.False(installed);
+            Assert.Empty(installer.InstallCalls);
+            Assert.Single(ui.Confirmations);
+            Assert.Empty(ui.Errors);
+        }
+
+        [Fact]
+        public async Task InstallPackageAsync_BlocksInvalidCopilotManifestBeforeLoadingPluginCode()
+        {
+            string packagePath = CreatePackage("sample.plugin", "2.4.1", """
+                {
+                  "id": "sample.plugin",
+                  "name": "Sample Plugin",
+                  "version": "2.4.1",
+                  "copilot_agents": [
+                    {
+                      "id": "plugin-reviewer",
+                      "name": "Plugin Reviewer",
+                      "description": "Review plugin source.",
+                      "instructions": "Read only the requested evidence.",
+                      "scope": "WorkspaceReadOnly",
+                      "capabilities": ["ExecuteProcess"]
+                    }
+                  ]
+                }
+                """);
+            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
+
+            Assert.False(installed);
+            Assert.Empty(installer.InstallCalls);
+            Assert.Empty(ui.Confirmations);
+            Assert.Contains("ExecuteProcess", Assert.Single(ui.Errors), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task InstallPackageAsync_BlocksManifestWhoseIdentityDoesNotMatchRequest()
+        {
+            string packagePath = CreatePackage("PluginA", "1.0.0", """
+                {
+                  "id": "DifferentPlugin",
+                  "name": "Different Plugin",
+                  "version": "1.0.0"
+                }
+                """);
+            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, new FakeMarketplacePackageDownloader(), installer, ui);
+
+            bool installed = await service.InstallPackageAsync(CreateRequest("PluginA", "1.0.0"));
+
+            Assert.False(installed);
+            Assert.Empty(installer.InstallCalls);
+            Assert.Contains("DifferentPlugin", Assert.Single(ui.Errors), StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void TryApproveBatchInstall_StopsPackagesThatRequireIndividualCopilotReview()
+        {
+            string packagePath = CreateCopilotPackage();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(new FakeMarketplacePackageClient(), new FakeMarketplacePackageDownloader(), new FakeMarketplacePackageInstaller(), ui);
+
+            bool approved = service.TryApproveBatchInstall([packagePath]);
+
+            Assert.False(approved);
+            Assert.Single(ui.Warnings);
+            Assert.Empty(ui.Confirmations);
+        }
+
+        [Fact]
         public async Task EnsurePackagesAvailableAsync_DeduplicatesDuplicateRequests()
         {
             var client = new FakeMarketplacePackageClient
@@ -160,6 +299,25 @@ namespace ColorVision.UI.Tests
             Assert.Equal(2, paths.Count);
             Assert.Contains(Path.Combine(_downloadDirectory, "PluginA-1.0.0.cvxp"), paths);
             Assert.Contains(Path.Combine(_downloadDirectory, "PluginB-2.0.0.cvxp"), paths);
+        }
+
+        [Fact]
+        public async Task EnsurePackagesAvailableAsync_CanPrefetchWithoutShowingDownloadWindow()
+        {
+            var client = new FakeMarketplacePackageClient();
+            var downloader = new FakeMarketplacePackageDownloader();
+            var installer = new FakeMarketplacePackageInstaller();
+            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
+            var service = CreateService(client, downloader, installer, ui);
+
+            IReadOnlyList<string> paths = await service.EnsurePackagesAvailableAsync(
+                new[] { CreateRequest("PluginA", "1.0.0") },
+                showFailureDialog: false,
+                showDownloadWindow: false);
+
+            Assert.Single(paths);
+            Assert.Single(downloader.Invocations);
+            Assert.Equal(0, ui.ShowDownloadWindowCalls);
         }
 
         [Fact]
@@ -283,6 +441,45 @@ namespace ColorVision.UI.Tests
             };
         }
 
+        private string CreateCopilotPackage()
+        {
+            return CreatePackage("sample.plugin", "2.4.1", """
+                {
+                  "id": "sample.plugin",
+                  "name": "Sample Plugin",
+                  "version": "2.4.1",
+                  "copilot_agents": [
+                    {
+                      "id": "plugin-reviewer",
+                      "name": "Plugin Reviewer",
+                      "description": "Delegate a bounded plugin code review.",
+                      "instructions": "Review only the requested plugin source evidence.",
+                      "scope": "WorkspaceReadOnly",
+                      "capabilities": ["GrepText", "ReadLocalFile"],
+                      "child_mode": "Code",
+                      "parent_modes": ["Code", "Diagnose"],
+                      "maximum_tool_calls": 5,
+                      "maximum_agent_passes": 2,
+                      "maximum_duration_seconds": 60,
+                      "maximum_answer_characters": 8000
+                    }
+                  ]
+                }
+                """);
+        }
+
+        private string CreatePackage(string pluginId, string version, string manifestJson)
+        {
+            Directory.CreateDirectory(_downloadDirectory);
+            string packagePath = Path.Combine(_downloadDirectory, $"{pluginId}-{version}.cvxp");
+            using ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Create);
+            ZipArchiveEntry entry = archive.CreateEntry($"{pluginId}/manifest.json");
+            using Stream stream = entry.Open();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            writer.Write(manifestJson);
+            return packagePath;
+        }
+
         private sealed class FakeMarketplacePackageClient : IMarketplacePackageClient
         {
             public Func<string, string, string, string?, string?>? ExistingFileResolver { get; set; }
@@ -374,7 +571,9 @@ namespace ColorVision.UI.Tests
             public int ShowDownloadWindowCalls { get; private set; }
             public List<string> Warnings { get; } = new();
             public List<string> Errors { get; } = new();
+            public List<string> Confirmations { get; } = new();
             public List<string?> OpenedFolders { get; } = new();
+            public bool ConfirmInstallResult { get; set; } = true;
 
             public void ShowDownloadWindow()
             {
@@ -389,6 +588,12 @@ namespace ColorVision.UI.Tests
             public void ShowError(string message, string title)
             {
                 Errors.Add(message);
+            }
+
+            public bool ConfirmInstall(string message, string title)
+            {
+                Confirmations.Add(message);
+                return ConfirmInstallResult;
             }
 
             public void OpenFolder(string? folderPath)

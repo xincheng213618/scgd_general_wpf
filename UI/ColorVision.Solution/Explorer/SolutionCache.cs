@@ -1,4 +1,5 @@
 using log4net;
+using Microsoft.Data.Sqlite;
 using SqlSugar;
 using System.IO;
 
@@ -37,15 +38,17 @@ namespace ColorVision.Solution.Explorer
 
         private readonly SqlSugarClient _db;
         private readonly string _dbPath;
+        private readonly string _connectionString;
         private readonly object _lock = new();
         private bool _disposed;
 
         public SolutionCache(string solutionFilePath)
         {
             _dbPath = solutionFilePath + ".cache.db";
+            _connectionString = $"Data Source={_dbPath}";
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={_dbPath}",
+                ConnectionString = _connectionString,
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -61,6 +64,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return false;
             lock (_lock)
             {
+                if (_disposed) return false;
                 try
                 {
                     return File.Exists(_dbPath) && _db.Queryable<FileTreeCacheEntry>().Any();
@@ -80,6 +84,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return new List<FileTreeCacheEntry>();
             lock (_lock)
             {
+                if (_disposed) return new List<FileTreeCacheEntry>();
                 try
                 {
                     return _db.Queryable<FileTreeCacheEntry>()
@@ -96,25 +101,35 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        public List<FileTreeCacheEntry> Search(string[] keywords, int maxResults = 500)
+        public List<FileTreeCacheEntry> Search(
+            string[] keywords,
+            int maxResults = 500,
+            string? rootPath = null)
         {
             if (_disposed || keywords.Length == 0) return new List<FileTreeCacheEntry>();
             lock (_lock)
             {
+                if (_disposed) return new List<FileTreeCacheEntry>();
                 try
                 {
-                    var query = _db.Queryable<FileTreeCacheEntry>();
-                    foreach (string keyword in keywords.Where(keyword => !string.IsNullOrWhiteSpace(keyword)))
+                    while (true)
                     {
-                        string term = keyword;
-                        query = query.Where(entry => entry.Name.Contains(term));
-                    }
+                        List<FileTreeCacheEntry> entries = CreateSearchQuery(keywords, rootPath)
+                            .OrderBy(entry => entry.IsDirectory, OrderByType.Desc)
+                            .OrderBy(entry => entry.Name)
+                            .Take(maxResults)
+                            .ToList();
+                        List<FileTreeCacheEntry> staleEntries = entries
+                            .Where(entry => entry.IsDirectory
+                                ? !Directory.Exists(entry.FullPath)
+                                : !File.Exists(entry.FullPath))
+                            .ToList();
+                        if (staleEntries.Count == 0)
+                            return entries;
 
-                    return query
-                        .OrderBy(entry => entry.IsDirectory, OrderByType.Desc)
-                        .OrderBy(entry => entry.Name)
-                        .Take(maxResults)
-                        .ToList();
+                        foreach (FileTreeCacheEntry staleEntry in staleEntries)
+                            RemoveEntryInternal(staleEntry.FullPath, staleEntry.IsDirectory);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -133,12 +148,13 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     _db.Ado.BeginTran();
                     _db.Deleteable<FileTreeCacheEntry>().ExecuteCommand();
 
-                    ScanDirectory(new DirectoryInfo(rootPath), rootPath);
+                    ScanDirectory(new DirectoryInfo(rootPath));
 
                     _db.Ado.CommitTran();
                     log.Info($"缓存重建完成: {rootPath}");
@@ -151,50 +167,59 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        private void ScanDirectory(DirectoryInfo dirInfo, string rootPath)
+        private void ScanDirectory(DirectoryInfo dirInfo)
         {
+            DirectoryInfo[] subDirectories;
             try
             {
-                foreach (var subDir in dirInfo.GetDirectories())
+                subDirectories = dirInfo.GetDirectories();
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                return;
+            }
+
+            foreach (DirectoryInfo subDirectory in subDirectories)
+            {
+                try
                 {
-                    if ((subDir.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                    if ((subDirectory.Attributes & FileAttributes.Hidden) != 0)
                         continue;
 
-                    var entry = new FileTreeCacheEntry
-                    {
-                        FullPath = subDir.FullName,
-                        ParentPath = dirInfo.FullName,
-                        Name = subDir.Name,
-                        IsDirectory = true,
-                        Extension = string.Empty,
-                        FileSize = 0,
-                        LastWriteTicks = subDir.LastWriteTimeUtc.Ticks
-                    };
-                    _db.Insertable(entry).ExecuteCommand();
+                    _db.Insertable(CreateDirectoryEntry(subDirectory, dirInfo.FullName)).ExecuteCommand();
 
-                    ScanDirectory(subDir, rootPath);
+                    if ((subDirectory.Attributes & FileAttributes.ReparsePoint) == 0)
+                        ScanDirectory(subDirectory);
                 }
-
-                foreach (var file in dirInfo.GetFiles())
+                catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
                 {
-                    if (SolutionNodeFactory.IsInternalFile(file.Name)) continue;
-
-                    var entry = new FileTreeCacheEntry
-                    {
-                        FullPath = file.FullName,
-                        ParentPath = dirInfo.FullName,
-                        Name = file.Name,
-                        IsDirectory = false,
-                        Extension = file.Extension,
-                        FileSize = file.Length,
-                        LastWriteTicks = file.LastWriteTimeUtc.Ticks
-                    };
-                    _db.Insertable(entry).ExecuteCommand();
+                    // Keep indexing sibling entries when one path changes or becomes inaccessible.
                 }
             }
-            catch (UnauthorizedAccessException)
+
+            FileInfo[] files;
+            try
             {
-                // Skip directories we can't access
+                files = dirInfo.GetFiles();
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                return;
+            }
+
+            foreach (FileInfo file in files)
+            {
+                try
+                {
+                    if (SolutionNodeFactory.IsInternalFile(file.Name))
+                        continue;
+
+                    _db.Insertable(CreateFileEntry(file, dirInfo.FullName)).ExecuteCommand();
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+                {
+                    // The file can disappear while an imported directory is still being copied.
+                }
             }
         }
 
@@ -207,6 +232,7 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return false;
             lock (_lock)
             {
+                if (_disposed) return false;
                 try
                 {
                     var dirInfo = new DirectoryInfo(directoryPath);
@@ -255,21 +281,13 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     var fileInfo = new FileInfo(fullPath);
                     if (!fileInfo.Exists) return;
 
-                    var entry = new FileTreeCacheEntry
-                    {
-                        FullPath = fullPath,
-                        ParentPath = parentPath,
-                        Name = fileInfo.Name,
-                        IsDirectory = false,
-                        Extension = fileInfo.Extension,
-                        FileSize = fileInfo.Length,
-                        LastWriteTicks = fileInfo.LastWriteTimeUtc.Ticks
-                    };
+                    FileTreeCacheEntry entry = CreateFileEntry(fileInfo, parentPath);
 
                     // Upsert
                     if (_db.Queryable<FileTreeCacheEntry>().Any(e => e.FullPath == fullPath))
@@ -292,21 +310,13 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
                     var dirInfo = new DirectoryInfo(fullPath);
                     if (!dirInfo.Exists) return;
 
-                    var entry = new FileTreeCacheEntry
-                    {
-                        FullPath = fullPath,
-                        ParentPath = parentPath,
-                        Name = dirInfo.Name,
-                        IsDirectory = true,
-                        Extension = string.Empty,
-                        FileSize = 0,
-                        LastWriteTicks = dirInfo.LastWriteTimeUtc.Ticks
-                    };
+                    FileTreeCacheEntry entry = CreateDirectoryEntry(dirInfo, parentPath);
 
                     if (_db.Queryable<FileTreeCacheEntry>().Any(e => e.FullPath == fullPath))
                         _db.Updateable(entry).ExecuteCommand();
@@ -320,6 +330,33 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        public void AddDirectoryTree(string fullPath, string parentPath)
+        {
+            if (_disposed) return;
+            lock (_lock)
+            {
+                if (_disposed) return;
+                try
+                {
+                    var directoryInfo = new DirectoryInfo(fullPath);
+                    if (!directoryInfo.Exists)
+                        return;
+
+                    _db.Ado.BeginTran();
+                    RemoveEntryInternal(directoryInfo.FullName, isDirectory: true);
+                    _db.Insertable(CreateDirectoryEntry(directoryInfo, parentPath)).ExecuteCommand();
+                    if ((directoryInfo.Attributes & FileAttributes.ReparsePoint) == 0)
+                        ScanDirectory(directoryInfo);
+                    _db.Ado.CommitTran();
+                }
+                catch (Exception ex)
+                {
+                    try { _db.Ado.RollbackTran(); } catch { }
+                    log.Warn($"缓存添加目录树失败: {ex.Message}");
+                }
+            }
+        }
+
         /// <summary>
         /// Remove an entry from the cache.
         /// </summary>
@@ -328,19 +365,90 @@ namespace ColorVision.Solution.Explorer
             if (_disposed) return;
             lock (_lock)
             {
+                if (_disposed) return;
                 try
                 {
-                    string normalizedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                    string childPrefix = normalizedPath + Path.DirectorySeparatorChar;
-                    _db.Deleteable<FileTreeCacheEntry>()
-                        .Where(e => e.FullPath == normalizedPath || e.FullPath.StartsWith(childPrefix))
-                        .ExecuteCommand();
+                    RemoveEntryInternal(fullPath, isDirectory: true);
                 }
                 catch (Exception ex)
                 {
                     log.Warn($"缓存删除失败: {ex.Message}");
                 }
             }
+        }
+
+        private ISugarQueryable<FileTreeCacheEntry> CreateSearchQuery(
+            IEnumerable<string> keywords,
+            string? rootPath)
+        {
+            var query = _db.Queryable<FileTreeCacheEntry>();
+            if (!string.IsNullOrWhiteSpace(rootPath))
+            {
+                string normalizedRootPath = Path.GetFullPath(rootPath)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string childPrefix = normalizedRootPath + Path.DirectorySeparatorChar;
+                query = query.Where(entry =>
+                    entry.FullPath == normalizedRootPath
+                    || entry.FullPath.StartsWith(childPrefix));
+            }
+            foreach (string keyword in keywords.Where(keyword => !string.IsNullOrWhiteSpace(keyword)))
+            {
+                string term = keyword;
+                query = query.Where(entry =>
+                    entry.Name.Contains(term)
+                    || entry.FullPath.Contains(term));
+            }
+            return query;
+        }
+
+        private void RemoveEntryInternal(string fullPath, bool isDirectory)
+        {
+            string normalizedPath = fullPath.TrimEnd(
+                Path.DirectorySeparatorChar,
+                Path.AltDirectorySeparatorChar);
+            if (!isDirectory)
+            {
+                _db.Deleteable<FileTreeCacheEntry>()
+                    .Where(entry => entry.FullPath == normalizedPath)
+                    .ExecuteCommand();
+                return;
+            }
+
+            string childPrefix = normalizedPath + Path.DirectorySeparatorChar;
+            _db.Deleteable<FileTreeCacheEntry>()
+                .Where(entry => entry.FullPath == normalizedPath
+                    || entry.FullPath.StartsWith(childPrefix))
+                .ExecuteCommand();
+        }
+
+        private static FileTreeCacheEntry CreateFileEntry(FileInfo fileInfo, string parentPath)
+        {
+            return new FileTreeCacheEntry
+            {
+                FullPath = fileInfo.FullName,
+                ParentPath = parentPath,
+                Name = fileInfo.Name,
+                IsDirectory = false,
+                Extension = fileInfo.Extension,
+                FileSize = fileInfo.Length,
+                LastWriteTicks = fileInfo.LastWriteTimeUtc.Ticks,
+            };
+        }
+
+        private static FileTreeCacheEntry CreateDirectoryEntry(
+            DirectoryInfo directoryInfo,
+            string parentPath)
+        {
+            return new FileTreeCacheEntry
+            {
+                FullPath = directoryInfo.FullName,
+                ParentPath = parentPath,
+                Name = directoryInfo.Name,
+                IsDirectory = true,
+                Extension = string.Empty,
+                FileSize = 0,
+                LastWriteTicks = directoryInfo.LastWriteTimeUtc.Ticks,
+            };
         }
 
         public void Dispose()
@@ -351,6 +459,8 @@ namespace ColorVision.Solution.Explorer
                 lock (_lock)
                 {
                     _db?.Dispose();
+                    using var poolKey = new SqliteConnection(_connectionString);
+                    SqliteConnection.ClearPool(poolKey);
                 }
             }
             GC.SuppressFinalize(this);
