@@ -6,6 +6,8 @@ namespace ColorVision.Solution.Explorer
     [ProjectTemplate(0)]
     public class EmptyProjectTemplate : IProjectTemplate
     {
+        public string Id => "colorvision.project-template.empty";
+        public string ProjectProviderId => FolderProjectProvider.ProviderId;
         public string Name => "空项目";
         public string Category => "通用";
         public string Description => "创建一个空的项目，仅包含 .cvproj 文件";
@@ -22,6 +24,8 @@ namespace ColorVision.Solution.Explorer
     [ProjectTemplate(0)]
     public class ScriptProjectTemplate : IProjectTemplate
     {
+        public string Id => "colorvision.project-template.script";
+        public string ProjectProviderId => FolderProjectProvider.ProviderId;
         public string Name => "脚本项目";
         public string Category => "通用";
         public string Description => "创建一个包含脚本目录和示例脚本的项目";
@@ -65,6 +69,8 @@ namespace ColorVision.Solution.Explorer
     [ProjectTemplate(0)]
     public class DataProjectTemplate : IProjectTemplate
     {
+        public string Id => "colorvision.project-template.data";
+        public string ProjectProviderId => FolderProjectProvider.ProviderId;
         public string Name => "数据项目";
         public string Category => "通用";
         public string Description => "创建一个包含数据、配置和输出目录的项目";

@@ -705,13 +705,31 @@ namespace ColorVision.Solution.Explorer
             };
             if (window.ShowDialog() == true && window.SelectedTemplate != null && window.ProjectName != null)
             {
-                var dirInfo = ProjectTemplateRegistry.CreateFromTemplate(
-                    window.SelectedTemplate, DirectoryInfo.FullName, window.ProjectName);
-
-                // Register project path in solution config (like VS .sln)
-                if (dirInfo != null)
+                if (!ProjectTemplateRegistry.TryCreateFromTemplate(
+                    window.SelectedTemplate,
+                    DirectoryInfo.FullName,
+                    window.ProjectName,
+                    out DirectoryInfo? projectDirectory,
+                    out string errorMessage)
+                    || projectDirectory == null)
                 {
-                    RegisterProject(dirInfo, solutionFolderId);
+                    MessageBox.Show(
+                        Application.Current?.GetActiveWindow(),
+                        errorMessage,
+                        "创建项目失败",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!RegisterProject(projectDirectory, solutionFolderId))
+                {
+                    MessageBox.Show(
+                        Application.Current?.GetActiveWindow(),
+                        $"项目已创建在“{projectDirectory.FullName}”，但未能添加到当前解决方案。",
+                        "添加项目失败",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 }
             }
         }
@@ -2438,9 +2456,6 @@ namespace ColorVision.Solution.Explorer
             foreach (var item in unavailable)
             {
                 RemovePhysicalNodeShadowingProjectReference(item.ResolvedPath);
-                string unavailablePath = Directory.Exists(item.ResolvedPath)
-                    ? Path.Combine(item.ResolvedPath, ".missing.cvproj")
-                    : item.ResolvedPath;
                 UnavailableProjectNode? unavailableNode = currentUnavailableNodes.FirstOrDefault(node =>
                     !retainedUnavailableNodes.Contains(node)
                     && ProjectReferencesEqual(
@@ -2452,12 +2467,12 @@ namespace ColorVision.Solution.Explorer
                     unavailableNode = new UnavailableProjectNode(
                         this,
                         item.Reference,
-                        unavailablePath,
+                        item.ResolvedPath,
                         item.ErrorMessage);
                 }
                 else
                 {
-                    unavailableNode.UpdateUnavailableState(unavailablePath, item.ErrorMessage);
+                    unavailableNode.UpdateUnavailableState(item.ResolvedPath, item.ErrorMessage);
                 }
                 retainedUnavailableNodes.Add(unavailableNode);
                 ReparentSolutionNode(

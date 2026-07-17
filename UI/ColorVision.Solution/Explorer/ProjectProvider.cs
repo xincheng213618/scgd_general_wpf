@@ -1078,12 +1078,49 @@ namespace ColorVision.Solution.Explorer
                 }
             }
 
+            string? declaredProviderId = GetDeclaredProviderId(projectFile);
             errorMessage = providerErrors.Count > 0
                 ? string.Join(Environment.NewLine, providerErrors)
                 : IsSupportedProjectFilePath(projectFile.FullName)
-                    ? $"没有已安装的项目 Provider 能加载“{projectFile.Name}”。可能缺少对应插件，或项目类型标识不受支持。"
+                    ? $"没有已安装的项目 Provider 能加载“{projectFile.Name}”。"
+                        + (declaredProviderId == null ? string.Empty : $"项目声明需要 Provider“{declaredProviderId}”；")
+                        + "可能缺少对应插件，或项目类型标识不受支持。"
                     : $"没有项目 Provider 声明支持文件“{projectFile.Name}”。";
             return false;
+        }
+
+        /// <summary>
+        /// Reads the provider identity declared by the built-in .cvproj
+        /// envelope without attempting to load the project. This keeps missing
+        /// plugin diagnostics actionable while leaving other formats opaque.
+        /// </summary>
+        public static string? GetDeclaredProviderId(FileInfo projectFile)
+        {
+            ArgumentNullException.ThrowIfNull(projectFile);
+            projectFile.Refresh();
+            if (!projectFile.Exists
+                || !string.Equals(projectFile.Extension, ".cvproj", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            try
+            {
+                string? projectType = JObject.Parse(File.ReadAllText(projectFile.FullName))
+                    .Value<string>("ProjectType")?
+                    .Trim();
+                if (string.IsNullOrWhiteSpace(projectType))
+                    return FolderProjectProvider.ProviderId;
+                return string.Equals(projectType, "folder", StringComparison.OrdinalIgnoreCase)
+                    ? FolderProjectProvider.ProviderId
+                    : projectType;
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or Newtonsoft.Json.JsonException)
+            {
+                return null;
+            }
         }
 
         public static bool IsSupportedProjectFilePath(string? path)

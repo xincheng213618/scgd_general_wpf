@@ -338,11 +338,13 @@ namespace ColorVision.Solution.Explorer
         private readonly SolutionExplorer _solutionExplorer;
 
         public string ProjectReference { get; }
+        public string ResolvedPath { get; private set; }
         public string LoadError { get; private set; }
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public RelayCommand RemoveFromSolutionCommand { get; }
         public RelayCommand ShowLoadErrorCommand { get; }
+        public RelayCommand OpenContainingFolderCommand { get; }
 
         public UnavailableProjectNode(
             SolutionExplorer solutionExplorer,
@@ -355,7 +357,8 @@ namespace ColorVision.Solution.Explorer
             LoadError = string.IsNullOrWhiteSpace(loadError)
                 ? "项目文件不存在，或没有已安装的 Provider 能加载该项目。"
                 : loadError;
-            FullPath = resolvedPath;
+            ResolvedPath = resolvedPath;
+            FullPath = GetNodeIdentityPath(resolvedPath);
             Name1 = $"{GetDisplayName(projectReference, resolvedPath)} (不可用)";
             CanAdd = false;
             CanCopy = false;
@@ -367,10 +370,13 @@ namespace ColorVision.Solution.Explorer
             RemoveFromSolutionCommand = new RelayCommand(_ => _solutionExplorer.RemoveProjectReference(ProjectReference));
             ShowLoadErrorCommand = new RelayCommand(_ => MessageBox.Show(
                 Application.Current?.GetActiveWindow(),
-                LoadError,
+                BuildDiagnosticMessage(),
                 "项目加载错误",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning));
+            OpenContainingFolderCommand = new RelayCommand(
+                _ => OpenContainingFolder(),
+                _ => GetExistingContainerPath() != null);
         }
 
         internal void UpdateUnavailableState(string resolvedPath, string? loadError)
@@ -378,9 +384,11 @@ namespace ColorVision.Solution.Explorer
             LoadError = string.IsNullOrWhiteSpace(loadError)
                 ? "项目文件不存在，或没有已安装的 Provider 能加载该项目。"
                 : loadError;
-            FullPath = resolvedPath;
+            ResolvedPath = resolvedPath;
+            FullPath = GetNodeIdentityPath(resolvedPath);
             Name1 = $"{GetDisplayName(ProjectReference, resolvedPath)} (不可用)";
             NotifyPropertyChanged(nameof(Name));
+            NotifyPropertyChanged(nameof(LoadError));
             InvalidateMenuItems();
         }
 
@@ -403,8 +411,15 @@ namespace ColorVision.Solution.Explorer
             });
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
-                GuidId = SolutionCommandIds.Delete,
+                GuidId = "OpenUnavailableProjectContainer",
                 Order = 3,
+                Header = "在文件资源管理器中打开(_X)",
+                Command = OpenContainingFolderCommand,
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = SolutionCommandIds.Delete,
+                Order = 10,
                 Header = "从解决方案中移除(_V)",
                 Command = System.Windows.Input.ApplicationCommands.Delete,
             });
@@ -431,6 +446,61 @@ namespace ColorVision.Solution.Explorer
             }
 
             return _solutionExplorer.RemoveProjectReference(ProjectReference);
+        }
+
+        internal string BuildDiagnosticMessage()
+        {
+            return string.Join(Environment.NewLine, new[]
+            {
+                $"项目引用：{ProjectReference}",
+                $"解析路径：{ResolvedPath}",
+                string.Empty,
+                LoadError,
+                string.Empty,
+                "请恢复项目文件或安装对应的项目 Provider，然后选择“重新加载项目”。",
+            });
+        }
+
+        private void OpenContainingFolder()
+        {
+            string? containerPath = GetExistingContainerPath();
+            if (containerPath == null)
+                return;
+            if (File.Exists(ResolvedPath))
+                ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ResolvedPath);
+            else
+                ColorVision.Common.Utilities.PlatformHelper.OpenFolder(containerPath);
+        }
+
+        private string? GetExistingContainerPath()
+        {
+            if (Directory.Exists(ResolvedPath))
+                return ResolvedPath;
+
+            try
+            {
+                string? directoryPath = Path.GetDirectoryName(ResolvedPath);
+                return directoryPath != null && Directory.Exists(directoryPath)
+                    ? directoryPath
+                    : null;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        public override void CopyFullPath()
+        {
+            if (!string.IsNullOrWhiteSpace(ResolvedPath))
+                Common.Clipboard.SetText(ResolvedPath);
+        }
+
+        private static string GetNodeIdentityPath(string resolvedPath)
+        {
+            return Directory.Exists(resolvedPath)
+                ? Path.Combine(resolvedPath, ".missing.cvproj")
+                : resolvedPath;
         }
 
         private static string GetDisplayName(string projectReference, string resolvedPath)

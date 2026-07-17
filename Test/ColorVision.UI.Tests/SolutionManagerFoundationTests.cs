@@ -596,6 +596,99 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ProjectTemplateRegistry_ReplacesTemplatesByStableIdAndRaisesChanges()
+    {
+        string templateId = $"tests.project-template.{Guid.NewGuid():N}";
+        var first = new TestProjectTemplate(templateId, "First");
+        var replacement = new TestProjectTemplate(templateId, "Replacement");
+        int changeCount = 0;
+        EventHandler handler = (_, _) => changeCount++;
+        ProjectTemplateRegistry.TemplatesChanged += handler;
+
+        try
+        {
+            ProjectTemplateRegistry.Register(first, priority: 1);
+            ProjectTemplateRegistry.Register(replacement, priority: 2);
+
+            IProjectTemplate registered = Assert.Single(
+                ProjectTemplateRegistry.GetTemplates(),
+                template => template.Id == templateId);
+            Assert.Same(replacement, registered);
+            Assert.True(changeCount >= 2);
+        }
+        finally
+        {
+            ProjectTemplateRegistry.Unregister(templateId);
+            ProjectTemplateRegistry.TemplatesChanged -= handler;
+        }
+    }
+
+    [Fact]
+    public void ProjectTemplateCreation_ValidatesProviderAndRemovesFailedDirectories()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        var validTemplate = new TestProjectTemplate(
+            $"tests.project-template.valid.{Guid.NewGuid():N}",
+            "Valid",
+            FolderProjectProvider.ProviderId,
+            (projectDirectory, projectName) => FolderProjectProvider.CreateProjectFile(
+                Path.Combine(projectDirectory, $"{projectName}.cvproj"),
+                projectName));
+        var failingTemplate = new TestProjectTemplate(
+            $"tests.project-template.failing.{Guid.NewGuid():N}",
+            "Failing",
+            FolderProjectProvider.ProviderId,
+            (projectDirectory, _) =>
+            {
+                File.WriteAllText(Path.Combine(projectDirectory, "partial.txt"), "partial");
+                throw new InvalidOperationException("template failure");
+            });
+        var wrongProviderTemplate = new TestProjectTemplate(
+            $"tests.project-template.wrong-provider.{Guid.NewGuid():N}",
+            "Wrong Provider",
+            "tests.provider.missing",
+            (projectDirectory, projectName) => FolderProjectProvider.CreateProjectFile(
+                Path.Combine(projectDirectory, $"{projectName}.cvproj"),
+                projectName));
+
+        try
+        {
+            Assert.True(ProjectTemplateRegistry.TryCreateFromTemplate(
+                validTemplate,
+                rootPath,
+                "ExactName",
+                out DirectoryInfo? projectDirectory,
+                out string createError));
+            Assert.Equal(string.Empty, createError);
+            Assert.Equal(Path.Combine(rootPath, "ExactName"), projectDirectory?.FullName, ignoreCase: true);
+            Assert.True(ProjectProviderRegistry.TryLoadProject(projectDirectory!, out ProjectDefinition? project));
+            Assert.Equal(FolderProjectProvider.ProviderId, project?.ProviderId);
+
+            Assert.False(ProjectTemplateRegistry.TryCreateFromTemplate(
+                failingTemplate,
+                rootPath,
+                "FailedProject",
+                out _,
+                out string failureError));
+            Assert.Contains("template failure", failureError, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(Path.Combine(rootPath, "FailedProject")));
+
+            Assert.False(ProjectTemplateRegistry.TryCreateFromTemplate(
+                wrongProviderTemplate,
+                rootPath,
+                "WrongProviderProject",
+                out _,
+                out string providerError));
+            Assert.Contains("tests.provider.missing", providerError, StringComparison.Ordinal);
+            Assert.False(Directory.Exists(Path.Combine(rootPath, "WrongProviderProject")));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ProviderDeclaredProjectFormat_DrivesRoutingDiscoveryAndTreeVisibility()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -649,8 +742,12 @@ public class SolutionManagerFoundationTests
             });
             UnavailableProjectNode unavailableNode = Assert.Single(
                 explorer.VisualChildren.OfType<UnavailableProjectNode>());
+            Assert.Equal(projectPath, unavailableNode.FullPath, ignoreCase: true);
+            Assert.Contains("项目引用", unavailableNode.BuildDiagnosticMessage(), StringComparison.Ordinal);
             var unavailableMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
             unavailableNode.CollectMenuItems(unavailableMenuItems);
+            Assert.Contains(unavailableMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
+            Assert.Contains(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
                 && ReferenceEquals(item.Command, ApplicationCommands.Delete));
@@ -673,6 +770,50 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void UnavailableDirectoryProject_UsesRealDiagnosticPathAndRecoversAfterProjectAppears()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(solutionDirectory, "ProjectA");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        Directory.CreateDirectory(projectDirectory);
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = ["ProjectA"],
+        });
+
+        try
+        {
+            using var explorer = new SolutionExplorer(new SolutionEnvironments
+            {
+                SolutionDir = solutionDirectory,
+                SolutionName = "Example",
+                SolutionExt = ".cvsln",
+                SolutionFileName = "Example",
+                SolutionPath = solutionPath,
+            });
+            UnavailableProjectNode unavailableNode = Assert.Single(
+                explorer.VisualChildren.OfType<UnavailableProjectNode>());
+            Assert.Equal(projectDirectory, unavailableNode.ResolvedPath, ignoreCase: true);
+            Assert.NotEqual(unavailableNode.ResolvedPath, unavailableNode.FullPath);
+            Assert.Contains(projectDirectory, unavailableNode.BuildDiagnosticMessage(), StringComparison.OrdinalIgnoreCase);
+
+            string projectPath = Path.Combine(projectDirectory, "ProjectA.cvproj");
+            FolderProjectProvider.CreateProjectFile(projectPath, "Project A");
+            explorer.ReloadSolutionState();
+
+            ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            Assert.Equal(projectPath, projectNode.Project.ProjectFile.FullName, ignoreCase: true);
+            Assert.Empty(explorer.VisualChildren.OfType<UnavailableProjectNode>());
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ProjectProviderRegistry_ReportsUnsupportedProjectType()
     {
         string directoryPath = CreateTemporaryDirectory();
@@ -687,6 +828,8 @@ public class SolutionManagerFoundationTests
                 out string errorMessage));
             Assert.Contains("没有已安装的项目 Provider", errorMessage, StringComparison.Ordinal);
             Assert.Contains("可能缺少对应插件", errorMessage, StringComparison.Ordinal);
+            Assert.Contains("vendor.missing", errorMessage, StringComparison.Ordinal);
+            Assert.Equal("vendor.missing", ProjectProviderRegistry.GetDeclaredProviderId(new FileInfo(projectPath)));
         }
         finally
         {
@@ -2267,6 +2410,36 @@ public class SolutionManagerFoundationTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class TestProjectTemplate : IProjectTemplate
+    {
+        private readonly Action<string, string> _createProject;
+
+        public string Id { get; }
+        public string? ProjectProviderId { get; }
+        public string Name { get; }
+        public string Category => "Tests";
+        public string Description => Name;
+        public int Order => 0;
+        public System.Windows.Media.ImageSource? Icon => null;
+
+        public TestProjectTemplate(
+            string id,
+            string name,
+            string? projectProviderId = null,
+            Action<string, string>? createProject = null)
+        {
+            Id = id;
+            Name = name;
+            ProjectProviderId = projectProviderId;
+            _createProject = createProject ?? ((_, _) => { });
+        }
+
+        public void CreateProject(string projectDir, string projectName)
+        {
+            _createProject(projectDir, projectName);
         }
     }
 
