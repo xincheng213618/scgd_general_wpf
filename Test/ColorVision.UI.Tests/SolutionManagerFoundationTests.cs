@@ -139,6 +139,64 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ResourceOpenService_IsolatesBrokenEditorsAndPreservesDefaultAssociation()
+    {
+        string suffix = Guid.NewGuid().ToString("N");
+        string extension = $".open{suffix}";
+        string trackingId = $"tests.open.tracking.{suffix}";
+        string throwingOpenId = $"tests.open.throwing.{suffix}";
+        string throwingConstructorId = $"tests.open.constructor.{suffix}";
+        EditorManager manager = EditorManager.Instance;
+        manager.RegisterEditor(CreateFileDescriptor<TrackingEditor>(
+            trackingId,
+            isDefault: true,
+            extension: extension));
+        manager.RegisterEditor(CreateFileDescriptor<ThrowingOpenEditor>(
+            throwingOpenId,
+            priority: 100,
+            extension: extension));
+        manager.RegisterEditor(CreateFileDescriptor<ThrowingConstructorEditor>(
+            throwingConstructorId,
+            priority: 90,
+            extension: extension));
+        string directoryPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(directoryPath, $"Example{extension}");
+        File.WriteAllText(filePath, "test");
+
+        try
+        {
+            Assert.Equal(trackingId, manager.GetDefaultFileEditorDescriptor(extension)?.Id);
+
+            ResourceOpenResult throwingOpenResult = ResourceOpenService.Instance.OpenWith(
+                filePath,
+                throwingOpenId,
+                setAsDefault: true);
+            Assert.False(throwingOpenResult.Succeeded);
+            Assert.False(throwingOpenResult.DefaultEditorUpdated);
+            Assert.Contains("Open failed", throwingOpenResult.ErrorMessage, StringComparison.Ordinal);
+            Assert.Equal(trackingId, manager.GetDefaultFileEditorDescriptor(extension)?.Id);
+
+            ResourceOpenResult throwingConstructorResult = ResourceOpenService.Instance.OpenWith(
+                filePath,
+                throwingConstructorId);
+            Assert.False(throwingConstructorResult.Succeeded);
+            Assert.Contains("Constructor failed", throwingConstructorResult.ErrorMessage, StringComparison.Ordinal);
+
+            TrackingEditor.LastOpenedPath = null;
+            ResourceOpenResult successfulResult = ResourceOpenService.Instance.OpenWith(
+                filePath,
+                trackingId);
+            Assert.True(successfulResult.Succeeded);
+            Assert.Null(successfulResult.DefaultEditorUpdated);
+            Assert.Equal(filePath, TrackingEditor.LastOpenedPath, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryGetProjectDirectory_ResolvesExistingProjectFile()
     {
         string directoryPath = Path.Combine(Path.GetTempPath(), $"ColorVision.Solution.Tests-{Guid.NewGuid():N}");
@@ -3582,13 +3640,14 @@ public class SolutionManagerFoundationTests
         string id,
         bool isGeneric = false,
         bool isDefault = false,
-        int priority = 0)
+        int priority = 0,
+        string extension = ".test")
     {
         return new EditorDescriptor(
             id,
             typeof(T),
             EditorResourceKind.File,
-            isGeneric ? [] : [".test"],
+            isGeneric ? [] : [extension],
             isGeneric,
             isDefault,
             priority,
@@ -3693,6 +3752,26 @@ public class SolutionManagerFoundationTests
         public string? GetDefaultFileName()
         {
             throw new InvalidOperationException("Template metadata failed.");
+        }
+    }
+
+    private sealed class ThrowingOpenEditor : IEditor
+    {
+        public void Open(string filePath)
+        {
+            throw new InvalidOperationException("Open failed.");
+        }
+    }
+
+    private sealed class ThrowingConstructorEditor : IEditor
+    {
+        public ThrowingConstructorEditor()
+        {
+            throw new InvalidOperationException("Constructor failed.");
+        }
+
+        public void Open(string filePath)
+        {
         }
     }
 

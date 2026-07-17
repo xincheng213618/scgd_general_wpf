@@ -92,9 +92,19 @@ namespace ColorVision.Solution
             if (window.ShowDialog() != true || window.SelectedEditor is not { } selectedEditor)
                 return;
 
-            if (window.AlwaysUseSelectedEditor)
-                openService.SetDefaultOpenWithEditor(resourcePath, selectedEditor.Id);
-            openService.TryOpenWith(resourcePath, selectedEditor.Id);
+            ResourceOpenResult result = openService.OpenWith(
+                resourcePath,
+                selectedEditor.Id,
+                window.AlwaysUseSelectedEditor);
+            if (!result.Succeeded || result.DefaultEditorUpdated == false)
+            {
+                MessageBox.Show(
+                    Application.Current?.GetActiveWindow(),
+                    result.ErrorMessage,
+                    result.Succeeded ? "默认打开方式未保存" : "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void CanExecuteProperties(object sender, CanExecuteRoutedEventArgs e)

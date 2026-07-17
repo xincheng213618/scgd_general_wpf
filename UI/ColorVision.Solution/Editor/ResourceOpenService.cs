@@ -11,6 +11,12 @@ namespace ColorVision.Solution.Editor
         Project,
     }
 
+    public sealed record ResourceOpenResult(
+        ResourceOpenKind Kind,
+        bool Succeeded,
+        string ErrorMessage = "",
+        bool? DefaultEditorUpdated = null);
+
     /// <summary>
     /// Canonical application-level open router. It separates workspace/project
     /// activation from editor selection so callers do not need extension logic.
@@ -24,17 +30,48 @@ namespace ColorVision.Solution.Editor
         {
         }
 
-        public bool TryOpen(string path)
+        public ResourceOpenResult Open(string? path)
         {
-            return Classify(path) switch
+            ResourceOpenKind kind = Classify(path);
+            if (kind == ResourceOpenKind.Missing || string.IsNullOrWhiteSpace(path))
+                return new ResourceOpenResult(kind, false, "要打开的资源不存在。");
+
+            try
             {
-                ResourceOpenKind.Folder => SolutionManager.GetInstance().OpenFolder(path),
-                ResourceOpenKind.Solution => SolutionManager.GetInstance().OpenSolution(path),
-                ResourceOpenKind.Project => SolutionManager.GetInstance().OpenProject(path),
-                ResourceOpenKind.File => _editorManager.TryOpenFile(path),
-                _ => false,
-            };
+                bool succeeded;
+                string errorMessage = string.Empty;
+                switch (kind)
+                {
+                    case ResourceOpenKind.Folder:
+                        succeeded = SolutionManager.GetInstance().OpenFolder(path);
+                        break;
+                    case ResourceOpenKind.Solution:
+                        succeeded = SolutionManager.GetInstance().OpenSolution(path);
+                        break;
+                    case ResourceOpenKind.Project:
+                        succeeded = SolutionManager.GetInstance().OpenProject(path);
+                        break;
+                    case ResourceOpenKind.File:
+                        succeeded = _editorManager.TryOpenFile(path, out errorMessage);
+                        break;
+                    default:
+                        succeeded = false;
+                        break;
+                }
+
+                if (succeeded)
+                    return new ResourceOpenResult(kind, true);
+                if (string.IsNullOrWhiteSpace(errorMessage))
+                    errorMessage = $"无法打开{GetResourceKindName(kind)}。";
+                return new ResourceOpenResult(kind, false, errorMessage);
+            }
+            catch (Exception ex)
+            {
+                return new ResourceOpenResult(kind, false, $"无法打开{GetResourceKindName(kind)}：{ex.Message}");
+            }
         }
+
+        public bool TryOpen(string path) => Open(path).Succeeded;
 
         /// <summary>
         /// Opens an existing physical resource with one explicit editor. This
@@ -43,11 +80,39 @@ namespace ColorVision.Solution.Editor
         /// </summary>
         public bool TryOpenWith(string path, string editorId)
         {
+            return OpenWith(path, editorId).Succeeded;
+        }
+
+        public ResourceOpenResult OpenWith(
+            string? path,
+            string? editorId,
+            bool setAsDefault = false)
+        {
             if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(editorId))
-                return false;
-            if (Directory.Exists(path))
-                return _editorManager.OpenFolderWith(path, editorId);
-            return File.Exists(path) && _editorManager.OpenFileWith(path, editorId);
+                return new ResourceOpenResult(ResourceOpenKind.Missing, false, "资源路径或编辑器无效。", setAsDefault ? false : null);
+
+            ResourceOpenKind kind = Classify(path);
+            bool isFolder = Directory.Exists(path);
+            if (!isFolder && !File.Exists(path))
+                return new ResourceOpenResult(ResourceOpenKind.Missing, false, "要打开的资源不存在。", setAsDefault ? false : null);
+
+            string errorMessage;
+            bool opened = isFolder
+                ? _editorManager.OpenFolderWith(path, editorId, out errorMessage)
+                : _editorManager.OpenFileWith(path, editorId, out errorMessage);
+            if (!opened)
+                return new ResourceOpenResult(kind, false, errorMessage, setAsDefault ? false : null);
+            if (!setAsDefault)
+                return new ResourceOpenResult(kind, true);
+
+            bool defaultUpdated = TrySetDefaultOpenWithEditor(path, editorId, out string defaultError);
+            return defaultUpdated
+                ? new ResourceOpenResult(kind, true, DefaultEditorUpdated: true)
+                : new ResourceOpenResult(
+                    kind,
+                    true,
+                    $"资源已经打开，但未能保存默认打开方式：{defaultError}",
+                    DefaultEditorUpdated: false);
         }
 
         /// <summary>
@@ -78,13 +143,27 @@ namespace ColorVision.Solution.Editor
 
         public bool SetDefaultOpenWithEditor(string? path, string editorId)
         {
+            return TrySetDefaultOpenWithEditor(path, editorId, out _);
+        }
+
+        public bool TrySetDefaultOpenWithEditor(
+            string? path,
+            string editorId,
+            out string errorMessage)
+        {
             if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(editorId))
+            {
+                errorMessage = "资源路径或编辑器无效。";
                 return false;
+            }
             if (Directory.Exists(path))
-                return _editorManager.SetDefaultFolderEditor(editorId);
+                return _editorManager.TrySetDefaultFolderEditor(editorId, out errorMessage);
             if (!File.Exists(path))
+            {
+                errorMessage = "要设置默认打开方式的资源不存在。";
                 return false;
-            return _editorManager.SetDefaultEditor(Path.GetExtension(path), editorId);
+            }
+            return _editorManager.TrySetDefaultEditor(Path.GetExtension(path), editorId, out errorMessage);
         }
 
         public static bool TryOpenFile(string filePath) => EditorManager.Instance.TryOpenFile(filePath);
@@ -102,6 +181,18 @@ namespace ColorVision.Solution.Editor
             if (SolutionManager.IsProjectFilePath(path))
                 return ResourceOpenKind.Project;
             return ResourceOpenKind.File;
+        }
+
+        private static string GetResourceKindName(ResourceOpenKind kind)
+        {
+            return kind switch
+            {
+                ResourceOpenKind.Folder => "文件夹",
+                ResourceOpenKind.Solution => "解决方案",
+                ResourceOpenKind.Project => "项目",
+                ResourceOpenKind.File => "文件",
+                _ => "资源",
+            };
         }
     }
 }

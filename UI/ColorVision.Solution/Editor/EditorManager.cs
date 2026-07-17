@@ -427,17 +427,49 @@ namespace ColorVision.Solution
 
         public bool SetDefaultEditor(string extension, string editorId)
         {
+            return TrySetDefaultEditor(extension, editorId, out _);
+        }
+
+        public bool TrySetDefaultEditor(string extension, string editorId, out string errorMessage)
+        {
             string normalizedExtension = NormalizeExtension(extension);
             var descriptor = GetFileEditorDescriptors(normalizedExtension).FirstOrDefault(item =>
                 string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
             if (descriptor == null)
+            {
+                errorMessage = $"编辑器“{editorId}”不支持 {normalizedExtension} 文件。";
                 return false;
+            }
 
-            lock (_syncRoot)
-                _configuredFileEditorIds[normalizedExtension] = descriptor.Id;
-            EditorManagerConfig.Instance.DefaultEditors[normalizedExtension] = descriptor.Id;
-            ConfigService.Instance.Save<EditorManagerConfig>();
-            return true;
+            try
+            {
+                EditorManagerConfig config = EditorManagerConfig.Instance;
+                lock (_syncRoot)
+                {
+                    bool hadPreviousValue = config.DefaultEditors.TryGetValue(normalizedExtension, out string? previousValue);
+                    config.DefaultEditors[normalizedExtension] = descriptor.Id;
+                    try
+                    {
+                        ConfigService.Instance.Save<EditorManagerConfig>();
+                    }
+                    catch
+                    {
+                        if (hadPreviousValue)
+                            config.DefaultEditors[normalizedExtension] = previousValue!;
+                        else
+                            config.DefaultEditors.Remove(normalizedExtension);
+                        throw;
+                    }
+                    _configuredFileEditorIds[normalizedExtension] = descriptor.Id;
+                }
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"保存默认编辑器失败：{ex.Message}";
+                return false;
+            }
         }
 
         public List<Type> GetFolderEditors() => GetFolderEditorDescriptors().Select(descriptor => descriptor.EditorType).ToList();
@@ -457,16 +489,45 @@ namespace ColorVision.Solution
 
         public bool SetDefaultFolderEditor(string editorId)
         {
+            return TrySetDefaultFolderEditor(editorId, out _);
+        }
+
+        public bool TrySetDefaultFolderEditor(string editorId, out string errorMessage)
+        {
             var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item =>
                 string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
             if (descriptor == null)
+            {
+                errorMessage = $"编辑器“{editorId}”不支持打开文件夹。";
                 return false;
+            }
 
-            lock (_syncRoot)
-                _configuredFolderEditorId = descriptor.Id;
-            EditorManagerConfig.Instance.DefaultFolderEditor = descriptor.Id;
-            ConfigService.Instance.Save<EditorManagerConfig>();
-            return true;
+            try
+            {
+                EditorManagerConfig config = EditorManagerConfig.Instance;
+                lock (_syncRoot)
+                {
+                    string? previousValue = config.DefaultFolderEditor;
+                    config.DefaultFolderEditor = descriptor.Id;
+                    try
+                    {
+                        ConfigService.Instance.Save<EditorManagerConfig>();
+                    }
+                    catch
+                    {
+                        config.DefaultFolderEditor = previousValue;
+                        throw;
+                    }
+                    _configuredFolderEditorId = descriptor.Id;
+                }
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"保存默认文件夹编辑器失败：{ex.Message}";
+                return false;
+            }
         }
 
         public IEditor? OpenFile(string filePath)
@@ -478,28 +539,55 @@ namespace ColorVision.Solution
 
         public bool TryOpenFile(string filePath)
         {
+            return TryOpenFile(filePath, out _);
+        }
+
+        public bool TryOpenFile(string filePath, out string errorMessage)
+        {
             if (!File.Exists(filePath))
+            {
+                errorMessage = $"文件不存在：{filePath}";
                 return false;
-            return OpenWithDescriptor(filePath, GetDefaultFileEditorDescriptor(Path.GetExtension(filePath)));
+            }
+            return OpenWithDescriptor(
+                filePath,
+                GetDefaultFileEditorDescriptor(Path.GetExtension(filePath)),
+                out errorMessage);
         }
 
         public bool OpenFileWith(string filePath, Type editorType)
         {
+            return OpenFileWith(filePath, editorType, out _);
+        }
+
+        public bool OpenFileWith(string filePath, Type editorType, out string errorMessage)
+        {
             if (!File.Exists(filePath))
+            {
+                errorMessage = $"文件不存在：{filePath}";
                 return false;
+            }
 
             var descriptor = GetFileEditorDescriptors(Path.GetExtension(filePath)).FirstOrDefault(item => item.EditorType == editorType);
-            return OpenWithDescriptor(filePath, descriptor);
+            return OpenWithDescriptor(filePath, descriptor, out errorMessage);
         }
 
         public bool OpenFileWith(string filePath, string editorId)
         {
+            return OpenFileWith(filePath, editorId, out _);
+        }
+
+        public bool OpenFileWith(string filePath, string editorId, out string errorMessage)
+        {
             if (!File.Exists(filePath))
+            {
+                errorMessage = $"文件不存在：{filePath}";
                 return false;
+            }
 
             var descriptor = GetFileEditorDescriptors(Path.GetExtension(filePath))
                 .FirstOrDefault(item => string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
-            return OpenWithDescriptor(filePath, descriptor);
+            return OpenWithDescriptor(filePath, descriptor, out errorMessage);
         }
 
         public IEditor? OpenFolder(string folderPath)
@@ -511,28 +599,52 @@ namespace ColorVision.Solution
 
         public bool TryOpenFolder(string folderPath)
         {
+            return TryOpenFolder(folderPath, out _);
+        }
+
+        public bool TryOpenFolder(string folderPath, out string errorMessage)
+        {
             if (!Directory.Exists(folderPath))
+            {
+                errorMessage = $"文件夹不存在：{folderPath}";
                 return false;
-            return OpenWithDescriptor(folderPath, GetDefaultFolderEditorDescriptor());
+            }
+            return OpenWithDescriptor(folderPath, GetDefaultFolderEditorDescriptor(), out errorMessage);
         }
 
         public bool OpenFolderWith(string folderPath, Type editorType)
         {
+            return OpenFolderWith(folderPath, editorType, out _);
+        }
+
+        public bool OpenFolderWith(string folderPath, Type editorType, out string errorMessage)
+        {
             if (!Directory.Exists(folderPath))
+            {
+                errorMessage = $"文件夹不存在：{folderPath}";
                 return false;
+            }
 
             var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item => item.EditorType == editorType);
-            return OpenWithDescriptor(folderPath, descriptor);
+            return OpenWithDescriptor(folderPath, descriptor, out errorMessage);
         }
 
         public bool OpenFolderWith(string folderPath, string editorId)
         {
+            return OpenFolderWith(folderPath, editorId, out _);
+        }
+
+        public bool OpenFolderWith(string folderPath, string editorId, out string errorMessage)
+        {
             if (!Directory.Exists(folderPath))
+            {
+                errorMessage = $"文件夹不存在：{folderPath}";
                 return false;
+            }
 
             var descriptor = GetFolderEditorDescriptors()
                 .FirstOrDefault(item => string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
-            return OpenWithDescriptor(folderPath, descriptor);
+            return OpenWithDescriptor(folderPath, descriptor, out errorMessage);
         }
 
         private static IEditor? CreateEditor(EditorDescriptor? descriptor)
@@ -540,12 +652,50 @@ namespace ColorVision.Solution
             return descriptor == null ? null : Activator.CreateInstance(descriptor.EditorType) as IEditor;
         }
 
-        private static bool OpenWithDescriptor(string path, EditorDescriptor? descriptor)
+        private static bool OpenWithDescriptor(
+            string path,
+            EditorDescriptor? descriptor,
+            out string errorMessage)
         {
-            if (CreateEditor(descriptor) is not { } editor)
+            if (descriptor == null)
+            {
+                errorMessage = "没有找到可用于打开此资源的编辑器。";
                 return false;
-            editor.Open(path);
-            return true;
+            }
+
+            IEditor? editor = null;
+            try
+            {
+                editor = CreateEditor(descriptor);
+                if (editor == null)
+                {
+                    errorMessage = $"无法创建编辑器“{GetEditorName(descriptor)}”。";
+                    return false;
+                }
+                editor.Open(path);
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (editor is IDisposable disposable)
+                {
+                    try
+                    {
+                        disposable.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                Exception failure = ex is TargetInvocationException { InnerException: { } innerException }
+                    ? innerException
+                    : ex;
+                string resourceName = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
+                errorMessage = $"编辑器“{GetEditorName(descriptor)}”无法打开“{resourceName}”：{failure.Message}";
+                return false;
+            }
         }
     }
 }
