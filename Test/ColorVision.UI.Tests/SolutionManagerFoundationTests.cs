@@ -474,6 +474,26 @@ public class SolutionManagerFoundationTests
                 SolutionResourceCommands.OpenWith,
                 Assert.Single(solutionMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
             Assert.Same(
+                Commands.ReName,
+                Assert.Single(fileMenuItems, item => item.GuidId == SolutionCommandIds.Rename).Command);
+            Assert.Same(
+                ApplicationCommands.Properties,
+                Assert.Single(fileMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
+            Assert.DoesNotContain(fileMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
+            Assert.Same(
+                NavigationCommands.Refresh,
+                Assert.Single(folderMenuItems, item => item.GuidId == SolutionCommandIds.Refresh).Command);
+            Assert.Same(
+                ApplicationCommands.Properties,
+                Assert.Single(folderMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
+            Assert.Same(
+                NavigationCommands.Refresh,
+                Assert.Single(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Refresh).Command);
+            Assert.Same(
+                ApplicationCommands.Properties,
+                Assert.Single(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
+            Assert.DoesNotContain(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Rename);
+            Assert.Same(
                 SolutionNavigationCommands.RevealInTree,
                 Assert.Single(searchMenuItems, item =>
                     item.GuidId == SolutionNavigationCommands.RevealInTreeId).Command);
@@ -485,6 +505,21 @@ public class SolutionManagerFoundationTests
         {
             Directory.Delete(solutionDirectory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void SolutionNode_DefaultsDoNotAdvertiseUnsupportedManagementCommands()
+    {
+        var node = new SolutionNode();
+
+        List<MenuItemMetadata> menuItems = SolutionContextMenuService.CreateMenuMetadata([node]);
+
+        Assert.False(node.CanRefresh);
+        Assert.False(node.CanReName);
+        Assert.False(node.CanShowProperties);
+        Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Refresh);
+        Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Rename);
+        Assert.DoesNotContain(menuItems, item => item.GuidId == SolutionCommandIds.Properties);
     }
 
     [Fact]
@@ -1365,8 +1400,8 @@ public class SolutionManagerFoundationTests
                 explorer.VisualChildren.OfType<UnavailableProjectNode>());
             Assert.Equal(projectPath, unavailableNode.FullPath, ignoreCase: true);
             Assert.Contains("项目引用", unavailableNode.BuildDiagnosticMessage(), StringComparison.Ordinal);
-            var unavailableMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            unavailableNode.CollectMenuItems(unavailableMenuItems);
+            List<MenuItemMetadata> unavailableMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([unavailableNode]);
             Assert.Contains(unavailableMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
             Assert.Contains(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item =>
@@ -1791,7 +1826,15 @@ public class SolutionManagerFoundationTests
 
             Assert.Equal(SolutionProjectMode.Explicit, explorer.Config.ProjectMode);
             Assert.Equal(2, explorer.Config.Projects.Count);
-            Assert.Equal(folder.Id, Assert.Single(explorer.VisualChildren.OfType<SolutionFolderNode>()).FolderId);
+            SolutionFolderNode folderNode = Assert.Single(explorer.VisualChildren.OfType<SolutionFolderNode>());
+            Assert.Equal(folder.Id, folderNode.FolderId);
+            List<MenuItemMetadata> folderMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([folderNode]);
+            Assert.Same(
+                Commands.ReName,
+                Assert.Single(folderMenuItems, item => item.GuidId == SolutionCommandIds.Rename).Command);
+            Assert.DoesNotContain(folderMenuItems, item => item.GuidId == SolutionCommandIds.Properties);
+            Assert.DoesNotContain(folderMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
             Assert.Equal(["A", "B"], explorer.VisualChildren.OfType<ProjectNode>()
                 .Select(node => node.Project.Name)
                 .OrderBy(name => name));
@@ -2168,7 +2211,7 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public async Task FolderNode_ReloadRejectsStaleChildrenAndUsesLatestSnapshot()
+    public async Task FolderNode_RefreshRejectsStaleChildrenAndUsesLatestSnapshot()
     {
         string rootPath = CreateTemporaryDirectory();
         for (int index = 0; index < 256; index++)
@@ -2182,7 +2225,7 @@ public class SolutionManagerFoundationTests
             string latestFilePath = Path.Combine(rootPath, "latest.txt");
             File.WriteAllText(latestFilePath, string.Empty);
 
-            rootNode.ReloadChildren();
+            rootNode.Refresh();
             Task latestLoad = rootNode.EnsureChildrenLoadedAsync();
             await Task.WhenAll(originalLoad, latestLoad);
 

@@ -22,6 +22,7 @@ namespace ColorVision.Solution
             RegisterCommand(ApplicationCommands.Delete, ExecuteDelete, CanExecuteDelete);
             RegisterCommand(SolutionResourceCommands.Open, ExecuteOpen, CanExecuteOpen);
             RegisterCommand(SolutionResourceCommands.OpenWith, ExecuteOpenWith, CanExecuteOpenWith);
+            RegisterCommand(ApplicationCommands.Properties, ExecuteProperties, CanExecuteProperties);
             RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
             RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
             RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
@@ -88,6 +89,20 @@ namespace ColorVision.Solution
             if (window.AlwaysUseSelectedEditor)
                 openService.SetDefaultOpenWithEditor(resourcePath, selectedEditor.Id);
             openService.TryOpenWith(resourcePath, selectedEditor.Id);
+        }
+
+        private void CanExecuteProperties(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [var node]
+                && node.CanShowProperties;
+            e.Handled = true;
+        }
+
+        private void ExecuteProperties(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is [var node] && node.CanShowProperties)
+                node.ShowProperty();
+            e.Handled = true;
         }
 
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
@@ -331,13 +346,14 @@ namespace ColorVision.Solution
 
         private void CanExecuteRefresh(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = GetSelectedSolutionExplorer() != null;
+            e.CanExecute = _selectionService.CommandNodes is [var node] && node.CanRefresh;
             e.Handled = true;
         }
 
         private void ExecuteRefresh(object sender, ExecutedRoutedEventArgs e)
         {
-            GetSelectedSolutionExplorer()?.ReloadSolutionState();
+            if (_selectionService.CommandNodes is [var node] && node.CanRefresh)
+                node.Refresh();
             e.Handled = true;
         }
 

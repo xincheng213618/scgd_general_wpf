@@ -137,6 +137,8 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionCache? Cache { get; private set; }
         public override bool CanOpen => DirectoryInfo.Exists;
+        public override bool CanRefresh => true;
+        public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => ConfigFileInfo.FullName;
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
@@ -641,14 +643,6 @@ namespace ColorVision.Solution.Explorer
         public override void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionCommandIds.Refresh,
-                Order = 2,
-                Header = Resources.Refresh,
-                Command = System.Windows.Input.NavigationCommands.Refresh
-            });
-
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = "BuildSolution",
@@ -2983,6 +2977,11 @@ namespace ColorVision.Solution.Explorer
         public override void Open()
         {
             new SolutionEditor().Open(FullPath);
+        }
+
+        public override void Refresh()
+        {
+            ReloadSolutionState();
         }
 
         internal IReadOnlyList<SolutionNode> DeleteNodesAsSingleOperation(IReadOnlyList<SolutionNode> nodes)

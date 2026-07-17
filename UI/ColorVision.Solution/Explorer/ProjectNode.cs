@@ -150,6 +150,14 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        public override void Refresh()
+        {
+            if (SolutionExplorer != null)
+                SolutionExplorer.ReloadSolutionState();
+            else
+                base.Refresh();
+        }
+
         public bool CanExecuteCapability(string capabilityId)
         {
             ProjectDefinition executionProject = GetExecutionProject();
@@ -537,6 +545,7 @@ namespace ColorVision.Solution.Explorer
         public string ProjectReference { get; }
         public string ResolvedPath { get; private set; }
         public string LoadError { get; private set; }
+        public override bool CanRefresh => true;
         public override string? EditorResourcePath => ResolvedPath;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
@@ -595,13 +604,6 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Clear();
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
-                GuidId = SolutionCommandIds.Refresh,
-                Order = 1,
-                Header = "重新加载项目(_R)",
-                Command = System.Windows.Input.NavigationCommands.Refresh,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
                 GuidId = "ShowUnavailableProjectError",
                 Order = 2,
                 Header = "查看加载错误(_E)...",
@@ -621,6 +623,11 @@ namespace ColorVision.Solution.Explorer
                 Header = "从解决方案中移除(_V)",
                 Command = System.Windows.Input.ApplicationCommands.Delete,
             });
+        }
+
+        public override void Refresh()
+        {
+            _solutionExplorer.ReloadSolutionState();
         }
 
         internal override bool TryDelete(bool showConfirmation)

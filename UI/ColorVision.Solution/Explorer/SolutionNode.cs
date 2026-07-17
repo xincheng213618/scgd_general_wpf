@@ -142,8 +142,6 @@ namespace ColorVision.Solution.Explorer
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
 
-        public RelayCommand PropertyCommand { get; set; }
-
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
@@ -168,6 +166,8 @@ namespace ColorVision.Solution.Explorer
 
         /// <summary>Whether the node supports its primary open action.</summary>
         public virtual bool CanOpen => false;
+        public virtual bool CanRefresh => false;
+        public virtual bool CanShowProperties => false;
 
         /// <summary>
         /// Physical file or folder offered to explicit editors. This can differ
@@ -189,7 +189,6 @@ namespace ColorVision.Solution.Explorer
         {
             OpenCommand = new RelayCommand(_ => Open(), _ => CanOpen);
             DeleteCommand = new RelayCommand(s => Delete());
-            PropertyCommand = new RelayCommand(s => ShowProperty());
             CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));
         }
 
@@ -201,8 +200,6 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Copy, Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Ctrl+C" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Paste, Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Ctrl+V" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Rename, Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
         }
 
         private void AddProjectMembershipMenuItem()
@@ -250,6 +247,8 @@ namespace ColorVision.Solution.Explorer
 
         public virtual void ShowProperty() { }
 
+        public virtual void Refresh() { }
+
         public virtual void Delete()
         {
             TryDelete(showConfirmation: true);
@@ -271,7 +270,7 @@ namespace ColorVision.Solution.Explorer
             return true;
         }
 
-        public virtual bool CanReName { get; set; } = true;
+        public virtual bool CanReName { get; set; }
         public virtual bool CanDelete { get; set; } = true;
         public virtual bool CanAdd { get; set; } = true;
         public virtual bool CanCopy { get; set; } = true;

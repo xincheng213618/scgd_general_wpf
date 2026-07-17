@@ -4,6 +4,7 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.Reflection;
+using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -308,6 +309,59 @@ namespace ColorVision.Solution.Explorer
                     Order = 2,
                     Header = $"{ColorVision.Solution.Properties.Resources.Sol_OpenAs}(_N)",
                     Command = SolutionResourceCommands.OpenWith,
+                });
+            }
+            return menuItems;
+        }
+    }
+
+    [SolutionMenuContribution(priority: 250)]
+    public sealed class NodeManagementMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.node-management";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            SolutionNode node = context.PrimaryNode;
+            return node.CanRefresh || node.CanReName || node.CanShowProperties;
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            SolutionNode node = context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>();
+            if (node.CanRefresh)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Refresh,
+                    Order = 3,
+                    Header = ColorVision.Solution.Properties.Resources.Refresh,
+                    Command = NavigationCommands.Refresh,
+                });
+            }
+            if (node.CanReName)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Rename,
+                    Order = 104,
+                    Header = ColorVision.UI.Properties.Resources.MenuRename,
+                    Icon = MenuItemIcon.TryFindResource("DIRename"),
+                    InputGestureText = "F2",
+                    Command = Commands.ReName,
+                });
+            }
+            if (node.CanShowProperties)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Properties,
+                    Order = 9999,
+                    Header = ColorVision.Solution.Properties.Resources.MenuProperty,
+                    Icon = MenuItemIcon.TryFindResource("DIProperty"),
+                    Command = ApplicationCommands.Properties,
                 });
             }
             return menuItems;

@@ -17,7 +17,9 @@ namespace ColorVision.Solution.Explorer
     {
         internal override string? PhysicalDeletePath => FileInfo.FullName;
         public override bool CanOpen => FileInfo.Exists;
+        public override bool CanShowProperties => FileInfo.Exists;
         public override string? EditorResourcePath => FileInfo.FullName;
+        public override bool CanReName { get; set; } = true;
 
         public IFileMeta FileMeta { get; set; }
         public RelayCommand OpenContainingFolderCommand { get; set; }

@@ -18,6 +18,8 @@ namespace ColorVision.Solution.Explorer
     {
         internal override string? PhysicalDeletePath => DirectoryInfo.FullName;
         public override bool CanOpen => DirectoryInfo.Exists;
+        public override bool CanRefresh => DirectoryInfo.Exists;
+        public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => DirectoryInfo.FullName;
 
         public IFolderMeta FolderMeta { get; set; }
@@ -202,6 +204,11 @@ namespace ColorVision.Solution.Explorer
             ResetChildrenForReload();
             if (IsExpanded)
                 _ = EnsureChildrenLoadedAsync();
+        }
+
+        public override void Refresh()
+        {
+            ReloadChildren();
         }
 
         private void ResetChildrenForReload()

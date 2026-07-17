@@ -144,6 +144,7 @@ namespace ColorVision.Solution.Explorer
         public const string Delete = "Delete";
         public const string Rename = "ReName";
         public const string Refresh = "Refresh";
+        public const string Properties = "Property";
 
         public static bool SupportsMultipleSelection(string? commandId)
         {

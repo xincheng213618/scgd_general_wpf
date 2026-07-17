@@ -56,6 +56,8 @@ namespace ColorVision.Solution.Explorer
 
         public override bool IsStartupProject => TargetNode.IsStartupProject;
         public override bool CanOpen => TargetNode.CanOpen;
+        public override bool CanRefresh => TargetNode.CanRefresh;
+        public override bool CanShowProperties => TargetNode.CanShowProperties;
         public override string? EditorResourcePath => TargetNode.EditorResourcePath;
 
         internal SolutionSearchResultNode(
@@ -87,6 +89,11 @@ namespace ColorVision.Solution.Explorer
         public override void ShowProperty()
         {
             TargetNode.ShowProperty();
+        }
+
+        public override void Refresh()
+        {
+            TargetNode.Refresh();
         }
 
         public override void CopyFullPath()

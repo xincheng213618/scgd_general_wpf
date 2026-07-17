@@ -40,6 +40,7 @@ namespace ColorVision.Solution.Explorer
             CanCopy = false;
             CanCut = false;
             CanPaste = false;
+            CanReName = true;
             Initialize();
 
             AddSolutionFolderCommand = new RelayCommand(
@@ -135,14 +136,6 @@ namespace ColorVision.Solution.Explorer
                     });
                 }
             }
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionCommandIds.Rename,
-                Order = 50,
-                Header = "重命名(_M)",
-                Command = Commands.ReName,
-                InputGestureText = "F2",
-            });
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = SolutionCommandIds.Delete,
