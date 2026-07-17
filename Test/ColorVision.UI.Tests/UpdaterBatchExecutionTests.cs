@@ -126,8 +126,58 @@ namespace ColorVision.UI.Tests
                 restartApplication: false);
 
             Assert.Contains("set \"RESTART_APPLICATION=0\"", batch, StringComparison.Ordinal);
-            Assert.Contains("if \"%RESTART_APPLICATION%\"==\"1\" start \"\" /b \"%EXEPATH%\"", batch, StringComparison.Ordinal);
-            Assert.DoesNotContain("\r\nstart \"\" /b \"%EXEPATH%\"", batch, StringComparison.Ordinal);
+            Assert.Contains("if exist \"%REOPEN_REQUEST%\" start \"\" /b \"%EXEPATH%\"", batch, StringComparison.Ordinal);
+            Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void ExitUpdateBatchOnlyTargetsOriginalProcess()
+        {
+            string batch = BuildApplicationBatch(
+                @"C:\Update Root\ColorVision",
+                @"C:\Update Root",
+                @"D:\ColorVision",
+                "ColorVision.exe",
+                restartApplication: false,
+                originalProcessId: 4242);
+
+            Assert.Contains("set \"ORIGINAL_PID=4242\"", batch, StringComparison.Ordinal);
+            Assert.Contains("tasklist /fi \"PID eq %ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task ExitUpdateBatchReopensApplicationWhenLaunchWasRequested()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Requested Reopen Root");
+            string stageDirectory = Path.Combine(tempRoot, "ColorVision");
+            string targetDirectory = Path.Combine(_rootDirectory, "Requested Reopen Target");
+            string handoffDirectory = Path.Combine(tempRoot, "handoff");
+            string openedMarkerPath = Path.Combine(targetDirectory, "opened.txt");
+            Directory.CreateDirectory(stageDirectory);
+            Directory.CreateDirectory(targetDirectory);
+            Directory.CreateDirectory(handoffDirectory);
+            File.WriteAllText(Path.Combine(stageDirectory, "payload.txt"), "updated");
+
+            const string executableName = "reopen.cmd";
+            File.WriteAllText(
+                Path.Combine(targetDirectory, executableName),
+                $"@echo off{Environment.NewLine}>\"{openedMarkerPath}\" echo opened",
+                new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(handoffDirectory, "update.pending"), "pending");
+            File.WriteAllText(Path.Combine(handoffDirectory, "reopen.requested"), "requested");
+
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(
+                batchPath,
+                BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, restartApplication: false),
+                new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.True(await WaitForFileAsync(openedMarkerPath), result.ToString());
         }
 
         [Fact]
@@ -174,14 +224,28 @@ namespace ColorVision.UI.Tests
             string targetDirectory,
             string executableName,
             bool repairServiceHost = false,
-            bool restartApplication = true)
+            bool restartApplication = true,
+            int originalProcessId = 999999)
         {
             MethodInfo method = typeof(AutoUpdater).GetMethod(
                 "CreateIncrementalUpdateBatch",
                 BindingFlags.NonPublic | BindingFlags.Static)
                 ?? throw new MissingMethodException(typeof(AutoUpdater).FullName, "CreateIncrementalUpdateBatch");
 
-            return (string)method.Invoke(null, [stageDirectory, cleanupDirectory, targetDirectory, executableName, repairServiceHost, restartApplication])!;
+            ExitUpdateHandoffState handoffState = new(
+                Path.Combine(cleanupDirectory, "handoff", "update.pending"),
+                Path.Combine(cleanupDirectory, "handoff", "reopen.requested"),
+                "0123456789abcdef0123456789abcdef",
+                cleanupDirectory);
+            return (string)method.Invoke(null, [
+                stageDirectory,
+                cleanupDirectory,
+                targetDirectory,
+                executableName,
+                originalProcessId,
+                handoffState,
+                repairServiceHost,
+                restartApplication])!;
         }
 
         private static string CreateProbeExecutable(string directory)
@@ -228,6 +292,18 @@ namespace ColorVision.UI.Tests
             }
 
             return !Directory.Exists(directory);
+        }
+
+        private static async Task<bool> WaitForFileAsync(string filePath)
+        {
+            for (int attempt = 0; attempt < 30; attempt++)
+            {
+                if (File.Exists(filePath))
+                    return true;
+                await Task.Delay(100);
+            }
+
+            return File.Exists(filePath);
         }
 
         public void Dispose()

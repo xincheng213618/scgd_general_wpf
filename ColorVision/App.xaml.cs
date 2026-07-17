@@ -78,6 +78,12 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
+            {
+                Environment.Exit(0);
+                return;
+            }
+
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -230,13 +236,13 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
+            if (!_isSessionEnding)
+                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
             ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Dispose();
             CopilotMcpServer.Instance.Stop();
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
-            if (!_isSessionEnding)
-                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
             //Environment.Exit(0);
         }
     }

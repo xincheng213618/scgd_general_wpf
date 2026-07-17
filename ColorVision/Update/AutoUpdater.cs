@@ -751,6 +751,7 @@ namespace ColorVision.Update
             bool showErrors)
         {
             string? tempRoot = null;
+            ExitUpdateHandoffState? handoffState = null;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
@@ -767,6 +768,13 @@ namespace ColorVision.Update
 
                 // 更新脚本、解包中间文件和最终待复制文件相互隔离。
                 tempRoot = Path.Combine(Path.GetTempPath(), $"ColorVisionUpdate-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(tempRoot);
+                string batchFilePath = Path.Combine(tempRoot, "update.bat");
+                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
+                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                File.WriteAllText(batchFilePath, string.Empty);
+                handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
+
                 string stageDirectory = Path.Combine(tempRoot, "ColorVision");
                 Directory.CreateDirectory(stageDirectory);
 
@@ -793,11 +801,6 @@ namespace ColorVision.Update
                     log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
                 }
 
-                // 创建批处理文件内容
-                string batchFilePath = Path.Combine(tempRoot, "update.bat");
-                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
-
                 TimeSpan? privilegeTimeout = allowElevationFallback ? null : TimeSpan.FromSeconds(3);
                 string serviceHostPackageDirectory = Path.Combine(stageDirectory, "ServiceHost");
                 string? availableServiceHostPackageDirectory = File.Exists(Path.Combine(serviceHostPackageDirectory, ServiceHostProtocol.ExecutableName))
@@ -809,6 +812,7 @@ namespace ColorVision.Update
                 if (!canUpdateWithoutElevation && !allowElevationFallback)
                 {
                     log.Info("Skipped exit-time update because ColorVisionServiceHost could not prepare the application directory silently.");
+                    ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
@@ -818,9 +822,10 @@ namespace ColorVision.Update
                     tempRoot,
                     programDirectory,
                     executableName,
+                    Environment.ProcessId,
+                    handoffState,
                     repairServiceHost: !canUpdateWithoutElevation,
                     restartApplication: restartApplication);
-
                 File.WriteAllText(batchFilePath, batchContent);
 
                 // 设置批处理文件的启动信息
@@ -839,7 +844,10 @@ namespace ColorVision.Update
                 }
                 try
                 {
-                    _ = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start incremental update batch.");
+                    using Process updateProcess = Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Failed to start incremental update batch.");
+                    if (!ExitUpdateHandoff.TryActivate(handoffState, updateProcess.Id))
+                        log.Debug("The incremental update started, but its handoff process ID could not be recorded.");
                     if (restartApplication)
                         Environment.Exit(0);
                     return true;
@@ -849,6 +857,7 @@ namespace ColorVision.Update
                     log.Error("Failed to start incremental update batch.", ex);
                     if (showErrors)
                         MessageBox.Show(ex.Message);
+                    ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
@@ -858,6 +867,7 @@ namespace ColorVision.Update
                 log.Error("Failed to prepare incremental update.", ex);
                 if (showErrors)
                     MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
+                ExitUpdateHandoff.Clear(handoffState);
                 TryDeleteUpdateStage(tempRoot);
                 return false;
             }
@@ -904,6 +914,8 @@ namespace ColorVision.Update
             string cleanupDirectory,
             string programDirectory,
             string executableName,
+            int originalProcessId,
+            ExitUpdateHandoffState handoffState,
             bool repairServiceHost,
             bool restartApplication)
         {
@@ -917,6 +929,10 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
+            sb.AppendLine($"set \"ORIGINAL_PID={originalProcessId}\"");
+            sb.AppendLine($"set \"UPDATE_MARKER={EscapeForBatchValue(handoffState.MarkerPath)}\"");
+            sb.AppendLine($"set \"REOPEN_REQUEST={EscapeForBatchValue(handoffState.ReopenRequestPath)}\"");
+            sb.AppendLine($"set \"UPDATE_TOKEN={handoffState.LaunchToken}\"");
             sb.AppendLine($"set \"REPAIR_SERVICE_HOST={(repairServiceHost ? "1" : "0")}\"");
             sb.AppendLine($"set \"RESTART_APPLICATION={(restartApplication ? "1" : "0")}\"");
             sb.AppendLine($"set \"SERVICE_NAME={ServiceHostProtocol.ServiceName}\"");
@@ -927,9 +943,7 @@ namespace ColorVision.Update
             sb.AppendLine("set \"SERVICE_EXE=%SERVICE_DEST%\\%SERVICE_EXE_NAME%\"");
             sb.AppendLine("set \"SERVICE_LOG=%SERVICE_DEST%\\install.log\"");
             sb.AppendLine();
-            sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"0\" ping -n 3 127.0.0.1 >nul");
-            sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
-            sb.AppendLine("ping -n 3 127.0.0.1 >nul");
+            sb.AppendLine("call :wait_for_original_process");
             sb.AppendLine("call :skip_shell_extension_files");
             sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine();
@@ -937,6 +951,20 @@ namespace ColorVision.Update
             sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine("call :repair_service_host");
             sb.AppendLine("goto success");
+            sb.AppendLine();
+            sb.AppendLine(":wait_for_original_process");
+            sb.AppendLine("set \"WAIT_ATTEMPTS=0\"");
+            sb.AppendLine(":wait_for_original_process_loop");
+            sb.AppendLine("tasklist /fi \"PID eq %ORIGINAL_PID%\" /nh 2>nul | findstr /r /c:\"[ ]%ORIGINAL_PID%[ ]\" >nul");
+            sb.AppendLine("if errorlevel 1 exit /b 0");
+            sb.AppendLine("set /a WAIT_ATTEMPTS+=1");
+            sb.AppendLine("if %WAIT_ATTEMPTS% GEQ 15 goto wait_for_original_process_timeout");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("goto wait_for_original_process_loop");
+            sb.AppendLine(":wait_for_original_process_timeout");
+            sb.AppendLine("taskkill /f /pid \"%ORIGINAL_PID%\" >nul 2>nul");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":skip_shell_extension_files");
             sb.AppendLine("for /r \"%STAGE%\" %%F in (ColorVision.ShellExtension*) do (");
@@ -959,14 +987,29 @@ namespace ColorVision.Update
             AppendServiceHostRepairBatch(sb);
             sb.AppendLine();
             sb.AppendLine(":success");
-            sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
-            sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 1");
+            sb.AppendLine();
+            sb.AppendLine(":complete_handoff");
+            sb.AppendLine("if \"%RESTART_APPLICATION%\"==\"1\" goto launch_after_update");
+            sb.AppendLine("del /f /q \"%UPDATE_MARKER%\" >nul 2>nul");
+            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("if exist \"%REOPEN_REQUEST%\" start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("del /f /q \"%REOPEN_REQUEST%\" >nul 2>nul");
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine(":launch_after_update");
+            sb.AppendLine($"set \"{ExitUpdateHandoff.LaunchTokenEnvironmentVariable}=%UPDATE_TOKEN%\"");
+            sb.AppendLine("start \"\" /b \"%EXEPATH%\"");
+            sb.AppendLine("ping -n 4 127.0.0.1 >nul");
+            sb.AppendLine("del /f /q \"%UPDATE_MARKER%\" >nul 2>nul");
+            sb.AppendLine("del /f /q \"%REOPEN_REQUEST%\" >nul 2>nul");
+            sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":schedule_cleanup");
             sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
