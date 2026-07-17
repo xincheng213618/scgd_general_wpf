@@ -2680,6 +2680,105 @@ namespace ColorVision.UI.Desktop.Properties {
         }
 
         /// <summary>
+        ///   查找类似 当前步骤 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Current {
+            get {
+                return ResourceManager.GetString("Wizard_Current", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 完成必要的环境检查和服务配置后即可使用 ColorVision。 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Intro {
+            get {
+                return ResourceManager.GetString("Wizard_Intro", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 需要处理 的本地化字符串。
+        /// </summary>
+        public static string Wizard_NeedsAttention {
+            get {
+                return ResourceManager.GetString("Wizard_NeedsAttention", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 待配置 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Pending {
+            get {
+                return ResourceManager.GetString("Wizard_Pending", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 初始化进度 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Progress {
+            get {
+                return ResourceManager.GetString("Wizard_Progress", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已就绪 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Ready {
+            get {
+                return ResourceManager.GetString("Wizard_Ready", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 必需 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Required {
+            get {
+                return ResourceManager.GetString("Wizard_Required", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请先完成此必需步骤后再继续。 的本地化字符串。
+        /// </summary>
+        public static string Wizard_RequiredStepPrompt {
+            get {
+                return ResourceManager.GetString("Wizard_RequiredStepPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 步骤 {0} / {1} 的本地化字符串。
+        /// </summary>
+        public static string Wizard_StepProgressFormat {
+            get {
+                return ResourceManager.GetString("Wizard_StepProgressFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 配置步骤 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Steps {
+            get {
+                return ResourceManager.GetString("Wizard_Steps", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 处理中 的本地化字符串。
+        /// </summary>
+        public static string Wizard_Working {
+            get {
+                return ResourceManager.GetString("Wizard_Working", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>
         public static string zh_Hans {

@@ -16,6 +16,11 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
+            if (InstallServiceManager.IsServiceManagerConfigured())
+            {
+                return;
+            }
+
             LegacyServiceConfig.TryGetAppConfigPath(out string legacyConfigPath);
             ServiceManagerSetupChoiceWindow window = new(legacyConfigPath)
             {

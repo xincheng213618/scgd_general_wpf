@@ -9,6 +9,7 @@ namespace WindowsServicePlugin.ServiceManager
         public override int Order => 0;
         public override string Header => Properties.Resources.ServiceManager;
         public override string Description => BuildDescription();
+        public override string ActionText => Properties.Resources.ServiceManager;
         public override bool ConfigurationStatus
         {
             get => IsServiceManagerConfigured();
@@ -24,7 +25,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private static string BuildDescription()
         {
-            string description = "打开新的服务管理器，确认服务根目录、MySQL、MQTT 和 Windows 服务状态。旧版配置导入或手动配置会在配置向导初始化时处理。";
+            string description = "打开服务管理器，确认服务根目录、MySQL、MQTT 和 Windows 服务状态。关闭服务管理器后，向导会重新检查配置结果。";
 
             if (LegacyServiceConfig.TryGetAppConfigPath(out string legacyConfigPath))
             {
@@ -40,7 +41,7 @@ namespace WindowsServicePlugin.ServiceManager
             return description;
         }
 
-        private static bool IsServiceManagerConfigured()
+        internal static bool IsServiceManagerConfigured()
         {
             string baseLocation = ServiceManagerConfig.Instance.BaseLocation;
             return !string.IsNullOrWhiteSpace(baseLocation) && Directory.Exists(baseLocation);
@@ -52,7 +53,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
-            }.Show();
+            }.ShowDialog();
         }
     }
 }

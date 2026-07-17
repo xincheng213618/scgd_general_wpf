@@ -4,6 +4,8 @@ namespace ColorVision.UI.Tests;
 
 public sealed class ServiceHostUpdateCompatibilityTests
 {
+    private const string InstalledPath = @"C:\ProgramData\ColorVision\ServiceHost\ColorVisionServiceHost.exe";
+
     [Fact]
     public void LegacyRunningVersionRequiresElevatedInstall()
     {
@@ -35,8 +37,10 @@ public sealed class ServiceHostUpdateCompatibilityTests
     {
         State = ServiceHostInstallState.Running,
         PackageExecutablePath = Environment.ProcessPath ?? typeof(ServiceHostUpdateCompatibilityTests).Assembly.Location,
+        InstalledExecutablePath = InstalledPath,
         PackageVersion = new Version(1, 4, 10, 7),
         InstalledVersion = runningVersion ?? new Version(1, 4, 10, 4),
         RunningVersion = runningVersion,
+        RunningProcessPath = InstalledPath,
     };
 }

@@ -12,10 +12,25 @@ namespace WindowsServicePlugin
 {
     public partial class SetServiceConfigStep : WizardStepBase
     {
+        private bool _configurationStatus;
+
         public override int Order => 98;
 
         public override string Header => Properties.Resources.ReplaceServiceCfg;
-        public override string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
+        public override string Description => "如果已经正确配置服务管理工具，使用该命令会读取配置文件并应用。";
+        public override bool ConfigurationStatus
+        {
+            get => _configurationStatus;
+            set
+            {
+                if (_configurationStatus == value)
+                    return;
+
+                _configurationStatus = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanContinue));
+            }
+        }
 
         public override void Execute()
         {
@@ -59,6 +74,7 @@ namespace WindowsServicePlugin
             SetServiceConfig(dirPath,"CVFlowWindowsService");
             SetServiceConfig(dirPath,"CVMainWindowsService_dev");
 
+            ConfigurationStatus = true;
             MessageBox.Show("CFG配置成功，正在重启服务");
             if (Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService"))
             {

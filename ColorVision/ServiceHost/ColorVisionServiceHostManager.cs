@@ -2,6 +2,7 @@ using ColorVision.UI.ServiceHost;
 using log4net;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -50,11 +51,27 @@ namespace ColorVision.ServiceHost
             && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion));
 
         public bool NeedsRepair => IsPackageAvailable
-            && (State == ServiceHostInstallState.Stopped || (State == ServiceHostInstallState.Running && RunningVersion == null));
+            && (State == ServiceHostInstallState.Stopped
+                || (State == ServiceHostInstallState.Running && (RunningVersion == null || !HasExpectedRunningPath)));
+
+        public bool HasExpectedRunningPath => IsSameExecutablePath(RunningProcessPath, InstalledExecutablePath);
+
+        public bool IsReady => State == ServiceHostInstallState.Running
+            && RunningVersion != null
+            && HasExpectedRunningPath;
+
+        public bool HasCurrentOrNewerInstalledVersion => PackageVersion != null
+            && InstalledVersion != null
+            && InstalledVersion >= PackageVersion;
+
+        public bool WouldInstallDowngrade => PackageVersion != null
+            && ((InstalledVersion != null && InstalledVersion > PackageVersion)
+                || (RunningVersion != null && RunningVersion > PackageVersion));
 
         public bool CanSelfUpdate => State == ServiceHostInstallState.Running
             && NeedsUpdate
             && RunningVersion != null
+            && HasExpectedRunningPath
             && RunningVersion.CompareTo(MinimumSelfUpdateVersion) >= 0;
 
         public string DisplayText => State switch
@@ -68,6 +85,23 @@ namespace ColorVision.ServiceHost
         private static string FormatVersion(Version? version)
         {
             return version?.ToString() ?? "unknown";
+        }
+
+        private static bool IsSameExecutablePath(string left, string right)
+        {
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+                return false;
+
+            try
+            {
+                string normalizedLeft = Path.GetFullPath(left.Trim().Trim('"'));
+                string normalizedRight = Path.GetFullPath(right.Trim().Trim('"'));
+                return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -96,9 +130,28 @@ namespace ColorVision.ServiceHost
         }
     }
 
+    public sealed class ServiceHostEnsureResult
+    {
+        public bool Success { get; init; }
+
+        public int ExitCode { get; init; }
+
+        public ServiceHostStatus Status { get; init; } = new() { State = ServiceHostInstallState.Unknown };
+
+        public string Error { get; init; } = string.Empty;
+
+        public string Details { get; init; } = string.Empty;
+
+        public string Summary => Success
+            ? Details
+            : string.IsNullOrWhiteSpace(Details) ? Error : $"{Error}{Environment.NewLine}{Details}";
+    }
+
     public static class ColorVisionServiceHostManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ColorVisionServiceHostManager));
+        private static readonly TimeSpan DefaultReadinessTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan ReadinessPollInterval = TimeSpan.FromMilliseconds(500);
 
         public static bool IsAdministrator()
         {
@@ -142,6 +195,133 @@ namespace ColorVision.ServiceHost
         public static Task<ServiceHostOperationResult> StopAsync(CancellationToken cancellationToken = default)
         {
             return RunPowerShellScriptAsync(CreateStopScript(), requireAdministrator: true, cancellationToken);
+        }
+
+        public static Task<ServiceHostEnsureResult> EnsureReadyAsync(CancellationToken cancellationToken = default)
+        {
+            return EnsureReadyAsync(DefaultReadinessTimeout, cancellationToken);
+        }
+
+        internal static async Task<ServiceHostEnsureResult> EnsureReadyAsync(
+            TimeSpan readinessTimeout,
+            CancellationToken cancellationToken = default)
+        {
+            if (readinessTimeout <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(readinessTimeout), "The readiness timeout must be greater than zero.");
+
+            List<string> attempts = [];
+            ServiceHostStatus status = new()
+            {
+                State = ServiceHostInstallState.Unknown,
+                PackageExecutablePath = ServiceHostProtocol.PackageExecutablePath,
+                InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
+            };
+            try
+            {
+                status = await QueryStatusAsync(cancellationToken).ConfigureAwait(false);
+                if (IsReadyForPackagedVersion(status))
+                    return CreateEnsureSuccess(status, attempts);
+
+                if (!status.IsPackageAvailable)
+                {
+                    return CreateEnsureFailure(
+                        $"Service host executable was not found: {status.PackageExecutablePath}",
+                        status,
+                        attempts);
+                }
+
+                if (status.PackageVersion == null)
+                {
+                    return CreateEnsureFailure(
+                        $"Unable to read the packaged service host version: {status.PackageExecutablePath}",
+                        status,
+                        attempts);
+                }
+
+                ServiceHostStartupAction action = ServiceHostStartupUpdateChecker.ResolveAction(status);
+                if (action == ServiceHostStartupAction.None)
+                {
+                    return status.WouldInstallDowngrade
+                        ? CreateEnsureFailure(
+                            $"Refusing to replace a newer service host with package {status.PackageVersion}. Installed={status.InstalledVersion}, Running={status.RunningVersion}.",
+                            status,
+                            attempts)
+                        : CreateEnsureFailure($"ColorVisionServiceHost is not ready: {status.DisplayText}", status, attempts);
+                }
+
+                if (action == ServiceHostStartupAction.Start)
+                {
+                    ServiceHostOperationResult startResult = await StartAsync(cancellationToken).ConfigureAwait(false);
+                    AddAttempt(attempts, "Start", startResult);
+                    if (startResult.Success)
+                    {
+                        status = await WaitForReadyAsync(readinessTimeout, cancellationToken).ConfigureAwait(false);
+                        if (IsReadyForPackagedVersion(status))
+                            return CreateEnsureSuccess(status, attempts);
+                    }
+                    else
+                    {
+                        status = await QueryStatusAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (IsReadyForPackagedVersion(status))
+                        return CreateEnsureSuccess(status, attempts);
+
+                    if (status.WouldInstallDowngrade)
+                    {
+                        return CreateEnsureFailure(
+                            $"The installed service host could not be started, and repairing it from package {status.PackageVersion} would downgrade version {status.InstalledVersion ?? status.RunningVersion}.",
+                            status,
+                            attempts);
+                    }
+
+                    return await InstallAndWaitForReadyAsync(readinessTimeout, status, attempts, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (action == ServiceHostStartupAction.SelfUpdate)
+                {
+                    ServiceHostOperationResult selfUpdateResult = await SelfUpdateAsync(cancellationToken).ConfigureAwait(false);
+                    AddAttempt(attempts, "Self Update", selfUpdateResult);
+                    if (selfUpdateResult.Success)
+                    {
+                        status = await WaitForReadyAsync(readinessTimeout, cancellationToken).ConfigureAwait(false);
+                        if (IsReadyForPackagedVersion(status))
+                            return CreateEnsureSuccess(status, attempts);
+                    }
+                    else
+                    {
+                        status = await QueryStatusAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (IsReadyForPackagedVersion(status))
+                        return CreateEnsureSuccess(status, attempts);
+
+                    if (status.WouldInstallDowngrade)
+                    {
+                        return CreateEnsureFailure(
+                            $"Silent service host update failed, and elevated repair from package {status.PackageVersion} would downgrade the installed service.",
+                            status,
+                            attempts);
+                    }
+
+                    return await InstallAndWaitForReadyAsync(readinessTimeout, status, attempts, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (status.WouldInstallDowngrade)
+                {
+                    return CreateEnsureFailure(
+                        $"Refusing to repair ColorVisionServiceHost from older package {status.PackageVersion}. Installed={status.InstalledVersion}, Running={status.RunningVersion}.",
+                        status,
+                        attempts);
+                }
+
+                return await InstallAndWaitForReadyAsync(readinessTimeout, status, attempts, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to ensure that ColorVisionServiceHost is ready.", ex);
+                return CreateEnsureFailure(ex.Message, status, attempts);
+            }
         }
 
         public static async Task<ServiceHostOperationResult> SelfUpdateAsync(CancellationToken cancellationToken = default)
@@ -245,6 +425,100 @@ namespace ColorVision.ServiceHost
                     InstalledVersion = installedVersion,
                 };
             }
+        }
+
+        private static async Task<ServiceHostEnsureResult> InstallAndWaitForReadyAsync(
+            TimeSpan timeout,
+            ServiceHostStatus status,
+            List<string> attempts,
+            CancellationToken cancellationToken)
+        {
+            if (status.WouldInstallDowngrade)
+            {
+                return CreateEnsureFailure(
+                    $"Refusing to install older service host package {status.PackageVersion}. Installed={status.InstalledVersion}, Running={status.RunningVersion}.",
+                    status,
+                    attempts);
+            }
+
+            ServiceHostOperationResult installResult = await InstallAsync(cancellationToken).ConfigureAwait(false);
+            AddAttempt(attempts, "Install / Repair", installResult);
+            if (!installResult.Success)
+            {
+                string installError = string.IsNullOrWhiteSpace(installResult.Error)
+                    ? $"PowerShell exited with code {installResult.ExitCode}. See {Path.Combine(ServiceHostProtocol.InstallDirectory, "install.log")}."
+                    : installResult.Error;
+                return CreateEnsureFailure(
+                    $"ColorVisionServiceHost installation failed: {installError}",
+                    status,
+                    attempts,
+                    installResult.ExitCode);
+            }
+
+            ServiceHostStatus readyStatus = await WaitForReadyAsync(timeout, cancellationToken).ConfigureAwait(false);
+            if (IsReadyForPackagedVersion(readyStatus))
+                return CreateEnsureSuccess(readyStatus, attempts);
+
+            return CreateEnsureFailure(
+                $"ColorVisionServiceHost did not become ready within {timeout.TotalSeconds:0.#} seconds: {readyStatus.DisplayText}",
+                readyStatus,
+                attempts);
+        }
+
+        private static async Task<ServiceHostStatus> WaitForReadyAsync(TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            DateTime deadline = DateTime.UtcNow + timeout;
+            ServiceHostStatus status = await QueryStatusAsync(cancellationToken).ConfigureAwait(false);
+            while (!IsReadyForPackagedVersion(status) && DateTime.UtcNow < deadline)
+            {
+                TimeSpan remaining = deadline - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                    break;
+
+                await Task.Delay(remaining < ReadinessPollInterval ? remaining : ReadinessPollInterval, cancellationToken).ConfigureAwait(false);
+                status = await QueryStatusAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return status;
+        }
+
+        internal static bool IsReadyForPackagedVersion(ServiceHostStatus status)
+        {
+            return status.IsReady && !status.NeedsUpdate;
+        }
+
+        private static ServiceHostEnsureResult CreateEnsureSuccess(ServiceHostStatus status, List<string> attempts)
+        {
+            string readyMessage = $"ColorVisionServiceHost is ready: {status.DisplayText}";
+            attempts.Add(readyMessage);
+            return new ServiceHostEnsureResult
+            {
+                Success = true,
+                ExitCode = 0,
+                Details = string.Join(Environment.NewLine, attempts),
+                Status = status,
+            };
+        }
+
+        private static ServiceHostEnsureResult CreateEnsureFailure(
+            string message,
+            ServiceHostStatus status,
+            List<string> attempts,
+            int exitCode = -1)
+        {
+            return new ServiceHostEnsureResult
+            {
+                Success = false,
+                ExitCode = exitCode,
+                Details = string.Join(Environment.NewLine, attempts),
+                Error = message,
+                Status = status,
+            };
+        }
+
+        private static void AddAttempt(List<string> attempts, string name, ServiceHostOperationResult result)
+        {
+            attempts.Add($"{name}: {result.Summary}");
         }
 
         private static async Task<(Version? Version, string ProcessPath)> QueryRunningVersionAsync(CancellationToken cancellationToken)

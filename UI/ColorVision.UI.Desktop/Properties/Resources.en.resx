@@ -792,4 +792,15 @@
   <data name="Treemap_SelectValidDir" xml:space="preserve">
     <value>Please select a valid directory first.</value>
   </data>
+  <data name="Wizard_Intro" xml:space="preserve"><value>Complete the required environment checks and service configuration to get ColorVision ready.</value></data>
+  <data name="Wizard_StepProgressFormat" xml:space="preserve"><value>Step {0} of {1}</value></data>
+  <data name="Wizard_Required" xml:space="preserve"><value>Required</value></data>
+  <data name="Wizard_Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Wizard_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Wizard_Current" xml:space="preserve"><value>Current step</value></data>
+  <data name="Wizard_Working" xml:space="preserve"><value>Working</value></data>
+  <data name="Wizard_NeedsAttention" xml:space="preserve"><value>Needs attention</value></data>
+  <data name="Wizard_Progress" xml:space="preserve"><value>Setup progress</value></data>
+  <data name="Wizard_Steps" xml:space="preserve"><value>Setup steps</value></data>
+  <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>Complete this required step to continue.</value></data>
 </root>
