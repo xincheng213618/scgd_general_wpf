@@ -968,14 +968,15 @@ public class SolutionManagerFoundationTests
         {
             using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
             using var parentResult = new SolutionSearchResultNode(explorer, parent, "Project\\parent", ownsTarget: false);
+            using var duplicateParentResult = new SolutionSearchResultNode(explorer, parent, "Duplicate\\parent", ownsTarget: false);
             using var childResult = new SolutionSearchResultNode(explorer, child, "Project\\parent\\child", ownsTarget: false);
             var service = new SolutionSelectionService();
 
-            service.SelectMany([parentResult, childResult]);
+            service.SelectMany([parentResult, duplicateParentResult, childResult]);
 
             Assert.Equal([parent, child], service.CommandNodes);
             Assert.Equal([parent], service.GetTopLevelNodes(_ => true));
-            Assert.Equal([parentResult, childResult], service.SelectedNodes);
+            Assert.Equal([parentResult, duplicateParentResult, childResult], service.SelectedNodes);
         }
         finally
         {
@@ -2916,7 +2917,7 @@ public class SolutionManagerFoundationTests
             string[] recycledPaths = [];
 
             IReadOnlyList<SolutionNode> failures = SolutionBatchDeleteService.Delete(
-                [firstFile, secondFile, folder],
+                [firstFile, firstFile, secondFile, folder],
                 paths =>
                 {
                     recycleCalls++;
