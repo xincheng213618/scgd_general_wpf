@@ -2048,7 +2048,7 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void ResourceOpenService_PreservesWorkspaceFailuresAcrossLegacyFileRoute()
+    public void ResourceOpenService_PreservesResultsAcrossLegacyFileRoute()
     {
         FileOpenRouteResult projectFailure = ResourceOpenService.ToFileOpenRouteResult(
             new ResourceOpenResult(ResourceOpenKind.Project, false, "项目加载失败"));
@@ -2060,9 +2060,70 @@ public class SolutionManagerFoundationTests
         Assert.True(projectFailure.Handled);
         Assert.False(projectFailure.Succeeded);
         Assert.Equal("项目加载失败", projectFailure.ErrorMessage);
-        Assert.False(fileFailure.Handled);
+        Assert.True(fileFailure.Handled);
+        Assert.False(fileFailure.Succeeded);
+        Assert.Equal("没有可用编辑器", fileFailure.ErrorMessage);
         Assert.True(fileSuccess.Handled);
         Assert.True(fileSuccess.Succeeded);
+    }
+
+    [Fact]
+    public void FileOpenActions_UsePriorityAndContinueOnlyWhenNotHandled()
+    {
+        var attempts = new List<int>();
+        var lowPriority = new StubFileOpenActionProcessor(
+            10,
+            _ =>
+            {
+                attempts.Add(10);
+                return new FileOpenRouteResult(true, false, "不应执行");
+            });
+        var selected = new StubFileOpenActionProcessor(
+            50,
+            _ =>
+            {
+                attempts.Add(50);
+                return new FileOpenRouteResult(true, true);
+            });
+        var declined = new StubFileOpenActionProcessor(
+            100,
+            _ =>
+            {
+                attempts.Add(100);
+                return FileOpenRouteResult.NotHandled;
+            });
+
+        FileOpenRouteResult result = FileProcessorFactory.SelectFileOpenAction(
+            [lowPriority, selected, declined],
+            "Example.cvaction");
+
+        Assert.True(result.Handled);
+        Assert.True(result.Succeeded);
+        Assert.Equal([100, 50], attempts);
+    }
+
+    [Fact]
+    public void CVCalImport_ReportsMissingCameraConfiguration()
+    {
+        string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-{Guid.NewGuid():N}.cvcal");
+        try
+        {
+            using (System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.Open(
+                filePath,
+                System.IO.Compression.ZipArchiveMode.Create))
+            {
+                archive.CreateEntry("README.txt");
+            }
+
+            Assert.False(ColorVision.Engine.CalFile.CVCalInitialized.TryImport(
+                filePath,
+                out string errorMessage));
+            Assert.Contains("CameraConfig.cfg", errorMessage, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
     }
 
     [Fact]
@@ -5315,6 +5376,29 @@ public class SolutionManagerFoundationTests
         {
             Factory = factory,
         };
+    }
+
+    private sealed class StubFileOpenActionProcessor : IFileOpenActionProcessor
+    {
+        private readonly Func<string, FileOpenRouteResult> _open;
+
+        public int Order { get; }
+
+        public StubFileOpenActionProcessor(
+            int order,
+            Func<string, FileOpenRouteResult> open)
+        {
+            Order = order;
+            _open = open;
+        }
+
+        public FileOpenRouteResult OpenFile(string filePath) => _open(filePath);
+
+        public bool Process(string filePath) => OpenFile(filePath).Succeeded;
+
+        public void Export(string filePath)
+        {
+        }
     }
 
     private static SolutionNode CreateNode(string path)

@@ -10,7 +10,7 @@ using System.Linq;
 namespace ColorVision.Update
 {
     [FileExtension(".cvx")]
-    public class IncrementalUpdatePackageFileProcessor : IFileProcessor
+    public class IncrementalUpdatePackageFileProcessor : IFileOpenActionProcessor
     {
         public int Order => 1;
 
@@ -28,7 +28,7 @@ namespace ColorVision.Update
     }
 
     [FileExtension(".cvxp")]
-    public class PluginPackageFileProcessor : IFileProcessor
+    public class PluginPackageFileProcessor : IFileOpenActionProcessor
     {
         public int Order => 1;
 
@@ -47,7 +47,7 @@ namespace ColorVision.Update
     }
 
     [FileExtension(".zip")]
-    public class ZipPluginPackageFileProcessor : IFileProcessor
+    public class ZipPluginPackageFileProcessor : IFileOpenActionProcessor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ZipPluginPackageFileProcessor));
 
@@ -77,6 +77,13 @@ namespace ColorVision.Update
             }
 
             return false;
+        }
+
+        public FileOpenRouteResult OpenFile(string filePath)
+        {
+            return Process(filePath)
+                ? new FileOpenRouteResult(true, true)
+                : FileOpenRouteResult.NotHandled;
         }
 
         private static bool IsTopLevelPluginManifest(ZipArchiveEntry entry)

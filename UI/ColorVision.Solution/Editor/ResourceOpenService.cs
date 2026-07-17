@@ -73,6 +73,20 @@ namespace ColorVision.Solution.Editor
 
             try
             {
+                if (kind == ResourceOpenKind.File)
+                {
+                    FileOpenRouteResult actionResult = FileProcessorFactory.GetInstance()
+                        .TryOpenFileAction(path);
+                    if (actionResult.Handled)
+                    {
+                        return new ResourceOpenResult(
+                            kind,
+                            actionResult.Succeeded,
+                            actionResult.ErrorMessage,
+                            Canceled: actionResult.Canceled);
+                    }
+                }
+
                 bool succeeded;
                 string errorMessage = string.Empty;
                 switch (kind)
@@ -116,17 +130,11 @@ namespace ColorVision.Solution.Editor
         internal static FileOpenRouteResult ToFileOpenRouteResult(ResourceOpenResult result)
         {
             ArgumentNullException.ThrowIfNull(result);
-            if (result.Kind is ResourceOpenKind.Solution or ResourceOpenKind.Project)
-            {
-                return new FileOpenRouteResult(
-                    true,
-                    result.Succeeded,
-                    result.ErrorMessage);
-            }
-
-            return result.Succeeded
-                ? new FileOpenRouteResult(true, true)
-                : FileOpenRouteResult.NotHandled;
+            return new FileOpenRouteResult(
+                true,
+                result.Succeeded,
+                result.ErrorMessage,
+                result.Canceled);
         }
 
         public async Task<ResourceOpenResult> OpenAsync(
@@ -151,6 +159,16 @@ namespace ColorVision.Solution.Editor
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
+                FileOpenRouteResult actionResult = FileProcessorFactory.GetInstance()
+                    .TryOpenFileAction(path);
+                if (actionResult.Handled)
+                {
+                    return new ResourceOpenResult(
+                        kind,
+                        actionResult.Succeeded,
+                        actionResult.ErrorMessage,
+                        Canceled: actionResult.Canceled);
+                }
                 bool succeeded = _editorManager.TryOpenFile(path, out string errorMessage);
                 if (succeeded)
                     return new ResourceOpenResult(kind, true);

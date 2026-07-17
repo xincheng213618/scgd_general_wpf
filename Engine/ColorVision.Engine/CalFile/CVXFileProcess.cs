@@ -34,53 +34,12 @@ namespace ColorVision.Engine.CalFile
             if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;
 
             string targetFile = CVXFileProcess.FilePath;
-
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
-                    string jsonContent = null;
-
-                    ConfigCamera configCamera = null;
-
-                    // 1. 解压读取 JSON 字符串
-                    using (ZipArchive archive = ZipFile.OpenRead(targetFile))
-                    {
-
-                        var entry = archive.GetEntry("CameraConfig.cfg");
-                        if (entry != null)
-                        {
-                            using (var stream = entry.Open())
-                            using (var reader = new StreamReader(stream, Encoding.UTF8))
-                            {
-                                jsonContent = reader.ReadToEnd();
-                                try
-                                {
-                                    configCamera = JsonConvert.DeserializeObject<ConfigCamera>(jsonContent);
-                                }
-                                catch (Exception jsonEx)
-                                {
-                                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError}: {jsonEx.Message}", ColorVision.Engine.Properties.Resources.Engine_Msg_ParseError);
-                                    return;
-                                }
-
-                                PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configCamera);
-                                propertyEditorWindow.Submited += (s, e) =>
-                                {
-                                    PhyCameraManagerWindow phyCameraManagerWindow = new PhyCameraManagerWindow();
-                                    phyCameraManagerWindow.Show();
-                                };
-                                propertyEditorWindow.ShowDialog();
-                                return;
-                            }
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"导入流程异常: {ex.Message}");
-                    MessageBox.Show($"{ColorVision.Engine.Properties.Resources.Engine_Msg_FileProcessError}: {ex.Message}");
+                    if (!TryImport(targetFile, out string errorMessage))
+                        MessageBox.Show(errorMessage, ColorVision.Engine.Properties.Resources.Engine_Msg_ParseError);
                 }
                 finally
                 {
@@ -91,10 +50,54 @@ namespace ColorVision.Engine.CalFile
             return Task.CompletedTask;
         }
 
+        internal static bool TryImport(string targetFile, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            try
+            {
+                using ZipArchive archive = ZipFile.OpenRead(targetFile);
+                ZipArchiveEntry? entry = archive.GetEntry("CameraConfig.cfg");
+                if (entry == null)
+                {
+                    errorMessage = "校准文件中缺少 CameraConfig.cfg。";
+                    return false;
+                }
+
+                using Stream stream = entry.Open();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                string jsonContent = reader.ReadToEnd();
+                ConfigCamera? configCamera;
+                try
+                {
+                    configCamera = JsonConvert.DeserializeObject<ConfigCamera>(jsonContent);
+                }
+                catch (Exception jsonException)
+                {
+                    errorMessage = $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError}: {jsonException.Message}";
+                    return false;
+                }
+                if (configCamera == null)
+                {
+                    errorMessage = ColorVision.Engine.Properties.Resources.Engine_Msg_ConfigFileFormatError;
+                    return false;
+                }
+
+                var propertyEditorWindow = new PropertyEditorWindow(configCamera);
+                propertyEditorWindow.Submited += (s, e) => new PhyCameraManagerWindow().Show();
+                propertyEditorWindow.ShowDialog();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"导入流程异常: {ex.Message}");
+                errorMessage = $"{ColorVision.Engine.Properties.Resources.Engine_Msg_FileProcessError}: {ex.Message}";
+                return false;
+            }
+        }
     }
 
     [FileExtension(".cvcal")]
-    public class CVCalFileProcess : IFileProcessor
+    public class CVCalFileProcess : IFileOpenActionProcessor
     {
         public int Order => 1;
         public void Export(string filePath) { }
@@ -102,6 +105,21 @@ namespace ColorVision.Engine.CalFile
         {
             CVXFileProcess.FilePath = filePath;
             return false;
+        }
+
+        public FileOpenRouteResult OpenFile(string filePath)
+        {
+            if (Application.Current?.Dispatcher is not { } dispatcher)
+                return new FileOpenRouteResult(true, false, "应用程序尚未完成初始化，无法导入校准文件。");
+
+            bool succeeded = false;
+            string errorMessage = string.Empty;
+            void Import() => succeeded = CVCalInitialized.TryImport(filePath, out errorMessage);
+            if (dispatcher.CheckAccess())
+                Import();
+            else
+                dispatcher.Invoke(Import);
+            return new FileOpenRouteResult(true, succeeded, errorMessage);
         }
     }
 }

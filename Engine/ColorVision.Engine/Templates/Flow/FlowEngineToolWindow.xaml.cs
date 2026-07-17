@@ -15,7 +15,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Templates.Flow
 {
     [FileExtension(".stn", ".cvflow")]
-    public class FileProcessorFlow : IFileProcessor
+    public class FileProcessorFlow : IFileOpenActionProcessor
     {
         public int Order => 1;
 

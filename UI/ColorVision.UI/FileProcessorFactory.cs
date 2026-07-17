@@ -9,14 +9,6 @@ using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public sealed record FileOpenRouteResult(
-        bool Handled,
-        bool Succeeded,
-        string ErrorMessage = "")
-    {
-        public static FileOpenRouteResult NotHandled { get; } = new(false, false);
-    }
-
     public class MenuFileOpen : MenuItemBase
     {
         public override int Order => 1;
@@ -53,7 +45,7 @@ namespace ColorVision.UI
                     return;
                 }
                 FileOpenRouteResult result = FileProcessorFactory.GetInstance().OpenFile(selectedFilePath);
-                if (!result.Succeeded)
+                if (!result.Succeeded && !result.Canceled)
                 {
                     MessageBox.Show(string.IsNullOrWhiteSpace(result.ErrorMessage)
                         ? Properties.Resources.UnsupportedFileFormat
@@ -69,21 +61,41 @@ namespace ColorVision.UI
         public static FileProcessorFactory GetInstance() => _instance.Value;
 
         private readonly Dictionary<string, List<Type>> _extTypeMap = new();
+        private readonly Dictionary<string, List<Type>> _openActionTypeMap = new();
+        private readonly HashSet<Assembly> _registeredAssemblies = new();
+        private readonly object _syncRoot = new();
         private Type? _genericType;
 
         /// <summary>
-        /// Optional workspace-aware handler installed by the solution module.
+        /// Optional resource-aware handler installed by the solution module.
         /// The legacy processor path remains available for standalone file mode.
         /// </summary>
-        public Func<string, FileOpenRouteResult>? WorkspaceOpenHandler { get; set; }
+        public Func<string, FileOpenRouteResult>? ResourceOpenHandler { get; set; }
 
         private FileProcessorFactory()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
+            foreach (Assembly assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                RegisterAssembly(assembly);
+        }
+
+        private void CurrentDomain_AssemblyLoad(object? sender, AssemblyLoadEventArgs e)
+        {
+            RegisterAssembly(e.LoadedAssembly);
+        }
+
+        private void RegisterAssembly(Assembly assembly)
+        {
+            lock (_syncRoot)
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IFileProcessor).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface))
+                if (!_registeredAssemblies.Add(assembly))
+                    return;
+
+                foreach (Type type in GetLoadableTypes(assembly).Where(type =>
+                    typeof(IFileProcessor).IsAssignableFrom(type)
+                    && !type.IsAbstract
+                    && !type.IsInterface))
                 {
-                    // 检查是否是兜底处理器
                     if (type.GetCustomAttribute<GenericFileAttribute>() != null)
                     {
                         _genericType = type;
@@ -92,35 +104,67 @@ namespace ColorVision.UI
                     var extAttr = type.GetCustomAttribute<FileExtensionAttribute>();
                     if (extAttr != null)
                     {
-                        foreach (var ext in extAttr.Extensions)
+                        foreach (string extKey in extAttr.Extensions
+                            .Where(extension => !string.IsNullOrWhiteSpace(extension))
+                            .Select(extension => extension.ToLowerInvariant())
+                            .Distinct(StringComparer.OrdinalIgnoreCase))
                         {
-                            var extKey = ext.ToLowerInvariant();
                             if (!_extTypeMap.ContainsKey(extKey))
                                 _extTypeMap[extKey] = new List<Type>();
                             _extTypeMap[extKey].Add(type);
+                            if (typeof(IFileOpenActionProcessor).IsAssignableFrom(type))
+                            {
+                                if (!_openActionTypeMap.ContainsKey(extKey))
+                                    _openActionTypeMap[extKey] = new List<Type>();
+                                _openActionTypeMap[extKey].Add(type);
+                            }
                         }
                     }
                 }
             }
         }
 
-        public IFileProcessor? GetFileProcessor(string filePath)
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
         {
-            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
-            List<Type>? typeList = null;
-            if (!string.IsNullOrWhiteSpace(ext))
-                _extTypeMap.TryGetValue(ext, out typeList);
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                return ex.Types.OfType<Type>();
+            }
+            catch
+            {
+                return Array.Empty<Type>();
+            }
+        }
+
+        public IFileProcessor? GetFileProcessor(
+            string filePath,
+            bool includeOpenActions = true)
+        {
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Type[] typeList;
+            Type? genericType;
+            lock (_syncRoot)
+            {
+                typeList = _extTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
+                    ? registeredTypes.ToArray()
+                    : [];
+                genericType = _genericType;
+            }
 
             var candidates = new List<IFileProcessor>();
 
-            if (typeList != null && typeList.Count > 0)
+            if (typeList.Length > 0)
             {
-                foreach (var t in typeList)
+                foreach (Type type in typeList)
                 {
-                    if (Activator.CreateInstance(t) is IFileProcessor processor )
-                    {
-                        candidates.Add(processor);
-                    }
+                    if ((!includeOpenActions && typeof(IFileOpenActionProcessor).IsAssignableFrom(type))
+                        || Activator.CreateInstance(type) is not IFileProcessor processor)
+                        continue;
+                    candidates.Add(processor);
                 }
             }
 
@@ -129,9 +173,10 @@ namespace ColorVision.UI
                 return candidates.OrderByDescending(p => p.Order).First();
 
             // 如果没有，尝试 fallback
-            if (_genericType != null)
+            if (genericType != null
+                && (includeOpenActions || !typeof(IFileOpenActionProcessor).IsAssignableFrom(genericType)))
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
+                if (Activator.CreateInstance(genericType) is IFileProcessor fallback)
                     return fallback;
             }
             return null;
@@ -147,11 +192,12 @@ namespace ColorVision.UI
             if (!File.Exists(filePath))
                 return new FileOpenRouteResult(true, false, $"文件不存在：{filePath}");
 
-            FileOpenRouteResult? routedResult = WorkspaceOpenHandler?.Invoke(filePath);
+            bool usedResourceRouter = ResourceOpenHandler != null;
+            FileOpenRouteResult? routedResult = ResourceOpenHandler?.Invoke(filePath);
             if (routedResult?.Handled == true)
                 return routedResult;
 
-            var processor = GetFileProcessor(filePath);
+            var processor = GetFileProcessor(filePath, includeOpenActions: !usedResourceRouter);
             if (processor != null)
             {
                 bool result = processor.Process(filePath);
@@ -163,17 +209,55 @@ namespace ColorVision.UI
             return new FileOpenRouteResult(true, false, Properties.Resources.UnsupportedFileFormat);
         }
 
+        public FileOpenRouteResult TryOpenFileAction(string filePath)
+        {
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Type[] actionTypes;
+            lock (_syncRoot)
+            {
+                actionTypes = _openActionTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
+                    ? registeredTypes.ToArray()
+                    : [];
+            }
+            if (actionTypes.Length == 0)
+                return FileOpenRouteResult.NotHandled;
+
+            return SelectFileOpenAction(actionTypes
+                .Select(type => Activator.CreateInstance(type))
+                .OfType<IFileOpenActionProcessor>(), filePath);
+        }
+
+        internal static FileOpenRouteResult SelectFileOpenAction(
+            IEnumerable<IFileOpenActionProcessor> processors,
+            string filePath)
+        {
+            foreach (IFileOpenActionProcessor processor in processors
+                .OrderByDescending(processor => processor.Order))
+            {
+                FileOpenRouteResult result = processor.OpenFile(filePath);
+                if (result.Handled)
+                    return result;
+            }
+            return FileOpenRouteResult.NotHandled;
+        }
+
         public bool ExportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
-            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
-            List<Type>? typeList = null;
-            if (!string.IsNullOrWhiteSpace(ext))
-                _extTypeMap.TryGetValue(ext, out typeList);
+            string extension = Path.GetExtension(filePath).ToLowerInvariant();
+            Type[] typeList;
+            Type? genericType;
+            lock (_syncRoot)
+            {
+                typeList = _extTypeMap.TryGetValue(extension, out List<Type>? registeredTypes)
+                    ? registeredTypes.ToArray()
+                    : [];
+                genericType = _genericType;
+            }
 
             var candidates = new List<IFileProcessor>();
 
-            if (typeList != null && typeList.Count > 0)
+            if (typeList.Length > 0)
             {
                 foreach (var t in typeList)
                 {
@@ -193,9 +277,9 @@ namespace ColorVision.UI
             }
 
             // fallback
-            if (_genericType != null)
+            if (genericType != null)
             {
-                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback)
+                if (Activator.CreateInstance(genericType) is IFileProcessor fallback)
                 {
                     fallback.Export(filePath);
                     return true;

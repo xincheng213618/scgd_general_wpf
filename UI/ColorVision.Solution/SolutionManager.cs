@@ -150,7 +150,7 @@ namespace ColorVision.Solution
         {
             _tryCloseWorkspaceDocuments = tryCloseWorkspaceDocuments
                 ?? TryCloseWorkspaceDocumentsCore;
-            ColorVision.UI.FileProcessorFactory.GetInstance().WorkspaceOpenHandler ??=
+            ColorVision.UI.FileProcessorFactory.GetInstance().ResourceOpenHandler ??=
                 Editor.ResourceOpenService.Instance.RouteFileProcessorOpen;
             SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
 
