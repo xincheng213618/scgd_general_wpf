@@ -128,7 +128,6 @@ namespace ColorVision.Solution.Explorer
         internal void RefreshConfigurationState()
         {
             Capabilities = ProjectProviderRegistry.GetCapabilities(GetExecutionProject());
-            InvalidateMenuItems();
             NotifyPropertyChanged(nameof(Capabilities));
         }
 
@@ -507,7 +506,6 @@ namespace ColorVision.Solution.Explorer
             Name1 = $"{GetDisplayName(ProjectReference, resolvedPath)} (不可用)";
             NotifyPropertyChanged(nameof(Name));
             NotifyPropertyChanged(nameof(LoadError));
-            InvalidateMenuItems();
         }
 
         public override void Refresh()

@@ -120,12 +120,6 @@ namespace ColorVision.Solution.Explorer
             return TargetNode.TryDelete(showConfirmation);
         }
 
-        public override void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            TargetNode.CollectMenuItems(MenuItemMetadatas);
-        }
-
         public void Dispose()
         {
             if (_disposed)

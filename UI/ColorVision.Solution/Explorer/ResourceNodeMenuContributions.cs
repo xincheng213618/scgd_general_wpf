@@ -1,7 +1,39 @@
 using ColorVision.UI.Menus;
+using ColorVision.Solution.FileMeta;
 
 namespace ColorVision.Solution.Explorer
 {
+    [SolutionMenuContribution(priority: 250)]
+    public sealed class ScriptFileMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.script-file-actions";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode is FileNode
+            {
+                FileMeta: IScriptFileMeta,
+                FileInfo.Exists: true,
+            };
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.RunScriptId,
+                    Order = 0,
+                    Header = "运行脚本",
+                    Command = SolutionResourceCommands.RunScript,
+                    Icon = MenuItemIcon.TryFindResource("DIRun"),
+                },
+            ];
+        }
+    }
+
     [SolutionMenuContribution(priority: 245)]
     public sealed class FileNodeMenuContribution : ISolutionMenuContribution
     {

@@ -532,8 +532,6 @@ public class SolutionManagerFoundationTests
         var effectiveNodes = service.GetTopLevelNodes(_ => true);
 
         Assert.Equal([parent, sibling], effectiveNodes);
-        Assert.True(SolutionCommandIds.SupportsMultipleSelection(SolutionCommandIds.Delete));
-        Assert.False(SolutionCommandIds.SupportsMultipleSelection(SolutionCommandIds.Rename));
     }
 
     [Fact]
@@ -638,23 +636,19 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void SolutionContextMenuAddsDynamicContributionsAtOpening()
+    public void SolutionContextMenuUsesRegisteredContributionsAtOpening()
     {
         var node = CreateNode("C:\\Workspace\\sample.txt");
         node.Initialize();
-        var nodeItems = new List<MenuItemMetadata>();
-        node.CollectMenuItems(nodeItems);
 
         List<MenuItemMetadata> openingItems = SolutionContextMenuService.CreateMenuMetadata([node]);
 
-        Assert.DoesNotContain(nodeItems, item => item.GuidId == "CopyFullPath");
-        Assert.DoesNotContain(nodeItems, item => item.GuidId == SolutionCommandIds.Delete);
         Assert.Single(openingItems, item => item.GuidId == "CopyFullPath");
         Assert.Single(openingItems, item => item.GuidId == SolutionCommandIds.Delete);
     }
 
     [Fact]
-    public void ResourceNodeMenusComposeFixedActionsDynamicallyAndPreserveMetaExtensions()
+    public void ResourceNodeMenusComposeRegisteredActionsDynamically()
     {
         string rootPath = CreateTemporaryDirectory();
         string filePath = Path.Combine(rootPath, "sample.txt");
@@ -667,21 +661,13 @@ public class SolutionManagerFoundationTests
         try
         {
             using var explorer = CreateSolutionExplorer(rootPath, solutionPath);
-            var fileNode = new FileNode(new TestFileMenuMeta(
-                new FileInfo(filePath),
-                "TestFileMetaAction"));
-            using var folderNode = new FolderNode(new TestFolderMenuMeta(
-                new DirectoryInfo(folderPath),
-                "TestFolderMetaAction"));
+            var fileNode = new FileNode(new CommonFile(new FileInfo(filePath)));
+            using var folderNode = new FolderNode(new BaseFolder(new DirectoryInfo(folderPath)));
             using var searchResult = new SolutionSearchResultNode(
                 explorer,
                 fileNode,
                 "sample.txt",
                 ownsTarget: false);
-            var fileNodeItems = new List<MenuItemMetadata>();
-            var folderNodeItems = new List<MenuItemMetadata>();
-            fileNode.CollectMenuItems(fileNodeItems);
-            folderNode.CollectMenuItems(folderNodeItems);
 
             List<MenuItemMetadata> fileMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([fileNode]);
@@ -692,14 +678,6 @@ public class SolutionManagerFoundationTests
             List<MenuItemMetadata> multiMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
 
-            Assert.Contains(fileNodeItems, item => item.GuidId == "TestFileMetaAction");
-            Assert.Contains(folderNodeItems, item => item.GuidId == "TestFolderMetaAction");
-            Assert.DoesNotContain(fileNodeItems, item => item.GuidId is
-                "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder");
-            Assert.DoesNotContain(folderNodeItems, item => item.GuidId is
-                "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
-
-            Assert.Contains(fileMenuItems, item => item.GuidId == "TestFileMetaAction");
             Assert.Same(
                 fileNode.AskCopilotExplainFileCommand,
                 Assert.Single(fileMenuItems, item => item.GuidId == "AskCopilotExplainFile").Command);
@@ -710,7 +688,6 @@ public class SolutionManagerFoundationTests
                 fileNode.OpenContainingFolderCommand,
                 Assert.Single(fileMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
 
-            Assert.Contains(folderMenuItems, item => item.GuidId == "TestFolderMetaAction");
             Assert.Same(
                 folderNode.AskCopilotSummarizeFolderCommand,
                 Assert.Single(folderMenuItems, item => item.GuidId == "AskCopilotSummarizeFolder").Command);
@@ -724,7 +701,6 @@ public class SolutionManagerFoundationTests
                 folderNode.OpenInCmdCommand,
                 Assert.Single(folderMenuItems, item => item.GuidId == "OpenInCmdCommad").Command);
 
-            Assert.Contains(searchMenuItems, item => item.GuidId == "TestFileMetaAction");
             Assert.Same(
                 fileNode.OpenContainingFolderCommand,
                 Assert.Single(searchMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
@@ -739,29 +715,56 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void SolutionContextMenuContributionsOverrideLegacyNodeItemsById()
+    public void ScriptFileMenuUsesRoutedCommandContribution()
     {
-        string suffix = Guid.NewGuid().ToString("N");
-        string menuId = $"TestOverride.{suffix}";
-        var contribution = new TestSolutionMenuContribution(
-            $"tests.override.{suffix}",
-            menuId,
-            SolutionMenuSelectionPolicy.SingleOnly);
-        SolutionMenuContributionRegistry.Register(contribution, priority: 1000);
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "sample.py");
+        File.WriteAllText(filePath, "print('ok')");
 
         try
         {
-            var node = new LegacyMenuNode(menuId);
+            var node = new FileNode(new PythonFile(new FileInfo(filePath)));
 
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([node]);
 
-            MenuItemMetadata item = Assert.Single(menuItems, item => item.GuidId == menuId);
-            Assert.Equal(contribution.Id, item.Header?.ToString());
+            Assert.Same(
+                SolutionResourceCommands.RunScript,
+                Assert.Single(menuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RunScriptId).Command);
         }
         finally
         {
-            SolutionMenuContributionRegistry.Unregister(contribution.Id);
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CVRawFileMenuIsContributedByEngineModule()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "sample.cvraw");
+        File.WriteAllBytes(filePath, []);
+
+        try
+        {
+            var fileMeta = new ColorVision.Engine.Impl.CVFile.FileCVCIE(new FileInfo(filePath));
+            var node = new FileNode(fileMeta);
+
+            List<MenuItemMetadata> menuItems =
+                SolutionContextMenuService.CreateMenuMetadata([node]);
+
+            Assert.Single(menuItems, item => item.GuidId == "Export");
+            Assert.Same(
+                fileMeta.ExportCommand,
+                Assert.Single(menuItems, item => item.GuidId == "ExportAs").Command);
+            Assert.Same(
+                fileMeta.ExportBMPCommand,
+                Assert.Single(menuItems, item => item.GuidId == "ExportBmp").Command);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
         }
     }
 
@@ -815,19 +818,9 @@ public class SolutionManagerFoundationTests
             ProjectNode projectNode = Assert.Single(
                 explorer.VisualChildren.OfType<ProjectNode>(),
                 node => string.Equals(node.Project.Name, "App", StringComparison.Ordinal));
-            var nodeItems = new List<MenuItemMetadata>();
-            projectNode.CollectMenuItems(nodeItems);
-
             List<MenuItemMetadata> initialItems =
                 SolutionContextMenuService.CreateMenuMetadata([projectNode]);
 
-            Assert.DoesNotContain(nodeItems, item => item.GuidId is
-                SolutionProjectCommands.EditProjectFileId
-                or SolutionProjectCommands.ShowAllFilesId
-                or SolutionProjectCommands.SetStartupProjectId
-                or "ProjectCapability.run"
-                or "ProjectCapability.publish"
-                or "MoveProjectToSolutionFolder");
             Assert.Single(initialItems, item =>
                 item.GuidId == SolutionProjectCommands.EditProjectFileId);
             Assert.False(Assert.Single(initialItems, item =>
@@ -876,20 +869,9 @@ public class SolutionManagerFoundationTests
         try
         {
             using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
-            var nodeItems = new List<MenuItemMetadata>();
-            explorer.CollectMenuItems(nodeItems);
-
             List<MenuItemMetadata> initialItems =
                 SolutionContextMenuService.CreateMenuMetadata([explorer]);
 
-            Assert.DoesNotContain(nodeItems, item => item.GuidId is
-                SolutionProjectCommands.BuildSolutionId
-                or SolutionProjectCommands.RunStartupProjectId
-                or SolutionProjectCommands.DebugStartupProjectId
-                or SolutionProjectCommands.ActiveConfigurationId
-                or SolutionProjectCommands.ConfigurationManagerId
-                or "Edit"
-                or "MenuOpenFileInExplorer");
             Assert.Same(
                 SolutionProjectCommands.BuildSolution,
                 Assert.Single(initialItems, item =>
@@ -1120,8 +1102,6 @@ public class SolutionManagerFoundationTests
                 folderNode,
                 "duplicate/Folder",
                 ownsTarget: false);
-            var searchNodeItems = new List<MenuItemMetadata>();
-            searchResult.CollectMenuItems(searchNodeItems);
             List<MenuItemMetadata> fileMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([fileNode]);
             List<MenuItemMetadata> folderMenuItems =
@@ -1199,8 +1179,6 @@ public class SolutionManagerFoundationTests
                 ApplicationCommands.Properties,
                 Assert.Single(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
             Assert.DoesNotContain(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Rename);
-            Assert.DoesNotContain(searchNodeItems, item =>
-                item.GuidId == SolutionNavigationCommands.RevealInTreeId);
             Assert.Same(
                 SolutionNavigationCommands.RevealInTree,
                 Assert.Single(searchMenuItems, item =>
@@ -2498,8 +2476,6 @@ public class SolutionManagerFoundationTests
                 explorer.VisualChildren.OfType<UnavailableProjectNode>());
             Assert.Equal(projectPath, unavailableNode.FullPath, ignoreCase: true);
             Assert.Contains("项目引用", unavailableNode.BuildDiagnosticMessage(), StringComparison.Ordinal);
-            var nodeMenuItems = new List<MenuItemMetadata>();
-            unavailableNode.CollectMenuItems(nodeMenuItems);
             List<MenuItemMetadata> unavailableMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([unavailableNode]);
             using var searchResult = new SolutionSearchResultNode(
@@ -2516,8 +2492,6 @@ public class SolutionManagerFoundationTests
             List<MenuItemMetadata> multiMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([unavailableNode, secondUnavailableNode]);
 
-            Assert.DoesNotContain(nodeMenuItems, item => item.GuidId is
-                "ShowUnavailableProjectError" or "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
             Assert.Same(
                 unavailableNode.ShowLoadErrorCommand,
@@ -3486,9 +3460,6 @@ public class SolutionManagerFoundationTests
             Assert.Contains(moveOptions, option => option.Id == null);
             Assert.Contains(moveOptions, option => option.Id == toolsFolderId);
             Assert.DoesNotContain(moveOptions, option => option.Id == appsFolderId || option.Id == testsFolderId);
-            var nodeItems = new List<MenuItemMetadata>();
-            appsNode.CollectMenuItems(nodeItems);
-            Assert.DoesNotContain(nodeItems, item => item.GuidId == "MoveSolutionFolder");
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([appsNode]);
             Assert.Contains(menuItems, item => item.GuidId == $"MoveSolutionFolder.{toolsFolderId}");
@@ -3626,9 +3597,6 @@ public class SolutionManagerFoundationTests
                 node => node.FolderId == docsFolderId);
             SolutionItemNode solutionItemNode = Assert.Single(docsNode.VisualChildren.OfType<SolutionItemNode>());
             Assert.Equal(notesPath, solutionItemNode.FullPath);
-            var nodeItems = new List<MenuItemMetadata>();
-            solutionItemNode.CollectMenuItems(nodeItems);
-            Assert.DoesNotContain(nodeItems, item => item.GuidId == "MoveSolutionItem");
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]);
             Assert.Contains(menuItems, item => item.GuidId == "MoveSolutionItem.Root");
@@ -5688,26 +5656,6 @@ public class SolutionManagerFoundationTests
         }
     }
 
-    private sealed class LegacyMenuNode : SolutionNode
-    {
-        private readonly string _menuId;
-
-        public LegacyMenuNode(string menuId)
-        {
-            _menuId = menuId;
-        }
-
-        public override void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = _menuId,
-                Header = "legacy",
-            });
-        }
-    }
-
     private sealed class TestSolutionMenuContribution : ISolutionMenuContribution
     {
         private readonly string _menuId;
@@ -5736,55 +5684,6 @@ public class SolutionManagerFoundationTests
                     GuidId = _menuId,
                     Order = 500,
                     Header = Id,
-                },
-            ];
-        }
-    }
-
-    private sealed class TestFileMenuMeta : FileMetaBase
-    {
-        private readonly string _menuId;
-
-        public TestFileMenuMeta(FileInfo fileInfo, string menuId)
-        {
-            FileInfo = fileInfo;
-            Name = fileInfo.Name;
-            _menuId = menuId;
-        }
-
-        public override IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            return
-            [
-                new MenuItemMetadata
-                {
-                    GuidId = _menuId,
-                    Order = 40,
-                    Header = _menuId,
-                },
-            ];
-        }
-    }
-
-    private sealed class TestFolderMenuMeta : FolderMetaBase
-    {
-        private readonly string _menuId;
-
-        public TestFolderMenuMeta(DirectoryInfo directoryInfo, string menuId)
-        {
-            DirectoryInfo = directoryInfo;
-            _menuId = menuId;
-        }
-
-        public override IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            return
-            [
-                new MenuItemMetadata
-                {
-                    GuidId = _menuId,
-                    Order = 40,
-                    Header = _menuId,
                 },
             ];
         }

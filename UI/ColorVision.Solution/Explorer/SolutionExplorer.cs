@@ -1406,7 +1406,6 @@ namespace ColorVision.Solution.Explorer
 
             Config.ActiveConfiguration = normalizedName;
             SaveConfig();
-            InvalidateMenuItems();
             foreach (ProjectNode projectNode in VisualChildren.GetAllVisualChildren().OfType<ProjectNode>())
                 projectNode.RefreshConfigurationState();
             EnsureStartupProject();
@@ -3212,7 +3211,6 @@ namespace ColorVision.Solution.Explorer
                 {
                     ReconcileExplicitProjects(reloadLoadedProjects: true);
                     EnsureStartupProject();
-                    InvalidateMenuItems();
                     RefreshConfigurationCommandSurfaces();
                 }
                 return new ProjectRefreshResult(true);
@@ -3289,7 +3287,6 @@ namespace ColorVision.Solution.Explorer
             foreach (ProjectNode projectNode in VisualChildren.GetAllVisualChildren().OfType<ProjectNode>())
                 projectNode.RefreshConfigurationState();
             UpdateStartupProjectState();
-            InvalidateMenuItems();
             RefreshConfigurationCommandSurfaces();
         }
 
@@ -3383,7 +3380,6 @@ namespace ColorVision.Solution.Explorer
             }
 
             EnsureStartupProject();
-            InvalidateMenuItems();
             RefreshConfigurationCommandSurfaces();
 
             if (Cache != null)

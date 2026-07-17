@@ -9,7 +9,6 @@ using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
 using System.IO;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Solution.Explorer
@@ -189,46 +188,11 @@ namespace ColorVision.Solution.Explorer
         public virtual string? ClipboardResourcePath => null;
         public bool IsExcludedFromProject { get; private set; }
 
-        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
-
-        private bool _menuInitialized;
-
-        public SolutionNode()
-        {
-            MenuItemMetadatas = new List<MenuItemMetadata>();
-        }
-
         public virtual void Initialize()
         {
             OpenCommand = new RelayCommand(_ => Open(), _ => CanOpen);
             DeleteCommand = new RelayCommand(s => Delete());
             CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));
-        }
-
-        public virtual void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-        }
-
-        /// <summary>
-        /// Collect menu items for the shared context menu service.
-        /// Called on-demand when the shared ContextMenu opens on this node.
-        /// This avoids allocating per-node menus until needed.
-        /// </summary>
-        public void CollectMenuItems(List<MenuItemMetadata> target)
-        {
-            if (!_menuInitialized)
-            {
-                InitMenuItem();
-                _menuInitialized = true;
-            }
-            target.AddRange(MenuItemMetadatas);
-        }
-
-        internal void InvalidateMenuItems()
-        {
-            _menuInitialized = false;
-            MenuItemMetadatas.Clear();
         }
 
         public virtual void ShowProperty() { }

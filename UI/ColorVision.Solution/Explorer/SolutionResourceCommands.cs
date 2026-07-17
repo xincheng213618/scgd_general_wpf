@@ -11,6 +11,7 @@ namespace ColorVision.Solution.Explorer
     {
         public const string OpenId = "Open";
         public const string OpenWithId = "OpenWith";
+        public const string RunScriptId = "RunScript";
         public const string ImportedSourceMenuId = "ImportedSolutionSource";
         public const string EditImportedSourceId = "EditImportedSolutionSource";
         public const string RevealImportedSourceId = "RevealImportedSolutionSource";
@@ -25,6 +26,11 @@ namespace ColorVision.Solution.Explorer
         public static RoutedUICommand OpenWith { get; } = new(
             "打开方式",
             nameof(OpenWith),
+            typeof(SolutionResourceCommands));
+
+        public static RoutedUICommand RunScript { get; } = new(
+            "运行脚本",
+            nameof(RunScript),
             typeof(SolutionResourceCommands));
     }
 

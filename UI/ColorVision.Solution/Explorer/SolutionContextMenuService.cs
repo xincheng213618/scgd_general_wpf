@@ -55,63 +55,9 @@ namespace ColorVision.Solution.Explorer
             ArgumentNullException.ThrowIfNull(nodes);
             if (nodes.Count == 0)
                 return [];
-
-            List<MenuItemMetadata> metadatas = nodes.Count == 1
-                ? BuildSingleNodeMenu(nodes[0])
-                : BuildMultiNodeMenu(nodes);
-            IReadOnlyList<MenuItemMetadata> contributionItems =
-                SolutionMenuContributionRegistry.GetMenuItems(new SolutionMenuContext(nodes));
-            if (contributionItems.Count > 0)
-            {
-                var contributionIds = contributionItems
-                    .Select(item => item.GuidId)
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                metadatas.RemoveAll(item => contributionIds.Contains(item.GuidId));
-                metadatas.AddRange(contributionItems);
-            }
-            return metadatas;
-        }
-
-        private static List<MenuItemMetadata> BuildSingleNodeMenu(SolutionNode node)
-        {
-            var metadatas = new List<MenuItemMetadata>();
-            node.CollectMenuItems(metadatas);
-            return metadatas;
-        }
-
-        private static List<MenuItemMetadata> BuildMultiNodeMenu(IReadOnlyList<SolutionNode> nodes)
-        {
-            // For multi-select, only show operations that are valid for all selected nodes
-            // Collect all metadata per node, keyed by GuidId
-            var allNodeMetadatas = new List<List<MenuItemMetadata>>();
-            foreach (var node in nodes)
-            {
-                var metas = new List<MenuItemMetadata>();
-                node.CollectMenuItems(metas);
-                allNodeMetadatas.Add(metas);
-            }
-
-            // Intersect GuidIds: keep only items present in ALL nodes
-            var commonGuids = new HashSet<string>(allNodeMetadatas[0].Select(m => m.GuidId));
-            for (int i = 1; i < allNodeMetadatas.Count; i++)
-            {
-                var nodeGuids = new HashSet<string>(allNodeMetadatas[i].Select(m => m.GuidId));
-                commonGuids.IntersectWith(nodeGuids);
-            }
-
-            // Multi-selection exposes only commands with explicit batch semantics.
-            // Matching GuidIds alone is not enough: Open/Properties/Add may share
-            // ids while still being single-target commands.
-            var commonMetadatas = new List<MenuItemMetadata>();
-            foreach (var meta in allNodeMetadatas[0].Where(m => commonGuids.Contains(m.GuidId)
-                && SolutionCommandIds.SupportsMultipleSelection(m.GuidId)
-                && m.Command is RoutedCommand))
-            {
-                commonMetadatas.Add(meta);
-            }
-
-            return commonMetadatas;
+            return SolutionMenuContributionRegistry
+                .GetMenuItems(new SolutionMenuContext(nodes))
+                .ToList();
         }
 
         private void BuildMenuFromMetadata(List<MenuItemMetadata> metadatas)

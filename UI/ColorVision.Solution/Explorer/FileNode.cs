@@ -48,12 +48,6 @@ namespace ColorVision.Solution.Explorer
             AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);
         }
 
-        public override void InitMenuItem()
-        {
-            base.InitMenuItem();
-            MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
-        }
-
         private void AskCopilotAboutFile(CopilotPromptMode mode, bool diagnose)
         {
             if (!FileInfo.Exists)

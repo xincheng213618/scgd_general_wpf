@@ -1,5 +1,7 @@
 ﻿using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Editor;
+using ColorVision.Solution.FileMeta;
+using ColorVision.Solution.Terminal;
 using ColorVision.UI;
 using ColorVision.Solution.Workspace;
 using System.Collections.Specialized;
@@ -23,6 +25,7 @@ namespace ColorVision.Solution
             RegisterCommand(ApplicationCommands.Delete, ExecuteDelete, CanExecuteDelete);
             RegisterCommand(SolutionResourceCommands.Open, ExecuteOpen, CanExecuteOpen);
             RegisterCommand(SolutionResourceCommands.OpenWith, ExecuteOpenWith, CanExecuteOpenWith);
+            RegisterCommand(SolutionResourceCommands.RunScript, ExecuteRunScript, CanExecuteRunScript);
             RegisterCommand(ApplicationCommands.Properties, ExecuteProperties, CanExecuteProperties);
             RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
             RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
@@ -135,6 +138,23 @@ namespace ColorVision.Solution
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+        }
+
+        private void CanExecuteRunScript(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is
+                [FileNode { FileMeta: IScriptFileMeta, FileInfo.Exists: true }];
+            e.Handled = true;
+        }
+
+        private void ExecuteRunScript(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is
+                [FileNode { FileMeta: IScriptFileMeta, FileInfo.Exists: true } fileNode])
+            {
+                TerminalService.GetInstance().RunScript(fileNode.FileInfo.FullName);
+            }
+            e.Handled = true;
         }
 
         private void CanExecuteSelectAll(object sender, CanExecuteRoutedEventArgs e)

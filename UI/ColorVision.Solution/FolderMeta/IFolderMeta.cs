@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows.Media;
 
@@ -40,7 +39,6 @@ namespace ColorVision.Solution.FolderMeta
     public interface IFolderMeta
     {
         public DirectoryInfo DirectoryInfo { get; set; }
-        IEnumerable<MenuItemMetadata> GetMenuItems();
         ImageSource? Icon { get; set; }
     }
 
@@ -48,11 +46,6 @@ namespace ColorVision.Solution.FolderMeta
     {
         public virtual DirectoryInfo DirectoryInfo { get; set; }
         public virtual ImageSource? Icon { get; set; }
-
-        public virtual IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            return new List<MenuItemMetadata>();
-        }
 
     }
 

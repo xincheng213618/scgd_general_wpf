@@ -256,12 +256,6 @@ namespace ColorVision.Solution.Explorer
             IsExpanded = !IsExpanded;
         }
 
-        public override void InitMenuItem()
-        {
-            base.InitMenuItem();
-            MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
-        }
-
         private void AskCopilotAboutFolder()
         {
             if (!DirectoryInfo.Exists)

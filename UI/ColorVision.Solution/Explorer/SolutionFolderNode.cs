@@ -86,7 +86,6 @@ namespace ColorVision.Solution.Explorer
             Definition = definition;
             Name1 = definition.Name;
             NotifyPropertyChanged(nameof(Name));
-            InvalidateMenuItems();
         }
 
         internal override bool TryDelete(bool showConfirmation)

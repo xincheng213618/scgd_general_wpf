@@ -51,7 +51,6 @@ namespace ColorVision.Solution.Explorer
             CanCopy = FileInfo.Exists;
             NotifyPropertyChanged(nameof(Name));
             NotifyPropertyChanged(nameof(FileInfo));
-            InvalidateMenuItems();
         }
 
         internal override bool TryDelete(bool showConfirmation)

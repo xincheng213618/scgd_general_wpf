@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.NativeMethods;
-using ColorVision.UI.Menus;
 using System.IO;
 
 namespace ColorVision.Solution.FileMeta
@@ -18,22 +17,6 @@ namespace ColorVision.Solution.FileMeta
             FileInfo = fileInfo;
             Name = FileInfo.Name;
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
-        }
-
-        public override IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            var menuItems = base.GetMenuItems().ToList();
-            
-            // Add image-specific menu items
-            menuItems.Add(new MenuItemMetadata 
-            { 
-                GuidId = "ViewImage", 
-                Order = 1, 
-                Header = "查看图像", 
-                Icon = MenuItemIcon.TryFindResource("DIImage") 
-            });
-            
-            return menuItems;
         }
     }
 }
