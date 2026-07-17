@@ -3755,6 +3755,114 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ImportedSolutionRefresh_ReimportsSourceAndPreservesWorkspacePreferences()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string appDirectory = Path.Combine(directoryPath, "src", "App");
+        string libraryDirectory = Path.Combine(directoryPath, "src", "Library");
+        string appProjectPath = Path.Combine(appDirectory, "App.csproj");
+        string libraryProjectPath = Path.Combine(libraryDirectory, "Library.csproj");
+        string solutionPath = Path.Combine(directoryPath, "Example.slnx");
+        string initialContents = """
+            <Solution>
+              <Folder Name="/src/">
+                <Project Path="src\App\App.csproj" />
+              </Folder>
+            </Solution>
+            """;
+        string updatedContents = """
+            <Solution>
+              <Folder Name="/docs/">
+                <File Path="README.md" />
+              </Folder>
+              <Folder Name="/src/">
+                <Project Path="src\App\App.csproj" />
+                <Project Path="src\Library\Library.csproj" />
+              </Folder>
+            </Solution>
+            """;
+        string? importedWorkspacePath = null;
+        try
+        {
+            Directory.CreateDirectory(appDirectory);
+            Directory.CreateDirectory(libraryDirectory);
+            File.WriteAllText(appProjectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(libraryProjectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(Path.Combine(directoryPath, "README.md"), "readme");
+            File.WriteAllText(solutionPath, initialContents);
+
+            Assert.True(SolutionManager.TryCreateImportedSolution(
+                new FileInfo(solutionPath),
+                out importedWorkspacePath,
+                out _));
+            SolutionConfig config = SolutionConfigStore.Load(importedWorkspacePath).Config;
+            string appReference = Assert.Single(config.Projects);
+            config.StartupProject = appReference;
+            config.ActiveConfiguration = "Release";
+            SolutionConfigStore.Save(importedWorkspacePath, config);
+
+            using var explorer = CreateSolutionExplorer(directoryPath, importedWorkspacePath);
+            Assert.True(explorer.IsImportedSolution);
+            Assert.True(explorer.IsImportedSolutionSourcePath(solutionPath));
+            Assert.False(explorer.IsImportedSolutionSourcePath(appProjectPath));
+
+            File.WriteAllText(solutionPath, "<Solution><Folder>");
+            Assert.False(explorer.TryRefreshImportedSolutionState(out string malformedError));
+            Assert.Contains(VisualStudioSolutionFileProvider.ProviderId, malformedError, StringComparison.OrdinalIgnoreCase);
+            Assert.Single(explorer.Config.Projects);
+
+            File.WriteAllText(solutionPath, updatedContents);
+            Assert.True(explorer.TryRefreshImportedSolutionState(out string refreshError), refreshError);
+
+            Assert.Equal(2, explorer.Config.Projects.Count);
+            Assert.Equal(appReference, explorer.Config.StartupProject, ignoreCase: true);
+            Assert.Equal("Release", explorer.Config.ActiveConfiguration);
+            Assert.Equal(2, explorer.VisualChildren.GetAllVisualChildren().OfType<ProjectNode>().Count());
+            Assert.Contains(explorer.Config.SolutionFolders, folder => folder.Name == "docs");
+            Assert.Single(explorer.Config.SolutionItems);
+            Assert.Equal(updatedContents, File.ReadAllText(solutionPath));
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(importedWorkspacePath))
+            {
+                File.Delete(importedWorkspacePath);
+                File.Delete($"{importedWorkspacePath}.bak");
+                File.Delete($"{importedWorkspacePath}.cache.db");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MalformedVisualStudioSolution_ProvidesActionableOpenError()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(directoryPath, "Broken.slnx");
+        try
+        {
+            File.WriteAllText(solutionPath, "<Solution><Folder>");
+
+            Assert.False(SolutionManager.TryResolveOpenTarget(
+                solutionPath,
+                out string workspacePath,
+                out string historyPath,
+                out string displayName,
+                out string errorMessage));
+
+            Assert.Empty(workspacePath);
+            Assert.Empty(historyPath);
+            Assert.Empty(displayName);
+            Assert.Contains(VisualStudioSolutionFileProvider.ProviderId, errorMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("加载失败", errorMessage, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionConfiguration_MapsAndListsProjectConfigurations()
     {
         string containerPath = CreateTemporaryDirectory();

@@ -12,6 +12,9 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     internal static class ImportedSolutionWorkspaceService
     {
+        internal const string ProviderExtensionKey = "ImportedSolutionProvider";
+        internal const string SourceExtensionKey = "ImportedSolutionSource";
+
         public static bool TryCreate(
             FileInfo sourceFile,
             out string solutionPath,
@@ -111,8 +114,8 @@ namespace ColorVision.Solution.Explorer
                         ?? "Debug";
                 }
                 config.ExtensionData ??= new Dictionary<string, JToken>();
-                config.ExtensionData["ImportedSolutionProvider"] = new JValue(definition.ProviderId);
-                config.ExtensionData["ImportedSolutionSource"] = new JValue(definition.SourceFile.FullName);
+                config.ExtensionData[ProviderExtensionKey] = new JValue(definition.ProviderId);
+                config.ExtensionData[SourceExtensionKey] = new JValue(definition.SourceFile.FullName);
                 SolutionConfigStore.Save(solutionPath, config);
 
                 displayName = definition.Name;
@@ -128,6 +131,87 @@ namespace ColorVision.Solution.Explorer
                 errorMessage = $"创建导入解决方案工作区失败：{ex.Message}";
                 solutionPath = string.Empty;
                 displayName = string.Empty;
+                return false;
+            }
+        }
+
+        public static bool IsImportedSolution(SolutionConfig config)
+        {
+            return TryGetSourceFile(config, out _);
+        }
+
+        public static bool TryGetSourceFile(SolutionConfig config, out FileInfo? sourceFile)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            sourceFile = null;
+            bool hasProvider = config.ExtensionData != null
+                && config.ExtensionData.TryGetValue(ProviderExtensionKey, out JToken? providerToken)
+                && !string.IsNullOrWhiteSpace(providerToken.Value<string>());
+            string? sourcePath = hasProvider
+                && config.ExtensionData!.TryGetValue(SourceExtensionKey, out JToken? sourceToken)
+                    ? sourceToken.Value<string>()
+                    : null;
+            if (string.IsNullOrWhiteSpace(sourcePath))
+                return false;
+
+            try
+            {
+                sourceFile = new FileInfo(Path.GetFullPath(sourcePath));
+                return true;
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
+        }
+
+        public static bool TryRefresh(
+            FileInfo workspaceFile,
+            SolutionConfig currentConfig,
+            out SolutionConfig? refreshedConfig,
+            out string errorMessage)
+        {
+            ArgumentNullException.ThrowIfNull(workspaceFile);
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            refreshedConfig = null;
+            errorMessage = string.Empty;
+            if (!TryGetSourceFile(currentConfig, out FileInfo? sourceFile) || sourceFile == null)
+            {
+                errorMessage = "当前工作区不是外部解决方案导入工作区。";
+                return false;
+            }
+
+            sourceFile.Refresh();
+            if (!sourceFile.Exists)
+            {
+                errorMessage = $"外部解决方案源文件不存在：{sourceFile.FullName}";
+                return false;
+            }
+
+            if (!TryCreate(sourceFile, out string refreshedWorkspacePath, out _, out errorMessage))
+                return false;
+            if (!string.Equals(
+                Path.GetFullPath(workspaceFile.FullName),
+                Path.GetFullPath(refreshedWorkspacePath),
+                StringComparison.OrdinalIgnoreCase))
+            {
+                errorMessage = $"外部解决方案刷新到了意外的工作区：{refreshedWorkspacePath}";
+                return false;
+            }
+
+            try
+            {
+                refreshedConfig = SolutionConfigStore.Load(workspaceFile.FullName).Config;
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or JsonException
+                or InvalidDataException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                errorMessage = $"重新加载导入工作区失败：{ex.Message}";
                 return false;
             }
         }

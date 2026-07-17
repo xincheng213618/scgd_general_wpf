@@ -250,17 +250,34 @@ namespace ColorVision.Solution
 
         public bool OpenFolder(string folderPath)
         {
-            return Directory.Exists(folderPath) && OpenSolution(folderPath);
+            return TryOpenFolder(folderPath, out _);
         }
 
-        private static bool TryResolveOpenTarget(string path, out string solutionPath, out string historyPath, out string displayName)
+        public bool TryOpenFolder(string folderPath, out string errorMessage)
+        {
+            if (!Directory.Exists(folderPath))
+            {
+                errorMessage = $"文件夹不存在：{folderPath}";
+                return false;
+            }
+            return TryOpenSolution(folderPath, out errorMessage);
+        }
+
+        internal static bool TryResolveOpenTarget(
+            string path,
+            out string solutionPath,
+            out string historyPath,
+            out string displayName,
+            out string errorMessage)
         {
             solutionPath = string.Empty;
             historyPath = string.Empty;
             displayName = string.Empty;
+            errorMessage = string.Empty;
 
             if (string.IsNullOrWhiteSpace(path))
             {
+                errorMessage = "要打开的资源路径为空。";
                 return false;
             }
 
@@ -272,7 +289,10 @@ namespace ColorVision.Solution
                 solutionPath = ResolveDirectorySolutionPath(directoryInfo);
                 historyPath = directoryInfo.FullName;
                 displayName = directoryInfo.Name;
-                return File.Exists(solutionPath);
+                if (File.Exists(solutionPath))
+                    return true;
+                errorMessage = $"无法为文件夹创建工作区：{directoryInfo.FullName}";
+                return false;
             }
 
             if (File.Exists(normalizedPath) && IsNativeSolutionFilePath(normalizedPath))
@@ -286,23 +306,36 @@ namespace ColorVision.Solution
 
             if (File.Exists(normalizedPath)
                 && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath)
-                && TryCreateImportedSolution(
-                    new FileInfo(normalizedPath),
-                    out solutionPath,
-                    out displayName))
+                && TryCreateImportedSolution(new FileInfo(normalizedPath), out solutionPath, out displayName, out errorMessage))
             {
                 historyPath = Path.GetFullPath(normalizedPath);
                 return true;
             }
 
             if (File.Exists(normalizedPath)
+                && SolutionFileProviderRegistry.IsSupportedSolutionFilePath(normalizedPath))
+            {
+                return false;
+            }
+
+            if (File.Exists(normalizedPath)
                 && IsProjectFilePath(normalizedPath)
-                && TryCreateImplicitProjectSolution(new FileInfo(normalizedPath), out solutionPath, out displayName))
+                && TryCreateImplicitProjectSolution(
+                    new FileInfo(normalizedPath),
+                    out solutionPath,
+                    out displayName,
+                    out errorMessage))
             {
                 historyPath = Path.GetFullPath(normalizedPath);
                 return true;
             }
 
+            if (File.Exists(normalizedPath) && IsProjectFilePath(normalizedPath))
+                return false;
+
+            errorMessage = File.Exists(normalizedPath)
+                ? $"不支持打开此文件：{normalizedPath}"
+                : $"要打开的资源不存在：{normalizedPath}";
             return false;
         }
 
@@ -311,10 +344,30 @@ namespace ColorVision.Solution
             out string solutionPath,
             out string displayName)
         {
+            return TryCreateImplicitProjectSolution(
+                projectFile,
+                out solutionPath,
+                out displayName,
+                out _);
+        }
+
+        internal static bool TryCreateImplicitProjectSolution(
+            FileInfo projectFile,
+            out string solutionPath,
+            out string displayName,
+            out string errorMessage)
+        {
             solutionPath = string.Empty;
             displayName = string.Empty;
-            if (!ProjectProviderRegistry.TryLoadProject(projectFile, out ProjectDefinition? project) || project == null)
+            errorMessage = string.Empty;
+            if (!ProjectProviderRegistry.TryLoadProject(
+                projectFile,
+                out ProjectDefinition? project,
+                out errorMessage)
+                || project == null)
+            {
                 return false;
+            }
 
             try
             {
@@ -352,6 +405,7 @@ namespace ColorVision.Solution
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
                 log.Warn($"创建隐式解决方案失败: {projectFile.FullName}, {ex.Message}");
+                errorMessage = $"创建项目工作区失败：{ex.Message}";
                 solutionPath = string.Empty;
                 displayName = string.Empty;
                 return false;
@@ -363,11 +417,20 @@ namespace ColorVision.Solution
             out string solutionPath,
             out string displayName)
         {
+            return TryCreateImportedSolution(sourceFile, out solutionPath, out displayName, out _);
+        }
+
+        internal static bool TryCreateImportedSolution(
+            FileInfo sourceFile,
+            out string solutionPath,
+            out string displayName,
+            out string errorMessage)
+        {
             if (ImportedSolutionWorkspaceService.TryCreate(
                 sourceFile,
                 out solutionPath,
                 out displayName,
-                out string errorMessage))
+                out errorMessage))
             {
                 return true;
             }
@@ -386,19 +449,32 @@ namespace ColorVision.Solution
 
             Window? owner = WindowHelpers.GetActiveWindow();
             bool? result = owner is null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
-            return result == true && Editor.ResourceOpenService.Instance.TryOpen(dialog.FolderName);
+            return result == true
+                && Editor.ResourceOpenService.Instance.TryOpenWithFeedback(dialog.FolderName, owner);
         }
 
         public bool OpenSolution(string FullPath)
         {
-            if (!TryResolveOpenTarget(FullPath, out string solutionPath, out string historyPath, out string displayName))
+            return TryOpenSolution(FullPath, out _);
+        }
+
+        public bool TryOpenSolution(string fullPath, out string errorMessage)
+        {
+            if (!TryResolveOpenTarget(
+                fullPath,
+                out string solutionPath,
+                out string historyPath,
+                out string displayName,
+                out errorMessage))
             {
-                string normalizedPath = NormalizeRecentPath(FullPath);
-                if (!string.IsNullOrWhiteSpace(normalizedPath))
+                string normalizedPath = NormalizeRecentPath(fullPath);
+                if (!string.IsNullOrWhiteSpace(normalizedPath)
+                    && !IsSupportedOpenPath(normalizedPath))
                 {
                     SolutionHistory.RemoveFile(normalizedPath);
+                    SolutionHistory.RemoveFile(fullPath);
                 }
-                SolutionHistory.RemoveFile(FullPath);
+                log.Warn($"无法解析要打开的解决方案或工作区: {fullPath}, {errorMessage}");
                 return false;
             }
 
@@ -424,12 +500,7 @@ namespace ColorVision.Solution
                 or NotSupportedException)
             {
                 log.Warn($"打开解决方案失败: {solutionPath}", ex);
-                MessageBox.Show(
-                    Application.Current?.GetActiveWindow(),
-                    $"无法打开解决方案。\n\n{ex.Message}",
-                    "无法打开解决方案",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                errorMessage = $"无法打开解决方案：{ex.Message}";
                 return false;
             }
 
@@ -439,29 +510,31 @@ namespace ColorVision.Solution
             SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
             SolutionExplorers.Add(candidateExplorer);
             SolutionHistory.InsertFile(historyPath);
-            if (!string.Equals(FullPath, historyPath, StringComparison.OrdinalIgnoreCase))
-                SolutionHistory.RemoveFile(FullPath);
+            if (!string.Equals(fullPath, historyPath, StringComparison.OrdinalIgnoreCase))
+                SolutionHistory.RemoveFile(fullPath);
             SolutionLoaded?.Invoke(historyPath, EventArgs.Empty);
+            errorMessage = string.Empty;
             return true;
         }
 
         public bool OpenProject(string projectPath)
         {
-            var projectFile = new FileInfo(projectPath);
-            if (!ProjectProviderRegistry.TryLoadProject(
-                projectFile,
-                out _,
-                out string errorMessage))
+            return TryOpenProject(projectPath, out _);
+        }
+
+        public bool TryOpenProject(string projectPath, out string errorMessage)
+        {
+            if (!File.Exists(projectPath))
             {
-                MessageBox.Show(
-                    Application.Current?.GetActiveWindow(),
-                    errorMessage,
-                    "无法打开项目",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                errorMessage = $"项目文件不存在：{projectPath}";
                 return false;
             }
-            return OpenSolution(projectPath);
+            if (!IsProjectFilePath(projectPath))
+            {
+                errorMessage = $"不支持此项目文件：{projectPath}";
+                return false;
+            }
+            return TryOpenSolution(projectPath, out errorMessage);
         }
 
         public bool CreateSolution(string SolutionDirectoryPath)

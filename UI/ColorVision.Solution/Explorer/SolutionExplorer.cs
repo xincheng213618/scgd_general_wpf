@@ -116,6 +116,7 @@ namespace ColorVision.Solution.Explorer
         private FileSystemWatcher _fileSystemWatcher;
         private DispatcherTimer _changedDebounceTimer;
         private DispatcherTimer _projectChangedDebounceTimer;
+        private DispatcherTimer? _importSourceChangedDebounceTimer;
         private readonly EventHandler _processExitHandler;
         private bool _disposed;
         private int _cacheRebuildPending;
@@ -150,6 +151,7 @@ namespace ColorVision.Solution.Explorer
             : SolutionContainerAction.None;
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
+        internal bool IsImportedSolution => ImportedSolutionWorkspaceService.IsImportedSolution(Config);
         public string ActiveConfiguration => Config.ActiveConfiguration;
 
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
@@ -324,6 +326,16 @@ namespace ColorVision.Solution.Explorer
                     _projectChangedDebounceTimer.Stop();
                     ReconcileExplicitProjects(reloadLoadedProjects: true);
                 };
+                if (IsImportedSolution)
+                {
+                    _importSourceChangedDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                    _importSourceChangedDebounceTimer.Tick += (_, _) =>
+                    {
+                        _importSourceChangedDebounceTimer.Stop();
+                        if (!TryRefreshImportedSolutionState(out string errorMessage))
+                            Logger.Warn($"自动刷新外部解决方案失败: {errorMessage}");
+                    };
+                }
 
                 _fileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName)
                 {
@@ -338,17 +350,24 @@ namespace ColorVision.Solution.Explorer
                 _fileSystemWatcher.Created += FileSystemWatcher_Created;
                 _fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
                 _fileSystemWatcher.Renamed += FileSystemWatcher_Renamed;
-                _fileSystemWatcher.Changed += (_, e) =>
-                {
-                    if (SolutionManager.IsProjectFilePath(e.FullPath))
-                        RefreshProjectFileState(e.FullPath);
-                };
+                _fileSystemWatcher.Changed += FileSystemWatcher_Changed;
                 _fileSystemWatcher.Error += FileSystemWatcher_Error;
             }
         }
 
+        private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
+                return;
+            if (SolutionManager.IsProjectFilePath(e.FullPath))
+                RefreshProjectFileState(e.FullPath);
+        }
+
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
+            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
+                return;
+
             // Skip internal solution files (e.g. .cvsln, .cache.db)
             if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
             {
@@ -408,6 +427,9 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
         {
+            if (QueueImportedSolutionRefreshIfSource(e.FullPath))
+                return;
+
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
                 Cache?.Remove(e.FullPath);
@@ -445,6 +467,12 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Renamed(object sender, RenamedEventArgs e)
         {
+            if (QueueImportedSolutionRefreshIfSource(e.FullPath)
+                || QueueImportedSolutionRefreshIfSource(e.OldFullPath))
+            {
+                return;
+            }
+
             bool oldPathIsSolutionItem = IsRegisteredSolutionItemPath(e.OldFullPath);
             if (IsRegisteredSolutionItemPath(e.FullPath))
             {
@@ -509,6 +537,35 @@ namespace ColorVision.Solution.Explorer
         {
             Logger.Warn("解决方案文件监视器发生错误，将重建搜索缓存。", e.GetException());
             QueueCacheRebuild();
+        }
+
+        internal bool IsImportedSolutionSourcePath(string? path)
+        {
+            return !string.IsNullOrWhiteSpace(path)
+                && ImportedSolutionWorkspaceService.TryGetSourceFile(Config, out FileInfo? sourceFile)
+                && sourceFile != null
+                && PathEquals(sourceFile.FullName, path);
+        }
+
+        private bool QueueImportedSolutionRefreshIfSource(string? path)
+        {
+            if (!IsImportedSolutionSourcePath(path) || _importSourceChangedDebounceTimer == null)
+                return false;
+
+            Dispatcher dispatcher = _importSourceChangedDebounceTimer.Dispatcher;
+            void QueueRefresh()
+            {
+                if (_disposed)
+                    return;
+                _importSourceChangedDebounceTimer.Stop();
+                _importSourceChangedDebounceTimer.Start();
+            }
+
+            if (dispatcher.CheckAccess())
+                QueueRefresh();
+            else
+                _ = dispatcher.BeginInvoke(QueueRefresh);
+            return true;
         }
 
         private void QueueDirectoryIndex(string directoryPath, string parentPath)
@@ -2844,6 +2901,32 @@ namespace ColorVision.Solution.Explorer
             SolutionStateReloaded?.Invoke(this, EventArgs.Empty);
         }
 
+        internal bool TryRefreshImportedSolutionState(out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            if (!IsImportedSolution)
+            {
+                errorMessage = "当前解决方案不是外部导入工作区。";
+                return false;
+            }
+
+            _importSourceChangedDebounceTimer?.Stop();
+            if (!ImportedSolutionWorkspaceService.TryRefresh(
+                ConfigFileInfo,
+                Config,
+                out SolutionConfig? refreshedConfig,
+                out errorMessage)
+                || refreshedConfig == null)
+            {
+                return false;
+            }
+
+            Config = refreshedConfig;
+            Config.ActiveConfiguration = NormalizeConfigurationName(Config.ActiveConfiguration);
+            ReloadSolutionState();
+            return true;
+        }
+
         private void RefreshConfigurationCommandSurfaces()
         {
             NotifyPropertyChanged(nameof(ActiveConfiguration));
@@ -2923,6 +3006,12 @@ namespace ColorVision.Solution.Explorer
 
         public override void Refresh()
         {
+            if (IsImportedSolution)
+            {
+                if (!TryRefreshImportedSolutionState(out string errorMessage))
+                    ShowUserError(errorMessage);
+                return;
+            }
             ReloadSolutionState();
         }
 
@@ -3172,6 +3261,7 @@ namespace ColorVision.Solution.Explorer
             _fileSystemWatcher?.Dispose();
             _changedDebounceTimer?.Stop();
             _projectChangedDebounceTimer?.Stop();
+            _importSourceChangedDebounceTimer?.Stop();
             DisposeVisualChildren(this);
             VisualChildren.Clear();
             Cache?.Dispose();

@@ -792,8 +792,10 @@ namespace ColorVision.Solution
             {
                 if (File.Exists(path) && SolutionManager.IsSolutionFilePath(path))
                 {
-                    if (ResourceOpenService.Instance.TryOpen(path))
+                    ResourceOpenResult result = ResourceOpenService.Instance.Open(path);
+                    if (result.Succeeded)
                         return true;
+                    ShowDropError(result.ErrorMessage);
                     continue;
                 }
 
@@ -809,8 +811,10 @@ namespace ColorVision.Solution
 
                 if (File.Exists(path) && SolutionManager.IsProjectFilePath(path))
                 {
-                    if (ResourceOpenService.Instance.TryOpen(path))
+                    ResourceOpenResult result = ResourceOpenService.Instance.Open(path);
+                    if (result.Succeeded)
                         return true;
+                    ShowDropError(result.ErrorMessage);
                     continue;
                 }
 
@@ -821,8 +825,10 @@ namespace ColorVision.Solution
                     new DirectoryInfo(path),
                     SearchOption.TopDirectoryOnly))
                 {
-                    if (ResourceOpenService.Instance.TryOpen(projectFile.FullName))
+                    ResourceOpenResult result = ResourceOpenService.Instance.Open(projectFile.FullName);
+                    if (result.Succeeded)
                         return true;
+                    ShowDropError(result.ErrorMessage);
                 }
             }
 

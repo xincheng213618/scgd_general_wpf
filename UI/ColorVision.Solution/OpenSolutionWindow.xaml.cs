@@ -124,7 +124,7 @@ namespace ColorVision.Solution
             };
             if (openFileDialog.ShowDialog(this) == true)
             {
-                if (ResourceOpenService.Instance.TryOpen(openFileDialog.FileName))
+                if (ResourceOpenService.Instance.TryOpenWithFeedback(openFileDialog.FileName, this))
                     Close();
             }
         }
@@ -213,14 +213,17 @@ namespace ColorVision.Solution
             if (ListView1.SelectedItem is not SolutionInfo solutionInfo)
                 return false;
 
-            if (ResourceOpenService.Instance.TryOpen(solutionInfo.FullName))
+            if (ResourceOpenService.Instance.TryOpenWithFeedback(solutionInfo.FullName, this))
             {
                 Close();
                 return true;
             }
 
-            SolutionInfos.Remove(solutionInfo);
-            ApplyRecentFilter();
+            if (!SolutionManager.IsSupportedOpenPath(solutionInfo.FullName))
+            {
+                SolutionInfos.Remove(solutionInfo);
+                ApplyRecentFilter();
+            }
             return false;
         }
 

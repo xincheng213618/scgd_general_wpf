@@ -1,4 +1,6 @@
 using System.IO;
+using System.Windows;
+using ColorVision.UI;
 
 namespace ColorVision.Solution.Editor
 {
@@ -66,13 +68,13 @@ namespace ColorVision.Solution.Editor
                 switch (kind)
                 {
                     case ResourceOpenKind.Folder:
-                        succeeded = SolutionManager.GetInstance().OpenFolder(path);
+                        succeeded = SolutionManager.GetInstance().TryOpenFolder(path, out errorMessage);
                         break;
                     case ResourceOpenKind.Solution:
-                        succeeded = SolutionManager.GetInstance().OpenSolution(path);
+                        succeeded = SolutionManager.GetInstance().TryOpenSolution(path, out errorMessage);
                         break;
                     case ResourceOpenKind.Project:
-                        succeeded = SolutionManager.GetInstance().OpenProject(path);
+                        succeeded = SolutionManager.GetInstance().TryOpenProject(path, out errorMessage);
                         break;
                     case ResourceOpenKind.File:
                         succeeded = _editorManager.TryOpenFile(path, out errorMessage);
@@ -95,6 +97,33 @@ namespace ColorVision.Solution.Editor
         }
 
         public bool TryOpen(string path) => Open(path).Succeeded;
+
+        public bool TryOpenWithFeedback(string path, Window? owner = null)
+        {
+            ResourceOpenResult result = Open(path);
+            if (result.Succeeded)
+                return true;
+
+            Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
+            if (actualOwner == null)
+            {
+                MessageBox.Show(
+                    result.ErrorMessage,
+                    "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else
+            {
+                MessageBox.Show(
+                    actualOwner,
+                    result.ErrorMessage,
+                    "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            return false;
+        }
 
         public static bool CanOpenTogether(IEnumerable<string> paths)
         {
