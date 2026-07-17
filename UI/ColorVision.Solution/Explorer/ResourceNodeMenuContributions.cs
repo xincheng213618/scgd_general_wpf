@@ -1,5 +1,4 @@
 using ColorVision.UI.Menus;
-using ColorVision.Solution.FileMeta;
 using System.IO;
 
 namespace ColorVision.Solution.Explorer
@@ -12,11 +11,8 @@ namespace ColorVision.Solution.Explorer
 
         public bool IsApplicable(SolutionMenuContext context)
         {
-            return context.PrimaryNode is FileNode
-            {
-                FileMeta: IScriptFileMeta,
-                FileInfo.Exists: true,
-            };
+            return context.PrimaryNode is FileNode fileNode
+                && ScriptFileSupport.CanRun(fileNode.FileInfo);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)

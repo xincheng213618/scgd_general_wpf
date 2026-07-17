@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Solution.Editor;
-using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System.IO;
@@ -24,17 +23,17 @@ namespace ColorVision.Solution.Explorer
             : null;
         public override bool CanReName { get; set; } = true;
 
-        public IFileMeta FileMeta { get; set; }
         public RelayCommand AskCopilotExplainFileCommand { get; set; }
         public RelayCommand AskCopilotDiagnoseFileCommand { get; set; }
 
-        public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
+        public FileInfo FileInfo { get; set; }
 
-        public FileNode(IFileMeta fileMeta) : base()
+        public FileNode(FileInfo fileInfo)
         {
-            FileMeta = fileMeta;
-            Name1 = fileMeta.Name;
-            Icon = fileMeta.Icon;
+            ArgumentNullException.ThrowIfNull(fileInfo);
+            FileInfo = fileInfo;
+            Name1 = fileInfo.Name;
+            Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
             FullPath = FileInfo.FullName;
             CanCopy = true;
             CanCut = true;

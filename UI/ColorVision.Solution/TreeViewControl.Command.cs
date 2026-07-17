@@ -1,6 +1,5 @@
 ﻿using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Editor;
-using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Terminal;
 using ColorVision.UI;
 using ColorVision.Solution.Workspace;
@@ -147,15 +146,15 @@ namespace ColorVision.Solution
 
         private void CanExecuteRunScript(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = _selectionService.CommandNodes is
-                [FileNode { FileMeta: IScriptFileMeta, FileInfo.Exists: true }];
+            e.CanExecute = _selectionService.CommandNodes is [FileNode fileNode]
+                && ScriptFileSupport.CanRun(fileNode.FileInfo);
             e.Handled = true;
         }
 
         private void ExecuteRunScript(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_selectionService.CommandNodes is
-                [FileNode { FileMeta: IScriptFileMeta, FileInfo.Exists: true } fileNode])
+            if (_selectionService.CommandNodes is [FileNode fileNode]
+                && ScriptFileSupport.CanRun(fileNode.FileInfo))
             {
                 TerminalService.GetInstance().RunScript(fileNode.FileInfo.FullName);
             }
