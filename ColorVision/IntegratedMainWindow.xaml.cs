@@ -427,12 +427,11 @@ namespace ColorVision
                 return;
 
             var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-            var firstFile = files?.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(firstFile))
+            if (files is not { Length: > 0 })
                 return;
 
             e.Handled = true;
-            await ResourceOpenService.Instance.TryOpenAsync(firstFile);
+            await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(files, this);
         }
 
         private void InitRightMenuItemPanel()

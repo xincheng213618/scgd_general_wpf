@@ -15,27 +15,15 @@ namespace ColorVision.Solution
         public override async Task Initialize()
         {
             ArgumentParser parser = ArgumentParser.GetInstance();
-            string? inputPath = parser.GetValue("input");
-            string? solutionPath = parser.GetValue("solutionpath");
-            string? deferredInputPath = GetDeferredInputPath(inputPath, solutionPath);
-            if (deferredInputPath == null)
+            ArgumentParseResult parsedArguments = parser.ParseSnapshot(parser.CommandLineArgs);
+            CommandLineResourceOpenRequest request = CommandLineResourceOpenRequest.Create(
+                parsedArguments,
+                parser.GetValue("solutionpath"));
+            if (request.ResourcePaths.Count == 0)
                 return;
 
             await SolutionManager.GetInstance().InitialWorkspaceOpenTask;
-            await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(deferredInputPath);
-        }
-
-        internal static string? GetDeferredInputPath(
-            string? inputPath,
-            string? solutionPath)
-        {
-            if (string.IsNullOrWhiteSpace(inputPath)
-                || string.Equals(inputPath, solutionPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            return inputPath;
+            await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(request.ResourcePaths);
         }
     }
 }

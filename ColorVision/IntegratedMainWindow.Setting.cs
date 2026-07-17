@@ -181,11 +181,10 @@ namespace ColorVision
                         char separator = '\u0001';
                         string[] parsedArgs = receivedString.Split(separator);
                         var parser = ArgumentParser.GetInstance();
-                        IReadOnlyDictionary<string, string> parsedValues = parser.ParseValues(parsedArgs);
-                        parsedValues.TryGetValue("input", out string? inputFile);
-                        parsedValues.TryGetValue("solutionpath", out string? solutionPath);
-                        _ = OpenReceivedResourcesAsync(inputFile, solutionPath);
-                        parsedValues.TryGetValue("project", out string? project);
+                        ArgumentParseResult parsedArguments = parser.ParseSnapshot(parsedArgs);
+                        CommandLineResourceOpenRequest request = CommandLineResourceOpenRequest.Create(parsedArguments);
+                        _ = ResourceOpenService.Instance.TryOpenCommandLineWithFeedbackAsync(request);
+                        parsedArguments.Values.TryGetValue("project", out string? project);
 
                         List<IFeatureLauncher> projects = new();
                         foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -211,19 +210,6 @@ namespace ColorVision
             }
 
             return IntPtr.Zero;
-        }
-
-        private static async Task OpenReceivedResourcesAsync(
-            string? inputPath,
-            string? solutionPath)
-        {
-            if (!string.IsNullOrWhiteSpace(solutionPath))
-                await ResourceOpenService.Instance.TryOpenAsync(solutionPath);
-            if (!string.IsNullOrWhiteSpace(inputPath)
-                && !string.Equals(inputPath, solutionPath, StringComparison.OrdinalIgnoreCase))
-            {
-                await ResourceOpenService.Instance.TryOpenAsync(inputPath);
-            }
         }
 
         private void ApplyMainWindowDwmAttributes()

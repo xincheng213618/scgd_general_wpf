@@ -254,12 +254,10 @@ namespace ColorVision
             {
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
-                var fn = a?.First();
-
-                if (!string.IsNullOrWhiteSpace(fn))
+                if (a is { Length: > 0 })
                 {
                     e.Handled = true;
-                    await ResourceOpenService.Instance.TryOpenAsync(fn);
+                    await ResourceOpenService.Instance.TryOpenManyWithFeedbackAsync(a, this);
                 }
             }
         }

@@ -274,24 +274,15 @@ namespace ColorVision.Solution.Editor
         public ResourceOpenBatchResult OpenMany(IEnumerable<string> paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
-            List<string> resources = paths
-                .Where(path => !string.IsNullOrWhiteSpace(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            List<string> resources = NormalizeBatchPaths(paths);
             var successfulPaths = new List<string>();
             var failures = new List<ResourceOpenFailure>();
 
             foreach (string path in resources)
             {
-                ResourceOpenKind kind = Classify(path);
-                if (resources.Count > 1 && kind != ResourceOpenKind.File)
+                if (TryCreateBatchRestrictionFailure(path, resources.Count, out ResourceOpenFailure? failure))
                 {
-                    failures.Add(new ResourceOpenFailure(
-                        path,
-                        kind,
-                        kind == ResourceOpenKind.Missing
-                            ? "资源不存在。"
-                            : "批量打开仅支持普通文件；文件夹、工程和解决方案需要单独打开。"));
+                    failures.Add(failure);
                     continue;
                 }
 
@@ -303,6 +294,116 @@ namespace ColorVision.Solution.Editor
             }
 
             return new ResourceOpenBatchResult(resources.Count, successfulPaths, failures);
+        }
+
+        public async Task<ResourceOpenBatchResult> OpenManyAsync(
+            IEnumerable<string> paths,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(paths);
+            List<string> resources = NormalizeBatchPaths(paths);
+            var successfulPaths = new List<string>();
+            var failures = new List<ResourceOpenFailure>();
+
+            foreach (string path in resources)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (TryCreateBatchRestrictionFailure(path, resources.Count, out ResourceOpenFailure? failure))
+                {
+                    failures.Add(failure);
+                    continue;
+                }
+
+                ResourceOpenResult result = await OpenAsync(path, cancellationToken);
+                if (result.Succeeded)
+                    successfulPaths.Add(path);
+                else
+                    failures.Add(new ResourceOpenFailure(path, result.Kind, result.ErrorMessage));
+            }
+
+            return new ResourceOpenBatchResult(resources.Count, successfulPaths, failures);
+        }
+
+        public async Task<bool> TryOpenManyWithFeedbackAsync(
+            IEnumerable<string> paths,
+            Window? owner = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResourceOpenBatchResult result = await OpenManyAsync(paths, cancellationToken);
+            if (result.Failures.Count > 0)
+                ShowBatchOpenFailures(result, owner);
+            return result.IsComplete;
+        }
+
+        public async Task<bool> TryOpenCommandLineWithFeedbackAsync(
+            CommandLineResourceOpenRequest request,
+            Window? owner = null,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            bool openedWorkspace = false;
+            if (!string.IsNullOrWhiteSpace(request.WorkspacePath))
+            {
+                openedWorkspace = await TryOpenWithFeedbackAsync(
+                    request.WorkspacePath,
+                    owner,
+                    cancellationToken);
+                if (!openedWorkspace)
+                    return false;
+            }
+
+            if (request.ResourcePaths.Count == 0)
+                return openedWorkspace;
+            return await TryOpenManyWithFeedbackAsync(
+                request.ResourcePaths,
+                owner,
+                cancellationToken);
+        }
+
+        private static List<string> NormalizeBatchPaths(IEnumerable<string> paths)
+        {
+            return paths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static bool TryCreateBatchRestrictionFailure(
+            string path,
+            int resourceCount,
+            out ResourceOpenFailure failure)
+        {
+            ResourceOpenKind kind = Classify(path);
+            if (resourceCount <= 1 || kind == ResourceOpenKind.File)
+            {
+                failure = null!;
+                return false;
+            }
+
+            failure = new ResourceOpenFailure(
+                path,
+                kind,
+                kind == ResourceOpenKind.Missing
+                    ? "资源不存在。"
+                    : "批量打开仅支持普通文件；文件夹、工程和解决方案需要单独打开。");
+            return true;
+        }
+
+        private static void ShowBatchOpenFailures(ResourceOpenBatchResult result, Window? owner)
+        {
+            string details = string.Join(
+                Environment.NewLine,
+                result.Failures.Take(5).Select(failure =>
+                    $"• {Path.GetFileName(failure.ResourcePath)}: {failure.Message}"));
+            if (result.Failures.Count > 5)
+                details += $"{Environment.NewLine}• …";
+
+            MessageBox.Show(
+                owner ?? Application.Current?.GetActiveWindow(),
+                $"已打开 {result.SuccessfulPaths.Count}/{result.RequestedCount} 项。{Environment.NewLine}{Environment.NewLine}{details}",
+                "部分文件未能打开",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
 
         /// <summary>

@@ -2118,20 +2118,30 @@ public class SolutionManagerFoundationTests
         Assert.Equal("Original.cvsln", parser.GetValue("solutionpath"));
     }
 
-    [Theory]
-    [InlineData(null, null, null)]
-    [InlineData("", null, null)]
-    [InlineData("Example.cvsln", "Example.cvsln", null)]
-    [InlineData("Example.txt", "Example.cvsln", "Example.txt")]
-    [InlineData("Example.txt", null, "Example.txt")]
-    public void StartupResourceOpenInitializer_DefersOnlyDistinctInput(
-        string? inputPath,
-        string? solutionPath,
-        string? expectedPath)
+    [Fact]
+    public void ArgumentParser_ParseSnapshot_PreservesMultiplePositionalResources()
     {
-        Assert.Equal(
-            expectedPath,
-            StartupResourceOpenInitializer.GetDeferredInputPath(inputPath, solutionPath));
+        var parser = new ColorVision.UI.Shell.ArgumentParser();
+
+        ColorVision.UI.Shell.ArgumentParseResult parsedArguments = parser.ParseSnapshot(
+            ["First.txt", "Second.txt"]);
+
+        Assert.Equal("First.txt", parsedArguments.Values["input"]);
+        Assert.Equal(["First.txt", "Second.txt"], parsedArguments.PositionalArguments);
+    }
+
+    [Fact]
+    public void CommandLineResourceOpenRequest_SeparatesWorkspaceAndAllFiles()
+    {
+        var parser = new ColorVision.UI.Shell.ArgumentParser();
+        parser.AddArgument("solutionpath", false, "s");
+        ColorVision.UI.Shell.ArgumentParseResult parsedArguments = parser.ParseSnapshot(
+            ["--solutionpath", "Workspace.cvsln", "--input", "First.txt", "Second.txt"]);
+
+        CommandLineResourceOpenRequest request = CommandLineResourceOpenRequest.Create(parsedArguments);
+
+        Assert.Equal("Workspace.cvsln", request.WorkspacePath);
+        Assert.Equal(["First.txt", "Second.txt"], request.ResourcePaths);
     }
 
     [Fact]

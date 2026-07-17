@@ -1,5 +1,9 @@
 ﻿namespace ColorVision.UI.Shell
 {
+    public sealed record ArgumentParseResult(
+        IReadOnlyDictionary<string, string> Values,
+        IReadOnlyList<string> PositionalArguments);
+
     public class Argument
     {
         public string LongName { get; }
@@ -33,7 +37,8 @@
         public ArgumentParser(string description ="")
         {
             AddArgument("input", false, "i");
-            AddArgument("version", false, "i");
+            AddArgument("version", false, "v");
+            AddArgument("project", false, "p");
             Description = description;
         }
         public void AddArgument(string name, bool isFlag = false, string aliases ="")
@@ -50,7 +55,7 @@
         public void Parse(string[] args)
         {
             CommandLineArgs = args;
-            foreach (KeyValuePair<string, string> item in ParseValues(args))
+            foreach (KeyValuePair<string, string> item in ParseSnapshot(args).Values)
                 _parsedArguments[item.Key] = item.Value;
         }
 
@@ -58,49 +63,50 @@
         /// Parses an independent argument snapshot without changing the values
         /// retained for the current application instance.
         /// </summary>
-        public IReadOnlyDictionary<string, string> ParseValues(string[] args)
+        public IReadOnlyDictionary<string, string> ParseValues(string[] args) => ParseSnapshot(args).Values;
+
+        public ArgumentParseResult ParseSnapshot(string[] args)
         {
             ArgumentNullException.ThrowIfNull(args);
             var parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (args.Length == 1 && !args[0].StartsWith("-" , StringComparison.CurrentCulture))
-            {
-                // Handle the case where only a file path is provided
-                parsedArguments["input"] = args[0];
-                return parsedArguments;
-            }
-
-
+            var positionalArguments = new List<string>();
             var aliasMap = BuildAliasMap();
 
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i].StartsWith("-", StringComparison.CurrentCulture))
+                if (!args[i].StartsWith("-", StringComparison.CurrentCulture))
                 {
-                    string key = args[i].TrimStart('-').ToLower(System.Globalization.CultureInfo.CurrentCulture);
-                    if (aliasMap.TryGetValue(key, out string? value))
-                    {
-                        key = value;
-                    }
-
-                    if (_arguments.Exists(arg => arg.LongName.Equals(key, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        Argument argument = _arguments.Find(arg => arg.LongName.Equals(key, StringComparison.OrdinalIgnoreCase));
-                        if (argument != null)
-                        {
-                            string value1 = argument.IsOption ? "true" : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture) ? args[i + 1] : null;
-                            if (value1 != null)
-                            {
-                                parsedArguments[key] = value1;
-                                if (!argument.IsOption)
-                                {
-                                    i++; // Skip the next argument if it's a value
-                                }
-                            }
-                        }
-                    }
+                    if (!string.IsNullOrWhiteSpace(args[i]))
+                        positionalArguments.Add(args[i]);
+                    continue;
                 }
+
+                string key = args[i].TrimStart('-').ToLower(System.Globalization.CultureInfo.CurrentCulture);
+                if (aliasMap.TryGetValue(key, out string? canonicalName))
+                    key = canonicalName;
+
+                Argument? argument = _arguments.Find(candidate =>
+                    candidate.LongName.Equals(key, StringComparison.OrdinalIgnoreCase));
+                if (argument == null)
+                    continue;
+
+                string? argumentValue = argument.IsOption
+                    ? "true"
+                    : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture)
+                        ? args[i + 1]
+                        : null;
+                if (argumentValue == null)
+                    continue;
+
+                parsedArguments[key] = argumentValue;
+                if (!argument.IsOption)
+                    i++;
             }
-            return parsedArguments;
+
+            if (!parsedArguments.ContainsKey("input") && positionalArguments.Count > 0)
+                parsedArguments["input"] = positionalArguments[0];
+
+            return new ArgumentParseResult(parsedArguments, positionalArguments);
         }
         public bool GetFlag(string name) => _parsedArguments.TryGetValue(name, out var value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 
