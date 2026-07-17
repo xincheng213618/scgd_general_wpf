@@ -36,8 +36,6 @@ namespace ColorVision.Solution.Explorer
         public bool ShowAllFiles { get; private set; }
         public override bool IsStartupProject => _isStartupProject;
         private bool _isStartupProject;
-        private MenuItemMetadata? _showAllFilesMenuItem;
-        private MenuItemMetadata? _startupProjectMenuItem;
 
         public ProjectNode(IFolderMeta folderMeta, ProjectDefinition project, SolutionExplorer? solutionExplorer = null)
             : base(folderMeta)
@@ -57,95 +55,6 @@ namespace ColorVision.Solution.Explorer
                 _ => SolutionExplorer?.IsExplicitProjectMode == true);
             SetStartupProjectState(SolutionExplorer?.IsConfiguredStartupProject(Project) == true);
             InitializeExternalProjectWatcher();
-        }
-
-        public override void InitMenuItem()
-        {
-            _showAllFilesMenuItem = null;
-            _startupProjectMenuItem = null;
-            base.InitMenuItem();
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "EditProjectFile",
-                Order = 3,
-                Header = "编辑项目文件(_E)",
-                Command = EditProjectFileCommand,
-                Icon = MenuItemIcon.TryFindResource("DICode")
-            });
-
-            if (Project.ItemRules?.Exclude.Count > 0)
-            {
-                _showAllFilesMenuItem = new MenuItemMetadata
-                {
-                    GuidId = "ShowAllProjectFiles",
-                    Order = 4,
-                    Header = "显示所有文件(_S)",
-                    Command = ToggleShowAllFilesCommand,
-                    IsChecked = ShowAllFiles,
-                };
-                MenuItemMetadatas.Add(_showAllFilesMenuItem);
-            }
-
-            if (SolutionExplorer?.CanSetStartupProject(Project) == true)
-            {
-                _startupProjectMenuItem = new MenuItemMetadata
-                {
-                    GuidId = "SetStartupProject",
-                    Order = 5,
-                    Header = "设为启动项目(_A)",
-                    Command = SolutionProjectCommands.SetStartupProject,
-                    IsChecked = IsStartupProject,
-                };
-                MenuItemMetadatas.Add(_startupProjectMenuItem);
-            }
-
-            foreach (ProjectCapabilityDescriptor capability in Capabilities)
-            {
-                var routedCommand = SolutionProjectCommands.GetCommand(capability.Id);
-                MenuItemMetadatas.Add(new MenuItemMetadata
-                {
-                    GuidId = $"ProjectCapability.{capability.Id}",
-                    Order = 10 + capability.Order,
-                    Header = capability.Header,
-                    Command = routedCommand ?? new RelayCommand(
-                        _ => ExecuteCapability(capability.Id),
-                        _ => CanExecuteCapability(capability.Id)),
-                    Icon = MenuItemIcon.TryFindResource(GetCapabilityIcon(capability.Id)),
-                });
-            }
-
-            if (SolutionExplorer?.IsExplicitProjectMode == true)
-            {
-                if (SolutionExplorer.GetSolutionFolderOptions().Count > 1)
-                {
-                    const string moveMenuId = "MoveProjectToSolutionFolder";
-                    MenuItemMetadatas.Add(new MenuItemMetadata
-                    {
-                        GuidId = moveMenuId,
-                        Order = 80,
-                        Header = "移动到解决方案文件夹(_M)",
-                    });
-                    string? currentFolderId = SolutionExplorer.GetProjectSolutionFolderId(Project);
-                    int order = 0;
-                    foreach (var option in SolutionExplorer.GetSolutionFolderOptions())
-                    {
-                        string? targetFolderId = option.Id;
-                        MenuItemMetadatas.Add(new MenuItemMetadata
-                        {
-                            OwnerGuid = moveMenuId,
-                            GuidId = $"MoveProjectToSolutionFolder.{targetFolderId ?? "Root"}",
-                            Order = order++,
-                            Header = option.DisplayName,
-                            IsChecked = string.Equals(
-                                currentFolderId,
-                                targetFolderId,
-                                StringComparison.OrdinalIgnoreCase),
-                            Command = new RelayCommand(_ =>
-                                SolutionExplorer.MoveProjectToSolutionFolder(Project, targetFolderId)),
-                        });
-                    }
-                }
-            }
         }
 
         public override void Refresh()
@@ -207,8 +116,6 @@ namespace ColorVision.Solution.Explorer
                 return;
 
             _isStartupProject = isStartupProject;
-            if (_startupProjectMenuItem != null)
-                _startupProjectMenuItem.IsChecked = isStartupProject;
             NotifyPropertyChanged(nameof(IsStartupProject));
         }
 
@@ -265,8 +172,7 @@ namespace ColorVision.Solution.Explorer
         private void ToggleShowAllFiles()
         {
             ShowAllFiles = !ShowAllFiles;
-            if (_showAllFilesMenuItem != null)
-                _showAllFilesMenuItem.IsChecked = ShowAllFiles;
+            NotifyPropertyChanged(nameof(ShowAllFiles));
             ReloadChildren();
         }
 
@@ -520,7 +426,7 @@ namespace ColorVision.Solution.Explorer
             base.Dispose(disposing);
         }
 
-        private static string GetCapabilityIcon(string capabilityId)
+        internal static string GetCapabilityIcon(string capabilityId)
         {
             return capabilityId.ToLowerInvariant() switch
             {

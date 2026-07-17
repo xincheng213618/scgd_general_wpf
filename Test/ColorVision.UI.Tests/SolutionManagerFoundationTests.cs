@@ -631,6 +631,100 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ProjectMenus_AreComposedFromCurrentProjectState()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(solutionDirectory, "App");
+        string projectPath = Path.Combine(projectDirectory, "App.cvproj");
+        string startupProjectDirectory = Path.Combine(solutionDirectory, "Launcher");
+        string startupProjectPath = Path.Combine(startupProjectDirectory, "Launcher.cvproj");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        const string solutionFolderId = "logical";
+        Directory.CreateDirectory(projectDirectory);
+        Directory.CreateDirectory(startupProjectDirectory);
+        FolderProjectProvider.CreateProjectFile(
+            projectPath,
+            "App",
+            commands: new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)
+            {
+                [ProjectCapabilityIds.Run] = new("dotnet run", "."),
+                ["publish"] = new("dotnet publish", "."),
+            },
+            excludedPaths: ["Output/**"]);
+        FolderProjectProvider.CreateProjectFile(
+            startupProjectPath,
+            "Launcher",
+            commands: new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase)
+            {
+                [ProjectCapabilityIds.Run] = new("dotnet run", "."),
+            });
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects =
+            [
+                Path.GetRelativePath(solutionDirectory, projectPath),
+                Path.GetRelativePath(solutionDirectory, startupProjectPath),
+            ],
+            StartupProject = Path.GetRelativePath(solutionDirectory, startupProjectPath),
+            SolutionFolders =
+            [
+                new SolutionFolderDefinition { Id = solutionFolderId, Name = "Logical" },
+            ],
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            ProjectNode projectNode = Assert.Single(
+                explorer.VisualChildren.OfType<ProjectNode>(),
+                node => string.Equals(node.Project.Name, "App", StringComparison.Ordinal));
+            var nodeItems = new List<MenuItemMetadata>();
+            projectNode.CollectMenuItems(nodeItems);
+
+            List<MenuItemMetadata> initialItems =
+                SolutionContextMenuService.CreateMenuMetadata([projectNode]);
+
+            Assert.DoesNotContain(nodeItems, item => item.GuidId is
+                SolutionProjectCommands.EditProjectFileId
+                or SolutionProjectCommands.ShowAllFilesId
+                or SolutionProjectCommands.SetStartupProjectId
+                or "ProjectCapability.run"
+                or "ProjectCapability.publish"
+                or "MoveProjectToSolutionFolder");
+            Assert.Single(initialItems, item =>
+                item.GuidId == SolutionProjectCommands.EditProjectFileId);
+            Assert.False(Assert.Single(initialItems, item =>
+                item.GuidId == SolutionProjectCommands.ShowAllFilesId).IsChecked);
+            Assert.False(Assert.Single(initialItems, item =>
+                item.GuidId == SolutionProjectCommands.SetStartupProjectId).IsChecked);
+            Assert.Same(
+                SolutionProjectCommands.Run,
+                Assert.Single(initialItems, item => item.GuidId == "ProjectCapability.run").Command);
+            Assert.IsType<ColorVision.Common.MVVM.RelayCommand>(Assert.Single(initialItems, item =>
+                item.GuidId == "ProjectCapability.publish").Command);
+            Assert.Single(initialItems, item => item.GuidId == "MoveProjectToSolutionFolder");
+            Assert.Single(initialItems, item =>
+                item.GuidId == $"MoveProjectToSolutionFolder.{solutionFolderId}");
+
+            projectNode.ToggleShowAllFilesCommand.Execute(null);
+            Assert.True(Assert.Single(
+                SolutionContextMenuService.CreateMenuMetadata([projectNode]),
+                item => item.GuidId == SolutionProjectCommands.ShowAllFilesId).IsChecked);
+
+            Assert.True(explorer.SetStartupProject(projectNode.Project));
+            Assert.True(Assert.Single(
+                SolutionContextMenuService.CreateMenuMetadata([projectNode]),
+                item => item.GuidId == SolutionProjectCommands.SetStartupProjectId).IsChecked);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SelectionService_SelectManyRestoresMovedNodeSelectionAndAnchor()
     {
         var first = CreateNode("first");
@@ -2888,6 +2982,9 @@ public class SolutionManagerFoundationTests
             Assert.Contains(moveOptions, option => option.Id == null);
             Assert.Contains(moveOptions, option => option.Id == toolsFolderId);
             Assert.DoesNotContain(moveOptions, option => option.Id == appsFolderId || option.Id == testsFolderId);
+            var nodeItems = new List<MenuItemMetadata>();
+            appsNode.CollectMenuItems(nodeItems);
+            Assert.DoesNotContain(nodeItems, item => item.GuidId == "MoveSolutionFolder");
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([appsNode]);
             Assert.Contains(menuItems, item => item.GuidId == $"MoveSolutionFolder.{toolsFolderId}");
@@ -2928,6 +3025,9 @@ public class SolutionManagerFoundationTests
             Assert.Same(projectANode, Assert.Single(
                 appsNode.VisualChildren.GetAllVisualChildren().OfType<ProjectNode>(),
                 node => node.Project.Name == "A"));
+            Assert.True(Assert.Single(
+                SolutionContextMenuService.CreateMenuMetadata([appsNode]),
+                item => item.GuidId == $"MoveSolutionFolder.{toolsFolderId}").IsChecked);
         }
         finally
         {
@@ -3022,6 +3122,9 @@ public class SolutionManagerFoundationTests
                 node => node.FolderId == docsFolderId);
             SolutionItemNode solutionItemNode = Assert.Single(docsNode.VisualChildren.OfType<SolutionItemNode>());
             Assert.Equal(notesPath, solutionItemNode.FullPath);
+            var nodeItems = new List<MenuItemMetadata>();
+            solutionItemNode.CollectMenuItems(nodeItems);
+            Assert.DoesNotContain(nodeItems, item => item.GuidId == "MoveSolutionItem");
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]);
             Assert.Contains(menuItems, item => item.GuidId == "MoveSolutionItem.Root");
@@ -3037,6 +3140,9 @@ public class SolutionManagerFoundationTests
                 out string moveError),
                 moveError);
             Assert.Same(solutionItemNode, Assert.Single(explorer.VisualChildren.OfType<SolutionItemNode>()));
+            Assert.True(Assert.Single(
+                SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]),
+                item => item.GuidId == "MoveSolutionItem.Root").IsChecked);
 
             Assert.True(solutionItemNode.TryDelete(showConfirmation: false));
             Assert.True(File.Exists(notesPath));

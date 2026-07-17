@@ -474,6 +474,176 @@ namespace ColorVision.Solution.Explorer
         }
     }
 
+    [SolutionMenuContribution(priority: 235)]
+    public sealed class ProjectMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.project-actions";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode is ProjectNode;
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            var projectNode = (ProjectNode)context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>
+            {
+                new()
+                {
+                    GuidId = SolutionProjectCommands.EditProjectFileId,
+                    Order = 3,
+                    Header = "编辑项目文件(_E)",
+                    Command = projectNode.EditProjectFileCommand,
+                    Icon = MenuItemIcon.TryFindResource("DICode"),
+                },
+            };
+
+            if (projectNode.Project.ItemRules?.Exclude.Count > 0)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionProjectCommands.ShowAllFilesId,
+                    Order = 4,
+                    Header = "显示所有文件(_S)",
+                    Command = projectNode.ToggleShowAllFilesCommand,
+                    IsChecked = projectNode.ShowAllFiles,
+                });
+            }
+
+            if (projectNode.SolutionExplorer?.CanSetStartupProject(projectNode.Project) == true)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionProjectCommands.SetStartupProjectId,
+                    Order = 5,
+                    Header = "设为启动项目(_A)",
+                    Command = SolutionProjectCommands.SetStartupProject,
+                    IsChecked = projectNode.IsStartupProject,
+                });
+            }
+
+            foreach (ProjectCapabilityDescriptor capability in projectNode.Capabilities)
+            {
+                ICommand command = SolutionProjectCommands.GetCommand(capability.Id)
+                    ?? new RelayCommand(
+                        _ => projectNode.ExecuteCapability(capability.Id),
+                        _ => projectNode.CanExecuteCapability(capability.Id));
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = $"ProjectCapability.{capability.Id}",
+                    Order = 10 + capability.Order,
+                    Header = capability.Header,
+                    Command = command,
+                    Icon = MenuItemIcon.TryFindResource(ProjectNode.GetCapabilityIcon(capability.Id)),
+                });
+            }
+            return menuItems;
+        }
+    }
+
+    [SolutionMenuContribution(priority: 225)]
+    public sealed class SolutionOrganizationMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.organization";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode switch
+            {
+                ProjectNode projectNode => projectNode.SolutionExplorer?.IsExplicitProjectMode == true
+                    && projectNode.SolutionExplorer.GetSolutionFolderOptions().Count > 1,
+                SolutionFolderNode folderNode => folderNode.SolutionExplorer
+                    .GetSolutionFolderMoveOptions(folderNode.FolderId).Count > 1,
+                SolutionItemNode itemNode => itemNode.SolutionExplorer
+                    .GetSolutionFolderOptions().Count > 1,
+                _ => false,
+            };
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            return context.PrimaryNode switch
+            {
+                ProjectNode projectNode => CreateProjectMoveItems(projectNode),
+                SolutionFolderNode folderNode => CreateSolutionFolderMoveItems(folderNode),
+                SolutionItemNode itemNode => CreateSolutionItemMoveItems(itemNode),
+                _ => [],
+            };
+        }
+
+        private static List<MenuItemMetadata> CreateProjectMoveItems(ProjectNode node)
+        {
+            SolutionExplorer? explorer = node.SolutionExplorer;
+            return explorer == null
+                ? []
+                : CreateMoveItems(
+                    "MoveProjectToSolutionFolder",
+                    80,
+                    explorer.GetSolutionFolderOptions(),
+                    explorer.GetProjectSolutionFolderId(node.Project),
+                    targetFolderId => explorer.MoveProjectToSolutionFolder(node.Project, targetFolderId));
+        }
+
+        private static List<MenuItemMetadata> CreateSolutionFolderMoveItems(SolutionFolderNode node)
+        {
+            return CreateMoveItems(
+                "MoveSolutionFolder",
+                40,
+                node.SolutionExplorer.GetSolutionFolderMoveOptions(node.FolderId),
+                node.SolutionExplorer.GetSolutionFolderParentId(node.FolderId),
+                node.MoveToSolutionFolder);
+        }
+
+        private static List<MenuItemMetadata> CreateSolutionItemMoveItems(SolutionItemNode node)
+        {
+            return CreateMoveItems(
+                "MoveSolutionItem",
+                80,
+                node.SolutionExplorer.GetSolutionFolderOptions(),
+                node.SolutionExplorer.GetSolutionItemFolderId(node.ItemId),
+                targetFolderId => node.SolutionExplorer.MoveSolutionItemToFolder(node.ItemId, targetFolderId));
+        }
+
+        private static List<MenuItemMetadata> CreateMoveItems(
+            string menuId,
+            int menuOrder,
+            IReadOnlyList<(string? Id, string DisplayName)> options,
+            string? currentFolderId,
+            Action<string?> move)
+        {
+            var menuItems = new List<MenuItemMetadata>
+            {
+                new()
+                {
+                    GuidId = menuId,
+                    Order = menuOrder,
+                    Header = "移动到解决方案文件夹(_M)",
+                },
+            };
+            int order = 0;
+            foreach (var option in options)
+            {
+                string? targetFolderId = option.Id;
+                menuItems.Add(new MenuItemMetadata
+                {
+                    OwnerGuid = menuId,
+                    GuidId = $"{menuId}.{targetFolderId ?? "Root"}",
+                    Order = order++,
+                    Header = option.DisplayName,
+                    IsChecked = string.Equals(
+                        currentFolderId,
+                        targetFolderId,
+                        StringComparison.OrdinalIgnoreCase),
+                    Command = new RelayCommand(_ => move(targetFolderId)),
+                });
+            }
+            return menuItems;
+        }
+    }
+
     [SolutionMenuContribution(priority: 230)]
     public sealed class ProjectItemMembershipMenuContribution : ISolutionMenuContribution
     {

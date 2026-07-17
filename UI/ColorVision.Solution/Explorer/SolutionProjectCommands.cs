@@ -9,8 +9,11 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     public static class SolutionProjectCommands
     {
+        public const string EditProjectFileId = "EditProjectFile";
         public const string ExcludeFromProjectId = "ExcludeFromProject";
         public const string IncludeInProjectId = "IncludeInProject";
+        public const string SetStartupProjectId = "SetStartupProject";
+        public const string ShowAllFilesId = "ShowAllProjectFiles";
 
         public static RoutedUICommand Build { get; } = new("生成项目", nameof(Build), typeof(SolutionProjectCommands));
         public static RoutedUICommand BuildSolution { get; } = new(

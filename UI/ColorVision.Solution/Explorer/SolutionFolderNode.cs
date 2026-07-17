@@ -1,9 +1,6 @@
-using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -43,41 +40,6 @@ namespace ColorVision.Solution.Explorer
             CanCut = false;
             CanReName = true;
             Initialize();
-        }
-
-        public override void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            IReadOnlyList<(string? Id, string DisplayName)> moveOptions =
-                _solutionExplorer.GetSolutionFolderMoveOptions(FolderId);
-            if (moveOptions.Count > 1)
-            {
-                const string moveMenuId = "MoveSolutionFolder";
-                MenuItemMetadatas.Add(new MenuItemMetadata
-                {
-                    GuidId = moveMenuId,
-                    Order = 40,
-                    Header = "移动到解决方案文件夹(_M)",
-                });
-                string? currentParentId = _solutionExplorer.GetSolutionFolderParentId(FolderId);
-                int order = 0;
-                foreach (var option in moveOptions)
-                {
-                    string? targetFolderId = option.Id;
-                    MenuItemMetadatas.Add(new MenuItemMetadata
-                    {
-                        OwnerGuid = moveMenuId,
-                        GuidId = $"MoveSolutionFolder.{targetFolderId ?? "Root"}",
-                        Order = order++,
-                        Header = option.DisplayName,
-                        IsChecked = string.Equals(
-                            currentParentId,
-                            targetFolderId,
-                            StringComparison.OrdinalIgnoreCase),
-                        Command = new RelayCommand(_ => MoveToSolutionFolder(targetFolderId)),
-                    });
-                }
-            }
         }
 
         public override bool ReName(string name)
@@ -141,7 +103,7 @@ namespace ColorVision.Solution.Explorer
             return _solutionExplorer.RemoveSolutionFolder(FolderId);
         }
 
-        private void MoveToSolutionFolder(string? targetFolderId)
+        internal void MoveToSolutionFolder(string? targetFolderId)
         {
             if (_solutionExplorer.MoveSolutionItemsToFolder(
                 [],

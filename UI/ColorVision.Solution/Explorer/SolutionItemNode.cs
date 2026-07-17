@@ -1,6 +1,4 @@
-using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 
@@ -42,38 +40,6 @@ namespace ColorVision.Solution.Explorer
             base.InitMenuItem();
             MenuItemMetadatas.RemoveAll(item => item.GuidId is
                 SolutionCommandIds.Cut or SolutionCommandIds.Paste or SolutionCommandIds.Rename);
-
-            IReadOnlyList<(string? Id, string DisplayName)> moveOptions =
-                _solutionExplorer.GetSolutionFolderOptions();
-            if (moveOptions.Count > 1)
-            {
-                const string moveMenuId = "MoveSolutionItem";
-                MenuItemMetadatas.Add(new MenuItemMetadata
-                {
-                    GuidId = moveMenuId,
-                    Order = 80,
-                    Header = "移动到解决方案文件夹(_M)",
-                });
-                string? currentFolderId = _solutionExplorer.GetSolutionItemFolderId(ItemId);
-                int order = 0;
-                foreach (var option in moveOptions)
-                {
-                    string? targetFolderId = option.Id;
-                    MenuItemMetadatas.Add(new MenuItemMetadata
-                    {
-                        OwnerGuid = moveMenuId,
-                        GuidId = $"MoveSolutionItem.{targetFolderId ?? "Root"}",
-                        Order = order++,
-                        Header = option.DisplayName,
-                        IsChecked = string.Equals(
-                            currentFolderId,
-                            targetFolderId,
-                            StringComparison.OrdinalIgnoreCase),
-                        Command = new RelayCommand(_ =>
-                            _solutionExplorer.MoveSolutionItemToFolder(ItemId, targetFolderId)),
-                    });
-                }
-            }
         }
 
         internal bool CanReuseFor(SolutionItemDefinition definition, string fullPath)
