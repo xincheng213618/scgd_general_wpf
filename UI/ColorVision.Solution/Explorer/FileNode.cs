@@ -1,7 +1,6 @@
 #pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Workspace;
@@ -20,10 +19,12 @@ namespace ColorVision.Solution.Explorer
         public override string? ClipboardResourcePath => FileInfo.Exists
             ? FileInfo.FullName
             : null;
+        public override string? ExplorerResourcePath => FileInfo.Exists
+            ? FileInfo.FullName
+            : null;
         public override bool CanReName { get; set; } = true;
 
         public IFileMeta FileMeta { get; set; }
-        public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand AskCopilotExplainFileCommand { get; set; }
         public RelayCommand AskCopilotDiagnoseFileCommand { get; set; }
 
@@ -42,7 +43,6 @@ namespace ColorVision.Solution.Explorer
 
         private void InitializeCommands()
         {
-            OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             AskCopilotExplainFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Code, false), a => FileInfo.Exists);
             AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);
         }

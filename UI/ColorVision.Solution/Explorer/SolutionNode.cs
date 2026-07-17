@@ -178,6 +178,10 @@ namespace ColorVision.Solution.Explorer
         /// FullPath remains a tree identity and must not be used as a substitute.
         /// </summary>
         public virtual string? ClipboardResourcePath => null;
+        /// <summary>Existing file or directory exposed to the Windows shell.</summary>
+        public virtual string? ExplorerResourcePath => null;
+        /// <summary>Existing directory used as the working directory for a terminal.</summary>
+        public virtual string? TerminalWorkingDirectory => null;
         public bool IsExcludedFromProject { get; private set; }
 
         public virtual void ShowProperty() { }

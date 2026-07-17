@@ -456,12 +456,12 @@ namespace ColorVision.Solution.Explorer
         public string LoadError { get; private set; }
         public override bool CanRefresh => true;
         public override string? EditorResourcePath => ResolvedPath;
+        public override string? ExplorerResourcePath => GetExistingExplorerPath();
         public override SolutionDeleteKind DeleteKind => SolutionDeleteKind.RemoveFromSolution;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public RelayCommand RemoveFromSolutionCommand { get; }
         public RelayCommand ShowLoadErrorCommand { get; }
-        public RelayCommand OpenContainingFolderCommand { get; }
 
         public UnavailableProjectNode(
             SolutionExplorer solutionExplorer,
@@ -490,9 +490,6 @@ namespace ColorVision.Solution.Explorer
                 "项目加载错误",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning));
-            OpenContainingFolderCommand = new RelayCommand(
-                _ => OpenContainingFolder(),
-                _ => GetExistingContainerPath() != null);
         }
 
         internal void UpdateUnavailableState(string resolvedPath, string? loadError)
@@ -541,19 +538,10 @@ namespace ColorVision.Solution.Explorer
             });
         }
 
-        private void OpenContainingFolder()
+        private string? GetExistingExplorerPath()
         {
-            string? containerPath = GetExistingContainerPath();
-            if (containerPath == null)
-                return;
             if (File.Exists(ResolvedPath))
-                ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ResolvedPath);
-            else
-                ColorVision.Common.Utilities.PlatformHelper.OpenFolder(containerPath);
-        }
-
-        private string? GetExistingContainerPath()
-        {
+                return ResolvedPath;
             if (Directory.Exists(ResolvedPath))
                 return ResolvedPath;
 

@@ -26,6 +26,8 @@ namespace ColorVision.Solution
             RegisterCommand(SolutionResourceCommands.Open, ExecuteOpen, CanExecuteOpen);
             RegisterCommand(SolutionResourceCommands.OpenWith, ExecuteOpenWith, CanExecuteOpenWith);
             RegisterCommand(SolutionResourceCommands.RunScript, ExecuteRunScript, CanExecuteRunScript);
+            RegisterCommand(SolutionResourceCommands.RevealInFileExplorer, ExecuteRevealInFileExplorer, CanExecuteRevealInFileExplorer);
+            RegisterCommand(SolutionResourceCommands.OpenInTerminal, ExecuteOpenInTerminal, CanExecuteOpenInTerminal);
             RegisterCommand(ApplicationCommands.Properties, ExecuteProperties, CanExecuteProperties);
             RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
             RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
@@ -154,6 +156,34 @@ namespace ColorVision.Solution
             {
                 TerminalService.GetInstance().RunScript(fileNode.FileInfo.FullName);
             }
+            e.Handled = true;
+        }
+
+        private void CanExecuteRevealInFileExplorer(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [var node]
+                && SolutionResourceShellPolicy.CanReveal(node);
+            e.Handled = true;
+        }
+
+        private void ExecuteRevealInFileExplorer(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is [var node])
+                SolutionResourceShellPolicy.TryReveal(node);
+            e.Handled = true;
+        }
+
+        private void CanExecuteOpenInTerminal(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [var node]
+                && SolutionResourceShellPolicy.CanOpenTerminal(node);
+            e.Handled = true;
+        }
+
+        private void ExecuteOpenInTerminal(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is [var node])
+                SolutionResourceShellPolicy.TryOpenTerminal(node);
             e.Handled = true;
         }
 

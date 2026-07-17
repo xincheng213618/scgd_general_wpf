@@ -1,4 +1,8 @@
+using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
@@ -12,6 +16,8 @@ namespace ColorVision.Solution.Explorer
         public const string OpenId = "Open";
         public const string OpenWithId = "OpenWith";
         public const string RunScriptId = "RunScript";
+        public const string RevealInFileExplorerId = "RevealInFileExplorer";
+        public const string OpenInTerminalId = "OpenInTerminal";
         public const string ImportedSourceMenuId = "ImportedSolutionSource";
         public const string EditImportedSourceId = "EditImportedSolutionSource";
         public const string RevealImportedSourceId = "RevealImportedSolutionSource";
@@ -32,6 +38,76 @@ namespace ColorVision.Solution.Explorer
             "运行脚本",
             nameof(RunScript),
             typeof(SolutionResourceCommands));
+
+        public static RoutedUICommand RevealInFileExplorer { get; } = new(
+            "在文件资源管理器中打开",
+            nameof(RevealInFileExplorer),
+            typeof(SolutionResourceCommands));
+
+        public static RoutedUICommand OpenInTerminal { get; } = new(
+            "在终端中打开",
+            nameof(OpenInTerminal),
+            typeof(SolutionResourceCommands));
+    }
+
+    internal static class SolutionResourceShellPolicy
+    {
+        public static bool CanReveal(SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            return node.ExplorerResourcePath is { } path
+                && (File.Exists(path) || Directory.Exists(path));
+        }
+
+        public static bool TryReveal(SolutionNode node)
+        {
+            if (!CanReveal(node) || node.ExplorerResourcePath is not { } path)
+                return false;
+
+            try
+            {
+                if (File.Exists(path))
+                    PlatformHelper.OpenFolderAndSelectFile(path);
+                else
+                    PlatformHelper.OpenFolder(path);
+                return true;
+            }
+            catch (Exception ex) when (ex is Win32Exception
+                or InvalidOperationException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        public static bool CanOpenTerminal(SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            return node.TerminalWorkingDirectory is { } path && Directory.Exists(path);
+        }
+
+        public static bool TryOpenTerminal(SolutionNode node)
+        {
+            if (!CanOpenTerminal(node) || node.TerminalWorkingDirectory is not { } path)
+                return false;
+
+            try
+            {
+                return Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/K cd /d \"{path}\"",
+                    UseShellExecute = true,
+                }) != null;
+            }
+            catch (Exception ex) when (ex is Win32Exception
+                or InvalidOperationException
+                or ArgumentException)
+            {
+                return false;
+            }
+        }
     }
 
     internal static class SolutionResourceOpenPolicy

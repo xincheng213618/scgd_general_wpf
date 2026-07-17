@@ -1,7 +1,6 @@
 #pragma warning disable CA1805,CS4014,CS8602,CS8603,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
@@ -23,6 +22,12 @@ namespace ColorVision.Solution.Explorer
         public override string? ClipboardResourcePath => DirectoryInfo.Exists
             ? DirectoryInfo.FullName
             : null;
+        public override string? ExplorerResourcePath => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
+        public override string? TerminalWorkingDirectory => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
         public string PhysicalContainerPath => DirectoryInfo.FullName;
         public virtual SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
             ? SolutionContainerAction.AddNewItem
@@ -33,9 +38,7 @@ namespace ColorVision.Solution.Explorer
         public IFolderMeta FolderMeta { get; set; }
 
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
-        public RelayCommand OpenFileInExplorerCommand { get; set; }
         public bool HasFile { get => this.HasFile(); }
-        public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
         public RelayCommand OpenFusionCommand { get; set; }
         private bool _childrenLoaded;
@@ -238,8 +241,6 @@ namespace ColorVision.Solution.Explorer
 
         private void InitializeCommands()
         {
-            OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
             OpenFusionCommand = new RelayCommand(_ => OpenFusionWithFolderImages(), _ => DirectoryInfo.Exists);
         }

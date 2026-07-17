@@ -25,13 +25,6 @@ namespace ColorVision.Solution.Explorer
                     Header = "查看加载错误(_E)...",
                     Command = projectNode.ShowLoadErrorCommand,
                 },
-                new MenuItemMetadata
-                {
-                    GuidId = "OpenUnavailableProjectContainer",
-                    Order = 3,
-                    Header = "在文件资源管理器中打开(_X)",
-                    Command = projectNode.OpenContainingFolderCommand,
-                },
             ];
         }
     }

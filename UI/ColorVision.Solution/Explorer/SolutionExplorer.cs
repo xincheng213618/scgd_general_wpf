@@ -125,7 +125,6 @@ namespace ColorVision.Solution.Explorer
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
         internal const string ImportedStructureReadOnlyMessage = "外部解决方案的结构由源 .sln/.slnx 文件控制，当前以只读方式导入。";
         public DirectoryInfo DirectoryInfo { get; private set; }
-        public RelayCommand OpenFileInExplorerCommand { get; }
         public RelayCommand OpenImportedSolutionSourceCommand { get; }
         public RelayCommand RevealImportedSolutionSourceCommand { get; }
         public RelayCommand CopyImportedSolutionSourcePathCommand { get; }
@@ -163,6 +162,9 @@ namespace ColorVision.Solution.Explorer
         public override bool CanOpen => DirectoryInfo.Exists;
         public override bool CanRefresh => true;
         public override bool CanShowProperties => DirectoryInfo.Exists;
+        public override string? ExplorerResourcePath => DirectoryInfo.Exists
+            ? DirectoryInfo.FullName
+            : null;
         public override string? EditorResourcePath
         {
             get
@@ -247,7 +249,6 @@ namespace ColorVision.Solution.Explorer
             CanCopy = false;
             CanCut = false;
 
-            OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
             OpenImportedSolutionSourceCommand = new RelayCommand(
                 _ => OpenImportedSolutionSource(),
                 _ => ImportedSolutionSourcePath is { } path && File.Exists(path));

@@ -1,5 +1,6 @@
 using ColorVision.UI.Menus;
 using ColorVision.Solution.FileMeta;
+using System.IO;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -64,13 +65,6 @@ namespace ColorVision.Solution.Explorer
                     Header = "问 AI 诊断此文件/日志",
                     Command = fileNode.AskCopilotDiagnoseFileCommand,
                 },
-                new MenuItemMetadata
-                {
-                    GuidId = "OpenContainingFolder",
-                    Order = 200,
-                    Header = Properties.Resources.MenuOpenContainingFolder,
-                    Command = fileNode.OpenContainingFolderCommand,
-                },
             ];
         }
     }
@@ -105,21 +99,49 @@ namespace ColorVision.Solution.Explorer
                     Header = "景深融合(_F)",
                     Command = folderNode.OpenFusionCommand,
                 },
-                new MenuItemMetadata
-                {
-                    GuidId = "MenuOpenFileInExplorer",
-                    Order = 200,
-                    Header = Properties.Resources.MenuOpenFileInExplorer,
-                    Command = folderNode.OpenFileInExplorerCommand,
-                },
-                new MenuItemMetadata
-                {
-                    GuidId = "OpenInCmdCommad",
-                    Order = 200,
-                    Header = "在终端中打开",
-                    Command = folderNode.OpenInCmdCommand,
-                },
             ];
+        }
+    }
+
+    [SolutionMenuContribution(priority: 240)]
+    public sealed class ResourceShellMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.resource-shell-actions";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return SolutionResourceShellPolicy.CanReveal(context.PrimaryNode)
+                || SolutionResourceShellPolicy.CanOpenTerminal(context.PrimaryNode);
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            SolutionNode node = context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>();
+            if (SolutionResourceShellPolicy.CanReveal(node))
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.RevealInFileExplorerId,
+                    Order = 200,
+                    Header = File.Exists(node.ExplorerResourcePath)
+                        ? Properties.Resources.MenuOpenContainingFolder
+                        : Properties.Resources.MenuOpenFileInExplorer,
+                    Command = SolutionResourceCommands.RevealInFileExplorer,
+                });
+            }
+            if (SolutionResourceShellPolicy.CanOpenTerminal(node))
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.OpenInTerminalId,
+                    Order = 201,
+                    Header = "在终端中打开",
+                    Command = SolutionResourceCommands.OpenInTerminal,
+                });
+            }
+            return menuItems;
         }
     }
 }

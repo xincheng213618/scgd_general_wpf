@@ -664,13 +664,6 @@ namespace ColorVision.Solution.Explorer
                     Command = explorer.CopyImportedSolutionSourcePathCommand,
                 });
             }
-            menuItems.Add(new MenuItemMetadata
-            {
-                GuidId = "MenuOpenFileInExplorer",
-                Order = 200,
-                Header = ColorVision.Solution.Properties.Resources.MenuOpenFileInExplorer,
-                Command = explorer.OpenFileInExplorerCommand,
-            });
             return menuItems;
         }
     }

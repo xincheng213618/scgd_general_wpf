@@ -697,8 +697,9 @@ public class SolutionManagerFoundationTests
                 fileNode.AskCopilotDiagnoseFileCommand,
                 Assert.Single(fileMenuItems, item => item.GuidId == "AskCopilotDiagnoseFile").Command);
             Assert.Same(
-                fileNode.OpenContainingFolderCommand,
-                Assert.Single(fileMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
+                SolutionResourceCommands.RevealInFileExplorer,
+                Assert.Single(fileMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RevealInFileExplorerId).Command);
 
             Assert.Same(
                 folderNode.AskCopilotSummarizeFolderCommand,
@@ -707,18 +708,27 @@ public class SolutionManagerFoundationTests
                 folderNode.OpenFusionCommand,
                 Assert.Single(folderMenuItems, item => item.GuidId == "Fusion").Command);
             Assert.Same(
-                folderNode.OpenFileInExplorerCommand,
-                Assert.Single(folderMenuItems, item => item.GuidId == "MenuOpenFileInExplorer").Command);
+                SolutionResourceCommands.RevealInFileExplorer,
+                Assert.Single(folderMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RevealInFileExplorerId).Command);
             Assert.Same(
-                folderNode.OpenInCmdCommand,
-                Assert.Single(folderMenuItems, item => item.GuidId == "OpenInCmdCommad").Command);
+                SolutionResourceCommands.OpenInTerminal,
+                Assert.Single(folderMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.OpenInTerminalId).Command);
 
             Assert.Same(
-                fileNode.OpenContainingFolderCommand,
-                Assert.Single(searchMenuItems, item => item.GuidId == "OpenContainingFolder").Command);
+                SolutionResourceCommands.RevealInFileExplorer,
+                Assert.Single(searchMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RevealInFileExplorerId).Command);
             Assert.DoesNotContain(multiMenuItems, item => item.GuidId is
-                "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder"
-                or "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
+                "AskCopilotExplainFile" or "AskCopilotDiagnoseFile"
+                or "AskCopilotSummarizeFolder" or "Fusion"
+                or SolutionResourceCommands.RevealInFileExplorerId
+                or SolutionResourceCommands.OpenInTerminalId);
+            Assert.True(SolutionResourceShellPolicy.CanReveal(fileNode));
+            Assert.False(SolutionResourceShellPolicy.CanOpenTerminal(fileNode));
+            Assert.True(SolutionResourceShellPolicy.CanReveal(folderNode));
+            Assert.True(SolutionResourceShellPolicy.CanOpenTerminal(folderNode));
         }
         finally
         {
@@ -1190,6 +1200,10 @@ public class SolutionManagerFoundationTests
             Assert.Same(
                 ApplicationCommands.Properties,
                 Assert.Single(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
+            Assert.Same(
+                SolutionResourceCommands.RevealInFileExplorer,
+                Assert.Single(solutionMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RevealInFileExplorerId).Command);
             Assert.DoesNotContain(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Rename);
             Assert.Same(
                 SolutionNavigationCommands.RevealInTree,
@@ -1202,10 +1216,13 @@ public class SolutionManagerFoundationTests
             Assert.Single(duplicateSearchContext.Nodes);
             Assert.DoesNotContain(duplicateSearchMenuItems, item => item.GuidId is
                 SolutionResourceCommands.OpenWithId or SolutionCommandIds.Rename or SolutionCommandIds.Properties
-                or "AskCopilotExplainFile" or "AskCopilotDiagnoseFile" or "OpenContainingFolder");
+                or "AskCopilotExplainFile" or "AskCopilotDiagnoseFile"
+                or SolutionResourceCommands.RevealInFileExplorerId);
             Assert.DoesNotContain(duplicateFolderSearchMenuItems, item => item.GuidId is
                 SolutionResourceCommands.OpenWithId or SolutionCommandIds.Paste
-                or "AskCopilotSummarizeFolder" or "Fusion" or "MenuOpenFileInExplorer" or "OpenInCmdCommad");
+                or "AskCopilotSummarizeFolder" or "Fusion"
+                or SolutionResourceCommands.RevealInFileExplorerId
+                or SolutionResourceCommands.OpenInTerminalId);
             Assert.Equal(filePath, fileNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(folderPath, folderNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);
@@ -2563,14 +2580,16 @@ public class SolutionManagerFoundationTests
                 unavailableNode.ShowLoadErrorCommand,
                 Assert.Single(unavailableMenuItems, item => item.GuidId == "ShowUnavailableProjectError").Command);
             Assert.Same(
-                unavailableNode.OpenContainingFolderCommand,
-                Assert.Single(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer").Command);
+                SolutionResourceCommands.RevealInFileExplorer,
+                Assert.Single(unavailableMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.RevealInFileExplorerId).Command);
+            Assert.True(SolutionResourceShellPolicy.CanReveal(unavailableNode));
             Assert.Contains(searchMenuItems, item => item.GuidId == SolutionNavigationCommands.RevealInTreeId);
             Assert.Same(
                 unavailableNode.ShowLoadErrorCommand,
                 Assert.Single(searchMenuItems, item => item.GuidId == "ShowUnavailableProjectError").Command);
             Assert.DoesNotContain(multiMenuItems, item => item.GuidId is
-                "ShowUnavailableProjectError" or "OpenUnavailableProjectContainer");
+                "ShowUnavailableProjectError" or SolutionResourceCommands.RevealInFileExplorerId);
             Assert.Contains(unavailableMenuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
                 && ReferenceEquals(item.Command, ApplicationCommands.Delete)

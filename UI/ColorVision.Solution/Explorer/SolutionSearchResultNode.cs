@@ -59,6 +59,8 @@ namespace ColorVision.Solution.Explorer
         public override bool CanShowProperties => TargetNode.CanShowProperties;
         public override string? EditorResourcePath => TargetNode.EditorResourcePath;
         public override string? ClipboardResourcePath => TargetNode.ClipboardResourcePath;
+        public override string? ExplorerResourcePath => TargetNode.ExplorerResourcePath;
+        public override string? TerminalWorkingDirectory => TargetNode.TerminalWorkingDirectory;
 
         internal SolutionSearchResultNode(
             SolutionExplorer explorer,
