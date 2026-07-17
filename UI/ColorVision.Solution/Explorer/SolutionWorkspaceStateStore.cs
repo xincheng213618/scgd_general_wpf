@@ -135,6 +135,43 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        public static async Task RestoreExpansionAsync(
+            SolutionExplorer explorer,
+            SolutionWorkspaceState state,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(explorer);
+            ArgumentNullException.ThrowIfNull(state);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            RestoreExpansion(explorer, state);
+            var expandedIds = state.ExpandedNodeIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var processedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var matchedNodes = EnumerateNodes(explorer)
+                    .Select(node => (Node: node, Id: GetNodeId(node)))
+                    .Where(item => item.Id != null
+                        && expandedIds.Contains(item.Id)
+                        && processedIds.Add(item.Id))
+                    .ToList();
+                if (matchedNodes.Count == 0)
+                    break;
+
+                var loadTasks = new List<Task>();
+                foreach (var item in matchedNodes)
+                {
+                    item.Node.IsExpanded = true;
+                    if (item.Node is FolderNode folderNode)
+                        loadTasks.Add(folderNode.EnsureChildrenLoadedAsync());
+                }
+
+                if (loadTasks.Count > 0)
+                    await Task.WhenAll(loadTasks).WaitAsync(cancellationToken);
+            }
+        }
+
         public static IReadOnlyList<SolutionNode> ResolveSelectedNodes(
             SolutionExplorer explorer,
             SolutionWorkspaceState state)

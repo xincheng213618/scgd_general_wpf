@@ -8,6 +8,8 @@ using System.Windows;
 
 namespace ColorVision.Solution.Explorer
 {
+    internal sealed record SolutionDirectoryEntrySnapshot(string FullPath, bool IsDirectory);
+
     public static class SolutionNodeFactory
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SolutionNodeFactory));
@@ -144,6 +146,173 @@ namespace ColorVision.Solution.Explorer
                 log.Debug($"{item.FullName}加载时间: {sw.Elapsed.TotalSeconds} 秒");
             }
 
+        }
+
+        internal static Task<IReadOnlyList<SolutionDirectoryEntrySnapshot>> CreateChildrenSnapshotAsync(
+            DirectoryInfo directoryInfo,
+            SolutionCache? cache,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(directoryInfo);
+            return Task.Run<IReadOnlyList<SolutionDirectoryEntrySnapshot>>(
+                () => CreateChildrenSnapshot(directoryInfo, cache, cancellationToken),
+                cancellationToken);
+        }
+
+        internal static async Task<IReadOnlyList<SolutionNode>> CreateNodesFromSnapshotAsync(
+            SolutionNode parent,
+            IReadOnlyList<SolutionDirectoryEntrySnapshot> entries,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(parent);
+            ArgumentNullException.ThrowIfNull(entries);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            SolutionExplorer? solutionExplorer = FindSolutionExplorer(parent);
+            var children = new List<SolutionNode>(entries.Count);
+            bool completed = false;
+            try
+            {
+                const int batchSize = 128;
+                for (int offset = 0; offset < entries.Count; offset += batchSize)
+                {
+                    int startIndex = offset;
+                    int endIndex = Math.Min(offset + batchSize, entries.Count);
+                    await InvokeOnDispatcherAsync(() =>
+                    {
+                        for (int index = startIndex; index < endIndex; index++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            SolutionDirectoryEntrySnapshot entry = entries[index];
+                            try
+                            {
+                                if (entry.IsDirectory)
+                                {
+                                    if (!Directory.Exists(entry.FullPath)
+                                        || !ShouldIncludeProjectPath(parent, entry.FullPath))
+                                    {
+                                        continue;
+                                    }
+
+                                    var directory = new DirectoryInfo(entry.FullPath);
+                                    if (solutionExplorer?.ShouldOmitPhysicalProjectDirectory(parent, directory) == true)
+                                        continue;
+                                    children.Add(CreateFolderNode(directory, solutionExplorer));
+                                    continue;
+                                }
+
+                                if (!File.Exists(entry.FullPath)
+                                    || IsInternalFile(Path.GetFileName(entry.FullPath))
+                                    || !ShouldIncludeProjectPath(parent, entry.FullPath))
+                                {
+                                    continue;
+                                }
+
+                                var file = new FileInfo(entry.FullPath);
+                                if (solutionExplorer?.ShouldOmitPhysicalSolutionItem(parent, file) == true)
+                                    continue;
+                                if (file.Extension.Contains("lnk", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(file.FullName);
+                                    file = new FileInfo(targetPath);
+                                }
+                                children.Add(CreateFileNode(file));
+                            }
+                            catch (Exception ex) when (ex is IOException
+                                or UnauthorizedAccessException
+                                or ArgumentException
+                                or NotSupportedException)
+                            {
+                                log.Warn($"创建解决方案节点失败: {entry.FullPath}, {ex.Message}");
+                            }
+                        }
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                children.Sort((left, right) =>
+                {
+                    int result = left.CompareTo(right);
+                    return result != 0
+                        ? result
+                        : StringComparer.OrdinalIgnoreCase.Compare(left.FullPath, right.FullPath);
+                });
+                completed = true;
+                return children;
+            }
+            finally
+            {
+                if (!completed)
+                {
+                    foreach (IDisposable disposable in children.OfType<IDisposable>())
+                        disposable.Dispose();
+                }
+            }
+        }
+
+        private static async Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                action();
+                return;
+            }
+
+            await dispatcher.InvokeAsync(
+                action,
+                System.Windows.Threading.DispatcherPriority.Background,
+                cancellationToken).Task.ConfigureAwait(false);
+        }
+
+        private static IReadOnlyList<SolutionDirectoryEntrySnapshot> CreateChildrenSnapshot(
+            DirectoryInfo directoryInfo,
+            SolutionCache? cache,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!directoryInfo.Exists)
+                return Array.Empty<SolutionDirectoryEntrySnapshot>();
+
+            try
+            {
+                if (cache?.HasCache() == true && cache.ValidateDirectory(directoryInfo.FullName))
+                {
+                    List<FileTreeCacheEntry> cachedChildren = cache.GetChildren(directoryInfo.FullName);
+                    if (cachedChildren.Count > 0)
+                    {
+                        return cachedChildren
+                            .Select(entry => new SolutionDirectoryEntrySnapshot(entry.FullPath, entry.IsDirectory))
+                            .ToList();
+                    }
+                }
+
+                var entries = new List<SolutionDirectoryEntrySnapshot>();
+                foreach (DirectoryInfo directory in directoryInfo.EnumerateDirectories())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if ((directory.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                        continue;
+                    entries.Add(new SolutionDirectoryEntrySnapshot(directory.FullName, IsDirectory: true));
+                }
+
+                foreach (FileInfo file in directoryInfo.EnumerateFiles())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!IsInternalFile(file.Name))
+                        entries.Add(new SolutionDirectoryEntrySnapshot(file.FullName, IsDirectory: false));
+                }
+                return entries;
+            }
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or ArgumentException
+                or NotSupportedException)
+            {
+                log.Warn($"枚举解决方案目录失败: {directoryInfo.FullName}, {ex.Message}");
+                return Array.Empty<SolutionDirectoryEntrySnapshot>();
+            }
         }
 
         private static bool TryPopulateChildrenFromCache(

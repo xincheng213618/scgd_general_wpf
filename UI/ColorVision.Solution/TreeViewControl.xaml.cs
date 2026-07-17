@@ -51,6 +51,7 @@ namespace ColorVision.Solution
         private readonly DispatcherTimer _workspaceStateSaveTimer;
         private readonly HashSet<SolutionExplorer> _observedExplorers = new();
         private SolutionNode? _dropTargetNode;
+        private CancellationTokenSource? _workspaceStateRestoreCancellation;
         private bool _isDragging;
         private bool _isRestoringWorkspaceState;
 
@@ -247,6 +248,7 @@ namespace ColorVision.Solution
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
             SaveWorkspaceState(SolutionManager.CurrentSolutionExplorer);
+            CancelWorkspaceStateRestore();
             _workspaceStateSaveTimer.Stop();
             SolutionManager.SolutionExplorers.CollectionChanged -= SolutionExplorers_CollectionChanged;
             foreach (SolutionExplorer explorer in _observedExplorers.ToList())
@@ -261,6 +263,7 @@ namespace ColorVision.Solution
         private void SolutionExplorers_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             _workspaceStateSaveTimer.Stop();
+            CancelWorkspaceStateRestore();
             _isRestoringWorkspaceState = true;
             try
             {
@@ -321,6 +324,7 @@ namespace ColorVision.Solution
             {
                 _workspaceStateSaveTimer.Stop();
                 SaveWorkspaceState(explorer);
+                CancelWorkspaceStateRestore();
             }
         }
 
@@ -343,6 +347,7 @@ namespace ColorVision.Solution
             {
                 _workspaceStateSaveTimer.Stop();
                 SaveWorkspaceState(explorer);
+                CancelWorkspaceStateRestore();
             }
         }
 
@@ -400,7 +405,7 @@ namespace ColorVision.Solution
             }
         }
 
-        private void RestoreWorkspaceState(SolutionExplorer? explorer)
+        private async void RestoreWorkspaceState(SolutionExplorer? explorer)
         {
             if (explorer == null
                 || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
@@ -408,6 +413,9 @@ namespace ColorVision.Solution
                 return;
             }
 
+            CancelWorkspaceStateRestore();
+            var cancellation = new CancellationTokenSource();
+            _workspaceStateRestoreCancellation = cancellation;
             SolutionWorkspaceStateLoadResult loadResult = SolutionWorkspaceStateStore.Load(
                 explorer.ConfigFileInfo.FullName);
             _isRestoringWorkspaceState = true;
@@ -417,7 +425,13 @@ namespace ColorVision.Solution
                 if (!loadResult.HasPersistedState)
                     return;
 
-                SolutionWorkspaceStateStore.RestoreExpansion(explorer, loadResult.State);
+                await SolutionWorkspaceStateStore.RestoreExpansionAsync(
+                    explorer,
+                    loadResult.State,
+                    cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (!ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
+                    return;
                 IReadOnlyList<SolutionNode> selectedNodes = SolutionWorkspaceStateStore.ResolveSelectedNodes(
                     explorer,
                     loadResult.State);
@@ -426,10 +440,30 @@ namespace ColorVision.Solution
                     loadResult.State);
                 _selectionService.SelectMany(selectedNodes, anchorNode);
             }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"恢复解决方案工作区状态失败: {ex}");
+            }
             finally
             {
-                _isRestoringWorkspaceState = false;
+                if (ReferenceEquals(_workspaceStateRestoreCancellation, cancellation))
+                {
+                    _workspaceStateRestoreCancellation = null;
+                    _isRestoringWorkspaceState = false;
+                    cancellation.Dispose();
+                }
             }
+        }
+
+        private void CancelWorkspaceStateRestore()
+        {
+            _workspaceStateRestoreCancellation?.Cancel();
+            _workspaceStateRestoreCancellation?.Dispose();
+            _workspaceStateRestoreCancellation = null;
+            _isRestoringWorkspaceState = false;
         }
 
         private void TreeViewControl_DragLeave(object sender, DragEventArgs e)

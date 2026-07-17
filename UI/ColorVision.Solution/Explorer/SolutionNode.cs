@@ -26,7 +26,19 @@ namespace ColorVision.Solution.Explorer
     {
         public SolutionNode Parent { get; set; }
 
-        public virtual ObservableCollection<SolutionNode> VisualChildren { get; set; }
+        public virtual ObservableCollection<SolutionNode> VisualChildren
+        {
+            get => _visualChildren;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (ReferenceEquals(_visualChildren, value))
+                    return;
+                _visualChildren = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private ObservableCollection<SolutionNode> _visualChildren = new();
 
         public event EventHandler AddChildEventHandler;
 
@@ -42,6 +54,53 @@ namespace ColorVision.Solution.Explorer
             node.UpdateProjectMembershipState();
             AddChildEventHandler?.Invoke(this, new EventArgs());
             VisualChildren.SortedAdd(node);
+        }
+
+        internal void ReplaceLazyChildren(
+            IEnumerable<SolutionNode> loadedChildren,
+            bool loadedChildrenAreSorted = false)
+        {
+            ArgumentNullException.ThrowIfNull(loadedChildren);
+
+            var children = VisualChildren
+                .Where(child => child is not LazyLoadingNode)
+                .ToList();
+            bool hasExistingChildren = children.Count > 0;
+            var existingPaths = children
+                .Where(child => !string.IsNullOrWhiteSpace(child.FullPath))
+                .Select(child => child.FullPath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (SolutionNode child in loadedChildren)
+            {
+                if (!string.IsNullOrWhiteSpace(child.FullPath)
+                    && !existingPaths.Add(child.FullPath))
+                {
+                    if (child is IDisposable disposable)
+                        disposable.Dispose();
+                    continue;
+                }
+                children.Add(child);
+            }
+
+            if (hasExistingChildren || !loadedChildrenAreSorted)
+            {
+                children.Sort((left, right) =>
+                {
+                    int result = left.CompareTo(right);
+                    return result != 0
+                        ? result
+                        : StringComparer.OrdinalIgnoreCase.Compare(left.FullPath, right.FullPath);
+                });
+            }
+
+            foreach (SolutionNode child in children)
+            {
+                child.Parent = this;
+                child.UpdateProjectMembershipState();
+            }
+            VisualChildren = new ObservableCollection<SolutionNode>(children);
+            AddChildEventHandler?.Invoke(this, EventArgs.Empty);
         }
         public event EventHandler RemoveChildEventHandler;
         public virtual void RemoveChild(SolutionNode node)
@@ -114,7 +173,6 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionNode()
         {
-            VisualChildren = new ObservableCollection<SolutionNode>() { };
             MenuItemMetadatas = new List<MenuItemMetadata>();
         }
 

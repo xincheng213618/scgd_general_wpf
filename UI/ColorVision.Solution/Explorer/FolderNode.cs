@@ -29,8 +29,13 @@ namespace ColorVision.Solution.Explorer
         private bool _childrenLoaded;
         private bool _childrenLoading;
         private bool _isExpanded;
+        private readonly object _childrenLoadLock = new();
+        private int _childrenLoadGeneration;
+        private CancellationTokenSource? _childrenLoadCancellation;
+        private Task _childrenLoadTask = Task.CompletedTask;
 
         public bool AreChildrenLoaded => _childrenLoaded;
+        internal bool AreChildrenLoading => _childrenLoading;
 
         public FolderNode(IFolderMeta folder) : base()
         {
@@ -60,31 +65,124 @@ namespace ColorVision.Solution.Explorer
                 _isExpanded = value;
                 NotifyPropertyChanged();
                 if (value)
-                    EnsureChildrenLoaded();
+                    _ = EnsureChildrenLoadedAsync();
             }
         }
 
         public void EnsureChildrenLoaded()
         {
-            if (_childrenLoaded || _childrenLoading || !DirectoryInfo.Exists)
-                return;
+            _ = EnsureChildrenLoadedAsync();
+        }
 
-            _childrenLoading = true;
-            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, async () =>
+        public Task EnsureChildrenLoadedAsync()
+        {
+            lock (_childrenLoadLock)
             {
+                if (_disposed || _childrenLoaded || !DirectoryInfo.Exists)
+                    return Task.CompletedTask;
+                if (_childrenLoading)
+                    return _childrenLoadTask;
+
+                int generation = ++_childrenLoadGeneration;
+                var cancellation = new CancellationTokenSource();
+                _childrenLoadCancellation = cancellation;
+                _childrenLoading = true;
+                _childrenLoadTask = LoadChildrenAsync(generation, cancellation);
+                return _childrenLoadTask;
+            }
+        }
+
+        private async Task LoadChildrenAsync(int generation, CancellationTokenSource cancellation)
+        {
+            bool completed = false;
+            IReadOnlyList<SolutionNode>? loadedChildren = null;
+            bool childrenAttached = false;
+            try
+            {
+                SolutionCache? cache = SolutionNodeFactory.FindSolutionExplorer(this)?.Cache;
+                IReadOnlyList<SolutionDirectoryEntrySnapshot> entries = await SolutionNodeFactory.CreateChildrenSnapshotAsync(
+                    DirectoryInfo,
+                    cache,
+                    cancellation.Token).ConfigureAwait(false);
+                IReadOnlyList<SolutionNode> materializedChildren = await SolutionNodeFactory.CreateNodesFromSnapshotAsync(
+                    this,
+                    entries,
+                    cancellation.Token).ConfigureAwait(false);
+                loadedChildren = materializedChildren;
+                await InvokeOnDispatcherAsync(() =>
+                {
+                    lock (_childrenLoadLock)
+                    {
+                        if (!IsCurrentChildrenLoad(generation, cancellation))
+                            return;
+                        ReplaceLazyChildren(materializedChildren, loadedChildrenAreSorted: true);
+                        childrenAttached = true;
+                        _childrenLoaded = true;
+                        completed = true;
+                    }
+                }, cancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                LogError($"加载文件夹失败: {DirectoryInfo.FullName}", ex);
+            }
+            finally
+            {
+                if (!childrenAttached && loadedChildren != null)
+                {
+                    foreach (IDisposable disposable in loadedChildren.OfType<IDisposable>())
+                        disposable.Dispose();
+                }
                 try
                 {
-                    VisualChildren.Clear();
-                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
-                    await SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache);
-                    _childrenLoaded = true;
+                    await InvokeOnDispatcherAsync(() =>
+                    {
+                        lock (_childrenLoadLock)
+                        {
+                            if (!IsCurrentChildrenLoad(generation, cancellation))
+                                return;
+                            _childrenLoading = false;
+                            if (!completed)
+                                _childrenLoaded = false;
+                            _childrenLoadCancellation = null;
+                            _childrenLoadTask = Task.CompletedTask;
+                            NotifyPropertyChanged(nameof(HasFile));
+                        }
+                    }, CancellationToken.None).ConfigureAwait(false);
                 }
-                finally
+                catch (Exception ex) when (ex is TaskCanceledException or InvalidOperationException)
                 {
-                    _childrenLoading = false;
-                    NotifyPropertyChanged(nameof(HasFile));
+                    LogError($"完成文件夹加载状态更新失败: {DirectoryInfo.FullName}", ex);
                 }
-            });
+                cancellation.Dispose();
+            }
+        }
+
+        private bool IsCurrentChildrenLoad(int generation, CancellationTokenSource cancellation)
+        {
+            return !_disposed
+                && generation == _childrenLoadGeneration
+                && ReferenceEquals(_childrenLoadCancellation, cancellation)
+                && !cancellation.IsCancellationRequested;
+        }
+
+        private static async Task InvokeOnDispatcherAsync(Action action, CancellationToken cancellationToken)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                action();
+                return;
+            }
+
+            await dispatcher.InvokeAsync(
+                action,
+                System.Windows.Threading.DispatcherPriority.Background,
+                cancellationToken).Task.ConfigureAwait(false);
         }
 
         public void MarkChildrenChanged()
@@ -92,28 +190,40 @@ namespace ColorVision.Solution.Explorer
             if (_childrenLoaded)
                 return;
 
-            VisualChildren.Clear();
-            AddLazyPlaceholderIfNeeded();
+            ResetChildrenForReload();
+            if (IsExpanded)
+                _ = EnsureChildrenLoadedAsync();
         }
 
         public void ReloadChildren()
         {
-            foreach (IDisposable disposable in VisualChildren.OfType<IDisposable>().ToList())
-                disposable.Dispose();
-            VisualChildren.Clear();
-            _childrenLoaded = false;
-            _childrenLoading = false;
-            AddLazyPlaceholderIfNeeded();
+            ResetChildrenForReload();
             if (IsExpanded)
-                EnsureChildrenLoaded();
+                _ = EnsureChildrenLoadedAsync();
+        }
+
+        private void ResetChildrenForReload()
+        {
+            lock (_childrenLoadLock)
+            {
+                _childrenLoadGeneration++;
+                _childrenLoadCancellation?.Cancel();
+                _childrenLoadCancellation?.Dispose();
+                _childrenLoadCancellation = null;
+                _childrenLoadTask = Task.CompletedTask;
+                _childrenLoaded = false;
+                _childrenLoading = false;
+                foreach (IDisposable disposable in VisualChildren.OfType<IDisposable>().ToList())
+                    disposable.Dispose();
+                VisualChildren.Clear();
+                AddLazyPlaceholderIfNeeded();
+            }
         }
 
         private void AddLazyPlaceholderIfNeeded()
         {
-            if (SolutionNodeFactory.HasVisibleChildren(DirectoryInfo))
-            {
+            if (DirectoryInfo.Exists && VisualChildren.Count == 0)
                 VisualChildren.Add(new LazyLoadingNode { Parent = this });
-            }
         }
 
         private void InitializeFileSystemWatcher()
@@ -399,11 +509,9 @@ namespace ColorVision.Solution.Explorer
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
                     FullPath = destinationDirectoryPath;
 
-                    VisualChildren.Clear();
-                    _childrenLoaded = false;
-                    AddLazyPlaceholderIfNeeded();
+                    ResetChildrenForReload();
                     if (IsExpanded)
-                        EnsureChildrenLoaded();
+                        _ = EnsureChildrenLoadedAsync();
 
                     if (FileSystemWatcher != null)
                     {
@@ -468,11 +576,9 @@ namespace ColorVision.Solution.Explorer
                         }
                     }
 
-                    VisualChildren.Clear();
-                    _childrenLoaded = false;
-                    AddLazyPlaceholderIfNeeded();
+                    ResetChildrenForReload();
                     if (IsExpanded)
-                        EnsureChildrenLoaded();
+                        _ = EnsureChildrenLoadedAsync();
                     LogOperation("成功回滚重命名操作");
                 }
             }
@@ -541,16 +647,22 @@ namespace ColorVision.Solution.Explorer
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            lock (_childrenLoadLock)
             {
-                if (disposing)
-                {
-                    foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
-                        child.Dispose();
-                    VisualChildren.Clear();
-                    FileSystemWatcher?.Dispose();
-                }
+                if (_disposed)
+                    return;
                 _disposed = true;
+                if (!disposing)
+                    return;
+
+                _childrenLoadGeneration++;
+                _childrenLoadCancellation?.Cancel();
+                _childrenLoadCancellation?.Dispose();
+                _childrenLoadCancellation = null;
+                foreach (var child in VisualChildren.OfType<IDisposable>().ToList())
+                    child.Dispose();
+                VisualChildren.Clear();
+                FileSystemWatcher?.Dispose();
             }
         }
 

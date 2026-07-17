@@ -1362,6 +1362,133 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public async Task FolderNode_LoadsChildrenLazilyAndClearsLeafPlaceholder()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string emptyFolderPath = Path.Combine(rootPath, "01-empty");
+        Directory.CreateDirectory(emptyFolderPath);
+        File.WriteAllText(Path.Combine(rootPath, "02-file.txt"), string.Empty);
+
+        try
+        {
+            using FolderNode rootNode = SolutionNodeFactory.CreateFolderNode(new DirectoryInfo(rootPath));
+            var changedProperties = new List<string?>();
+            rootNode.PropertyChanged += (_, e) => changedProperties.Add(e.PropertyName);
+            var placeholderCollection = rootNode.VisualChildren;
+            Assert.IsType<LazyLoadingNode>(Assert.Single(rootNode.VisualChildren));
+
+            await rootNode.EnsureChildrenLoadedAsync();
+
+            Assert.True(rootNode.AreChildrenLoaded);
+            Assert.False(rootNode.AreChildrenLoading);
+            Assert.NotSame(placeholderCollection, rootNode.VisualChildren);
+            Assert.Contains(nameof(SolutionNode.VisualChildren), changedProperties);
+            Assert.Equal(["01-empty", "02-file.txt"], rootNode.VisualChildren.Select(node => node.Name));
+            FolderNode emptyFolderNode = Assert.IsType<FolderNode>(rootNode.VisualChildren[0]);
+            Assert.IsType<LazyLoadingNode>(Assert.Single(emptyFolderNode.VisualChildren));
+
+            await emptyFolderNode.EnsureChildrenLoadedAsync();
+
+            Assert.True(emptyFolderNode.AreChildrenLoaded);
+            Assert.Empty(emptyFolderNode.VisualChildren);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FolderNode_ReloadRejectsStaleChildrenAndUsesLatestSnapshot()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        for (int index = 0; index < 256; index++)
+            File.WriteAllText(Path.Combine(rootPath, $"item-{index:D3}.txt"), string.Empty);
+
+        try
+        {
+            using FolderNode rootNode = SolutionNodeFactory.CreateFolderNode(new DirectoryInfo(rootPath));
+            rootNode.IsExpanded = true;
+            Task originalLoad = rootNode.EnsureChildrenLoadedAsync();
+            string latestFilePath = Path.Combine(rootPath, "latest.txt");
+            File.WriteAllText(latestFilePath, string.Empty);
+
+            rootNode.ReloadChildren();
+            Task latestLoad = rootNode.EnsureChildrenLoadedAsync();
+            await Task.WhenAll(originalLoad, latestLoad);
+
+            Assert.True(rootNode.AreChildrenLoaded);
+            Assert.False(rootNode.AreChildrenLoading);
+            Assert.Equal(257, rootNode.VisualChildren.Count);
+            Assert.Equal(
+                rootNode.VisualChildren.Count,
+                rootNode.VisualChildren.Select(node => node.FullPath).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+            Assert.Contains(rootNode.VisualChildren, node =>
+                string.Equals(node.FullPath, latestFilePath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionWorkspaceState_RestoresNestedLazyExpansionAndSelection()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        string parentPath = Path.Combine(solutionDirectory, "Parent");
+        string childPath = Path.Combine(parentPath, "Child");
+        string filePath = Path.Combine(childPath, "notes.txt");
+        Directory.CreateDirectory(childPath);
+        File.WriteAllText(filePath, string.Empty);
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.AutoDiscover,
+        });
+
+        try
+        {
+            SolutionWorkspaceState state;
+            using (var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath))
+            {
+                FolderNode parentNode = Assert.Single(
+                    explorer.VisualChildren.OfType<FolderNode>(),
+                    node => string.Equals(node.FullPath, parentPath, StringComparison.OrdinalIgnoreCase));
+                parentNode.IsExpanded = true;
+                await parentNode.EnsureChildrenLoadedAsync();
+                FolderNode childNode = Assert.Single(parentNode.VisualChildren.OfType<FolderNode>());
+                childNode.IsExpanded = true;
+                await childNode.EnsureChildrenLoadedAsync();
+                FileNode fileNode = Assert.Single(childNode.VisualChildren.OfType<FileNode>());
+                state = SolutionWorkspaceStateStore.Capture(explorer, [fileNode], fileNode);
+            }
+
+            using var recreatedExplorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            await SolutionWorkspaceStateStore.RestoreExpansionAsync(recreatedExplorer, state);
+
+            FolderNode recreatedParent = Assert.Single(
+                recreatedExplorer.VisualChildren.OfType<FolderNode>(),
+                node => string.Equals(node.FullPath, parentPath, StringComparison.OrdinalIgnoreCase));
+            Assert.True(recreatedParent.IsExpanded);
+            Assert.True(recreatedParent.AreChildrenLoaded);
+            FolderNode recreatedChild = Assert.Single(recreatedParent.VisualChildren.OfType<FolderNode>());
+            Assert.True(recreatedChild.IsExpanded);
+            Assert.True(recreatedChild.AreChildrenLoaded);
+            FileNode recreatedFile = Assert.Single(recreatedChild.VisualChildren.OfType<FileNode>());
+            Assert.Equal(filePath, recreatedFile.FullPath, ignoreCase: true);
+            Assert.Same(recreatedFile, Assert.Single(
+                SolutionWorkspaceStateStore.ResolveSelectedNodes(recreatedExplorer, state)));
+            Assert.Same(recreatedFile, SolutionWorkspaceStateStore.ResolveAnchorNode(recreatedExplorer, state));
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionOrganizationMove_MovesBatchesAndRejectsFolderCycles()
     {
         string solutionDirectory = CreateTemporaryDirectory();
@@ -2344,6 +2471,18 @@ public class SolutionManagerFoundationTests
         string directoryPath = Path.Combine(Path.GetTempPath(), $"ColorVision.Solution.Tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directoryPath);
         return directoryPath;
+    }
+
+    private static SolutionExplorer CreateSolutionExplorer(string solutionDirectory, string solutionPath)
+    {
+        return new SolutionExplorer(new SolutionEnvironments
+        {
+            SolutionDir = solutionDirectory,
+            SolutionName = Path.GetFileNameWithoutExtension(solutionPath),
+            SolutionExt = Path.GetExtension(solutionPath),
+            SolutionFileName = Path.GetFileNameWithoutExtension(solutionPath),
+            SolutionPath = solutionPath,
+        });
     }
 
     private static ProjectDefinition CreateBuildProject(
