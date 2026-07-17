@@ -2170,6 +2170,38 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void CommandLineResourceOpenRequest_DeduplicatesPhysicalAliases()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string workspacePath = Path.Combine(rootPath, "Workspace");
+        string filePath = Path.Combine(rootPath, "Sample.txt");
+        Directory.CreateDirectory(workspacePath);
+        File.WriteAllText(filePath, "sample");
+
+        try
+        {
+            string workspaceAlias = Path.Combine(workspacePath, ".");
+            string fileAlias = Path.Combine(rootPath, ".", "Sample.txt");
+            var parser = new ColorVision.UI.Shell.ArgumentParser();
+            parser.AddArgument("solutionpath", false, "s");
+            ColorVision.UI.Shell.ArgumentParseResult parsedArguments = parser.ParseSnapshot(
+                ["--solutionpath", workspacePath, workspaceAlias, filePath, fileAlias]);
+
+            CommandLineResourceOpenRequest request = CommandLineResourceOpenRequest.Create(parsedArguments);
+
+            Assert.Equal(workspacePath, request.WorkspacePath);
+            Assert.Equal([filePath], request.ResourcePaths);
+            Assert.Equal(
+                [filePath],
+                ResourceOpenService.NormalizeBatchPaths([filePath, fileAlias]));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SingleInstanceCommandLineTransport_RoundTripsLongAndEscapedArguments()
     {
         string longPath = Path.Combine(

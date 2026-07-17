@@ -25,7 +25,7 @@ namespace ColorVision.Solution.Editor
             resourcePaths.AddRange(parsedArguments.PositionalArguments);
             resourcePaths = resourcePaths
                 .Where(path => !string.IsNullOrWhiteSpace(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct(ResourcePathIdentityComparer.Instance)
                 .ToList();
 
             if (string.IsNullOrWhiteSpace(workspacePath))
@@ -34,7 +34,7 @@ namespace ColorVision.Solution.Editor
             if (!string.IsNullOrWhiteSpace(workspacePath))
             {
                 resourcePaths.RemoveAll(path =>
-                    string.Equals(path, workspacePath, StringComparison.OrdinalIgnoreCase));
+                    ResourcePathIdentityComparer.Instance.Equals(path, workspacePath));
             }
 
             return new CommandLineResourceOpenRequest(workspacePath, resourcePaths);

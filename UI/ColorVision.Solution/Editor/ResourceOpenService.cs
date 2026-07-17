@@ -262,7 +262,7 @@ namespace ColorVision.Solution.Editor
             ArgumentNullException.ThrowIfNull(paths);
             List<string> resources = paths
                 .Where(path => !string.IsNullOrWhiteSpace(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct(ResourcePathIdentityComparer.Instance)
                 .ToList();
             if (resources.Count == 0)
                 return false;
@@ -360,11 +360,11 @@ namespace ColorVision.Solution.Editor
                 cancellationToken);
         }
 
-        private static List<string> NormalizeBatchPaths(IEnumerable<string> paths)
+        internal static List<string> NormalizeBatchPaths(IEnumerable<string> paths)
         {
             return paths
                 .Where(path => !string.IsNullOrWhiteSpace(path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct(ResourcePathIdentityComparer.Instance)
                 .ToList();
         }
 
