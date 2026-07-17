@@ -1,4 +1,3 @@
-using ColorVision.UI.Menus;
 using System.IO;
 
 namespace ColorVision.Solution.Explorer
@@ -125,13 +124,6 @@ namespace ColorVision.Solution.Explorer
         {
             MenuItemMetadatas.Clear();
             TargetNode.CollectMenuItems(MenuItemMetadatas);
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionNavigationCommands.RevealInTreeId,
-                Order = 6,
-                Header = "在解决方案资源管理器中定位(_L)",
-                Command = SolutionNavigationCommands.RevealInTree,
-            });
         }
 
         public void Dispose()

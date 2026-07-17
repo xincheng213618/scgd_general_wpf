@@ -1104,6 +1104,13 @@ public class SolutionManagerFoundationTests
                 fileNode,
                 "sample.txt",
                 ownsTarget: false);
+            using var duplicateSearchResult = new SolutionSearchResultNode(
+                explorer,
+                fileNode,
+                "duplicate/sample.txt",
+                ownsTarget: false);
+            var searchNodeItems = new List<MenuItemMetadata>();
+            searchResult.CollectMenuItems(searchNodeItems);
             List<MenuItemMetadata> fileMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([fileNode]);
             List<MenuItemMetadata> folderMenuItems =
@@ -1116,6 +1123,8 @@ public class SolutionManagerFoundationTests
                 SolutionContextMenuService.CreateMenuMetadata([fileNode, secondFileNode]);
             List<MenuItemMetadata> mixedMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([fileNode, folderNode]);
+            List<MenuItemMetadata> duplicateSearchMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([searchResult, duplicateSearchResult]);
 
             Assert.Same(
                 SolutionResourceCommands.Open,
@@ -1176,10 +1185,14 @@ public class SolutionManagerFoundationTests
                 ApplicationCommands.Properties,
                 Assert.Single(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Properties).Command);
             Assert.DoesNotContain(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Rename);
+            Assert.DoesNotContain(searchNodeItems, item =>
+                item.GuidId == SolutionNavigationCommands.RevealInTreeId);
             Assert.Same(
                 SolutionNavigationCommands.RevealInTree,
                 Assert.Single(searchMenuItems, item =>
                     item.GuidId == SolutionNavigationCommands.RevealInTreeId).Command);
+            Assert.DoesNotContain(duplicateSearchMenuItems, item =>
+                item.GuidId == SolutionNavigationCommands.RevealInTreeId);
             Assert.Equal(filePath, fileNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(folderPath, folderNode.EditorResourcePath, ignoreCase: true);
             Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);
