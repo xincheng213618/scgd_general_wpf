@@ -86,6 +86,7 @@ namespace ProjectARVRPro.Exports
             {
                 if (property.Name == nameof(ObjectiveTestResult.DynamicTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
+                    property.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
                     property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults))
                     continue;

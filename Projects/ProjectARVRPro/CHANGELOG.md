@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.7.46] 2026.07.17
+
+1. 增加屏幕缺陷检测 Process，支持结果文件包装与直接 JSON 解析。
+2. 增加缺陷结果文本展示和图像缺陷框绘制，不参与上下限及总结果判定。
+3. 在 `ObjectiveTestResult` 中输出面向客户的精简屏幕缺陷 JSON，移除原始详情和文件包装字段。
+
 ## [1.1.7.45] 2026.07.15
 
 1. Demura烧录目标文件名改为`DemuraDynamic.bin`，并兼容迁移旧默认值`DemuraMerged.bin`。
