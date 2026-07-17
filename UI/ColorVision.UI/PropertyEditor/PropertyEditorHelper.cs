@@ -17,6 +17,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace ColorVision.UI
 {
@@ -760,17 +761,14 @@ namespace ColorVision.UI
                     if (visibleProperties.Count == 0 && !addAdvancedToggle)
                         continue;
 
-                    var border = new Border
+                    bool useIntegratedLayout = advancedOptions?.UseIntegratedCategoryLayout == true;
+                    var stackPanel = new StackPanel
                     {
-                        BorderThickness = new Thickness(1),
-                        CornerRadius = new CornerRadius(5),
-                        Margin = new Thickness(0, 0, 0, 5),
+                        Margin = useIntegratedLayout
+                            ? new Thickness(5, 4, 5, 6)
+                            : showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5),
                         Tag = categoryGroup.Key
                     };
-                    border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
-                    border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-
-                    var stackPanel = new StackPanel { Margin = showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5) };
 
 
                     if (showCategoryHeader)
@@ -780,8 +778,6 @@ namespace ColorVision.UI
                         advancedToggleAdded |= addAdvancedToggle;
                     }
 
-
-                    border.Child = stackPanel;
 
                     int propertyEditorCount = 0;
                     foreach (var property in visibleProperties)
@@ -795,7 +791,24 @@ namespace ColorVision.UI
 
                     if (propertyEditorCount > 0 || addAdvancedToggle)
                     {
-                        propertyPanel.Children.Add(border);
+                        if (useIntegratedLayout)
+                        {
+                            propertyPanel.Children.Add(stackPanel);
+                        }
+                        else
+                        {
+                            var border = new Border
+                            {
+                                BorderThickness = new Thickness(1),
+                                CornerRadius = new CornerRadius(5),
+                                Margin = new Thickness(0, 0, 0, 5),
+                                Tag = categoryGroup.Key,
+                                Child = stackPanel
+                            };
+                            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+                            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+                            propertyPanel.Children.Add(border);
+                        }
                     }
                 }
 
@@ -818,19 +831,11 @@ namespace ColorVision.UI
 
             if (advancedOptions != null)
             {
-                var icon = new TextBlock
-                {
-                    Text = advancedOptions.IconGlyph,
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 14,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-                icon.SetResourceReference(TextBlock.ForegroundProperty, advancedOptions.ShowAdvancedProperties ? "PrimaryBrush" : "GlobalTextBrush");
+                Canvas icon = CreateAdvancedFilterIcon(advancedOptions.ShowAdvancedProperties);
 
                 var toggle = new ToggleButton
                 {
-                    Width = 22,
+                    Width = 24,
                     Height = 20,
                     Padding = new Thickness(0),
                     Margin = new Thickness(5, -2, 0, 0),
@@ -871,6 +876,52 @@ namespace ColorVision.UI
             titleText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
             header.Children.Add(titleText);
             return header;
+        }
+
+        private static Canvas CreateAdvancedFilterIcon(bool isActive)
+        {
+            const double iconSize = 16;
+            string brushKey = isActive ? "PrimaryBrush" : "GlobalTextBrush";
+            var icon = new Canvas
+            {
+                Width = iconSize,
+                Height = iconSize,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            AddSlider(3.5, 6.5);
+            AddSlider(8, 11);
+            AddSlider(12.5, 4.5);
+            return icon;
+
+            void AddSlider(double y, double knobX)
+            {
+                var line = new Line
+                {
+                    X1 = 1.5,
+                    X2 = 14.5,
+                    Y1 = y,
+                    Y2 = y,
+                    StrokeThickness = 1.25,
+                    StrokeStartLineCap = PenLineCap.Round,
+                    StrokeEndLineCap = PenLineCap.Round
+                };
+                line.SetResourceReference(Shape.StrokeProperty, brushKey);
+                icon.Children.Add(line);
+
+                var knob = new Ellipse
+                {
+                    Width = 3.5,
+                    Height = 3.5
+                };
+                knob.SetResourceReference(Shape.FillProperty, brushKey);
+                Canvas.SetLeft(knob, knobX - 1.75);
+                Canvas.SetTop(knob, y - 1.75);
+                icon.Children.Add(knob);
+            }
         }
 
 

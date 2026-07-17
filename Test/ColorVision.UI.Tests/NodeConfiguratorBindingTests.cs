@@ -82,6 +82,8 @@ public class NodeConfiguratorBindingTests
                 Assert.Equal(new[] { nameof(AdvancedFilterConfig.StandardValue) }, GetDisplayedPropertyNames(propertyEditor));
                 ToggleButton advancedToggle = Assert.Single(FindVisualChildren<ToggleButton>(propertyEditor));
                 Assert.Equal(Dock.Right, DockPanel.GetDock(advancedToggle));
+                Assert.IsType<Canvas>(advancedToggle.Content);
+                Assert.IsType<StackPanel>(Assert.Single(propertyEditor.Children));
 
                 advancedToggle.IsChecked = true;
                 Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
@@ -98,6 +100,7 @@ public class NodeConfiguratorBindingTests
 
                 StackPanel defaultEditor = PropertyEditorHelper.GenPropertyEditorControl(filterConfig);
                 Assert.Empty(FindVisualChildren<ToggleButton>(defaultEditor));
+                Assert.IsType<Border>(Assert.Single(defaultEditor.Children));
                 Assert.Equal(2, GetDisplayedPropertyNames(defaultEditor).Count);
             }
             catch (Exception ex)

@@ -23,6 +23,9 @@ namespace ColorVision.UI
 
         public string ToolTip { get; set; } = "Advanced";
 
-        public string IconGlyph { get; set; } = "\uE713";
+        /// <summary>
+        /// Gets or sets whether categories are rendered directly in the editor instead of inside card borders.
+        /// </summary>
+        public bool UseIntegratedCategoryLayout { get; set; } = true;
     }
 }
