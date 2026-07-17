@@ -515,16 +515,6 @@ namespace ColorVision.Solution
             return OpenWithDescriptor(filePath, descriptor, out errorMessage);
         }
 
-        internal bool TryOpenFolder(string folderPath, out string errorMessage)
-        {
-            if (!Directory.Exists(folderPath))
-            {
-                errorMessage = $"文件夹不存在：{folderPath}";
-                return false;
-            }
-            return OpenWithDescriptor(folderPath, GetDefaultFolderEditorDescriptor(), out errorMessage);
-        }
-
         internal bool OpenFolderWith(string folderPath, string editorId, out string errorMessage)
         {
             if (!Directory.Exists(folderPath))

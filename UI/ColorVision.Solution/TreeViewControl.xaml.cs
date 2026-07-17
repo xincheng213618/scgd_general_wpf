@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1868
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -51,7 +50,7 @@ namespace ColorVision.Solution
         private readonly SolutionSelectionService _selectionService;
         private readonly DispatcherTimer _workspaceStateSaveTimer;
         private readonly DispatcherTimer _searchDebounceTimer;
-        private readonly HashSet<SolutionExplorer> _observedExplorers = new();
+        private SolutionExplorer? _observedExplorer;
         private readonly List<SolutionSearchResultNode> _searchResultNodes = new();
         private SolutionNode? _dropTargetNode;
         private CancellationTokenSource? _workspaceStateRestoreCancellation;
@@ -89,7 +88,7 @@ namespace ColorVision.Solution
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = SolutionManager;
-            SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
             IniCommand();
         }
 
@@ -263,9 +262,9 @@ namespace ColorVision.Solution
 
             // Use the shared context menu service instead of per-node ContextMenu
             SolutionTreeView.ContextMenu = _contextMenuService.ContextMenu;
-            SolutionManager.SolutionExplorers.CollectionChanged -= SolutionExplorers_CollectionChanged;
-            SolutionManager.SolutionExplorers.CollectionChanged += SolutionExplorers_CollectionChanged;
-            SynchronizeObservedExplorers();
+            SolutionManager.CurrentWorkspaceChanged -= SolutionManager_CurrentWorkspaceChanged;
+            SolutionManager.CurrentWorkspaceChanged += SolutionManager_CurrentWorkspaceChanged;
+            SynchronizeObservedExplorer();
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
@@ -282,17 +281,17 @@ namespace ColorVision.Solution
             CancelPendingSearch();
             CancelPendingReveal();
             DisposeSearchResultNodes();
-            SolutionManager.SolutionExplorers.CollectionChanged -= SolutionExplorers_CollectionChanged;
-            foreach (SolutionExplorer explorer in _observedExplorers.ToList())
-                DetachExplorer(explorer);
-            _observedExplorers.Clear();
+            SolutionManager.CurrentWorkspaceChanged -= SolutionManager_CurrentWorkspaceChanged;
+            if (_observedExplorer != null)
+                DetachExplorer(_observedExplorer);
+            _observedExplorer = null;
             DragOver -= TreeViewControl_DragOver;
             Drop -= TreeViewControl_Drop;
             DragLeave -= TreeViewControl_DragLeave;
             ClearDropTargetVisual();
         }
 
-        private void SolutionExplorers_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        private void SolutionManager_CurrentWorkspaceChanged(object? sender, EventArgs e)
         {
             _workspaceStateSaveTimer.Stop();
             CancelWorkspaceStateRestore();
@@ -307,7 +306,8 @@ namespace ColorVision.Solution
                 _isRestoringWorkspaceState = false;
             }
 
-            SynchronizeObservedExplorers();
+            SynchronizeObservedExplorer();
+            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
             Dispatcher.BeginInvoke(
                 () => RestoreWorkspaceState(SolutionManager.CurrentSolutionExplorer),
                 DispatcherPriority.Loaded);
@@ -315,20 +315,23 @@ namespace ColorVision.Solution
                 SearchBar1TextChanged();
         }
 
-        private void SynchronizeObservedExplorers()
+        private void SynchronizeObservedExplorer()
         {
-            var currentExplorers = SolutionManager.SolutionExplorers.ToHashSet();
-            foreach (SolutionExplorer explorer in _observedExplorers.Except(currentExplorers).ToList())
-            {
-                DetachExplorer(explorer);
-                _observedExplorers.Remove(explorer);
-            }
+            SolutionExplorer? current = SolutionManager.CurrentSolutionExplorer;
+            if (ReferenceEquals(_observedExplorer, current))
+                return;
+            if (_observedExplorer != null)
+                DetachExplorer(_observedExplorer);
+            _observedExplorer = current;
+            if (current != null)
+                AttachExplorer(current);
+        }
 
-            foreach (SolutionExplorer explorer in currentExplorers.Except(_observedExplorers))
-            {
-                AttachExplorer(explorer);
-                _observedExplorers.Add(explorer);
-            }
+        private static IReadOnlyList<SolutionExplorer> GetActiveWorkspaceItems()
+        {
+            return SolutionManager.CurrentSolutionExplorer is { } explorer
+                ? [explorer]
+                : [];
         }
 
         private void AttachExplorer(SolutionExplorer explorer)
@@ -1045,7 +1048,7 @@ namespace ColorVision.Solution
             try
             {
                 SolutionSearchResult result = await SolutionSearchService.SearchAsync(
-                    SolutionManager.SolutionExplorers.ToList(),
+                    GetActiveWorkspaceItems(),
                     query,
                     SolutionSearchService.DefaultMaxResults,
                     cancellation.Token);
@@ -1081,7 +1084,7 @@ namespace ColorVision.Solution
             DisposeSearchResultNodes();
             foreach (SolutionSearchHit hit in result.Hits)
             {
-                if (!SolutionManager.SolutionExplorers.Contains(hit.Explorer))
+                if (!ReferenceEquals(hit.Explorer, SolutionManager.CurrentSolutionExplorer))
                     continue;
                 SolutionNode? targetNode = CreateSearchTargetNode(hit, out bool ownsTarget);
                 if (targetNode == null)
@@ -1141,7 +1144,7 @@ namespace ColorVision.Solution
         private void ShowSolutionTree()
         {
             _selectionService.Clear();
-            SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            SolutionTreeView.ItemsSource = GetActiveWorkspaceItems();
             DisposeSearchResultNodes();
             SearchStatusText.Text = string.Empty;
             SearchStatusText.Visibility = Visibility.Collapsed;

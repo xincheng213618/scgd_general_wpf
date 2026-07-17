@@ -458,7 +458,7 @@ namespace ColorVision.Solution
         private void CanExecuteRevealInTree(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = _selectionService.SelectedNodes is [SolutionSearchResultNode searchResult]
-                && SolutionManager.SolutionExplorers.Contains(searchResult.Explorer);
+                && ReferenceEquals(searchResult.Explorer, SolutionManager.CurrentSolutionExplorer);
             e.Handled = true;
         }
 
@@ -470,7 +470,7 @@ namespace ColorVision.Solution
 
             SolutionExplorer explorer = searchResult.Explorer;
             SolutionNode targetNode = searchResult.TargetNode;
-            if (!SolutionManager.SolutionExplorers.Contains(explorer))
+            if (!ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
                 return;
 
             CancelPendingReveal();
@@ -483,7 +483,7 @@ namespace ColorVision.Solution
                     targetNode,
                     cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                if (resolvedNode == null || !SolutionManager.SolutionExplorers.Contains(explorer))
+                if (resolvedNode == null || !ReferenceEquals(explorer, SolutionManager.CurrentSolutionExplorer))
                 {
                     SearchStatusText.Text = "无法在解决方案树中定位该项";
                     SearchStatusText.Visibility = Visibility.Visible;
@@ -494,7 +494,6 @@ namespace ColorVision.Solution
                 _isRestoringWorkspaceState = true;
                 try
                 {
-                    SolutionManager.CurrentSolutionExplorer = explorer;
                     _isClearingSearchForReveal = true;
                     SearchBar1.Text = string.Empty;
                     ExpandNodeAncestors(resolvedNode);

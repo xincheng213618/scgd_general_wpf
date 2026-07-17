@@ -32,7 +32,7 @@ namespace ColorVision.UI
                 return text;
             }
         }
-        public override void Execute()
+        public override async void Execute()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.Filter = Properties.Resources.AllFiles;
@@ -44,7 +44,7 @@ namespace ColorVision.UI
                 {
                     return;
                 }
-                FileOpenRouteResult result = FileProcessorFactory.GetInstance().OpenFile(selectedFilePath);
+                FileOpenRouteResult result = await FileProcessorFactory.GetInstance().OpenFileAsync(selectedFilePath);
                 if (!result.Succeeded && !result.Canceled)
                 {
                     MessageBox.Show(string.IsNullOrWhiteSpace(result.ErrorMessage)
@@ -70,7 +70,7 @@ namespace ColorVision.UI
         /// Optional resource-aware handler installed by the solution module.
         /// Registered file actions remain available for standalone file mode.
         /// </summary>
-        public Func<string, FileOpenRouteResult>? ResourceOpenHandler { get; set; }
+        public Func<string, CancellationToken, Task<FileOpenRouteResult>>? ResourceOpenHandlerAsync { get; set; }
 
         private FileProcessorFactory()
         {
@@ -146,12 +146,16 @@ namespace ColorVision.UI
             }
         }
 
-        public FileOpenRouteResult OpenFile(string filePath)
+        public async Task<FileOpenRouteResult> OpenFileAsync(
+            string filePath,
+            CancellationToken cancellationToken = default)
         {
             if (!File.Exists(filePath))
                 return new FileOpenRouteResult(true, false, $"文件不存在：{filePath}");
 
-            FileOpenRouteResult? routedResult = ResourceOpenHandler?.Invoke(filePath);
+            FileOpenRouteResult? routedResult = ResourceOpenHandlerAsync == null
+                ? null
+                : await ResourceOpenHandlerAsync(filePath, cancellationToken);
             if (routedResult?.Handled == true)
                 return routedResult;
 

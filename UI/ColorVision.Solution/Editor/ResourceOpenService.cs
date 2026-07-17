@@ -70,6 +70,13 @@ namespace ColorVision.Solution.Editor
             ResourceOpenKind kind = Classify(path);
             if (kind == ResourceOpenKind.Missing || string.IsNullOrWhiteSpace(path))
                 return new ResourceOpenResult(kind, false, "要打开的资源不存在。");
+            if (kind is ResourceOpenKind.Folder or ResourceOpenKind.Solution or ResourceOpenKind.Project)
+            {
+                return new ResourceOpenResult(
+                    kind,
+                    false,
+                    "工作区、工程和解决方案必须通过异步打开接口打开。");
+            }
 
             try
             {
@@ -87,26 +94,7 @@ namespace ColorVision.Solution.Editor
                     }
                 }
 
-                bool succeeded;
-                string errorMessage = string.Empty;
-                switch (kind)
-                {
-                    case ResourceOpenKind.Folder:
-                        succeeded = SolutionManager.GetInstance().TryOpenFolder(path, out errorMessage);
-                        break;
-                    case ResourceOpenKind.Solution:
-                        succeeded = SolutionManager.GetInstance().TryOpenSolution(path, out errorMessage);
-                        break;
-                    case ResourceOpenKind.Project:
-                        succeeded = SolutionManager.GetInstance().TryOpenProject(path, out errorMessage);
-                        break;
-                    case ResourceOpenKind.File:
-                        succeeded = _editorManager.TryOpenFile(path, out errorMessage);
-                        break;
-                    default:
-                        succeeded = false;
-                        break;
-                }
+                bool succeeded = _editorManager.TryOpenFile(path, out string errorMessage);
 
                 if (succeeded)
                     return new ResourceOpenResult(kind, true);
@@ -122,9 +110,11 @@ namespace ColorVision.Solution.Editor
 
         public bool TryOpen(string path) => Open(path).Succeeded;
 
-        internal FileOpenRouteResult RouteFileProcessorOpen(string path)
+        internal async Task<FileOpenRouteResult> RouteFileProcessorOpenAsync(
+            string path,
+            CancellationToken cancellationToken)
         {
-            return ToFileOpenRouteResult(Open(path));
+            return ToFileOpenRouteResult(await OpenAsync(path, cancellationToken));
         }
 
         internal static FileOpenRouteResult ToFileOpenRouteResult(ResourceOpenResult result)
