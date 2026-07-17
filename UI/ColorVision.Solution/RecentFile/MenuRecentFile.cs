@@ -17,24 +17,27 @@ namespace ColorVision.Solution.RecentFile
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            List<MenuItemMetadata> menuItemMetas = new List<MenuItemMetadata>();
-            List<string> recentFiles = SolutionManager.GetInstance().SolutionHistory.RecentFiles
-                .Where(SolutionManager.IsSupportedOpenPath)
-                .ToList();
-
-            for (int i = 0; i < recentFiles.Count; i++)
+            List<MenuItemMetadata> menuItemMetas = new();
+            foreach (string item in SolutionManager.GetInstance().SolutionHistory.RecentFiles)
             {
-                string item = recentFiles[i];
+                if (!ResourceOpenService.TryDescribeWorkspaceResource(
+                    item,
+                    out WorkspaceResourceInfo resourceInfo))
+                {
+                    continue;
+                }
+
+                int index = menuItemMetas.Count + 1;
                 RelayCommand relayCommand = new RelayCommand(
                     async _ => await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(item),
                     _ => SolutionManager.IsSupportedOpenPath(item));
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {
                     OwnerGuid = nameof(MenuRecentFile),
-                    GuidId = item.ToString(),
-                    Header = item,
+                    GuidId = resourceInfo.FullPath,
+                    Header = $"_{index}  {resourceInfo.DisplayName}  [{resourceInfo.KindDisplayName}] — {resourceInfo.FullPath}",
                     Icon = null, // Set your icon here if needed
-                    Order = i,
+                    Order = index - 1,
                     Command = relayCommand,
                 };
                 menuItemMetas.Add(menuItemMeta);

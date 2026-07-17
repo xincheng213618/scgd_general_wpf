@@ -2052,20 +2052,28 @@ public class SolutionManagerFoundationTests
     {
         string directoryPath = CreateTemporaryDirectory();
         string solutionPath = Path.Combine(directoryPath, "Example.cvsln");
+        string projectPath = Path.Combine(directoryPath, "ProjectA.cvproj");
         string legacyFolderWorkspacePath = Path.Combine(directoryPath, SolutionManager.FolderWorkspaceFileName);
         string ordinaryFilePath = Path.Combine(directoryPath, "notes.txt");
         try
         {
             File.WriteAllText(solutionPath, "{}");
+            FolderProjectProvider.CreateProjectFile(projectPath, "Project A");
             File.WriteAllText(legacyFolderWorkspacePath, "{}");
             File.WriteAllText(ordinaryFilePath, "text");
 
             Assert.True(OpenSolutionWindow.TryCreateSolutionInfo(solutionPath, out SolutionInfo solutionInfo));
             Assert.Equal(solutionPath, solutionInfo.FullName);
+            Assert.Equal("Example", solutionInfo.Name);
+            Assert.Equal("解决方案", solutionInfo.KindName);
+            Assert.True(OpenSolutionWindow.TryCreateSolutionInfo(projectPath, out SolutionInfo projectInfo));
+            Assert.Equal("ProjectA", projectInfo.Name);
+            Assert.Equal("项目", projectInfo.KindName);
             Assert.True(OpenSolutionWindow.TryCreateSolutionInfo(
                 legacyFolderWorkspacePath,
                 out SolutionInfo folderInfo));
             Assert.Equal(directoryPath, folderInfo.FullName);
+            Assert.Equal("文件夹", folderInfo.KindName);
             Assert.False(OpenSolutionWindow.TryCreateSolutionInfo(ordinaryFilePath, out _));
         }
         finally

@@ -25,6 +25,15 @@ namespace ColorVision.Solution.Editor
         ResourceOpenKind Kind,
         string Message);
 
+    internal sealed record WorkspaceResourceInfo(
+        ResourceOpenKind Kind,
+        string DisplayName,
+        string FullPath,
+        DateTime CreationTime)
+    {
+        public string KindDisplayName => ResourceOpenService.GetResourceKindName(Kind);
+    }
+
     public sealed class ResourceOpenBatchResult
     {
         public int RequestedCount { get; }
@@ -367,7 +376,37 @@ namespace ColorVision.Solution.Editor
             return ResourceOpenKind.File;
         }
 
-        private static string GetResourceKindName(ResourceOpenKind kind)
+        internal static bool TryDescribeWorkspaceResource(
+            string? path,
+            out WorkspaceResourceInfo resourceInfo)
+        {
+            resourceInfo = null!;
+            string normalizedPath = SolutionManager.NormalizeRecentPath(path);
+            ResourceOpenKind kind = Classify(normalizedPath);
+            if (kind == ResourceOpenKind.Folder)
+            {
+                DirectoryInfo directoryInfo = new(normalizedPath);
+                resourceInfo = new WorkspaceResourceInfo(
+                    kind,
+                    directoryInfo.Name,
+                    directoryInfo.FullName,
+                    directoryInfo.CreationTime);
+                return true;
+            }
+
+            if (kind is not (ResourceOpenKind.Solution or ResourceOpenKind.Project))
+                return false;
+
+            FileInfo fileInfo = new(normalizedPath);
+            resourceInfo = new WorkspaceResourceInfo(
+                kind,
+                Path.GetFileNameWithoutExtension(fileInfo.Name),
+                fileInfo.FullName,
+                fileInfo.CreationTime);
+            return true;
+        }
+
+        internal static string GetResourceKindName(ResourceOpenKind kind)
         {
             return kind switch
             {

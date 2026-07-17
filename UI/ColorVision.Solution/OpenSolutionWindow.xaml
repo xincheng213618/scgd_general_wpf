@@ -63,7 +63,12 @@
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
                                                     <Grid Grid.Column="1" Margin="0,2">
-                                                        <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="Bold" />
+                                                            <Border Margin="8,0,0,0" Padding="5,0" CornerRadius="2" Background="#227F8FA4">
+                                                                <TextBlock Text="{Binding KindName}" FontSize="11" VerticalAlignment="Center" />
+                                                            </Border>
+                                                        </StackPanel>
                                                         <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
                                                         <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                                                     </Grid>

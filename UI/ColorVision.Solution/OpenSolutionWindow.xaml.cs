@@ -82,36 +82,19 @@ namespace ColorVision.Solution
         internal static bool TryCreateSolutionInfo(string path, out SolutionInfo solutionInfo)
         {
             solutionInfo = null!;
-
-            string normalizedPath = SolutionManager.NormalizeRecentPath(path);
-            if (!SolutionManager.IsSupportedOpenPath(normalizedPath))
+            if (!ResourceOpenService.TryDescribeWorkspaceResource(
+                path,
+                out WorkspaceResourceInfo resourceInfo))
                 return false;
 
-            if (Directory.Exists(normalizedPath))
+            solutionInfo = new SolutionInfo
             {
-                DirectoryInfo directoryInfo = new(normalizedPath);
-                solutionInfo = new SolutionInfo()
-                {
-                    Name = directoryInfo.Name,
-                    FullName = directoryInfo.FullName,
-                    CreationTime = directoryInfo.CreationTime.ToString("yyyy/MM/dd H:mm")
-                };
-                return true;
-            }
-
-            if (File.Exists(normalizedPath))
-            {
-                FileInfo fileInfo = new(normalizedPath);
-                solutionInfo = new SolutionInfo()
-                {
-                    Name = fileInfo.Name,
-                    FullName = fileInfo.FullName,
-                    CreationTime = fileInfo.CreationTime.ToString("yyyy/MM/dd H:mm")
-                };
-                return true;
-            }
-
-            return false;
+                Name = resourceInfo.DisplayName,
+                KindName = resourceInfo.KindDisplayName,
+                FullName = resourceInfo.FullPath,
+                CreationTime = resourceInfo.CreationTime.ToString("yyyy/MM/dd H:mm"),
+            };
+            return true;
         }
 
         private async void OpenSolutionFile_Click(object sender, RoutedEventArgs e)
@@ -323,6 +306,7 @@ namespace ColorVision.Solution
     public sealed class SolutionInfo
     {
         public string Name { get; set; } = string.Empty;
+        public string KindName { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string CreationTime { get; set; } = string.Empty;
     }
