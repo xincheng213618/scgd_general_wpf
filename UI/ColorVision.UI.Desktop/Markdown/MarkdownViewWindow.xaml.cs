@@ -4,22 +4,23 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
-    /// <summary>
-    /// Interaction logic for MarkdownViewWindow.xaml
-    /// </summary>
     public partial class MarkdownViewWindow : Window
     {
+        private readonly string _html;
+
         public MarkdownViewWindow(string html)
         {
+            _html = html ?? string.Empty;
             InitializeComponent();
             this.ApplyCaption();
-            Phrase(html);
+            Loaded += MarkdownViewWindow_Loaded;
         }
 
-        private async void Phrase( string html)
+        private async void MarkdownViewWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            Loaded -= MarkdownViewWindow_Loaded;
             await WebViewService.EnsureWebViewInitializedAsync(webView);
-            WebViewService.RenderMarkdown(webView, html);
+            WebViewService.RenderMarkdown(webView, _html);
         }
     }
 }
