@@ -126,32 +126,20 @@ namespace ColorVision.Solution.Explorer
         /// </summary>
         public static FileInfo? CreateFromTemplate(INewItemTemplate template, string directoryPath)
         {
-            try
-            {
-                string baseName = template.GetDefaultFileName() ?? template.Name;
-                string ext = template.Extension ?? "";
-                string fileName = baseName + ext;
-                string fullPath = Path.Combine(directoryPath, fileName);
-
-                int count = 2;
-                while (File.Exists(fullPath))
-                {
-                    fullPath = Path.Combine(directoryPath, $"{baseName}({count}){ext}");
-                    count++;
-                }
-
-                string? content = template.GetDefaultContent(Path.GetFileName(fullPath));
-                if (content != null)
-                    File.WriteAllText(fullPath, content);
-                else
-                    File.Create(fullPath).Dispose();
-
-                return new FileInfo(fullPath);
-            }
-            catch
+            if (!SolutionPhysicalItemOperations.TryGetAvailableFileName(
+                template,
+                directoryPath,
+                out string fileName,
+                out _))
             {
                 return null;
             }
+            SolutionPhysicalItemResult result = SolutionPhysicalItemOperations.CreateFromTemplate(
+                template,
+                directoryPath,
+                fileName,
+                overwrite: false);
+            return result.IsComplete ? new FileInfo(result.SuccessfulPaths[0]) : null;
         }
     }
 }

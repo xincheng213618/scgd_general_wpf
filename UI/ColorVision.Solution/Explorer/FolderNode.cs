@@ -347,18 +347,19 @@ namespace ColorVision.Solution.Explorer
             };
             if (window.ShowDialog() == true && window.SelectedTemplate != null && window.NewFileName != null)
             {
-                string fullPath = System.IO.Path.Combine(DirectoryInfo.FullName, window.NewFileName);
-                string? content = window.SelectedTemplate.GetDefaultContent(window.NewFileName);
-                if (content != null)
-                    System.IO.File.WriteAllText(fullPath, content);
-                else
-                    System.IO.File.Create(fullPath).Dispose();
+                string targetPath = Path.Combine(DirectoryInfo.FullName, window.NewFileName);
+                if (window.OverwriteExisting
+                    && !EditorDocumentService.TryCloseDocumentsForResources([targetPath]))
+                {
+                    return;
+                }
 
-                var fileInfo = new FileInfo(fullPath);
-                var fileNode = SolutionNodeFactory.CreateFileNode(fileInfo);
-                AddChild(fileNode);
-                if (!IsExpanded) IsExpanded = true;
-                fileNode.IsSelected = true;
+                SolutionPhysicalItemResult result = SolutionPhysicalItemOperations.CreateFromTemplate(
+                    window.SelectedTemplate,
+                    DirectoryInfo.FullName,
+                    window.NewFileName,
+                    window.OverwriteExisting);
+                ApplyPhysicalItemResult(result, "新建项失败");
             }
         }
 
@@ -372,15 +373,117 @@ namespace ColorVision.Solution.Explorer
             };
             if (dialog.ShowDialog() == true)
             {
-                foreach (var sourcePath in dialog.FileNames)
+                IReadOnlyList<string> conflicts = SolutionPhysicalItemOperations.GetImportConflictPaths(
+                    dialog.FileNames,
+                    DirectoryInfo.FullName);
+                bool overwrite = false;
+                if (conflicts.Count > 0)
                 {
-                    string destPath = System.IO.Path.Combine(DirectoryInfo.FullName, System.IO.Path.GetFileName(sourcePath));
-                    if (!System.IO.File.Exists(destPath))
-                    {
-                        System.IO.File.Copy(sourcePath, destPath);
-                    }
+                    MessageBoxResult choice = MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"目标文件夹中已有 {conflicts.Count} 个同名文件。是否覆盖这些文件？",
+                        "添加现有项",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Question);
+                    if (choice == MessageBoxResult.Cancel)
+                        return;
+                    overwrite = choice == MessageBoxResult.Yes;
+                    if (overwrite && !EditorDocumentService.TryCloseDocumentsForResources(conflicts))
+                        return;
                 }
-                if (!IsExpanded) IsExpanded = true;
+
+                SolutionPhysicalItemResult result = SolutionPhysicalItemOperations.ImportFiles(
+                    dialog.FileNames,
+                    DirectoryInfo.FullName,
+                    overwrite);
+                ApplyPhysicalItemResult(result, "添加现有项失败");
+            }
+        }
+
+        private void ApplyPhysicalItemResult(
+            SolutionPhysicalItemResult result,
+            string failureTitle)
+        {
+            bool projectReloaded = TryIncludeExplicitlyAddedProjectItems(
+                result.SuccessfulPaths,
+                out string membershipError);
+            if (!projectReloaded)
+                SynchronizePhysicalItems(result.SuccessfulPaths);
+
+            if (result.Failures.Count > 0)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    SolutionPhysicalItemOperations.BuildFailureMessage(result),
+                    failureTitle,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            if (!string.IsNullOrWhiteSpace(membershipError))
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"文件已经写入磁盘，但未能包括到项目中：{membershipError}",
+                    "更新项目失败",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        private bool TryIncludeExplicitlyAddedProjectItems(
+            IReadOnlyList<string> paths,
+            out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            ProjectNode? projectNode = ProjectNode.FindOwningProject(this);
+            if (projectNode == null)
+                return false;
+
+            List<string> excludedPaths = paths
+                .Where(path => !projectNode.IsPathIncludedByProjectRules(path))
+                .ToList();
+            if (excludedPaths.Count == 0)
+                return false;
+            if (!ProjectProviderRegistry.TrySetProjectItemMembership(
+                projectNode.Project,
+                excludedPaths,
+                included: true,
+                out ProjectDefinition? updatedProject,
+                out errorMessage)
+                || updatedProject == null)
+            {
+                return false;
+            }
+
+            if (projectNode.SolutionExplorer != null)
+                projectNode.SolutionExplorer.ApplyProjectMutation(updatedProject);
+            else
+                projectNode.UpdateProjectDefinition(updatedProject);
+            return true;
+        }
+
+        private void SynchronizePhysicalItems(IReadOnlyList<string> paths)
+        {
+            SolutionExplorer? explorer = SolutionNodeFactory.FindSolutionExplorer(this);
+            foreach (string path in paths)
+            {
+                explorer?.Cache?.AddFile(path, DirectoryInfo.FullName);
+                if (!VisualChildren.Any(node => string.Equals(
+                    node.FullPath,
+                    path,
+                    StringComparison.OrdinalIgnoreCase)))
+                {
+                    SolutionNodeFactory.AddFileNode(this, new FileInfo(path));
+                }
+            }
+
+            if (paths.Count > 0)
+            {
+                IsExpanded = true;
+                VisualChildren.FirstOrDefault(node => paths.Contains(
+                    node.FullPath,
+                    StringComparer.OrdinalIgnoreCase))?.IsSelected = true;
+                explorer?.NotifyVisualTreeChanged();
             }
         }
 

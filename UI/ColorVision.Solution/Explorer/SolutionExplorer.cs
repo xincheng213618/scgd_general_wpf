@@ -740,22 +740,67 @@ namespace ColorVision.Solution.Explorer
             if (window.ShowDialog() == true && window.SelectedTemplate != null && window.NewFileName != null)
             {
                 string fullPath = Path.Combine(DirectoryInfo.FullName, window.NewFileName);
-                string? content = window.SelectedTemplate.GetDefaultContent(window.NewFileName);
-                if (content != null)
-                    File.WriteAllText(fullPath, content);
-                else
-                    File.Create(fullPath).Dispose();
+                if (window.OverwriteExisting
+                    && !EditorDocumentService.TryCloseDocumentsForResources([fullPath]))
+                {
+                    return;
+                }
 
-                if (!RegisterSolutionItems([fullPath], solutionFolderId, out string errorMessage))
+                SolutionPhysicalItemResult createResult = SolutionPhysicalItemOperations.CreateFromTemplate(
+                    window.SelectedTemplate,
+                    DirectoryInfo.FullName,
+                    window.NewFileName,
+                    window.OverwriteExisting);
+                if (!createResult.IsComplete)
                 {
                     MessageBox.Show(
                         Application.Current.GetActiveWindow(),
-                        errorMessage,
-                        "ColorVision",
+                        SolutionPhysicalItemOperations.BuildFailureMessage(createResult),
+                        "新建项失败",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!RegisterSolutionItems(createResult.SuccessfulPaths, solutionFolderId, out string errorMessage))
+                {
+                    bool rollbackAttempted = createResult.NewlyCreatedPaths.Count > 0;
+                    bool rolledBack = rollbackAttempted
+                        && TryRollbackNewSolutionItems(createResult.NewlyCreatedPaths);
+                    string rollbackMessage = rolledBack
+                        ? "已撤销本次新建文件。"
+                        : rollbackAttempted
+                            ? "未能完全撤销本次新建文件，请检查磁盘状态。"
+                            : "文件内容已经写入，但未能登记为解决方案项。";
+                    MessageBox.Show(
+                        Application.Current.GetActiveWindow(),
+                        $"{errorMessage}{Environment.NewLine}{Environment.NewLine}{rollbackMessage}",
+                        "添加解决方案项失败",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    foreach (string path in createResult.SuccessfulPaths)
+                        RestorePhysicalSolutionItem(path);
                 }
             }
+        }
+
+        private bool TryRollbackNewSolutionItems(IReadOnlyList<string> paths)
+        {
+            bool succeeded = true;
+            foreach (string path in paths)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                        File.Delete(path);
+                    Cache?.Remove(path);
+                }
+                catch
+                {
+                    succeeded = false;
+                }
+            }
+            return succeeded;
         }
 
         internal void AddExistingItem(string? solutionFolderId = null)

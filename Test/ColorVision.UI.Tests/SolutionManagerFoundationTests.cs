@@ -217,6 +217,127 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void PhysicalItemCreation_IsAtomicAndPreservesExistingFilesOnFailure()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "new_file.txt");
+        var textTemplate = new TextFileTemplate();
+
+        try
+        {
+            SolutionPhysicalItemResult created = SolutionPhysicalItemOperations.CreateFromTemplate(
+                textTemplate,
+                rootPath,
+                "new_file.txt",
+                overwrite: false);
+
+            Assert.True(created.IsComplete);
+            Assert.Equal(filePath, Assert.Single(created.NewlyCreatedPaths), ignoreCase: true);
+            File.WriteAllText(filePath, "original");
+
+            SolutionPhysicalItemResult rejected = SolutionPhysicalItemOperations.CreateFromTemplate(
+                textTemplate,
+                rootPath,
+                "new_file.txt",
+                overwrite: false);
+            Assert.False(rejected.IsComplete);
+            Assert.Equal("original", File.ReadAllText(filePath));
+
+            SolutionPhysicalItemResult failedOverwrite = SolutionPhysicalItemOperations.CreateFromTemplate(
+                new ThrowingNewItemTemplate(),
+                rootPath,
+                "new_file.txt",
+                overwrite: true);
+            Assert.False(failedOverwrite.IsComplete);
+            Assert.Equal("original", File.ReadAllText(filePath));
+
+            SolutionPhysicalItemResult overwritten = SolutionPhysicalItemOperations.CreateFromTemplate(
+                textTemplate,
+                rootPath,
+                "new_file.txt",
+                overwrite: true);
+            Assert.True(overwritten.IsComplete);
+            Assert.Empty(overwritten.NewlyCreatedPaths);
+            Assert.Equal(string.Empty, File.ReadAllText(filePath));
+
+            File.Delete(filePath);
+            Directory.CreateDirectory(filePath);
+            Assert.Equal(
+                "new_file(2).txt",
+                SolutionPhysicalItemOperations.GetAvailableFileName(textTemplate, rootPath));
+
+            Assert.False(SolutionPhysicalItemOperations.TryGetAvailableFileName(
+                new BrokenMetadataNewItemTemplate(),
+                rootPath,
+                out _,
+                out string metadataError));
+            Assert.Contains("读取新建项模板失败", metadataError, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PhysicalItemImport_RequiresExplicitOverwriteAndRejectsProjectMetadata()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string sourceDirectory = Path.Combine(rootPath, "Source");
+        string targetDirectory = Path.Combine(rootPath, "Target");
+        Directory.CreateDirectory(sourceDirectory);
+        Directory.CreateDirectory(targetDirectory);
+        string sourcePath = Path.Combine(sourceDirectory, "item.txt");
+        string targetPath = Path.Combine(targetDirectory, "item.txt");
+        string projectPath = Path.Combine(sourceDirectory, "Nested.cvproj");
+        File.WriteAllText(sourcePath, "incoming");
+        File.WriteAllText(targetPath, "existing");
+        File.WriteAllText(projectPath, "{}");
+
+        try
+        {
+            Assert.Equal(
+                targetPath,
+                Assert.Single(SolutionPhysicalItemOperations.GetImportConflictPaths(
+                    [sourcePath],
+                    targetDirectory)),
+                ignoreCase: true);
+
+            SolutionPhysicalItemResult rejected = SolutionPhysicalItemOperations.ImportFiles(
+                [sourcePath],
+                targetDirectory,
+                overwrite: false);
+            Assert.False(rejected.IsComplete);
+            Assert.Equal("existing", File.ReadAllText(targetPath));
+
+            SolutionPhysicalItemResult overwritten = SolutionPhysicalItemOperations.ImportFiles(
+                [sourcePath],
+                targetDirectory,
+                overwrite: true);
+            Assert.True(overwritten.IsComplete);
+            Assert.Equal("incoming", File.ReadAllText(targetPath));
+
+            SolutionPhysicalItemResult alreadyPresent = SolutionPhysicalItemOperations.ImportFiles(
+                [targetPath],
+                targetDirectory,
+                overwrite: false);
+            Assert.True(alreadyPresent.IsComplete);
+            Assert.Empty(alreadyPresent.ChangedPaths);
+
+            SolutionPhysicalItemResult rejectedProject = SolutionPhysicalItemOperations.ImportFiles(
+                [projectPath],
+                targetDirectory,
+                overwrite: false);
+            Assert.False(rejectedProject.IsComplete);
+            Assert.False(File.Exists(Path.Combine(targetDirectory, "Nested.cvproj")));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SelectionService_SelectsVisibleRangeFromStableAnchor()
     {
         var first = CreateNode("first");
@@ -3544,6 +3665,36 @@ public class SolutionManagerFoundationTests
     private sealed class SpecializedEditor { }
     private sealed class AlternateEditor { }
     private sealed class GenericEditor { }
+
+    private sealed class ThrowingNewItemTemplate : INewItemTemplate
+    {
+        public string Name => "Throwing";
+        public string Category => "Tests";
+        public string? Extension => ".txt";
+        public int Order => 0;
+        public System.Windows.Media.ImageSource? Icon => null;
+
+        public string? GetDefaultContent(string fileName)
+        {
+            throw new InvalidOperationException("Template failed.");
+        }
+    }
+
+    private sealed class BrokenMetadataNewItemTemplate : INewItemTemplate
+    {
+        public string Name => "Broken";
+        public string Category => "Tests";
+        public string? Extension => ".txt";
+        public int Order => 0;
+        public System.Windows.Media.ImageSource? Icon => null;
+
+        public string? GetDefaultContent(string fileName) => string.Empty;
+
+        public string? GetDefaultFileName()
+        {
+            throw new InvalidOperationException("Template metadata failed.");
+        }
+    }
 
     private sealed class TrackingEditor : IEditor
     {
