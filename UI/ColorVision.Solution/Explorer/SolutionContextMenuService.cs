@@ -59,8 +59,17 @@ namespace ColorVision.Solution.Explorer
             List<MenuItemMetadata> metadatas = nodes.Count == 1
                 ? BuildSingleNodeMenu(nodes[0])
                 : BuildMultiNodeMenu(nodes);
-            metadatas.AddRange(SolutionMenuContributionRegistry.GetMenuItems(
-                new SolutionMenuContext(nodes)));
+            IReadOnlyList<MenuItemMetadata> contributionItems =
+                SolutionMenuContributionRegistry.GetMenuItems(new SolutionMenuContext(nodes));
+            if (contributionItems.Count > 0)
+            {
+                var contributionIds = contributionItems
+                    .Select(item => item.GuidId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                metadatas.RemoveAll(item => contributionIds.Contains(item.GuidId));
+                metadatas.AddRange(contributionItems);
+            }
             return metadatas;
         }
 

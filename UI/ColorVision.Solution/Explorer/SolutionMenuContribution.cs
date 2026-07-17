@@ -474,6 +474,98 @@ namespace ColorVision.Solution.Explorer
         }
     }
 
+    [SolutionMenuContribution(priority: 230)]
+    public sealed class ProjectItemMembershipMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.project-item-membership";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return TryGetMembershipTarget(context.PrimaryNode, out _);
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            if (!TryGetMembershipTarget(context.PrimaryNode, out ProjectNode? projectNode)
+                || projectNode == null)
+            {
+                return [];
+            }
+
+            bool isIncluded = projectNode.IsPathIncludedByProjectRules(context.PrimaryNode.FullPath);
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = isIncluded
+                        ? SolutionProjectCommands.ExcludeFromProjectId
+                        : SolutionProjectCommands.IncludeInProjectId,
+                    Order = 90,
+                    Header = isIncluded ? "从项目中排除(_J)" : "包括在项目中(_J)",
+                    Command = isIncluded
+                        ? SolutionProjectCommands.ExcludeFromProject
+                        : SolutionProjectCommands.IncludeInProject,
+                },
+            ];
+        }
+
+        private static bool TryGetMembershipTarget(
+            SolutionNode node,
+            out ProjectNode? projectNode)
+        {
+            projectNode = null;
+            if (node is ProjectNode || string.IsNullOrWhiteSpace(node.FullPath))
+                return false;
+            projectNode = ProjectNode.FindOwningProject(node);
+            return projectNode != null
+                && ProjectProviderRegistry.CanChangeProjectItemMembership(
+                    projectNode.Project,
+                    node.FullPath);
+        }
+    }
+
+    [SolutionMenuContribution(priority: 210)]
+    public sealed class DeleteMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.delete";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.Any;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.Nodes.Count > 0 && context.Nodes.All(node => node.CanDelete);
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            string header = context.Nodes.Count == 1
+                ? GetDeleteHeader(context.PrimaryNode.DeleteKind)
+                : ColorVision.UI.Properties.Resources.MenuDelete;
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = SolutionCommandIds.Delete,
+                    Order = 103,
+                    Command = ApplicationCommands.Delete,
+                    Header = header,
+                    Icon = MenuItemIcon.TryFindResource("DIDelete"),
+                    InputGestureText = "Del",
+                },
+            ];
+        }
+
+        private static string GetDeleteHeader(SolutionDeleteKind deleteKind)
+        {
+            return deleteKind switch
+            {
+                SolutionDeleteKind.RemoveFromSolution => "从解决方案中移除(_V)",
+                SolutionDeleteKind.RemoveSolutionFolder => "移除解决方案文件夹(_V)",
+                _ => ColorVision.UI.Properties.Resources.MenuDelete,
+            };
+        }
+    }
+
     [SolutionMenuContribution(priority: 200)]
     public sealed class ClipboardMenuContribution : ISolutionMenuContribution
     {

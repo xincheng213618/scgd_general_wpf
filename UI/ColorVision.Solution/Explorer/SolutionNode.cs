@@ -22,6 +22,13 @@ namespace ColorVision.Solution.Explorer
         public void RemoveChild(SolutionNode node);
     }
 
+    public enum SolutionDeleteKind
+    {
+        DeletePhysicalResource,
+        RemoveFromSolution,
+        RemoveSolutionFolder,
+    }
+
     [DataContract]
     public class SolutionNode : INotifyPropertyChanged, ISolutionNode
     {
@@ -201,30 +208,6 @@ namespace ColorVision.Solution.Explorer
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            AddProjectMembershipMenuItem();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
-        }
-
-        private void AddProjectMembershipMenuItem()
-        {
-            if (this is ProjectNode
-                || string.IsNullOrWhiteSpace(FullPath)
-                || ProjectNode.FindOwningProject(this) is not { } projectNode
-                || !ProjectProviderRegistry.CanChangeProjectItemMembership(projectNode.Project, FullPath))
-            {
-                return;
-            }
-
-            bool isIncluded = projectNode.IsPathIncludedByProjectRules(FullPath);
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = isIncluded ? "ExcludeFromProject" : "IncludeInProject",
-                Order = 90,
-                Header = isIncluded ? "从项目中排除(_J)" : "包括在项目中(_J)",
-                Command = isIncluded
-                    ? SolutionProjectCommands.ExcludeFromProject
-                    : SolutionProjectCommands.IncludeInProject,
-            });
         }
 
         /// <summary>
@@ -275,6 +258,7 @@ namespace ColorVision.Solution.Explorer
 
         public virtual bool CanReName { get; set; }
         public virtual bool CanDelete { get; set; } = true;
+        public virtual SolutionDeleteKind DeleteKind => SolutionDeleteKind.DeletePhysicalResource;
         public virtual bool CanAdd
         {
             get => _canAddEnabled

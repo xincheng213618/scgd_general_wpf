@@ -26,6 +26,9 @@ namespace ColorVision.Solution.Explorer
         public IReadOnlyList<ProjectCapabilityDescriptor> Capabilities { get; private set; }
         public SolutionExplorer? SolutionExplorer { get; }
         public override string? EditorResourcePath => Project.ProjectFile.FullName;
+        public override SolutionDeleteKind DeleteKind => SolutionExplorer?.IsExplicitProjectMode == true
+            ? SolutionDeleteKind.RemoveFromSolution
+            : base.DeleteKind;
 
         public RelayCommand EditProjectFileCommand { get; }
         public RelayCommand RemoveFromSolutionCommand { get; }
@@ -61,11 +64,6 @@ namespace ColorVision.Solution.Explorer
             _showAllFilesMenuItem = null;
             _startupProjectMenuItem = null;
             base.InitMenuItem();
-            if (SolutionExplorer?.IsExplicitProjectMode == true
-                && MenuItemMetadatas.FirstOrDefault(item => item.GuidId == SolutionCommandIds.Delete) is { } removeProjectItem)
-            {
-                removeProjectItem.Header = "从解决方案中移除(_V)";
-            }
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = "EditProjectFile",
@@ -547,6 +545,7 @@ namespace ColorVision.Solution.Explorer
         public string LoadError { get; private set; }
         public override bool CanRefresh => true;
         public override string? EditorResourcePath => ResolvedPath;
+        public override SolutionDeleteKind DeleteKind => SolutionDeleteKind.RemoveFromSolution;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public RelayCommand RemoveFromSolutionCommand { get; }
@@ -613,13 +612,6 @@ namespace ColorVision.Solution.Explorer
                 Order = 3,
                 Header = "在文件资源管理器中打开(_X)",
                 Command = OpenContainingFolderCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionCommandIds.Delete,
-                Order = 10,
-                Header = "从解决方案中移除(_V)",
-                Command = System.Windows.Input.ApplicationCommands.Delete,
             });
         }
 

@@ -17,6 +17,7 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionFolderDefinition Definition { get; private set; }
         public string FolderId => Definition.Id;
+        public override SolutionDeleteKind DeleteKind => SolutionDeleteKind.RemoveSolutionFolder;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public SolutionContainerAction SupportedContainerActions =>
@@ -77,13 +78,6 @@ namespace ColorVision.Solution.Explorer
                     });
                 }
             }
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = SolutionCommandIds.Delete,
-                Order = 60,
-                Header = "移除解决方案文件夹(_V)",
-                Command = ApplicationCommands.Delete,
-            });
         }
 
         public override bool ReName(string name)

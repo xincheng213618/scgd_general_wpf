@@ -20,6 +20,7 @@ namespace ColorVision.Solution.Explorer
 
         public SolutionItemDefinition Definition { get; private set; }
         public string ItemId => Definition.Id;
+        public override SolutionDeleteKind DeleteKind => SolutionDeleteKind.RemoveFromSolution;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public SolutionItemNode(
@@ -41,8 +42,6 @@ namespace ColorVision.Solution.Explorer
             base.InitMenuItem();
             MenuItemMetadatas.RemoveAll(item => item.GuidId is
                 SolutionCommandIds.Cut or SolutionCommandIds.Paste or SolutionCommandIds.Rename);
-            if (MenuItemMetadatas.FirstOrDefault(item => item.GuidId == SolutionCommandIds.Delete) is { } removeItem)
-                removeItem.Header = "从解决方案中移除(_V)";
 
             IReadOnlyList<(string? Id, string DisplayName)> moveOptions =
                 _solutionExplorer.GetSolutionFolderOptions();

@@ -598,7 +598,36 @@ public class SolutionManagerFoundationTests
         List<MenuItemMetadata> openingItems = SolutionContextMenuService.CreateMenuMetadata([node]);
 
         Assert.DoesNotContain(nodeItems, item => item.GuidId == "CopyFullPath");
+        Assert.DoesNotContain(nodeItems, item => item.GuidId == SolutionCommandIds.Delete);
         Assert.Single(openingItems, item => item.GuidId == "CopyFullPath");
+        Assert.Single(openingItems, item => item.GuidId == SolutionCommandIds.Delete);
+    }
+
+    [Fact]
+    public void SolutionContextMenuContributionsOverrideLegacyNodeItemsById()
+    {
+        string suffix = Guid.NewGuid().ToString("N");
+        string menuId = $"TestOverride.{suffix}";
+        var contribution = new TestSolutionMenuContribution(
+            $"tests.override.{suffix}",
+            menuId,
+            SolutionMenuSelectionPolicy.SingleOnly);
+        SolutionMenuContributionRegistry.Register(contribution, priority: 1000);
+
+        try
+        {
+            var node = new LegacyMenuNode(menuId);
+
+            List<MenuItemMetadata> menuItems =
+                SolutionContextMenuService.CreateMenuMetadata([node]);
+
+            MenuItemMetadata item = Assert.Single(menuItems, item => item.GuidId == menuId);
+            Assert.Equal(contribution.Id, item.Header?.ToString());
+        }
+        finally
+        {
+            SolutionMenuContributionRegistry.Unregister(contribution.Id);
+        }
     }
 
     [Fact]
@@ -813,6 +842,13 @@ public class SolutionManagerFoundationTests
             Assert.DoesNotContain(mixedMenuItems, item =>
                 item.GuidId == SolutionResourceCommands.OpenId
                 || item.GuidId == SolutionResourceCommands.OpenWithId);
+            Assert.Same(
+                ApplicationCommands.Delete,
+                Assert.Single(fileMenuItems, item => item.GuidId == SolutionCommandIds.Delete).Command);
+            Assert.Same(
+                ApplicationCommands.Delete,
+                Assert.Single(multiFileMenuItems, item => item.GuidId == SolutionCommandIds.Delete).Command);
+            Assert.DoesNotContain(solutionMenuItems, item => item.GuidId == SolutionCommandIds.Delete);
             Assert.Same(
                 Commands.ReName,
                 Assert.Single(fileMenuItems, item => item.GuidId == SolutionCommandIds.Rename).Command);
@@ -1584,10 +1620,10 @@ public class SolutionManagerFoundationTests
 
             SolutionNode includedSource = Assert.Single(projectNode.VisualChildren, child => child.Name == "Source");
             Assert.DoesNotContain(projectNode.VisualChildren, child => child.Name == "Output");
-            var includedMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            includedSource.CollectMenuItems(includedMenuItems);
+            List<MenuItemMetadata> includedMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([includedSource]);
             Assert.Contains(includedMenuItems, item =>
-                item.GuidId == "ExcludeFromProject"
+                item.GuidId == SolutionProjectCommands.ExcludeFromProjectId
                 && item.Command == SolutionProjectCommands.ExcludeFromProject);
 
             Assert.False(projectNode.ShowAllFiles);
@@ -1597,10 +1633,10 @@ public class SolutionManagerFoundationTests
             await SolutionNodeFactory.PopulateChildren(projectNode, projectNode.DirectoryInfo);
             SolutionNode excludedOutput = Assert.Single(projectNode.VisualChildren, child => child.Name == "Output");
             Assert.True(excludedOutput.IsExcludedFromProject);
-            var excludedMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            excludedOutput.CollectMenuItems(excludedMenuItems);
+            List<MenuItemMetadata> excludedMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([excludedOutput]);
             Assert.Contains(excludedMenuItems, item =>
-                item.GuidId == "IncludeInProject"
+                item.GuidId == SolutionProjectCommands.IncludeInProjectId
                 && item.Command == SolutionProjectCommands.IncludeInProject);
         }
         finally
@@ -1901,7 +1937,8 @@ public class SolutionManagerFoundationTests
             Assert.Contains(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
-                && ReferenceEquals(item.Command, ApplicationCommands.Delete));
+                && ReferenceEquals(item.Command, ApplicationCommands.Delete)
+                && string.Equals(item.Header?.ToString(), "从解决方案中移除(_V)", StringComparison.Ordinal));
 
             ProjectProviderRegistry.Register(new LateProjectProvider(), priority: 1000);
 
@@ -1909,9 +1946,11 @@ public class SolutionManagerFoundationTests
             Assert.Equal(LateProjectProvider.ProviderId, projectNode.Project.ProviderId);
             Assert.Empty(explorer.VisualChildren.OfType<UnavailableProjectNode>());
             Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
-            var projectMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            projectNode.CollectMenuItems(projectMenuItems);
-            Assert.Single(projectMenuItems, item => item.GuidId == SolutionCommandIds.Delete);
+            List<MenuItemMetadata> projectMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([projectNode]);
+            Assert.Contains(projectMenuItems, item =>
+                item.GuidId == SolutionCommandIds.Delete
+                && string.Equals(item.Header?.ToString(), "从解决方案中移除(_V)", StringComparison.Ordinal));
             Assert.DoesNotContain(projectMenuItems, item => item.GuidId == "RemoveProjectFromSolution");
         }
         finally
@@ -2849,10 +2888,13 @@ public class SolutionManagerFoundationTests
             Assert.Contains(moveOptions, option => option.Id == null);
             Assert.Contains(moveOptions, option => option.Id == toolsFolderId);
             Assert.DoesNotContain(moveOptions, option => option.Id == appsFolderId || option.Id == testsFolderId);
-            var menuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            appsNode.CollectMenuItems(menuItems);
+            List<MenuItemMetadata> menuItems =
+                SolutionContextMenuService.CreateMenuMetadata([appsNode]);
             Assert.Contains(menuItems, item => item.GuidId == $"MoveSolutionFolder.{toolsFolderId}");
             Assert.DoesNotContain(menuItems, item => item.GuidId == $"MoveSolutionFolder.{testsFolderId}");
+            Assert.Contains(menuItems, item =>
+                item.GuidId == SolutionCommandIds.Delete
+                && string.Equals(item.Header?.ToString(), "移除解决方案文件夹(_V)", StringComparison.Ordinal));
 
             Assert.False(explorer.CanMoveSolutionItemsToFolder(
                 [],
@@ -2980,8 +3022,8 @@ public class SolutionManagerFoundationTests
                 node => node.FolderId == docsFolderId);
             SolutionItemNode solutionItemNode = Assert.Single(docsNode.VisualChildren.OfType<SolutionItemNode>());
             Assert.Equal(notesPath, solutionItemNode.FullPath);
-            var menuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            solutionItemNode.CollectMenuItems(menuItems);
+            List<MenuItemMetadata> menuItems =
+                SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]);
             Assert.Contains(menuItems, item => item.GuidId == "MoveSolutionItem.Root");
             Assert.Contains(menuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
@@ -3942,6 +3984,26 @@ public class SolutionManagerFoundationTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class LegacyMenuNode : SolutionNode
+    {
+        private readonly string _menuId;
+
+        public LegacyMenuNode(string menuId)
+        {
+            _menuId = menuId;
+        }
+
+        public override void InitMenuItem()
+        {
+            MenuItemMetadatas.Clear();
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = _menuId,
+                Header = "legacy",
+            });
         }
     }
 

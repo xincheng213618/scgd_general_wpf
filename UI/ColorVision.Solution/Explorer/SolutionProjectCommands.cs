@@ -9,6 +9,9 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     public static class SolutionProjectCommands
     {
+        public const string ExcludeFromProjectId = "ExcludeFromProject";
+        public const string IncludeInProjectId = "IncludeInProject";
+
         public static RoutedUICommand Build { get; } = new("生成项目", nameof(Build), typeof(SolutionProjectCommands));
         public static RoutedUICommand BuildSolution { get; } = new(
             "生成解决方案",
