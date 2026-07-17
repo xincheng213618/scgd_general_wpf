@@ -1,6 +1,6 @@
 #pragma warning disable CA1822
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.ServiceHost;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -83,7 +83,9 @@ namespace ColorVision.Update
 
         public static ApplicationSnapshotService Instance { get; } = new();
 
-        public string SnapshotDirectory => Environments.DirApplicationSnapshots;
+        public string SnapshotDirectory => Path.Combine(
+            Environments.DirApplicationSnapshots,
+            ExitUpdateHandoff.GetInstallationKey(AppDomain.CurrentDomain.BaseDirectory));
 
         public string DefaultSnapshotPath => Path.Combine(SnapshotDirectory, DefaultSnapshotFileName);
 
@@ -121,21 +123,6 @@ namespace ColorVision.Update
             }, cancellationToken);
         }
 
-        public Task<ApplicationSnapshotInfo> CreateUpdateSnapshotAsync(Version? versionBefore, Version? versionTarget, CancellationToken cancellationToken = default)
-        {
-            return Task.Run(() => CreateUpdateSnapshot(versionBefore, versionTarget, cancellationToken), cancellationToken);
-        }
-
-        public ApplicationSnapshotInfo CreateUpdateSnapshot(Version? versionBefore, Version? versionTarget, CancellationToken cancellationToken = default)
-        {
-            Directory.CreateDirectory(SnapshotDirectory);
-            string fromVersion = versionBefore?.ToString() ?? GetCurrentVersionText();
-            string toVersion = versionTarget?.ToString() ?? "unknown";
-            string fileName = $"ColorVision-update-{SanitizeFilePart(fromVersion)}-to-{SanitizeFilePart(toVersion)}-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
-            string snapshotPath = Path.Combine(SnapshotDirectory, fileName);
-            return CreateSnapshotCore(snapshotPath, SnapshotKind.Update, versionTarget: toVersion, overwrite: false, cancellationToken);
-        }
-
         public ApplicationSnapshotInfo GetSnapshotInfo(string snapshotPath)
         {
             if (string.IsNullOrWhiteSpace(snapshotPath) || !File.Exists(snapshotPath))
@@ -148,12 +135,23 @@ namespace ColorVision.Update
         public IReadOnlyList<ApplicationSnapshotInfo> ListSnapshots()
         {
             Directory.CreateDirectory(SnapshotDirectory);
-            return Directory.EnumerateFiles(SnapshotDirectory, "*.zip", SearchOption.TopDirectoryOnly)
+            return GetSnapshotSearchDirectories()
+                .SelectMany(directory => Directory.Exists(directory)
+                    ? Directory.EnumerateFiles(directory, "*.zip", SearchOption.TopDirectoryOnly)
+                    : Enumerable.Empty<string>())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(TryReadSnapshotInfoOrIgnore)
                 .OfType<ApplicationSnapshotInfo>()
                 .OrderByDescending(item => item.IsDefault)
                 .ThenByDescending(item => item.CreatedAt)
                 .ToList();
+        }
+
+        private IEnumerable<string> GetSnapshotSearchDirectories()
+        {
+            yield return SnapshotDirectory;
+            if (!string.Equals(SnapshotDirectory, Environments.DirApplicationSnapshots, StringComparison.OrdinalIgnoreCase))
+                yield return Environments.DirApplicationSnapshots;
         }
 
         public async Task DeleteSnapshotAsync(ApplicationSnapshotInfo snapshot, CancellationToken cancellationToken = default)
@@ -361,8 +359,15 @@ namespace ColorVision.Update
 
             string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
             string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
-            string batchPath = Path.Combine(stageDirectory, "restore-snapshot.bat");
-            File.WriteAllText(batchPath, CreateRestoreBatch(stageDirectory, programDirectory, executableName), Encoding.UTF8);
+            RemoveShellExtensionFilesFromRestoreStage(stageDirectory);
+
+            string batchPath = Path.Combine(stageDirectory, "update.bat");
+            File.WriteAllText(batchPath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(programDirectory, stageDirectory);
+            File.WriteAllText(
+                batchPath,
+                CreateRestoreBatch(stageDirectory, programDirectory, executableName, Environment.ProcessId, handoffState),
+                Encoding.UTF8);
 
             ProcessStartInfo startInfo = new()
             {
@@ -371,55 +376,85 @@ namespace ColorVision.Update
                 WindowStyle = ProcessWindowStyle.Hidden,
             };
 
-            if (!Tool.HasWritePermission(programDirectory))
+            if (!ApplicationUpdatePrivilegeBroker.TryPrepareApplicationDirectory())
             {
                 startInfo.Verb = "runas";
                 startInfo.WindowStyle = ProcessWindowStyle.Normal;
             }
 
-            Process.Start(startInfo);
-            Environment.Exit(0);
+            try
+            {
+                using Process restoreProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
+                Environment.Exit(0);
+            }
+            catch
+            {
+                ExitUpdateHandoff.Clear(handoffState);
+                TryDeleteRestoreStage(stageDirectory);
+                throw;
+            }
         }
 
-        private static string CreateRestoreBatch(string stageDirectory, string programDirectory, string executableName)
+        internal static string CreateRestoreBatch(
+            string stageDirectory,
+            string programDirectory,
+            string executableName,
+            int originalProcessId,
+            ExitUpdateHandoffState handoffState)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
             sb.AppendLine("@echo off");
-            sb.AppendLine("setlocal enabledelayedexpansion");
+            sb.AppendLine("setlocal DisableDelayedExpansion");
             sb.AppendLine("title ColorVision Snapshot Restore");
             sb.AppendLine($"set \"STAGE={EscapeForBatchValue(stageDirectory)}\"");
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            sb.AppendLine("set \"NEED_RESTART_EXPLORER=0\"");
-            sb.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
-            sb.AppendLine("timeout /t 2 /nobreak >nul");
-            sb.AppendLine("dir /b /s \"%STAGE%\\ColorVision.ShellExtension*\" >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  taskkill /f /im explorer.exe >nul 2>nul");
-            sb.AppendLine("  taskkill /f /im dllhost.exe >nul 2>nul");
-            sb.AppendLine("  set \"NEED_RESTART_EXPLORER=1\"");
-            sb.AppendLine("  timeout /t 2 /nobreak >nul");
-            sb.AppendLine(")");
-            sb.AppendLine("where robocopy >nul 2>nul");
-            sb.AppendLine("if !ERRORLEVEL! EQU 0 (");
-            sb.AppendLine("  robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /XF restore-snapshot.bat snapshot-manifest.json /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
-            sb.AppendLine("  set \"RC=!ERRORLEVEL!\"");
-            sb.AppendLine("  if !RC! GEQ 8 goto fail");
-            sb.AppendLine(") else (");
-            sb.AppendLine("  xcopy /y /e /i \"%STAGE%\\*\" \"%TARGET%\\\" >nul");
-            sb.AppendLine("  if !ERRORLEVEL! NEQ 0 goto fail");
-            sb.AppendLine(")");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
-            sb.AppendLine("start \"\" \"%EXEPATH%\"");
+            ExternalUpdateBatchScript.AppendSessionVariables(sb, originalProcessId, handoffState);
+            sb.AppendLine("call :wait_for_original_process");
+            sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /XF update.bat snapshot-manifest.json /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
+            sb.AppendLine("if %ERRORLEVEL% GEQ 8 goto fail");
+            ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments: null);
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
             sb.AppendLine(":fail");
-            sb.AppendLine("if \"%NEED_RESTART_EXPLORER%\"==\"1\" start \"\" explorer.exe");
-            sb.AppendLine("start \"\" \"%EXEPATH%\"");
+            ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments: null);
             sb.AppendLine("exit /b 1");
+            ExternalUpdateBatchScript.AppendWaitForOriginalProcess(sb);
             return sb.ToString();
+        }
+
+        internal static int RemoveShellExtensionFilesFromRestoreStage(string stageDirectory)
+        {
+            if (!Directory.Exists(stageDirectory))
+                return 0;
+
+            int removedCount = 0;
+            foreach (string filePath in Directory.EnumerateFiles(stageDirectory, "ColorVision.ShellExtension*", SearchOption.AllDirectories))
+            {
+                FileAttributes attributes = File.GetAttributes(filePath);
+                if (attributes.HasFlag(FileAttributes.ReadOnly))
+                    File.SetAttributes(filePath, attributes & ~FileAttributes.ReadOnly);
+
+                File.Delete(filePath);
+                removedCount++;
+            }
+
+            return removedCount;
+        }
+
+        private static void TryDeleteRestoreStage(string stageDirectory)
+        {
+            try
+            {
+                if (Directory.Exists(stageDirectory))
+                    Directory.Delete(stageDirectory, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Failed to delete unused snapshot restore stage '{stageDirectory}': {ex.Message}");
+            }
         }
 
         public static string GetCurrentVersionText()

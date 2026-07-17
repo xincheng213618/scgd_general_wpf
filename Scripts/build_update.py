@@ -8,8 +8,10 @@ from pathlib import PurePosixPath
 
 try:
     from .backend_client import upload_file_to_folder
+    from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
 except ImportError:
     from backend_client import upload_file_to_folder
+    from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
 
 ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
@@ -17,18 +19,6 @@ ALLOWED_RUNTIME_PREFIXES = (
 )
 EXCLUDED_OUTPUT_DIRECTORIES = {'log', 'plugins', 'publish'}
 SHELL_EXTENSION_FILE_PREFIX = 'colorvision.shellextension'
-REQUIRED_SERVICE_HOST_RUNTIME_PATHS = (
-    'ServiceHost/ColorVisionServiceHost.exe',
-    'ServiceHost/ColorVisionServiceHost.dll',
-    'ServiceHost/ColorVisionServiceHost.deps.json',
-    'ServiceHost/ColorVisionServiceHost.runtimeconfig.json',
-    'ServiceHost/Newtonsoft.Json.dll',
-    'ServiceHost/System.ServiceProcess.ServiceController.dll',
-    'ServiceHost/runtimes/win/lib/net10.0/System.ServiceProcess.ServiceController.dll',
-    'ServiceHost/Tasks/RegisterFileAssociations.ps1',
-    'ServiceHost/Tasks/RegisterThumbnail.ps1',
-    'ServiceHost/Tasks/UnregisterThumbnail.ps1',
-)
 FULL_RELEASE_ZIP_RE = re.compile(
     r'^ColorVision-\[(\d+)\.(\d+)\.(\d+)\.(\d+)]\.zip$',
     re.IGNORECASE,
@@ -69,18 +59,6 @@ def is_root_service_host_file(path_value: str) -> bool:
     normalized = normalize_archive_relative_path(path_value).lower()
     return '/' not in normalized and os.path.basename(normalized).startswith('colorvisionservicehost.')
 
-
-def validate_service_host_runtime(version_directory: str) -> None:
-    missing_paths = []
-    for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS:
-        path = os.path.join(version_directory, *PurePosixPath(relative_path).parts)
-        if not os.path.isfile(path):
-            missing_paths.append(relative_path)
-
-    if missing_paths:
-        raise FileNotFoundError(
-            'ServiceHost runtime is incomplete: ' + ', '.join(missing_paths)
-        )
 
 def upload_file(file_path, folder_name):
     return upload_file_to_folder(file_path, folder_name)

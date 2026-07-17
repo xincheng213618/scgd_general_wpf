@@ -87,7 +87,9 @@ namespace ColorVision.UI.Tests
 
             string executableName = CreateProbeExecutable(targetDirectory);
             string batchPath = Path.Combine(tempRoot, "update.bat");
-            PluginUpdater.GenerateBatchFile(batchPath, targetDirectory, executableName, restartArguments: null);
+            File.WriteAllText(batchPath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(targetDirectory, tempRoot, Path.Combine(_rootDirectory, "PluginState"));
+            PluginUpdater.GenerateBatchFile(batchPath, targetDirectory, executableName, int.MaxValue, handoffState, restartArguments: null);
 
             BatchResult result = await RunBatchAsync(batchPath);
 

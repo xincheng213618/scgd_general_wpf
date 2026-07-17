@@ -287,7 +287,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             await RefreshVersionsAsync(cancellationToken);
 
-            CombinedPluginUpdatePlan plan = new();
+            CombinedPluginUpdatePlan plan = new() { HostVersion = hostVersion };
             var pluginsToCheck = Plugins
                 .Where(plugin => plugin.PluginInfo.Enabled && plugin.HasUpdate && !string.IsNullOrWhiteSpace(plugin.PackageName))
                 .ToList();
@@ -299,11 +299,22 @@ namespace ColorVision.UI.Desktop.Marketplace
             foreach (var plugin in pluginsToCheck)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                MarketplacePluginVersionInfo? candidate = null;
                 try
                 {
                     MarketplacePluginDetail? detail = await client.GetPluginDetailAsync(plugin.PackageName!, cancellationToken);
-                    candidate = SelectCompatibleVersion(plugin, detail, hostVersion);
+                    MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(plugin.AssemblyVersion, detail, hostVersion);
+                    if (candidate != null)
+                    {
+                        plan.Updates.Add(new CombinedPluginUpdateItem
+                        {
+                            Plugin = plugin,
+                            VersionInfo = candidate,
+                        });
+                    }
+                    else
+                    {
+                        plan.SkippedIncompatiblePlugins.Add(plugin.Name ?? plugin.PackageName ?? "Unknown");
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -312,21 +323,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 catch (Exception ex)
                 {
                     log.Warn($"BuildCombinedUpdatePlanAsync failed for {plugin.PackageName}: {ex.Message}");
-                }
-
-                candidate ??= CreateFallbackCandidate(plugin);
-
-                if (candidate != null)
-                {
-                    plan.Updates.Add(new CombinedPluginUpdateItem
-                    {
-                        Plugin = plugin,
-                        VersionInfo = candidate,
-                    });
-                }
-                else
-                {
-                    plan.SkippedIncompatiblePlugins.Add(plugin.Name ?? plugin.PackageName ?? "Unknown");
                 }
             }
 
@@ -386,16 +382,23 @@ namespace ColorVision.UI.Desktop.Marketplace
         public async Task UpdateAllAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var pluginsToUpdate = Plugins.Where(p => p.PluginInfo.Enabled && p.HasUpdate).ToList();
-            
-            if (pluginsToUpdate.Count == 0)
+            Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
+            if (hostVersion == null)
+            {
+                log.Warn("UpdateAllAsync aborted because the current ColorVision version could not be resolved.");
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceBulkUpdatePackageDownloadFailed, Resources.MarketplaceBulkUpdateTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            CombinedPluginUpdatePlan plan = await BuildCombinedUpdatePlanAsync(hostVersion, cancellationToken);
+            if (!plan.HasUpdates)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceNoUpdates, Resources.PluginManagerWindow, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(), 
-                string.Format(Resources.MarketplaceBulkUpdateConfirm, pluginsToUpdate.Count), 
+                string.Format(Resources.MarketplaceBulkUpdateConfirm, plan.Updates.Count),
                 Resources.MarketplaceBulkUpdateTitle, 
                 MessageBoxButton.YesNo, 
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
@@ -403,21 +406,8 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return;
             }
 
-            var requests = new List<MarketplacePackageRequest>();
-            foreach (PluginInfoVM plugin in pluginsToUpdate)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                string version = plugin.LastVersion.ToString();
-                string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(plugin.PackageName!, version, cancellationToken);
-                requests.Add(new MarketplacePackageRequest
-                {
-                    PluginId = plugin.PackageName!,
-                    Version = version,
-                    ExpectedHash = expectedHash,
-                });
-            }
-
-            IReadOnlyList<string> packagePaths = await _packageDownloadService.EnsurePackagesAvailableAsync(requests, cancellationToken: cancellationToken);
+            List<MarketplacePackageRequest> requests = CreateCombinedUpdateRequests(plan);
+            IReadOnlyList<string> packagePaths = await EnsureCombinedUpdatePackagesAsync(plan, showDownloadWindow: true, cancellationToken);
             if (packagePaths.Count == 0)
             {
                 log.Warn("UpdateAllAsync: no plugin packages were downloaded successfully.");
@@ -437,62 +427,6 @@ namespace ColorVision.UI.Desktop.Marketplace
                 return;
 
             await Application.Current!.Dispatcher.InvokeAsync(() => PluginUpdater.UpdatePlugin(packagePaths.ToArray()));
-        }
-
-        private static MarketplacePluginVersionInfo? CreateFallbackCandidate(PluginInfoVM plugin)
-        {
-            if (plugin.LastVersion == null)
-                return null;
-
-            if (plugin.AssemblyVersion != null && plugin.LastVersion <= plugin.AssemblyVersion)
-                return null;
-
-            return new MarketplacePluginVersionInfo
-            {
-                Version = plugin.LastVersion.ToString(),
-            };
-        }
-
-        private static MarketplacePluginVersionInfo? SelectCompatibleVersion(PluginInfoVM plugin, MarketplacePluginDetail? detail, Version hostVersion)
-        {
-            if (detail == null)
-                return null;
-
-            var versions = detail.Versions
-                .Concat(detail.ArchivedVersions)
-                .OrderByDescending(version => ParseVersion(version.Version) ?? new Version())
-                .ThenByDescending(version => version.CreatedAt);
-
-            foreach (var versionInfo in versions)
-            {
-                Version? candidateVersion = ParseVersion(versionInfo.Version);
-                if (candidateVersion == null)
-                    continue;
-
-                if (plugin.AssemblyVersion != null && candidateVersion <= plugin.AssemblyVersion)
-                    continue;
-
-                string? requiresVersion = versionInfo.RequiresVersion ?? detail.RequiresVersion;
-                if (IsCompatibleWithHostVersion(requiresVersion, hostVersion))
-                    return versionInfo;
-            }
-
-            return null;
-        }
-
-        private static bool IsCompatibleWithHostVersion(string? requiresVersion, Version hostVersion)
-        {
-            if (string.IsNullOrWhiteSpace(requiresVersion))
-                return true;
-
-            return Version.TryParse(requiresVersion.Trim(), out var requiredVersion)
-                ? hostVersion >= requiredVersion
-                : true;
-        }
-
-        private static Version? ParseVersion(string? value)
-        {
-            return Version.TryParse(value, out var version) ? version : null;
         }
 
         public void Restart()

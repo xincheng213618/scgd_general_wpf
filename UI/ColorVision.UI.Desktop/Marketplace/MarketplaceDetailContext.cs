@@ -65,6 +65,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly CompositeFormat UpdateVersionFormat = CompositeFormat.Parse(Resources.MarketplaceUpdateVersionFormat);
         private static readonly CompositeFormat DownloadCountFormat = CompositeFormat.Parse(Resources.MarketplaceDownloadCountFormat);
         private readonly PluginInfoVM? _installedPlugin;
+        private readonly string? _defaultRequiresVersion;
         private readonly MarketplacePackageDownloadService _packageDownloadService = MarketplacePackageDownloadService.GetInstance();
         private ImageSource? _icon = MarketplaceClient.GetDefaultPluginIcon();
 
@@ -159,16 +160,22 @@ namespace ColorVision.UI.Desktop.Marketplace
         public MarketplaceDetailContext(MarketplacePluginDetail detail, PluginInfoVM? installedPlugin = null)
         {
             _installedPlugin = installedPlugin;
+            _defaultRequiresVersion = detail.RequiresVersion;
+            Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
+            MarketplacePluginVersionInfo? latestCompatibleVersion = hostVersion == null
+                ? null
+                : PluginUpdateCompatibility.SelectLatestCompatibleVersion(installedVersion: null, detail, hostVersion);
             Name = detail.Name;
             PackageName = detail.PluginId;
             Description = detail.Description;
             Author = detail.Author;
             Category = detail.Category;
-            LatestVersion = detail.LatestVersion ?? detail.Versions.FirstOrDefault()?.Version;
-            RequiresVersion = detail.RequiresVersion ?? detail.Versions.FirstOrDefault()?.RequiresVersion;
+            LatestVersion = latestCompatibleVersion?.Version
+                ?? (hostVersion == null ? detail.LatestVersion ?? detail.Versions.FirstOrDefault()?.Version : null);
+            RequiresVersion = latestCompatibleVersion?.RequiresVersion;
             TotalDownloads = detail.TotalDownloads;
             Readme = detail.Readme;
-            ChangeLog = detail.Changelog ?? detail.Versions.FirstOrDefault()?.ChangeLog;
+            ChangeLog = latestCompatibleVersion?.ChangeLog ?? detail.Changelog ?? detail.Versions.FirstOrDefault()?.ChangeLog;
             Versions = detail.Versions;
             ArchivedVersions = detail.ArchivedVersions;
             IconUrl = detail.IconUrl;
@@ -276,7 +283,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     : $"{Resources.MarketplaceVersionSha256Label}: {version.FileHash}",
                 InstallText = GetInstallLabel(version),
                 Badges = BuildBadges(version),
-                InstallCommand = new AsyncRelayCommand(_ => InstallVersionAsync(version), logger: log),
+                InstallCommand = new AsyncRelayCommand(_ => InstallVersionAsync(version), _ => IsVersionCompatible(version), logger: log),
                 DownloadCommand = new AsyncRelayCommand(_ => DownloadVersionAsync(version), logger: log),
             };
         }
@@ -334,6 +341,14 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (string.Equals(version.Version, LatestVersion, StringComparison.OrdinalIgnoreCase) && HasUpdate)
                 return Resources.Update;
             return Resources.Install;
+        }
+
+        private bool IsVersionCompatible(MarketplacePluginVersionInfo version)
+        {
+            Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
+            return hostVersion != null && PluginUpdateCompatibility.IsCompatibleWithHostVersion(
+                version.RequiresVersion ?? _defaultRequiresVersion,
+                hostVersion);
         }
 
         private static List<MarketplacePluginVersionInfo> OrderVersions(IEnumerable<MarketplacePluginVersionInfo> versions)

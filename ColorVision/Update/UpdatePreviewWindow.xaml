@@ -257,21 +257,6 @@
                                                        TextWrapping="Wrap"
                                                        Visibility="{Binding SelectionLockMessageVisibility}" />
 
-                                            <StackPanel Margin="0,12,0,0"
-                                                        Visibility="{Binding ProgressVisibility}">
-                                                <ProgressBar Height="6"
-                                                             Minimum="0"
-                                                             Maximum="100"
-                                                             Value="{Binding ProgressValue}"
-                                                             Background="{DynamicResource UpdateDialog.SurfaceAlt}"
-                                                             Foreground="{DynamicResource UpdateDialog.Accent}" />
-                                                <TextBlock Margin="0,8,0,0"
-                                                           FontSize="13"
-                                                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                                                           Opacity="0.74"
-                                                           Text="{Binding ProgressText}"
-                                                           TextWrapping="Wrap" />
-                                            </StackPanel>
                                         </StackPanel>
 
                                         <Border Grid.Column="2"

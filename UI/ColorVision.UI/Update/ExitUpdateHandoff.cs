@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ColorVision.Update
 {
-    internal sealed record ExitUpdateHandoffState(
+    public sealed record ExitUpdateHandoffState(
         string MarkerPath,
         string ReopenRequestPath,
         string LaunchToken,
@@ -15,13 +15,13 @@ namespace ColorVision.Update
     /// <summary>
     /// Coordinates application launches while an external update batch is replacing files.
     /// </summary>
-    internal static class ExitUpdateHandoff
+    public static class ExitUpdateHandoff
     {
-        internal const string LaunchTokenEnvironmentVariable = "COLORVISION_UPDATE_TOKEN";
+        public const string LaunchTokenEnvironmentVariable = "COLORVISION_UPDATE_TOKEN";
         private static readonly TimeSpan MaximumMarkerAge = TimeSpan.FromMinutes(15);
         private static readonly TimeSpan MaximumPreparationAge = TimeSpan.FromMinutes(5);
 
-        internal static ExitUpdateHandoffState Prepare(
+        public static ExitUpdateHandoffState Prepare(
             string programDirectory,
             string updateRoot,
             string? stateRootOverride = null)
@@ -43,7 +43,7 @@ namespace ColorVision.Update
             return state;
         }
 
-        internal static bool TryActivate(ExitUpdateHandoffState state, int updaterProcessId)
+        public static bool TryActivate(ExitUpdateHandoffState state, int updaterProcessId)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace ColorVision.Update
             }
         }
 
-        internal static bool TryDeferLaunchForActiveUpdate(string programDirectory)
+        public static bool TryDeferLaunchForActiveUpdate(string programDirectory)
         {
             return TryDeferLaunchForActiveUpdate(
                 programDirectory,
@@ -64,7 +64,7 @@ namespace ColorVision.Update
                 stateRootOverride: null);
         }
 
-        internal static bool TryDeferLaunchForActiveUpdate(
+        public static bool TryDeferLaunchForActiveUpdate(
             string programDirectory,
             string? launchToken,
             string? stateRootOverride)
@@ -151,7 +151,36 @@ namespace ColorVision.Update
             }
         }
 
-        internal static void Clear(ExitUpdateHandoffState? state)
+        public static Process Start(ExitUpdateHandoffState state, ProcessStartInfo startInfo)
+        {
+            Process? process = null;
+            try
+            {
+                process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start external update process.");
+                if (!TryActivate(state, process.Id))
+                {
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch
+                    {
+                    }
+
+                    throw new InvalidOperationException("Failed to activate external update handoff.");
+                }
+
+                return process;
+            }
+            catch
+            {
+                process?.Dispose();
+                Clear(state);
+                throw;
+            }
+        }
+
+        public static void Clear(ExitUpdateHandoffState? state)
         {
             if (state != null)
                 Clear(state.MarkerPath, state.ReopenRequestPath);
@@ -167,11 +196,7 @@ namespace ColorVision.Update
             string programDirectory,
             string? stateRootOverride)
         {
-            string normalizedProgramDirectory = Path.GetFullPath(programDirectory)
-                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .ToUpperInvariant();
-            string installationKey = Convert.ToHexString(
-                SHA256.HashData(Encoding.UTF8.GetBytes(normalizedProgramDirectory)))[..16];
+            string installationKey = GetInstallationKey(programDirectory);
             string stateRoot = stateRootOverride ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ColorVision",
@@ -180,6 +205,16 @@ namespace ColorVision.Update
             return (
                 Path.Combine(stateDirectory, "update.pending"),
                 Path.Combine(stateDirectory, "reopen.requested"));
+        }
+
+        public static string GetInstallationKey(string programDirectory)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(programDirectory);
+            string normalizedProgramDirectory = Path.GetFullPath(programDirectory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .ToUpperInvariant();
+            return Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(normalizedProgramDirectory)))[..16];
         }
 
         private static void TryDeleteFile(string path)

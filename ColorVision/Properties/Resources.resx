@@ -371,12 +371,6 @@
   <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
     <value>{0} 个插件更新</value>
   </data>
-  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
-    <value>{0} 个主题更新</value>
-  </data>
-  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
-    <value>{0} 个其他更新</value>
-  </data>
   <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
     <value>已选择 {0} / {1} 个插件</value>
   </data>

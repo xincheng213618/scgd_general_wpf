@@ -4,6 +4,13 @@ using System.Threading.Tasks;
 
 namespace ColorVision.ServiceHost
 {
+    internal enum ServiceHostStartupAction
+    {
+        None,
+        SelfUpdate,
+        InstallOrRepair,
+    }
+
     internal static class ServiceHostStartupUpdateChecker
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceHostStartupUpdateChecker));
@@ -18,13 +25,11 @@ namespace ColorVision.ServiceHost
             try
             {
                 ServiceHostStatus status = await ColorVisionServiceHostManager.QueryStatusAsync().ConfigureAwait(true);
-                if (!status.IsPackageAvailable || status.PackageVersion == null)
+                ServiceHostStartupAction action = ResolveAction(status);
+                if (action == ServiceHostStartupAction.None)
                     return;
 
-                if (!status.NeedsInstall && !status.NeedsUpdate)
-                    return;
-
-                if (status.CanSelfUpdate)
+                if (action == ServiceHostStartupAction.SelfUpdate)
                 {
                     ServiceHostOperationResult selfUpdateResult = await ColorVisionServiceHostManager.SelfUpdateAsync().ConfigureAwait(true);
                     if (selfUpdateResult.Success)
@@ -53,6 +58,20 @@ namespace ColorVision.ServiceHost
             {
                 _isChecking = false;
             }
+        }
+
+        internal static ServiceHostStartupAction ResolveAction(ServiceHostStatus status)
+        {
+            if (!status.IsPackageAvailable || status.PackageVersion == null)
+                return ServiceHostStartupAction.None;
+
+            if (status.NeedsRepair || status.NeedsInstall)
+                return ServiceHostStartupAction.InstallOrRepair;
+
+            if (!status.NeedsUpdate)
+                return ServiceHostStartupAction.None;
+
+            return status.CanSelfUpdate ? ServiceHostStartupAction.SelfUpdate : ServiceHostStartupAction.InstallOrRepair;
         }
     }
 }

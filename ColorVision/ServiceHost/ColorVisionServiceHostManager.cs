@@ -49,6 +49,9 @@ namespace ColorVision.ServiceHost
             && PackageVersion != null
             && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion));
 
+        public bool NeedsRepair => IsPackageAvailable
+            && (State == ServiceHostInstallState.Stopped || (State == ServiceHostInstallState.Running && RunningVersion == null));
+
         public bool CanSelfUpdate => State == ServiceHostInstallState.Running
             && NeedsUpdate
             && RunningVersion != null
@@ -281,12 +284,14 @@ namespace ColorVision.ServiceHost
                 $"$executableName = {PsQuote(ServiceHostProtocol.ExecutableName)}",
                 "$logPath = Join-Path $destination 'install.log'",
                 "function Write-Step([string]$message) { try { Add-Content -LiteralPath $logPath -Value (\"[$(Get-Date -Format o)] $message\") -Encoding UTF8 -ErrorAction Stop } catch {} }",
+                "$serviceExistedBeforeInstall = $false",
                 "New-Item -ItemType Directory -Force -Path $destination | Out-Null",
                 "try {",
                 "Write-Step \"Service host installation started. Source=$source Destination=$destination\"",
                 "$sourceExe = Join-Path $source $executableName",
                 "if (-not (Test-Path -LiteralPath $sourceExe)) { throw \"Service host executable was not found: $sourceExe\" }",
                 "$service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
+                "$serviceExistedBeforeInstall = $null -ne $service",
                 "if ($service -and $service.Status -ne 'Stopped') {",
                 "    Stop-Service -Name $serviceName -Force -ErrorAction Stop",
                 "    $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20))",
@@ -309,6 +314,18 @@ namespace ColorVision.ServiceHost
                 "Write-Output \"Service start type: Automatic\"",
                 "} catch {",
                 "    Write-Step (\"Service host installation failed: \" + $_.Exception.Message)",
+                "    if ($serviceExistedBeforeInstall) {",
+                "        try {",
+                "            $service = Get-Service -Name $serviceName -ErrorAction Stop",
+                "            if ($service.Status -ne 'Running') {",
+                "                Start-Service -Name $serviceName -ErrorAction Stop",
+                "                $service.WaitForStatus('Running', [TimeSpan]::FromSeconds(20))",
+                "            }",
+                "            Write-Step \"Service host restarted after failed installation.\"",
+                "        } catch {",
+                "            Write-Step (\"Failed to restart service host after installation failure: \" + $_.Exception.Message)",
+                "        }",
+                "    }",
                 "    throw",
                 "}",
                 string.Empty,

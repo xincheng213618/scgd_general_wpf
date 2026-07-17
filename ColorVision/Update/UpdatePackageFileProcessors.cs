@@ -9,21 +9,6 @@ using System.Linq;
 
 namespace ColorVision.Update
 {
-    [FileExtension(".cvx")]
-    public class IncrementalUpdatePackageFileProcessor : IFileOpenActionProcessor
-    {
-        public int Order => 1;
-
-        public FileOpenRouteResult OpenFile(string filePath)
-        {
-            if (!AutoUpdater.IsIncrementalPackageFileReady(filePath))
-                return new FileOpenRouteResult(true, false, "不是有效的增量更新包。");
-
-            AutoUpdater.RestartIsIncrementApplication(filePath);
-            return new FileOpenRouteResult(true, true);
-        }
-    }
-
     [FileExtension(".cvxp")]
     public class PluginPackageFileProcessor : IFileOpenActionProcessor
     {

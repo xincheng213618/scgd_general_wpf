@@ -205,7 +205,9 @@ public abstract class STNode
 		}
 	}
 
-	public string Title
+    [STNodeProperty("Title", "Title", true)]
+    [Browsable(true)]
+    public string Title
 	{
 		get
 		{

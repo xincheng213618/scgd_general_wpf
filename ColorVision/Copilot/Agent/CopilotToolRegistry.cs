@@ -74,7 +74,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
-            return request.Mode != CopilotAgentMode.Review || tool.Capability.Access == CopilotToolAccess.ReadOnly;
+            return request.Mode is not (CopilotAgentMode.Review or CopilotAgentMode.Diagnose)
+                || tool.Capability.Access == CopilotToolAccess.ReadOnly;
         }
 
         internal static bool IsAvailableForAgent(ICopilotTool tool, CopilotAgentRequest request)

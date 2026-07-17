@@ -5,9 +5,9 @@ namespace ColorVision.UI.Tests
     public sealed class ServiceHostStatusTests
     {
         [Fact]
-        public void RunningOutdatedServiceCanSelfUpdate()
+        public void SupportedRunningServiceCanSelfUpdate()
         {
-            ServiceHostStatus status = CreateStatus(new Version(1, 4, 10, 4));
+            ServiceHostStatus status = CreateStatus(new Version(1, 4, 10, 5));
 
             Assert.True(status.NeedsUpdate);
             Assert.True(status.CanSelfUpdate);
@@ -31,6 +31,23 @@ namespace ColorVision.UI.Tests
             Assert.DoesNotContain("inheritance:r", script, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("install.log", script, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Copy-Item", script, StringComparison.Ordinal);
+            Assert.Contains("Service host restarted after failed installation.", script, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void StoppedCurrentServiceNeedsRepair()
+        {
+            ServiceHostStatus status = new()
+            {
+                State = ServiceHostInstallState.Stopped,
+                PackageExecutablePath = Environment.ProcessPath ?? typeof(ServiceHostStatusTests).Assembly.Location,
+                PackageVersion = new Version(1, 4, 10, 7),
+                InstalledVersion = new Version(1, 4, 10, 7),
+            };
+
+            Assert.False(status.NeedsUpdate);
+            Assert.True(status.NeedsRepair);
+            Assert.Equal(ServiceHostStartupAction.InstallOrRepair, ServiceHostStartupUpdateChecker.ResolveAction(status));
         }
 
         private static ServiceHostStatus CreateStatus(Version? runningVersion) => new()

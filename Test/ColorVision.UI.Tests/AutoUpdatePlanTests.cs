@@ -1,5 +1,6 @@
 using ColorVision.Update;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using Resources = ColorVision.Properties.Resources;
@@ -202,6 +203,39 @@ namespace ColorVision.UI.Tests
                 Assert.False(AutoUpdater.IsFullInstallerFileReady(installerPath));
                 Assert.Null(AutoUpdater.MoveInvalidApplicationPackageToRecovery(installerPath, isIncremental: false));
                 Assert.True(File.Exists(installerPath));
+            }
+            finally
+            {
+                Directory.Delete(tempDirectory, true);
+            }
+        }
+
+        [Fact]
+        public void ApplicationPackageCacheRejectsAValidPackageWithTheWrongTargetVersion()
+        {
+            string tempDirectory = Directory.CreateTempSubdirectory("ColorVisionPackageVersionTest-").FullName;
+            string sourceExecutable = typeof(AutoUpdater).Assembly.Location;
+            string? fileVersion = FileVersionInfo.GetVersionInfo(sourceExecutable).FileVersion;
+            Assert.True(Version.TryParse(fileVersion, out Version? expectedVersion));
+            Version wrongVersion = new(expectedVersion.Major, expectedVersion.Minor, expectedVersion.Build, expectedVersion.Revision + 1);
+            string packagePath = Path.Combine(tempDirectory, $"ColorVision-Update-[{expectedVersion}].cvx");
+            string installerPath = Path.Combine(tempDirectory, $"ColorVision-{expectedVersion}.exe");
+
+            try
+            {
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry("ColorVision.exe");
+                    using Stream source = File.OpenRead(sourceExecutable);
+                    using Stream destination = entry.Open();
+                    source.CopyTo(destination);
+                }
+                File.Copy(sourceExecutable, installerPath);
+
+                Assert.True(AutoUpdater.IsApplicationPackageFileReady(packagePath, isIncremental: true, expectedVersion));
+                Assert.False(AutoUpdater.IsApplicationPackageFileReady(packagePath, isIncremental: true, wrongVersion));
+                Assert.True(AutoUpdater.IsApplicationPackageFileReady(installerPath, isIncremental: false, expectedVersion));
+                Assert.False(AutoUpdater.IsApplicationPackageFileReady(installerPath, isIncremental: false, wrongVersion));
             }
             finally
             {

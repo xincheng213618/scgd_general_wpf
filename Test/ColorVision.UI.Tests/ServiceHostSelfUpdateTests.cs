@@ -43,6 +43,7 @@ namespace ColorVision.UI.Tests
             Assert.Contains("Get-ChildItem -LiteralPath $source -Force | Copy-Item", script, StringComparison.Ordinal);
             Assert.Contains("Remove-Item -LiteralPath $source -Recurse -Force", script, StringComparison.Ordinal);
             Assert.Contains("Remove-Item -LiteralPath $scriptPath -Force", script, StringComparison.Ordinal);
+            Assert.Contains("Service host restarted after failed self update.", script, StringComparison.Ordinal);
             Assert.Contains("exit $exitCode", script, StringComparison.Ordinal);
         }
 

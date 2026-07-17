@@ -258,12 +258,26 @@ namespace ColorVision.UI.Desktop.Marketplace
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(PackageName!, LastVersion.ToString(), cancellationToken);
+                Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
+                if (hostVersion == null)
+                {
+                    log.Warn($"Plugin update skipped because the current ColorVision version could not be resolved: {PackageName}");
+                    return;
+                }
+
+                MarketplacePluginDetail? detail = await MarketplaceClient.GetInstance().GetPluginDetailAsync(PackageName!, cancellationToken);
+                MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(AssemblyVersion, detail, hostVersion);
+                if (candidate == null)
+                {
+                    log.Info($"Plugin update skipped because no compatible version is available: {PackageName}; Host={hostVersion}");
+                    return;
+                }
+
                 await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
                 {
                     PluginId = PackageName!,
-                    Version = LastVersion.ToString(),
-                    ExpectedHash = expectedHash,
+                    Version = candidate.Version,
+                    ExpectedHash = candidate.FileHash,
                 }, cancellationToken: cancellationToken);
             }
             catch (OperationCanceledException)

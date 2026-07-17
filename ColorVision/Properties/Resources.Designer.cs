@@ -1510,29 +1510,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 {0} 个其他更新 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewHeaderOtherCount {
-            get {
-                return ResourceManager.GetString("UpdatePreviewHeaderOtherCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 {0} 个插件更新 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewHeaderPluginCount {
             get {
                 return ResourceManager.GetString("UpdatePreviewHeaderPluginCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 {0} 个主题更新 的本地化字符串。
-        /// </summary>
-        public static string UpdatePreviewHeaderThemeCount {
-            get {
-                return ResourceManager.GetString("UpdatePreviewHeaderThemeCount", resourceCulture);
             }
         }
         

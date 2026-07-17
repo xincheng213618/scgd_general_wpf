@@ -24,68 +24,63 @@ namespace ColorVision.UI.Plugins
         {
             if (packageNames == null || packageNames.Length == 0) return;
 
-            string programPluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-            List<string> targetPluginDirectories = new();
-            foreach (string packageName in packageNames)
+            string? tempDirectory = null;
+            ExitUpdateHandoffState? handoffState = null;
+            try
             {
-                if (TryGetPluginTargetDirectory(programPluginsDirectory, packageName, out string targetPluginDirectory))
+                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string programPluginsDirectory = Path.Combine(programDirectory, "Plugins");
+                List<string> targetPluginDirectories = new();
+                foreach (string packageName in packageNames)
                 {
-                    targetPluginDirectories.Add(targetPluginDirectory);
+                    if (TryGetPluginTargetDirectory(programPluginsDirectory, packageName, out string targetPluginDirectory))
+                    {
+                        targetPluginDirectories.Add(targetPluginDirectory);
+                    }
+                    else
+                    {
+                        log.Warn($"Ignored invalid plugin directory name during deletion: {packageName}");
+                    }
                 }
-                else
+
+                targetPluginDirectories = targetPluginDirectories.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                if (targetPluginDirectories.Count == 0) return;
+
+                ConfigService.Instance.SaveConfigs();
+                PluginLoaderrConfig.Instance.Save();
+
+                tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");
+                Directory.CreateDirectory(tempDirectory);
+                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+                string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                string executablePath = Path.Combine(programDirectory, executableName);
+                File.WriteAllText(batchFilePath, string.Empty);
+                handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempDirectory);
+                GenerateDeleteBatchFile(batchFilePath, targetPluginDirectories, executablePath, Environment.ProcessId, handoffState);
+
+                ProcessStartInfo startInfo = new()
                 {
-                    log.Warn($"Ignored invalid plugin directory name during deletion: {packageName}");
+                    FileName = batchFilePath,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = tempDirectory,
+                };
+                if (!ApplicationUpdatePrivilegeBroker.TryPrepareApplicationDirectory())
+                {
+                    startInfo.Verb = "runas";
+                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
                 }
+
+                using Process updateProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
+                Environment.Exit(0);
             }
-
-            targetPluginDirectories = targetPluginDirectories.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (targetPluginDirectories.Count == 0) return;
-
-            ConfigService.Instance.SaveConfigs();
-            PluginLoaderrConfig.Instance.Save();
-
-            string tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVisionPluginsUpdate-{Guid.NewGuid():N}");
-            Directory.CreateDirectory(tempDirectory);
-            string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-            string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
-            string executablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName);
-
-            var batchContentBuilder = new StringBuilder();
-            batchContentBuilder.AppendLine("@echo off");
-            batchContentBuilder.AppendLine("setlocal DisableDelayedExpansion");
-            batchContentBuilder.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
-            batchContentBuilder.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            batchContentBuilder.AppendLine($"set \"TEMP_DIR={EscapeForBatchValue(tempDirectory)}\"");
-            batchContentBuilder.AppendLine("taskkill /f /im \"%EXE%\" >nul 2>nul");
-            batchContentBuilder.AppendLine("ping -n 2 127.0.0.1 >nul");
-
-            foreach (string targetPluginDirectory in targetPluginDirectories)
+            catch (Exception ex)
             {
-                batchContentBuilder.AppendLine($"set \"TARGET={EscapeForBatchValue(targetPluginDirectory)}\"");
-                batchContentBuilder.AppendLine("if exist \"%TARGET%\" rd /s /q \"%TARGET%\"");
+                ExitUpdateHandoff.Clear(handoffState);
+                TryDeleteDirectory(tempDirectory);
+                log.Error("Plugin deletion failed before updater batch completed.", ex);
+                MessageBox.Show($"Delete failed: {ex.Message}");
             }
-
-            batchContentBuilder.AppendLine("start \"\" /b \"%EXEPATH%\" -c MenuPluginManager");
-            batchContentBuilder.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%TEMP_DIR%\" 2^>nul");
-            batchContentBuilder.AppendLine("endlocal");
-            batchContentBuilder.AppendLine("exit /b 0");
-            File.WriteAllText(batchFilePath, batchContentBuilder.ToString());
-
-            // 设置批处理文件的启动信息
-            ProcessStartInfo startInfo = new()
-            {
-                FileName = batchFilePath,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-            if (!ApplicationUpdatePrivilegeBroker.TryPrepareApplicationDirectory())
-            {
-                startInfo.Verb = "runas"; // 请求管理员权限
-                startInfo.WindowStyle = ProcessWindowStyle.Normal;
-            }
-            Process.Start(startInfo);
-            Environment.Exit(0);
-
         }
 
         internal static bool TryGetPluginTargetDirectory(string pluginsDirectory, string packageName, out string targetDirectory)
@@ -123,6 +118,7 @@ namespace ColorVision.UI.Plugins
             if (downloadPaths == null || downloadPaths.Length == 0) return;
 
             string? tempRoot = null;
+            ExitUpdateHandoffState? handoffState = null;
             try
             {
                 // 1. 保存配置（原逻辑）
@@ -148,10 +144,14 @@ namespace ColorVision.UI.Plugins
 
                 // 5. 生成批处理
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
+                File.WriteAllText(batchFilePath, string.Empty);
+                handoffState = ExitUpdateHandoff.Prepare(baseDir, tempRoot);
                 GenerateBatchFile(
                     batchFilePath: batchFilePath,
                     baseDir: baseDir,
                     exeName: exeName,
+                    originalProcessId: Environment.ProcessId,
+                    handoffState: handoffState,
                     restartArguments: restartArguments
                 );
 
@@ -169,11 +169,12 @@ namespace ColorVision.UI.Plugins
                     psi.Verb = "runas";
                     psi.WindowStyle = ProcessWindowStyle.Normal;
                 }
-                _ = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start plugin update batch.");
+                using Process updateProcess = ExitUpdateHandoff.Start(handoffState, psi);
                 Environment.Exit(0);
             }
             catch (Exception ex)
             {
+                ExitUpdateHandoff.Clear(handoffState);
                 TryDeleteDirectory(tempRoot);
                 log.Error("Plugin update failed before updater batch completed.", ex);
                 MessageBox.Show($"Update failed: {ex.Message}");
@@ -327,6 +328,8 @@ namespace ColorVision.UI.Plugins
             string batchFilePath,
             string baseDir,
             string exeName,
+            int originalProcessId,
+            ExitUpdateHandoffState handoffState,
             string? restartArguments = "-c MenuPluginManager"
         )
         {
@@ -346,10 +349,12 @@ namespace ColorVision.UI.Plugins
             sb.AppendLine("@echo off");
             sb.AppendLine("setlocal DisableDelayedExpansion");
             sb.AppendLine("title ColorVision Updater");
+            sb.AppendLine($"set \"EXEPATH={escapedExePath}\"");
+            sb.AppendLine($"set \"UPDATE_ROOT={EscapeForBatchValue(Path.GetDirectoryName(batchFilePath)!)}\"");
+            ExternalUpdateBatchScript.AppendSessionVariables(sb, originalProcessId, handoffState);
             sb.AppendLine();
             sb.AppendLine(string.Format(Properties.Resources.EchoTerminatingProcess, exeName));
-            sb.AppendLine($"taskkill /f /im \"{exeName}\" >nul 2>nul");
-            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
+            sb.AppendLine("call :wait_for_original_process");
             sb.AppendLine();
             sb.AppendLine(Properties.Resources.EchoStartCopyingFiles);
             sb.AppendLine(Properties.Resources.RemStagePointsToTemp);
@@ -378,43 +383,72 @@ namespace ColorVision.UI.Plugins
             sb.AppendLine(Properties.Resources.EchoCopyComplete);
             sb.AppendLine();
 
-            sb.AppendLine(Properties.Resources.EchoRestartingProgram);
-            if (string.IsNullOrWhiteSpace(restartArguments))
-            {
-                sb.AppendLine($"start \"\" /b \"{escapedExePath}\"");
-            }
-            else
-            {
-                sb.AppendLine($"start \"\" /b \"{escapedExePath}\" {restartArguments}");
-            }
-            sb.AppendLine();
-
             sb.AppendLine(Properties.Resources.EchoUpdateComplete);
+            sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("endlocal");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
 
             sb.AppendLine(":fail");
-            if (string.IsNullOrWhiteSpace(restartArguments))
-            {
-                sb.AppendLine($"start \"\" /b \"{escapedExePath}\"");
-            }
-            else
-            {
-                sb.AppendLine($"start \"\" /b \"{escapedExePath}\" {restartArguments}");
-            }
+            sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("endlocal");
             sb.AppendLine("exit /b 1");
             sb.AppendLine();
+
+            sb.AppendLine(":complete_handoff");
+            ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments);
+            sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+
             sb.AppendLine(":schedule_cleanup");
             sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);
-            sb.AppendLine("set \"SELF_DIR=%~dp0\"");
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%SELF_DIR%\" 2^>nul");
+            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
             sb.AppendLine("exit /b 0");
+            sb.AppendLine();
+
+            ExternalUpdateBatchScript.AppendWaitForOriginalProcess(sb);
 
             File.WriteAllText(batchFilePath, sb.ToString(), Encoding.GetEncoding(936));
+        }
+
+        internal static void GenerateDeleteBatchFile(
+            string batchFilePath,
+            IReadOnlyList<string> targetPluginDirectories,
+            string executablePath,
+            int originalProcessId,
+            ExitUpdateHandoffState handoffState)
+        {
+            StringBuilder builder = new();
+            builder.AppendLine("@echo off");
+            builder.AppendLine("setlocal DisableDelayedExpansion");
+            builder.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
+            builder.AppendLine($"set \"UPDATE_ROOT={EscapeForBatchValue(Path.GetDirectoryName(batchFilePath)!)}\"");
+            ExternalUpdateBatchScript.AppendSessionVariables(builder, originalProcessId, handoffState);
+            builder.AppendLine("call :wait_for_original_process");
+
+            foreach (string targetPluginDirectory in targetPluginDirectories)
+            {
+                builder.AppendLine($"set \"TARGET={EscapeForBatchValue(targetPluginDirectory)}\"");
+                builder.AppendLine("if exist \"%TARGET%\" rd /s /q \"%TARGET%\"");
+            }
+
+            builder.AppendLine("call :complete_handoff");
+            builder.AppendLine("call :schedule_cleanup");
+            builder.AppendLine("endlocal");
+            builder.AppendLine("exit /b 0");
+            builder.AppendLine();
+            builder.AppendLine(":complete_handoff");
+            ExternalUpdateBatchScript.AppendRestartAndComplete(builder, "-c MenuPluginManager");
+            builder.AppendLine("exit /b 0");
+            builder.AppendLine();
+            builder.AppendLine(":schedule_cleanup");
+            builder.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            builder.AppendLine("exit /b 0");
+            builder.AppendLine();
+            ExternalUpdateBatchScript.AppendWaitForOriginalProcess(builder);
+            File.WriteAllText(batchFilePath, builder.ToString(), Encoding.GetEncoding(936));
         }
     }
 }

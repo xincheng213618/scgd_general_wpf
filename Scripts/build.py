@@ -9,20 +9,48 @@ from pathlib import Path
 from typing import Any, Callable
 from xml.etree import ElementTree
 
-from backend_client import (
-    DEFAULT_CONNECT_TIMEOUT,
-    DEFAULT_READ_TIMEOUT,
-    DEFAULT_UPLOAD_CHUNK_SIZE,
-    DEFAULT_UPLOAD_FOLDER,
-    DEFAULT_UPLOAD_RETRIES,
-    RemoteUploadSettings,
-    fetch_latest_version as backend_fetch_latest_version,
-    preflight_remote_upload as backend_preflight_remote_upload,
-    resolve_upload_base_url,
-    resolve_upload_credentials,
-    upload_content as backend_upload_content,
-    upload_file as backend_upload_file,
-)
+try:
+    from .backend_client import (
+        DEFAULT_CONNECT_TIMEOUT,
+        DEFAULT_READ_TIMEOUT,
+        DEFAULT_UPLOAD_CHUNK_SIZE,
+        DEFAULT_UPLOAD_FOLDER,
+        DEFAULT_UPLOAD_RETRIES,
+        RemoteUploadSettings,
+        fetch_latest_version as backend_fetch_latest_version,
+        preflight_remote_upload as backend_preflight_remote_upload,
+        resolve_upload_base_url,
+        resolve_upload_credentials,
+        upload_content as backend_upload_content,
+        upload_file as backend_upload_file,
+    )
+    from .service_host_runtime import (
+        REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
+        installer_contains_relative_path,
+        read_installer_source_paths,
+        validate_service_host_runtime,
+    )
+except ImportError:
+    from backend_client import (
+        DEFAULT_CONNECT_TIMEOUT,
+        DEFAULT_READ_TIMEOUT,
+        DEFAULT_UPLOAD_CHUNK_SIZE,
+        DEFAULT_UPLOAD_FOLDER,
+        DEFAULT_UPLOAD_RETRIES,
+        RemoteUploadSettings,
+        fetch_latest_version as backend_fetch_latest_version,
+        preflight_remote_upload as backend_preflight_remote_upload,
+        resolve_upload_base_url,
+        resolve_upload_credentials,
+        upload_content as backend_upload_content,
+        upload_file as backend_upload_file,
+    )
+    from service_host_runtime import (
+        REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
+        installer_contains_relative_path,
+        read_installer_source_paths,
+        validate_service_host_runtime,
+    )
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -63,15 +91,15 @@ def validate_installer_runtime_dlls(
         return False
 
     try:
-        root = ElementTree.parse(aip_path).getroot()
+        installer_source_paths = read_installer_source_paths(aip_path)
+        validate_service_host_runtime(runtime_path)
     except (ElementTree.ParseError, OSError) as exc:
-        report(f"Could not read Advanced Installer project: {exc}")
+        report(f"Could not validate Advanced Installer runtime: {exc}")
         return False
 
     installer_sources = {
-        source_path.replace("\\", "/").rsplit("/", 1)[-1].casefold()
-        for element in root.iter()
-        if (source_path := element.attrib.get("SourcePath"))
+        source_path.rsplit("/", 1)[-1]
+        for source_path in installer_source_paths
     }
     missing_dlls = sorted(
         file_path.name
@@ -82,7 +110,16 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
         return False
 
-    report("Verified all root release runtime DLLs are included by Advanced Installer.")
+    missing_service_host_paths = [
+        relative_path
+        for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS
+        if not installer_contains_relative_path(installer_source_paths, relative_path)
+    ]
+    if missing_service_host_paths:
+        report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
+        return False
+
+    report("Verified root runtime DLLs and the complete ServiceHost runtime in Advanced Installer.")
     return True
 
 

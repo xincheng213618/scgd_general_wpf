@@ -107,11 +107,6 @@ public class CVBaseServerNode : CVCommonNode
 			_MaxTime = value;
 		}
 	}
-
-    [STNodeProperty("Subtitle", "Subtitle", false, true)]
-    public string Subtitle { get => _Subtitle; set { _Subtitle = value; } }
-    private string _Subtitle = string.Empty;
-
     public string TempDisName => _TempName;
 
 	public string DefaultPublishTopic => m_nodeType + "/CMD/" + m_nodeName;
@@ -151,11 +146,6 @@ public class CVBaseServerNode : CVCommonNode
 
     public override string OnGetDrawTitle()
 	{
-		if (!string.IsNullOrWhiteSpace(Subtitle))
-		{
-            return $"{Subtitle}";
-
-        }
         return $"{base.Title}";
 	}
 

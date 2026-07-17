@@ -14,11 +14,9 @@ namespace ColorVision.Update
 {
     public enum UpdatePreviewItemKind
     {
-        Other = 0,
-        Application = 1,
-        ApplicationIncremental = 2,
-        Plugin = 3,
-        Theme = 4,
+        Application = 0,
+        ApplicationIncremental = 1,
+        Plugin = 2,
     }
 
     public enum UpdatePreviewAction
@@ -142,31 +140,6 @@ namespace ColorVision.Update
         }
         private string _selectionLockMessage = string.Empty;
 
-        public bool IsUpdating
-        {
-            get => _isUpdating;
-            set
-            {
-                SetProperty(ref _isUpdating, value);
-                OnPropertyChanged(nameof(ProgressVisibility));
-            }
-        }
-        private bool _isUpdating;
-
-        public double ProgressValue
-        {
-            get => _progressValue;
-            set => SetProperty(ref _progressValue, value);
-        }
-        private double _progressValue;
-
-        public string ProgressText
-        {
-            get => _progressText;
-            set => SetProperty(ref _progressText, value);
-        }
-        private string _progressText = string.Empty;
-
         public bool CanChooseApplicationUpdateMode
         {
             get => _canChooseApplicationUpdateMode;
@@ -235,10 +208,6 @@ namespace ColorVision.Update
             : string.Empty;
 
         public Visibility HostRequirementVisibility => HasMeaningfulHostRequirement(HostRequirement)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-
-        public Visibility ProgressVisibility => IsUpdating
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -337,7 +306,6 @@ namespace ColorVision.Update
         {
             OnPropertyChanged(nameof(ApplicationUpdateCount));
             OnPropertyChanged(nameof(PluginUpdateCount));
-            OnPropertyChanged(nameof(ThemeUpdateCount));
             OnPropertyChanged(nameof(HeaderSummaryText));
             OnPropertyChanged(nameof(ItemsListVisibility));
             OnPropertyChanged(nameof(EmptyStateCenteredVisibility));
@@ -504,8 +472,6 @@ namespace ColorVision.Update
 
         public int PluginUpdateCount => Items.Count(item => item.Kind == UpdatePreviewItemKind.Plugin);
 
-        public int ThemeUpdateCount => Items.Count(item => item.Kind == UpdatePreviewItemKind.Theme);
-
         public bool HasApplicationUpdates => ApplicationUpdateCount > 0;
 
         public bool AreAllSelectableItemsPlugins => !HasSelectableItems
@@ -529,13 +495,6 @@ namespace ColorVision.Update
 
                 if (PluginUpdateCount > 0)
                     segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderPluginCount, PluginUpdateCount));
-
-                if (ThemeUpdateCount > 0)
-                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderThemeCount, ThemeUpdateCount));
-
-                int otherCount = Items.Count - ApplicationUpdateCount - PluginUpdateCount - ThemeUpdateCount;
-                if (otherCount > 0)
-                    segments.Add(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewHeaderOtherCount, otherCount));
 
                 return segments.Count == 0
                     ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryDefault, Items.Count)
