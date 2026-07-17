@@ -619,13 +619,16 @@ namespace ColorVision.Solution.Explorer
                 Command = SolutionProjectCommands.ConfigurationManager,
                 Icon = MenuItemIcon.TryFindResource("DISetting"),
             });
-            menuItems.Add(new MenuItemMetadata
+            if (explorer.CanModifySolutionStructure)
             {
-                GuidId = "Edit",
-                Order = 50,
-                Header = ColorVision.Solution.Properties.Resources.EditSolution,
-                Command = explorer.EditCommand,
-            });
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = "Edit",
+                    Order = 50,
+                    Header = ColorVision.Solution.Properties.Resources.EditSolution,
+                    Command = explorer.EditCommand,
+                });
+            }
             menuItems.Add(new MenuItemMetadata
             {
                 GuidId = "MenuOpenFileInExplorer",
@@ -648,10 +651,13 @@ namespace ColorVision.Solution.Explorer
             return context.PrimaryNode switch
             {
                 ProjectNode projectNode => projectNode.SolutionExplorer?.IsExplicitProjectMode == true
+                    && projectNode.SolutionExplorer.CanModifySolutionStructure
                     && projectNode.SolutionExplorer.GetSolutionFolderOptions().Count > 1,
-                SolutionFolderNode folderNode => folderNode.SolutionExplorer
+                SolutionFolderNode folderNode => folderNode.SolutionExplorer.CanModifySolutionStructure
+                    && folderNode.SolutionExplorer
                     .GetSolutionFolderMoveOptions(folderNode.FolderId).Count > 1,
-                SolutionItemNode itemNode => itemNode.SolutionExplorer
+                SolutionItemNode itemNode => itemNode.SolutionExplorer.CanModifySolutionStructure
+                    && itemNode.SolutionExplorer
                     .GetSolutionFolderOptions().Count > 1,
                 _ => false,
             };

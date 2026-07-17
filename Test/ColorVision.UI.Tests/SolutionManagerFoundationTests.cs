@@ -3863,6 +3863,98 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ImportedSolution_DisablesSourceControlledStructureMutations()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(directoryPath, "src", "App");
+        string projectPath = Path.Combine(projectDirectory, "App.csproj");
+        string readmePath = Path.Combine(directoryPath, "README.md");
+        string solutionPath = Path.Combine(directoryPath, "Example.slnx");
+        string? importedWorkspacePath = null;
+        try
+        {
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(readmePath, "readme");
+            File.WriteAllText(solutionPath, """
+                <Solution>
+                  <Folder Name="/Solution Items/">
+                    <File Path="README.md" />
+                  </Folder>
+                  <Folder Name="/src/">
+                    <Project Path="src\App\App.csproj" />
+                  </Folder>
+                </Solution>
+                """);
+
+            Assert.True(SolutionManager.TryCreateImportedSolution(
+                new FileInfo(solutionPath),
+                out importedWorkspacePath,
+                out _));
+            using var explorer = CreateSolutionExplorer(directoryPath, importedWorkspacePath);
+            SolutionFolderNode sourceFolder = Assert.Single(
+                explorer.VisualChildren.GetAllVisualChildren().OfType<SolutionFolderNode>(),
+                folder => folder.Name == "src");
+            ProjectNode projectNode = Assert.Single(
+                explorer.VisualChildren.GetAllVisualChildren().OfType<ProjectNode>());
+            SolutionItemNode solutionItemNode = Assert.Single(
+                explorer.VisualChildren.GetAllVisualChildren().OfType<SolutionItemNode>());
+
+            Assert.True(explorer.IsImportedSolution);
+            Assert.False(explorer.CanModifySolutionStructure);
+            Assert.Equal(SolutionContainerAction.None, explorer.SupportedContainerActions);
+            Assert.Equal(SolutionContainerAction.None, sourceFolder.SupportedContainerActions);
+            Assert.False(sourceFolder.CanReName);
+            Assert.False(sourceFolder.CanDelete);
+            Assert.False(projectNode.CanDelete);
+            Assert.False(solutionItemNode.CanDelete);
+
+            List<MenuItemMetadata> rootMenu = SolutionContextMenuService.CreateMenuMetadata([explorer]);
+            Assert.DoesNotContain(rootMenu, item => item.GuidId == SolutionContainerCommands.AddMenuId);
+            Assert.DoesNotContain(rootMenu, item => item.GuidId == "Edit");
+            List<MenuItemMetadata> projectMenu = SolutionContextMenuService.CreateMenuMetadata([projectNode]);
+            Assert.DoesNotContain(projectMenu, item => item.GuidId == SolutionCommandIds.Delete);
+            Assert.DoesNotContain(projectMenu, item => item.GuidId == "MoveProjectToSolutionFolder");
+            List<MenuItemMetadata> itemMenu = SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]);
+            Assert.DoesNotContain(itemMenu, item => item.GuidId == SolutionCommandIds.Delete);
+            Assert.DoesNotContain(itemMenu, item => item.GuidId == "MoveSolutionItem");
+
+            Assert.False(explorer.CanMoveSolutionItemsToFolder(
+                [projectNode.Project],
+                [],
+                sourceFolder.FolderId,
+                out string moveError));
+            Assert.Equal(SolutionExplorer.ImportedStructureReadOnlyMessage, moveError);
+            Assert.False(explorer.RegisterSolutionItems(
+                [readmePath],
+                sourceFolder.FolderId,
+                out string registerError));
+            Assert.Equal(SolutionExplorer.ImportedStructureReadOnlyMessage, registerError);
+            Assert.False(explorer.RemoveProject(projectNode.Project));
+            Assert.False(explorer.RemoveSolutionItem(solutionItemNode.ItemId));
+            Assert.False(explorer.TryRenameSolutionFolder(sourceFolder.FolderId, "renamed"));
+            InvalidOperationException createError = Assert.Throws<InvalidOperationException>(
+                () => explorer.CreateSolutionFolder());
+            Assert.Equal(SolutionExplorer.ImportedStructureReadOnlyMessage, createError.Message);
+
+            SolutionConfig persistedConfig = SolutionConfigStore.Load(importedWorkspacePath).Config;
+            Assert.Single(persistedConfig.Projects);
+            Assert.Equal(2, persistedConfig.SolutionFolders.Count);
+            Assert.Single(persistedConfig.SolutionItems);
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(importedWorkspacePath))
+            {
+                File.Delete(importedWorkspacePath);
+                File.Delete($"{importedWorkspacePath}.bak");
+                File.Delete($"{importedWorkspacePath}.cache.db");
+            }
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionConfiguration_MapsAndListsProjectConfigurations()
     {
         string containerPath = CreateTemporaryDirectory();

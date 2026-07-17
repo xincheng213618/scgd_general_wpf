@@ -218,7 +218,8 @@ namespace ColorVision.Solution
                     out SolutionExplorer? resourceTargetExplorer,
                     out _))
                 {
-                    e.Effects = CanRegisterDroppedSolutionResources(dropPaths)
+                    e.Effects = resourceTargetExplorer?.CanModifySolutionStructure == true
+                        && CanRegisterDroppedSolutionResources(dropPaths)
                         ? DragDropEffects.Copy
                         : DragDropEffects.None;
                     SetDropTargetVisual(e.Effects == DragDropEffects.None
@@ -647,6 +648,7 @@ namespace ColorVision.Solution
                 _ => null,
             };
             if (solutionExplorer?.IsExplicitProjectMode != true
+                || !solutionExplorer.CanModifySolutionStructure
                 || selectedNodes.Any(node => !ReferenceEquals(solutionExplorer, node switch
                 {
                     ProjectNode projectNode => projectNode.SolutionExplorer,

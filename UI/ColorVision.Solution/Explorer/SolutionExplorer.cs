@@ -107,6 +107,7 @@ namespace ColorVision.Solution.Explorer
     public class SolutionExplorer : SolutionNode, ISolutionContainerNode, ISolutionPhysicalContainer, IDisposable
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
+        internal const string ImportedStructureReadOnlyMessage = "外部解决方案的结构由源 .sln/.slnx 文件控制，当前以只读方式导入。";
         public DirectoryInfo DirectoryInfo { get; private set; }
         public RelayCommand OpenFileInExplorerCommand { get; }
         public RelayCommand SaveCommand { get; }
@@ -141,7 +142,7 @@ namespace ColorVision.Solution.Explorer
         public override bool CanShowProperties => DirectoryInfo.Exists;
         public override string? EditorResourcePath => ConfigFileInfo.FullName;
         public string PhysicalContainerPath => DirectoryInfo.FullName;
-        public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists
+        public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists && CanModifySolutionStructure
             ? SolutionContainerAction.AddNewItem
                 | SolutionContainerAction.AddExistingItem
                 | SolutionContainerAction.CreateFolder
@@ -152,6 +153,7 @@ namespace ColorVision.Solution.Explorer
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
         internal bool IsImportedSolution => ImportedSolutionWorkspaceService.IsImportedSolution(Config);
+        internal bool CanModifySolutionStructure => !IsImportedSolution;
         public string ActiveConfiguration => Config.ActiveConfiguration;
 
         public SolutionExplorer(SolutionEnvironments solutionEnvironments)
@@ -181,7 +183,7 @@ namespace ColorVision.Solution.Explorer
                     }.ShowDialog();
                     return SaveConfigWithUserFeedback();
                 }, result => result);
-            });
+            }, _ => CanModifySolutionStructure);
             // Initialize SQLite cache BEFORE file watcher to avoid watcher picking up cache.db creation
             try
             {
@@ -706,6 +708,8 @@ namespace ColorVision.Solution.Explorer
 
         internal void ShowAddNewItemDialog(string? solutionFolderId = null)
         {
+            if (!CanModifySolutionStructure)
+                return;
             var window = new AddNewItemWindow(DirectoryInfo.FullName)
             {
                 Owner = Application.Current.GetActiveWindow(),
@@ -779,6 +783,8 @@ namespace ColorVision.Solution.Explorer
 
         internal void AddExistingItem(string? solutionFolderId = null)
         {
+            if (!CanModifySolutionStructure)
+                return;
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "添加现有项",
@@ -801,6 +807,8 @@ namespace ColorVision.Solution.Explorer
 
         internal void ShowAddNewProjectDialog(string? solutionFolderId = null)
         {
+            if (!CanModifySolutionStructure)
+                return;
             var window = new AddNewProjectWindow(DirectoryInfo.FullName)
             {
                 Owner = Application.Current.GetActiveWindow(),
@@ -839,6 +847,8 @@ namespace ColorVision.Solution.Explorer
 
         internal void AddExistingProject(string? solutionFolderId = null)
         {
+            if (!CanModifySolutionStructure)
+                return;
             string projectPatterns = ProjectProviderRegistry.GetProjectFileDialogPattern();
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
@@ -1421,6 +1431,8 @@ namespace ColorVision.Solution.Explorer
 
         internal SolutionFolderDefinition CreateSolutionFolder(string? parentId = null)
         {
+            if (!CanModifySolutionStructure)
+                throw new InvalidOperationException(ImportedStructureReadOnlyMessage);
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("新建解决方案文件夹", () => CreateSolutionFolder(parentId), _ => true);
             EnsureExplicitProjectModePreservingProjects();
@@ -1454,6 +1466,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool TryRenameSolutionFolder(string folderId, string name)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("重命名解决方案文件夹", () => TryRenameSolutionFolder(folderId, name), result => result);
             string normalizedName = name?.Trim() ?? string.Empty;
@@ -1482,6 +1496,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveSolutionFolder(string folderId)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("删除解决方案文件夹", () => RemoveSolutionFolder(folderId), result => result);
             SolutionFolderDefinition? folder = Config.SolutionFolders.FirstOrDefault(item =>
@@ -1607,6 +1623,11 @@ namespace ColorVision.Solution.Explorer
             out string errorMessage)
         {
             errorMessage = string.Empty;
+            if (!CanModifySolutionStructure)
+            {
+                errorMessage = ImportedStructureReadOnlyMessage;
+                return false;
+            }
             if (!IsExplicitProjectMode)
             {
                 errorMessage = "只有显式项目模式支持解决方案文件夹组织。";
@@ -1844,6 +1865,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RegisterProject(DirectoryInfo projectDirectory, string? solutionFolderId = null)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (!ProjectProviderRegistry.TryLoadProject(projectDirectory, out ProjectDefinition? project))
                 return false;
             return RegisterProject(project, solutionFolderId);
@@ -1859,6 +1882,11 @@ namespace ColorVision.Solution.Explorer
             string? solutionFolderId,
             out string errorMessage)
         {
+            if (!CanModifySolutionStructure)
+            {
+                errorMessage = ImportedStructureReadOnlyMessage;
+                return false;
+            }
             if (!ProjectProviderRegistry.TryLoadProject(
                 projectFile,
                 out ProjectDefinition? project,
@@ -1872,6 +1900,8 @@ namespace ColorVision.Solution.Explorer
 
         private bool RegisterProject(ProjectDefinition project, string? solutionFolderId)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation($"添加项目“{project.Name}”", () => RegisterProject(project, solutionFolderId), result => result);
             EnsureExplicitProjectModePreservingProjects();
@@ -1900,6 +1930,11 @@ namespace ColorVision.Solution.Explorer
             string? solutionFolderId,
             out string errorMessage)
         {
+            if (!CanModifySolutionStructure)
+            {
+                errorMessage = ImportedStructureReadOnlyMessage;
+                return false;
+            }
             if (_trackedMutationDepth == 0)
             {
                 string trackedError = string.Empty;
@@ -1984,6 +2019,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool MoveSolutionItemToFolder(string itemId, string? solutionFolderId)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("移动解决方案项", () => MoveSolutionItemToFolder(itemId, solutionFolderId), result => result);
             if (solutionFolderId != null && !IsKnownSolutionFolder(solutionFolderId))
@@ -2005,6 +2042,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveSolutionItem(string itemId)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("从解决方案移除解决方案项", () => RemoveSolutionItem(itemId), result => result);
             SolutionItemDefinition? item = Config.SolutionItems.FirstOrDefault(candidate => string.Equals(
@@ -2184,6 +2223,12 @@ namespace ColorVision.Solution.Explorer
             out IReadOnlyList<SolutionNode> registeredNodes,
             out string errorMessage)
         {
+            if (!CanModifySolutionStructure)
+            {
+                registeredNodes = Array.Empty<SolutionNode>();
+                errorMessage = ImportedStructureReadOnlyMessage;
+                return false;
+            }
             if (_trackedMutationDepth == 0)
             {
                 IReadOnlyList<SolutionNode> trackedNodes = Array.Empty<SolutionNode>();
@@ -2369,6 +2414,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveProject(ProjectDefinition project)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation($"从解决方案移除项目“{project.Name}”", () => RemoveProject(project), result => result);
             if (!IsExplicitProjectMode || !UnregisterProject(project))
@@ -2384,6 +2431,8 @@ namespace ColorVision.Solution.Explorer
 
         internal bool RemoveProjectReference(string projectReference)
         {
+            if (!CanModifySolutionStructure)
+                return false;
             if (_trackedMutationDepth == 0)
                 return ExecuteTrackedMutation("移除不可用项目引用", () => RemoveProjectReference(projectReference), result => result);
             if (!Config.Projects.Remove(projectReference))
