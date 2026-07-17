@@ -499,8 +499,6 @@ namespace ColorVision.Solution.Editor
             return _editorManager.TrySetDefaultEditor(Path.GetExtension(path), editorId, out errorMessage);
         }
 
-        public static bool TryOpenFile(string filePath) => EditorManager.Instance.TryOpenFile(filePath);
-
         internal static ResourceOpenKind Classify(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))

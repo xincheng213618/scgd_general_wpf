@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using System.IO;
 using System.Windows;
@@ -212,7 +213,7 @@ namespace ColorVision.Solution.Explorer
 
         private void EditProjectFile()
         {
-            EditorManager.Instance.TryOpenFile(Project.ProjectFile.FullName);
+            ResourceOpenService.Instance.TryOpenWith(Project.ProjectFile.FullName, "colorvision.text");
         }
 
         private void InitializeExternalProjectWatcher()

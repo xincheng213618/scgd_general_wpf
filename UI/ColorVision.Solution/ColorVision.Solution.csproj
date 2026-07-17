@@ -15,14 +15,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="interface\**" />
-	  <EmbeddedResource Remove="interface\**" />
-	  <None Remove="interface\**" />
-	  <Page Remove="interface\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Markdig.Signed" Version="1.2.0" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.74.1" />
@@ -40,11 +32,6 @@
 		<Compile Update="Editor\AvalonEditor\AvalonEditControll.xaml.cs">
 		  <SubType>Code</SubType>
 		</Compile>
-		<Compile Update="Properties1\Resources.Designer.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Resources.resx</DependentUpon>
-		</Compile>
 		<Compile Update="Properties\Resources.Designer.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
@@ -53,10 +40,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Update="Properties1\Resources.resx">
-			<Generator>PublicResXFileCodeGenerator</Generator>
-			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
-		</EmbeddedResource>
 		<EmbeddedResource Update="Properties\Resources.resx">
 		  <Generator>PublicResXFileCodeGenerator</Generator>
 		  <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -68,10 +51,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Editor\Hex\" />
 	</ItemGroup>
 
 </Project>

@@ -61,9 +61,9 @@ namespace ColorVision.Solution.Editor
                 return;
 
             if (entry.IsDirectory)
-                EditorManager.Instance.OpenFolderWith(entry.FullPath, typeof(ProjectEditor));
+                ResourceOpenService.Instance.TryOpenWith(entry.FullPath, "colorvision.folder.project-list");
             else
-                EditorManager.Instance.TryOpenFile(entry.FullPath);
+                ResourceOpenService.Instance.TryOpen(entry.FullPath);
         }
 
         private static IReadOnlyList<FolderBrowserEntry> LoadEntries(DirectoryInfo directory)

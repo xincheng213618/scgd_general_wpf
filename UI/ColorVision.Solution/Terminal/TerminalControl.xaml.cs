@@ -742,17 +742,6 @@ namespace ColorVision.Solution.Terminal
         #region UI Event Handlers
 
         /// <summary>
-        /// Forward printable text input directly to ConPTY and track it.
-        /// </summary>
-        private void OutputTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            if (SendText(e.Text))
-            {
-                e.Handled = true;
-            }
-        }
-
-        /// <summary>
         /// Forward printable text input from IME proxy to ConPTY.
         /// The hidden TextBox handles IME composition natively; we intercept committed text.
         /// </summary>

@@ -495,33 +495,6 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        private static Dictionary<string, ProjectReferenceLoadResult> LoadProjectReferences(
-            string rootDirectory,
-            SolutionConfig config,
-            CancellationToken cancellationToken)
-        {
-            var results = new Dictionary<string, ProjectReferenceLoadResult>(StringComparer.OrdinalIgnoreCase);
-            if (config.ProjectMode != SolutionProjectMode.Explicit)
-                return results;
-
-            foreach (string reference in config.Projects.Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                bool succeeded = TryResolveProjectReference(
-                    rootDirectory,
-                    reference,
-                    out ProjectDefinition? project,
-                    out string resolvedPath,
-                    out string errorMessage);
-                results[reference] = new ProjectReferenceLoadResult(
-                    reference,
-                    succeeded ? project : null,
-                    resolvedPath,
-                    errorMessage);
-            }
-            return results;
-        }
-
         private void NormalizeSolutionOrganization()
         {
             SolutionConfigStore.Normalize(Config);

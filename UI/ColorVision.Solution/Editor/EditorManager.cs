@@ -409,28 +409,7 @@ namespace ColorVision.Solution
             return descriptors.FirstOrDefault(descriptor => descriptor.EditorType == editorType);
         }
 
-        public List<Type> GetEditorsForExt(string extension) => GetFileEditorDescriptors(extension).Select(descriptor => descriptor.EditorType).ToList();
-
-        public List<Type> GetVisibleEditorsForExt(string extension) => GetFileEditorDescriptors(extension, visibleOnly: true).Select(descriptor => descriptor.EditorType).ToList();
-
-        public Type? GetDefaultEditorType(string extension) => GetDefaultFileEditorDescriptor(extension)?.EditorType;
-
-        public void SetDefaultEditor(string extension, Type editorType)
-        {
-            string normalizedExtension = NormalizeExtension(extension);
-            var descriptor = GetFileEditorDescriptors(normalizedExtension).FirstOrDefault(item => item.EditorType == editorType);
-            if (descriptor == null)
-                return;
-
-            SetDefaultEditor(normalizedExtension, descriptor.Id);
-        }
-
-        public bool SetDefaultEditor(string extension, string editorId)
-        {
-            return TrySetDefaultEditor(extension, editorId, out _);
-        }
-
-        public bool TrySetDefaultEditor(string extension, string editorId, out string errorMessage)
+        internal bool TrySetDefaultEditor(string extension, string editorId, out string errorMessage)
         {
             string normalizedExtension = NormalizeExtension(extension);
             var descriptor = GetFileEditorDescriptors(normalizedExtension).FirstOrDefault(item =>
@@ -472,27 +451,7 @@ namespace ColorVision.Solution
             }
         }
 
-        public List<Type> GetFolderEditors() => GetFolderEditorDescriptors().Select(descriptor => descriptor.EditorType).ToList();
-
-        public List<Type> GetVisibleFolderEditors() => GetFolderEditorDescriptors(visibleOnly: true).Select(descriptor => descriptor.EditorType).ToList();
-
-        public Type? GetDefaultFolderEditorType() => GetDefaultFolderEditorDescriptor()?.EditorType;
-
-        public void SetDefaultFolderEditor(Type editorType)
-        {
-            var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item => item.EditorType == editorType);
-            if (descriptor == null)
-                return;
-
-            SetDefaultFolderEditor(descriptor.Id);
-        }
-
-        public bool SetDefaultFolderEditor(string editorId)
-        {
-            return TrySetDefaultFolderEditor(editorId, out _);
-        }
-
-        public bool TrySetDefaultFolderEditor(string editorId, out string errorMessage)
+        internal bool TrySetDefaultFolderEditor(string editorId, out string errorMessage)
         {
             var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item =>
                 string.Equals(item.Id, editorId, StringComparison.OrdinalIgnoreCase));
@@ -530,19 +489,7 @@ namespace ColorVision.Solution
             }
         }
 
-        public IEditor? OpenFile(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return null;
-            return CreateEditor(GetDefaultFileEditorDescriptor(Path.GetExtension(filePath)));
-        }
-
-        public bool TryOpenFile(string filePath)
-        {
-            return TryOpenFile(filePath, out _);
-        }
-
-        public bool TryOpenFile(string filePath, out string errorMessage)
+        internal bool TryOpenFile(string filePath, out string errorMessage)
         {
             if (!File.Exists(filePath))
             {
@@ -555,29 +502,7 @@ namespace ColorVision.Solution
                 out errorMessage);
         }
 
-        public bool OpenFileWith(string filePath, Type editorType)
-        {
-            return OpenFileWith(filePath, editorType, out _);
-        }
-
-        public bool OpenFileWith(string filePath, Type editorType, out string errorMessage)
-        {
-            if (!File.Exists(filePath))
-            {
-                errorMessage = $"文件不存在：{filePath}";
-                return false;
-            }
-
-            var descriptor = GetFileEditorDescriptors(Path.GetExtension(filePath)).FirstOrDefault(item => item.EditorType == editorType);
-            return OpenWithDescriptor(filePath, descriptor, out errorMessage);
-        }
-
-        public bool OpenFileWith(string filePath, string editorId)
-        {
-            return OpenFileWith(filePath, editorId, out _);
-        }
-
-        public bool OpenFileWith(string filePath, string editorId, out string errorMessage)
+        internal bool OpenFileWith(string filePath, string editorId, out string errorMessage)
         {
             if (!File.Exists(filePath))
             {
@@ -590,19 +515,7 @@ namespace ColorVision.Solution
             return OpenWithDescriptor(filePath, descriptor, out errorMessage);
         }
 
-        public IEditor? OpenFolder(string folderPath)
-        {
-            if (!Directory.Exists(folderPath))
-                return null;
-            return CreateEditor(GetDefaultFolderEditorDescriptor());
-        }
-
-        public bool TryOpenFolder(string folderPath)
-        {
-            return TryOpenFolder(folderPath, out _);
-        }
-
-        public bool TryOpenFolder(string folderPath, out string errorMessage)
+        internal bool TryOpenFolder(string folderPath, out string errorMessage)
         {
             if (!Directory.Exists(folderPath))
             {
@@ -612,29 +525,7 @@ namespace ColorVision.Solution
             return OpenWithDescriptor(folderPath, GetDefaultFolderEditorDescriptor(), out errorMessage);
         }
 
-        public bool OpenFolderWith(string folderPath, Type editorType)
-        {
-            return OpenFolderWith(folderPath, editorType, out _);
-        }
-
-        public bool OpenFolderWith(string folderPath, Type editorType, out string errorMessage)
-        {
-            if (!Directory.Exists(folderPath))
-            {
-                errorMessage = $"文件夹不存在：{folderPath}";
-                return false;
-            }
-
-            var descriptor = GetFolderEditorDescriptors().FirstOrDefault(item => item.EditorType == editorType);
-            return OpenWithDescriptor(folderPath, descriptor, out errorMessage);
-        }
-
-        public bool OpenFolderWith(string folderPath, string editorId)
-        {
-            return OpenFolderWith(folderPath, editorId, out _);
-        }
-
-        public bool OpenFolderWith(string folderPath, string editorId, out string errorMessage)
+        internal bool OpenFolderWith(string folderPath, string editorId, out string errorMessage)
         {
             if (!Directory.Exists(folderPath))
             {
