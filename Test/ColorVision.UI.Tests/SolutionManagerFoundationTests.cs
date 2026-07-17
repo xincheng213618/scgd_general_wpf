@@ -3490,6 +3490,110 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void MsBuildProjectProvider_LoadsSdkMetadataReferencesAndCommands()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectPath = Path.Combine(directoryPath, "Sample.csproj");
+        try
+        {
+            File.WriteAllText(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <OutputType>Exe</OutputType>
+                    <AssemblyName>Sample.Application</AssemblyName>
+                    <Version>2.3.4</Version>
+                    <Configurations>Debug;Release;Staging</Configurations>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\Library\Library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var provider = new MsBuildProjectProvider();
+            ProjectDefinition project = provider.Load(new FileInfo(projectPath));
+            ProjectDefinition releaseProject = project.ForConfiguration("release");
+
+            Assert.True(provider.CanLoad(new FileInfo(projectPath)));
+            Assert.Equal(MsBuildProjectProvider.ProviderId, project.ProviderId);
+            Assert.Equal("Sample.Application", project.Name);
+            Assert.Equal("2.3.4", project.Version);
+            Assert.Equal(["..\\Library\\Library.csproj"], project.Dependencies);
+            Assert.Equal(["Debug", "Release", "Staging"], project.Configurations!.Keys);
+            Assert.False(project.ItemRules!.Includes(project.ProjectDirectory, Path.Combine(directoryPath, "bin")));
+            Assert.Equal(
+                [ProjectCapabilityIds.Build, ProjectCapabilityIds.Run],
+                provider.GetCapabilities(releaseProject).Select(capability => capability.Id));
+            Assert.True(provider.TryCreateInvocation(
+                releaseProject,
+                ProjectCapabilityIds.Build,
+                out ProjectCommandInvocation? buildInvocation));
+            Assert.Equal(
+                $"dotnet build \"{projectPath}\" --configuration \"Release\"",
+                buildInvocation?.Command);
+            Assert.True(provider.TryCreateInvocation(
+                releaseProject,
+                ProjectCapabilityIds.Run,
+                out ProjectCommandInvocation? runInvocation));
+            Assert.Equal(
+                $"dotnet run --project \"{projectPath}\" --configuration \"Release\"",
+                runInvocation?.Command);
+            Assert.False(provider.CanExecuteCapability(releaseProject, ProjectCapabilityIds.Debug));
+
+            Assert.Contains("*.csproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("*.fsproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("*.vbproj", ProjectProviderRegistry.GetProjectFilePatterns(), StringComparer.OrdinalIgnoreCase);
+            Assert.True(ProjectProviderRegistry.TryLoadProject(new FileInfo(projectPath), out ProjectDefinition? registeredProject));
+            Assert.Equal(MsBuildProjectProvider.ProviderId, registeredProject?.ProviderId);
+            Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MsBuildProjectProvider_UsesMsBuildForLegacyProjectsAndReportsMalformedXml()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string legacyProjectPath = Path.Combine(directoryPath, "Legacy.vbproj");
+        string malformedProjectPath = Path.Combine(directoryPath, "Broken.fsproj");
+        try
+        {
+            File.WriteAllText(legacyProjectPath, """
+                <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <PropertyGroup>
+                    <AssemblyName>Legacy.Library</AssemblyName>
+                    <OutputType>Library</OutputType>
+                  </PropertyGroup>
+                </Project>
+                """);
+            File.WriteAllText(malformedProjectPath, "<Project>");
+
+            var provider = new MsBuildProjectProvider();
+            ProjectDefinition legacyProject = provider.Load(new FileInfo(legacyProjectPath)).ForConfiguration(null);
+            ProjectDefinition malformedProject = provider.Load(new FileInfo(malformedProjectPath));
+
+            Assert.Equal("Legacy.Library", legacyProject.Name);
+            Assert.Equal([ProjectCapabilityIds.Build], provider.GetCapabilities(legacyProject).Select(capability => capability.Id));
+            Assert.True(provider.TryCreateInvocation(
+                legacyProject,
+                ProjectCapabilityIds.Build,
+                out ProjectCommandInvocation? invocation));
+            Assert.Equal(
+                $"msbuild \"{legacyProjectPath}\" /t:Build /p:Configuration=\"Debug\"",
+                invocation?.Command);
+            Assert.NotEmpty(malformedProject.LoadError!);
+            Assert.Empty(provider.GetCapabilities(malformedProject));
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionConfiguration_MapsAndListsProjectConfigurations()
     {
         string containerPath = CreateTemporaryDirectory();

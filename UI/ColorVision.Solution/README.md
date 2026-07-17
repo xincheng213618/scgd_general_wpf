@@ -10,6 +10,7 @@
 
 ### 解决方案管理
 - **创建/打开/保存** — .cvsln 格式解决方案文件
+- **工程 Provider** — 原生支持 .cvproj，并以只读方式接入 SDK/传统 MSBuild 工程（.csproj、.fsproj、.vbproj）
 - **文件树视图** — 树形结构展示工程文件
 - **文件监控** — 根级递归 FileSystemWatcher 实时同步，避免每个文件夹单独创建监听器
 - **缓存加载** — SolutionCache 缓存目录结构，减少大型工程的重复枚举
