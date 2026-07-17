@@ -9,7 +9,6 @@ using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
@@ -23,13 +22,6 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
 
         private static Mutex mutex;
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        const uint WM_USER = 0x0400; // �û��Զ�����Ϣ��ʼֵ
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern ushort GlobalAddAtom(string lpString);
 
         [STAThread]
         [DebuggerNonUserCode]

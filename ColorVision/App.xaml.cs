@@ -145,11 +145,12 @@ namespace ColorVision
                 {
                     if (ArgumentParser.GetInstance().CommandLineArgs.Length > 0)
                     {
-                        char separator = '\u0001';
-                        string combinedArgs = string.Join(separator.ToString(), ArgumentParser.GetInstance().CommandLineArgs);
-                        ushort atom = GlobalAddAtom(combinedArgs);
-                        //这里反了，不过没必要改了，都一样
-                        SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, (IntPtr)atom);  // 发送消息
+                        if (!SingleInstanceCommandLineTransport.TrySend(
+                            hWnd,
+                            ArgumentParser.GetInstance().CommandLineArgs))
+                        {
+                            log.Warn("无法将启动参数转发到现有 ColorVision 实例。");
+                        }
                     }
                     log.Info("程序已经打开");
                     if (!ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute)

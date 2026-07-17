@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -16,7 +15,6 @@ namespace ColorVision
 {
     public partial class IntegratedMainWindow
     {
-        private const uint WM_USER = 0x0400;
         private const int WM_NCHITTEST = 0x0084;
         private const int WM_NCMOUSEMOVE = 0x00A0;
         private const int WM_NCLBUTTONDOWN = 0x00A1;
@@ -49,12 +47,6 @@ namespace ColorVision
             public IntPtr hwndTrack;
             public uint dwHoverTime;
         }
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern ushort GlobalDeleteAtom(ushort nAtom);
 
         [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
         private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
@@ -167,41 +159,17 @@ namespace ColorVision
                 return new IntPtr(HTMAXBUTTON);
             }
 
-            if (msg == WM_USER + 1)
+            if (msg == SingleInstanceCommandLineTransport.MessageId
+                && SingleInstanceCommandLineTransport.TryReceive(lParam, out string[] parsedArgs))
             {
                 try
                 {
-                    char[] chars = new char[1024];
-                    int size = GlobalGetAtomName((ushort)lParam, chars, chars.Length);
-                    if (size > 0)
-                    {
-                        string receivedString = new(chars, 0, size);
-                        GlobalDeleteAtom((ushort)lParam);
-
-                        char separator = '\u0001';
-                        string[] parsedArgs = receivedString.Split(separator);
-                        var parser = ArgumentParser.GetInstance();
-                        ArgumentParseResult parsedArguments = parser.ParseSnapshot(parsedArgs);
-                        CommandLineResourceOpenRequest request = CommandLineResourceOpenRequest.Create(parsedArguments);
-                        _ = ResourceOpenService.Instance.TryOpenCommandLineWithFeedbackAsync(request);
-                        parsedArguments.Values.TryGetValue("project", out string? project);
-
-                        List<IFeatureLauncher> projects = new();
-                        foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                        {
-                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
-                            {
-                                if (Activator.CreateInstance(type) is IFeatureLauncher featureLauncher)
-                                {
-                                    projects.Add(featureLauncher);
-                                }
-                            }
-                        }
-                        if (projects.Find(a => a.Header == project) is IFeatureLauncher selectedProject)
-                        {
-                            selectedProject.Execute();
-                        }
-                    }
+                    ForwardedCommandLineHandler.Handle(parsedArgs);
+                    if (WindowState == WindowState.Minimized)
+                        WindowState = WindowState.Normal;
+                    Activate();
+                    handled = true;
+                    return new IntPtr(1);
                 }
                 catch (Exception ex)
                 {

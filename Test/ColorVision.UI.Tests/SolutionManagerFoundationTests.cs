@@ -2145,6 +2145,33 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SingleInstanceCommandLineTransport_RoundTripsLongAndEscapedArguments()
+    {
+        string longPath = Path.Combine(
+            "C:\\Workspace",
+            new string('A', 400),
+            "带引号的文件\"名称.txt");
+        string[] arguments = ["--input", longPath, "Second\u0001File.txt"];
+
+        string payload = SingleInstanceCommandLineTransport.SerializeArguments(arguments);
+
+        Assert.True(SingleInstanceCommandLineTransport.TryDeserializeArguments(
+            payload,
+            out string[] parsedArguments));
+        Assert.Equal(arguments, parsedArguments);
+        Assert.True(payload.Length > 255);
+    }
+
+    [Fact]
+    public void SingleInstanceCommandLineTransport_RejectsMalformedPayload()
+    {
+        Assert.False(SingleInstanceCommandLineTransport.TryDeserializeArguments(
+            "not-json",
+            out string[] parsedArguments));
+        Assert.Empty(parsedArguments);
+    }
+
+    [Fact]
     public void CVCalImport_ReportsMissingCameraConfiguration()
     {
         string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-{Guid.NewGuid():N}.cvcal");
