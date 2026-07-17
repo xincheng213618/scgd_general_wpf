@@ -2123,6 +2123,8 @@ public class SolutionManagerFoundationTests
                 folderPath,
                 SolutionManager.NormalizeRecentPath(workspacePath),
                 ignoreCase: true);
+            using (SolutionExplorer explorer = CreateSolutionExplorer(folderPath, workspacePath))
+                Assert.Equal(folderPath, explorer.EditorResourcePath, ignoreCase: true);
             config.SolutionFolders.Add(new SolutionFolderDefinition { Id = "preserved", Name = "Preserved" });
             SolutionConfigStore.Save(workspacePath, config);
 
@@ -5267,6 +5269,8 @@ public class SolutionManagerFoundationTests
                 projectPath,
                 SolutionManager.NormalizeRecentPath(implicitSolutionPath),
                 ignoreCase: true);
+            using (SolutionExplorer explorer = CreateSolutionExplorer(projectDirectory, implicitSolutionPath))
+                Assert.Equal(projectPath, explorer.EditorResourcePath, ignoreCase: true);
             Assert.Equal(
                 projectDirectory,
                 SolutionExplorer.ResolveRootDirectory(new FileInfo(implicitSolutionPath), config.RootPath).FullName,

@@ -163,9 +163,22 @@ namespace ColorVision.Solution.Explorer
         public override bool CanOpen => DirectoryInfo.Exists;
         public override bool CanRefresh => true;
         public override bool CanShowProperties => DirectoryInfo.Exists;
-        public override string? EditorResourcePath => IsImportedSolution
-            ? ImportedSolutionSourcePath
-            : ConfigFileInfo.FullName;
+        public override string? EditorResourcePath
+        {
+            get
+            {
+                if (PrivateWorkspaceService.TryResolveSourcePath(
+                    ConfigFileInfo.FullName,
+                    out string sourcePath))
+                {
+                    return sourcePath;
+                }
+
+                return IsImportedSolution
+                    ? ImportedSolutionSourcePath
+                    : ConfigFileInfo.FullName;
+            }
+        }
         public string PhysicalContainerPath => DirectoryInfo.FullName;
         public SolutionContainerAction SupportedContainerActions => DirectoryInfo.Exists && CanModifySolutionStructure
             ? SolutionContainerAction.AddNewItem
