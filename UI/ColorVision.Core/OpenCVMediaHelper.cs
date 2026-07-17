@@ -55,6 +55,21 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_DetectSurfaceDefects(HImage img, RoiRect roi, string config, out IntPtr result);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_DetectGhosts(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_AnalyzeLedArray(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_MatchRotatedTemplate(HImage img, HImage templateImage, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalBinocularFusion(HImage img, RoiRect roi, [MarshalAs(UnmanagedType.LPUTF8Str)] string config, out IntPtr result);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int FreeResult(IntPtr str);
@@ -67,6 +82,21 @@ namespace ColorVision.Core
             try
             {
                 return str == IntPtr.Zero ? string.Empty : Marshal.PtrToStringAnsi(str) ?? string.Empty;
+            }
+            finally
+            {
+                if (str != IntPtr.Zero)
+                {
+                    _ = FreeResult(str);
+                }
+            }
+        }
+
+        public static string PtrToStringUtf8AndFree(IntPtr str)
+        {
+            try
+            {
+                return str == IntPtr.Zero ? string.Empty : Marshal.PtrToStringUTF8(str) ?? string.Empty;
             }
             finally
             {

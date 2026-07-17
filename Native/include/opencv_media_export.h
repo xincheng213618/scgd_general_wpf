@@ -97,6 +97,16 @@ extern "C" COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, c
 // Returns JSON with summary + defect list. Thresholds are relative ratios; values > 1 are treated as percentages.
 extern "C" COLORVISIONCORE_API int M_DetectSurfaceDefects(HImage img, RoiRect roi, const char* config, char** result);
 
+// P2 local image-analysis capabilities. Each function returns a CoTaskMemAlloc
+// UTF-8 JSON buffer; release it with FreeResult. A positive return value is the
+// allocated byte count (including the terminating null), while negative values
+// are stable export-layer error codes.
+extern "C" COLORVISIONCORE_API int M_DetectGhosts(HImage img, RoiRect roi, const char* config, char** result);
+extern "C" COLORVISIONCORE_API int M_AnalyzeKeyboardHalo(HImage img, RoiRect roi, const char* config, char** result);
+extern "C" COLORVISIONCORE_API int M_AnalyzeLedArray(HImage img, RoiRect roi, const char* config, char** result);
+extern "C" COLORVISIONCORE_API int M_MatchRotatedTemplate(HImage img, HImage templateImage, RoiRect roi, const char* config, char** result);
+extern "C" COLORVISIONCORE_API int M_CalBinocularFusion(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(

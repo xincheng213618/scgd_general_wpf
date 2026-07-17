@@ -828,6 +828,51 @@ Use this for every buffer that the DLL returns from `CoTaskMemAlloc`, including 
 
 ---
 
+## P2 Local Analysis Functions
+
+The P2 APIs are stateless native algorithms. They use the common signature
+`HImage + RoiRect + JSON config` and return a UTF-8 JSON buffer allocated with
+`CoTaskMemAlloc`. A positive return value is the buffer size including the null
+terminator; release the buffer with `FreeResult`.
+
+| Function | Purpose | Main config fields |
+|----------|---------|--------------------|
+| `M_DetectGhosts` | Bright-source and secondary ghost candidate measurement | `brightThresholdMode`, `brightThreshold`, `ghostThresholdMode`, `ghostThreshold`, `brightGridRows`, `brightGridCols`, area/size/morphology limits, `minDistanceFromBright`, `minRelativeIntensity`, severity thresholds |
+| `M_AnalyzeKeyboardHalo` | Per-key inner brightness and surrounding halo ratio | `keyRects` (optional), `innerInsetRatio`, `haloGapRatio`, `haloWidthRatio`, `excludeKeyRectsFromHalo`, `gray`; `detection` controls automatic key detection when `keyRects` is omitted |
+| `M_AnalyzeLedArray` | LED grid ordering, missing/extra points, spacing, rotation, brightness and area | `rows`, `cols`, assignment gates, brightness/area limits, `gray`; `detections` can be supplied or `detection` can drive automatic connected-component detection |
+| `M_MatchRotatedTemplate` | Multi-angle template matching with NMS | `angleMin`, `angleMax`, `angleStep` (degrees), `scoreThreshold`, `maxMatches`, `nmsRadius`, `pyramidLevels`, `subpixel` |
+| `M_CalBinocularFusion` | Five-cross selection and binocular geometry metrics | `threshold` (0–255; <= 0 uses Otsu), `blurKernel`, `morphKernel`, area limits, `pixelSize` (um), `focalLength` (mm), `virtualImageDistance` (mm), `opticalCenter`, `maxCandidates` |
+
+Rectangles and points in JSON use object form (`x`, `y`, `width`, `height`).
+Configured `keyRects`, LED `detections`, and all reported coordinates are in the
+full-image coordinate system. A non-positive ROI size selects the whole image.
+Ghost thresholds and keyboard/LED brightness values are normalized to `[0, 1]`.
+Ghost and automatic Keyboard/LED analysis require a non-empty ROI to be fully
+inside the image. Matching and binocular analysis clip a partially overlapping
+ROI and report that adjustment in `warnings`; a non-overlapping ROI is invalid.
+
+Example:
+
+```csharp
+string config = "{\"rows\":3,\"cols\":4,\"detection\":{\"threshold\":0.5,\"minArea\":10}}";
+int length = OpenCVMediaHelper.M_AnalyzeLedArray(image, roi, config, out IntPtr result);
+if (length > 0)
+{
+    string json = OpenCVMediaHelper.PtrToStringUtf8AndFree(result);
+}
+```
+
+P2 export errors are `-1` invalid arguments, `-3` allocation failure, `-4`
+invalid JSON/config shape, `-5` OpenCV exception, `-6` standard exception, and
+`-7` unknown exception. A valid algorithm run returns JSON even when
+`success=false`, so callers retain its status and diagnostics.
+
+The five managed P/Invoke declarations marshal config strings as UTF-8. Use
+`PtrToStringUtf8AndFree` for their result buffers; the legacy ANSI helper remains
+available for older exports whose historical encoding contract differs.
+
+---
+
 ## Error Codes
 
 ### General Errors
@@ -866,6 +911,7 @@ enum StitchingErrorCode {
 - **Video functions:** Thread-safe with internal mutex protection
 - **Image processing:** Not thread-safe; process one image at a time per instance
 - **SFR calculations:** Thread-safe for independent images
+- **P2 local analysis functions:** Thread-safe for independent calls; no retained mutable state
 
 ---
 
