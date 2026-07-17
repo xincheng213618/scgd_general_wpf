@@ -12,6 +12,8 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     public sealed class SolutionItemNode : FileNode, IDisposable
     {
+        internal override string? PhysicalDeletePath => null;
+
         private readonly SolutionExplorer _solutionExplorer;
         private FileSystemWatcher? _externalWatcher;
         private bool _disposed;

@@ -253,6 +253,16 @@ namespace ColorVision.Solution.Explorer
             return true;
         }
 
+        internal virtual string? PhysicalDeletePath => null;
+
+        internal virtual bool CompletePhysicalDelete()
+        {
+            Parent?.RemoveChild(this);
+            if (this is IDisposable disposable)
+                disposable.Dispose();
+            return true;
+        }
+
         public virtual bool CanReName { get; set; } = true;
         public virtual bool CanDelete { get; set; } = true;
         public virtual bool CanAdd { get; set; } = true;

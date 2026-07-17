@@ -15,6 +15,8 @@ namespace ColorVision.Solution.Explorer
 {
     public class FileNode : SolutionNode
     {
+        internal override string? PhysicalDeletePath => FileInfo.FullName;
+
         public IFileMeta FileMeta { get; set; }
         public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand AskCopilotExplainFileCommand { get; set; }

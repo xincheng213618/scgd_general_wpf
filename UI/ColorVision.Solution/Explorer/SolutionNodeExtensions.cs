@@ -21,6 +21,22 @@ namespace ColorVision.Solution.Explorer
             return node.Parent.GetAncestor<T>();
         }
 
+        internal static SolutionExplorer? FindSolutionExplorer(this SolutionNode node)
+        {
+            ArgumentNullException.ThrowIfNull(node);
+            for (SolutionNode? current = node; current != null; current = current.Parent)
+            {
+                if (current is SolutionExplorer explorer)
+                    return explorer;
+            }
+            return node switch
+            {
+                ProjectNode projectNode => projectNode.SolutionExplorer,
+                UnavailableProjectNode unavailableProjectNode => unavailableProjectNode.SolutionExplorer,
+                _ => null,
+            };
+        }
+
         public static bool HasFile(this SolutionNode node)
         {
             for (int i = 0; i < node.VisualChildren.Count; i++)

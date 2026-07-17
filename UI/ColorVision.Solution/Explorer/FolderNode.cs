@@ -16,6 +16,8 @@ namespace ColorVision.Solution.Explorer
 {
     public class FolderNode : SolutionNode, IDisposable
     {
+        internal override string? PhysicalDeletePath => DirectoryInfo.FullName;
+
         public IFolderMeta FolderMeta { get; set; }
 
         public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }

@@ -153,10 +153,7 @@ namespace ColorVision.Solution
                 if (!EditorDocumentService.TryCloseDocumentsForResources(nodes.Select(node => node.FullPath)))
                     return;
 
-                SolutionExplorer? explorer = SolutionManager.CurrentSolutionExplorer;
-                IReadOnlyList<SolutionNode> failedNodes = explorer != null
-                    ? explorer.DeleteNodesAsSingleOperation(nodes)
-                    : nodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList();
+                IReadOnlyList<SolutionNode> failedNodes = DeleteNodesByOwningSolution(nodes);
                 if (failedNodes.Count > 0)
                 {
                     MessageBox.Show(
@@ -170,6 +167,23 @@ namespace ColorVision.Solution
 
             _selectionService.Clear();
             e.Handled = true;
+        }
+
+        internal static IReadOnlyList<SolutionNode> DeleteNodesByOwningSolution(
+            IReadOnlyList<SolutionNode> nodes)
+        {
+            ArgumentNullException.ThrowIfNull(nodes);
+            List<SolutionNode> distinctNodes = nodes.Distinct().ToList();
+            var failedNodes = new HashSet<SolutionNode>();
+            foreach (IGrouping<SolutionExplorer?, SolutionNode> group in distinctNodes
+                .GroupBy(node => node.FindSolutionExplorer()))
+            {
+                IReadOnlyList<SolutionNode> groupFailures = group.Key != null
+                    ? group.Key.DeleteNodesAsSingleOperation(group.ToList())
+                    : SolutionBatchDeleteService.Delete(group.ToList());
+                failedNodes.UnionWith(groupFailures);
+            }
+            return distinctNodes.Where(failedNodes.Contains).ToList();
         }
 
         private void CanExecuteRename(object sender, CanExecuteRoutedEventArgs e)

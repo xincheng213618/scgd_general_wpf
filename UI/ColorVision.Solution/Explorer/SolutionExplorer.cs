@@ -3008,7 +3008,7 @@ namespace ColorVision.Solution.Explorer
 
             return ExecuteTrackedMutation(
                 $"删除或移除 {distinctNodes.Count} 项",
-                () => distinctNodes.Where(node => !node.TryDelete(showConfirmation: false)).ToList(),
+                () => SolutionBatchDeleteService.Delete(distinctNodes),
                 _ => true);
         }
 

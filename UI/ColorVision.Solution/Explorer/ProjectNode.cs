@@ -13,6 +13,10 @@ namespace ColorVision.Solution.Explorer
     /// </summary>
     public sealed class ProjectNode : FolderNode
     {
+        internal override string? PhysicalDeletePath => SolutionExplorer?.IsExplicitProjectMode == true
+            ? null
+            : base.PhysicalDeletePath;
+
         private FileSystemWatcher? _externalProjectWatcher;
         private FileSystemWatcher? _externalProjectFileWatcher;
         private readonly object _externalChangeSync = new();
@@ -281,6 +285,13 @@ namespace ColorVision.Solution.Explorer
 
             (SolutionExplorer ?? SolutionManager.GetInstance().CurrentSolutionExplorer)?.UnregisterProject(Project);
             return true;
+        }
+
+        internal override bool CompletePhysicalDelete()
+        {
+            bool completed = base.CompletePhysicalDelete();
+            (SolutionExplorer ?? SolutionManager.GetInstance().CurrentSolutionExplorer)?.UnregisterProject(Project);
+            return completed;
         }
 
         private void EditProjectFile()

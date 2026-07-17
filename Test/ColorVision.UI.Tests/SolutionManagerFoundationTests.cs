@@ -1793,6 +1793,154 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void SolutionBatchDelete_UsesOneRecycleOperationForPhysicalNodes()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string firstFilePath = Path.Combine(rootPath, "first.txt");
+        string secondFilePath = Path.Combine(rootPath, "second.txt");
+        string folderPath = Path.Combine(rootPath, "Folder");
+        File.WriteAllText(firstFilePath, "first");
+        File.WriteAllText(secondFilePath, "second");
+        Directory.CreateDirectory(folderPath);
+
+        try
+        {
+            var parent = new SolutionNode();
+            FileNode firstFile = SolutionNodeFactory.CreateFileNode(new FileInfo(firstFilePath));
+            FileNode secondFile = SolutionNodeFactory.CreateFileNode(new FileInfo(secondFilePath));
+            FolderNode folder = SolutionNodeFactory.CreateFolderNode(new DirectoryInfo(folderPath));
+            parent.AddChild(firstFile);
+            parent.AddChild(secondFile);
+            parent.AddChild(folder);
+            int recycleCalls = 0;
+            string[] recycledPaths = [];
+
+            IReadOnlyList<SolutionNode> failures = SolutionBatchDeleteService.Delete(
+                [firstFile, secondFile, folder],
+                paths =>
+                {
+                    recycleCalls++;
+                    recycledPaths = paths;
+                    return 0;
+                });
+
+            Assert.Empty(failures);
+            Assert.Equal(1, recycleCalls);
+            Assert.Empty(parent.VisualChildren);
+            Assert.Equal(
+                [firstFilePath, secondFilePath, folderPath],
+                recycledPaths,
+                StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SolutionBatchDelete_PreservesNodesWhenRecycleOperationFails()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "kept.txt");
+        File.WriteAllText(filePath, "kept");
+
+        try
+        {
+            var parent = new SolutionNode();
+            FileNode file = SolutionNodeFactory.CreateFileNode(new FileInfo(filePath));
+            parent.AddChild(file);
+
+            IReadOnlyList<SolutionNode> failures = SolutionBatchDeleteService.Delete(
+                [file],
+                _ => 5);
+
+            Assert.Equal([file], failures);
+            Assert.Equal([file], parent.VisualChildren);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SolutionBatchDelete_RejectsNodesWithoutDeleteCapability()
+    {
+        string rootPath = CreateTemporaryDirectory();
+        string filePath = Path.Combine(rootPath, "protected.txt");
+        File.WriteAllText(filePath, "protected");
+
+        try
+        {
+            var parent = new SolutionNode();
+            FileNode file = SolutionNodeFactory.CreateFileNode(new FileInfo(filePath));
+            file.CanDelete = false;
+            parent.AddChild(file);
+            int recycleCalls = 0;
+
+            IReadOnlyList<SolutionNode> failures = SolutionBatchDeleteService.Delete(
+                [file],
+                _ =>
+                {
+                    recycleCalls++;
+                    return 0;
+                });
+
+            Assert.Equal([file], failures);
+            Assert.Equal(0, recycleCalls);
+            Assert.Equal([file], parent.VisualChildren);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MultiDelete_RecordsHistoryInEachOwningSolution()
+    {
+        string firstDirectory = CreateTemporaryDirectory();
+        string secondDirectory = CreateTemporaryDirectory();
+        string firstSolutionPath = Path.Combine(firstDirectory, "First.cvsln");
+        string secondSolutionPath = Path.Combine(secondDirectory, "Second.cvsln");
+        SolutionConfigStore.Save(firstSolutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            SolutionFolders = [new SolutionFolderDefinition { Id = "first", Name = "First" }],
+        });
+        SolutionConfigStore.Save(secondSolutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            SolutionFolders = [new SolutionFolderDefinition { Id = "second", Name = "Second" }],
+        });
+
+        try
+        {
+            using var firstExplorer = CreateSolutionExplorer(firstDirectory, firstSolutionPath);
+            using var secondExplorer = CreateSolutionExplorer(secondDirectory, secondSolutionPath);
+            SolutionFolderNode firstFolder = Assert.Single(firstExplorer.VisualChildren.OfType<SolutionFolderNode>());
+            SolutionFolderNode secondFolder = Assert.Single(secondExplorer.VisualChildren.OfType<SolutionFolderNode>());
+
+            IReadOnlyList<SolutionNode> failures = TreeViewControl.DeleteNodesByOwningSolution(
+                [firstFolder, secondFolder]);
+
+            Assert.Empty(failures);
+            Assert.Empty(firstExplorer.Config.SolutionFolders);
+            Assert.Empty(secondExplorer.Config.SolutionFolders);
+            Assert.True(firstExplorer.CanUndoSolutionOperation);
+            Assert.True(secondExplorer.CanUndoSolutionOperation);
+        }
+        finally
+        {
+            Directory.Delete(firstDirectory, recursive: true);
+            Directory.Delete(secondDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SolutionWorkspaceState_RestoresStableExpansionAndSelectionOutsideWorkspace()
     {
         string solutionDirectory = CreateTemporaryDirectory();
