@@ -136,6 +136,8 @@ namespace ColorVision.Solution.Explorer
         internal event EventHandler? Disposing;
 
         public SolutionCache? Cache { get; private set; }
+        public override bool CanOpen => DirectoryInfo.Exists;
+        public override string? EditorResourcePath => ConfigFileInfo.FullName;
         internal SolutionOperationHistory OperationHistory { get; } = new();
         internal bool IsExplicitProjectMode => Config.ProjectMode == SolutionProjectMode.Explicit;
         public string ActiveConfiguration => Config.ActiveConfiguration;
@@ -639,14 +641,6 @@ namespace ColorVision.Solution.Explorer
         public override void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "Open",
-                Order = 1,
-                Header = Resources.MenuOpen,
-                Command = OpenCommand
-            });
-
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = SolutionCommandIds.Refresh,

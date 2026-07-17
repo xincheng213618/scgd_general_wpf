@@ -110,6 +110,35 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ResourceOpenService_SeparatesProjectActivationFromExplicitEditing()
+    {
+        string directoryPath = CreateTemporaryDirectory();
+        string projectPath = Path.Combine(directoryPath, "Example.cvproj");
+        File.WriteAllText(projectPath, "{}");
+
+        try
+        {
+            Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
+
+            IReadOnlyList<EditorDescriptor> projectEditors =
+                ResourceOpenService.Instance.GetOpenWithEditors(projectPath);
+            IReadOnlyList<EditorDescriptor> folderEditors =
+                ResourceOpenService.Instance.GetOpenWithEditors(directoryPath);
+
+            Assert.Contains(projectEditors, descriptor =>
+                descriptor.ResourceKind == EditorResourceKind.File
+                && descriptor.EditorType == typeof(SystemEditor));
+            Assert.NotEmpty(folderEditors);
+            Assert.All(folderEditors, descriptor =>
+                Assert.Equal(EditorResourceKind.Folder, descriptor.ResourceKind));
+        }
+        finally
+        {
+            Directory.Delete(directoryPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TryGetProjectDirectory_ResolvesExistingProjectFile()
     {
         string directoryPath = Path.Combine(Path.GetTempPath(), $"ColorVision.Solution.Tests-{Guid.NewGuid():N}");
@@ -358,6 +387,13 @@ public class SolutionManagerFoundationTests
         {
             using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
             ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            List<MenuItemMetadata> projectMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([projectNode]);
+            Assert.Equal(projectPath, projectNode.EditorResourcePath, ignoreCase: true);
+            Assert.Same(
+                SolutionResourceCommands.OpenWith,
+                Assert.Single(projectMenuItems, item =>
+                    item.GuidId == SolutionResourceCommands.OpenWithId).Command);
             FileNode projectTarget = SolutionNodeFactory.CreateFileNode(new FileInfo(targetPath));
             projectTarget.Parent = projectNode;
             FileNode unregisteredTarget = SolutionNodeFactory.CreateFileNode(new FileInfo(unregisteredPath));
@@ -382,7 +418,7 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
-    public void SearchResultMenu_ForwardsOpenWithAndAddsRevealCommand()
+    public void ContextMenu_ComposesRoutedOpenCommandsForPhysicalResources()
     {
         string solutionDirectory = CreateTemporaryDirectory();
         string filePath = Path.Combine(solutionDirectory, "sample.txt");
@@ -404,27 +440,46 @@ public class SolutionManagerFoundationTests
                 fileNode,
                 "sample.txt",
                 ownsTarget: false);
-            var fileMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            var folderMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
-            var searchMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+            List<MenuItemMetadata> fileMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([fileNode]);
+            List<MenuItemMetadata> folderMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([folderNode]);
+            List<MenuItemMetadata> searchMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([searchResult]);
+            List<MenuItemMetadata> solutionMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([explorer]);
 
-            fileNode.CollectMenuItems(fileMenuItems);
-            folderNode.CollectMenuItems(folderMenuItems);
-            searchResult.CollectMenuItems(searchMenuItems);
-
             Assert.Same(
-                fileNode.OpenMethodCommand,
-                Assert.Single(fileMenuItems, item => item.GuidId == "OpenMethod").Command);
+                SolutionResourceCommands.Open,
+                Assert.Single(fileMenuItems, item => item.GuidId == SolutionResourceCommands.OpenId).Command);
             Assert.Same(
-                folderNode.OpenMethodCommand,
-                Assert.Single(folderMenuItems, item => item.GuidId == "OpenMethod").Command);
+                SolutionResourceCommands.OpenWith,
+                Assert.Single(fileMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
             Assert.Same(
-                fileNode.OpenMethodCommand,
-                Assert.Single(searchMenuItems, item => item.GuidId == "OpenMethod").Command);
+                SolutionResourceCommands.Open,
+                Assert.Single(folderMenuItems, item => item.GuidId == SolutionResourceCommands.OpenId).Command);
+            Assert.Same(
+                SolutionResourceCommands.OpenWith,
+                Assert.Single(folderMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
+            Assert.Same(
+                SolutionResourceCommands.Open,
+                Assert.Single(searchMenuItems, item => item.GuidId == SolutionResourceCommands.OpenId).Command);
+            Assert.Same(
+                SolutionResourceCommands.OpenWith,
+                Assert.Single(searchMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
+            Assert.Same(
+                SolutionResourceCommands.Open,
+                Assert.Single(solutionMenuItems, item => item.GuidId == SolutionResourceCommands.OpenId).Command);
+            Assert.Same(
+                SolutionResourceCommands.OpenWith,
+                Assert.Single(solutionMenuItems, item => item.GuidId == SolutionResourceCommands.OpenWithId).Command);
             Assert.Same(
                 SolutionNavigationCommands.RevealInTree,
                 Assert.Single(searchMenuItems, item =>
                     item.GuidId == SolutionNavigationCommands.RevealInTreeId).Command);
+            Assert.Equal(filePath, fileNode.EditorResourcePath, ignoreCase: true);
+            Assert.Equal(folderPath, folderNode.EditorResourcePath, ignoreCase: true);
+            Assert.Equal(solutionPath, explorer.EditorResourcePath, ignoreCase: true);
         }
         finally
         {

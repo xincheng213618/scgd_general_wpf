@@ -23,7 +23,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="{x:Static properties:Resources.Sol_OpenFileHint}" Margin="10,0,0,10"/>
+        <TextBlock x:Name="OpenHintText" Margin="10,0,0,10"/>
         <ListView x:Name="ListEditorSelection" Grid.Row="1"  Background="Transparent" MouseDoubleClick="ListEditorSelection_MouseDoubleClick">
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">

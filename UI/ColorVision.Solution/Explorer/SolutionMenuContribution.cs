@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
@@ -266,6 +267,50 @@ namespace ColorVision.Solution.Explorer
             {
                 return Array.Empty<Type>();
             }
+        }
+    }
+
+    [SolutionMenuContribution(priority: 300)]
+    public sealed class ResourceOpenMenuContribution : ISolutionMenuContribution
+    {
+        public string Id => "colorvision.solution.resource-open";
+        public SolutionMenuSelectionPolicy SelectionPolicy => SolutionMenuSelectionPolicy.SingleOnly;
+
+        public bool IsApplicable(SolutionMenuContext context)
+        {
+            return context.PrimaryNode.CanOpen
+                || !string.IsNullOrWhiteSpace(context.PrimaryNode.EditorResourcePath);
+        }
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            SolutionNode node = context.PrimaryNode;
+            var menuItems = new List<MenuItemMetadata>();
+            if (node.CanOpen)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.OpenId,
+                    Order = 1,
+                    Header = ColorVision.Solution.Properties.Resources.MenuOpen,
+                    Icon = MenuItemIcon.TryFindResource("DIOpen"),
+                    InputGestureText = "Enter",
+                    Command = SolutionResourceCommands.Open,
+                });
+            }
+
+            if (node.EditorResourcePath is { } resourcePath
+                && ResourceOpenService.Instance.GetOpenWithEditors(resourcePath).Count > 0)
+            {
+                menuItems.Add(new MenuItemMetadata
+                {
+                    GuidId = SolutionResourceCommands.OpenWithId,
+                    Order = 2,
+                    Header = $"{ColorVision.Solution.Properties.Resources.Sol_OpenAs}(_N)",
+                    Command = SolutionResourceCommands.OpenWith,
+                });
+            }
+            return menuItems;
         }
     }
 

@@ -17,6 +17,8 @@ namespace ColorVision.Solution.Explorer
     public class FolderNode : SolutionNode, IDisposable
     {
         internal override string? PhysicalDeletePath => DirectoryInfo.FullName;
+        public override bool CanOpen => DirectoryInfo.Exists;
+        public override string? EditorResourcePath => DirectoryInfo.FullName;
 
         public IFolderMeta FolderMeta { get; set; }
 
@@ -25,7 +27,6 @@ namespace ColorVision.Solution.Explorer
         public RelayCommand AddDirCommand { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
-        public RelayCommand OpenMethodCommand { get; set; }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
         private bool _childrenLoaded;
         private bool _childrenLoading;
@@ -232,24 +233,7 @@ namespace ColorVision.Solution.Explorer
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
-            OpenMethodCommand = new RelayCommand(a => OpenMethod());
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
-        }
-
-        public void OpenMethod()
-        {
-            var descriptors = EditorManager.Instance.GetFolderEditorDescriptors(visibleOnly: true);
-            var current = EditorManager.Instance.GetDefaultFolderEditorDescriptor();
-
-            if (descriptors.Count == 0) return;
-
-            var window = new FolderEditorSelectionWindow(descriptors, current?.Id, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (window.ShowDialog() == true && window.SelectedEditor is { } selectedEditor)
-            {
-                if (window.AlwaysUseSelectedEditor)
-                    EditorManager.Instance.SetDefaultFolderEditor(selectedEditor.Id);
-                ResourceOpenService.Instance.TryOpenWith(FullPath, selectedEditor.Id);
-            }
         }
 
         public override void Open()
@@ -261,14 +245,6 @@ namespace ColorVision.Solution.Explorer
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "Open",
-                Order = 1,
-                Header = Resources.MenuOpen,
-                Command = OpenCommand
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = $"{Resources.Sol_OpenAs}(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });

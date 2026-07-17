@@ -16,6 +16,8 @@ namespace ColorVision.Solution.Explorer
     public class FileNode : SolutionNode
     {
         internal override string? PhysicalDeletePath => FileInfo.FullName;
+        public override bool CanOpen => FileInfo.Exists;
+        public override string? EditorResourcePath => FileInfo.FullName;
 
         public IFileMeta FileMeta { get; set; }
         public RelayCommand OpenContainingFolderCommand { get; set; }
@@ -23,8 +25,6 @@ namespace ColorVision.Solution.Explorer
         public RelayCommand AskCopilotDiagnoseFileCommand { get; set; }
 
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
-
-        public RelayCommand OpenMethodCommand { get; set; }
 
         public FileNode(IFileMeta fileMeta) : base()
         {
@@ -39,34 +39,14 @@ namespace ColorVision.Solution.Explorer
         {
             base.Initialize();
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
-            OpenMethodCommand = new RelayCommand(a => OpenMethod());
             AskCopilotExplainFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Code, false), a => FileInfo.Exists);
             AskCopilotDiagnoseFileCommand = new RelayCommand(a => AskCopilotAboutFile(CopilotPromptMode.Diagnose, true), a => FileInfo.Exists);
-        }
-
-        public void OpenMethod()
-        {
-            var ext = Path.GetExtension(FullPath);
-            var descriptors = EditorManager.Instance.GetFileEditorDescriptors(ext, visibleOnly: true);
-            var current = EditorManager.Instance.GetDefaultFileEditorDescriptor(ext);
-
-            if (descriptors.Count == 0) return;
-
-            var window = new EditorSelectionWindow(descriptors, current?.Id, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (window.ShowDialog() == true && window.SelectedEditor is { } selectedEditor)
-            {
-                if (window.AlwaysUseSelectedEditor)
-                    EditorManager.Instance.SetDefaultEditor(ext, selectedEditor.Id);
-                ResourceOpenService.Instance.TryOpenWith(FullPath, selectedEditor.Id);
-            }
         }
 
         public override void InitMenuItem()
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = $"{Resources.Sol_OpenAs}(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotExplainFile", Order = 20, Header = "问 AI 解释此文件", Command = AskCopilotExplainFileCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotDiagnoseFile", Order = 21, Header = "问 AI 诊断此文件/日志", Command = AskCopilotDiagnoseFileCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });

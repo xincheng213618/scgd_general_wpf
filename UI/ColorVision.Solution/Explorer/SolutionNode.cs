@@ -165,6 +165,15 @@ namespace ColorVision.Solution.Explorer
         private bool _IsDropTarget;
 
         public virtual bool IsStartupProject => false;
+
+        /// <summary>Whether the node supports its primary open action.</summary>
+        public virtual bool CanOpen => false;
+
+        /// <summary>
+        /// Physical file or folder offered to explicit editors. This can differ
+        /// from FullPath, which may represent a tree identity or project root.
+        /// </summary>
+        public virtual string? EditorResourcePath => null;
         public bool IsExcludedFromProject { get; private set; }
 
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
@@ -178,7 +187,7 @@ namespace ColorVision.Solution.Explorer
 
         public virtual void Initialize()
         {
-            OpenCommand = new RelayCommand((s) => Open());
+            OpenCommand = new RelayCommand(_ => Open(), _ => CanOpen);
             DeleteCommand = new RelayCommand(s => Delete());
             PropertyCommand = new RelayCommand(s => ShowProperty());
             CopyFullPathCommand = new RelayCommand(s => CopyFullPath(), s => !string.IsNullOrEmpty(FullPath));

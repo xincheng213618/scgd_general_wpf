@@ -10,13 +10,14 @@ namespace ColorVision.Solution.Editor
         public string Name { get; set; }
         public EditorDescriptor Descriptor { get; }
 
-        public EditorDescriptorViewModel(EditorDescriptor descriptor, string extension)
+        public EditorDescriptorViewModel(EditorDescriptor descriptor, string resourcePath)
         {
             Descriptor = descriptor;
             Name = EditorManager.GetEditorName(descriptor);
-            if (descriptor.EditorType == typeof(SystemEditor))
+            if (descriptor.ResourceKind == EditorResourceKind.File
+                && descriptor.EditorType == typeof(SystemEditor))
             {
-                string friendlyName = FileAssociation.GetFriendlyAppName(extension);
+                string friendlyName = FileAssociation.GetFriendlyAppName(Path.GetExtension(resourcePath));
                 Name = $"{Name} ({friendlyName})";
             }
         }
@@ -37,13 +38,20 @@ namespace ColorVision.Solution.Editor
         public EditorSelectionWindow(
             IReadOnlyList<EditorDescriptor> descriptors,
             string? currentEditorId,
-            string filePath)
+            string resourcePath)
         {
             InitializeComponent();
             this.ApplyCaption();
-            string extension = Path.GetExtension(filePath);
+            bool isFolder = descriptors.Count > 0
+                && descriptors[0].ResourceKind == EditorResourceKind.Folder;
+            OpenHintText.Text = isFolder
+                ? ColorVision.Solution.Properties.Resources.Sol_OpenFolderHint
+                : ColorVision.Solution.Properties.Resources.Sol_OpenFileHint;
+            AlwaysUseCheckBox.Content = isFolder
+                ? "始终使用此编辑器打开文件夹"
+                : "始终使用此编辑器打开此类文件";
             EditorTypes = descriptors.Select(descriptor =>
-                new EditorDescriptorViewModel(descriptor, extension)).ToList();
+                new EditorDescriptorViewModel(descriptor, resourcePath)).ToList();
             ListEditorSelection.ItemsSource = EditorTypes;
             int selectedIndex = currentEditorId == null
                 ? -1

@@ -25,6 +25,7 @@ namespace ColorVision.Solution.Explorer
         public ProjectDefinition Project { get; private set; }
         public IReadOnlyList<ProjectCapabilityDescriptor> Capabilities { get; private set; }
         public SolutionExplorer? SolutionExplorer { get; }
+        public override string? EditorResourcePath => Project.ProjectFile.FullName;
 
         public RelayCommand EditProjectFileCommand { get; }
         public RelayCommand RemoveFromSolutionCommand { get; }
@@ -536,6 +537,7 @@ namespace ColorVision.Solution.Explorer
         public string ProjectReference { get; }
         public string ResolvedPath { get; private set; }
         public string LoadError { get; private set; }
+        public override string? EditorResourcePath => ResolvedPath;
         internal SolutionExplorer SolutionExplorer => _solutionExplorer;
 
         public RelayCommand RemoveFromSolutionCommand { get; }

@@ -55,6 +55,8 @@ namespace ColorVision.Solution.Explorer
         }
 
         public override bool IsStartupProject => TargetNode.IsStartupProject;
+        public override bool CanOpen => TargetNode.CanOpen;
+        public override string? EditorResourcePath => TargetNode.EditorResourcePath;
 
         internal SolutionSearchResultNode(
             SolutionExplorer explorer,

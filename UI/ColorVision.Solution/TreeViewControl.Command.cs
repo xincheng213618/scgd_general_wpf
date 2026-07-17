@@ -1,4 +1,5 @@
 ﻿using ColorVision.Solution.Explorer;
+using ColorVision.Solution.Editor;
 using ColorVision.UI;
 using ColorVision.Solution.Workspace;
 using System.Collections.Specialized;
@@ -19,6 +20,8 @@ namespace ColorVision.Solution
             RegisterCommand(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
             RegisterCommand(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
             RegisterCommand(ApplicationCommands.Delete, ExecuteDelete, CanExecuteDelete);
+            RegisterCommand(SolutionResourceCommands.Open, ExecuteOpen, CanExecuteOpen);
+            RegisterCommand(SolutionResourceCommands.OpenWith, ExecuteOpenWith, CanExecuteOpenWith);
             RegisterCommand(Commands.ReName, ExecuteRename, CanExecuteRename);
             RegisterCommand(NavigationCommands.Refresh, ExecuteRefresh, CanExecuteRefresh);
             RegisterCommand(SolutionProjectCommands.Build, ExecuteProjectCapability, CanExecuteProjectCapability);
@@ -37,6 +40,55 @@ namespace ColorVision.Solution
         }
 
         #region Command Handlers
+
+        private void CanExecuteOpen(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [var node] && node.CanOpen;
+            e.Handled = true;
+        }
+
+        private void ExecuteOpen(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (_selectionService.CommandNodes is [var node] && node.CanOpen)
+                node.Open();
+            e.Handled = true;
+        }
+
+        private void CanExecuteOpenWith(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.CommandNodes is [var node]
+                && node.EditorResourcePath is { } resourcePath
+                && ResourceOpenService.Instance.GetOpenWithEditors(resourcePath).Count > 0;
+            e.Handled = true;
+        }
+
+        private void ExecuteOpenWith(object sender, ExecutedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_selectionService.CommandNodes is not [var node]
+                || node.EditorResourcePath is not { } resourcePath)
+            {
+                return;
+            }
+
+            ResourceOpenService openService = ResourceOpenService.Instance;
+            IReadOnlyList<EditorDescriptor> descriptors = openService.GetOpenWithEditors(resourcePath);
+            if (descriptors.Count == 0)
+                return;
+
+            EditorDescriptor? current = openService.GetDefaultOpenWithEditor(resourcePath);
+            var window = new EditorSelectionWindow(descriptors, current?.Id, resourcePath)
+            {
+                Owner = Application.Current?.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            };
+            if (window.ShowDialog() != true || window.SelectedEditor is not { } selectedEditor)
+                return;
+
+            if (window.AlwaysUseSelectedEditor)
+                openService.SetDefaultOpenWithEditor(resourcePath, selectedEditor.Id);
+            openService.TryOpenWith(resourcePath, selectedEditor.Id);
+        }
 
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
         {

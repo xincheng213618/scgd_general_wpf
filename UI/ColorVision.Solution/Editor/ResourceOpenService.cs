@@ -50,6 +50,43 @@ namespace ColorVision.Solution.Editor
             return File.Exists(path) && _editorManager.OpenFileWith(path, editorId);
         }
 
+        /// <summary>
+        /// Returns explicit editor choices for one physical resource. Solution
+        /// and project files stay files here: Open With must not activate them.
+        /// </summary>
+        public IReadOnlyList<EditorDescriptor> GetOpenWithEditors(string? path, bool visibleOnly = true)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return Array.Empty<EditorDescriptor>();
+            if (Directory.Exists(path))
+                return _editorManager.GetFolderEditorDescriptors(visibleOnly);
+            if (!File.Exists(path))
+                return Array.Empty<EditorDescriptor>();
+            return _editorManager.GetFileEditorDescriptors(Path.GetExtension(path), visibleOnly);
+        }
+
+        public EditorDescriptor? GetDefaultOpenWithEditor(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+            if (Directory.Exists(path))
+                return _editorManager.GetDefaultFolderEditorDescriptor();
+            if (!File.Exists(path))
+                return null;
+            return _editorManager.GetDefaultFileEditorDescriptor(Path.GetExtension(path));
+        }
+
+        public bool SetDefaultOpenWithEditor(string? path, string editorId)
+        {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(editorId))
+                return false;
+            if (Directory.Exists(path))
+                return _editorManager.SetDefaultFolderEditor(editorId);
+            if (!File.Exists(path))
+                return false;
+            return _editorManager.SetDefaultEditor(Path.GetExtension(path), editorId);
+        }
+
         public static bool TryOpenFile(string filePath) => EditorManager.Instance.TryOpenFile(filePath);
 
         internal static ResourceOpenKind Classify(string? path)
