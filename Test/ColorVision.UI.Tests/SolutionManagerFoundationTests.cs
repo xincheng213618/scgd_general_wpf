@@ -4101,6 +4101,13 @@ public class SolutionManagerFoundationTests
             Assert.Equal(
                 $"msbuild \"{projectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"x64\"",
                 invocation?.Command);
+            Assert.True(provider.TryCreateInvocation(
+                project.ForConfiguration("Debug|Win32"),
+                ProjectCapabilityIds.Build,
+                out ProjectCommandInvocation? win32Invocation));
+            Assert.Equal(
+                $"msbuild \"{projectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"Win32\"",
+                win32Invocation?.Command);
             Assert.Equal(ResourceOpenKind.Project, ResourceOpenService.Classify(projectPath));
             Assert.True(SolutionManager.TryCreateImplicitProjectSolution(
                 new FileInfo(projectPath),
@@ -4168,12 +4175,30 @@ public class SolutionManagerFoundationTests
         string directoryPath = CreateTemporaryDirectory();
         string projectDirectory = Path.Combine(directoryPath, "src", "App");
         string projectPath = Path.Combine(projectDirectory, "App.csproj");
+        string nativeProjectDirectory = Path.Combine(directoryPath, "src", "Native");
+        string nativeProjectPath = Path.Combine(nativeProjectDirectory, "Native.vcxproj");
         string readmePath = Path.Combine(directoryPath, "README.md");
         string solutionPath = Path.Combine(directoryPath, "Example.sln");
+        string? importedWorkspacePath = null;
         try
         {
             Directory.CreateDirectory(projectDirectory);
+            Directory.CreateDirectory(nativeProjectDirectory);
             File.WriteAllText(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+            File.WriteAllText(nativeProjectPath, """
+                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                  <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|x64">
+                      <Configuration>Debug</Configuration>
+                      <Platform>x64</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|x64">
+                      <Configuration>Release</Configuration>
+                      <Platform>x64</Platform>
+                    </ProjectConfiguration>
+                  </ItemGroup>
+                </Project>
+                """);
             File.WriteAllText(readmePath, "readme");
             File.WriteAllText(solutionPath, """
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -4181,6 +4206,8 @@ public class SolutionManagerFoundationTests
                 VisualStudioVersion = 17.0.31903.59
                 MinimumVisualStudioVersion = 10.0.40219.1
                 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "src\App\App.csproj", "{11111111-1111-1111-1111-111111111111}"
+                EndProject
+                Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Native", "src\Native\Native.vcxproj", "{33333333-3333-3333-3333-333333333333}"
                 EndProject
                 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{22222222-2222-2222-2222-222222222222}"
                     ProjectSection(SolutionItems) = preProject
@@ -4197,6 +4224,10 @@ public class SolutionManagerFoundationTests
                         {11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
                         {11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
                         {11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
+                        {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.ActiveCfg = Debug|x64
+                        {33333333-3333-3333-3333-333333333333}.Debug|Any CPU.Build.0 = Debug|x64
+                        {33333333-3333-3333-3333-333333333333}.Release|Any CPU.ActiveCfg = Release|x64
+                        {33333333-3333-3333-3333-333333333333}.Release|Any CPU.Build.0 = Release|x64
                     EndGlobalSection
                     GlobalSection(NestedProjects) = preSolution
                         {11111111-1111-1111-1111-111111111111} = {22222222-2222-2222-2222-222222222222}
@@ -4206,7 +4237,10 @@ public class SolutionManagerFoundationTests
 
             var provider = new VisualStudioSolutionFileProvider();
             SolutionFileDefinition definition = provider.Load(new FileInfo(solutionPath));
-            SolutionFileProject project = Assert.Single(definition.Projects);
+            SolutionFileProject project = Assert.Single(definition.Projects, item =>
+                item.Path.EndsWith("App.csproj", StringComparison.OrdinalIgnoreCase));
+            SolutionFileProject nativeProject = Assert.Single(definition.Projects, item =>
+                item.Path.EndsWith("Native.vcxproj", StringComparison.OrdinalIgnoreCase));
             SolutionFileFolder folder = Assert.Single(definition.Folders);
 
             Assert.Equal(VisualStudioSolutionFileProvider.ProviderId, definition.ProviderId);
@@ -4215,6 +4249,8 @@ public class SolutionManagerFoundationTests
             Assert.Equal("src\\App\\App.csproj", project.Path);
             Assert.Equal(folder.Path, project.SolutionFolderPath);
             Assert.Equal("Release", project.Configurations["Release"]);
+            Assert.Equal("Debug|x64", nativeProject.Configurations["Debug"]);
+            Assert.Equal("Release|x64", nativeProject.Configurations["Release"]);
             Assert.Equal("src", folder.Name);
             Assert.Contains("README.md", folder.Files, StringComparer.OrdinalIgnoreCase);
             Assert.True(SolutionFileProviderRegistry.TryLoadSolution(
@@ -4225,9 +4261,33 @@ public class SolutionManagerFoundationTests
             Assert.Equal(VisualStudioSolutionFileProvider.ProviderId, registeredDefinition?.ProviderId);
             Assert.Equal(ResourceOpenKind.Solution, ResourceOpenService.Classify(solutionPath));
             Assert.Contains("*.sln", SolutionFileProviderRegistry.GetSolutionFilePatterns(), StringComparer.OrdinalIgnoreCase);
+            Assert.True(SolutionManager.TryCreateImportedSolution(
+                new FileInfo(solutionPath),
+                out importedWorkspacePath,
+                out _));
+            SolutionConfig importedConfig = SolutionConfigStore.Load(importedWorkspacePath).Config;
+            string nativeReference = Path.Combine("src", "Native", "Native.vcxproj");
+            Assert.Equal("Debug|x64", importedConfig.ProjectConfigurations[nativeReference]["Debug"]);
+            using SolutionExplorer explorer = CreateSolutionExplorer(directoryPath, importedWorkspacePath);
+            ProjectNode nativeProjectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>(), node =>
+                node.Project.ProjectFile.Extension.Equals(".vcxproj", StringComparison.OrdinalIgnoreCase));
+            ProjectDefinition configuredNativeProject = explorer.ApplyActiveConfiguration(nativeProjectNode.Project);
+            Assert.Equal("Debug|x64", configuredNativeProject.ActiveConfiguration);
+            Assert.True(ProjectProviderRegistry.TryCreateCapabilityInvocation(
+                configuredNativeProject,
+                ProjectCapabilityIds.Build,
+                out ProjectCommandInvocation? nativeInvocation));
+            Assert.Equal(
+                $"msbuild \"{nativeProjectPath}\" /t:Build /p:Configuration=\"Debug\" /p:Platform=\"x64\"",
+                nativeInvocation?.Command);
         }
         finally
         {
+            if (!string.IsNullOrWhiteSpace(importedWorkspacePath))
+            {
+                File.Delete(importedWorkspacePath);
+                File.Delete(SolutionConfigStore.GetBackupPath(importedWorkspacePath));
+            }
             Directory.Delete(directoryPath, recursive: true);
         }
     }

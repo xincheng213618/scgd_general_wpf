@@ -147,7 +147,19 @@ namespace ColorVision.Solution.Explorer
                 solutionConfiguration,
                 solutionPlatform);
             string? buildType = projectConfiguration.Item1;
-            return string.IsNullOrWhiteSpace(buildType) ? solutionConfiguration : buildType;
+            string projectBuildType = string.IsNullOrWhiteSpace(buildType)
+                ? solutionConfiguration
+                : buildType;
+            string? projectPlatform = projectConfiguration.Item2;
+            return IsVisualCppProject(project.FilePath) && !string.IsNullOrWhiteSpace(projectPlatform)
+                ? $"{projectBuildType}|{projectPlatform}"
+                : projectBuildType;
+        }
+
+        private static bool IsVisualCppProject(string? projectPath)
+        {
+            return !string.IsNullOrWhiteSpace(projectPath)
+                && projectPath.EndsWith(".vcxproj", StringComparison.OrdinalIgnoreCase);
         }
     }
 

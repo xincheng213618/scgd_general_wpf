@@ -121,6 +121,13 @@ namespace ColorVision.Solution.Explorer
                 string configuration = string.IsNullOrWhiteSpace(project.ActiveConfiguration)
                     ? "Debug"
                     : project.ActiveConfiguration;
+                string? platform = null;
+                if (string.Equals(project.ProjectFile.Extension, ".vcxproj", StringComparison.OrdinalIgnoreCase)
+                    && TrySplitConfigurationPlatform(configuration, out string configurationName, out string platformName))
+                {
+                    configuration = configurationName;
+                    platform = platformName;
+                }
                 string workingDirectory = string.IsNullOrWhiteSpace(command.WorkingDirectory)
                     ? project.ProjectDirectory.FullName
                     : Path.GetFullPath(Path.IsPathRooted(command.WorkingDirectory)
@@ -130,6 +137,12 @@ namespace ColorVision.Solution.Explorer
                     .Replace("{ProjectDir}", project.ProjectDirectory.FullName, StringComparison.OrdinalIgnoreCase)
                     .Replace("{ProjectFile}", project.ProjectFile.FullName, StringComparison.OrdinalIgnoreCase)
                     .Replace("{Configuration}", configuration, StringComparison.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(platform)
+                    && string.Equals(capabilityId, ProjectCapabilityIds.Build, StringComparison.OrdinalIgnoreCase)
+                    && !expandedCommand.Contains("/p:Platform=", StringComparison.OrdinalIgnoreCase))
+                {
+                    expandedCommand += $" /p:Platform=\"{platform}\"";
+                }
                 invocation = new ProjectCommandInvocation(project, capabilityId, expandedCommand, workingDirectory);
                 return true;
             }
@@ -260,21 +273,46 @@ namespace ColorVision.Solution.Explorer
                 entry => entry.Configuration,
                 StringComparer.OrdinalIgnoreCase))
             {
-                string platform = configurationGroup
+                string preferredPlatform = configurationGroup
                     .Where(entry => !string.IsNullOrWhiteSpace(entry.Platform))
                     .OrderBy(entry => GetPlatformPreference(entry.Platform))
                     .ThenBy(entry => entry.Platform, StringComparer.OrdinalIgnoreCase)
                     .Select(entry => entry.Platform)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .FirstOrDefault() ?? string.Empty;
-                var commands = new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase);
-                if (!string.IsNullOrWhiteSpace(platform))
-                {
-                    commands[ProjectCapabilityIds.Build] = new ProjectCommandDefinition(
-                        $"msbuild \"{{ProjectFile}}\" /t:Build /p:Configuration=\"{{Configuration}}\" /p:Platform=\"{platform}\"");
-                }
-                result[configurationGroup.Key] = new ProjectConfigurationDefinition(commands);
+                result[configurationGroup.Key] = CreateVisualCppConfiguration(preferredPlatform);
             }
             return result;
+        }
+
+        private static ProjectConfigurationDefinition CreateVisualCppConfiguration(string platform)
+        {
+            var commands = new Dictionary<string, ProjectCommandDefinition>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(platform))
+            {
+                commands[ProjectCapabilityIds.Build] = new ProjectCommandDefinition(
+                    $"msbuild \"{{ProjectFile}}\" /t:Build /p:Configuration=\"{{Configuration}}\" /p:Platform=\"{platform}\"");
+            }
+            return new ProjectConfigurationDefinition(commands);
+        }
+
+        private static bool TrySplitConfigurationPlatform(
+            string value,
+            out string configuration,
+            out string platform)
+        {
+            int separatorIndex = value.IndexOf('|');
+            if (separatorIndex <= 0 || separatorIndex == value.Length - 1)
+            {
+                configuration = value;
+                platform = string.Empty;
+                return false;
+            }
+
+            configuration = value[..separatorIndex].Trim();
+            platform = value[(separatorIndex + 1)..].Trim();
+            return !string.IsNullOrWhiteSpace(configuration)
+                && !string.IsNullOrWhiteSpace(platform);
         }
 
         private static string? GetChildValue(XElement element, string childName)
