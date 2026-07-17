@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.FolderMeta;
-using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 
@@ -509,25 +508,6 @@ namespace ColorVision.Solution.Explorer
             NotifyPropertyChanged(nameof(Name));
             NotifyPropertyChanged(nameof(LoadError));
             InvalidateMenuItems();
-        }
-
-        public override void InitMenuItem()
-        {
-            MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "ShowUnavailableProjectError",
-                Order = 2,
-                Header = "查看加载错误(_E)...",
-                Command = ShowLoadErrorCommand,
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "OpenUnavailableProjectContainer",
-                Order = 3,
-                Header = "在文件资源管理器中打开(_X)",
-                Command = OpenContainingFolderCommand,
-            });
         }
 
         public override void Refresh()

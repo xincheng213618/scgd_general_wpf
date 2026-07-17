@@ -2265,10 +2265,39 @@ public class SolutionManagerFoundationTests
                 explorer.VisualChildren.OfType<UnavailableProjectNode>());
             Assert.Equal(projectPath, unavailableNode.FullPath, ignoreCase: true);
             Assert.Contains("项目引用", unavailableNode.BuildDiagnosticMessage(), StringComparison.Ordinal);
+            var nodeMenuItems = new List<MenuItemMetadata>();
+            unavailableNode.CollectMenuItems(nodeMenuItems);
             List<MenuItemMetadata> unavailableMenuItems =
                 SolutionContextMenuService.CreateMenuMetadata([unavailableNode]);
+            using var searchResult = new SolutionSearchResultNode(
+                explorer,
+                unavailableNode,
+                unavailableNode.Name,
+                ownsTarget: false);
+            List<MenuItemMetadata> searchMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([searchResult]);
+            var secondUnavailableNode = new UnavailableProjectNode(
+                explorer,
+                "Other.lateproj",
+                Path.Combine(solutionDirectory, "Other.lateproj"));
+            List<MenuItemMetadata> multiMenuItems =
+                SolutionContextMenuService.CreateMenuMetadata([unavailableNode, secondUnavailableNode]);
+
+            Assert.DoesNotContain(nodeMenuItems, item => item.GuidId is
+                "ShowUnavailableProjectError" or "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item => item.GuidId == SolutionCommandIds.Refresh);
-            Assert.Contains(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer");
+            Assert.Same(
+                unavailableNode.ShowLoadErrorCommand,
+                Assert.Single(unavailableMenuItems, item => item.GuidId == "ShowUnavailableProjectError").Command);
+            Assert.Same(
+                unavailableNode.OpenContainingFolderCommand,
+                Assert.Single(unavailableMenuItems, item => item.GuidId == "OpenUnavailableProjectContainer").Command);
+            Assert.Contains(searchMenuItems, item => item.GuidId == SolutionNavigationCommands.RevealInTreeId);
+            Assert.Same(
+                unavailableNode.ShowLoadErrorCommand,
+                Assert.Single(searchMenuItems, item => item.GuidId == "ShowUnavailableProjectError").Command);
+            Assert.DoesNotContain(multiMenuItems, item => item.GuidId is
+                "ShowUnavailableProjectError" or "OpenUnavailableProjectContainer");
             Assert.Contains(unavailableMenuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
                 && ReferenceEquals(item.Command, ApplicationCommands.Delete)
