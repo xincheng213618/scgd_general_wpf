@@ -385,7 +385,7 @@ namespace ColorVision.Solution
 
         private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (_selectionService.SelectedNodes.Count == 0)
+            if (!_contextMenuService.PrepareMenu())
                 e.Handled = true;
         }
 

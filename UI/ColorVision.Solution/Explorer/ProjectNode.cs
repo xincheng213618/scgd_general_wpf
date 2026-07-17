@@ -619,13 +619,6 @@ namespace ColorVision.Solution.Explorer
                 Header = "从解决方案中移除(_V)",
                 Command = System.Windows.Input.ApplicationCommands.Delete,
             });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
-                GuidId = "CopyFullPath",
-                Order = 200,
-                Header = "复制完整路径",
-                Command = CopyFullPathCommand,
-            });
         }
 
         internal override bool TryDelete(bool showConfirmation)

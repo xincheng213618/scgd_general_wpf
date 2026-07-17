@@ -27,6 +27,7 @@ namespace ColorVision.Solution.Explorer
                 NewItemTemplateRegistry.Initialize();
                 ProjectTemplateRegistry.Initialize();
                 ProjectProviderRegistry.Initialize();
+                SolutionMenuContributionRegistry.Initialize();
                 _registriesInitialized = true;
             }
         }

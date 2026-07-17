@@ -193,7 +193,6 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Paste, Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Ctrl+V" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Delete, Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = SolutionCommandIds.Rename, Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径", Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
         }
 

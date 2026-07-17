@@ -783,14 +783,6 @@ namespace ColorVision.Solution.Explorer
 
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
-                GuidId = "CopyFullPath",
-                Order = 200,
-                Command = CopyFullPathCommand,
-                Header = ColorVision.Solution.Properties.Resources.CopyFullPath,
-                Icon = MenuItemIcon.TryFindResource("DICopyFullPath")
-            });
-            MenuItemMetadatas.Add(new MenuItemMetadata
-            {
                 GuidId = "MenuOpenFileInExplorer",
                 Order = 200,
                 Command = OpenFileInExplorerCommand,

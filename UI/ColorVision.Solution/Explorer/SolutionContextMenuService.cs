@@ -31,7 +31,6 @@ namespace ColorVision.Solution.Explorer
         public SolutionContextMenuService()
         {
             _contextMenu = new ContextMenu();
-            _contextMenu.Opened += OnContextMenuOpened;
         }
 
         /// <summary>
@@ -39,37 +38,40 @@ namespace ColorVision.Solution.Explorer
         /// </summary>
         public Func<IReadOnlyList<SolutionNode>>? GetSelectedNodes { get; set; }
 
-        private void OnContextMenuOpened(object sender, RoutedEventArgs e)
+        public bool PrepareMenu()
         {
             _contextMenu.Items.Clear();
 
             var nodes = GetSelectedNodes?.Invoke();
             if (nodes == null || nodes.Count == 0)
-            {
-                e.Handled = true;
-                return;
-            }
+                return false;
 
-            if (nodes.Count == 1)
-            {
-                BuildSingleNodeMenu(nodes[0]);
-            }
-            else
-            {
-                BuildMultiNodeMenu(nodes);
-            }
+            BuildMenuFromMetadata(CreateMenuMetadata(nodes));
+            return _contextMenu.Items.Count > 0;
         }
 
-        private void BuildSingleNodeMenu(SolutionNode node)
+        internal static List<MenuItemMetadata> CreateMenuMetadata(IReadOnlyList<SolutionNode> nodes)
         {
-            // Collect metadata from the node
+            ArgumentNullException.ThrowIfNull(nodes);
+            if (nodes.Count == 0)
+                return [];
+
+            List<MenuItemMetadata> metadatas = nodes.Count == 1
+                ? BuildSingleNodeMenu(nodes[0])
+                : BuildMultiNodeMenu(nodes);
+            metadatas.AddRange(SolutionMenuContributionRegistry.GetMenuItems(
+                new SolutionMenuContext(nodes)));
+            return metadatas;
+        }
+
+        private static List<MenuItemMetadata> BuildSingleNodeMenu(SolutionNode node)
+        {
             var metadatas = new List<MenuItemMetadata>();
             node.CollectMenuItems(metadatas);
-
-            BuildMenuFromMetadata(metadatas);
+            return metadatas;
         }
 
-        private void BuildMultiNodeMenu(IReadOnlyList<SolutionNode> nodes)
+        private static List<MenuItemMetadata> BuildMultiNodeMenu(IReadOnlyList<SolutionNode> nodes)
         {
             // For multi-select, only show operations that are valid for all selected nodes
             // Collect all metadata per node, keyed by GuidId
@@ -100,7 +102,7 @@ namespace ColorVision.Solution.Explorer
                 commonMetadatas.Add(meta);
             }
 
-            BuildMenuFromMetadata(commonMetadatas);
+            return commonMetadatas;
         }
 
         private void BuildMenuFromMetadata(List<MenuItemMetadata> metadatas)

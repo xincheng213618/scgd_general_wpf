@@ -3,6 +3,7 @@ using ColorVision.Solution.Editor;
 using ColorVision.Solution.Explorer;
 using ColorVision.Solution.Terminal;
 using ColorVision.Solution.Workspace;
+using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -177,6 +178,73 @@ public class SolutionManagerFoundationTests
         Assert.Equal([parent, sibling], effectiveNodes);
         Assert.True(SolutionCommandIds.SupportsMultipleSelection(SolutionCommandIds.Delete));
         Assert.False(SolutionCommandIds.SupportsMultipleSelection(SolutionCommandIds.Rename));
+    }
+
+    [Fact]
+    public void SolutionMenuContributionsComposeAndHonorSelectionPolicies()
+    {
+        string prefix = $"tests.solution-menu.{Guid.NewGuid():N}";
+        var singleContribution = new TestSolutionMenuContribution(
+            $"{prefix}.single",
+            "TestSingleMenu",
+            SolutionMenuSelectionPolicy.SingleOnly);
+        var multipleContribution = new TestSolutionMenuContribution(
+            $"{prefix}.multiple",
+            "TestMultipleMenu",
+            SolutionMenuSelectionPolicy.MultipleOnly);
+        var anyContribution = new TestSolutionMenuContribution(
+            $"{prefix}.any",
+            "TestAnyMenu",
+            SolutionMenuSelectionPolicy.Any);
+        var lowerPriorityDuplicate = new TestSolutionMenuContribution(
+            $"{prefix}.duplicate",
+            "TestAnyMenu",
+            SolutionMenuSelectionPolicy.Any);
+
+        try
+        {
+            SolutionMenuContributionRegistry.Register(singleContribution, priority: 30);
+            SolutionMenuContributionRegistry.Register(multipleContribution, priority: 20);
+            SolutionMenuContributionRegistry.Register(anyContribution, priority: 10);
+            SolutionMenuContributionRegistry.Register(lowerPriorityDuplicate, priority: 5);
+            var first = CreateNode("first");
+            var second = CreateNode("second");
+
+            IReadOnlyList<MenuItemMetadata> singleItems =
+                SolutionMenuContributionRegistry.GetMenuItems(new SolutionMenuContext([first]));
+            IReadOnlyList<MenuItemMetadata> multipleItems =
+                SolutionMenuContributionRegistry.GetMenuItems(new SolutionMenuContext([first, second]));
+
+            Assert.Contains(singleItems, item => item.GuidId == "TestSingleMenu");
+            Assert.Contains(singleItems, item => item.GuidId == "TestAnyMenu");
+            Assert.Single(singleItems, item => item.GuidId == "TestAnyMenu");
+            Assert.Contains(singleItems, item => item.Header?.ToString() == anyContribution.Id);
+            Assert.DoesNotContain(singleItems, item => item.GuidId == "TestMultipleMenu");
+            Assert.Contains(multipleItems, item => item.GuidId == "TestMultipleMenu");
+            Assert.Contains(multipleItems, item => item.GuidId == "TestAnyMenu");
+            Assert.DoesNotContain(multipleItems, item => item.GuidId == "TestSingleMenu");
+        }
+        finally
+        {
+            SolutionMenuContributionRegistry.Unregister(singleContribution.Id);
+            SolutionMenuContributionRegistry.Unregister(multipleContribution.Id);
+            SolutionMenuContributionRegistry.Unregister(anyContribution.Id);
+            SolutionMenuContributionRegistry.Unregister(lowerPriorityDuplicate.Id);
+        }
+    }
+
+    [Fact]
+    public void SolutionContextMenuAddsDynamicContributionsAtOpening()
+    {
+        var node = CreateNode("C:\\Workspace\\sample.txt");
+        node.Initialize();
+        var nodeItems = new List<MenuItemMetadata>();
+        node.CollectMenuItems(nodeItems);
+
+        List<MenuItemMetadata> openingItems = SolutionContextMenuService.CreateMenuMetadata([node]);
+
+        Assert.DoesNotContain(nodeItems, item => item.GuidId == "CopyFullPath");
+        Assert.Single(openingItems, item => item.GuidId == "CopyFullPath");
     }
 
     [Fact]
@@ -3195,6 +3263,39 @@ public class SolutionManagerFoundationTests
         public void Dispose()
         {
             IsDisposed = true;
+        }
+    }
+
+    private sealed class TestSolutionMenuContribution : ISolutionMenuContribution
+    {
+        private readonly string _menuId;
+
+        public string Id { get; }
+        public SolutionMenuSelectionPolicy SelectionPolicy { get; }
+
+        public TestSolutionMenuContribution(
+            string id,
+            string menuId,
+            SolutionMenuSelectionPolicy selectionPolicy)
+        {
+            Id = id;
+            _menuId = menuId;
+            SelectionPolicy = selectionPolicy;
+        }
+
+        public bool IsApplicable(SolutionMenuContext context) => true;
+
+        public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
+        {
+            return
+            [
+                new MenuItemMetadata
+                {
+                    GuidId = _menuId,
+                    Order = 500,
+                    Header = Id,
+                },
+            ];
         }
     }
 
