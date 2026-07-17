@@ -242,6 +242,11 @@ namespace ColorVision.Solution
                 return string.Empty;
             }
 
+            if (PrivateWorkspaceService.TryResolveSourcePath(path, out string sourcePath))
+            {
+                return sourcePath;
+            }
+
             if (IsFolderWorkspaceFile(path))
             {
                 return Path.GetDirectoryName(path) ?? path;
@@ -286,14 +291,9 @@ namespace ColorVision.Solution
             try
             {
                 string normalizedRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directoryInfo.FullName));
-                string workspaceDirectory = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "ColorVision",
-                    "FolderWorkspaces");
-                Directory.CreateDirectory(workspaceDirectory);
-
-                string workspaceKey = Tool.GetMD5(normalizedRoot.ToUpperInvariant());
-                solutionPath = Path.Combine(workspaceDirectory, $"{workspaceKey}.cvsln");
+                solutionPath = PrivateWorkspaceService.CreateWorkspacePath(
+                    PrivateWorkspaceKind.Folder,
+                    normalizedRoot);
                 bool workspaceExists = File.Exists(solutionPath);
                 SolutionConfig config = workspaceExists
                     ? SolutionConfigStore.Load(solutionPath).Config
@@ -303,7 +303,11 @@ namespace ColorVision.Solution
                     normalizedRoot,
                     StringComparison.OrdinalIgnoreCase);
                 config.RootPath = normalizedRoot;
-                if (!workspaceExists || rootChanged)
+                bool sourceChanged = PrivateWorkspaceService.SetSource(
+                    config,
+                    PrivateWorkspaceKind.Folder,
+                    normalizedRoot);
+                if (!workspaceExists || rootChanged || sourceChanged)
                     SolutionConfigStore.Save(solutionPath, config);
                 return true;
             }
@@ -562,13 +566,9 @@ namespace ColorVision.Solution
 
             try
             {
-                string implicitSolutionDirectory = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "ColorVision",
-                    "ImplicitSolutions");
-                Directory.CreateDirectory(implicitSolutionDirectory);
-                string projectKey = Tool.GetMD5(project.ProjectFile.FullName.ToUpperInvariant());
-                solutionPath = Path.Combine(implicitSolutionDirectory, $"{projectKey}.cvsln");
+                solutionPath = PrivateWorkspaceService.CreateWorkspacePath(
+                    PrivateWorkspaceKind.Project,
+                    project.ProjectFile.FullName);
                 string projectReference = Path.GetRelativePath(project.ProjectDirectory.FullName, project.ProjectFile.FullName);
 
                 SolutionConfig config;
@@ -586,6 +586,10 @@ namespace ColorVision.Solution
                 if (!config.Projects.Any(reference => string.Equals(reference, projectReference, StringComparison.OrdinalIgnoreCase)))
                     config.Projects.Insert(0, projectReference);
                 config.StartupProject = projectReference;
+                PrivateWorkspaceService.SetSource(
+                    config,
+                    PrivateWorkspaceKind.Project,
+                    project.ProjectFile.FullName);
                 SolutionConfigStore.Save(solutionPath, config);
 
                 displayName = string.IsNullOrWhiteSpace(project.Name)

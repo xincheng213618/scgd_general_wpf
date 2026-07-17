@@ -1,4 +1,5 @@
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.Workspace;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
@@ -114,13 +115,9 @@ namespace ColorVision.Solution.Explorer
 
             try
             {
-                string importedSolutionDirectory = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "ColorVision",
-                    "ImportedSolutions");
-                Directory.CreateDirectory(importedSolutionDirectory);
-                string sourceKey = Tool.GetMD5(definition.SourceFile.FullName.ToUpperInvariant());
-                solutionPath = Path.Combine(importedSolutionDirectory, $"{sourceKey}.cvsln");
+                solutionPath = PrivateWorkspaceService.CreateWorkspacePath(
+                    PrivateWorkspaceKind.ImportedSolution,
+                    definition.SourceFile.FullName);
                 SolutionConfig config = File.Exists(solutionPath)
                     ? SolutionConfigStore.Load(solutionPath).Config
                     : new SolutionConfig();
@@ -202,6 +199,10 @@ namespace ColorVision.Solution.Explorer
                 config.ExtensionData[ProviderExtensionKey] = new JValue(definition.ProviderId);
                 config.ExtensionData[SourceExtensionKey] = new JValue(definition.SourceFile.FullName);
                 config.ExtensionData[ConfigurationBaselineExtensionKey] = JToken.FromObject(sourceProjectConfigurations);
+                PrivateWorkspaceService.SetSource(
+                    config,
+                    PrivateWorkspaceKind.ImportedSolution,
+                    definition.SourceFile.FullName);
                 SolutionConfigStore.Save(solutionPath, config);
 
                 displayName = definition.Name;

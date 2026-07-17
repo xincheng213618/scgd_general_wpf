@@ -2101,6 +2101,10 @@ public class SolutionManagerFoundationTests
 
             SolutionConfig config = SolutionConfigStore.Load(workspacePath).Config;
             Assert.Equal(folderPath, config.RootPath, ignoreCase: true);
+            Assert.Equal(
+                folderPath,
+                SolutionManager.NormalizeRecentPath(workspacePath),
+                ignoreCase: true);
             config.SolutionFolders.Add(new SolutionFolderDefinition { Id = "preserved", Name = "Preserved" });
             SolutionConfigStore.Save(workspacePath, config);
 
@@ -3960,6 +3964,10 @@ public class SolutionManagerFoundationTests
                 VisualStudioSolutionFileProvider.ProviderId,
                 config.ExtensionData!["ImportedSolutionProvider"]!.Value<string>());
             Assert.Equal(solutionPath, config.ExtensionData["ImportedSolutionSource"]!.Value<string>(), ignoreCase: true);
+            Assert.Equal(
+                solutionPath,
+                SolutionManager.NormalizeRecentPath(importedWorkspacePath),
+                ignoreCase: true);
             Assert.Contains("*.slnx", SolutionManager.GetSolutionFileDialogPattern(), StringComparison.OrdinalIgnoreCase);
         }
         finally
@@ -5237,6 +5245,10 @@ public class SolutionManagerFoundationTests
             Assert.Contains("ProjectA.cvproj", config.Projects, StringComparer.OrdinalIgnoreCase);
             Assert.Equal("ProjectA.cvproj", config.StartupProject, ignoreCase: true);
             Assert.Equal("Debug", config.ActiveConfiguration);
+            Assert.Equal(
+                projectPath,
+                SolutionManager.NormalizeRecentPath(implicitSolutionPath),
+                ignoreCase: true);
             Assert.Equal(
                 projectDirectory,
                 SolutionExplorer.ResolveRootDirectory(new FileInfo(implicitSolutionPath), config.RootPath).FullName,
