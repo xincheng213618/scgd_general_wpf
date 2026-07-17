@@ -135,24 +135,8 @@ namespace ColorVision
                     return;
                 }
             }
-            string inputFile = parser.GetValue("input");
-            if (inputFile != null)
-            {
-                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
-                if (isok)
-                {
-                    ProgramTimer.StopAndReport();
-                    return;
-                }
-                else
-                {
-
-                }
-            }
-
             ConfigHandler.GetInstance().IsAutoSave = true;
 
-            //单独处理文件的进程不需要关闭当前进程
             mutex = new Mutex(true, "ColorVision", out bool ret);
             if (!ret && !Debugger.IsAttached)
             {

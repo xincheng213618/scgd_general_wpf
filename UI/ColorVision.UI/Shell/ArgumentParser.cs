@@ -50,11 +50,23 @@
         public void Parse(string[] args)
         {
             CommandLineArgs = args;
+            foreach (KeyValuePair<string, string> item in ParseValues(args))
+                _parsedArguments[item.Key] = item.Value;
+        }
+
+        /// <summary>
+        /// Parses an independent argument snapshot without changing the values
+        /// retained for the current application instance.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> ParseValues(string[] args)
+        {
+            ArgumentNullException.ThrowIfNull(args);
+            var parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (args.Length == 1 && !args[0].StartsWith("-" , StringComparison.CurrentCulture))
             {
                 // Handle the case where only a file path is provided
-                _parsedArguments["input"] = args[0];
-                return;
+                parsedArguments["input"] = args[0];
+                return parsedArguments;
             }
 
 
@@ -78,7 +90,7 @@
                             string value1 = argument.IsOption ? "true" : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture) ? args[i + 1] : null;
                             if (value1 != null)
                             {
-                                _parsedArguments[key] = value1;
+                                parsedArguments[key] = value1;
                                 if (!argument.IsOption)
                                 {
                                     i++; // Skip the next argument if it's a value
@@ -88,6 +100,7 @@
                     }
                 }
             }
+            return parsedArguments;
         }
         public bool GetFlag(string name) => _parsedArguments.TryGetValue(name, out var value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 

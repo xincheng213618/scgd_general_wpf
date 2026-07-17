@@ -2103,6 +2103,38 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void ArgumentParser_ParseValues_DoesNotReuseOrReplaceApplicationValues()
+    {
+        var parser = new ColorVision.UI.Shell.ArgumentParser();
+        parser.AddArgument("solutionpath", false, "s");
+        parser.Parse(["--input", "Original.txt", "--solutionpath", "Original.cvsln"]);
+
+        IReadOnlyDictionary<string, string> parsedValues = parser.ParseValues(
+            ["--input", "Forwarded.txt"]);
+
+        Assert.Equal("Forwarded.txt", parsedValues["input"]);
+        Assert.False(parsedValues.ContainsKey("solutionpath"));
+        Assert.Equal("Original.txt", parser.GetValue("input"));
+        Assert.Equal("Original.cvsln", parser.GetValue("solutionpath"));
+    }
+
+    [Theory]
+    [InlineData(null, null, null)]
+    [InlineData("", null, null)]
+    [InlineData("Example.cvsln", "Example.cvsln", null)]
+    [InlineData("Example.txt", "Example.cvsln", "Example.txt")]
+    [InlineData("Example.txt", null, "Example.txt")]
+    public void StartupResourceOpenInitializer_DefersOnlyDistinctInput(
+        string? inputPath,
+        string? solutionPath,
+        string? expectedPath)
+    {
+        Assert.Equal(
+            expectedPath,
+            StartupResourceOpenInitializer.GetDeferredInputPath(inputPath, solutionPath));
+    }
+
+    [Fact]
     public void CVCalImport_ReportsMissingCameraConfiguration()
     {
         string filePath = Path.Combine(Path.GetTempPath(), $"ColorVision-{Guid.NewGuid():N}.cvcal");

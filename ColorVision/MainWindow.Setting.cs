@@ -21,7 +21,7 @@ namespace ColorVision
         private static extern int GlobalGetAtomName(ushort nAtom, char[] retVal, int size);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern short GlobalDeleteAtom(short nAtom);
+        private static extern ushort GlobalDeleteAtom(ushort nAtom);
 
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -38,16 +38,16 @@ namespace ColorVision
                         if (size > 0)
                         {
                             string receivedString = new(chars, 0, size);
-                            GlobalDeleteAtom((short)wParam);
+                            GlobalDeleteAtom((ushort)lParam);
 
                             char separator = '\u0001';
                             string[] parsedArgs = receivedString.Split(separator);
                             var parser = ArgumentParser.GetInstance();
-                            parser.Parse(parsedArgs);
-                            string inputFile = parser.GetValue("input");
-                            string s = parser.GetValue("solutionpath");
-                            _ = OpenReceivedResourcesAsync(inputFile, s);
-                            string project = parser.GetValue("project");
+                            IReadOnlyDictionary<string, string> parsedValues = parser.ParseValues(parsedArgs);
+                            parsedValues.TryGetValue("input", out string? inputFile);
+                            parsedValues.TryGetValue("solutionpath", out string? solutionPath);
+                            _ = OpenReceivedResourcesAsync(inputFile, solutionPath);
+                            parsedValues.TryGetValue("project", out string? project);
 
                             List<IFeatureLauncher> IProjects = new List<IFeatureLauncher>();
                             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())

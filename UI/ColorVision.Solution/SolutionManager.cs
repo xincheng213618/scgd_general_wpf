@@ -53,6 +53,7 @@ namespace ColorVision.Solution
         private readonly Func<SolutionExplorer, bool> _tryCloseWorkspaceDocuments;
         private CancellationTokenSource? _workspaceOpenCancellation;
         private int _workspaceOpenVersion;
+        internal Task InitialWorkspaceOpenTask { get; private set; } = Task.CompletedTask;
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
@@ -159,33 +160,10 @@ namespace ColorVision.Solution
             if (restoreLastWorkspace && Application.Current != null)
             {
                 string? solutionPath = ArgumentParser.GetInstance().GetValue("solutionpath");
-                Application.Current.Dispatcher.BeginInvoke(async () =>
-                {
-                    string? restorePath = solutionPath
-                        ?? SolutionHistory.RecentFiles.FirstOrDefault();
-                    bool succeeded = false;
-                    if (!string.IsNullOrWhiteSpace(restorePath))
-                    {
-                        SolutionOpenOperationResult result = await OpenSolutionAsync(restorePath);
-                        succeeded = result.Succeeded;
-                        if (result.Canceled)
-                            return;
-                    }
-                    JumpListManager jumpListManager = new JumpListManager();
-                    jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
-                    if (!succeeded
-                        && CurrentSolutionExplorer == null
-                        && !IsOpeningWorkspace)
-                    {
-                        string defaultRoot = Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                            "ColorVision");
-                        Directory.CreateDirectory(defaultRoot);
-                        string defaultSolution = Path.Combine(defaultRoot, "Default");
-                        Directory.CreateDirectory(defaultSolution);
-                        CreateSolution(defaultSolution);
-                    }
-                });
+                InitialWorkspaceOpenTask = Application.Current.Dispatcher
+                    .InvokeAsync(() => RestoreInitialWorkspaceAsync(solutionPath))
+                    .Task
+                    .Unwrap();
             }
 
             SettingCommand = restoreLastWorkspace
@@ -194,6 +172,33 @@ namespace ColorVision.Solution
 
             if (restoreLastWorkspace)
                 WorkspaceManager.ContentIdSelected += (s, e) => CurrentSolutionExplorer?.SetSelected(e);
+        }
+
+        private async Task RestoreInitialWorkspaceAsync(string? solutionPath)
+        {
+            string? restorePath = solutionPath
+                ?? SolutionHistory.RecentFiles.FirstOrDefault();
+            bool succeeded = false;
+            if (!string.IsNullOrWhiteSpace(restorePath))
+            {
+                SolutionOpenOperationResult result = await OpenSolutionAsync(restorePath);
+                succeeded = result.Succeeded;
+                if (result.Canceled)
+                    return;
+            }
+
+            var jumpListManager = new JumpListManager();
+            jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
+            if (succeeded || CurrentSolutionExplorer != null || IsOpeningWorkspace)
+                return;
+
+            string defaultRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "ColorVision");
+            Directory.CreateDirectory(defaultRoot);
+            string defaultSolution = Path.Combine(defaultRoot, "Default");
+            Directory.CreateDirectory(defaultSolution);
+            CreateSolution(defaultSolution);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
