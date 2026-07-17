@@ -115,7 +115,7 @@ namespace ColorVision.UI.Tests
                     stream.WriteByte(1);
                 }
 
-                Assert.False(new ZipPluginPackageFileProcessor().Process(packagePath));
+                Assert.False(new ZipPluginPackageFileProcessor().OpenFile(packagePath).Handled);
             }
             finally
             {

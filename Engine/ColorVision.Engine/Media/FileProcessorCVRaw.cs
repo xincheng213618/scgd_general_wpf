@@ -1,23 +1,20 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.ImageEditor;
-using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
 using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Windows;
 
 namespace ColorVision.Engine.Impl.SolutionImpl
 {
     [FileExtension(".cvraw|.cvcie")]
-    public class FileProcessorCVRaw : IFileProcessor
+    public class CVRawFileExporter : IFileExporter
     {
         public int Order => 1;
 
-        public void Export(string filePath)
+        public FileExportResult Export(string filePath)
         {
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("quiet", true, "q");
@@ -60,38 +57,10 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             {
                 VExportCIE.SaveToTif(vie);
                 Environment.Exit(0);
-                return;
+                return new FileExportResult(true, true);
             }
             new ExportCVCIE(vie).Show();
-        }
-
-        public bool Process(string filePath)
-        {
-            ImageView imageView = new();
-            Window window = new Window() { Title = filePath };
-            if (Application.Current.MainWindow != window)
-            {
-                window.Owner = Application.Current.GetActiveWindow();
-            }
-            window.Content = imageView;
-            imageView.OpenImage(filePath);
-
-            imageView.ImageShow.ImageInitialized += (s, e) =>
-            {
-                window.Title = $"{imageView.Config.FilePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height} {imageView.Config.GetProperties<int>("Channel")}";
-            };
-
-            if (Application.Current.MainWindow != window)
-            {
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                {
-                    imageView.Clear();
-                }));
-            }
-            window.ApplyCaption();
-            window.Show();
-
-            return true;
+            return new FileExportResult(true, true);
         }
     }
 

@@ -15,16 +15,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
     {
         public int Order => 1;
 
-        public void Export(string filePath)
-        {
-
-        }
-
-        public bool Process(string filePath)
-        {
-            return OpenFile(filePath).Succeeded;
-        }
-
         public FileOpenRouteResult OpenFile(string filePath)
         {
             if (!File.Exists(filePath))

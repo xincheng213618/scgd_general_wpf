@@ -2103,6 +2103,41 @@ public class SolutionManagerFoundationTests
     }
 
     [Fact]
+    public void FileExporters_UsePriorityAndContinueOnlyWhenNotHandled()
+    {
+        var attempts = new List<int>();
+        var lowPriority = new StubFileExporter(
+            10,
+            _ =>
+            {
+                attempts.Add(10);
+                return new FileExportResult(true, false, "不应执行");
+            });
+        var selected = new StubFileExporter(
+            50,
+            _ =>
+            {
+                attempts.Add(50);
+                return new FileExportResult(true, true);
+            });
+        var declined = new StubFileExporter(
+            100,
+            _ =>
+            {
+                attempts.Add(100);
+                return FileExportResult.NotHandled;
+            });
+
+        FileExportResult result = FileProcessorFactory.SelectFileExporter(
+            [lowPriority, selected, declined],
+            "Example.cvexport");
+
+        Assert.True(result.Handled);
+        Assert.True(result.Succeeded);
+        Assert.Equal([100, 50], attempts);
+    }
+
+    [Fact]
     public void ArgumentParser_ParseValues_DoesNotReuseOrReplaceApplicationValues()
     {
         var parser = new ColorVision.UI.Shell.ArgumentParser();
@@ -2184,7 +2219,7 @@ public class SolutionManagerFoundationTests
                 archive.CreateEntry("README.txt");
             }
 
-            Assert.False(ColorVision.Engine.CalFile.CVCalInitialized.TryImport(
+            Assert.False(ColorVision.Engine.CalFile.CVCalImporter.TryImport(
                 filePath,
                 out string errorMessage));
             Assert.Contains("CameraConfig.cfg", errorMessage, StringComparison.Ordinal);
@@ -5462,12 +5497,23 @@ public class SolutionManagerFoundationTests
         }
 
         public FileOpenRouteResult OpenFile(string filePath) => _open(filePath);
+    }
 
-        public bool Process(string filePath) => OpenFile(filePath).Succeeded;
+    private sealed class StubFileExporter : IFileExporter
+    {
+        private readonly Func<string, FileExportResult> _export;
 
-        public void Export(string filePath)
+        public int Order { get; }
+
+        public StubFileExporter(
+            int order,
+            Func<string, FileExportResult> export)
         {
+            Order = order;
+            _export = export;
         }
+
+        public FileExportResult Export(string filePath) => _export(filePath);
     }
 
     private static SolutionNode CreateNode(string path)

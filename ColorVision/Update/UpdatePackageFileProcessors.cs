@@ -14,16 +14,13 @@ namespace ColorVision.Update
     {
         public int Order => 1;
 
-        public void Export(string filePath)
+        public FileOpenRouteResult OpenFile(string filePath)
         {
-
-        }
-        public bool Process(string filePath)
-        {
-            if (!AutoUpdater.IsIncrementalPackageFileReady(filePath)) return false;
+            if (!AutoUpdater.IsIncrementalPackageFileReady(filePath))
+                return new FileOpenRouteResult(true, false, "不是有效的增量更新包。");
 
             AutoUpdater.RestartIsIncrementApplication(filePath);
-            return true;
+            return new FileOpenRouteResult(true, true);
         }
     }
 
@@ -32,17 +29,13 @@ namespace ColorVision.Update
     {
         public int Order => 1;
 
-        public void Export(string filePath)
+        public FileOpenRouteResult OpenFile(string filePath)
         {
-
-        }
-
-        public bool Process(string filePath)
-        {
-            if (!PluginUpdater.IsPluginPackageFileReady(filePath)) return false;
+            if (!PluginUpdater.IsPluginPackageFileReady(filePath))
+                return new FileOpenRouteResult(true, false, "不是有效的插件包。");
 
             PluginUpdater.UpdatePlugin(filePath);
-            return true;
+            return new FileOpenRouteResult(true, true);
         }
     }
 
@@ -53,14 +46,10 @@ namespace ColorVision.Update
 
         public int Order => 1;
 
-        public void Export(string filePath)
+        public FileOpenRouteResult OpenFile(string filePath)
         {
-
-        }
-
-        public bool Process(string filePath)
-        {
-            if (!PluginUpdater.IsPluginPackageFileReady(filePath)) return false;
+            if (!PluginUpdater.IsPluginPackageFileReady(filePath))
+                return FileOpenRouteResult.NotHandled;
 
             try
             {
@@ -68,7 +57,7 @@ namespace ColorVision.Update
                 if (archive.Entries.Any(IsTopLevelPluginManifest))
                 {
                     PluginUpdater.UpdatePlugin(filePath);
-                    return true;
+                    return new FileOpenRouteResult(true, true);
                 }
             }
             catch (Exception ex)
@@ -76,14 +65,7 @@ namespace ColorVision.Update
                 log.Warn($"Failed to inspect update package '{filePath}': {ex.Message}");
             }
 
-            return false;
-        }
-
-        public FileOpenRouteResult OpenFile(string filePath)
-        {
-            return Process(filePath)
-                ? new FileOpenRouteResult(true, true)
-                : FileOpenRouteResult.NotHandled;
+            return FileOpenRouteResult.NotHandled;
         }
 
         private static bool IsTopLevelPluginManifest(ZipArchiveEntry entry)

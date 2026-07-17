@@ -9,46 +9,13 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.CalFile
 {
-    public static class CVXFileProcess
+    internal static class CVCalImporter
     {
-        public static string FilePath { get; set; }
-    }
-
-    public class CVCalInitialized : MainWindowInitializedBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(CVCalInitialized));
-
-        public CVCalInitialized()
-        {
-            Order = -1;
-        }
-
-        public override Task Initialize()
-        {
-            if (string.IsNullOrWhiteSpace(CVXFileProcess.FilePath)) return Task.CompletedTask;
-            if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;
-
-            string targetFile = CVXFileProcess.FilePath;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    if (!TryImport(targetFile, out string errorMessage))
-                        MessageBox.Show(errorMessage, ColorVision.Engine.Properties.Resources.Engine_Msg_ParseError);
-                }
-                finally
-                {
-                    CVXFileProcess.FilePath = null;
-                }
-            });
-
-            return Task.CompletedTask;
-        }
+        private static readonly ILog log = LogManager.GetLogger(typeof(CVCalImporter));
 
         internal static bool TryImport(string targetFile, out string errorMessage)
         {
@@ -100,12 +67,6 @@ namespace ColorVision.Engine.CalFile
     public class CVCalFileProcess : IFileOpenActionProcessor
     {
         public int Order => 1;
-        public void Export(string filePath) { }
-        public bool Process(string filePath)
-        {
-            CVXFileProcess.FilePath = filePath;
-            return false;
-        }
 
         public FileOpenRouteResult OpenFile(string filePath)
         {
@@ -114,7 +75,7 @@ namespace ColorVision.Engine.CalFile
 
             bool succeeded = false;
             string errorMessage = string.Empty;
-            void Import() => succeeded = CVCalInitialized.TryImport(filePath, out errorMessage);
+            void Import() => succeeded = CVCalImporter.TryImport(filePath, out errorMessage);
             if (dispatcher.CheckAccess())
                 Import();
             else

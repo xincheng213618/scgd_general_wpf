@@ -122,15 +122,17 @@ namespace ColorVision
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
-                bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
+                FileExportResult exportResult = FileProcessorFactory.GetInstance().TryExportFile(exportFile);
                 ProgramTimer.StopAndReport();
-                if (isok)
+                if (exportResult.Succeeded)
                 {
                     return;
                 }
                 else
                 {
-                    MessageBox.Show(ColorVision.Properties.Resources.UnsupportedFileFormat);
+                    MessageBox.Show(string.IsNullOrWhiteSpace(exportResult.ErrorMessage)
+                        ? ColorVision.Properties.Resources.UnsupportedFileFormat
+                        : exportResult.ErrorMessage);
                     Environment.Exit(0);
                     return;
                 }
