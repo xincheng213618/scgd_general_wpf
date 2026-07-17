@@ -82,6 +82,9 @@ namespace ColorVision.UI.Tests
             Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.Ordinal);
             Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
             Assert.Contains(ExitUpdateHandoff.LaunchTokenEnvironmentVariable, batch, StringComparison.Ordinal);
+            Assert.Contains("if exist \"%TARGET%\" goto fail", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Plugin deletion failed.", batch, StringComparison.Ordinal);
+            Assert.Contains("update.log", batch, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

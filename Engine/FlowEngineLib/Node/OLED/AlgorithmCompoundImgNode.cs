@@ -27,6 +27,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

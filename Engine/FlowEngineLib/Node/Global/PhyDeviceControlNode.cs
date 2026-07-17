@@ -25,6 +25,7 @@ public class PhyDeviceControlNode : CVBaseServerNode
 		{
 			_DeviceType = value;
 			setDeviceType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class PhyDeviceControlNode : CVBaseServerNode
 			_CmdType = value;
 			m_ctrl_cmd.Value = value;
 			setCmdCtl();
+			OnPropertyChanged();
 		}
 	}
 

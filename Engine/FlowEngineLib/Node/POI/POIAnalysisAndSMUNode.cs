@@ -17,6 +17,7 @@ public class POIAnalysisAndSMUNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

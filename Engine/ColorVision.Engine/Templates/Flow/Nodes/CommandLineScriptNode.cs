@@ -64,7 +64,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public CommandLineScriptType ScriptType
         {
             get => _ScriptType;
-            set => _ScriptType = value;
+            set
+            {
+                _ScriptType = value;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -73,7 +77,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string ScriptFile
         {
             get => _ScriptFile;
-            set => _ScriptFile = value ?? string.Empty;
+            set
+            {
+                _ScriptFile = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -81,7 +89,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string CommandText
         {
             get => _CommandText;
-            set => _CommandText = value ?? string.Empty;
+            set
+            {
+                _CommandText = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -89,7 +101,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string Arguments
         {
             get => _Arguments;
-            set => _Arguments = value ?? string.Empty;
+            set
+            {
+                _Arguments = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -98,7 +114,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string WorkingDirectory
         {
             get => _WorkingDirectory;
-            set => _WorkingDirectory = value ?? string.Empty;
+            set
+            {
+                _WorkingDirectory = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -106,7 +126,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string PythonExecutable
         {
             get => _PythonExecutable;
-            set => _PythonExecutable = value ?? string.Empty;
+            set
+            {
+                _PythonExecutable = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -114,7 +138,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string SuccessExitCodes
         {
             get => _SuccessExitCodes;
-            set => _SuccessExitCodes = value ?? string.Empty;
+            set
+            {
+                _SuccessExitCodes = value ?? string.Empty;
+                OnPropertyChanged();
+            }
         }
 
         [Category("PreProcess_ScriptGroup")]
@@ -122,7 +150,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public int MaxOutputChars
         {
             get => _MaxOutputChars;
-            set => _MaxOutputChars = Math.Max(0, value);
+            set
+            {
+                _MaxOutputChars = Math.Max(0, value);
+                OnPropertyChanged();
+            }
         }
 
         public CommandLineScriptNode()

@@ -444,36 +444,35 @@ namespace ColorVision.UI.Desktop.Marketplace
         public async Task DownloadPackageAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            string? latestVersion = await _packageDownloadService.ResolveLatestVersionAsync(SearchName, cancellationToken);
-            if (string.IsNullOrWhiteSpace(latestVersion))
+            Version? hostVersion = PluginUpdateCompatibility.GetCurrentHostVersion();
+            MarketplacePluginDetail? detail = hostVersion == null
+                ? null
+                : await MarketplaceClient.GetInstance().GetPluginDetailAsync(SearchName, cancellationToken);
+            MarketplacePluginVersionInfo? candidate = hostVersion == null
+                ? null
+                : PluginUpdateCompatibility.SelectLatestCompatibleVersion(installedVersion: null, detail, hostVersion);
+            if (candidate == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.ProjectNotFound, SearchName));
+                MessageBox.Show(Application.Current.GetActiveWindow(), Resources.MarketplaceNoUpdates, Resources.PluginManagerWindow, MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             MessageBoxResult confirmResult = await Application.Current.Dispatcher.InvokeAsync(() =>
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{latestVersion}"),
+                    string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{candidate.Version}"),
                     "ColorVision",
                     MessageBoxButton.YesNo));
 
             if (confirmResult == MessageBoxResult.Yes)
             {
-                await InstallLatestRequestedPackageAsync(SearchName, latestVersion, cancellationToken);
+                await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
+                {
+                    PluginId = SearchName,
+                    Version = candidate.Version,
+                    ExpectedHash = candidate.FileHash,
+                }, cancellationToken: cancellationToken);
             }
-        }
-
-        private async Task InstallLatestRequestedPackageAsync(string pluginId, string version, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            string? expectedHash = await _packageDownloadService.ResolveExpectedHashAsync(pluginId, version, cancellationToken);
-            await _packageDownloadService.InstallPackageAsync(new MarketplacePackageRequest
-            {
-                PluginId = pluginId,
-                Version = version,
-                ExpectedHash = expectedHash,
-            }, cancellationToken: cancellationToken);
         }
 
         private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource)

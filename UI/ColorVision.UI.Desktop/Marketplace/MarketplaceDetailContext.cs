@@ -424,6 +424,8 @@ namespace ColorVision.UI.Desktop.Marketplace
         {
             if (string.IsNullOrEmpty(PackageName) || string.IsNullOrEmpty(versionInfo.Version))
                 return;
+            if (applyAfterDownload && !IsVersionCompatible(versionInfo))
+                return;
 
             MarketplacePackageRequest request = new()
             {

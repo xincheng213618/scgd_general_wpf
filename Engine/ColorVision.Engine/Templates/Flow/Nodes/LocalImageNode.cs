@@ -42,7 +42,11 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public string ImageFileUrl
         {
             get => _ImageFileUrl;
-            set => _ImageFileUrl = value;
+            set
+            {
+                _ImageFileUrl = value;
+                OnPropertyChanged();
+            }
         }
 
         public TestMessageBoxNode()

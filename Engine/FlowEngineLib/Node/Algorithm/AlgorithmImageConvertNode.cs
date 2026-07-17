@@ -27,6 +27,7 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 		{
 			_ImageFormat = value;
 			m_ctrl_type.Value = _ImageFormat;
+			OnPropertyChanged();
 		}
 	}
 
@@ -42,6 +43,7 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -56,6 +58,7 @@ public class AlgorithmImageConvertNode : CVBaseServerNode
 		{
 			_Channel = value;
 			m_ctrl_channel.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

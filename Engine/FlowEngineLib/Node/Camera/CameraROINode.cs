@@ -36,6 +36,7 @@ public class CameraROINode : CVBaseServerNode
 		{
 			_ROI_X = value;
 			m_ctrl_x.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -50,6 +51,7 @@ public class CameraROINode : CVBaseServerNode
 		{
 			_ROI_Y = value;
 			m_ctrl_y.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -64,6 +66,7 @@ public class CameraROINode : CVBaseServerNode
 		{
 			_ROI_Width = value;
 			m_ctrl_width.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -78,6 +81,7 @@ public class CameraROINode : CVBaseServerNode
 		{
 			_ROI_Height = value;
 			m_ctrl_height.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

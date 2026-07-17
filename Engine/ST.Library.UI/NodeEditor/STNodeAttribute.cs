@@ -34,7 +34,7 @@ public class STNodeAttribute : Attribute
 
 	public string Description => _Description;
 
-	public string DisplayDescription => Lang.GetOrDefault(_Description, _Description);
+	public string DisplayDescription => Lang.GetOrDefault(_Description);
 
 	public STNodeAttribute(string strPath)
 		: this(strPath, null, null, null, null)

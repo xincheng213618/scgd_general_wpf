@@ -24,6 +24,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -38,6 +39,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			operatorCode = value;
 			m_ctrl_op.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -52,6 +54,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -67,6 +70,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

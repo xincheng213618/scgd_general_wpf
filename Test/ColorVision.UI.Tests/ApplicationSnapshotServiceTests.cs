@@ -32,6 +32,15 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
     }
 
     [Fact]
+    public void SnapshotDirectoryIsScopedToTheCurrentInstallation()
+    {
+        string legacyDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
+
+        Assert.NotEqual(legacyDirectory, ApplicationSnapshotService.Instance.SnapshotDirectory);
+        Assert.StartsWith(legacyDirectory + Path.DirectorySeparatorChar, ApplicationSnapshotService.Instance.SnapshotDirectory);
+    }
+
+    [Fact]
     public void UnreadableDefaultSnapshotIsMovedToRecoveryInsteadOfDeleted()
     {
         string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
@@ -85,6 +94,8 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
         Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("explorer.exe", batch, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dllhost.exe", batch, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Snapshot restore failed.", batch, StringComparison.Ordinal);
+        Assert.Contains("update.log", batch, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

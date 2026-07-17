@@ -27,6 +27,7 @@ public class AlgDataConvertNode : CVBaseServerNode
 		{
 			_MethodType = value;
 			m_ctrl_medType.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class AlgDataConvertNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class AlgDataConvertNode : CVBaseServerNode
 		set
 		{
 			_InType = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +69,7 @@ public class AlgDataConvertNode : CVBaseServerNode
 		set
 		{
 			_OutType = value;
+			OnPropertyChanged();
 		}
 	}
 

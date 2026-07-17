@@ -976,6 +976,7 @@ namespace ColorVision.Update
             sb.AppendLine("set \"SERVICE_LOG=%SERVICE_DEST%\\install.log\"");
             sb.AppendLine();
             sb.AppendLine("call :wait_for_original_process");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update started.");
             sb.AppendLine("call :skip_shell_extension_files");
             sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine();
@@ -1007,11 +1008,13 @@ namespace ColorVision.Update
             AppendServiceHostRepairBatch(sb);
             sb.AppendLine();
             sb.AppendLine(":success");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update completed.");
             sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update failed.");
             sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 1");

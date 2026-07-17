@@ -35,6 +35,7 @@ public class LoopNode : CVCommonNode
 		{
 			m_begin_val = value;
 			updateUI(null);
+			OnPropertyChanged();
 		}
 	}
 
@@ -49,6 +50,7 @@ public class LoopNode : CVCommonNode
 		{
 			m_end_val = value;
 			updateUI(null);
+			OnPropertyChanged();
 		}
 	}
 
@@ -63,6 +65,7 @@ public class LoopNode : CVCommonNode
 		{
 			m_step_val = value;
 			updateUI(null);
+			OnPropertyChanged();
 		}
 	}
 

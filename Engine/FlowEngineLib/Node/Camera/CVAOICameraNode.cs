@@ -49,6 +49,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_CamTempName = value;
 			setTempValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -63,6 +64,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_ImgSaveMode = value;
 			setImgValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -77,6 +79,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_FlipMode = value;
 			setImgValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -91,6 +94,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_IsAutoExp = value;
 			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -104,6 +108,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -118,6 +123,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_IsWithND = value;
 			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -132,6 +138,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_CalibTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -146,6 +153,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_AOIType = value;
 			setAOIValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -160,6 +168,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		{
 			_AlgTempName = value;
 			setAOIValue();
+			OnPropertyChanged();
 		}
 	}
 

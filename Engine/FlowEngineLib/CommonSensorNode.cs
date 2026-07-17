@@ -30,6 +30,7 @@ public class CommonSensorNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -44,6 +45,7 @@ public class CommonSensorNode : CVBaseServerNode
 		{
 			_CmdType = value;
 			m_ctrl_cmd_type.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -58,6 +60,7 @@ public class CommonSensorNode : CVBaseServerNode
 		{
 			_CmdSend = value;
 			m_ctrl_cmd_send.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -72,6 +75,7 @@ public class CommonSensorNode : CVBaseServerNode
 		{
 			_CmdReceive = value;
 			m_ctrl_cmd_recv.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

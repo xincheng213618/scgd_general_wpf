@@ -20,6 +20,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeHub
 		{
 			operatorCode = value;
 			m_ctrl_op.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -33,6 +34,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

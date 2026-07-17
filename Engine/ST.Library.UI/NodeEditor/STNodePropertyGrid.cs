@@ -318,7 +318,7 @@ public class STNodePropertyGrid : Control
 					sTNodePropertyDescriptor.Node = node;
 					string name = Lang.Get(sTNodePropertyAttribute.Name);
 					sTNodePropertyDescriptor.Name = name;
-					sTNodePropertyDescriptor.Description = Lang.GetOrDefault(sTNodePropertyAttribute.Description, sTNodePropertyAttribute.Description);
+					sTNodePropertyDescriptor.Description = Lang.GetOrDefault(sTNodePropertyAttribute.Description);
 					sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
 					sTNodePropertyDescriptor.IsEditEnable = IsEditEnable || sTNodePropertyAttribute.IsEditEnable;
 					sTNodePropertyDescriptor.IsReadOnly = sTNodePropertyAttribute.IsReadOnly;

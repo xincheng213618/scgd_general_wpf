@@ -22,6 +22,7 @@ internal class Timer : CVCommonNodeHub
 		set
 		{
 			_Time = value;
+			OnPropertyChanged();
 		}
 	}
 

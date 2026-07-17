@@ -20,6 +20,7 @@ internal class LVCameraLoopNode : CVBaseLoopServerNode<CameraNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

@@ -9,6 +9,7 @@ namespace FlowEngineLib.Node.PG;
 public class PGGECSNode : CVBaseServerNode
 {
 	private PGGECSCommCmdType _PGCmd;
+	private string _CmdParam;
 
 	private STNodeEditText<PGGECSCommCmdType> m_ctrl_editText;
 
@@ -23,11 +24,23 @@ public class PGGECSNode : CVBaseServerNode
 		{
 			_PGCmd = value;
 			m_ctrl_editText.Value = _PGCmd;
+			OnPropertyChanged();
 		}
 	}
 
 	[STNodeProperty("参数", "参数", true)]
-	public string CmdParam { get; set; }
+	public string CmdParam
+	{
+		get
+		{
+			return _CmdParam;
+		}
+		set
+		{
+			_CmdParam = value;
+			OnPropertyChanged();
+		}
+	}
 
 	public PGGECSNode()
 		: base("PG.GECS", "PG", "SVR.PG.Default", "DEV.PG.Default")

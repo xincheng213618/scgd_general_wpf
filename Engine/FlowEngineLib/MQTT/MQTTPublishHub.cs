@@ -21,6 +21,7 @@ public class MQTTPublishHub : STNodeInHub
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -34,6 +35,7 @@ public class MQTTPublishHub : STNodeInHub
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 

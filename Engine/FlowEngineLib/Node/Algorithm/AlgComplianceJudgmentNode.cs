@@ -21,6 +21,7 @@ public class AlgComplianceJudgmentNode : CVBaseServerNode
 		{
 			_IsBreak = value;
 			setBreak();
+			OnPropertyChanged();
 		}
 	}
 

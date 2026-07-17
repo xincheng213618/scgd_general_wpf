@@ -42,6 +42,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_CmdType = value;
 			m_ctrl_cmd_type.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -56,6 +57,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_CmdSend = value;
 			m_ctrl_cmd_send.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -70,6 +72,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_CmdReceive = value;
 			m_ctrl_cmd_recv.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -84,6 +87,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_CmdTimeout = value;
 			m_ctrl_cmd_timeout.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -98,6 +102,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_RetryCount = value;
 			m_ctrl_cmd_retry.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -112,6 +117,7 @@ public class RealCommonSensorNode : CVBaseServerNode
 		{
 			_Delay = value;
 			m_ctrl_cmd_delay.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

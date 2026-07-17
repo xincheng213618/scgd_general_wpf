@@ -20,6 +20,7 @@ public class AlgDataLoadNode : CVBaseServerNode
 		{
 			_TempName = value;
 			m_ctrl_temp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (string.IsNullOrWhiteSpace(resourceKey))
                 return resourceKey;
 
-            return Lang.GetOrDefault(resourceKey, resourceKey);
+            return Lang.GetOrDefault(resourceKey);
         }
     }
 }

@@ -413,12 +413,15 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
             ExternalUpdateBatchScript.AppendSessionVariables(sb, originalProcessId, handoffState);
             sb.AppendLine("call :wait_for_original_process");
+            ExternalUpdateBatchScript.AppendLog(sb, "Snapshot restore started.");
             sb.AppendLine("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E /XF update.bat snapshot-manifest.json /NFL /NDL /NP /NJH /NJS /R:2 /W:1");
             sb.AppendLine("if %ERRORLEVEL% GEQ 8 goto fail");
+            ExternalUpdateBatchScript.AppendLog(sb, "Snapshot restore completed.");
             ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments: null);
             sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
             sb.AppendLine("exit /b 0");
             sb.AppendLine(":fail");
+            ExternalUpdateBatchScript.AppendLog(sb, "Snapshot restore failed.");
             ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments: null);
             sb.AppendLine("exit /b 1");
             ExternalUpdateBatchScript.AppendWaitForOriginalProcess(sb);

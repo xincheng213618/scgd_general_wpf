@@ -31,6 +31,7 @@ public class POICADMappingNode : CVBaseServerNode
 		{
 			_TemplateName = value;
 			m_ctrl_temp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -45,6 +46,7 @@ public class POICADMappingNode : CVBaseServerNode
 		{
 			_MappingType = value;
 			m_ctrl_type.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -58,6 +60,7 @@ public class POICADMappingNode : CVBaseServerNode
 		set
 		{
 			_CADFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -72,6 +75,7 @@ public class POICADMappingNode : CVBaseServerNode
 		{
 			_PrefixName = value;
 			m_ctrl_prefix.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

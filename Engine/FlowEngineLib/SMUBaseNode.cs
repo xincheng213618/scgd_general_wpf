@@ -69,6 +69,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			loopName = value;
 			m_ctrl_lpName.Value = loopName;
+			OnPropertyChanged();
 		}
 	}
 
@@ -82,6 +83,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		set
 		{
 			_IsCloseOutput = value;
+			OnPropertyChanged();
 		}
 	}
 

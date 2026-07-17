@@ -37,6 +37,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -51,6 +52,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		{
 			_Color = value;
 			m_ctrl_color.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +68,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -79,6 +82,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_FDAType = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -92,6 +96,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_FixedLEDPoint = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -107,6 +112,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -120,6 +126,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -133,6 +140,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_ImgPosResultFile = value;
+			OnPropertyChanged();
 		}
 	}
 

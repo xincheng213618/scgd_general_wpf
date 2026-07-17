@@ -516,7 +516,7 @@ public class STNodeTreeView : Control
 			string[] array = nodeAttribute.Path.Split(m_chr_splitter);
 			for (int i = 0; i < array.Length; i++)
 			{
-				string segment = Lang.GetOrDefault(array[i], array[i]);
+				string segment = Lang.GetOrDefault(array[i]);
 				items = items.Add(segment);
 				items.STNodeCount++;
 				text = text + "/" + segment;

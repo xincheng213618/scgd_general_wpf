@@ -17,6 +17,7 @@ public class POIAnalysisNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

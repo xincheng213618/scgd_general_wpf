@@ -29,6 +29,7 @@ public class InputMergeNode : STNodeInHub
 		set
 		{
 			_PathType = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -42,6 +43,7 @@ public class InputMergeNode : STNodeInHub
 		set
 		{
 			_OutPath = value;
+			OnPropertyChanged();
 		}
 	}
 

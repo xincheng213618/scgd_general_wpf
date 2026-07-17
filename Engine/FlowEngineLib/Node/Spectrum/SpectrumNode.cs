@@ -45,6 +45,7 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			_Cmd = value;
 			setValue(_Cmd);
+			OnPropertyChanged();
 		}
 	}
 
@@ -59,6 +60,7 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			_Temp = value;
 			m_ctrl_editText.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -73,6 +75,7 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			_AveNum = value;
 			m_ctrl_AveNum.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -86,6 +89,7 @@ public class SpectrumNode : CVBaseServerNode
 		set
 		{
 			_AutoIntTime = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -99,6 +103,7 @@ public class SpectrumNode : CVBaseServerNode
 		set
 		{
 			_IsWithND = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -113,6 +118,7 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			_SelfDark = value;
 			setDarkDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -127,6 +133,7 @@ public class SpectrumNode : CVBaseServerNode
 		{
 			_AutoInitDark = value;
 			setDarkDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -140,6 +147,7 @@ public class SpectrumNode : CVBaseServerNode
 		set
 		{
 			_OutputDataFilename = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -37,6 +37,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -51,6 +52,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +68,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -79,6 +82,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -92,6 +96,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_CustomSN = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -105,6 +110,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_VhLineEnable = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -118,6 +124,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_PixelDefectEnable = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -131,6 +138,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_MuraEnable = value;
+			OnPropertyChanged();
 		}
 	}
 

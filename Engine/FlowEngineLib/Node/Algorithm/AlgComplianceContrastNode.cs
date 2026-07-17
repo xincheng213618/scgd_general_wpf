@@ -24,6 +24,7 @@ public class AlgComplianceContrastNode : CVBaseServerNodeHub
 		{
 			_Operation = value;
 			setOperationType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -38,6 +39,7 @@ public class AlgComplianceContrastNode : CVBaseServerNodeHub
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

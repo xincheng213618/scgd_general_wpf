@@ -32,6 +32,7 @@ public class MQTTSubscribeHub : STNodeOutHub
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -45,6 +46,7 @@ public class MQTTSubscribeHub : STNodeOutHub
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 

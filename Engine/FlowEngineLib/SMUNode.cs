@@ -19,6 +19,7 @@ public class SMUNode : SMUBaseNode
 		{
 			_source = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -33,6 +34,7 @@ public class SMUNode : SMUBaseNode
 		{
 			_channel = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +49,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_begin_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -61,6 +64,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_end_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -74,6 +78,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_limitVal = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -88,6 +93,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_point_num = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -101,6 +107,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_IsAutoRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -114,6 +121,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_SrcRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -127,6 +135,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_LmtRng = value;
+			OnPropertyChanged();
 		}
 	}
 

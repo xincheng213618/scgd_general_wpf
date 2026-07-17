@@ -22,6 +22,7 @@ public class ManualConfirmNode : CVCommonNodeHub
 		set
 		{
 			_MessageText = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -22,6 +22,7 @@ internal class MQTTCustomPublishNode : MQTTBaseNode
 		set
 		{
 			_Data = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -35,6 +36,7 @@ internal class MQTTCustomPublishNode : MQTTBaseNode
 		set
 		{
 			_Topic = value;
+			OnPropertyChanged();
 		}
 	}
 

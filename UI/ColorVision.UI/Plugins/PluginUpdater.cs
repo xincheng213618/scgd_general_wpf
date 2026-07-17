@@ -355,6 +355,7 @@ namespace ColorVision.UI.Plugins
             sb.AppendLine();
             sb.AppendLine(string.Format(Properties.Resources.EchoTerminatingProcess, exeName));
             sb.AppendLine("call :wait_for_original_process");
+            ExternalUpdateBatchScript.AppendLog(sb, "Plugin update started.");
             sb.AppendLine();
             sb.AppendLine(Properties.Resources.EchoStartCopyingFiles);
             sb.AppendLine(Properties.Resources.RemStagePointsToTemp);
@@ -381,6 +382,7 @@ namespace ColorVision.UI.Plugins
 
             sb.AppendLine(":copy_done");
             sb.AppendLine(Properties.Resources.EchoCopyComplete);
+            ExternalUpdateBatchScript.AppendLog(sb, "Plugin update completed.");
             sb.AppendLine();
 
             sb.AppendLine(Properties.Resources.EchoUpdateComplete);
@@ -391,6 +393,7 @@ namespace ColorVision.UI.Plugins
             sb.AppendLine();
 
             sb.AppendLine(":fail");
+            ExternalUpdateBatchScript.AppendLog(sb, "Plugin update failed.");
             sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("endlocal");
@@ -427,17 +430,27 @@ namespace ColorVision.UI.Plugins
             builder.AppendLine($"set \"UPDATE_ROOT={EscapeForBatchValue(Path.GetDirectoryName(batchFilePath)!)}\"");
             ExternalUpdateBatchScript.AppendSessionVariables(builder, originalProcessId, handoffState);
             builder.AppendLine("call :wait_for_original_process");
+            ExternalUpdateBatchScript.AppendLog(builder, "Plugin deletion started.");
 
             foreach (string targetPluginDirectory in targetPluginDirectories)
             {
                 builder.AppendLine($"set \"TARGET={EscapeForBatchValue(targetPluginDirectory)}\"");
                 builder.AppendLine("if exist \"%TARGET%\" rd /s /q \"%TARGET%\"");
+                builder.AppendLine("if exist \"%TARGET%\" goto fail");
             }
 
+            ExternalUpdateBatchScript.AppendLog(builder, "Plugin deletion completed.");
             builder.AppendLine("call :complete_handoff");
             builder.AppendLine("call :schedule_cleanup");
             builder.AppendLine("endlocal");
             builder.AppendLine("exit /b 0");
+            builder.AppendLine();
+            builder.AppendLine(":fail");
+            ExternalUpdateBatchScript.AppendLog(builder, "Plugin deletion failed.");
+            builder.AppendLine("call :complete_handoff");
+            builder.AppendLine("call :schedule_cleanup");
+            builder.AppendLine("endlocal");
+            builder.AppendLine("exit /b 1");
             builder.AppendLine();
             builder.AppendLine(":complete_handoff");
             ExternalUpdateBatchScript.AppendRestartAndComplete(builder, "-c MenuPluginManager");

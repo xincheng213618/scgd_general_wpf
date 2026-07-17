@@ -38,6 +38,7 @@ internal class BaseSimulator : STNode
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -51,6 +52,7 @@ internal class BaseSimulator : STNode
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -64,6 +66,7 @@ internal class BaseSimulator : STNode
 		set
 		{
 			_Time = value;
+			OnPropertyChanged();
 		}
 	}
 

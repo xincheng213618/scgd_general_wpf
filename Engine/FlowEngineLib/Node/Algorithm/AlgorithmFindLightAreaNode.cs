@@ -27,6 +27,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -42,6 +43,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -55,6 +57,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		set
 		{
 			_SavePOITempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -68,6 +71,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -81,6 +85,7 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 		set
 		{
 			setOIndex(value);
+			OnPropertyChanged();
 		}
 	}
 

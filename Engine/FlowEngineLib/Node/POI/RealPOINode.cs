@@ -51,6 +51,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +67,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		{
 			_FilterTemplateName = value;
 			setFilterReviseTemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -81,6 +83,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		{
 			_ReviseTemplateName = value;
 			setFilterReviseTemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -95,6 +98,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		{
 			_ReviseFileName = value;
 			setFilterReviseTemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -110,6 +114,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		{
 			_OutputTemplateName = value;
 			m_ctrl_outtemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -123,6 +128,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			_SubPixelTemplateName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -136,6 +142,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			setPOIType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -149,6 +156,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			setHeight(value, syncWid: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -162,6 +170,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			setWidth(value, syncHei: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -175,6 +184,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			_IsResultAdd = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -188,6 +198,7 @@ public class RealPOINode : CVBaseServerNodeHub
 		set
 		{
 			_IsCCTWave = value;
+			OnPropertyChanged();
 		}
 	}
 

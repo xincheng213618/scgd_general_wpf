@@ -26,6 +26,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -39,6 +40,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		set
 		{
 			SetMathType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		{
 			_IsBreak = value;
 			setBreak();
+			OnPropertyChanged();
 		}
 	}
 

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 
 namespace ColorVision.Update
@@ -10,6 +11,12 @@ namespace ColorVision.Update
             builder.AppendLine($"set \"UPDATE_MARKER={EscapeValue(handoffState.MarkerPath)}\"");
             builder.AppendLine($"set \"REOPEN_REQUEST={EscapeValue(handoffState.ReopenRequestPath)}\"");
             builder.AppendLine($"set \"UPDATE_TOKEN={handoffState.LaunchToken}\"");
+            builder.AppendLine($"set \"UPDATE_LOG={EscapeValue(Path.Combine(Path.GetDirectoryName(handoffState.MarkerPath)!, "update.log"))}\"");
+        }
+
+        public static void AppendLog(StringBuilder builder, string message)
+        {
+            builder.AppendLine($">>\"%UPDATE_LOG%\" echo [%date% %time%] {message}");
         }
 
         public static void AppendWaitForOriginalProcess(StringBuilder builder)

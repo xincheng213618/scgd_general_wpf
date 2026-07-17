@@ -21,6 +21,7 @@ internal class MQTTCustomSubscribeNode : MQTTBaseNode
 		set
 		{
 			_Topic = value;
+			OnPropertyChanged();
 		}
 	}
 

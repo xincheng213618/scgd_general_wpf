@@ -16,6 +16,7 @@ public class CVCommonNodeHub : STNodeHub
 		set
 		{
 			m_nodeId = value;
+			OnPropertyChanged();
 		}
 	}
 

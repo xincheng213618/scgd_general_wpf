@@ -22,6 +22,7 @@ public class SMUModelNode : SMUBaseNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

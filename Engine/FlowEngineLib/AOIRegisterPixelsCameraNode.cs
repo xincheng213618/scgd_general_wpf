@@ -56,6 +56,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		{
 			_ImgSaveMode = value;
 			setImgValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -69,6 +70,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_ImgSaveName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -82,6 +84,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_AvgCount = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -95,6 +98,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_Gain = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -109,6 +113,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		{
 			_ExpTime = value;
 			m_ctrl_exp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -122,6 +127,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_IsAutoExp = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -135,6 +141,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_AutoExpTempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -148,6 +155,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_IsWithND = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -162,6 +170,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		{
 			_CaliTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -175,6 +184,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_FlipMode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -189,6 +199,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		{
 			_AlgTempName = value;
 			setAOIValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -202,6 +213,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		set
 		{
 			_Channel = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -216,6 +228,7 @@ public class AOIRegisterPixelsCameraNode : CVBaseServerNodeHub
 		{
 			_OutputTempName = value;
 			setOutputTemp();
+			OnPropertyChanged();
 		}
 	}
 

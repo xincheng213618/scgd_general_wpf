@@ -20,6 +20,7 @@ public class AlgorithmEQENode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

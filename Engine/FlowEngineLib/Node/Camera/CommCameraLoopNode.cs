@@ -17,6 +17,7 @@ public class CommCameraLoopNode : CVBaseLoopServerNode<CommCameraNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

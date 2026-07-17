@@ -24,6 +24,7 @@ internal class MQTTBaseNode : STNode
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -37,6 +38,7 @@ internal class MQTTBaseNode : STNode
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 

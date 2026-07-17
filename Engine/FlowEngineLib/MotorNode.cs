@@ -27,6 +27,7 @@ public class MotorNode : CVBaseServerNode
 		{
 			_RunType = value;
 			m_ctrl_RunType.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class MotorNode : CVBaseServerNode
 		set
 		{
 			_bAbs = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class MotorNode : CVBaseServerNode
 		set
 		{
 			_Pos = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +69,7 @@ public class MotorNode : CVBaseServerNode
 		set
 		{
 			_Aperture = value;
+			OnPropertyChanged();
 		}
 	}
 

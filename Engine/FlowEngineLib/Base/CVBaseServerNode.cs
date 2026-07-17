@@ -65,10 +65,10 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			base.DeviceCode = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
-	[STNodeProperty("Token", "Token", true)]
 	public string Token
 	{
 		get
@@ -78,8 +78,9 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_Token = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 
 	[STNodeProperty("允许失败继续", "服务返回Fail时按正常流程继续", true)]
@@ -92,6 +93,7 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_ContinueOnFail = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -105,6 +107,7 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_MaxTime = value;
+			OnPropertyChanged();
 		}
 	}
     public string TempDisName => _TempName;

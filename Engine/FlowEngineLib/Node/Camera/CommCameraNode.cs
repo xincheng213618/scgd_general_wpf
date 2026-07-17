@@ -56,6 +56,7 @@ public class CommCameraNode : CVBaseServerNode
 			_IsHDR = value;
 			CamTempName = string.Empty;
 			setTempValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -70,6 +71,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_CamTempName = value;
 			setTempValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -83,6 +85,7 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_FlipMode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -97,6 +100,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_IsAutoExp = value;
 			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -110,6 +114,7 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -124,6 +129,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_IsWithND = value;
 			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -138,6 +144,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_CalibTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -152,6 +159,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_POITempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -166,6 +174,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_POIFilterTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -180,6 +189,7 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_POIReviseTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 

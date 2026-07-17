@@ -48,6 +48,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			_source = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -62,6 +63,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			_channel = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -76,6 +78,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			m_begin_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -90,6 +93,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			m_end_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -104,6 +108,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			_limitVal = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -118,6 +123,7 @@ public class SMUSweepNode : CVBaseServerNode
 		{
 			m_point_num = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -131,6 +137,7 @@ public class SMUSweepNode : CVBaseServerNode
 		set
 		{
 			_IsCloseOutput = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -144,6 +151,7 @@ public class SMUSweepNode : CVBaseServerNode
 		set
 		{
 			_IsAutoRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -157,6 +165,7 @@ public class SMUSweepNode : CVBaseServerNode
 		set
 		{
 			_SrcRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -170,6 +179,7 @@ public class SMUSweepNode : CVBaseServerNode
 		set
 		{
 			_LmtRng = value;
+			OnPropertyChanged();
 		}
 	}
 
