@@ -139,8 +139,12 @@ namespace ColorVision
             }
             ConfigHandler.GetInstance().IsAutoSave = true;
 
-            mutex = new Mutex(true, "ColorVision", out bool ret);
-            if (!ret && !Debugger.IsAttached)
+            mutex = new Mutex(true, "ColorVision", out bool ownsMutex);
+            bool allowMultipleInstances = ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute;
+            if (SingleInstanceStartupPolicy.Decide(
+                ownsMutex,
+                Debugger.IsAttached,
+                allowMultipleInstances) == SingleInstanceStartupAction.ActivateExistingInstance)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
@@ -155,11 +159,9 @@ namespace ColorVision
                         }
                     }
                     log.Info("程序已经打开");
-                    if (!ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute)
-                        Environment.Exit(0);
+                    Environment.Exit(0);
+                    return;
                 }
-                ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
-                //Environment.Exit(0);
             }
 
             CopilotMcpServer.Instance.ApplyConfig();

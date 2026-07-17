@@ -2228,6 +2228,28 @@ public class SolutionManagerFoundationTests
         Assert.Empty(parsedArguments);
     }
 
+    [Theory]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, false, false, true)]
+    public void SingleInstanceStartupPolicy_AssignsArgumentsToExactlyOneInstance(
+        bool ownsMutex,
+        bool isDebuggerAttached,
+        bool allowMultipleInstances,
+        bool shouldActivateExistingInstance)
+    {
+        SingleInstanceStartupAction expectedAction = shouldActivateExistingInstance
+            ? SingleInstanceStartupAction.ActivateExistingInstance
+            : SingleInstanceStartupAction.StartCurrentInstance;
+        Assert.Equal(
+            expectedAction,
+            SingleInstanceStartupPolicy.Decide(
+                ownsMutex,
+                isDebuggerAttached,
+                allowMultipleInstances));
+    }
+
     [Fact]
     public void CVCalImport_ReportsMissingCameraConfiguration()
     {
