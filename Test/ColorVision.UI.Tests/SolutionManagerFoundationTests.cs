@@ -200,18 +200,168 @@ public class SolutionManagerFoundationTests
     [Fact]
     public void SelectionService_SearchResultsResolveToCommandTargets()
     {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig { RootPath = "." });
         var parent = CreateNode("parent");
         var child = CreateNode("child");
         parent.AddChild(child);
-        using var parentResult = new SolutionSearchResultNode(parent, "Project\\parent", ownsTarget: false);
-        using var childResult = new SolutionSearchResultNode(child, "Project\\parent\\child", ownsTarget: false);
-        var service = new SolutionSelectionService();
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            using var parentResult = new SolutionSearchResultNode(explorer, parent, "Project\\parent", ownsTarget: false);
+            using var childResult = new SolutionSearchResultNode(explorer, child, "Project\\parent\\child", ownsTarget: false);
+            var service = new SolutionSelectionService();
 
-        service.SelectMany([parentResult, childResult]);
+            service.SelectMany([parentResult, childResult]);
 
-        Assert.Equal([parent, child], service.CommandNodes);
-        Assert.Equal([parent], service.GetTopLevelNodes(_ => true));
-        Assert.Equal([parentResult, childResult], service.SelectedNodes);
+            Assert.Equal([parent, child], service.CommandNodes);
+            Assert.Equal([parent], service.GetTopLevelNodes(_ => true));
+            Assert.Equal([parentResult, childResult], service.SelectedNodes);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionTreeNavigation_LoadsLazyFoldersAndResolvesPhysicalFile()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string targetPath = Path.Combine(solutionDirectory, "Deep", "Nested", "target.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+        File.WriteAllText(targetPath, "target");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.AutoDiscover,
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            FileNode detachedTarget = SolutionNodeFactory.CreateFileNode(new FileInfo(targetPath));
+
+            SolutionNode? resolvedNode = await SolutionTreeNavigationService.ResolveNodeAsync(
+                explorer,
+                detachedTarget);
+
+            FileNode resolvedFile = Assert.IsType<FileNode>(resolvedNode);
+            Assert.NotSame(detachedTarget, resolvedFile);
+            Assert.Equal(targetPath, resolvedFile.FullPath, ignoreCase: true);
+            FolderNode nestedFolder = Assert.IsType<FolderNode>(resolvedFile.Parent);
+            FolderNode deepFolder = Assert.IsType<FolderNode>(nestedFolder.Parent);
+            Assert.True(deepFolder.AreChildrenLoaded);
+            Assert.True(nestedFolder.AreChildrenLoaded);
+            Assert.True(deepFolder.IsExpanded);
+            Assert.True(nestedFolder.IsExpanded);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SolutionTreeNavigation_ResolvesFilesInExternalExplicitProjectOnly()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string externalDirectory = CreateTemporaryDirectory();
+        string projectDirectory = Path.Combine(externalDirectory, "ExternalProject");
+        string projectPath = Path.Combine(projectDirectory, "ExternalProject.cvproj");
+        string targetPath = Path.Combine(projectDirectory, "Source", "target.txt");
+        string unregisteredPath = Path.Combine(externalDirectory, "Outside", "target.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(unregisteredPath)!);
+        File.WriteAllText(targetPath, "target");
+        File.WriteAllText(unregisteredPath, "outside");
+        FolderProjectProvider.CreateProjectFile(projectPath, "ExternalProject");
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig
+        {
+            RootPath = ".",
+            ProjectMode = SolutionProjectMode.Explicit,
+            Projects = [Path.GetRelativePath(solutionDirectory, projectPath)],
+        });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            ProjectNode projectNode = Assert.Single(explorer.VisualChildren.OfType<ProjectNode>());
+            FileNode projectTarget = SolutionNodeFactory.CreateFileNode(new FileInfo(targetPath));
+            projectTarget.Parent = projectNode;
+            FileNode unregisteredTarget = SolutionNodeFactory.CreateFileNode(new FileInfo(unregisteredPath));
+
+            SolutionNode? resolvedProjectNode = await SolutionTreeNavigationService.ResolveNodeAsync(
+                explorer,
+                projectTarget);
+            SolutionNode? resolvedUnregisteredNode = await SolutionTreeNavigationService.ResolveNodeAsync(
+                explorer,
+                unregisteredTarget);
+
+            Assert.IsType<FileNode>(resolvedProjectNode);
+            Assert.Equal(targetPath, resolvedProjectNode.FullPath, ignoreCase: true);
+            Assert.Null(resolvedUnregisteredNode);
+            Assert.True(projectNode.AreChildrenLoaded);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+            Directory.Delete(externalDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SearchResultMenu_ForwardsOpenWithAndAddsRevealCommand()
+    {
+        string solutionDirectory = CreateTemporaryDirectory();
+        string filePath = Path.Combine(solutionDirectory, "sample.txt");
+        File.WriteAllText(filePath, "sample");
+        string folderPath = Path.Combine(solutionDirectory, "Folder");
+        Directory.CreateDirectory(folderPath);
+        string solutionPath = Path.Combine(solutionDirectory, "Example.cvsln");
+        SolutionConfigStore.Save(solutionPath, new SolutionConfig { RootPath = "." });
+
+        try
+        {
+            using var explorer = CreateSolutionExplorer(solutionDirectory, solutionPath);
+            FileNode fileNode = SolutionNodeFactory.CreateFileNode(new FileInfo(filePath));
+            using FolderNode folderNode = SolutionNodeFactory.CreateFolderNode(
+                new DirectoryInfo(folderPath),
+                explorer);
+            using var searchResult = new SolutionSearchResultNode(
+                explorer,
+                fileNode,
+                "sample.txt",
+                ownsTarget: false);
+            var fileMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+            var folderMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+            var searchMenuItems = new List<ColorVision.UI.Menus.MenuItemMetadata>();
+
+            fileNode.CollectMenuItems(fileMenuItems);
+            folderNode.CollectMenuItems(folderMenuItems);
+            searchResult.CollectMenuItems(searchMenuItems);
+
+            Assert.Same(
+                fileNode.OpenMethodCommand,
+                Assert.Single(fileMenuItems, item => item.GuidId == "OpenMethod").Command);
+            Assert.Same(
+                folderNode.OpenMethodCommand,
+                Assert.Single(folderMenuItems, item => item.GuidId == "OpenMethod").Command);
+            Assert.Same(
+                fileNode.OpenMethodCommand,
+                Assert.Single(searchMenuItems, item => item.GuidId == "OpenMethod").Command);
+            Assert.Same(
+                SolutionNavigationCommands.RevealInTree,
+                Assert.Single(searchMenuItems, item =>
+                    item.GuidId == SolutionNavigationCommands.RevealInTreeId).Command);
+        }
+        finally
+        {
+            Directory.Delete(solutionDirectory, recursive: true);
+        }
     }
 
     [Fact]

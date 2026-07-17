@@ -64,7 +64,7 @@ namespace ColorVision.Solution.Explorer
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = $"{Resources.Sol_OpenAs}(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotExplainFile", Order = 20, Header = "问 AI 解释此文件", Command = AskCopilotExplainFileCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotDiagnoseFile", Order = 21, Header = "问 AI 诊断此文件/日志", Command = AskCopilotDiagnoseFileCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });

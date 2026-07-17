@@ -319,7 +319,7 @@ namespace ColorVision.Solution.Explorer
                 Header = Resources.MenuOpen,
                 Command = OpenCommand
             });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = $"{Resources.Sol_OpenAs}(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "AskCopilotSummarizeFolder", Order = 20, Header = "问 AI 总结此文件夹", Command = AskCopilotSummarizeFolderCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });

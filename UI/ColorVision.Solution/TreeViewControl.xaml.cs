@@ -55,9 +55,12 @@ namespace ColorVision.Solution
         private SolutionNode? _dropTargetNode;
         private CancellationTokenSource? _workspaceStateRestoreCancellation;
         private CancellationTokenSource? _searchCancellation;
+        private CancellationTokenSource? _revealCancellation;
         private int _searchVersion;
         private bool _isDragging;
         private bool _isRestoringWorkspaceState;
+        private bool _isClearingSearchForReveal;
+        private bool _allowProgrammaticBringIntoView;
 
         public IReadOnlyList<SolutionNode> SelectedNodes => _selectionService.CommandNodes;
 
@@ -77,7 +80,7 @@ namespace ColorVision.Solution
             _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
             _selectionService.SelectionChanged += SelectionService_SelectionChanged;
             InitializeComponent();
-            _contextMenuService.GetSelectedNodes = () => _selectionService.CommandNodes;
+            _contextMenuService.GetSelectedNodes = () => _selectionService.SelectedNodes;
             _contextMenuService.CommandTarget = SolutionTreeView;
         }
 
@@ -263,6 +266,7 @@ namespace ColorVision.Solution
             _workspaceStateSaveTimer.Stop();
             _searchDebounceTimer.Stop();
             CancelPendingSearch();
+            CancelPendingReveal();
             DisposeSearchResultNodes();
             SolutionManager.SolutionExplorers.CollectionChanged -= SolutionExplorers_CollectionChanged;
             foreach (SolutionExplorer explorer in _observedExplorers.ToList())
@@ -278,6 +282,7 @@ namespace ColorVision.Solution
         {
             _workspaceStateSaveTimer.Stop();
             CancelWorkspaceStateRestore();
+            CancelPendingReveal();
             _isRestoringWorkspaceState = true;
             try
             {
@@ -342,6 +347,7 @@ namespace ColorVision.Solution
                 _workspaceStateSaveTimer.Stop();
                 SaveWorkspaceState(explorer);
                 CancelWorkspaceStateRestore();
+                CancelPendingReveal();
             }
         }
 
@@ -367,6 +373,7 @@ namespace ColorVision.Solution
                 _workspaceStateSaveTimer.Stop();
                 SaveWorkspaceState(explorer);
                 CancelWorkspaceStateRestore();
+                CancelPendingReveal();
             }
         }
 
@@ -983,6 +990,7 @@ namespace ColorVision.Solution
                 if (targetNode == null)
                     continue;
                 _searchResultNodes.Add(new SolutionSearchResultNode(
+                    hit.Explorer,
                     targetNode,
                     hit.DisplayPath,
                     ownsTarget));
@@ -1049,6 +1057,12 @@ namespace ColorVision.Solution
             _searchCancellation = null;
         }
 
+        private void CancelPendingReveal()
+        {
+            _revealCancellation?.Cancel();
+            _revealCancellation = null;
+        }
+
         private void DisposeSearchResultNodes()
         {
             foreach (SolutionSearchResultNode searchResultNode in _searchResultNodes)
@@ -1058,13 +1072,60 @@ namespace ColorVision.Solution
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (!_isClearingSearchForReveal)
+                CancelPendingReveal();
             SearchBar1TextChanged();
         }
 
+        private static void ExpandNodeAncestors(SolutionNode node)
+        {
+            for (SolutionNode? current = node.Parent; current != null; current = current.Parent)
+                current.IsExpanded = true;
+        }
+
+        private void BringNodeIntoView(SolutionNode node)
+        {
+            var path = new Stack<SolutionNode>();
+            for (SolutionNode? current = node; current != null; current = current.Parent)
+                path.Push(current);
+
+            ItemsControl parent = SolutionTreeView;
+            TreeViewItem? container = null;
+            SolutionTreeView.UpdateLayout();
+            while (path.Count > 0)
+            {
+                SolutionNode pathNode = path.Pop();
+                container = parent.ItemContainerGenerator.ContainerFromItem(pathNode) as TreeViewItem;
+                if (container == null)
+                {
+                    parent.UpdateLayout();
+                    container = parent.ItemContainerGenerator.ContainerFromItem(pathNode) as TreeViewItem;
+                }
+                if (container == null)
+                    return;
+
+                if (path.Count > 0)
+                    container.IsExpanded = true;
+                parent = container;
+            }
+
+            if (container == null)
+                return;
+            _allowProgrammaticBringIntoView = true;
+            try
+            {
+                container.BringIntoView();
+            }
+            finally
+            {
+                _allowProgrammaticBringIntoView = false;
+            }
+        }
 
         private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
         {
-            e.Handled = true;
+            if (!_allowProgrammaticBringIntoView)
+                e.Handled = true;
         }
     }
 }

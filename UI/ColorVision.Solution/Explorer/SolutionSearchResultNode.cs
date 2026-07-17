@@ -1,3 +1,4 @@
+using ColorVision.UI.Menus;
 using System.IO;
 
 namespace ColorVision.Solution.Explorer
@@ -7,6 +8,7 @@ namespace ColorVision.Solution.Explorer
         private readonly bool _ownsTarget;
         private bool _disposed;
 
+        public SolutionExplorer Explorer { get; }
         public SolutionNode TargetNode { get; }
 
         public string DisplayPath
@@ -55,10 +57,12 @@ namespace ColorVision.Solution.Explorer
         public override bool IsStartupProject => TargetNode.IsStartupProject;
 
         internal SolutionSearchResultNode(
+            SolutionExplorer explorer,
             SolutionNode targetNode,
             string displayPath,
             bool ownsTarget)
         {
+            Explorer = explorer ?? throw new ArgumentNullException(nameof(explorer));
             TargetNode = targetNode ?? throw new ArgumentNullException(nameof(targetNode));
             _displayPath = displayPath ?? string.Empty;
             _ownsTarget = ownsTarget;
@@ -102,6 +106,13 @@ namespace ColorVision.Solution.Explorer
         {
             MenuItemMetadatas.Clear();
             TargetNode.CollectMenuItems(MenuItemMetadatas);
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = SolutionNavigationCommands.RevealInTreeId,
+                Order = 6,
+                Header = "在解决方案资源管理器中定位(_L)",
+                Command = SolutionNavigationCommands.RevealInTree,
+            });
         }
 
         public void Dispose()

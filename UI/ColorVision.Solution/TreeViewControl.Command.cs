@@ -28,6 +28,7 @@ namespace ColorVision.Solution
             RegisterCommand(SolutionProjectCommands.SetStartupProject, ExecuteSetStartupProject, CanExecuteSetStartupProject);
             RegisterCommand(SolutionProjectCommands.ExcludeFromProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
             RegisterCommand(SolutionProjectCommands.IncludeInProject, ExecuteProjectItemMembership, CanExecuteProjectItemMembership);
+            RegisterCommand(SolutionNavigationCommands.RevealInTree, ExecuteRevealInTree, CanExecuteRevealInTree);
         }
 
         private void RegisterCommand(ICommand command, ExecutedRoutedEventHandler executed, CanExecuteRoutedEventHandler canExecute)
@@ -187,6 +188,79 @@ namespace ColorVision.Solution
                 visualNode.IsEditMode = true;
             }
             e.Handled = true;
+        }
+
+        private void CanExecuteRevealInTree(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = _selectionService.SelectedNodes is [SolutionSearchResultNode searchResult]
+                && SolutionManager.SolutionExplorers.Contains(searchResult.Explorer);
+            e.Handled = true;
+        }
+
+        private async void ExecuteRevealInTree(object sender, ExecutedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_selectionService.SelectedNodes is not [SolutionSearchResultNode searchResult])
+                return;
+
+            SolutionExplorer explorer = searchResult.Explorer;
+            SolutionNode targetNode = searchResult.TargetNode;
+            if (!SolutionManager.SolutionExplorers.Contains(explorer))
+                return;
+
+            CancelPendingReveal();
+            var cancellation = new CancellationTokenSource();
+            _revealCancellation = cancellation;
+            try
+            {
+                SolutionNode? resolvedNode = await SolutionTreeNavigationService.ResolveNodeAsync(
+                    explorer,
+                    targetNode,
+                    cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (resolvedNode == null || !SolutionManager.SolutionExplorers.Contains(explorer))
+                {
+                    SearchStatusText.Text = "无法在解决方案树中定位该项";
+                    SearchStatusText.Visibility = Visibility.Visible;
+                    return;
+                }
+
+                CancelWorkspaceStateRestore();
+                _isRestoringWorkspaceState = true;
+                try
+                {
+                    SolutionManager.CurrentSolutionExplorer = explorer;
+                    _isClearingSearchForReveal = true;
+                    SearchBar1.Text = string.Empty;
+                    ExpandNodeAncestors(resolvedNode);
+                    _selectionService.SelectSingle(resolvedNode);
+                    ClearTreeViewSelection();
+                }
+                finally
+                {
+                    _isClearingSearchForReveal = false;
+                    _isRestoringWorkspaceState = false;
+                }
+
+                ScheduleWorkspaceStateSave();
+                _ = Dispatcher.BeginInvoke(
+                    () => BringNodeIntoView(resolvedNode),
+                    System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                SearchStatusText.Text = $"定位失败：{ex.Message}";
+                SearchStatusText.Visibility = Visibility.Visible;
+            }
+            finally
+            {
+                if (ReferenceEquals(_revealCancellation, cancellation))
+                    _revealCancellation = null;
+                cancellation.Dispose();
+            }
         }
 
         private void CanExecuteRefresh(object sender, CanExecuteRoutedEventArgs e)
