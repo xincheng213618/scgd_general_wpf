@@ -36,13 +36,6 @@ namespace ColorVision.Solution.Explorer
             InitializeExternalWatcher();
         }
 
-        public override void InitMenuItem()
-        {
-            base.InitMenuItem();
-            MenuItemMetadatas.RemoveAll(item => item.GuidId is
-                SolutionCommandIds.Cut or SolutionCommandIds.Paste or SolutionCommandIds.Rename);
-        }
-
         internal bool CanReuseFor(SolutionItemDefinition definition, string fullPath)
         {
             return string.Equals(ItemId, definition.Id, StringComparison.OrdinalIgnoreCase)

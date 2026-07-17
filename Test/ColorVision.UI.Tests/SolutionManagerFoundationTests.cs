@@ -3399,6 +3399,15 @@ public class SolutionManagerFoundationTests
             List<MenuItemMetadata> menuItems =
                 SolutionContextMenuService.CreateMenuMetadata([solutionItemNode]);
             Assert.Contains(menuItems, item => item.GuidId == "MoveSolutionItem.Root");
+            Assert.True(solutionItemNode.CanCopy);
+            Assert.False(solutionItemNode.CanCut);
+            Assert.False(solutionItemNode.CanPaste);
+            Assert.False(solutionItemNode.CanReName);
+            Assert.Same(
+                ApplicationCommands.Copy,
+                Assert.Single(menuItems, item => item.GuidId == SolutionCommandIds.Copy).Command);
+            Assert.DoesNotContain(menuItems, item => item.GuidId is
+                SolutionCommandIds.Cut or SolutionCommandIds.Paste or SolutionCommandIds.Rename);
             Assert.Contains(menuItems, item =>
                 item.GuidId == SolutionCommandIds.Delete
                 && string.Equals(item.Header?.ToString(), "从解决方案中移除(_V)", StringComparison.Ordinal));
