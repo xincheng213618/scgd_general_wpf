@@ -88,13 +88,6 @@ namespace ColorVision.Solution.Explorer
                     Header = "问 AI 总结此文件夹",
                     Command = folderNode.AskCopilotSummarizeFolderCommand,
                 },
-                new MenuItemMetadata
-                {
-                    GuidId = "Fusion",
-                    Order = 50,
-                    Header = "景深融合(_F)",
-                    Command = folderNode.OpenFusionCommand,
-                },
             ];
         }
     }

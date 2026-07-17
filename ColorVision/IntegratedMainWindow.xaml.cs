@@ -49,6 +49,7 @@ namespace ColorVision
 
         public IntegratedMainWindow()
         {
+            ImageTools.ImageToolsModule.EnsureLoaded();
             InitializeComponent();
             _integratedWindowChrome = CreateIntegratedWindowChrome();
             InitializeWindowChromeCommands();

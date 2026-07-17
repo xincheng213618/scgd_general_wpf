@@ -44,6 +44,7 @@ namespace ColorVision
 
         public MainWindow()
         {
+            ImageTools.ImageToolsModule.EnsureLoaded();
             InitializeComponent();
             Config.SetWindow(this);
 

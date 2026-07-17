@@ -36,7 +36,6 @@ namespace ColorVision.Solution.Explorer
         public DirectoryInfo DirectoryInfo { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
-        public RelayCommand OpenFusionCommand { get; set; }
         private bool _childrenLoaded;
         private bool _childrenLoading;
         private bool _isExpanded;
@@ -240,7 +239,6 @@ namespace ColorVision.Solution.Explorer
         private void InitializeCommands()
         {
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
-            OpenFusionCommand = new RelayCommand(_ => OpenFusionWithFolderImages(), _ => DirectoryInfo.Exists);
         }
 
         public override void Open()
@@ -302,22 +300,6 @@ namespace ColorVision.Solution.Explorer
                     $"Last modified: {DirectoryInfo.LastWriteTime:O}",
                 }),
             };
-        }
-
-        private void OpenFusionWithFolderImages()
-        {
-            var imageExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-            var imageFiles = DirectoryInfo.GetFiles()
-                .Where(f => imageExts.Contains(f.Extension))
-                .OrderBy(f => f.Name, Comparer<string>.Create((a, b) => Common.NativeMethods.Shlwapi.CompareLogical(a, b)))
-                .Select(f => f.FullName);
-            var window = new Fusion.FusionWindow(imageFiles)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            window.Show();
         }
 
         private void ShowAddNewItemDialog()

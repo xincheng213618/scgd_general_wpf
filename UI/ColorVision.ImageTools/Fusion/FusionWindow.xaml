@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.Sol_Fusion_Title}" Height="620" Width="780"
         Background="{DynamicResource GlobalBackground}"
