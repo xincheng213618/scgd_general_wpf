@@ -703,4 +703,15 @@
   <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
   <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
   <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
+  <data name="Wizard_Intro" xml:space="preserve"><value>Terminez les vérifications requises et la configuration des services pour préparer ColorVision.</value></data>
+  <data name="Wizard_StepProgressFormat" xml:space="preserve"><value>Étape {0} sur {1}</value></data>
+  <data name="Wizard_Required" xml:space="preserve"><value>Requis</value></data>
+  <data name="Wizard_Ready" xml:space="preserve"><value>Prêt</value></data>
+  <data name="Wizard_Pending" xml:space="preserve"><value>À configurer</value></data>
+  <data name="Wizard_Current" xml:space="preserve"><value>Étape actuelle</value></data>
+  <data name="Wizard_Working" xml:space="preserve"><value>Traitement en cours</value></data>
+  <data name="Wizard_NeedsAttention" xml:space="preserve"><value>Action requise</value></data>
+  <data name="Wizard_Progress" xml:space="preserve"><value>Progression de la configuration</value></data>
+  <data name="Wizard_Steps" xml:space="preserve"><value>Étapes de configuration</value></data>
+  <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>Terminez cette étape requise pour continuer.</value></data>
 </root>

@@ -3,30 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" d:DesignHeight="400" d:DesignWidth="300"
              Background="{DynamicResource GlobalBackground}">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <DockPanel>
-            <CheckBox x:Name="ShowDebugPropertiesToggle"
-                      DockPanel.Dock="Right"
-                      Margin="8,0,6,0"
-                      VerticalAlignment="Center"
-                      Content="{x:Static properties:Resources.Debug}"
-                      ToolTip="{x:Static properties:Resources.Flow_ShowDebugPropertiesTooltip}"
-                      Checked="ShowDebugPropertiesToggle_Changed"
-                      Unchecked="ShowDebugPropertiesToggle_Changed" />
-        </DockPanel>
-
-        <Grid Grid.Row="1">
-            <ScrollViewer x:Name="SignStackScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="Visible">
-                <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
-            </ScrollViewer>
-        </Grid>
+        <ScrollViewer x:Name="SignStackScrollViewer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+            <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
+        </ScrollViewer>
     </Grid>
 </UserControl>

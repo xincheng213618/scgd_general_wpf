@@ -3234,7 +3234,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>Sélectionnez une action de prétraitement</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>Type : {0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>Redémarrer {0}</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>Afficher les propriétés de débogage telles que l'ID du nœud, le jeton et le code de l'appareil</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>Afficher les propriétés avancées telles que l'ID du nœud, le jeton et le nom du service</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>Impossible de démarrer {0} : {1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>Impossible d'arrêter {0} : {1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>Plein cadre</value></data>

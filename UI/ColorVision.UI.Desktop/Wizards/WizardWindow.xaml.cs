@@ -1,37 +1,22 @@
-﻿#pragma warning disable CA1805
+#pragma warning disable CA1805
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using log4net;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
+using System.Windows.Threading;
 
-namespace  ColorVision.UI.Desktop.Wizards
+namespace ColorVision.UI.Desktop.Wizards
 {
-    public sealed class BooleanToBrushConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value != null && (bool)value ? Brushes.Green : Brushes.Red;
-        }
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value;
-        }
-    }
-
-
     public class WizardManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WizardManager));
         private static WizardManager _instance;
         private static readonly object _locker = new();
         public static WizardManager GetInstance() { lock (_locker) { _instance ??= new WizardManager(); return _instance; } }
-        public List<IWizardStep> IWizardSteps { get; private set; } = new List<IWizardStep>();
-        public List<IWizardInitializer> WizardInitializers { get; private set; } = new List<IWizardInitializer>();
+        public List<IWizardStep> IWizardSteps { get; private set; } = new();
+        public List<IWizardInitializer> WizardInitializers { get; private set; } = new();
 
         public void Initialized()
         {
@@ -41,10 +26,10 @@ namespace  ColorVision.UI.Desktop.Wizards
             {
                 foreach (var type in assembly.GetTypes().Where(t => !t.IsAbstract))
                 {
-                    if (typeof(IWizardStep).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardStep fileHandler)
+                    if (typeof(IWizardStep).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardStep wizardStep)
                     {
                         log.Debug(type);
-                        IWizardSteps.Add(fileHandler);
+                        IWizardSteps.Add(wizardStep);
                     }
 
                     if (typeof(IWizardInitializer).IsAssignableFrom(type) && Activator.CreateInstance(type) is IWizardInitializer initializer)
@@ -59,14 +44,20 @@ namespace  ColorVision.UI.Desktop.Wizards
         }
     }
 
-        /// <summary>
-        /// WizardWindow.xaml 的交互逻辑
-        /// </summary>
-        public partial class WizardWindow : Window
+    /// <summary>
+    /// WizardWindow.xaml interaction logic.
+    /// </summary>
+    public partial class WizardWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(WizardWindow));
+
         public static WizardWindowConfig WindowConfig => WizardWindowConfig.Instance;
-        private int _currentStepIndex = 0;
-        private List<IWizardStep> _wizardSteps;
+
+        private int _currentStepIndex;
+        private List<IWizardStep> _wizardSteps = new();
+        private INotifyPropertyChanged? _observedStep;
+        private bool _initializersRun;
+        private bool _isTransitioning;
 
         public WizardWindow()
         {
@@ -75,27 +66,35 @@ namespace  ColorVision.UI.Desktop.Wizards
             WindowConfig.SetWindow(this);
         }
 
-        private void Window_Initialized(object sender, System.EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             WizardManager.GetInstance().Initialized();
-            this.DataContext = WindowConfig;
             _wizardSteps = WizardManager.GetInstance().IWizardSteps;
-
             ListWizard.ItemsSource = _wizardSteps;
 
-            Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(new Action(async () =>
             {
-                if (RunInitializers())
+                try
                 {
-                    return;
-                }
+                    if (!_wizardSteps.Any(step => step.IsRequired))
+                    {
+                        _initializersRun = true;
+                        if (RunInitializers())
+                            return;
+                    }
 
-                if (_wizardSteps.Count > 0)
-                {
-                    _currentStepIndex = 0;
-                    ShowCurrentStep();
+                    if (_wizardSteps.Count > 0)
+                    {
+                        _currentStepIndex = 0;
+                        await ShowCurrentStepAsync().ConfigureAwait(true);
+                    }
                 }
-            }));
+                catch (Exception ex)
+                {
+                    log.Error("Failed to initialize the configuration wizard.", ex);
+                    MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }), DispatcherPriority.Loaded);
         }
 
         private bool RunInitializers()
@@ -115,86 +114,164 @@ namespace  ColorVision.UI.Desktop.Wizards
             return false;
         }
 
-        private void ShowCurrentStep()
+        private async Task ShowCurrentStepAsync()
         {
-            if (_wizardSteps == null || _wizardSteps.Count == 0) return;
+            if (_wizardSteps.Count == 0)
+                return;
+
+            _isTransitioning = true;
+            IWizardStep currentStep = _wizardSteps[_currentStepIndex];
+            ObserveStep(currentStep);
+
+            BorderContent.DataContext = currentStep;
+            ListWizard.SelectedIndex = _currentStepIndex;
+            ListWizard.ScrollIntoView(currentStep);
+            WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
+            StepProgressText.Text = string.Format(
+                Properties.Resources.Wizard_StepProgressFormat,
+                _currentStepIndex + 1,
+                _wizardSteps.Count);
+            UpdateNavigationState();
+
+            try
+            {
+                await currentStep.RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Wizard step refresh failed: {currentStep.GetType().FullName}", ex);
+            }
+            finally
+            {
+                _isTransitioning = false;
+                UpdateNavigationState();
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    CurrentStepTitle.Focus();
+                }, DispatcherPriority.Input);
+            }
+        }
+
+        private void ObserveStep(IWizardStep step)
+        {
+            if (_observedStep != null)
+                _observedStep.PropertyChanged -= CurrentStep_PropertyChanged;
+
+            _observedStep = step as INotifyPropertyChanged;
+            if (_observedStep != null)
+                _observedStep.PropertyChanged += CurrentStep_PropertyChanged;
+        }
+
+        private void CurrentStep_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(UpdateNavigationState));
+                return;
+            }
+
+            UpdateNavigationState();
+        }
+
+        private void UpdateNavigationState()
+        {
+            if (_wizardSteps.Count == 0)
+                return;
 
             IWizardStep currentStep = _wizardSteps[_currentStepIndex];
+            bool canNavigate = !_isTransitioning && currentStep.CanContinue;
 
-            // Update progress bar
-            WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
+            BtnPrevious.IsEnabled = !_isTransitioning && _currentStepIndex > 0;
+            BtnNext.IsEnabled = canNavigate;
+            BtnFinish.IsEnabled = canNavigate;
+            RequiredStepHint.Visibility = currentStep.IsRequired && !currentStep.ConfigurationStatus
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
-            // Show current step content
-            BorderContent.DataContext = currentStep;
-            
-            // Update ListView selection to show which step we're on
-            ListWizard.SelectedIndex = _currentStepIndex;
-
-            // Update button states
-            BtnPrevious.IsEnabled = _currentStepIndex > 0;
-            
-            if (_currentStepIndex < _wizardSteps.Count - 1)
-            {
-                // Not on last step - show Next button
-                BtnNext.Visibility = Visibility.Visible;
-                BtnFinish.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                // On last step - show Finish button
-                BtnNext.Visibility = Visibility.Collapsed;
-                BtnFinish.Visibility = Visibility.Visible;
-            }
-
+            bool isLastStep = _currentStepIndex == _wizardSteps.Count - 1;
+            BtnNext.Visibility = isLastStep ? Visibility.Collapsed : Visibility.Visible;
+            BtnFinish.Visibility = isLastStep ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void Previous_Click(object sender, RoutedEventArgs e)
+        private async void Previous_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentStepIndex > 0)
-            {
-                _currentStepIndex--;
-                ShowCurrentStep();
-            }
+            if (_isTransitioning || _currentStepIndex <= 0)
+                return;
+
+            _currentStepIndex--;
+            await ShowCurrentStepAsync().ConfigureAwait(true);
         }
 
-        private void Next_Click(object sender, RoutedEventArgs e)
+        private async void Next_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentStepIndex < _wizardSteps.Count - 1)
+            if (_isTransitioning || _currentStepIndex >= _wizardSteps.Count - 1)
+                return;
+
+            IWizardStep currentStep = _wizardSteps[_currentStepIndex];
+            if (!currentStep.CanContinue)
             {
-                _currentStepIndex++;
-                ShowCurrentStep();
+                UpdateNavigationState();
+                return;
             }
+
+            int nextStepIndex = _currentStepIndex + 1;
+            if (!_initializersRun && ShouldRunInitializersBefore(nextStepIndex))
+            {
+                _initializersRun = true;
+                if (RunInitializers())
+                    return;
+            }
+
+            _currentStepIndex = nextStepIndex;
+            await ShowCurrentStepAsync().ConfigureAwait(true);
         }
 
-        private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
+        private bool ShouldRunInitializersBefore(int nextStepIndex)
         {
-            bool result = true;
-            foreach (var item in WizardManager.GetInstance().IWizardSteps)
+            if (nextStepIndex >= _wizardSteps.Count || _wizardSteps[nextStepIndex].IsRequired)
+                return false;
+
+            return _wizardSteps
+                .Take(nextStepIndex)
+                .Where(step => step.IsRequired)
+                .All(step => step.ConfigurationStatus);
+        }
+
+        private async void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
+        {
+            IWizardStep? incompleteRequiredStep = _wizardSteps.FirstOrDefault(step => step.IsRequired && !step.ConfigurationStatus);
+            if (incompleteRequiredStep != null)
             {
-                result = result && item.ConfigurationStatus;
+                _currentStepIndex = _wizardSteps.IndexOf(incompleteRequiredStep);
+                await ShowCurrentStepAsync().ConfigureAwait(true);
+                return;
             }
 
+            if (!_initializersRun)
+            {
+                _initializersRun = true;
+                if (RunInitializers())
+                    return;
+            }
+
+            bool result = _wizardSteps.All(item => item.ConfigurationStatus);
             WindowConfig.WizardCompletionKey = result;
             ConfigHandler.GetInstance().SaveConfigs();
 
             if (!result)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SkipIncompleteConfigPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    Properties.Resources.SkipIncompleteConfigPrompt,
+                    "ColorVision",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question) != MessageBoxResult.Yes)
                 {
-                    if (Application.Current.MainWindow == this)
-                    {
-                        WindowConfig.WizardCompletionKey = true;
-                        ConfigHandler.GetInstance().SaveConfigs();  
-                        //这里使用件的启动路径，启动主程序
-                        Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"));
-                        Application.Current.Shutdown();
-                    }
-                    else
-                    {
-                        this.Close();
-                    }
+                    return;
                 }
-                return;
+
+                WindowConfig.WizardCompletionKey = true;
+                ConfigHandler.GetInstance().SaveConfigs();
             }
 
             CompleteWizard();
@@ -211,21 +288,13 @@ namespace  ColorVision.UI.Desktop.Wizards
         {
             if (Application.Current.MainWindow == this)
             {
-                //这里使用件的启动路径，启动主程序
                 Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"));
                 Application.Current.Shutdown();
             }
             else
             {
-                this.Close();
+                Close();
             }
-            //如果第一次启动需要以管理员权限启动
-            //Tool.RestartAsAdmin();
-        }
-
-        private void ComboBoxWizardType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
         }
     }
 }

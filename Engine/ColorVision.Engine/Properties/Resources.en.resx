@@ -4427,7 +4427,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>Select a pre-process action</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>Type: {0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>Restart {0}</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>Show debug properties such as node ID, token, and device code</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>Show advanced properties such as node ID, token, and service name</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>Failed to start {0}: {1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>Failed to stop {0}: {1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>Full frame</value></data>

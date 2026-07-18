@@ -12,10 +12,17 @@ namespace ColorVision.Database
 
         public override string Description => Properties.Resources.DB_MysqlConfigDesc;
 
+        public override bool ConfigurationStatus
+        {
+            get => MySqlControl.GetInstance().IsConnect;
+            set { }
+        }
+
         public override void Execute()
         {
             MySqlConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow() };
             mySqlConnect.ShowDialog();
+            OnPropertyChanged(nameof(ConfigurationStatus));
         }
 
     }

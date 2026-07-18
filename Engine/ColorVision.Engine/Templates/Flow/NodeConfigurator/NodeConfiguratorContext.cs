@@ -1,13 +1,10 @@
 #pragma warning disable CS8625
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
-using ColorVision.UI;
-using FlowEngineLib;
-using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
@@ -15,50 +12,40 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 {
     public class NodeConfiguratorContext
     {
-        private static readonly ConditionalWeakTable<CVCommonNode, Dictionary<string, FlowEngineNodeEvent>> _nodeEventHandlers = new();
+        private static readonly ConditionalWeakTable<STNode, Dictionary<string, PropertyChangedEventHandler>> _propertyChangedHandlers = new();
         private NodePanelBuilder? _panels;
 
         public STNode Node { get; set; }
         public StackPanel SignStackPanel { get; set; }
         public STNodeEditor STNodeEditor { get; set; }
-        public StackPanel PropertyStackPanel { get; set; }
-        public Action OnActiveChanged { get; set; }
+        public Action Refresh { get; set; }
         public NodePanelBuilder Panels => _panels ??= new NodePanelBuilder(this);
 
-        public void RefreshPropertyEditor()
+        public void ReconfigureOnPropertyChanged(STNode node, string propertyName)
         {
-            PropertyStackPanel?.Children.Clear();
-            var resourceManager = PropertyEditorHelper.GetResourceManager(Node);
-            PropertyStackPanel?.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
-                Node,
-                resourceManager,
-                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
-        }
-
-        public void RebindNodeEvent(CVCommonNode node, string key, Action refresh)
-        {
-            if (Node == null)
-                throw new InvalidOperationException("Cannot bind node event before the active node is set.");
-
-            var handlers = _nodeEventHandlers.GetValue(node, _ => new Dictionary<string, FlowEngineNodeEvent>());
+            var handlers = _propertyChangedHandlers.GetValue(node, _ => new Dictionary<string, PropertyChangedEventHandler>());
             lock (handlers)
             {
-                if (handlers.TryGetValue(key, out var previousHandler))
-                    node.nodeEvent -= previousHandler;
+                if (handlers.TryGetValue(propertyName, out var previousHandler))
+                    node.PropertyChanged -= previousHandler;
 
-                FlowEngineNodeEvent handler = (_, _) => refresh();
-                handlers[key] = handler;
-                node.nodeEvent += handler;
+                PropertyChangedEventHandler handler = (_, e) =>
+                {
+                    if ((string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == propertyName) && ReferenceEquals(STNodeEditor.ActiveNode, node))
+                        Refresh();
+                };
+                handlers[propertyName] = handler;
+                node.PropertyChanged += handler;
             }
         }
 
-        public void AddTemplateCollectionPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase =>
-            Panels.AddTemplateCollectionPanel(updateStorageAction, tempName, signName, itemSource);
+        public void AddTemplateCollectionPanel<T>(string propertyName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase =>
+            Panels.AddTemplateCollectionPanel(propertyName, signName, itemSource);
 
-        public void AddTemplateJsonPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new() =>
-            Panels.AddTemplateJsonPanel(updateStorageAction, tempName, signName, template);
+        public void AddTemplateJsonPanel<T>(string propertyName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new() =>
+            Panels.AddTemplateJsonPanel(propertyName, signName, template);
 
-        public void AddTemplatePanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new() =>
-            Panels.AddTemplatePanel(updateStorageAction, tempName, signName, template);
+        public void AddTemplatePanel<T>(string propertyName, string signName, ITemplate<T> template) where T : ParamModBase, new() =>
+            Panels.AddTemplatePanel(propertyName, signName, template);
     }
 }

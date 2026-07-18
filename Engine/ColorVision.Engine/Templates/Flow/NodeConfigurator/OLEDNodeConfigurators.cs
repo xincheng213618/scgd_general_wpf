@@ -14,10 +14,10 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode)context.Node;
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "AOI", new TemplateOLEDAOI());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.DefectCheckV2, new TemplateFPForRePicGradingV2());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BrightSpotCheck, new TemplateFPForQuardImg());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BlackScreenCheck, new TemplateFPForBlackScreen());
+            context.AddTemplateJsonPanel(nameof(node.TempName), "AOI", new TemplateOLEDAOI());
+            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.DefectCheckV2, new TemplateFPForRePicGradingV2());
+            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.BrightSpotCheck, new TemplateFPForQuardImg());
+            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.BlackScreenCheck, new TemplateFPForBlackScreen());
         }
     }
 
@@ -35,29 +35,29 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 switch (node.Algorithm)
                 {
                     case FlowEngineLib.Algorithm.Algorithm2Type.MTF:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "MTF2", new Jsons.MTF2.TemplateMTF2());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "MTF", new MTF.TemplateMTF());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new Jsons.MTF2.TemplateMTF2());
+                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new MTF.TemplateMTF());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "SFR", new SFR.TemplateSFR());
+                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new SFR.TemplateSFR());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.图像裁剪:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ImageCrop, new TemplateImageCropping());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.JND:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "JND", new JND.TemplateJND());
+                        context.AddTemplatePanel(nameof(node.TempName), "JND", new JND.TemplateJND());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.SFR_FindROI:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "SFR_FindROI", new Jsons.SFRFindROI.TemplateSFRFindROI());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new Jsons.SFRFindROI.TemplateSFRFindROI());
                         break;
                     case FlowEngineLib.Algorithm.Algorithm2Type.十字计算:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.CrossCalc, new Jsons.FindCross.TemplateFindCross());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new Jsons.FindCross.TemplateFindCross());
                         break;
                     default:
                         break;
                 }
             }
-            context.RebindNodeEvent(node, nameof(Algorithm2InNodeConfigurator), Refresh);
+            context.ReconfigureOnPropertyChanged(node, nameof(node.Algorithm));
             Refresh();
         }
     }

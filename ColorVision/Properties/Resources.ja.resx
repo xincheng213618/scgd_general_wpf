@@ -887,4 +887,20 @@
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>ファイル関連付け</value>
   </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve"><value>ColorVision バックグラウンドサービス</value></data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve"><value>処理中…</value></data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve"><value>再確認</value></data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve"><value>再試行</value></data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve"><value>バックグラウンドサービスをインストール</value></data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve"><value>修復して開始</value></data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve"><value>バックグラウンドサービスを更新</value></data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve"><value>ColorVision Service Host を準備しています。インストールまたは修復中に、Windows が管理者の承認を求める場合があります。</value></data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve"><value>ColorVision Service Host のインストール状態と実行状態を確認しています。</value></data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve"><value>バックグラウンドサービスはインストール済みで実行中です（バージョン {0}）。&#xA;&#xA;サービスマネージャーでローカルサービスを安全にインストール、更新、制御できます。</value></data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve"><value>バックグラウンドサービスのパッケージが見つからないため、セットアップを続行できません。&#xA;&#xA;パッケージ：{0}</value></data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve"><value>サービスマネージャーは、管理者権限が必要な操作に ColorVision Service Host を使用します。「バックグラウンドサービスをインストール」を選ぶと、Windows が承認を求めます。&#xA;&#xA;パッケージ：{0}</value></data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve"><value>バックグラウンドサービスはインストール済み（バージョン {0}）ですが、実行されていません。続行する前に修復して開始してください。</value></data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>バックグラウンドサービスの更新または修復が必要です。インストール済み：{0}、パッケージ：{1}。サービスマネージャーを開く前に完了してください。</value></data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>バックグラウンドサービスのパッケージがありません：{0}</value></data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>バックグラウンドサービスの状態を確認できませんでした。再試行してください。</value></data>
 </root>

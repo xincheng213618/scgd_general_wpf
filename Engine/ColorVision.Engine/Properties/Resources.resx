@@ -857,7 +857,7 @@
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>请选择一个预处理动作</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>类型：{0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>重启 {0}</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>显示节点 ID、Token、设备代码等调试属性</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>显示高级属性，如节点 ID、Token、服务名称等</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>启动 {0} 失败：{1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>停止 {0} 失败：{1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>全幅</value></data>

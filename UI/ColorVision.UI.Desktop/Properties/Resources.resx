@@ -847,4 +847,16 @@
   </data>
   <data name="Treemap_SelectValidDir" xml:space="preserve">
     <value>请先选择有效的目录。</value>
-  </data></root>
+  </data>
+  <data name="Wizard_Intro" xml:space="preserve"><value>完成必要的环境检查和服务配置后即可使用 ColorVision。</value></data>
+  <data name="Wizard_StepProgressFormat" xml:space="preserve"><value>步骤 {0} / {1}</value></data>
+  <data name="Wizard_Required" xml:space="preserve"><value>必需</value></data>
+  <data name="Wizard_Ready" xml:space="preserve"><value>已就绪</value></data>
+  <data name="Wizard_Pending" xml:space="preserve"><value>待配置</value></data>
+  <data name="Wizard_Current" xml:space="preserve"><value>当前步骤</value></data>
+  <data name="Wizard_Working" xml:space="preserve"><value>处理中</value></data>
+  <data name="Wizard_NeedsAttention" xml:space="preserve"><value>需要处理</value></data>
+  <data name="Wizard_Progress" xml:space="preserve"><value>初始化进度</value></data>
+  <data name="Wizard_Steps" xml:space="preserve"><value>配置步骤</value></data>
+  <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>请先完成此必需步骤后再继续。</value></data>
+</root>

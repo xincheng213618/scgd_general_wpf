@@ -1,123 +1,415 @@
-﻿<Window x:Class="ColorVision.UI.Desktop.Wizards.WizardWindow"
+<Window x:Class="ColorVision.UI.Desktop.Wizards.WizardWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.UI.Desktop.Wizards"
-        xmlns:ui ="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
-        xmlns:properties ="clr-namespace:ColorVision.UI.Desktop.Properties"
+        xmlns:ui="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:WizardWindowConfig}"
-        Title="{x:Static properties:Resources.SetupWizard}"  Height="550" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.SetupWizard}"
+        Height="620"
+        Width="940"
+        MinHeight="560"
+        MinWidth="820"
+        Background="{DynamicResource GlobalBackground}"
+        Foreground="{DynamicResource GlobalTextBrush}"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Initialized="Window_Initialized">
     <Window.Resources>
-        <local:BooleanToBrushConverter x:Key="BooleanToBrushConverter" />
-        <PathGeometry x:Key="CheckMarkGeometry" Figures="M 1,3 C1,3 1,6 1,6 1,6 4,9 4,9 4,9 9,3 9,3 9,3 9,0 9,0 9,0 4,6 4,6 4,6 1,3 1,3 z" />
-        <PathGeometry x:Key="CrossMarkGeometry">
-            <PathFigure StartPoint="1,1">
-                <BezierSegment Point1="1,1" Point2="3,3" Point3="4,4"/>
-                <BezierSegment Point1="5,5" Point2="7,7" Point3="9,9"/>
-            </PathFigure>
-            <PathFigure StartPoint="9,1">
-                <BezierSegment Point1="9,1" Point2="7,3" Point3="6,4"/>
-                <BezierSegment Point1="5,5" Point2="3,7" Point3="1,9"/>
-            </PathFigure>
-        </PathGeometry>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <Style x:Key="WizardNavigationButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="MinWidth" Value="112"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="Padding" Value="20,8"/>
         </Style>
-        <Style TargetType="{x:Type TextBlock}" >
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
+
+        <Style x:Key="WizardPrimaryButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource ButtonPrimary}">
+            <Setter Property="MinWidth" Value="112"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="Padding" Value="20,8"/>
+        </Style>
+
+        <Style x:Key="WizardStepItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="StepChrome"
+                                Padding="12,11"
+                                CornerRadius="7"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Width="22" Height="22" VerticalAlignment="Top">
+                                    <Border x:Name="StatusRing"
+                                            CornerRadius="11"
+                                            Background="Transparent"
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                            BorderThickness="1.5"/>
+                                    <Ellipse x:Name="CurrentDot"
+                                             Width="6"
+                                             Height="6"
+                                             Fill="White"
+                                             Visibility="Collapsed"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="StatusGlyph"
+                                               Text="&#xE73E;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="12"
+                                               Foreground="White"
+                                               Visibility="Collapsed"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <StackPanel Grid.Column="1" Margin="10,0,8,0">
+                                    <TextBlock x:Name="StepHeader"
+                                               Text="{Binding Header}"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Header}"/>
+                                    <TextBlock x:Name="StepState"
+                                               Text="{x:Static properties:Resources.Wizard_Pending}"
+                                               Margin="0,3,0,0"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </StackPanel>
+
+                                <Border x:Name="RequiredBadge"
+                                        Grid.Column="2"
+                                        Padding="7,2"
+                                        CornerRadius="9"
+                                        Background="{DynamicResource GlobalBorderBrush1}"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Top">
+                                    <TextBlock Text="{x:Static properties:Resources.Wizard_Required}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsRequired}" Value="True">
+                                <Setter TargetName="RequiredBadge" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding ConfigurationStatus}" Value="True">
+                                <Setter TargetName="StatusRing" Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                                <Setter TargetName="StatusRing" Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+                                <Setter TargetName="StatusGlyph" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="StepState" Property="Text" Value="{x:Static properties:Resources.Wizard_Ready}"/>
+                                <Setter TargetName="StepState" Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding ConfigurationStatus}" Value="False"/>
+                                    <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource TemplatedParent}}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="StatusRing" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="StatusRing" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="CurrentDot" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="StepState" Property="Text" Value="{x:Static properties:Resources.Wizard_Current}"/>
+                                <Setter TargetName="StepState" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                <Setter TargetName="StatusRing" Property="Background" Value="{DynamicResource WarningBrush}"/>
+                                <Setter TargetName="StatusRing" Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
+                                <Setter TargetName="StatusGlyph" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="CurrentDot" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="StepState" Property="Text" Value="{x:Static properties:Resources.Wizard_Working}"/>
+                                <Setter TargetName="StepState" Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasError}" Value="True">
+                                <Setter TargetName="StatusRing" Property="Background" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="StatusRing" Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="StatusGlyph" Property="Text" Value="&#xEA39;"/>
+                                <Setter TargetName="StatusGlyph" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="CurrentDot" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="StepState" Property="Text" Value="{x:Static properties:Resources.Wizard_NeedsAttention}"/>
+                                <Setter TargetName="StepState" Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                            </DataTrigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="StepChrome" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                <Setter TargetName="StepChrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
-    <Grid>
+
+    <Grid TextElement.Foreground="{DynamicResource GlobalTextBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- Step indicator and progress bar -->
-        <Grid Grid.Row="0" Margin="10,10,10,5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <ProgressBar x:Name="WizardProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0"/>
-        </Grid>
-        
-        <Grid Grid.Row="1" Visibility="{Binding IsList,Converter={StaticResource bool2VisibilityConverter}}">
+
+        <Border Grid.Row="0"
+                Padding="24,20,24,16"
+                BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{x:Static properties:Resources.SetupWizard}"
+                                   FontSize="23"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Static properties:Resources.Wizard_Intro}"
+                                   Margin="0,6,0,0"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    </StackPanel>
+                    <TextBlock x:Name="StepProgressText"
+                               Grid.Column="1"
+                               Margin="24,2,0,0"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               VerticalAlignment="Top"/>
+                </Grid>
+                <ProgressBar x:Name="WizardProgress"
+                             Grid.Row="1"
+                             Height="4"
+                             Margin="0,16,0,0"
+                             Minimum="0"
+                             Maximum="100"
+                             Value="0"
+                             AutomationProperties.Name="{x:Static properties:Resources.Wizard_Progress}"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="24,20">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="236"/>
+                <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            
-            <!-- Step list on the left (for overview) -->
-            <ListView x:Name="ListWizard" Background="Transparent" BorderThickness="0" Grid.Column="0" Padding="5,0,5,5" IsEnabled="False">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Width="180">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type ui:IWizardStep}">
-                                    <Grid>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Grid DockPanel.Dock="Right" Margin="0,0,5,0">
-                                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" Height="10" Width="10" HorizontalAlignment="Center" IsChecked="{Binding ConfigurationStatus,Mode=OneWay}" IsEnabled="False" />
-                                                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
-                                            </Grid>
-                                            <TextBlock Text="{Binding Header}"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
 
-            <!-- Current step content on the right -->
-            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,5,5,5" d:DataContext="{d:DesignInstance ui:IWizardStep}" Grid.Column="1">
-                <Grid Margin="5">
+            <ListBox x:Name="ListWizard"
+                     Grid.Column="0"
+                     Padding="0"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     IsHitTestVisible="False"
+                     Focusable="False"
+                     ItemContainerStyle="{StaticResource WizardStepItemStyle}"
+                     AutomationProperties.Name="{x:Static properties:Resources.Wizard_Steps}">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+            </ListBox>
+
+            <Border x:Name="BorderContent"
+                    Grid.Column="2"
+                    Padding="28"
+                    CornerRadius="9"
+                    Background="{DynamicResource ButtonBackground}"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}"
+                    BorderThickness="1"
+                    d:DataContext="{d:DesignInstance ui:IWizardStep}">
+                <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{Binding Header}" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" FontWeight="Bold"/>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <StackPanel>
-                            <TextBox x:Name="TextBoxMsg" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Description,Mode=OneWay}" VerticalContentAlignment="Top" Background="Transparent" BorderThickness="0" IsReadOnly="True" Margin="5"/>
+                            <TextBlock x:Name="CurrentStepTitle"
+                                       Text="{Binding Header}"
+                                       Focusable="True"
+                                       FontSize="25"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="None"
+                                       AutomationProperties.LiveSetting="Polite"/>
+                            <TextBlock Margin="0,7,0,0"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Text" Value="{x:Static properties:Resources.Wizard_Pending}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ConfigurationStatus}" Value="True">
+                                                <Setter Property="Text" Value="{x:Static properties:Resources.Wizard_Ready}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                                <Setter Property="Text" Value="{x:Static properties:Resources.Wizard_Working}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding HasError}" Value="True">
+                                                <Setter Property="Text" Value="{x:Static properties:Resources.Wizard_NeedsAttention}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
+
+                        <Border Grid.Column="1"
+                                Margin="16,2,0,0"
+                                Padding="9,4"
+                                CornerRadius="11"
+                                Background="{DynamicResource GlobalBorderBrush1}"
+                                Visibility="{Binding IsRequired, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                VerticalAlignment="Top">
+                            <TextBlock Text="{x:Static properties:Resources.Wizard_Required}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        </Border>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1"
+                                  Margin="0,24,0,20"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Focusable="False">
+                        <TextBlock Text="{Binding Description, Mode=OneWay}"
+                                   FontSize="15"
+                                   LineHeight="23"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="None"
+                                   VerticalAlignment="Top"/>
                     </ScrollViewer>
-                    <Button Grid.Row="2" Content="{x:Static properties:Resources.Wizard_Configure}" Width="120" Height="40" Command="{Binding Command}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10"/>
+
+                    <Border Grid.Row="2"
+                            Margin="0,0,0,16"
+                            Padding="12,10"
+                            CornerRadius="6"
+                            BorderBrush="{DynamicResource DangerBrush}"
+                            BorderThickness="1"
+                            Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <DockPanel LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="&#xEA39;"
+                                       Margin="0,0,9,0"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="15"
+                                       Foreground="{DynamicResource DangerBrush}"
+                                       VerticalAlignment="Top"/>
+                            <TextBlock Text="{Binding ErrorMessage}"
+                                       Foreground="{DynamicResource DangerBrush}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="None"/>
+                        </DockPanel>
+                    </Border>
+
+                    <Grid Grid.Row="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnConfigure"
+                                Grid.Column="0"
+                                MinWidth="148"
+                                MinHeight="40"
+                                Padding="20,8"
+                                Command="{Binding Command}">
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonPrimary}">
+                                    <Setter Property="Content" Value="{Binding ActionText}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActionText}" Value="">
+                                            <Setter Property="Content" Value="{x:Static properties:Resources.Wizard_Configure}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <ProgressBar Grid.Column="2"
+                                     Width="120"
+                                     Height="4"
+                                     IsIndeterminate="True"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                     VerticalAlignment="Center"
+                                     AutomationProperties.Name="{x:Static properties:Resources.Wizard_Working}"/>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
 
-        <!-- Navigation buttons -->
-        <Grid Grid.Row="2" Margin="5,0,5,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="BtnPrevious" Grid.Column="1" Content="{x:Static properties:Resources.Previous}" Width="100" Height="30" Margin="5,0" Click="Previous_Click"/>
-            <Button x:Name="BtnNext" Grid.Column="2" Content="{x:Static properties:Resources.Next}" Width="100" Height="30" Margin="5,0" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Next_Click"/>
-            <Button x:Name="BtnFinish" Grid.Column="3" Content="{x:Static properties:Resources.Finish}" Width="100" Height="30" Margin="5,0" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="ConfigurationComplete_Click" Visibility="Collapsed"/>
-        </Grid>
+        <Border Grid.Row="2"
+                Padding="24,14"
+                BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="RequiredStepHint"
+                           Margin="0,0,20,0"
+                           Text="{x:Static properties:Resources.Wizard_RequiredStepPrompt}"
+                           FontSize="12"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+                <Button x:Name="BtnPrevious"
+                        Grid.Column="1"
+                        Margin="0,0,10,0"
+                        Content="{x:Static properties:Resources.Previous}"
+                        Style="{StaticResource WizardNavigationButtonStyle}"
+                        Click="Previous_Click"/>
+                <Button x:Name="BtnNext"
+                        Grid.Column="2"
+                        Content="{x:Static properties:Resources.Next}"
+                        Style="{StaticResource WizardPrimaryButtonStyle}"
+                        IsDefault="True"
+                        Click="Next_Click"/>
+                <Button x:Name="BtnFinish"
+                        Grid.Column="3"
+                        Content="{x:Static properties:Resources.Finish}"
+                        Style="{StaticResource WizardPrimaryButtonStyle}"
+                        IsDefault="True"
+                        Click="ConfigurationComplete_Click"
+                        Visibility="Collapsed"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

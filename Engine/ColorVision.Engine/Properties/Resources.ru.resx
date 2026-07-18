@@ -3235,7 +3235,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>Выберите действие предварительной обработки</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>Тип: {0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>Перезапустить {0}</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>Показать отладочные свойства: ID узла, токен, код устройства и другие</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>Показать дополнительные свойства: ID узла, токен, имя службы и другие</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>Не удалось запустить {0}: {1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>Не удалось остановить {0}: {1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>Полный кадр</value></data>

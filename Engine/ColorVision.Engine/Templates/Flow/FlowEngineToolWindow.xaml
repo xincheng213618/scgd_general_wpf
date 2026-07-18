@@ -55,17 +55,7 @@
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
             <Grid x:Name="PropertyEditorPanel" Grid.Column="2" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <DockPanel Grid.Row="0">
-                    <Button DockPanel.Dock="Right" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" Width="30" Height="28"
-                            Click="PropertyEditorClose_Click" Background="Transparent" BorderThickness="0"/>
-                </DockPanel>
-
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel x:Name="SignStackPanelContainer" Orientation="Vertical" Margin="5"/>
                 </ScrollViewer>
             </Grid>

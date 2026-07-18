@@ -887,4 +887,20 @@
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>Ассоциация файлов</value>
   </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve"><value>Фоновая служба ColorVision</value></data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve"><value>Выполняется…</value></data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve"><value>Проверить снова</value></data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve"><value>Повторить</value></data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve"><value>Установить фоновую службу</value></data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve"><value>Исправить и запустить</value></data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve"><value>Обновить фоновую службу</value></data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve"><value>Подготовка ColorVision Service Host. Во время установки или исправления Windows может запросить разрешение администратора.</value></data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve"><value>Проверка установки и состояния ColorVision Service Host.</value></data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve"><value>Фоновая служба установлена и работает (версия {0}).&#xA;&#xA;Теперь диспетчер служб может безопасно устанавливать, обновлять и управлять локальными службами.</value></data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve"><value>Пакет фоновой службы не найден, поэтому настройку нельзя продолжить.&#xA;&#xA;Пакет: {0}</value></data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve"><value>Диспетчер служб использует ColorVision Service Host для операций, требующих прав администратора. После выбора «Установить фоновую службу» Windows запросит разрешение.&#xA;&#xA;Пакет: {0}</value></data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve"><value>Фоновая служба установлена (версия {0}), но не запущена. Исправьте и запустите её перед продолжением.</value></data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>Фоновую службу необходимо обновить или исправить. Установлено: {0}; пакет: {1}. Завершите этот шаг перед открытием диспетчера служб.</value></data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>Пакет фоновой службы отсутствует: {0}</value></data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>Не удалось подтвердить состояние фоновой службы. Повторите попытку.</value></data>
 </root>
