@@ -64,9 +64,14 @@ namespace ColorVision.UI
         public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
         {
             var manager = DockViewManager.GetInstance();
-            manager.AddView(viewControl);
             if (!string.IsNullOrEmpty(title))
-                manager.ViewTitles[viewControl] = title;
+                manager.SetViewTitle(viewControl, title);
+            manager.AddView(viewControl);
+
+            if (userControl is IDisPlayControl disPlayControl)
+            {
+                disPlayControl.Selected += (s, e) => manager.SelectView(viewControl);
+            }
 
             userControl.PreviewMouseDown += (s, e) =>
             {
@@ -140,16 +145,7 @@ namespace ColorVision.UI
             RebuildPanel();
 
             if (IDisPlayControls.Count > 0)
-            {
-                int index = DisPlayManagerConfig.Instance.LastSelectIndex;
-                if (index < 0 || index >= IDisPlayControls.Count)
-                {
-                    index = 0;
-                    DisPlayManagerConfig.Instance.LastSelectIndex = index;
-                }
-
-                SelectControl(IDisPlayControls[index]);
-            }
+                RestoreLastSelectedControl();
         }
 
         private void IDisPlayControls_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -183,6 +179,22 @@ namespace ColorVision.UI
             }
 
             RestoreControl();
+            RestoreLastSelectedControl();
+        }
+
+        private void RestoreLastSelectedControl()
+        {
+            if (IDisPlayControls.Count == 0)
+                return;
+
+            int index = DisPlayManagerConfig.Instance.LastSelectIndex;
+            if (index < 0 || index >= IDisPlayControls.Count)
+            {
+                index = 0;
+                DisPlayManagerConfig.Instance.LastSelectIndex = index;
+            }
+
+            SelectControl(IDisPlayControls[index]);
         }
 
         public void SelectControl(IDisPlayControl disPlayControl)
