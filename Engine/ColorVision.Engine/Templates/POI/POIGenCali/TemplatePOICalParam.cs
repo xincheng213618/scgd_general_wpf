@@ -21,7 +21,12 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         {
             EditPoiGenCali.SetParam(TemplateParams[index].Value);
         }
-        public EditPoiGenCali EditPoiGenCali { get; set; } = new EditPoiGenCali();
+        private EditPoiGenCali? _editPoiGenCali;
+        public EditPoiGenCali EditPoiGenCali
+        {
+            get => _editPoiGenCali ??= new EditPoiGenCali();
+            set => _editPoiGenCali = value;
+        }
 
         public override UserControl GetUserControl()
         {

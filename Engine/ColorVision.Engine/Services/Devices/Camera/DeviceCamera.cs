@@ -92,7 +92,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
 
-            this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
+            this.ContextMenu.Items.Add(new MenuItem
+            {
+                Header = "Log",
+                Command = new RelayCommand(_ => FlowEngineManager.GetInstance().WindowsServiceX64.OpenLog())
+            });
             this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
 
 
@@ -170,7 +174,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        public VideoReader CameraVideoControl { get; set; } = new VideoReader();
+        private VideoReader? _cameraVideoControl;
+        public VideoReader CameraVideoControl
+        {
+            get => _cameraVideoControl ??= new VideoReader();
+            set => _cameraVideoControl = value;
+        }
 
         public override void RestartRCService()
         {
@@ -383,6 +392,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             this.PhyCamera?.ReleaseDeviceCamera();
 
+            _cameraVideoControl?.Dispose();
             DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);

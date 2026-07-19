@@ -22,7 +22,12 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
         {
             EditPOIFilters.SetParam(TemplateParams[index].Value);
         }
-        public EditPoiFilters EditPOIFilters { get; set; } = new EditPoiFilters();
+        private EditPoiFilters? _editPOIFilters;
+        public EditPoiFilters EditPOIFilters
+        {
+            get => _editPOIFilters ??= new EditPoiFilters();
+            set => _editPOIFilters = value;
+        }
 
         public override UserControl GetUserControl()
         {

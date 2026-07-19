@@ -19,7 +19,12 @@ namespace ColorVision.Engine.Templates.Validate
             IsUserControl = true;
         }
 
-        private DicEditComply DicEditComply { get; set; } = new DicEditComply();
+        private DicEditComply? _dicEditComply;
+        private DicEditComply DicEditComply
+        {
+            get => _dicEditComply ??= new DicEditComply();
+            set => _dicEditComply = value;
+        }
 
         public override UserControl GetUserControl() => DicEditComply;
 

@@ -3,6 +3,7 @@ using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
 using log4net;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -458,8 +459,10 @@ namespace ColorVision.Solution.Workspace
 
             try
             {
-                content = registration.GetForLayout(ex =>
-                    log.Warn($"Failed to create deferred dock content '{contentId}'.", ex));
+                content = registration.GetForLayout(
+                    elapsedMilliseconds => log.Info(
+                        $"Deferred dock content '{contentId}' materialized in {elapsedMilliseconds} ms after layout restore."),
+                    ex => log.Warn($"Failed to create deferred dock content '{contentId}'.", ex));
                 return true;
             }
             catch (Exception ex)
@@ -669,9 +672,9 @@ namespace ColorVision.Solution.Workspace
 
         public object GetOrCreate() => _content.Value;
 
-        public object GetForLayout(Action<Exception> materializationFailed) =>
+        public object GetForLayout(Action<long> materialized, Action<Exception> materializationFailed) =>
             _isDeferred
-                ? new DeferredDockContent(GetOrCreate, materializationFailed)
+                ? new DeferredDockContent(GetOrCreate, materialized, materializationFailed)
                 : GetOrCreate();
 
         public static DockContentRegistration FromContent(object content)
@@ -698,13 +701,18 @@ namespace ColorVision.Solution.Workspace
     internal sealed class DeferredDockContent : ContentControl
     {
         private readonly Func<object> _contentFactory;
+        private readonly Action<long> _materialized;
         private readonly Action<Exception> _materializationFailed;
         private bool _isScheduled;
         private bool _materializationAttempted;
 
-        public DeferredDockContent(Func<object> contentFactory, Action<Exception> materializationFailed)
+        public DeferredDockContent(
+            Func<object> contentFactory,
+            Action<long> materialized,
+            Action<Exception> materializationFailed)
         {
             _contentFactory = contentFactory;
+            _materialized = materialized;
             _materializationFailed = materializationFailed;
             Loaded += (_, _) => ScheduleMaterialization();
             IsVisibleChanged += (_, _) => ScheduleMaterialization();
@@ -716,12 +724,16 @@ namespace ColorVision.Solution.Workspace
                 return Content;
 
             _materializationAttempted = true;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
                 Content = _contentFactory();
+                stopwatch.Stop();
+                _materialized(stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
                 _materializationFailed(ex);
             }
 

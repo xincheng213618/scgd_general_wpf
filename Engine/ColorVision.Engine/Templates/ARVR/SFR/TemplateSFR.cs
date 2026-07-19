@@ -20,7 +20,12 @@ namespace ColorVision.Engine.Templates.SFR
         {
             EditSFR.SetParam(TemplateParams[index].Value);
         }
-        public EditSFR EditSFR { get; set; } = new EditSFR();
+        private EditSFR? _editSFR;
+        public EditSFR EditSFR
+        {
+            get => _editSFR ??= new EditSFR();
+            set => _editSFR = value;
+        }
 
         public override UserControl GetUserControl()
         {

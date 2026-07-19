@@ -58,7 +58,7 @@ public class DockContentRegistrationTests
                 });
 
                 var deferredContent = Assert.IsType<DeferredDockContent>(
-                    registration.GetForLayout(ex => ExceptionDispatchInfo.Capture(ex).Throw()));
+                    registration.GetForLayout(_ => { }, ex => ExceptionDispatchInfo.Capture(ex).Throw()));
                 Assert.Equal(0, invocationCount);
 
                 object? first = deferredContent.Materialize();
@@ -88,7 +88,7 @@ public class DockContentRegistrationTests
         object content = new();
         DockContentRegistration registration = DockContentRegistration.FromContent(content);
 
-        object layoutContent = registration.GetForLayout(_ => { });
+        object layoutContent = registration.GetForLayout(_ => { }, _ => { });
 
         Assert.Same(content, layoutContent);
     }
@@ -131,6 +131,61 @@ public class DockContentRegistrationTests
                 Assert.True(layoutManager.IsPanelVisible("lazy-panel"));
                 LayoutAnchorable anchorable = Assert.Single(dockingManager.Layout.Descendents().OfType<LayoutAnchorable>());
                 Assert.Same(content, anchorable.Content);
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (failure != null)
+            ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    [Fact]
+    public void ShowPanel_MaterializesContentAlreadyRestoredAsDeferred()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                int invocationCount = 0;
+                var content = new Border();
+                var deferredContent = new DeferredDockContent(
+                    () =>
+                    {
+                        invocationCount++;
+                        return content;
+                    },
+                    _ => { },
+                    ex => ExceptionDispatchInfo.Capture(ex).Throw());
+                var anchorable = new LayoutAnchorable
+                {
+                    ContentId = "lazy-panel",
+                    Content = deferredContent,
+                };
+                var pane = new LayoutAnchorablePane();
+                pane.Children.Add(anchorable);
+                var paneGroup = new LayoutAnchorablePaneGroup();
+                paneGroup.Children.Add(pane);
+                var rootPanel = new LayoutPanel();
+                rootPanel.Children.Add(paneGroup);
+                var dockingManager = new DockingManager
+                {
+                    Layout = new LayoutRoot { RootPanel = rootPanel }
+                };
+                var layoutManager = new DockLayoutManager(dockingManager);
+
+                layoutManager.ShowPanel("lazy-panel");
+                layoutManager.ShowPanel("lazy-panel");
+
+                Assert.Equal(1, invocationCount);
+                Assert.Same(content, deferredContent.Content);
             }
             catch (Exception ex)
             {

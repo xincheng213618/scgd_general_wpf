@@ -30,13 +30,33 @@ namespace ColorVision.Engine.Services
 
             if (MySqlControl.GetInstance().IsConnect)
             {
+                Stopwatch totalStopwatch = Stopwatch.StartNew();
+                Stopwatch phaseStopwatch = new();
+                long physicalCameraMilliseconds = 0;
+                long serviceHierarchyMilliseconds = 0;
+                long pendingUpdatesMilliseconds = 0;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    phaseStopwatch.Restart();
                     PhyCameraManager.GetInstance();
+                    physicalCameraMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+
+                    phaseStopwatch.Restart();
                     ServiceManager serviceManager = ServiceManager.GetInstance();
+                    serviceHierarchyMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+
+                    phaseStopwatch.Restart();
                     MqttRCService.GetInstance().ApplyPendingServiceUpdates(serviceManager);
+                    pendingUpdatesMilliseconds = phaseStopwatch.ElapsedMilliseconds;
                 });
+
+                phaseStopwatch.Restart();
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+                long cameraResourceMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+                totalStopwatch.Stop();
+                log.Info($"Service initialization completed. PhysicalCameras={physicalCameraMilliseconds}ms, " +
+                    $"Hierarchy={serviceHierarchyMilliseconds}ms, PendingUpdates={pendingUpdatesMilliseconds}ms, " +
+                    $"CameraResource={cameraResourceMilliseconds}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
             }
             else
             {

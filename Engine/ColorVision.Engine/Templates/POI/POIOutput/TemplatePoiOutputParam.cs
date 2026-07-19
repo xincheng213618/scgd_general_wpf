@@ -22,7 +22,12 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
             EditControl.SetParam(TemplateParams[index].Value);
         }
 
-        public EditPoiOutput EditControl { get; set; } = new EditPoiOutput();
+        private EditPoiOutput? _editControl;
+        public EditPoiOutput EditControl
+        {
+            get => _editControl ??= new EditPoiOutput();
+            set => _editControl = value;
+        }
         public override UserControl GetUserControl()
         {
             return EditControl;
