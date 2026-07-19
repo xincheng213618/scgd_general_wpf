@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from Scripts.build import validate_installer_runtime_dlls
+from Scripts.build import validate_installer_runtime_dlls, validate_runtime_copy_integrity
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 
 
@@ -36,6 +36,36 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_runtime_copy_integrity_rejects_a_mismatched_dll(self) -> None:
+        solution_root = self.root / "source"
+        project_output = solution_root / "Module" / "bin" / "Module.dll"
+        project_output.parent.mkdir(parents=True)
+        project_output.write_bytes(b"valid module")
+        runtime_output = self.runtime_directory / "Module.dll"
+        runtime_output.write_bytes(b"corrupt module")
+
+        self.assertFalse(validate_runtime_copy_integrity(
+            solution_root,
+            self.runtime_directory,
+            project_outputs=(("Module/bin/Module.dll", "Module.dll"),),
+            report=lambda _: None,
+        ))
+
+    def test_runtime_copy_integrity_accepts_an_exact_copy(self) -> None:
+        solution_root = self.root / "source"
+        project_output = solution_root / "Module" / "bin" / "Module.dll"
+        project_output.parent.mkdir(parents=True)
+        project_output.write_bytes(b"valid module")
+        runtime_output = self.runtime_directory / "Module.dll"
+        runtime_output.write_bytes(project_output.read_bytes())
+
+        self.assertTrue(validate_runtime_copy_integrity(
+            solution_root,
+            self.runtime_directory,
+            project_outputs=(("Module/bin/Module.dll", "Module.dll"),),
+            report=lambda _: None,
+        ))
 
     def _write_aip(self, service_host_paths: tuple[str, ...]) -> Path:
         source_paths = ["C:\\build\\ColorVision.UI.dll", *[f"C:\\build\\{path}" for path in service_host_paths]]

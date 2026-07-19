@@ -250,17 +250,7 @@ namespace ColorVision.UI.Menus
 
                 foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                 {
-                    Type[] types;
-                    try
-                    {
-                        types = assembly.GetTypes();
-                    }
-                    catch (ReflectionTypeLoadException ex)
-                    {
-                        types = ex.Types.Where(t => t != null).ToArray();
-                    }
-
-                    foreach (var t in types)
+                    foreach (var t in AssemblyHandler.GetInstance().GetTypes(assembly))
                     {
                         if (!IsConcreteMenuCandidate(t)) continue;
 

@@ -17,10 +17,20 @@ namespace ColorVision.UI.Plugins
         public static void LoadPlugins()
         {
             LoadPlugins("Plugins");
-            AssemblyHandler.GetInstance().RefreshAssemblies();
+        }
+
+        public static void LoadPlugins(ModuleCatalog moduleCatalog)
+        {
+            ArgumentNullException.ThrowIfNull(moduleCatalog);
+            LoadPlugins("Plugins", moduleCatalog);
         }
 
         public static void LoadPlugins(string path)
+        {
+            LoadPlugins(path, null);
+        }
+
+        private static void LoadPlugins(string path, ModuleCatalog? moduleCatalog)
         {
             if (!Directory.Exists(path))
             {
@@ -165,6 +175,7 @@ namespace ColorVision.UI.Plugins
                             log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));
 
                             pluginInfo.Assembly = Assembly.LoadFrom(dllPath);
+                            moduleCatalog?.AddPlugin(manifest.Id, pluginInfo.Assembly);
 
                             var assembly = pluginInfo.Assembly;
 
@@ -191,7 +202,8 @@ namespace ColorVision.UI.Plugins
                         dllPath = Path.Combine(directory, dirName + ".dll");
                         if (File.Exists(dllPath))
                         {
-                            Assembly.LoadFrom(dllPath);
+                            Assembly assembly = Assembly.LoadFrom(dllPath);
+                            moduleCatalog?.AddPlugin(dirName, assembly);
                             log.Info(string.Format(Properties.Resources.LoadedPluginWithoutManifest, dllPath));
                         }
                         else
@@ -208,7 +220,7 @@ namespace ColorVision.UI.Plugins
             }
 
             pluginConfig.Save();
-
+            AssemblyHandler.GetInstance().RefreshAssemblies();
         }
     }
 }

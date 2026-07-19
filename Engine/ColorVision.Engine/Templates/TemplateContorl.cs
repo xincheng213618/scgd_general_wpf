@@ -58,21 +58,15 @@ namespace ColorVision.Engine.Templates
         private static async void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
-            foreach (var assembly in Application.Current.GetAssemblies())
+            foreach (var templateLoader in AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
+                try
                 {
-                    try
-                    {
-                        if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
-                        {
-                            iITemplateLoad.Load();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
+                    templateLoader.Load();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
                 }
             }
         }

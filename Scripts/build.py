@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import os
 import re
 import shutil
@@ -57,6 +58,20 @@ VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
 INSTALLER_EXTENSIONS = {".exe", ".msi", ".zip", ".rar"}
 DEFAULT_PROJECT_NAME = "ColorVision"
 
+CRITICAL_RUNTIME_PROJECT_OUTPUTS = (
+    ("Engine/ColorVision.Engine/bin/x64/Release/net10.0-windows/ColorVision.Engine.dll", "ColorVision.Engine.dll"),
+    ("UI/ColorVision.Common/bin/x64/Release/net10.0-windows7.0/ColorVision.Common.dll", "ColorVision.Common.dll"),
+    ("UI/ColorVision.UI/bin/x64/Release/net10.0-windows7.0/ColorVision.UI.dll", "ColorVision.UI.dll"),
+    ("UI/ColorVision.Rbac/bin/x64/Release/net10.0-windows7.0/ColorVision.Rbac.dll", "ColorVision.Rbac.dll"),
+    ("UI/ColorVision.Database/bin/x64/Release/net10.0-windows7.0/ColorVision.Database.dll", "ColorVision.Database.dll"),
+    ("UI/ColorVision.Solution/bin/x64/Release/net10.0-windows7.0/ColorVision.Solution.dll", "ColorVision.Solution.dll"),
+    ("UI/ColorVision.ImageEditor/bin/x64/Release/net10.0-windows7.0/ColorVision.ImageEditor.dll", "ColorVision.ImageEditor.dll"),
+    ("UI/ColorVision.ImageTools/bin/x64/Release/net10.0-windows7.0/ColorVision.ImageTools.dll", "ColorVision.ImageTools.dll"),
+    ("UI/ColorVision.Scheduler/bin/x64/Release/net10.0-windows7.0/ColorVision.Scheduler.dll", "ColorVision.Scheduler.dll"),
+    ("UI/ColorVision.SocketProtocol/bin/x64/Release/net10.0-windows7.0/ColorVision.SocketProtocol.dll", "ColorVision.SocketProtocol.dll"),
+    ("UI/ColorVision.UI.Desktop/bin/x64/Release/net10.0-windows7.0/ColorVision.UI.Desktop.dll", "ColorVision.UI.Desktop.dll"),
+)
+
 
 DEFAULT_READ_TIMEOUT = max(DEFAULT_READ_TIMEOUT, 1800)
 DEFAULT_MSBUILD_CANDIDATES = (
@@ -77,6 +92,38 @@ class ProjectConfig:
     setup_files_dir: Path
     changelog_src: Path
     wechat_target_directory: Path
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file_handle:
+        while chunk := file_handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_runtime_copy_integrity(
+    solution_root: str | Path,
+    runtime_directory: str | Path,
+    *,
+    project_outputs: tuple[tuple[str, str], ...] = CRITICAL_RUNTIME_PROJECT_OUTPUTS,
+    report: Callable[[str], None] = print,
+) -> bool:
+    solution_path = Path(solution_root)
+    runtime_path = Path(runtime_directory)
+
+    for project_relative_path, runtime_name in project_outputs:
+        project_output = solution_path / project_relative_path
+        runtime_output = runtime_path / runtime_name
+        if not project_output.is_file() or not runtime_output.is_file():
+            report(f"Runtime integrity input is missing: {project_output} -> {runtime_output}")
+            return False
+        if project_output.stat().st_size != runtime_output.stat().st_size or sha256_file(project_output) != sha256_file(runtime_output):
+            report(f"Runtime DLL differs from its project output: {project_output} -> {runtime_output}")
+            return False
+
+    report(f"Verified {len(project_outputs)} runtime DLL copies against their project outputs.")
+    return True
 
 
 def validate_installer_runtime_dlls(
@@ -132,6 +179,8 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
         )
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
+        if not validate_runtime_copy_integrity(solution_path.parent, runtime_directory):
+            return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False
 
