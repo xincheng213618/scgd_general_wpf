@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -88,6 +89,37 @@ class CacheManagerTests(unittest.TestCase):
         ts = now_ts()
         self.assertIsInstance(ts, int)
         self.assertGreater(ts, 1_700_000_000)
+
+    def test_backup_db_captures_committed_wal_content(self):
+        writer = self.cache.get_db()
+        try:
+            writer.execute("PRAGMA wal_autocheckpoint=0")
+            writer.execute("CREATE TABLE backup_probe (value TEXT NOT NULL)")
+            writer.execute("INSERT INTO backup_probe (value) VALUES ('committed-in-wal')")
+            writer.commit()
+
+            backup_path = Path(self.tmp.name) / "backup.db"
+            self.assertTrue(self.cache.backup_db(backup_path))
+        finally:
+            writer.close()
+
+        backup = sqlite3.connect(str(backup_path))
+        try:
+            value = backup.execute("SELECT value FROM backup_probe").fetchone()[0]
+            integrity = backup.execute("PRAGMA quick_check").fetchone()[0]
+        finally:
+            backup.close()
+
+        self.assertEqual(value, "committed-in-wal")
+        self.assertEqual(integrity, "ok")
+
+    def test_backup_db_rejects_overwriting_source_database(self):
+        self.assertFalse(self.cache.backup_db(self.db_path))
+        db = self.cache.get_db()
+        try:
+            self.assertEqual(db.execute("PRAGMA quick_check").fetchone()[0], "ok")
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":

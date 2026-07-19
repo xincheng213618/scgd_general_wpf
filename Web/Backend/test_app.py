@@ -56,6 +56,12 @@ class MarketplaceAppTests(unittest.TestCase):
         token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
         return {"Authorization": f"Basic {token}"}
 
+    def test_missing_frontend_asset_returns_404_instead_of_spa_html(self):
+        response = self.client.get("/assets/removed-build-chunk.js")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn(b'<div id="root">', response.data)
+
     def _create_plugin(self, plugin_id: str = "DemoPlugin", version: str = "1.0.0"):
         plugin_dir = self.storage / "Plugins" / plugin_id
         plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -270,6 +276,72 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("ColorVision 1.2.0.1", titles)
         self.assertIn("当前版本", categories)
         self.assertIn("目录", categories)
+
+    def test_site_home_compact_api_returns_bounded_contract(self):
+        self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
+        self._create_app_release("1.1.0.1", in_history=True, suffix=".zip", mtime=1_774_000_000)
+
+        response = self.client.get("/api/site/home?view=compact")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(
+            set(payload),
+            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs"},
+        )
+        self.assertNotIn("archive_recent", payload["app_info"])
+        self.assertNotIn("archive_timeline_groups", payload["app_info"])
+
+    def test_site_releases_compact_api_paginates_filtered_archive_items(self):
+        for fix in range(21):
+            self._create_app_release(f"1.1.0.{fix}", in_history=True, suffix=".zip", mtime=1_774_000_000 + fix)
+
+        response = self.client.get("/api/site/releases?view=compact&page=2&page_size=20&kind=ZIP")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["archive_visible_item_count"], 21)
+        self.assertEqual(payload["archive_page"], 2)
+        self.assertEqual(payload["archive_page_size"], 20)
+        self.assertEqual(payload["archive_total_pages"], 2)
+        self.assertEqual(payload["archive_page_item_count"], 1)
+        self.assertTrue(payload["archive_has_previous"])
+        self.assertFalse(payload["archive_has_next"])
+        self.assertTrue(payload["archive_visible_groups"])
+        self.assertTrue(all("items" not in group for group in payload["archive_visible_groups"]))
+        self.assertNotIn("archived_releases", payload["app_info"])
+
+    def test_site_releases_compact_api_clamps_page_parameters(self):
+        minimum = self.client.get(
+            "/api/site/releases?view=compact&page=0&page_size=1&android_page=0&android_page_size=1"
+        ).get_json()
+        maximum = self.client.get(
+            "/api/site/releases?view=compact&page_size=999&android_page_size=999"
+        ).get_json()
+
+        self.assertEqual(minimum["archive_page"], 1)
+        self.assertEqual(minimum["archive_page_size"], 20)
+        self.assertEqual(minimum["android_page"], 1)
+        self.assertEqual(minimum["android_page_size"], 20)
+        self.assertEqual(maximum["archive_page_size"], 200)
+        self.assertEqual(maximum["android_page_size"], 200)
+
+    def test_site_releases_compact_api_rejects_invalid_android_pagination(self):
+        response = self.client.get(
+            "/api/site/releases?view=compact&android_page=bad&android_page_size=20"
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_site_changelog_compact_api_omits_raw_changelog_and_timeline(self):
+        self._create_changelog("# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n")
+
+        response = self.client.get("/api/site/changelog?view=compact")
+
+        self.assertEqual(response.status_code, 200)
+        app_info = response.get_json()["app_info"]
+        self.assertEqual(set(app_info), {"latest_version", "changelog_html"})
+        self.assertIn("新增插件市场", app_info["changelog_html"])
 
     def test_public_routes_serve_react_shell_without_template_content(self):
         self._create_changelog(

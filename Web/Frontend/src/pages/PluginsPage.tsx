@@ -25,6 +25,12 @@ export function PluginsPage() {
 
   useEffect(() => {
     let mounted = true
+    const controller = new AbortController()
+    queueMicrotask(() => {
+      if (!mounted) return
+      setLoading(true)
+      setError('')
+    })
     const nextParams = new URLSearchParams(searchKey)
     const requestQuery = {
       keyword: nextParams.get('q') || '',
@@ -34,7 +40,7 @@ export function PluginsPage() {
       page: Number(nextParams.get('page') || 1),
       pageSize: Number(nextParams.get('pageSize') || 12),
     }
-    Promise.all([getPlugins(requestQuery), getPluginCategories()])
+    Promise.all([getPlugins(requestQuery, controller.signal), getPluginCategories(controller.signal)])
       .then(([plugins, nextCategories]) => {
         if (!mounted) return
         setData(plugins)
@@ -48,6 +54,7 @@ export function PluginsPage() {
       })
     return () => {
       mounted = false
+      controller.abort()
     }
   }, [searchKey])
 

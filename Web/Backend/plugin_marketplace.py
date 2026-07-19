@@ -225,14 +225,26 @@ def plugin_signature(storage: Path, plugin_id: str) -> str:
 
 
 def plugin_summary_signature(storage: Path, plugin_id: str) -> str:
+    """Return a metadata-only signature for every summary input.
+
+    Package contents are intentionally never opened or hashed here.  The
+    catalog checker only needs a cheap change detector; package hashing stays
+    in the index refresh path where it can be cached and accounted for.
+    """
     plugin_dir = storage / "Plugins" / plugin_id
     history_dir = plugin_history_dir(storage, plugin_id)
     parts: list[str] = []
-    for name in ("LATEST_RELEASE", "manifest.json", "PackageIcon.png"):
+    for name in (
+        "LATEST_RELEASE",
+        "manifest.json",
+        "PackageIcon.png",
+        "README.md",
+        "CHANGELOG.md",
+    ):
         candidate = plugin_dir / name
         try:
             stat = candidate.stat()
-            parts.append(f"{name}:{stat.st_mtime_ns}:{stat.st_size}")
+            parts.append(f"{name}:{stat.st_size}:{stat.st_mtime_ns}")
         except OSError:
             parts.append(f"{name}:missing")
 
@@ -245,14 +257,22 @@ def plugin_summary_signature(storage: Path, plugin_id: str) -> str:
             stat = entry.stat()
         except OSError:
             continue
-        parts.append(f"current:{entry.name}:{stat.st_mtime_ns}:{stat.st_size}")
+        parts.append(f"current:{entry.name}:{stat.st_size}:{stat.st_mtime_ns}")
 
     try:
-        history_stat = history_dir.stat()
-        history_count = sum(1 for item in history_dir.glob("*.cvxp") if item.is_file())
-        parts.append(f"history:{history_stat.st_mtime_ns}:{history_count}")
+        history_entries = sorted(history_dir.glob("*.cvxp"), key=lambda item: item.name.lower())
     except OSError:
+        history_entries = []
+
+    if not history_dir.is_dir():
         parts.append("history:missing")
+    else:
+        for entry in history_entries:
+            try:
+                stat = entry.stat()
+            except OSError:
+                continue
+            parts.append(f"history:{entry.name}:{stat.st_size}:{stat.st_mtime_ns}")
 
     return "|".join(parts)
 
@@ -267,7 +287,7 @@ def plugin_catalog_signature(storage: Path) -> str:
         if not entry.is_dir():
             continue
         parts.append(f"{entry.name}:{plugin_summary_signature(storage, entry.name)}")
-    return "|".join(parts)
+    return "|".join(parts) if parts else "empty"
 
 
 def _apply_download_counts(

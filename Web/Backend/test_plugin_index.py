@@ -4,6 +4,7 @@ import base64
 import copy
 import io
 import json
+import os
 import tempfile
 import unittest
 import zipfile
@@ -71,6 +72,21 @@ class PluginIndexTests(unittest.TestCase):
             encoding="utf-8",
         )
         return plugin_dir
+
+    def _rewrite_with_new_stat(self, path: Path, payload: bytes | str) -> None:
+        """Rewrite a fixture and force a distinct NTFS metadata signature."""
+        before = path.stat()
+        if isinstance(payload, bytes):
+            path.write_bytes(payload)
+        else:
+            path.write_text(payload, encoding="utf-8")
+        forced_mtime_ns = before.st_mtime_ns + 2_000_000_000
+        os.utime(path, ns=(forced_mtime_ns, forced_mtime_ns))
+        after = path.stat()
+        self.assertNotEqual(
+            (before.st_size, before.st_mtime_ns),
+            (after.st_size, after.st_mtime_ns),
+        )
 
     # -------------------------------------------------------------------
     # Plugin index refresh tests
@@ -143,7 +159,7 @@ class PluginIndexTests(unittest.TestCase):
         self.assertGreaterEqual(len(pkgs), 1)
 
     def test_refresh_plugin_missing_dir_marks_deleted(self):
-        from services.plugin_index import refresh_plugin_index
+        from services.plugin_index import is_plugin_index_populated, refresh_plugin_index
         result = refresh_plugin_index(self.cache, self.storage, "NonExistent")
         self.assertIsNone(result)
 
@@ -154,6 +170,7 @@ class PluginIndexTests(unittest.TestCase):
         db.close()
         self.assertIsNotNone(row)
         self.assertEqual(row["is_deleted"], 1)
+        self.assertFalse(is_plugin_index_populated(self.cache))
 
     # -------------------------------------------------------------------
     # API reads from index
@@ -248,6 +265,135 @@ class PluginIndexTests(unittest.TestCase):
         self.assertTrue(payload["versions"], "Should have versions")
         self.assertTrue(payload["versions"][0].get("fileHash"), "fileHash should be present")
 
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT file_hash, file_signature FROM package_index WHERE plugin_id = 'HashPlugin' AND is_deleted = 0"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["file_hash"], payload["versions"][0]["fileHash"])
+        self.assertTrue(row["file_signature"])
+
+    def test_detail_get_never_computes_missing_hash(self):
+        self._create_plugin("PendingHash", "1.0.0")
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(self.cache, self.storage)
+        db = self.cache.get_db()
+        db.execute("UPDATE package_index SET file_hash = '' WHERE plugin_id = 'PendingHash'")
+        db.commit()
+        db.close()
+
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("GET must not hash")):
+            response = self.client.get("/api/plugins/PendingHash")
+
+        self.assertEqual(response.status_code, 200)
+        version = response.get_json()["versions"][0]
+        self.assertTrue(version["hashPending"])
+        self.assertIsNone(version["fileHash"])
+
+    def test_refresh_reuses_hash_when_package_signature_is_unchanged(self):
+        self._create_plugin("ReuseHash", "1.0.0")
+        from services.plugin_index import refresh_plugin_index
+        refresh_plugin_index(self.cache, self.storage, "ReuseHash")
+
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("unchanged file must reuse hash")):
+            refresh_plugin_index(self.cache, self.storage, "ReuseHash")
+
+    def test_refresh_recomputes_hash_when_package_signature_changes(self):
+        plugin_dir = self._create_plugin("ChangedHash", "1.0.0")
+        from services.plugin_index import refresh_plugin_index
+        refresh_plugin_index(self.cache, self.storage, "ChangedHash")
+        package = plugin_dir / "ChangedHash-1.0.0.cvxp"
+        package.write_bytes(b"changed-package-payload")
+
+        with patch("plugin_marketplace._compute_file_hash", return_value="replacement-hash") as compute_hash:
+            refresh_plugin_index(self.cache, self.storage, "ChangedHash")
+
+        compute_hash.assert_called_once_with(package)
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT file_hash FROM package_index WHERE plugin_id = 'ChangedHash' AND is_deleted = 0"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["file_hash"], "replacement-hash")
+
+    def test_changed_package_hash_failure_clears_stale_hash_and_reports_pending(self):
+        plugin_dir = self._create_plugin("FailedHash", "1.0.0")
+        from services.plugin_index import refresh_plugin_index
+        refresh_plugin_index(self.cache, self.storage, "FailedHash")
+        package = plugin_dir / "FailedHash-1.0.0.cvxp"
+        package.write_bytes(b"changed-package-that-cannot-be-hashed")
+
+        with patch("plugin_marketplace._compute_file_hash", return_value=None):
+            refresh_plugin_index(self.cache, self.storage, "FailedHash")
+
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT file_hash, file_signature FROM package_index WHERE plugin_id = 'FailedHash' AND is_deleted = 0"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["file_hash"], "")
+        self.assertTrue(row["file_signature"])
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("GET must not hash")):
+            response = self.client.get("/api/plugins/FailedHash")
+        version = response.get_json()["versions"][0]
+        self.assertTrue(version["hashPending"])
+        self.assertIsNone(version["fileHash"])
+
+    def test_upsert_does_not_replace_good_hash_with_empty_value(self):
+        self._create_plugin("KeepHash", "1.0.0")
+        from services.plugin_index import _upsert_package, refresh_plugin_index
+        refresh_plugin_index(self.cache, self.storage, "KeepHash")
+        db = self.cache.get_db()
+        original = db.execute(
+            "SELECT * FROM package_index WHERE plugin_id = 'KeepHash' AND is_deleted = 0"
+        ).fetchone()
+        _upsert_package(
+            db,
+            "KeepHash",
+            {
+                "version": original["version"],
+                "filename": original["filename"],
+                "relative_path": original["relative_path"],
+                "size": original["size"],
+                "modified": original["modified"],
+                "fileHash": "",
+                "fileSignature": "",
+            },
+            "current",
+            original["indexed_at"],
+            self.storage,
+        )
+        db.commit()
+        updated = db.execute(
+            "SELECT file_hash, file_signature FROM package_index WHERE relative_path = ?",
+            (original["relative_path"],),
+        ).fetchone()
+        db.close()
+
+        self.assertEqual(updated["file_hash"], original["file_hash"])
+        self.assertEqual(updated["file_signature"], original["file_signature"])
+
+    def test_startup_check_backfills_active_packages_missing_hash(self):
+        self._create_plugin("StartupHash", "1.0.0")
+        from services.plugin_index import refresh_plugin_index
+        from services.scheduler import _run_startup_check
+        refresh_plugin_index(self.cache, self.storage, "StartupHash")
+        db = self.cache.get_db()
+        db.execute("UPDATE package_index SET file_hash = '' WHERE plugin_id = 'StartupHash'")
+        db.commit()
+        db.close()
+
+        with patch("services.artifact_index.startup_check_all_indexes", return_value="artifacts ready"):
+            summary = _run_startup_check(self.cache, self.storage, lambda: self.cache.get_db())
+
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT file_hash FROM package_index WHERE plugin_id = 'StartupHash' AND is_deleted = 0"
+        ).fetchone()
+        db.close()
+        self.assertIn("hashes backfilled", summary)
+        self.assertTrue(row["file_hash"])
+
     # -------------------------------------------------------------------
     # Issue 3: index_state.signature written after refresh
     # -------------------------------------------------------------------
@@ -278,6 +424,168 @@ class PluginIndexTests(unittest.TestCase):
         # Second check - still no changes
         result2 = _run_plugin_index_check(self.cache, self.storage, lambda: self.cache.get_db())
         self.assertIn("No changes detected", result2)
+
+    def test_plugin_summary_signature_is_stat_only_and_covers_summary_inputs(self):
+        plugin_dir = self._create_plugin("SignatureOnly", "1.0.0")
+        (plugin_dir / "README.md").write_text("readme", encoding="utf-8")
+        (plugin_dir / "CHANGELOG.md").write_text("changelog", encoding="utf-8")
+        history_dir = self.storage / "History" / "Plugins" / "SignatureOnly"
+        history_dir.mkdir(parents=True)
+        (history_dir / "SignatureOnly-0.9.0.cvxp").write_bytes(b"history")
+
+        from plugin_marketplace import plugin_catalog_signature, plugin_summary_signature
+        with patch("plugin_marketplace._compute_file_hash", side_effect=AssertionError("signature must not hash")) as compute_hash:
+            summary_signature = plugin_summary_signature(self.storage, "SignatureOnly")
+            catalog_signature = plugin_catalog_signature(self.storage)
+
+        compute_hash.assert_not_called()
+        self.assertIn("README.md:", summary_signature)
+        self.assertIn("CHANGELOG.md:", summary_signature)
+        self.assertIn("history:SignatureOnly-0.9.0.cvxp:", summary_signature)
+        self.assertIn(summary_signature, catalog_signature)
+
+    def test_periodic_check_refreshes_readme_and_changelog_edits(self):
+        plugin_dir = self._create_plugin("DocsPlugin", "1.0.0")
+        readme_path = plugin_dir / "README.md"
+        changelog_path = plugin_dir / "CHANGELOG.md"
+        readme_path.write_text("old readme", encoding="utf-8")
+        changelog_path.write_text("old changelog", encoding="utf-8")
+
+        from services.plugin_index import refresh_all_plugin_index
+        from services.scheduler import _run_plugin_index_check
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        self._rewrite_with_new_stat(readme_path, "new readme content")
+        readme_result = _run_plugin_index_check(
+            self.cache, self.storage, lambda: self.cache.get_db()
+        )
+        self.assertIn("Refreshed", readme_result)
+
+        self._rewrite_with_new_stat(changelog_path, "new changelog content")
+        changelog_result = _run_plugin_index_check(
+            self.cache, self.storage, lambda: self.cache.get_db()
+        )
+        self.assertIn("Refreshed", changelog_result)
+
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT readme, changelog FROM plugin_index WHERE plugin_id = 'DocsPlugin'"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["readme"], "new readme content")
+        self.assertEqual(row["changelog"], "new changelog content")
+
+    def test_periodic_check_detects_same_name_history_package_overwrite(self):
+        self._create_plugin("HistoryOverwrite", "1.0.0")
+        history_dir = self.storage / "History" / "Plugins" / "HistoryOverwrite"
+        history_dir.mkdir(parents=True)
+        package_path = history_dir / "HistoryOverwrite-0.9.0.cvxp"
+        package_path.write_bytes(b"old")
+
+        from services.plugin_index import refresh_all_plugin_index
+        from services.scheduler import _run_plugin_index_check
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        db = self.cache.get_db()
+        before = db.execute(
+            """SELECT size, file_hash, file_signature FROM package_index
+               WHERE plugin_id = 'HistoryOverwrite'
+                 AND filename = 'HistoryOverwrite-0.9.0.cvxp'
+                 AND is_deleted = 0"""
+        ).fetchone()
+        db.close()
+
+        # Keep both the path and size unchanged.  NTFS directory mtime and
+        # package count are therefore insufficient; the file mtime must be in
+        # the catalog signature.
+        self._rewrite_with_new_stat(package_path, b"new")
+        result = _run_plugin_index_check(
+            self.cache, self.storage, lambda: self.cache.get_db()
+        )
+        self.assertIn("Refreshed", result)
+
+        db = self.cache.get_db()
+        row = db.execute(
+            """SELECT size, file_hash, file_signature FROM package_index
+               WHERE plugin_id = 'HistoryOverwrite'
+                 AND filename = 'HistoryOverwrite-0.9.0.cvxp'
+                 AND is_deleted = 0"""
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["size"], before["size"])
+        self.assertNotEqual(row["file_signature"], before["file_signature"])
+        self.assertNotEqual(row["file_hash"], before["file_hash"])
+
+    def test_full_refresh_persists_pre_scan_signature_when_file_changes_mid_scan(self):
+        plugin_dir = self._create_plugin("RacePlugin", "1.0.0")
+        readme_path = plugin_dir / "README.md"
+        readme_path.write_text("before scan", encoding="utf-8")
+
+        import services.plugin_index as plugin_index_service
+        from plugin_marketplace import plugin_catalog_signature
+        from services.scheduler import _run_plugin_index_check
+
+        pre_scan_signature = plugin_catalog_signature(self.storage)
+        original_refresh = plugin_index_service.refresh_plugin_index
+
+        def refresh_then_mutate(*args, **kwargs):
+            summary = original_refresh(*args, **kwargs)
+            self._rewrite_with_new_stat(readme_path, "changed during full refresh")
+            return summary
+
+        with patch(
+            "services.plugin_index.refresh_plugin_index",
+            side_effect=refresh_then_mutate,
+        ):
+            result = plugin_index_service.refresh_all_plugin_index(
+                self.cache, self.storage
+            )
+
+        post_scan_signature = plugin_catalog_signature(self.storage)
+        state = plugin_index_service.get_plugin_index_state(self.cache)
+        self.assertNotEqual(pre_scan_signature, post_scan_signature)
+        self.assertEqual(state["signature"], pre_scan_signature)
+        self.assertTrue(result["changed_during_refresh"])
+
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT readme FROM plugin_index WHERE plugin_id = 'RacePlugin'"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["readme"], "before scan")
+
+        retry_result = _run_plugin_index_check(
+            self.cache, self.storage, lambda: self.cache.get_db()
+        )
+        self.assertIn("Refreshed", retry_result)
+        self.assertIn(
+            "No changes detected",
+            _run_plugin_index_check(
+                self.cache, self.storage, lambda: self.cache.get_db()
+            ),
+        )
+
+        db = self.cache.get_db()
+        row = db.execute(
+            "SELECT readme FROM plugin_index WHERE plugin_id = 'RacePlugin'"
+        ).fetchone()
+        db.close()
+        self.assertEqual(row["readme"], "changed during full refresh")
+
+    def test_full_refresh_single_flight_is_nonblocking(self):
+        from services.plugin_index import (
+            _PLUGIN_FULL_REFRESH_LOCK,
+            refresh_all_plugin_index,
+        )
+
+        self.assertTrue(_PLUGIN_FULL_REFRESH_LOCK.acquire(blocking=False))
+        try:
+            result = refresh_all_plugin_index(self.cache, self.storage)
+        finally:
+            _PLUGIN_FULL_REFRESH_LOCK.release()
+
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "refresh_in_progress")
 
     # -------------------------------------------------------------------
     # Issue 5: Fine-grained scope enforcement

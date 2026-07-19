@@ -2,6 +2,12 @@
 
 ColorVision marketplace web product boundary.
 
+Architecture boundaries, compatibility policy, extension ports, analytics
+privacy rules, and performance guardrails are documented in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
+The measured 2026-07-18 baseline, completed first pass, and prioritized follow-up
+work are recorded in [`PERFORMANCE_AUDIT.md`](PERFORMANCE_AUDIT.md).
+
 ```text
 Web/
 ├── Frontend/   # React + TypeScript + Ant Design + ProComponents

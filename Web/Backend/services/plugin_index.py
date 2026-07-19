@@ -16,9 +16,13 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
 from typing import Any, Callable
 
 from db_cache import CacheManager, now_iso
+
+
+_PLUGIN_FULL_REFRESH_LOCK = Lock()
 
 
 def _now_iso() -> str:
@@ -139,6 +143,52 @@ def _dir_mtime_iso(path: Path) -> str:
         return _now_iso()
 
 
+def _prepare_package_hashes(
+    cache: CacheManager,
+    storage: Path,
+    plugin_id: str,
+    packages: list[dict[str, Any]],
+) -> None:
+    """Populate hashes before the package-index write transaction starts."""
+    db = cache.get_db()
+    try:
+        rows = db.execute(
+            """SELECT relative_path, file_hash, file_signature
+               FROM package_index WHERE plugin_id = ?""",
+            (plugin_id,),
+        ).fetchall()
+        existing = {
+            str(row["relative_path"]): (str(row["file_hash"] or ""), str(row["file_signature"] or ""))
+            for row in rows
+        }
+    finally:
+        db.close()
+
+    from plugin_marketplace import _compute_file_hash
+
+    for pkg in packages:
+        relative_path = str(pkg.get("relative_path") or "")
+        if not relative_path:
+            continue
+        file_path = storage / relative_path
+        try:
+            stat = file_path.stat()
+        except OSError:
+            pkg["fileSignature"] = ""
+            continue
+
+        signature = f"{stat.st_mtime_ns}:{stat.st_size}"
+        pkg["fileSignature"] = signature
+        previous_hash, previous_signature = existing.get(relative_path, ("", ""))
+        if previous_hash and previous_signature == signature:
+            pkg["fileHash"] = previous_hash
+            continue
+
+        file_hash = _compute_file_hash(file_path)
+        if file_hash:
+            pkg["fileHash"] = file_hash
+
+
 # ---------------------------------------------------------------------------
 # Index refresh: single plugin
 # ---------------------------------------------------------------------------
@@ -167,6 +217,9 @@ def refresh_plugin_index(
     if not summary:
         _mark_plugin_deleted(cache, plugin_id, storage=storage)
         return None
+
+    packages = list(summary.get("current_packages", [])) + list(summary.get("historical_packages", []))
+    _prepare_package_hashes(cache, storage, plugin_id, packages)
 
     now = _now_iso()
     signature = _plugin_dir_signature(storage, plugin_id)
@@ -277,13 +330,19 @@ def _upsert_package(
             modified, file_hash, file_signature, indexed_at, is_deleted)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
            ON CONFLICT(relative_path) DO UPDATE SET
+               plugin_id = excluded.plugin_id,
                version = excluded.version,
                filename = excluded.filename,
                size = excluded.size,
                source = excluded.source,
                modified = excluded.modified,
-               file_hash = excluded.file_hash,
-               file_signature = excluded.file_signature,
+               file_hash = CASE
+                   WHEN excluded.file_hash != '' THEN excluded.file_hash
+                   WHEN excluded.file_signature != ''
+                        AND excluded.file_signature != package_index.file_signature THEN ''
+                   ELSE package_index.file_hash
+               END,
+               file_signature = CASE WHEN excluded.file_signature != '' THEN excluded.file_signature ELSE package_index.file_signature END,
                indexed_at = excluded.indexed_at,
                is_deleted = 0
         """,
@@ -296,7 +355,7 @@ def _upsert_package(
             pkg.get("source", source),
             pkg.get("modified", ""),
             pkg.get("fileHash", ""),
-            "",
+            pkg.get("fileSignature", ""),
             now,
         ),
     )
@@ -350,12 +409,55 @@ def refresh_all_plugin_index(
 
     Returns: {indexed_count, deleted_count, duration_ms, errors}
     """
+    if not _PLUGIN_FULL_REFRESH_LOCK.acquire(blocking=False):
+        return {
+            "indexed_count": 0,
+            "deleted_count": 0,
+            "duration_ms": 0,
+            "errors": [],
+            "status": "skipped",
+            "reason": "refresh_in_progress",
+            "changed_during_refresh": False,
+        }
+
+    try:
+        return _refresh_all_plugin_index(
+            cache,
+            storage,
+            download_counts=download_counts,
+        )
+    finally:
+        _PLUGIN_FULL_REFRESH_LOCK.release()
+
+
+def _refresh_all_plugin_index(
+    cache: CacheManager,
+    storage: Path,
+    *,
+    download_counts: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    """Run one full refresh while the caller owns the scope lock."""
     started = time.monotonic()
     now = _now_iso()
     plugins_dir = storage / "Plugins"
 
-    # Update index_state to refreshing
-    _update_index_state(cache, "plugins", status="refreshing", started_at=now)
+    # The stored signature must describe the snapshot we are about to scan.
+    # Computing it after the writes can permanently pair an old DB snapshot
+    # with a newer filesystem signature when a publish races the refresh.
+    pre_scan_signature = ""
+    try:
+        from plugin_marketplace import plugin_catalog_signature
+        pre_scan_signature = plugin_catalog_signature(storage)
+    except Exception as exc:
+        print(f"[plugin_index] pre-scan signature computation failed: {exc}")
+
+    _update_index_state(
+        cache,
+        "plugins",
+        status="refreshing",
+        signature=pre_scan_signature,
+        started_at=now,
+    )
 
     errors: list[str] = []
     indexed_count = 0
@@ -397,19 +499,26 @@ def refresh_all_plugin_index(
     elapsed_ms = int((time.monotonic() - started) * 1000)
     finished_at = _now_iso()
 
-    # Write the catalog signature so periodic checks can detect no-op
-    catalog_sig = ""
+    # A bounded post-check detects an in-flight publish.  We deliberately keep
+    # the pre-scan signature in index_state so the next periodic check sees a
+    # mismatch and refreshes the changed snapshot; there is no retry loop here.
+    post_scan_signature = ""
     try:
         from plugin_marketplace import plugin_catalog_signature
-        catalog_sig = plugin_catalog_signature(storage)
+        post_scan_signature = plugin_catalog_signature(storage)
     except Exception as exc:
-        print(f"[plugin_index] signature computation failed: {exc}")
+        print(f"[plugin_index] post-scan signature computation failed: {exc}")
+    changed_during_refresh = bool(
+        pre_scan_signature
+        and post_scan_signature
+        and pre_scan_signature != post_scan_signature
+    )
 
     _update_index_state(
         cache,
         "plugins",
         status="ready",
-        signature=catalog_sig,
+        signature=pre_scan_signature,
         finished_at=finished_at,
         item_count=indexed_count,
         duration_ms=elapsed_ms,
@@ -426,6 +535,8 @@ def refresh_all_plugin_index(
         "deleted_count": deleted_count,
         "duration_ms": elapsed_ms,
         "errors": errors,
+        "status": "ready",
+        "changed_during_refresh": changed_during_refresh,
     }
 
 
@@ -513,8 +624,7 @@ def get_plugin_detail_from_index(
     current_packages, historical_packages, all_packages, has_icon, total_downloads,
     name, description, author, url, category, modified, etc.
 
-    If package_index has no file_hash for a package, computes it from disk
-    when storage is provided (detail-only cost, list endpoint unaffected).
+    Missing hashes are surfaced as pending; GET never performs package I/O.
     """
     db = cache.get_db()
     try:
@@ -542,7 +652,6 @@ def get_plugin_detail_from_index(
             (plugin_id,),
         ).fetchall()
 
-        needs_hash_computation = False
         current_packages = []
         historical_packages = []
         for pkg_row in pkg_rows:
@@ -557,15 +666,11 @@ def get_plugin_detail_from_index(
             if pkg_row["file_hash"]:
                 pkg["fileHash"] = pkg_row["file_hash"]
             else:
-                needs_hash_computation = True
+                pkg["hashPending"] = True
             if pkg_row["source"] == "current":
                 current_packages.append(pkg)
             else:
                 historical_packages.append(pkg)
-
-        # Compute missing file hashes from disk (detail-only, not list)
-        if needs_hash_computation and storage is not None:
-            _compute_missing_hashes(cache, storage, plugin_id, current_packages + historical_packages)
 
         detail["packages"] = current_packages
         detail["current_packages"] = current_packages
@@ -583,45 +688,30 @@ def get_plugin_detail_from_index(
         db.close()
 
 
-def _compute_missing_hashes(
-    cache: CacheManager,
-    storage: Path,
-    plugin_id: str,
-    packages: list[dict[str, Any]],
-):
-    """Compute and store file hashes for packages missing them."""
-    from plugin_marketplace import _compute_file_hash
-    db = cache.get_db()
-    try:
-        for pkg in packages:
-            if pkg.get("fileHash"):
-                continue
-            rel_path = pkg.get("relative_path", "")
-            if not rel_path:
-                continue
-            file_path = storage / rel_path
-            if not file_path.is_file():
-                continue
-            file_hash = _compute_file_hash(file_path)
-            if file_hash:
-                pkg["fileHash"] = file_hash
-                db.execute(
-                    "UPDATE package_index SET file_hash = ? WHERE relative_path = ?",
-                    (file_hash, rel_path),
-                )
-        db.commit()
-    except Exception as exc:
-        print(f"[plugin_index] hash computation failed for {plugin_id}: {exc}")
-    finally:
-        db.close()
-
-
 def is_plugin_index_populated(cache: CacheManager) -> bool:
     """Check if plugin_index has any entries."""
     db = cache.get_db()
     try:
-        row = db.execute("SELECT COUNT(*) AS cnt FROM plugin_index").fetchone()
+        row = db.execute(
+            "SELECT COUNT(*) AS cnt FROM plugin_index WHERE is_deleted = 0"
+        ).fetchone()
         return bool(row and row["cnt"] > 0)
+    except Exception:
+        return False
+    finally:
+        db.close()
+
+
+def has_active_packages_missing_hash(cache: CacheManager) -> bool:
+    """Return whether startup refresh must backfill an active package hash."""
+    db = cache.get_db()
+    try:
+        row = db.execute(
+            """SELECT 1 FROM package_index
+               WHERE is_deleted = 0 AND (file_hash IS NULL OR file_hash = '')
+               LIMIT 1"""
+        ).fetchone()
+        return row is not None
     except Exception:
         return False
     finally:

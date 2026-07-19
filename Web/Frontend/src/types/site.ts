@@ -79,6 +79,7 @@ export interface ReleaseGroup {
   branch?: string
   count?: number
   visible_count?: number
+  page_item_count?: number
   kind_summary?: string
   visible_kind_summary?: string
   visible_era_summary?: string
@@ -91,17 +92,6 @@ export interface ReleaseGroup {
 
 export interface HomePayload {
   app_info: AppInfo
-  overview_summary: StorageSummary
-  overview_meta: Record<string, unknown>
-  filesystem_spotlight: Array<{
-    name: string
-    label: string
-    description: string
-    href: string
-    exists: boolean
-    file_count: number
-    modified: string
-  }>
   recent_change_dashboard: Array<{
     title: string
     subtitle: string
@@ -110,10 +100,7 @@ export interface HomePayload {
     action_label: string
     category: string
   }>
-  recent_change_summary: Record<string, unknown>
-  update_packages: UpdatePackage[]
   update_summary: UpdateSummary
-  tool_items: StorageItem[]
   tool_summary: StorageSummary
   docs?: DocsHomeSummary
 }
@@ -143,6 +130,20 @@ export interface ReleasesPayload {
   archive_visible_groups: ReleaseGroup[]
   archive_visible_group_count: number
   archive_visible_item_count: number
+  archive_page: number
+  archive_page_size: number
+  archive_total_pages: number
+  archive_has_previous: boolean
+  archive_has_next: boolean
+  archive_page_item_count: number
+  archive_page_group_count: number
+  android_page: number
+  android_page_size: number
+  android_total_pages: number
+  android_has_previous: boolean
+  android_has_next: boolean
+  android_page_item_count: number
+  android_total_item_count: number
   release_filters: {
     major_minor: string
     branch: string
@@ -222,7 +223,9 @@ export interface PluginVersion {
   changeLog?: string
   changeLogHtml?: string
   fileSize?: number
-  fileHash?: string
+  fileHash?: string | null
+  hashPending?: boolean
+  downloadCount?: number
   createdAt?: string
   source?: string
 }

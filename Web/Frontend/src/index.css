@@ -99,6 +99,39 @@ a:hover {
   width: 100%;
 }
 
+.route-loading {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+  color: var(--cv-muted-text);
+}
+
+.route-error {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--cv-text);
+  background: var(--cv-bg);
+}
+
+.route-error h1,
+.route-error p {
+  margin: 0;
+}
+
+.route-error button {
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
 .site-shell {
   min-height: 100vh;
   background:

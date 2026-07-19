@@ -1,5 +1,5 @@
 import { BookOutlined, CloudDownloadOutlined, FileDoneOutlined, FileMarkdownOutlined, FilterOutlined, MobileOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Collapse, Form, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Collapse, Form, Pagination, Row, Select, Skeleton, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getReleases } from '../services/site'
@@ -7,6 +7,13 @@ import type { ReleasesPayload } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
 
 const { Text } = Typography
+const archivePageSize = 100
+const androidArchivePageSize = 100
+
+function archivePage(value: string | null) {
+  const page = Number(value || 1)
+  return Number.isInteger(page) && page > 0 ? page : 1
+}
 
 export function ReleasesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -24,14 +31,24 @@ export function ReleasesPage() {
 
   useEffect(() => {
     let mounted = true
+    const controller = new AbortController()
+    queueMicrotask(() => {
+      if (!mounted) return
+      setLoading(true)
+      setError('')
+    })
     const nextParams = new URLSearchParams(searchKey)
     const requestParams = {
       major_minor: nextParams.get('major_minor') || '',
       branch: nextParams.get('branch') || '',
       kind: nextParams.get('kind') || '',
       era: nextParams.get('era') || '',
+      page: archivePage(nextParams.get('page')),
+      page_size: archivePageSize,
+      android_page: archivePage(nextParams.get('android_page')),
+      android_page_size: androidArchivePageSize,
     }
-    getReleases(requestParams)
+    getReleases(requestParams, controller.signal)
       .then((payload) => {
         if (mounted) setData(payload)
       })
@@ -43,6 +60,7 @@ export function ReleasesPage() {
       })
     return () => {
       mounted = false
+      controller.abort()
     }
   }, [searchKey])
 
@@ -147,6 +165,7 @@ export function ReleasesPage() {
 
       <Card title={<Space><FilterOutlined />Windows 桌面历史筛选</Space>}>
         <Form
+          key={`${params.major_minor}:${params.branch}:${params.kind}:${params.era}`}
           layout="inline"
           initialValues={params}
           onFinish={(values) => {
@@ -178,68 +197,62 @@ export function ReleasesPage() {
         </Form>
       </Card>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} xl={10}>
-          <Card title="Windows 桌面端当前版本">
-            <Space direction="vertical" className="wide-space">
-              {desktopReleases.map((release) => (
-                <div className="resource-row" key={release.relative_path}>
-                  <div>
-                    <Text strong>{release.display_title}</Text>
-                    <div className="muted-line">
-                      {release.filename} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
-                    </div>
-                  </div>
-                  <Button type="primary" icon={<CloudDownloadOutlined />} href={downloadPath(release.relative_path)}>
-                    下载桌面端
-                  </Button>
-                </div>
-              ))}
-              {desktopReleases.length === 0 && <Text type="secondary">未检测到桌面端版本文件。</Text>}
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} xl={14}>
-          <Card title={`Windows 桌面端归档历史 · ${data.archive_visible_item_count} 条`}>
-            <Collapse
-              defaultActiveKey={data.archive_visible_groups.filter((g) => g.is_expanded).map((g) => g.branch || '')}
-              items={data.archive_visible_groups.map((group, index) => ({
-                key: group.branch || String(index),
-                label: (
-                  <Space wrap>
-                    <Text strong>历史阶段 {group.branch}</Text>
-                    <Tag>{group.visible_count || group.count} 条</Tag>
-                    {group.contains_archive_only_formats && <Tag color="gold">ZIP / RAR</Tag>}
-                  </Space>
-                ),
-                children: (
-                  <Space direction="vertical" className="wide-space">
-                    <Text type="secondary">{group.time_range_display} · {group.visible_kind_summary || group.kind_summary}</Text>
-                    {(group.visible_items || []).map((release) => (
-                      <div className="resource-row" key={release.relative_path}>
-                        <div>
-                          <Text strong>{release.display_title}</Text>
-                          <div className="muted-line">
-                            {release.era_label} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
-                          </div>
-                        </div>
-                        <Button href={downloadPath(release.relative_path)}>下载</Button>
+      <Card title={`Windows 桌面端归档历史 · ${data.archive_visible_item_count} 条`}>
+        <Collapse
+          key={`${data.archive_page}:${params.major_minor}:${params.branch}:${params.kind}:${params.era}`}
+          defaultActiveKey={data.archive_visible_groups.filter((g) => g.is_expanded).map((g) => g.branch || '')}
+          items={data.archive_visible_groups.map((group, index) => ({
+            key: group.branch || String(index),
+            label: (
+              <Space wrap>
+                <Text strong>历史阶段 {group.branch}</Text>
+                <Tag>{group.visible_count ?? group.count} 条</Tag>
+                {group.contains_archive_only_formats && <Tag color="gold">ZIP / RAR</Tag>}
+              </Space>
+            ),
+            children: (
+              <Space direction="vertical" className="wide-space">
+                <Text type="secondary">{group.time_range_display} · {group.visible_kind_summary || group.kind_summary}</Text>
+                {(group.visible_items || []).map((release) => (
+                  <div className="resource-row" key={release.relative_path}>
+                    <div>
+                      <Text strong>{release.display_title}</Text>
+                      <div className="muted-line">
+                        {release.era_label} · {release.kind_label} · {humanSize(release.size)} · {shortDate(release.modified_display || release.modified)}
                       </div>
-                    ))}
-                  </Space>
-                ),
-              }))}
+                    </div>
+                    <Button href={downloadPath(release.relative_path)}>下载</Button>
+                  </div>
+                ))}
+              </Space>
+            ),
+          }))}
+        />
+        {data.archive_visible_groups.length === 0 && <Text type="secondary">暂无匹配的归档历史文件。</Text>}
+        {data.archive_total_pages > 1 && (
+          <div className="table-pager">
+            <Pagination
+              current={data.archive_page}
+              pageSize={data.archive_page_size}
+              total={data.archive_visible_item_count}
+              showSizeChanger={false}
+              showTotal={(total, range) => `${range[0]}-${range[1]} / ${total}`}
+              onChange={(page) => {
+                const next = new URLSearchParams(searchParams)
+                if (page > 1) next.set('page', String(page))
+                else next.delete('page')
+                setSearchParams(next)
+              }}
             />
-            {data.archive_visible_groups.length === 0 && <Text type="secondary">暂无匹配的归档历史文件。</Text>}
-            <div className="card-footer-link">
-              <Link to="/browse/History">打开 History 目录</Link>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+          </div>
+        )}
+        <div className="card-footer-link">
+          <Link to="/browse/History">打开 History 目录</Link>
+        </div>
+      </Card>
 
       {archivedAndroidReleases.length > 0 && (
-        <Card title={<Space><MobileOutlined />Android APK 历史包</Space>}>
+        <Card title={<Space><MobileOutlined />Android APK 历史包 · {data.android_total_item_count} 条</Space>}>
           <Space direction="vertical" className="wide-space">
             {archivedAndroidReleases.map((release) => (
               <div className="resource-row" key={release.relative_path}>
@@ -255,6 +268,23 @@ export function ReleasesPage() {
               </div>
             ))}
           </Space>
+          {data.android_total_pages > 1 && (
+            <div className="table-pager">
+              <Pagination
+                current={data.android_page}
+                pageSize={data.android_page_size}
+                total={data.android_total_item_count}
+                showSizeChanger={false}
+                showTotal={(total, range) => `${range[0]}-${range[1]} / ${total}`}
+                onChange={(page) => {
+                  const next = new URLSearchParams(searchParams)
+                  if (page > 1) next.set('android_page', String(page))
+                  else next.delete('android_page')
+                  setSearchParams(next)
+                }}
+              />
+            </div>
+          )}
         </Card>
       )}
     </Space>

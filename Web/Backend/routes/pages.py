@@ -105,33 +105,67 @@ def _latest_version_payload() -> tuple[str, str]:
 
 @pages.route("/api/site/home")
 def api_site_home():
-    from page_contexts import build_index_page_context
+    from page_contexts import build_compact_index_page_context, build_index_page_context
 
-    return jsonify(build_index_page_context(
+    is_compact = request.args.get("view", "").strip().lower() == "compact"
+    if is_compact:
+        compact_app_info = _services().get_request_compact_home_app_info()
+        if compact_app_info is not None:
+            payload = build_index_page_context(
+                _storage(),
+                get_app_info=lambda: compact_app_info,
+                get_storage_overview_context=_services().get_storage_overview_context,
+                get_tool_preview=_services().get_request_home_tool_preview,
+                cache_manager=_cache(),
+            )
+            return jsonify(build_compact_index_page_context(payload))
+
+    payload = build_index_page_context(
         _storage(),
         get_app_info=_services().get_request_home_app_info,
         get_storage_overview_context=_services().get_storage_overview_context,
         get_tool_preview=_services().get_request_home_tool_preview,
         cache_manager=_cache(),
-    ))
+    )
+    if is_compact:
+        payload = build_compact_index_page_context(payload)
+    return jsonify(payload)
 
 
 @pages.route("/api/site/releases")
 def api_site_releases():
-    from page_contexts import build_releases_page_context
+    from page_contexts import build_compact_releases_page_context, build_releases_page_context
 
-    return jsonify(build_releases_page_context(
-        _services().get_request_release_app_info(),
-        major_minor=request.args.get("major_minor", ""),
-        branch=request.args.get("branch", ""),
-        kind=request.args.get("kind", ""),
-        era=request.args.get("era", ""),
-    ))
+    kwargs = {
+        "major_minor": request.args.get("major_minor", ""),
+        "branch": request.args.get("branch", ""),
+        "kind": request.args.get("kind", ""),
+        "era": request.args.get("era", ""),
+    }
+    if request.args.get("view", "").strip().lower() == "compact":
+        compact_kwargs = {
+            **kwargs,
+            "page": _parse_int("page", default=1, minimum=1, maximum=100000),
+            "page_size": _parse_int("page_size", default=100, minimum=20, maximum=200),
+            "android_page": _parse_int("android_page", default=1, minimum=1, maximum=100000),
+            "android_page_size": _parse_int("android_page_size", default=100, minimum=20, maximum=200),
+        }
+        compact_payload = _services().get_request_compact_release_page(**compact_kwargs)
+        if compact_payload is not None:
+            return jsonify(compact_payload)
+        app_info = _services().get_request_release_app_info()
+        return jsonify(build_compact_releases_page_context(app_info, **compact_kwargs))
+    app_info = _services().get_request_release_app_info()
+    return jsonify(build_releases_page_context(app_info, **kwargs))
 
 
 @pages.route("/api/site/changelog")
 def api_site_changelog():
-    return jsonify({"app_info": _services().get_request_changelog_app_info()})
+    if request.args.get("view", "").strip().lower() == "compact":
+        app_info = _services().get_request_compact_changelog_app_info()
+    else:
+        app_info = _services().get_request_changelog_app_info()
+    return jsonify({"app_info": app_info})
 
 
 @pages.route("/api/site/updates")

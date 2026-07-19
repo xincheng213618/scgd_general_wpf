@@ -2,6 +2,7 @@ import {
   ApiOutlined,
   AppstoreOutlined,
   AuditOutlined,
+  BarChartOutlined,
   CloudUploadOutlined,
   DashboardOutlined,
   DatabaseOutlined,
@@ -28,6 +29,7 @@ const routeTitles: Record<string, string> = {
   '/admin/jobs': '任务调度',
   '/admin/api-keys': 'API Key',
   '/admin/audit': '审计日志',
+  '/admin/traffic': '访问统计',
   '/admin/settings': '系统设置',
 }
 
@@ -80,6 +82,11 @@ const route = {
           path: '/admin/audit',
           name: '审计日志',
           icon: <AuditOutlined />,
+        },
+        {
+          path: '/admin/traffic',
+          name: '访问统计',
+          icon: <BarChartOutlined />,
         },
       ],
     },

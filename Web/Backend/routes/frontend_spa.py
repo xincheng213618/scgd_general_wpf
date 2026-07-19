@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlencode
 
-from flask import Blueprint, current_app, redirect, request, send_from_directory
+from flask import Blueprint, abort, current_app, redirect, request, send_from_directory
 
 
 @dataclass(frozen=True)
@@ -52,21 +52,35 @@ def _serve_spa():
             503,
             {"Content-Type": "text/plain; charset=utf-8"},
         )
-    return send_from_directory(dist, "index.html")
+    response = send_from_directory(dist, "index.html", max_age=0)
+    # The HTML names hashed chunks, so it must revalidate on every navigation
+    # while those immutable chunks can be cached aggressively.
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
 
 
-def _serve_asset(asset_path: str):
+def _serve_asset(asset_path: str, *, immutable: bool = False):
     ctx = _get_ctx()
     dist = ctx.dist_dir
     target = dist / asset_path
     if target.is_file():
-        return send_from_directory(dist, asset_path)
-    return _serve_spa()
+        response = send_from_directory(
+            dist,
+            asset_path,
+            max_age=31_536_000 if immutable else 3_600,
+        )
+        if immutable:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+    # A missing hashed Vite chunk must stay a real miss. Returning index.html
+    # with status 200 makes dynamic import treat HTML as JavaScript and leaves
+    # an already-open tab on a blank screen after a rolling deployment.
+    abort(404)
 
 
 @frontend_spa.route("/assets/<path:asset_path>")
 def assets(asset_path: str):
-    return _serve_asset(f"assets/{asset_path}")
+    return _serve_asset(f"assets/{asset_path}", immutable=True)
 
 
 @frontend_spa.route("/brand/<path:asset_path>")

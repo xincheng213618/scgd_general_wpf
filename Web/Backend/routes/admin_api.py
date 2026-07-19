@@ -60,6 +60,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
     "stats_overview": ["stats:read"],
+    "traffic_stats": ["stats:read"],
     "list_api_keys": ["admin:*"],
     "create_api_key": ["admin:*"],
     "revoke_api_key": ["admin:*"],
@@ -86,6 +87,7 @@ class AdminApiContext:
     get_plugin_catalog_from_index: Callable[..., Any]
     human_size: Callable[[int], str]
     get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
+    get_access_recorder_status: Callable[[], dict[str, Any]] | None = None
 
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/api/admin")
@@ -467,6 +469,21 @@ def backup_db():
     if not success:
         return jsonify({"error": "Backup failed"}), 500
 
+    # Backups participate in the same privacy retention contract as the live
+    # database; otherwise an old snapshot could retain visitor identifiers
+    # after the scheduled live cleanup has removed them.
+    try:
+        from services.access_analytics import prune_access_analytics_database
+
+        config = ctx.config_getter()
+        prune_access_analytics_database(
+            backup_path,
+            retention_days=int(config.get("access_analytics_retention_days", 90) or 90),
+        )
+    except Exception as exc:
+        backup_path.unlink(missing_ok=True)
+        return jsonify({"error": f"Backup privacy cleanup failed: {exc}"}), 500
+
     ctx.cache.write_audit(
         actor_type=_actor_type(),
         actor_id=_actor_id(),
@@ -658,11 +675,48 @@ def stats_overview():
         except OSError:
             stats["dbSizeBytes"] = 0
 
+        from services.access_analytics import get_today_access_summary
+        stats.update(get_today_access_summary(db))
+
         return jsonify(stats)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
     finally:
         db.close()
+
+
+@admin_api.route("/stats/traffic", methods=["GET"])
+def traffic_stats():
+    """Return privacy-preserving access aggregates for the admin dashboard."""
+    from services.access_analytics import (
+        SqliteAccessTrafficQuery,
+        parse_bounded_int,
+    )
+
+    try:
+        days = parse_bounded_int(
+            request.args.get("days"),
+            name="days",
+            default=30,
+            minimum=1,
+            maximum=365,
+        )
+        limit = parse_bounded_int(
+            request.args.get("limit"),
+            name="limit",
+            default=10,
+            minimum=1,
+            maximum=100,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc), "status": 400}), 400
+
+    ctx = _get_ctx()
+    query = SqliteAccessTrafficQuery(
+        ctx.get_db,
+        recorder_status=ctx.get_access_recorder_status,
+    )
+    return jsonify(query.get_traffic(days=days, limit=limit))
 
 
 # ---------------------------------------------------------------------------

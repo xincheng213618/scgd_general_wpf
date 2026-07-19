@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import threading
 from pathlib import Path
 from typing import Any
@@ -11,10 +12,7 @@ _plugin_cache: dict[str, dict[str, str]] = {}
 
 
 def _key(storage: Path) -> str:
-    try:
-        return str(storage.resolve())
-    except OSError:
-        return str(storage)
+    return os.path.normcase(os.path.abspath(os.fspath(storage)))
 
 
 def _read_latest_version(storage: Path) -> str:

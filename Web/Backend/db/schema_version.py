@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -51,6 +51,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v2(db)
     if from_version < 3:
         _migration_v3(db)
+    if from_version < 4:
+        _migration_v4(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -70,6 +72,64 @@ def _migration_v3(db: sqlite3.Connection):
     _add_column_if_missing(db, "plugin_index", "changelog TEXT DEFAULT ''")
     _add_column_if_missing(db, "plugin_index", "source_manifest_path TEXT")
     _add_column_if_missing(db, "plugin_index", "source_archive_path TEXT")
+
+
+def _migration_v4(db: sqlite3.Connection):
+    """v4: Add privacy-preserving, daily access analytics aggregates."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS access_daily (
+            day                 TEXT PRIMARY KEY,
+            visits              INTEGER NOT NULL DEFAULT 0,
+            unique_visitors     INTEGER NOT NULL DEFAULT 0,
+            error_responses     INTEGER NOT NULL DEFAULT 0,
+            total_duration_ms   INTEGER NOT NULL DEFAULT 0,
+            max_duration_ms     INTEGER NOT NULL DEFAULT 0,
+            total_response_bytes INTEGER NOT NULL DEFAULT 0,
+            updated_at          TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS access_route_daily (
+            day                 TEXT NOT NULL,
+            route               TEXT NOT NULL,
+            method              TEXT NOT NULL,
+            visits              INTEGER NOT NULL DEFAULT 0,
+            error_responses     INTEGER NOT NULL DEFAULT 0,
+            total_duration_ms   INTEGER NOT NULL DEFAULT 0,
+            max_duration_ms     INTEGER NOT NULL DEFAULT 0,
+            total_response_bytes INTEGER NOT NULL DEFAULT 0,
+            updated_at          TEXT NOT NULL,
+            PRIMARY KEY (day, route, method)
+        );
+        CREATE INDEX IF NOT EXISTS idx_access_route_day
+            ON access_route_daily(day);
+
+        CREATE TABLE IF NOT EXISTS access_client_daily (
+            day                 TEXT NOT NULL,
+            client_type         TEXT NOT NULL,
+            visits              INTEGER NOT NULL DEFAULT 0,
+            unique_visitors     INTEGER NOT NULL DEFAULT 0,
+            error_responses     INTEGER NOT NULL DEFAULT 0,
+            total_duration_ms   INTEGER NOT NULL DEFAULT 0,
+            updated_at          TEXT NOT NULL,
+            PRIMARY KEY (day, client_type)
+        );
+        CREATE INDEX IF NOT EXISTS idx_access_client_day
+            ON access_client_daily(day);
+
+        CREATE TABLE IF NOT EXISTS access_visitor_daily (
+            day                 TEXT NOT NULL,
+            visitor_key         TEXT NOT NULL,
+            client_type         TEXT NOT NULL,
+            visits              INTEGER NOT NULL DEFAULT 0,
+            first_seen_at       TEXT NOT NULL,
+            last_seen_at        TEXT NOT NULL,
+            PRIMARY KEY (day, visitor_key)
+        );
+        CREATE INDEX IF NOT EXISTS idx_access_visitor_client_day
+            ON access_visitor_daily(day, client_type);
+        """
+    )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):
