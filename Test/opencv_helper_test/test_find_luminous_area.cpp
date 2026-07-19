@@ -23,6 +23,8 @@
 
 using json = nlohmann::json;
 
+bool RunP2AlgorithmTests();
+
 static std::atomic<int> g_videoCallbackFrames{ 0 };
 static std::atomic<int> g_videoStatusPlaying{ 0 };
 
@@ -1739,6 +1741,10 @@ void testWithRealImage(const std::string& imagePath)
 
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--p2-only") {
+        return RunP2AlgorithmTests() ? 0 : 1;
+    }
+
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea smoke test" << std::endl;
     std::cout << "========================================" << std::endl;
@@ -1890,6 +1896,11 @@ int main(int argc, char* argv[])
 
     if (!smokeCudaFusionBatchClearsOutputsOnFailure()) {
         std::cerr << "CUDA fusion batch failure-clear test failed" << std::endl;
+        return 1;
+    }
+
+    if (!RunP2AlgorithmTests()) {
+        std::cerr << "P2 native algorithm regression tests failed" << std::endl;
         return 1;
     }
 

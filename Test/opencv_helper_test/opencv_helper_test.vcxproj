@@ -159,6 +159,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="test_p2_algorithms.cpp" />
     <ClCompile Include="test_find_luminous_area.cpp" />
     <ClCompile Include="DatFileReader.cpp" />
     <ClCompile Include="Video.cpp" />
