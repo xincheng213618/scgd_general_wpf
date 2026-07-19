@@ -25,6 +25,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ColorVision
 {
@@ -58,6 +59,8 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            Stopwatch initializationStopwatch = Stopwatch.StartNew();
+            Stopwatch phaseStopwatch = Stopwatch.StartNew();
             this.SizeChanged += (s, e) =>
             {
                 SearchControl1.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
@@ -93,26 +96,25 @@ namespace ColorVision
             WorkspaceManager.LayoutManager = layoutManager;
 
             // 扫描并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前确保所有面板正确注册）
-            foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
-                .Select(t =>
-                {
-                    try { return Activator.CreateInstance(t) as IDockPanelProvider; }
-                    catch (Exception ex) { log.Debug($"Failed to instantiate IDockPanelProvider {t.Name}: {ex.Message}"); return null; }
-                })
-                .Where(p => p != null)
-                .OrderBy(p => p!.Order))
+            foreach (var provider in AssemblyHandler.GetInstance().LoadImplementations<IDockPanelProvider>()
+                .OrderBy(p => p.Order))
             {
+                Stopwatch providerStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    provider!.RegisterPanels();
+                    provider.RegisterPanels();
                 }
                 catch (Exception ex)
                 {
-                    log.Warn($"IDockPanelProvider {provider!.GetType().Name} failed: {ex.Message}");
+                    log.Warn($"IDockPanelProvider {provider.GetType().Name} failed: {ex.Message}");
+                }
+                finally
+                {
+                    providerStopwatch.Stop();
+                    log.Info($"Dock panel provider {provider.GetType().Name} took {providerStopwatch.ElapsedMilliseconds} ms.");
                 }
             }
+            log.Info($"Main window dock panel registration took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 初始化 DockViewManagerHost，注册 AvalonDock 回调等
             DockViewManagerHost.Initialize();
@@ -126,13 +128,16 @@ namespace ColorVision
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             // 加载已保存的布局
+            phaseStopwatch.Restart();
             if (!layoutManager.LoadLayout())
                 layoutManager.ResetLayout();
+            log.Info($"Main window layout restore took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 重新应用主题以修复 AvalonDock 问题，确保所有切换元素使用正确的主题
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
 
             // 将所有已注册的视图显示为文档标签页
+            phaseStopwatch.Restart();
             DockViewManager.ShowAllViews();
 
             // 切换到 DeviceControl 面板时，跳转回上次显示的视图
@@ -145,6 +150,7 @@ namespace ColorVision
                 action();
             }
             WorkspaceManager.DealyLoad.Clear();
+            log.Info($"Main window view activation took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // Ctrl+W 关闭当前活动的文档
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
@@ -154,9 +160,12 @@ namespace ColorVision
             }));
             InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
 
-            MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
+            phaseStopwatch.Restart();
+            MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
+            log.Info($"Main window menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
+            phaseStopwatch.Restart();
             this.LoadHotKeyFromAssembly();
-            StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
+            log.Info($"Main window hotkey phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             // 监听 DockingManager 活动文档切换和状态变化，更新视图管理器并通知视图变更
             DockingManager1.ActiveContentChanged += (s, e) =>
@@ -170,28 +179,27 @@ namespace ColorVision
             };
 
             Application.Current.MainWindow = this;
-            Task.Run(() =>
+            ContentRendered += MainWindow_ContentRendered;
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    LoadIMainWindowInitialized();
+                LoadIMainWindowInitialized();
 
-                    FluidMoveBehavior fluidMoveBehavior = new()
-                    {
-                        AppliesTo = FluidMoveScope.Children,
-                        Duration = TimeSpan.FromSeconds(0.1)
-                    };
-                    Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
-                });
-            });
-            ProgramTimer.StopAndReport();
+                FluidMoveBehavior fluidMoveBehavior = new()
+                {
+                    AppliesTo = FluidMoveScope.Children,
+                    Duration = TimeSpan.FromSeconds(0.1)
+                };
+                Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
+            }));
 
             // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
             var command = new RoutedCommand();
             command.InputGestures.Add(gesture);
             CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
+            phaseStopwatch.Restart();
             InitRightMenuItemPanel();
+            log.Info($"Main window right-side menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
             StartupRegistryChecker.Clear();
 
@@ -208,6 +216,8 @@ namespace ColorVision
                 }
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
+            initializationStopwatch.Stop();
+            log.Info($"Main window initialized event completed in {initializationStopwatch.ElapsedMilliseconds} ms.");
         }
 
         /// <summary>
@@ -350,22 +360,25 @@ namespace ColorVision
             SearchControl1.FocusSearchBox();
         }
 
-        public static async void LoadIMainWindowInitialized() 
+        private void MainWindow_ContentRendered(object? sender, EventArgs e)
         {
-            List<IMainWindowInitialized> IMainWindowInitializeds = new List<IMainWindowInitialized>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            ContentRendered -= MainWindow_ContentRendered;
+            ProgramTimer.StopAndReport();
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMainWindowInitialized).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
-                    {
-                        IMainWindowInitializeds.Add(componentInitialize);
-  
-                    }
-                }
-            }
-            foreach (var componentInitialize in IMainWindowInitializeds.OrderBy(a => a.Order))
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
+                stopwatch.Stop();
+                log.Info($"Main window status bar materialized in {stopwatch.ElapsedMilliseconds} ms after first render.");
+            }), DispatcherPriority.Background);
+        }
+
+        public static async void LoadIMainWindowInitialized()
+        {
+            List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
+            foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 try
                 {
                     await componentInitialize.Initialize();
@@ -374,7 +387,11 @@ namespace ColorVision
                 {
                     log.Error(ex);
                 }
-
+                finally
+                {
+                    stopwatch.Stop();
+                    log.Info($"Main window initializer {componentInitialize.Name} took {stopwatch.ElapsedMilliseconds} ms.");
+                }
             }
         }
 

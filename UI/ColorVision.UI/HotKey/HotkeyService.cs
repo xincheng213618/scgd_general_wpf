@@ -2,7 +2,6 @@ using ColorVision.UI.HotKey.GlobalHotKey;
 using ColorVision.UI.HotKey.WindowHotKey;
 using log4net;
 using System.Collections.ObjectModel;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -327,7 +326,7 @@ namespace ColorVision.UI.HotKey
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in GetLoadableTypes(assembly))
+                foreach (var type in AssemblyHandler.GetInstance().GetTypes(assembly))
                 {
                     if (type.IsAbstract || type.IsInterface) continue;
                     if (!typeof(IHotkeyProvider).IsAssignableFrom(type) && !typeof(IHotKey).IsAssignableFrom(type)) continue;
@@ -374,22 +373,6 @@ namespace ColorVision.UI.HotKey
                 string id = string.IsNullOrWhiteSpace(hotKeys.Id) ? CreateLegacyProviderId(type) : hotKeys.Id;
                 Hotkey defaultHotkey = hotKeys.DefaultHotkey.IsEmpty ? hotKeys.Hotkey : hotKeys.DefaultHotkey;
                 yield return new HotkeyDefinition(id, hotKeys.Name, defaultHotkey, hotKeys.HotKeyHandler, hotKeys.Kinds);
-            }
-        }
-
-        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types.Where(type => type != null).Cast<Type>();
-            }
-            catch
-            {
-                return Array.Empty<Type>();
             }
         }
 

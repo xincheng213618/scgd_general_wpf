@@ -48,7 +48,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; OnPropertyChanged(); } }
         private PhyCamera? _PhyCamera;
-        public ViewCamera View { get; set; }
+        private readonly Lazy<ViewCamera> _view;
+        public ViewCamera View => _view.Value;
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
@@ -59,8 +60,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCamera(this);
-
-            View = new ViewCamera(this);
+            _view = new Lazy<ViewCamera>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new ViewCamera(this)
+                : Application.Current.Dispatcher.Invoke(() => new ViewCamera(this)));
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));

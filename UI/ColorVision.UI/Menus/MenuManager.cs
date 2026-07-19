@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1854,CS8619
 using ColorVision.Common.MVVM;
 using log4net;
+using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -65,7 +66,10 @@ namespace ColorVision.UI.Menus
         /// </summary>
         public void LoadMenuForWindow(string targetName, Menu targetMenuControl, Func<Type, bool>? typeFilter)
         {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch phaseStopwatch = Stopwatch.StartNew();
             EnsureTypeCaches();
+            long typeDiscoveryMilliseconds = phaseStopwatch.ElapsedMilliseconds;
 
             RegisterMenu(targetName, targetMenuControl, typeFilter);
             if (!_menuBackups.ContainsKey(targetMenuControl))
@@ -81,11 +85,15 @@ namespace ColorVision.UI.Menus
             log.Info($"LoadMenuForWindow for target: {targetName}");
             targetMenuControl.Items.Clear();
 
+            phaseStopwatch.Restart();
             var windowSpecificItems = GetWindowSpecificItems(targetName, typeFilter);
+            long itemDiscoveryMilliseconds = phaseStopwatch.ElapsedMilliseconds;
             var rootMenuItems = windowSpecificItems
                 .Where(mi => GetEffectiveOwnerGuid(mi) == MenuItemConstants.Menu)
-                .OrderBy(mi => GetEffectiveOrder(mi));
+                .OrderBy(mi => GetEffectiveOrder(mi))
+                .ToList();
 
+            phaseStopwatch.Restart();
             foreach (var mi in rootMenuItems)
             {
                 var menuItem = CreateMenuItem(mi);
@@ -103,6 +111,12 @@ namespace ColorVision.UI.Menus
                     targetMenuControl.Items.Add(item);
                 }
             }
+
+            totalStopwatch.Stop();
+            log.Info($"LoadMenuForWindow completed for target: {targetName}. " +
+                $"Items={windowSpecificItems.Count}, Roots={rootMenuItems.Count}, " +
+                $"TypeDiscovery={typeDiscoveryMilliseconds}ms, ItemDiscovery={itemDiscoveryMilliseconds}ms, " +
+                $"TreeBuild={phaseStopwatch.ElapsedMilliseconds}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
         }
 
         public void UnregisterMenu(Menu menu)

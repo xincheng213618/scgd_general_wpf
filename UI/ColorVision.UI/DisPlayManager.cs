@@ -160,6 +160,31 @@ namespace ColorVision.UI
             RebuildPanel();
         }
 
+        /// <summary>
+        /// Replaces the complete display-control snapshot and rebuilds the visual
+        /// panel once. Startup service discovery can otherwise trigger a full panel
+        /// rebuild for every device added to the observable collection.
+        /// </summary>
+        public void ReplaceControls(IEnumerable<IDisPlayControl> controls)
+        {
+            ArgumentNullException.ThrowIfNull(controls);
+            _suppressCollectionChanged = true;
+            try
+            {
+                IDisPlayControls.Clear();
+                foreach (IDisPlayControl control in controls)
+                {
+                    IDisPlayControls.Add(control);
+                }
+            }
+            finally
+            {
+                _suppressCollectionChanged = false;
+            }
+
+            RestoreControl();
+        }
+
         public void SelectControl(IDisPlayControl disPlayControl)
         {
             ArgumentNullException.ThrowIfNull(disPlayControl);

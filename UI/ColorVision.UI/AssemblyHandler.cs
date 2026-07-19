@@ -72,7 +72,7 @@ namespace ColorVision.UI
 
                 if (_assemblies != null
                     && IsCustomAssembly(assembly.GetName().Name, assembly)
-                    && TryLoadAssemblyTypes(assembly))
+                    && TryLoadAssemblyTypes(assembly, out _))
                 {
                     _assemblies = _assemblies.Append(assembly).Distinct().ToArray();
                 }
@@ -150,23 +150,26 @@ namespace ColorVision.UI
         /// <summary>
         /// Safely loads types from an assembly
         /// </summary>
-        private bool TryLoadAssemblyTypes(Assembly assembly)
+        private bool TryLoadAssemblyTypes(Assembly assembly, out Type[] types)
         {
-            if (_assemblyTypeCache.ContainsKey(assembly))
+            if (_assemblyTypeCache.TryGetValue(assembly, out types!))
                 return true;
 
             try
             {
-                _assemblyTypeCache.TryAdd(assembly, assembly.GetTypes());
+                types = assembly.GetTypes();
+                _assemblyTypeCache.TryAdd(assembly, types);
                 return true;
             }
             catch (ReflectionTypeLoadException ex)
             {
+                types = Array.Empty<Type>();
                 Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
                 return false;
             }
             catch (Exception ex)
             {
+                types = Array.Empty<Type>();
                 Log.Error($"Unexpected error loading types from assembly '{assembly.FullName}': {ex.Message}", ex);
                 return false;
             }
@@ -180,8 +183,8 @@ namespace ColorVision.UI
         public IReadOnlyList<Type> GetTypes(Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
-            return TryLoadAssemblyTypes(assembly)
-                ? _assemblyTypeCache[assembly]
+            return TryLoadAssemblyTypes(assembly, out Type[] types)
+                ? types
                 : Array.Empty<Type>();
         }
 
@@ -198,7 +201,7 @@ namespace ColorVision.UI
                     .Where(assembly =>
                     {
                         string? name = assembly.GetName().Name;
-                        return IsCustomAssembly(name, assembly) && TryLoadAssemblyTypes(assembly);
+                        return IsCustomAssembly(name, assembly) && TryLoadAssemblyTypes(assembly, out _);
                     })
                     .ToArray();
 

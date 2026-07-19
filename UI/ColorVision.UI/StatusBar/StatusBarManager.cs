@@ -170,27 +170,13 @@ namespace ColorVision.UI
             if (_providers.Count == 0)
             {
                 // 首次加载：创建实例并订阅事件
-                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                foreach (IStatusBarProvider provider in AssemblyHandler.GetInstance().LoadImplementations<IStatusBarProvider>())
                 {
-                    foreach (var type in assembly.GetTypes()
-                        .Where(t => typeof(IStatusBarProvider).IsAssignableFrom(t) && !t.IsAbstract))
-                    {
-                        try
-                        {
-                            if (Activator.CreateInstance(type) is IStatusBarProvider provider)
-                            {
-                                _providers.Add(provider);
+                    _providers.Add(provider);
 
-                                if (provider is IStatusBarProviderUpdatable updatable)
-                                {
-                                    updatable.StatusBarItemsChanged += OnProviderItemsChanged;
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error($"Failed to load StatusBarProvider {type.Name}: {ex.Message}");
-                        }
+                    if (provider is IStatusBarProviderUpdatable updatable)
+                    {
+                        updatable.StatusBarItemsChanged += OnProviderItemsChanged;
                     }
                 }
             }

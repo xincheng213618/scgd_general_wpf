@@ -221,17 +221,10 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
-                .SelectMany(a => a.GetTypes())
-                .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
-                .Select(t =>
-                {
-                    try { return Activator.CreateInstance(t) as IDockPanelProvider; }
-                    catch (Exception ex) { log.Debug($"Failed to instantiate IDockPanelProvider {t.Name}: {ex.Message}"); return null; }
-                })
-                .Where(p => p != null)
-                .OrderBy(p => p!.Order))
+            foreach (var provider in AssemblyHandler.GetInstance().LoadImplementations<IDockPanelProvider>()
+                .OrderBy(p => p.Order))
             {
+                Stopwatch providerStopwatch = Stopwatch.StartNew();
                 try
                 {
                     provider!.RegisterPanels();
@@ -239,6 +232,11 @@ namespace ColorVision
                 catch (Exception ex)
                 {
                     log.Warn($"IDockPanelProvider {provider.GetType().Name} failed: {ex.Message}");
+                }
+                finally
+                {
+                    providerStopwatch.Stop();
+                    log.Info($"Dock panel provider {provider.GetType().Name} took {providerStopwatch.ElapsedMilliseconds} ms.");
                 }
             }
 
@@ -271,7 +269,6 @@ namespace ColorVision
 
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
             this.LoadHotKeyFromAssembly();
-            StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
 
             DockingManager1.ActiveContentChanged += (_, _) =>
             {
@@ -284,21 +281,18 @@ namespace ColorVision
             };
 
             Application.Current.MainWindow = this;
-            Task.Run(() =>
+            ContentRendered += IntegratedMainWindow_ContentRendered;
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    LoadIMainWindowInitialized();
+                LoadIMainWindowInitialized();
 
-                    FluidMoveBehavior fluidMoveBehavior = new()
-                    {
-                        AppliesTo = FluidMoveScope.Children,
-                        Duration = TimeSpan.FromSeconds(0.1)
-                    };
-                    Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
-                });
-            });
-            ProgramTimer.StopAndReport();
+                FluidMoveBehavior fluidMoveBehavior = new()
+                {
+                    AppliesTo = FluidMoveScope.Children,
+                    Duration = TimeSpan.FromSeconds(0.1)
+                };
+                Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
+            }));
 
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
             var command = new RoutedCommand();
@@ -582,22 +576,25 @@ namespace ColorVision
             SearchControl1.FocusSearchBox();
         }
 
+        private void IntegratedMainWindow_ContentRendered(object? sender, EventArgs e)
+        {
+            ContentRendered -= IntegratedMainWindow_ContentRendered;
+            ProgramTimer.StopAndReport();
+            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
+                stopwatch.Stop();
+                log.Info($"Main window status bar materialized in {stopwatch.ElapsedMilliseconds} ms after first render.");
+            }), DispatcherPriority.Background);
+        }
+
         public static async void LoadIMainWindowInitialized()
         {
-            List<IMainWindowInitialized> initializers = new();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMainWindowInitialized).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
-                    {
-                        initializers.Add(componentInitialize);
-                    }
-                }
-            }
-
+            List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
             foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 try
                 {
                     await componentInitialize.Initialize();
@@ -605,6 +602,11 @@ namespace ColorVision
                 catch (Exception ex)
                 {
                     log.Error(ex);
+                }
+                finally
+                {
+                    stopwatch.Stop();
+                    log.Info($"Main window initializer {componentInitialize.Name} took {stopwatch.ElapsedMilliseconds} ms.");
                 }
             }
         }

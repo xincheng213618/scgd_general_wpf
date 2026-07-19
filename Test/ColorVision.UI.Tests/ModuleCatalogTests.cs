@@ -84,6 +84,23 @@ namespace ColorVision.UI.Tests
             handler.ClearCaches();
         }
 
+        [Fact]
+        public void GetTypes_ReusesAssemblyTypeSnapshot()
+        {
+            AssemblyHandler handler = AssemblyHandler.GetInstance();
+            handler.ClearCaches();
+            Assembly assembly = typeof(ModuleCatalogTests).Assembly;
+            handler.RegisterAssembly(assembly);
+
+            IReadOnlyList<Type> firstSnapshot = handler.GetTypes(assembly);
+            IReadOnlyList<Type> secondSnapshot = handler.GetTypes(assembly);
+
+            Assert.NotEmpty(firstSnapshot);
+            Assert.Same(firstSnapshot, secondSnapshot);
+
+            handler.ClearCaches();
+        }
+
         private sealed class RecordingAssemblyService : IAssemblyService
         {
             public List<Assembly> Assemblies { get; } = new();

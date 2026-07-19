@@ -5,6 +5,8 @@ using ColorVision.UI;
 using log4net;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace ColorVision.Solution.Workspace
 {
@@ -32,7 +34,7 @@ namespace ColorVision.Solution.Workspace
         /// 持久化内容注册表，按 ContentId 索引。
         /// 初始化时填充，确保内容在关闭/重置/加载后始终可恢复。
         /// </summary>
-        private readonly Dictionary<string, object> _contentRegistry = new();
+        private readonly Dictionary<string, DockContentRegistration> _contentRegistry = new();
 
         /// <summary>
         /// 面板元数据注册表，存储每个面板的标题和默认位置信息。
@@ -59,7 +61,18 @@ namespace ColorVision.Solution.Workspace
         /// <param name="position">面板默认停靠位置</param>
         public void RegisterPanel(string contentId, object content, string title, PanelPosition position = PanelPosition.Bottom, bool isDefaultVisible = true)
         {
-            _contentRegistry[contentId] = content;
+            _contentRegistry[contentId] = DockContentRegistration.FromContent(content);
+            _panelInfoRegistry[contentId] = new PanelInfo(title, position, isDefaultVisible);
+        }
+
+        /// <summary>
+        /// Registers panel metadata immediately while deferring heavyweight content
+        /// construction until the saved layout or an explicit show action needs it.
+        /// </summary>
+        public void RegisterPanel(string contentId, Func<object> contentFactory, string title, PanelPosition position = PanelPosition.Bottom, bool isDefaultVisible = true)
+        {
+            ArgumentNullException.ThrowIfNull(contentFactory);
+            _contentRegistry[contentId] = DockContentRegistration.FromFactory(contentId, contentFactory);
             _panelInfoRegistry[contentId] = new PanelInfo(title, position, isDefaultVisible);
         }
 
@@ -72,7 +85,7 @@ namespace ColorVision.Solution.Workspace
         /// <param name="canClose">是否允许关闭</param>
         public void RegisterDocument(string contentId, object content, string title, bool canClose = true)
         {
-            _contentRegistry[contentId] = content;
+            _contentRegistry[contentId] = DockContentRegistration.FromContent(content);
             _documentRegistry[contentId] = new DocumentInfo(title, canClose);
         }
 
@@ -108,7 +121,7 @@ namespace ColorVision.Solution.Workspace
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 serializer.LayoutSerializationCallback += (s, args) =>
                 {
-                    if (args.Model.ContentId != null && _contentRegistry.TryGetValue(args.Model.ContentId, out var content))
+                    if (args.Model.ContentId != null && TryGetRegisteredLayoutContent(args.Model.ContentId, out object? content))
                         args.Content = content;
                     else
                         args.Cancel = true; // 取消未注册的项（如动态编辑器标签页），防止出现空内容
@@ -183,7 +196,7 @@ namespace ColorVision.Solution.Workspace
                             CanAutoHide = true,
                             CanFloat = true
                         };
-                        if (_contentRegistry.TryGetValue(panel.Key, out var content))
+                        if (TryGetRegisteredLayoutContent(panel.Key, out object? content))
                             anchorable.Content = content;
                         leftPane.Children.Add(anchorable);
                     }
@@ -208,7 +221,7 @@ namespace ColorVision.Solution.Workspace
                         ContentId = doc.Key,
                         CanClose = doc.Value.CanClose
                     };
-                    if (_contentRegistry.TryGetValue(doc.Key, out var content))
+                    if (TryGetRegisteredLayoutContent(doc.Key, out object? content))
                         layoutDoc.Content = content;
                     docPane.Children.Add(layoutDoc);
                 }
@@ -236,7 +249,7 @@ namespace ColorVision.Solution.Workspace
                             CanAutoHide = true,
                             CanFloat = true
                         };
-                        if (_contentRegistry.TryGetValue(panel.Key, out var content))
+                        if (TryGetRegisteredLayoutContent(panel.Key, out object? content))
                             anchorable.Content = content;
                         bottomPane.Children.Add(anchorable);
                     }
@@ -267,7 +280,7 @@ namespace ColorVision.Solution.Workspace
                             CanAutoHide = true,
                             CanFloat = true
                         };
-                        if (_contentRegistry.TryGetValue(panel.Key, out var content))
+                        if (TryGetRegisteredLayoutContent(panel.Key, out object? content))
                             anchorable.Content = content;
                         rightPane.Children.Add(anchorable);
                     }
@@ -310,14 +323,17 @@ namespace ColorVision.Solution.Workspace
             if (anchorable != null)
             {
                 if (anchorable.IsHidden)
+                {
+                    MaterializeDeferredContent(anchorable);
                     anchorable.Show();
+                }
                 else
                     anchorable.Hide();
                 return;
             }
 
             // 面板已关闭并从布局树中移除 — 从注册表重新添加
-            if (_contentRegistry.TryGetValue(contentId, out var content))
+            if (TryGetRegisteredContent(contentId, out object? content))
             {
                 var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
                 var position = info?.Position ?? PanelPosition.Bottom;
@@ -354,6 +370,7 @@ namespace ColorVision.Solution.Workspace
             var anchorable = FindAnchorable(contentId);
             if (anchorable != null)
             {
+                MaterializeDeferredContent(anchorable);
                 if (anchorable.IsHidden)
                     anchorable.Show();
                 anchorable.IsActive = true;
@@ -361,7 +378,7 @@ namespace ColorVision.Solution.Workspace
             }
 
             // Panel was closed and removed from layout tree — re-add from registry
-            if (_contentRegistry.TryGetValue(contentId, out var content))
+            if (TryGetRegisteredContent(contentId, out object? content))
             {
                 var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
                 var position = info?.Position ?? PanelPosition.Bottom;
@@ -407,6 +424,49 @@ namespace ColorVision.Solution.Workspace
         public PanelInfo? GetPanelInfo(string contentId)
         {
             return _panelInfoRegistry.TryGetValue(contentId, out var info) ? info : null;
+        }
+
+        private bool TryGetRegisteredContent(string contentId, out object? content)
+        {
+            content = null;
+            if (!_contentRegistry.TryGetValue(contentId, out DockContentRegistration? registration))
+                return false;
+
+            try
+            {
+                content = registration.GetOrCreate();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to create dock content '{contentId}'.", ex);
+                return false;
+            }
+        }
+
+        private static void MaterializeDeferredContent(LayoutAnchorable anchorable)
+        {
+            if (anchorable.Content is DeferredDockContent deferredContent)
+                deferredContent.Materialize();
+        }
+
+        private bool TryGetRegisteredLayoutContent(string contentId, out object? content)
+        {
+            content = null;
+            if (!_contentRegistry.TryGetValue(contentId, out DockContentRegistration? registration))
+                return false;
+
+            try
+            {
+                content = registration.GetForLayout(ex =>
+                    log.Warn($"Failed to create deferred dock content '{contentId}'.", ex));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Failed to restore dock content '{contentId}'.", ex);
+                return false;
+            }
         }
 
         /// <summary>
@@ -593,4 +653,93 @@ namespace ColorVision.Solution.Workspace
     /// 文档元数据
     /// </summary>
     public record DocumentInfo(string Title, bool CanClose);
+
+    internal sealed class DockContentRegistration
+    {
+        private readonly Lazy<object> _content;
+        private readonly bool _isDeferred;
+
+        private DockContentRegistration(Func<object> contentFactory, bool isDeferred)
+        {
+            _content = new Lazy<object>(contentFactory);
+            _isDeferred = isDeferred;
+        }
+
+        public bool IsValueCreated => _content.IsValueCreated;
+
+        public object GetOrCreate() => _content.Value;
+
+        public object GetForLayout(Action<Exception> materializationFailed) =>
+            _isDeferred
+                ? new DeferredDockContent(GetOrCreate, materializationFailed)
+                : GetOrCreate();
+
+        public static DockContentRegistration FromContent(object content)
+        {
+            ArgumentNullException.ThrowIfNull(content);
+            return new DockContentRegistration(() => content, isDeferred: false);
+        }
+
+        public static DockContentRegistration FromFactory(string contentId, Func<object> contentFactory)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(contentId);
+            ArgumentNullException.ThrowIfNull(contentFactory);
+            return new DockContentRegistration(() =>
+                contentFactory() ?? throw new InvalidOperationException($"Panel content factory returned null for '{contentId}'."),
+                isDeferred: true);
+        }
+    }
+
+    /// <summary>
+    /// Keeps factory-backed layout content lightweight until the restored panel is
+    /// actually visible. ApplicationIdle runs after WPF's render priority, so a
+    /// visible heavyweight panel no longer delays the main window's first frame.
+    /// </summary>
+    internal sealed class DeferredDockContent : ContentControl
+    {
+        private readonly Func<object> _contentFactory;
+        private readonly Action<Exception> _materializationFailed;
+        private bool _isScheduled;
+        private bool _materializationAttempted;
+
+        public DeferredDockContent(Func<object> contentFactory, Action<Exception> materializationFailed)
+        {
+            _contentFactory = contentFactory;
+            _materializationFailed = materializationFailed;
+            Loaded += (_, _) => ScheduleMaterialization();
+            IsVisibleChanged += (_, _) => ScheduleMaterialization();
+        }
+
+        internal object? Materialize()
+        {
+            if (_materializationAttempted)
+                return Content;
+
+            _materializationAttempted = true;
+            try
+            {
+                Content = _contentFactory();
+            }
+            catch (Exception ex)
+            {
+                _materializationFailed(ex);
+            }
+
+            return Content;
+        }
+
+        private void ScheduleMaterialization()
+        {
+            if (_materializationAttempted || _isScheduled || !IsLoaded || !IsVisible)
+                return;
+
+            _isScheduled = true;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                _isScheduled = false;
+                if (IsLoaded && IsVisible)
+                    Materialize();
+            }), DispatcherPriority.ApplicationIdle);
+        }
+    }
 }

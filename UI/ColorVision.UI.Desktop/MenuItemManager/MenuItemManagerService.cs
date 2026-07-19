@@ -12,13 +12,13 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             SyncSettingsFromMenuItems(MenuManager.GetInstance(), MenuItemManagerConfig.Instance);
         }
 
-        public static void ApplySettings()
+        public static bool ApplySettings()
         {
             var menuManager = MenuManager.GetInstance();
             var config = MenuItemManagerConfig.Instance;
 
             SyncSettingsFromMenuItems(menuManager, config);
-            ApplyConfigToMenuManager(menuManager, config);
+            return ApplyConfigToMenuManager(menuManager, config);
         }
 
         public static void RebuildMenu()
@@ -55,33 +55,66 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             return true;
         }
 
-        private static void ApplyConfigToMenuManager(MenuManager menuManager, MenuItemManagerConfig config)
+        private static bool ApplyConfigToMenuManager(MenuManager menuManager, MenuItemManagerConfig config)
         {
-            menuManager.FilteredGuids.Clear();
-            menuManager.OrderOverrides.Clear();
-            menuManager.OwnerGuidOverrides.Clear();
+            var filteredGuids = config.Settings
+                .Where(setting => !setting.IsVisible && !string.IsNullOrEmpty(setting.GuidId))
+                .Select(setting => setting.GuidId!)
+                .ToHashSet(StringComparer.Ordinal);
 
-            foreach (var setting in config.Settings.Where(s => !s.IsVisible && !string.IsNullOrEmpty(s.GuidId)))
-            {
-                menuManager.AddFilteredGuid(setting.GuidId);
-            }
+            var orderOverrides = config.Settings
+                .Where(setting => setting.OrderOverride.HasValue && !string.IsNullOrEmpty(setting.GuidId))
+                .GroupBy(setting => setting.GuidId!, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Last().OrderOverride!.Value, StringComparer.Ordinal);
 
-            foreach (var setting in config.Settings.Where(s => s.OrderOverride.HasValue && !string.IsNullOrEmpty(s.GuidId)))
-            {
-                menuManager.OrderOverrides[setting.GuidId] = setting.OrderOverride!.Value;
-            }
-
-            foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.OwnerGuidOverride) && !string.IsNullOrEmpty(s.GuidId)))
+            var ownerGuidOverrides = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var setting in config.Settings.Where(setting => !string.IsNullOrEmpty(setting.OwnerGuidOverride) && !string.IsNullOrEmpty(setting.GuidId)))
             {
                 if (IsValidOwnerOverride(setting, setting.OwnerGuidOverride))
                 {
-                    menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
+                    ownerGuidOverrides[setting.GuidId!] = setting.OwnerGuidOverride!;
                 }
                 else
                 {
                     log.Warn($"Skip invalid OwnerGuid override '{setting.OwnerGuidOverride}' for '{setting.GuidId}'.");
                 }
             }
+
+            bool changed = !menuManager.FilteredGuids.SetEquals(filteredGuids)
+                || !DictionaryEquals(menuManager.OrderOverrides, orderOverrides)
+                || !DictionaryEquals(menuManager.OwnerGuidOverrides, ownerGuidOverrides);
+
+            if (!changed)
+                return false;
+
+            menuManager.FilteredGuids.Clear();
+            menuManager.FilteredGuids.UnionWith(filteredGuids);
+
+            menuManager.OrderOverrides.Clear();
+            foreach (var (guid, order) in orderOverrides)
+            {
+                menuManager.OrderOverrides[guid] = order;
+            }
+
+            menuManager.OwnerGuidOverrides.Clear();
+            foreach (var (guid, ownerGuid) in ownerGuidOverrides)
+            {
+                menuManager.OwnerGuidOverrides[guid] = ownerGuid;
+            }
+
+            return true;
+        }
+
+        private static bool DictionaryEquals<TValue>(
+            IReadOnlyDictionary<string, TValue> current,
+            IReadOnlyDictionary<string, TValue> expected)
+        {
+            if (current.Count != expected.Count)
+                return false;
+
+            var comparer = EqualityComparer<TValue>.Default;
+            return current.All(pair => expected.TryGetValue(pair.Key, out TValue? value)
+                && comparer.Equals(pair.Value, value));
         }
 
         private static void SyncSettingsFromMenuItems(MenuManager menuManager, MenuItemManagerConfig config)
