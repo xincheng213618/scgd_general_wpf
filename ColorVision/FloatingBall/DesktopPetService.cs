@@ -130,10 +130,12 @@ namespace ColorVision.FloatingBall
         public override string Name => Properties.Resources.DesktopPetInitializerName;
         public override int Order { get; set; } = 1000;
 
-        public override async System.Threading.Tasks.Task Initialize()
+        public override System.Threading.Tasks.Task Initialize()
         {
-            await System.Threading.Tasks.Task.Delay(600);
-            DesktopPetService.GetInstance().ShowStartupGreeting();
+            if (MainWindowConfig.Instance.OpenFloatingBall && DesktopPetConfig.Instance.ShowStartupGreeting)
+                DesktopPetService.GetInstance().ShowStartupGreeting();
+
+            return System.Threading.Tasks.Task.CompletedTask;
         }
     }
 }
