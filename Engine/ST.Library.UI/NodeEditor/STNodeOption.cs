@@ -221,6 +221,7 @@ public class STNodeOption
 
 	private STNodeOption()
 	{
+		m_hs_connected = new HashSet<STNodeOption>();
 	}
 
 	public STNodeOption(string strText, Type dataType, bool bSingle)

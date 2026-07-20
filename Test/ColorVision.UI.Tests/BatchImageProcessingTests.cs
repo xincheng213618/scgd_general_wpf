@@ -137,12 +137,12 @@ public class BatchImageProcessingTests
                 Version = 1,
                 FileExtType = fileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase) ? CVType.Raw : CVType.CIE,
                 Rows = 2,
-                Cols = 2,
+                Cols = 3,
                 Bpp = 8,
                 Channels = 3,
                 Gain = 1,
                 Exp = new[] { 1f, 1f, 1f },
-                Data = Enumerable.Range(0, 12).Select(value => (byte)value).ToArray(),
+                Data = Enumerable.Range(0, 18).Select(value => (byte)value).ToArray(),
             };
             Assert.True(CVFileUtil.WriteCIEFile(filePath, file));
 
@@ -151,7 +151,7 @@ public class BatchImageProcessingTests
 
             Assert.False(loaded.Empty());
             Assert.Equal(2, loaded.Rows);
-            Assert.Equal(2, loaded.Cols);
+            Assert.Equal(3, loaded.Cols);
         }
         finally
         {

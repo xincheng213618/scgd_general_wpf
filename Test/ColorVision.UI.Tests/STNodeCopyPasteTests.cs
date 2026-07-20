@@ -9,6 +9,13 @@ namespace ColorVision.UI.Tests
         private const string RequiresStaUiTestRunner = "Requires an STA UI test runner.";
 
         [Fact]
+        public void EmptyOption_ReportsZeroConnections()
+        {
+            Assert.Equal(0, STNodeOption.Empty.ConnectionCount);
+            Assert.Empty(STNodeOption.Empty.ConnectedOption);
+        }
+
+        [Fact]
         public void Title_Set_RaisesPropertyChanged()
         {
             var node = new STNodeHub();
