@@ -83,8 +83,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 PhyCamera.DeviceCamera = this;
             }
 
-            RefreshCommand = new RelayCommand(a => Save());
-
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
 
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
