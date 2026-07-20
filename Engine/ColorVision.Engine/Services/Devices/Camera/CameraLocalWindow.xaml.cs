@@ -32,13 +32,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isConnected;
         private bool _isRefreshingCameraIds;
         private bool _closeAfterCameraIdRefresh;
-        private string? _loadedNativeCalibrationLibraryJson;
 
         public byte[] rawArray;
         public byte[] srcrawArray;
         public UInt32 ImgWid = 5544, ImgHei = 3684;
         public UInt32 Imgbpp = 8, Imgchannels = 1;
-        public IntPtr m_hCamHandle = IntPtr.Zero;
+        public IntPtr m_hCamHandle => Device.LocalCameraSession.Handle;
 
         TakeImageMode m_etakeImageMode = TakeImageMode.Measure_Normal;
         int m_nBppIndex = 1;
@@ -63,9 +62,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             m_etakeImageMode = Device.Config.TakeImageMode;
             m_nBppIndex = Device.Config.ImageBpp == ImageBpp.bpp16 ? 1 : 0;
 
-            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-            m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(m_eCameraMdl, m_eCameraMode, strPathSysCfg);
-            cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+            Device.LocalCameraSession.EnsureInitialized();
 
             cb_CM_TYPE.SelectedIndex = (int)m_eCameraMdl;
             cb_CM_MODE.SelectedIndex = (int)m_eCameraMode;
@@ -74,7 +71,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             cb_Channels.SelectedIndex = Device.Config.Channel == ImageChannel.Three ? 1 : 0;
             InitializeCameraIdFromConfig();
 
-            UpdateConnectionState(false);
+            bool isConnected = Device.LocalCameraSession.IsOpen;
+            if (isConnected && m_etakeImageMode == TakeImageMode.Live)
+            {
+                AttachLiveCallback();
+            }
+            UpdateConnectionState(isConnected);
             UpdateCalibrationTemplateOptions();
         }
 
@@ -292,26 +294,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             UpdateCurrentConfigFromUi(GetSelectedCameraId());
             _localRealtimePipeline.Stop(resetRealtime: true);
-            if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+            if (m_etakeImageMode == TakeImageMode.Live)
             {
-                if (m_etakeImageMode == TakeImageMode.Live)
-                {
-                    cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                    cvCameraCSLib.CM_Close(m_hCamHandle);
-                }
-                else
-                {
-                    cvCameraCSLib.CM_Close(m_hCamHandle);
-                }
+                Device.LocalCameraSession.DetachCallback();
             }
 
-            cvCameraCSLib.ReleaseCameraManager(m_hCamHandle);
-            cvCameraCSLib.ReleaseResource();
             SaveLocalPreferences();
             Dispose();
         }
 
         cvCameraCSLib.QHYCCDProcCallBack callback;
+
+        private void AttachLiveCallback()
+        {
+            if (!Device.LocalCameraSession.IsOpen || m_etakeImageMode != TakeImageMode.Live)
+            {
+                return;
+            }
+
+            callback ??= new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
+            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
+            _localRealtimePipeline.Start(ImageView);
+        }
 
         private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
         {
@@ -431,14 +435,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 calibrationLibCfg = calibrationFiles.Select(CreateCalibrationItem).ToList(),
             });
 
-            if (string.Equals(_loadedNativeCalibrationLibraryJson, json, StringComparison.Ordinal))
+            if (Device.LocalCameraSession.UpdateCalibration(json))
             {
-                return true;
-            }
-
-            if (cvCameraCSLib.UpdateCfgJson(m_hCamHandle, ConfigType.Cfg_Calibration, json))
-            {
-                _loadedNativeCalibrationLibraryJson = json;
                 return true;
             }
 
@@ -704,26 +702,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
-            if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+            if (Device.LocalCameraSession.IsOpen)
             {
+                AttachLiveCallback();
+                UpdateConnectionState(true);
                 return;
             }
 
-            int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
-            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, m_etakeImageMode);
-            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, m_nBppIndex == 0 ? 8 : 16);
+            int nErr = Device.LocalCameraSession.Open(cameraId, m_etakeImageMode, m_nBppIndex == 0 ? 8 : 16);
+            if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                string szMsg = "";
+                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                MessageBox.Show(szMsg);
+                btn_Connect.IsEnabled = true;
+                return;
+            }
 
             if (m_etakeImageMode != TakeImageMode.Live)
             {
-                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
-                {
-                    string szMsg = "";
-                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                    MessageBox.Show(szMsg);
-                    btn_Connect.IsEnabled = true;
-                    return;
-                }
-
                 string sn = cvCameraCSLib.CM_GetSN(m_hCamHandle);
                 string mode = cvCameraCSLib.CM_GetDeviceMode(m_hCamHandle);
                 this.Title = "Model: COLOR VISION " + mode;
@@ -735,26 +732,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-                if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
-                {
-                    string szMsg = "";
-                    cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-                    MessageBox.Show(szMsg);
-                    btn_Connect.IsEnabled = true;
-                    return;
-                }
-
                 ApplyCurrentCameraSettings();
                 UpdateCurrentConfigFromUi(cameraId);
                 SaveLocalPreferences();
-
-                if (callback == null)
-                {
-                    callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-                }
-
-                cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
-                _localRealtimePipeline.Start(ImageView);
+                AttachLiveCallback();
                 UpdateConnectionState(true);
             }
         }
@@ -764,13 +745,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (m_etakeImageMode == TakeImageMode.Live)
             {
                 _localRealtimePipeline.Stop(resetRealtime: true);
-                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                cvCameraCSLib.CM_Close(m_hCamHandle);
             }
-            else
-            {
-                cvCameraCSLib.CM_Close(m_hCamHandle);
-            }
+            Device.LocalCameraSession.Close(m_etakeImageMode == TakeImageMode.Live);
 
             UpdateConnectionState(false);
             SaveLocalPreferences();
@@ -780,6 +756,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         UInt32 src_bpp = 0, src_channels = 0;
 
         private void btn_Meas_Click(object sender, RoutedEventArgs e)
+        {
+            lock (Device.LocalCameraSession.SyncRoot)
+            {
+                MeasureOnce();
+            }
+        }
+
+        private void MeasureOnce()
         {
             btn_Meas.IsEnabled = false;
             button1.IsEnabled = false;

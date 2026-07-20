@@ -4,6 +4,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
@@ -54,11 +55,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
+        internal LocalCameraSession LocalCameraSession { get; }
 
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            LocalCameraSession = new LocalCameraSession(this);
             DService = new MQTTCamera(this);
             _view = new Lazy<ViewCamera>(() => Application.Current.Dispatcher.CheckAccess()
                 ? new ViewCamera(this)
@@ -376,6 +379,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
+            LocalCameraSession.Dispose();
             this.PhyCamera?.ReleaseDeviceCamera();
             DService?.Dispose();
             base.Dispose();
