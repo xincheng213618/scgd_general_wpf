@@ -1612,6 +1612,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternal()
         {
+            string configuredCameraId = Device.Config.CameraID ?? string.Empty;
             if (m_hCamHandle == IntPtr.Zero)
             {
                 cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
@@ -1659,9 +1660,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            if (!Device.Config.CameraID.Equals(cameraId, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(configuredCameraId, cameraId, StringComparison.OrdinalIgnoreCase))
             {
                 Device.Config.CameraID = cameraId;
+                try
+                {
+                    Device.SaveConfig();
+                    logger.Info($"Persisted refreshed CameraID. old={configuredCameraId}, new={cameraId}");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error($"Failed to persist refreshed CameraID. old={configuredCameraId}, new={cameraId}", ex);
+                }
             }
             SaveLocalPreferences();
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
