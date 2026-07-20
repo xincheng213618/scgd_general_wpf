@@ -32,6 +32,7 @@ public class DockViewManagerTests
             displayControl.IsSelected = true;
 
             Assert.Equal(0, pane.SelectedContentIndex);
+            Assert.True(document.IsActive);
             Assert.Same(view, manager.LastActiveView);
 
             manager.SetViewTitle(view, "Renamed Camera");

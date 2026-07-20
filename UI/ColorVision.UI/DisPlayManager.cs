@@ -70,7 +70,7 @@ namespace ColorVision.UI
 
             if (userControl is IDisPlayControl disPlayControl)
             {
-                disPlayControl.Selected += (s, e) => manager.SelectView(viewControl);
+                disPlayControl.Selected += (s, e) => manager.ActiveView(viewControl);
             }
 
             userControl.PreviewMouseDown += (s, e) =>

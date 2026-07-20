@@ -71,10 +71,11 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <Button x:Name="btn_RefreshCameraId" Width="56" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" />
+                        <Button x:Name="btn_RefreshCameraId" Width="64" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.RefreshDeviceList}" />
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CameraID}" />
                         <ComboBox x:Name="cb_CM_ID" IsEditable="True" SelectionChanged="cb_CM_ID_SelectionChanged" />
                     </DockPanel>
+                    <ProgressBar x:Name="CameraIdSearchProgress" Height="2" Margin="78,-1,0,3" IsIndeterminate="True" Visibility="Collapsed" />
 
                     <DockPanel Margin="0,3">
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CaptureMode}" />

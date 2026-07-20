@@ -11,13 +11,13 @@ using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -30,6 +30,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private static readonly ILog log = LogManager.GetLogger(typeof(CameraLocalWindow));
         private readonly CameraRealtimeFramePipeline _localRealtimePipeline = new();
         private bool _disposed;
+        private bool _isConnected;
+        private bool _isRefreshingCameraIds;
+        private bool _closeAfterCameraIdRefresh;
 
         public byte[] rawArray;
         public byte[] srcrawArray;
@@ -55,25 +58,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-            m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(m_eCameraMdl, m_eCameraMode, strPathSysCfg);
-            cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
-
             m_eCameraMdl = Device.Config.CameraModel;
             m_eCameraMode = Device.Config.CameraMode;
             m_etakeImageMode = Device.Config.TakeImageMode;
             m_nBppIndex = Device.Config.ImageBpp == ImageBpp.bpp16 ? 1 : 0;
 
-            cb_CM_ID.Items.Clear();
+            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+            m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(m_eCameraMdl, m_eCameraMode, strPathSysCfg);
+            cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+
             cb_CM_TYPE.SelectedIndex = (int)m_eCameraMdl;
             cb_CM_MODE.SelectedIndex = (int)m_eCameraMode;
             cb_get_mode.SelectedIndex = (int)m_etakeImageMode;
             cb_bpp.SelectedIndex = m_nBppIndex;
             cb_Channels.SelectedIndex = Device.Config.Channel == ImageChannel.Three ? 1 : 0;
+            InitializeCameraIdFromConfig();
 
             UpdateConnectionState(false);
-            RefreshCameraIdOptions(false);
-
             UpdateCalibrationTemplateOptions();
         }
 
@@ -81,21 +82,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void UpdateConnectionState(bool isConnected)
         {
-            btn_Connect.IsEnabled = !isConnected;
-            btn_close.IsEnabled = isConnected;
-            btn_reset.IsEnabled = !isConnected;
-            btn_RefreshCameraId.IsEnabled = !isConnected;
+            _isConnected = isConnected;
+            bool canConfigure = !isConnected && !_isRefreshingCameraIds;
 
-            cb_CM_TYPE.IsEnabled = !isConnected;
-            cb_CM_MODE.IsEnabled = !isConnected;
-            cb_CM_ID.IsEnabled = !isConnected;
-            cb_get_mode.IsEnabled = !isConnected;
-            cb_bpp.IsEnabled = !isConnected;
+            btn_Connect.IsEnabled = canConfigure;
+            btn_close.IsEnabled = isConnected;
+            btn_reset.IsEnabled = canConfigure;
+            btn_RefreshCameraId.IsEnabled = canConfigure;
+
+            cb_CM_TYPE.IsEnabled = canConfigure;
+            cb_CM_MODE.IsEnabled = canConfigure;
+            cb_CM_ID.IsEnabled = canConfigure;
+            cb_get_mode.IsEnabled = canConfigure;
+            cb_bpp.IsEnabled = canConfigure;
 
             bool canCapture = isConnected && m_etakeImageMode != TakeImageMode.Live;
             btn_Meas.IsEnabled = canCapture;
             button1.IsEnabled = canCapture;
             btn_CalAutoExp.IsEnabled = isConnected;
+        }
+
+        private void UpdateCameraIdRefreshState(bool isRefreshing)
+        {
+            _isRefreshingCameraIds = isRefreshing;
+            CameraIdSearchProgress.Visibility = isRefreshing ? Visibility.Visible : Visibility.Collapsed;
+            UpdateConnectionState(_isConnected);
         }
 
         private static void SaveDisplayConfig()
@@ -150,66 +161,123 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return cameraIds.FirstOrDefault() ?? string.Empty;
         }
 
-        private void RefreshCameraIdOptions(bool showFailureMessage)
+        private void InitializeCameraIdFromConfig()
         {
-            string szText = string.Empty;
-            if (!cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
+            string configuredCameraId = Device.Config.CameraID?.Trim() ?? string.Empty;
+            ApplyCameraIdOptions(string.IsNullOrWhiteSpace(configuredCameraId)
+                ? Array.Empty<string>()
+                : new[] { configuredCameraId });
+        }
+
+        private void ApplyCameraIdOptions(IReadOnlyList<string> cameraIds)
+        {
+            _isInitializingCameraIdSelection = true;
+            try
             {
+                cb_CM_ID.Items.Clear();
+                foreach (string cameraId in cameraIds)
+                {
+                    cb_CM_ID.Items.Add(cameraId);
+                }
+
+                string preferredCameraId = ResolvePreferredCameraId(cameraIds);
+                if (!string.IsNullOrWhiteSpace(preferredCameraId))
+                {
+                    cb_CM_ID.SelectedItem = cameraIds.FirstOrDefault(id => id.Equals(preferredCameraId, StringComparison.OrdinalIgnoreCase));
+                    cb_CM_ID.Text = preferredCameraId;
+                    cvCameraCSLib.CM_SetCameraID(m_hCamHandle, preferredCameraId);
+                }
+            }
+            finally
+            {
+                _isInitializingCameraIdSelection = false;
+            }
+        }
+
+        private async Task RefreshCameraIdOptionsAsync(bool showFailureMessage)
+        {
+            if (_isRefreshingCameraIds || _isConnected)
+            {
+                return;
+            }
+
+            CameraModel cameraModel = m_eCameraMdl;
+            UpdateCameraIdRefreshState(true);
+            try
+            {
+                cvCameraCSLib.CameraDiscoverySummary summary = await Task.Run(() =>
+                    cvCameraCSLib.SearchCameraIds(new[] { cameraModel }));
+
+                cvCameraCSLib.CameraDiscoveryModelResult? modelResult = summary.Models
+                    .FirstOrDefault(result => result.CameraModel == cameraModel);
+                if (modelResult?.Success != true)
+                {
+                    log.Warn($"Camera ID scan failed. Model={cameraModel}, Error={modelResult?.ErrorMessage}");
+                    if (showFailureMessage)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.GetCameraIdFailed, "ColorVision");
+                    }
+                    return;
+                }
+
+                IReadOnlyList<string> cameraIds = summary.Cameras
+                    .Where(camera => camera.CameraModel == cameraModel)
+                    .Select(camera => camera.CameraId.Trim())
+                    .Where(cameraId => !string.IsNullOrWhiteSpace(cameraId))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                if (cameraIds.Count == 0 && !string.IsNullOrWhiteSpace(Device.Config.CameraID))
+                {
+                    cameraIds = new[] { Device.Config.CameraID.Trim() };
+                }
+
+                ApplyCameraIdOptions(cameraIds);
+                log.Info($"Camera ID scan completed. Model={cameraModel}, Count={summary.Cameras.Count}, Took={summary.Elapsed.TotalMilliseconds:F0}ms.");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Camera ID scan failed. Model={cameraModel}", ex);
                 if (showFailureMessage)
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.GetCameraIdFailed, "ColorVision");
                 }
-                return;
             }
-
-            JObject jObject = JsonConvert.DeserializeObject<JObject>(szText);
-            IReadOnlyList<string> cameraIds = jObject?["ID"]?
-                .ToArray()
-                .Select(token => token.ToString().Trim())
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray()
-                ?? Array.Empty<string>();
-
-            _isInitializingCameraIdSelection = true;
-            cb_CM_ID.Items.Clear();
-            foreach (string cameraId in cameraIds)
+            finally
             {
-                cb_CM_ID.Items.Add(cameraId);
+                UpdateCameraIdRefreshState(false);
+                if (_closeAfterCameraIdRefresh)
+                {
+                    _closeAfterCameraIdRefresh = false;
+                    Close();
+                }
             }
-
-            string preferredCameraId = ResolvePreferredCameraId(cameraIds);
-            if (!string.IsNullOrWhiteSpace(preferredCameraId))
-            {
-                cb_CM_ID.SelectedItem = cameraIds.FirstOrDefault(id => id.Equals(preferredCameraId, StringComparison.OrdinalIgnoreCase));
-                cb_CM_ID.Text = preferredCameraId;
-            }
-            else if (cameraIds.Count > 0)
-            {
-                cb_CM_ID.SelectedIndex = 0;
-                cb_CM_ID.Text = cameraIds[0];
-            }
-
-            _isInitializingCameraIdSelection = false;
         }
 
-        private void RefreshCameraIds_Click(object sender, RoutedEventArgs e)
+        private async void RefreshCameraIds_Click(object sender, RoutedEventArgs e)
         {
-            RefreshCameraIdOptions(true);
+            await RefreshCameraIdOptionsAsync(true);
         }
 
-        private void GetID_Click(object sender, RoutedEventArgs e)
+        private async void GetID_Click(object sender, RoutedEventArgs e)
         {
-            RefreshCameraIdOptions(true);
+            await RefreshCameraIdOptionsAsync(true);
         }
 
-        private void GetAllID_Click(object sender, RoutedEventArgs e)
+        private async void GetAllID_Click(object sender, RoutedEventArgs e)
         {
-            RefreshCameraIdOptions(true);
+            await RefreshCameraIdOptionsAsync(true);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            if (_isRefreshingCameraIds)
+            {
+                e.Cancel = true;
+                _closeAfterCameraIdRefresh = true;
+                return;
+            }
+
             _localRealtimePipeline.Stop(resetRealtime: true);
             if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
             {
@@ -509,7 +577,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             m_eCameraMdl = (CameraModel)cb_CM_TYPE.SelectedIndex;
             Device.Config.CameraModel = m_eCameraMdl;
             cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
-            RefreshCameraIdOptions(false);
         }
 
         private void cb_CM_ID_SelectionChanged(object sender, SelectionChangedEventArgs e)
