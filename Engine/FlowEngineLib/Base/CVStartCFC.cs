@@ -20,6 +20,9 @@ public class CVStartCFC : CVBaseCFC
 	[JsonIgnore]
 	private FlowFinishState finishState = new FlowFinishState();
 
+	[JsonIgnore]
+	public FlowRuntimeResources RuntimeResources { get; private set; } = new FlowRuntimeResources();
+
 	public CVStartCFC()
 		: this("")
 	{
@@ -35,6 +38,7 @@ public class CVStartCFC : CVBaseCFC
 	{
 		StartNode = startCFC.StartNode;
 		finishState = startCFC.finishState;
+		RuntimeResources = startCFC.RuntimeResources;
 		StartTime = startCFC.StartTime;
 		EndTime = startCFC.EndTime;
 		Id = startCFC.Id;
@@ -97,7 +101,14 @@ public class CVStartCFC : CVBaseCFC
 		{
 			FlowStatus = StatusTypeEnum.Completed;
 		}
-		StartNode?.DoFinishing(this);
+		try
+		{
+			StartNode?.DoFinishing(this);
+		}
+		finally
+		{
+			RuntimeResources.Dispose();
+		}
 	}
 
 	public BaseStartNode GetStartNode()
