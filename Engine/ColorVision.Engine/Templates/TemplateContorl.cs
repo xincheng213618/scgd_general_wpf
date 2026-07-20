@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace ColorVision.Engine.Templates
 {
@@ -45,13 +44,6 @@ namespace ColorVision.Engine.Templates
     public class TemplateControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TemplateControl));
-        private static readonly HashSet<Type> DeferredLoaderTypes =
-        [
-            typeof(POI.TemplatePoi),
-            typeof(Flow.TemplateFlow),
-            typeof(POI.POIOutput.TemplatePoiOutputParam),
-        ];
-        private static readonly List<IITemplateLoad> DeferredLoaders = new();
 
         private static TemplateControl _instance;
         private static readonly object _locker = new();
@@ -59,12 +51,12 @@ namespace ColorVision.Engine.Templates
 
         public TemplateControl()
         {
-            Init(deferHeavyLoaders: true);
+            Init();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-                Application.Current.Dispatcher.Invoke(() => Init(deferHeavyLoaders: false));
+                Application.Current.Dispatcher.Invoke(Init);
         }
 
-        private static void Init(bool deferHeavyLoaders)
+        private static void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
             Stopwatch totalStopwatch = Stopwatch.StartNew();
@@ -72,15 +64,8 @@ namespace ColorVision.Engine.Templates
             List<IITemplateLoad> templateLoaders = AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>();
             long discoveryMilliseconds = phaseStopwatch.ElapsedMilliseconds;
             List<(string Name, long Milliseconds)> loaderTimings = new(templateLoaders.Count);
-            DeferredLoaders.Clear();
             foreach (var templateLoader in templateLoaders)
             {
-                if (deferHeavyLoaders && DeferredLoaderTypes.Contains(templateLoader.GetType()))
-                {
-                    DeferredLoaders.Add(templateLoader);
-                    continue;
-                }
-
                 phaseStopwatch.Restart();
                 try
                 {
@@ -102,39 +87,8 @@ namespace ColorVision.Engine.Templates
                 .Take(10)
                 .Select(timing => $"{timing.Name}={timing.Milliseconds}ms"));
             log.Info($"Template initialization completed. Loaders={templateLoaders.Count}, " +
-                $"Deferred={DeferredLoaders.Count}, " +
                 $"Discovery={discoveryMilliseconds}ms, Load={loaderTimings.Sum(timing => timing.Milliseconds)}ms, " +
                 $"Total={totalStopwatch.ElapsedMilliseconds}ms, Slowest=[{slowestLoaders}].");
-        }
-
-        internal static void LoadDeferredTemplates()
-        {
-            if (DeferredLoaders.Count == 0)
-                return;
-
-            Stopwatch totalStopwatch = Stopwatch.StartNew();
-            List<(string Name, long Milliseconds)> loaderTimings = new(DeferredLoaders.Count);
-            foreach (IITemplateLoad templateLoader in DeferredLoaders.ToArray())
-            {
-                Stopwatch loaderStopwatch = Stopwatch.StartNew();
-                try
-                {
-                    templateLoader.Load();
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-                finally
-                {
-                    loaderTimings.Add((templateLoader.GetType().Name, loaderStopwatch.ElapsedMilliseconds));
-                }
-            }
-            DeferredLoaders.Clear();
-            totalStopwatch.Stop();
-            log.Info($"Deferred template initialization completed. " +
-                $"Loaders={loaderTimings.Count}, Total={totalStopwatch.ElapsedMilliseconds}ms, " +
-                $"Details=[{string.Join(", ", loaderTimings.Select(timing => $"{timing.Name}={timing.Milliseconds}ms"))}].");
         }
 
         public static Dictionary<string, ITemplate> ITemplateNames { get; set; } = new Dictionary<string, ITemplate>();
@@ -162,22 +116,6 @@ namespace ColorVision.Engine.Templates
                     .Any(name => name.Equals(templateName, StringComparison.OrdinalIgnoreCase)));
 
             return duplicates;
-        }
-    }
-
-    /// <summary>
-    /// Loads the few expensive template collections after the main window has
-    /// rendered, but before Flow and device display controls are materialized.
-    /// </summary>
-    public sealed class DeferredTemplateInitializer : MainWindowInitializedBase
-    {
-        public override int Order { get; set; } = -200;
-
-        public override async Task Initialize()
-        {
-            await Application.Current.Dispatcher.InvokeAsync(
-                TemplateControl.LoadDeferredTemplates,
-                DispatcherPriority.ApplicationIdle);
         }
     }
 }

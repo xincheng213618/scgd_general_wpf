@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services
 {
@@ -35,6 +34,7 @@ namespace ColorVision.Engine.Services
                 long physicalCameraMilliseconds = 0;
                 long serviceHierarchyMilliseconds = 0;
                 long pendingUpdatesMilliseconds = 0;
+                long displayControlsMilliseconds = 0;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     phaseStopwatch.Restart();
@@ -48,6 +48,10 @@ namespace ColorVision.Engine.Services
                     phaseStopwatch.Restart();
                     MqttRCService.GetInstance().ApplyPendingServiceUpdates(serviceManager);
                     pendingUpdatesMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+
+                    phaseStopwatch.Restart();
+                    serviceManager.GenDeviceDisplayControl();
+                    displayControlsMilliseconds = phaseStopwatch.ElapsedMilliseconds;
                 });
 
                 phaseStopwatch.Restart();
@@ -56,35 +60,14 @@ namespace ColorVision.Engine.Services
                 totalStopwatch.Stop();
                 log.Info($"Service initialization completed. PhysicalCameras={physicalCameraMilliseconds}ms, " +
                     $"Hierarchy={serviceHierarchyMilliseconds}ms, PendingUpdates={pendingUpdatesMilliseconds}ms, " +
-                    $"CameraResource={cameraResourceMilliseconds}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
+                    $"DisplayControls={displayControlsMilliseconds}ms, CameraResource={cameraResourceMilliseconds}ms, " +
+                    $"Total={totalStopwatch.ElapsedMilliseconds}ms.");
             }
             else
             {
                 log.Info("数据库连接失败，跳过服务配置");
             }
 
-        }
-    }
-
-    /// <summary>
-    /// Materializes the heavyweight device display controls only after the main
-    /// window has had an opportunity to render its first frame.
-    /// </summary>
-    public sealed class ServiceDisplayInitializer : MainWindowInitializedBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ServiceDisplayInitializer));
-
-        public override int Order { get; set; } = -100;
-
-        public override async Task Initialize()
-        {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                ServiceManager.GetInstance().GenDeviceDisplayControl();
-                stopwatch.Stop();
-                log.Info($"Service display controls materialized in {stopwatch.ElapsedMilliseconds} ms after first render.");
-            }, DispatcherPriority.ApplicationIdle);
         }
     }
 }
