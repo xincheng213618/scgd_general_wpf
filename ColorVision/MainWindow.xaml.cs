@@ -140,8 +140,6 @@ namespace ColorVision
             phaseStopwatch.Restart();
             DockViewManager.ShowAllViews();
 
-            // 切换到 DeviceControl 面板时，跳转回上次显示的视图
-            HookAcquirePanelActivation();
             HookTerminalPanelActivation();
 
             // 执行延迟加载的操作
@@ -218,25 +216,6 @@ namespace ColorVision
             };
             initializationStopwatch.Stop();
             log.Info($"Main window initialized event completed in {initializationStopwatch.ElapsedMilliseconds} ms.");
-        }
-
-        /// <summary>
-        /// 当 AcquirePanel (DeviceControl) 变为活动状态时
-        /// 自动跳转到上次显示的视图，实现临时切换后恢复
-        /// </summary>
-        private void HookAcquirePanelActivation()
-        {
-            var acquirePanel = DockingManager1.Layout.Descendents()
-                .OfType<AvalonDock.Layout.LayoutAnchorable>()
-                .FirstOrDefault(a => a.ContentId == "AcquirePanel");
-            if (acquirePanel != null)
-            {
-                acquirePanel.IsActiveChanged += (s, e) =>
-                {
-                    if (acquirePanel.IsActive)
-                        DockViewManager.ActivateLastView();
-                };
-            }
         }
 
         private void HookTerminalPanelActivation()

@@ -249,7 +249,6 @@ namespace ColorVision
                 layoutManager.ResetLayout();
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
             DockViewManager.ShowAllViews();
-            HookAcquirePanelActivation();
             HookTerminalPanelActivation();
 
             foreach (var action in WorkspaceManager.DealyLoad)
@@ -316,21 +315,6 @@ namespace ColorVision
                 }
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
-        }
-
-        private void HookAcquirePanelActivation()
-        {
-            var acquirePanel = DockingManager1.Layout.Descendents()
-                .OfType<AvalonDock.Layout.LayoutAnchorable>()
-                .FirstOrDefault(a => a.ContentId == "AcquirePanel");
-            if (acquirePanel != null)
-            {
-                acquirePanel.IsActiveChanged += (_, _) =>
-                {
-                    if (acquirePanel.IsActive)
-                        DockViewManager.ActivateLastView();
-                };
-            }
         }
 
         private void HookTerminalPanelActivation()
