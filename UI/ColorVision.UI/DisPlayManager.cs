@@ -21,7 +21,7 @@ namespace ColorVision.UI
         /// <summary>
         /// 注册视图控件到 DockViewManager。
         /// 控件只需是 UserControl，标题通过 title 参数传入。
-        /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
+        /// 双击控件时激活对应视图，单击只保留控件自身的选择和编辑行为。
         /// </summary>
  
 
@@ -51,14 +51,20 @@ namespace ColorVision.UI
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
             if (disPlayControl is UserControl userControl)
+                RegisterSelectionInput(disPlayControl, userControl);
+        }
+
+        internal static void RegisterSelectionInput(IDisPlayControl disPlayControl, UserControl userControl)
+        {
+            userControl.Focusable = true;
+            userControl.PreviewMouseDown += (s, e) =>
             {
-                userControl.Focusable = true;
-                userControl.MouseDown += (s, e) =>
-                {
-                    DisPlayManager.GetInstance().SelectControl(disPlayControl);
-                    userControl.Focus();
-                };
-            }
+                DisPlayManager.GetInstance().SelectControl(disPlayControl);
+            };
+            userControl.MouseDown += (s, e) =>
+            {
+                userControl.Focus();
+            };
         }
 
         public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
@@ -68,14 +74,13 @@ namespace ColorVision.UI
                 manager.SetViewTitle(viewControl, title);
             manager.AddView(viewControl);
 
-            if (userControl is IDisPlayControl disPlayControl)
+            userControl.MouseDoubleClick += (s, e) =>
             {
-                disPlayControl.Selected += (s, e) => manager.ActiveView(viewControl);
-            }
+                if (e.ChangedButton != MouseButton.Left)
+                    return;
 
-            userControl.PreviewMouseDown += (s, e) =>
-            {
-                manager.SelectView(viewControl);
+                manager.ActiveView(viewControl);
+                e.Handled = true;
             };
         }
     }

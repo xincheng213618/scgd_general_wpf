@@ -4,13 +4,14 @@ using ColorVision.UI.Views;
 using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Tests;
 
 public class DockViewManagerTests
 {
     [Fact]
-    public void LateRegisteredView_IsAddedToDocumentPaneAndCanBeSelected()
+    public void LateRegisteredView_IsAddedToDocumentPaneAndTitleCanBeUpdated()
     {
         RunOnStaThread(() =>
         {
@@ -29,17 +30,64 @@ public class DockViewManagerTests
             Assert.Equal("Camera", document.Title);
             Assert.Same(view, document.Content);
 
-            displayControl.IsSelected = true;
-
-            Assert.Equal(0, pane.SelectedContentIndex);
-            Assert.True(document.IsActive);
-            Assert.Same(view, manager.LastActiveView);
-
             manager.SetViewTitle(view, "Renamed Camera");
             Assert.Equal("Renamed Camera", document.Title);
 
             DockViewManagerHost.ClearViewDocuments();
             ResetDockViewManager(manager);
+        });
+    }
+
+    [Fact]
+    public void DoubleClickingDisplayControl_ActivatesAssociatedView()
+    {
+        RunOnStaThread(() =>
+        {
+            DockViewManager viewManager = DockViewManager.GetInstance();
+            ResetDockViewManager(viewManager);
+            var pane = new LayoutDocumentPane();
+            WorkspaceManager.LayoutDocumentPane = pane;
+            DockViewManagerHost.ClearViewDocuments();
+            DockViewManagerHost.Initialize();
+
+            var view = new UserControl();
+            var displayControl = new TestDisplayControl("Camera");
+            displayControl.AddViewConfig(view, "Camera");
+
+            var otherView = new UserControl();
+            var otherDisplayControl = new TestDisplayControl("Other");
+            otherDisplayControl.AddViewConfig(otherView, "Other");
+            viewManager.SelectView(otherView);
+            DisPlayManager displayManager = DisPlayManager.GetInstance();
+            displayManager.SelectControl(otherDisplayControl);
+            DisPlayManagerExtension.RegisterSelectionInput(displayControl, displayControl);
+
+            LayoutDocument document = Assert.IsType<LayoutDocument>(pane.Children[0]);
+            LayoutDocument otherDocument = Assert.IsType<LayoutDocument>(pane.Children[1]);
+            Assert.False(document.IsActive);
+            Assert.Equal(1, pane.SelectedContentIndex);
+
+            displayControl.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+            {
+                RoutedEvent = Mouse.PreviewMouseDownEvent
+            });
+
+            Assert.Equal(1, pane.SelectedContentIndex);
+            Assert.Same(otherView, viewManager.LastActiveView);
+            Assert.Same(displayControl, displayManager.SelectedControl);
+
+            displayControl.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+            {
+                RoutedEvent = Control.MouseDoubleClickEvent
+            });
+
+            Assert.True(document.IsActive);
+            Assert.False(otherDocument.IsActive);
+            Assert.Equal(0, pane.SelectedContentIndex);
+            Assert.Same(view, viewManager.LastActiveView);
+
+            DockViewManagerHost.ClearViewDocuments();
+            ResetDockViewManager(viewManager);
         });
     }
 
