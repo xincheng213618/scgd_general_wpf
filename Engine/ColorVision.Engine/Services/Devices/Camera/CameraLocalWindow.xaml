@@ -7,7 +7,7 @@
     xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-    mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Closing="Window_Closing"
+    mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
     Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -41,7 +41,7 @@
             </Grid.ColumnDefinitions>
 
             <!--  Left Panel - Controls  -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Column="0" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="10,5">
                     <TextBlock Margin="0,0,0,6" FontSize="16" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
 

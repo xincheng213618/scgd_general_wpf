@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -33,6 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _isConnected;
         private bool _isRefreshingCameraIds;
         private bool _closeAfterCameraIdRefresh;
+        private string? _loadedNativeCalibrationLibraryJson;
 
         public byte[] rawArray;
         public byte[] srcrawArray;
@@ -403,6 +403,35 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return new CalibrationItem(calibrationFile.CalibrationType, true, calibrationFile.FullPath, calibrationFile.FullPath);
         }
 
+        private bool TryLoadNativeCalibrationLibrary(IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+        {
+            if (calibrationFiles.Count == 0)
+            {
+                return true;
+            }
+
+            string json = JsonConvert.SerializeObject(new
+            {
+                calibrationLibCfg = calibrationFiles.Select(CreateCalibrationItem).ToList(),
+            });
+
+            if (string.Equals(_loadedNativeCalibrationLibraryJson, json, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (cvCameraCSLib.UpdateCfgJson(m_hCamHandle, ConfigType.Cfg_Calibration, json))
+            {
+                _loadedNativeCalibrationLibraryJson = json;
+                return true;
+            }
+
+            log.Error("Failed to load the selected calibration files into the native camera calibration library.");
+            MessageBox1.Show(Application.Current.GetActiveWindow(),
+                Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_UpdateCfgJson", StringComparison.Ordinal), "ColorVision");
+            return false;
+        }
+
         private static void PopulateLegacyChannelChecks(ChannelCalibration channelCheck, IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
         {
             foreach (DeviceCameraCalibrationFile calibrationFile in calibrationFiles)
@@ -465,8 +494,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             (ImageChannelType.Gray_Z, 2),
         };
 
+        private static readonly (ImageChannelType ChannelType, int CfwPort)[] ColorFrameChannelOrder =
+        {
+            (ImageChannelType.Gray_X, 0),
+            (ImageChannelType.Gray_Y, 1),
+            (ImageChannelType.Gray_Z, 2),
+        };
+
         private IReadOnlyList<(ImageChannelType ChannelType, int CfwPort)> GetSelectedChannelConfigs(int channelCount)
         {
+            // BV/LVTOBV cameras return one interleaved three-channel frame. The native no-CFW
+            // path stores that frame in the first logical channel and expects it to be Gray_X.
+            if (channelCount == 3 && m_eCameraMode is CameraMode.BV_MODE or CameraMode.LVTOBV_MODE)
+            {
+                return ColorFrameChannelOrder;
+            }
+
             List<(ImageChannelType ChannelType, int CfwPort)> channelConfigs = new(channelCount);
 
             AppendChannelConfigs(channelConfigs, Device.Config.CFW.ChannelCfgs, channelCount);
@@ -520,9 +563,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
         }
 
-        private bool TryBuildParam(out string json)
+        private bool TryBuildParam(out string json, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
         {
             json = string.Empty;
+            calibrationFiles = Array.Empty<DeviceCameraCalibrationFile>();
             GetFrameParam param = new GetFrameParam();
 
             param.channelCount = GetSelectedChannelCount();
@@ -539,7 +583,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             param.autoExpFlag = Device.Config.IsAutoExpose;
 
-            if (!TryGetSelectedCalibrationFiles(true, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles))
+            if (!TryGetSelectedCalibrationFiles(true, out calibrationFiles))
             {
                 return false;
             }
@@ -723,16 +767,28 @@ namespace ColorVision.Engine.Services.Devices.Camera
             uint bpp = 0;
             UInt32 dstbpp = 32;
 
-            cvCameraCSLib.CM_GetSrcFrameInfo(m_hCamHandle, ref w, ref h, ref bpp, ref channels);
-            uint nLen = (bpp / 8) * w * h * channels;
-
-            if (srcrawArray == null || srcrawArray.Length != nLen)
+            if (cvCameraCSLib.CM_GetSrcFrameInfo(m_hCamHandle, ref w, ref h, ref bpp, ref channels) == 0
+                || w == 0 || h == 0 || bpp == 0 || channels == 0)
             {
-                srcrawArray = new byte[bpp / 8 * w * h * channels];
-                rawArray = new byte[dstbpp / 8 * w * h * channels];
+                log.Error("Failed to get valid source frame information before local camera capture.");
+                btn_Meas.IsEnabled = true;
+                button1.IsEnabled = true;
+                return;
             }
-            srcrawArray[47] = 90;
-            if (!TryBuildParam(out string json1))
+            int sourceLength = checked((int)((ulong)(bpp / 8) * w * h * channels));
+            int cieLength = checked((int)((ulong)(dstbpp / 8) * w * h * channels));
+
+            if (srcrawArray == null || srcrawArray.Length != sourceLength)
+            {
+                srcrawArray = new byte[sourceLength];
+            }
+            if (rawArray == null || rawArray.Length != cieLength)
+            {
+                rawArray = new byte[cieLength];
+            }
+
+            if (!TryBuildParam(out string json1, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+                || !TryLoadNativeCalibrationLibrary(calibrationFiles))
             {
                 btn_Meas.IsEnabled = true;
                 button1.IsEnabled = true;
@@ -741,8 +797,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ApplyCurrentCameraSettings();
 
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(json1);
-            string msg = Encoding.UTF8.GetString(utf8Bytes);
             TimeSpan start = new TimeSpan(DateTime.Now.Ticks);
             int nErr = cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref bpp, ref dstbpp, ref channels, srcrawArray, rawArray);
 
@@ -751,7 +805,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 string szMsg = "";
                 cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
                 MessageBox.Show(szMsg);
-                btn_Connect.IsEnabled = true;
+                btn_Meas.IsEnabled = true;
+                button1.IsEnabled = true;
+                return;
             }
 
             TimeSpan end = new TimeSpan(DateTime.Now.Ticks);
@@ -765,22 +821,42 @@ namespace ColorVision.Engine.Services.Devices.Camera
             src_bpp = bpp;
             src_channels = channels;
 
-            bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
-
-            if (hasColorCalibration)
-            {
-                cvCameraCSLib.CM_SetBufferXYZ(m_hCamHandle, w, h, dstbpp, channels, rawArray);
-            }
+            bool hasColorCalibration = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+            bool hasCieResult = hasColorCalibration && HasNativeCieResult(w, h, channels);
 
             ShowImageInView(srcrawArray, (int)bpp, (int)channels, (int)w, (int)h);
 
-            if (hasColorCalibration)
+            if (hasCieResult)
             {
                 AttachLiveCvcieResult(w, h, dstbpp, channels);
             }
+            else if (hasColorCalibration)
+            {
+                ShowMissingCieResultMessage();
+            }
 
-            SaveCaptureFilesIfNeeded(hasColorCalibration, w, h, bpp, dstbpp, channels, srcrawArray);
+            SaveCaptureFilesIfNeeded(hasCieResult, w, h, bpp, dstbpp, channels, srcrawArray);
+        }
+
+        private bool HasNativeCieResult(uint width, uint height, uint channels)
+        {
+            int centerX = checked((int)(width / 2));
+            int centerY = checked((int)(height / 2));
+            if (channels == 1)
+            {
+                float luminance = 0;
+                return cvCameraCSLib.CM_GetYCircle(m_hCamHandle, centerX, centerY, ref luminance, 1) != 0;
+            }
+
+            float xValue = 0, yValue = 0, zValue = 0;
+            return cvCameraCSLib.CM_GetXYZCircle(m_hCamHandle, centerX, centerY, ref xValue, ref yValue, ref zValue, 1) != 0;
+        }
+
+        private static void ShowMissingCieResultMessage()
+        {
+            log.Error("The native camera capture completed without producing a valid CIE buffer.");
+            MessageBox1.Show(Application.Current.GetActiveWindow(),
+                Properties.Resources.Engine_Msg_CalculateCieFailed.Replace("{0}", "CM_GetFrame returned no CIE buffer", StringComparison.Ordinal), "ColorVision");
         }
 
         private unsafe void ShowImageInView(byte[] data, int bpp, int channels, int width, int height)
@@ -1044,7 +1120,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            if (!TryBuildParam(out string json1))
+            if (!TryBuildParam(out string json1, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
+                || !TryLoadNativeCalibrationLibrary(calibrationFiles))
             {
                 btn_Meas.IsEnabled = true;
                 button1.IsEnabled = true;
@@ -1057,16 +1134,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UInt32 bpp = 0, channels = 0;
             uint srcbpp = 0;
 
-            cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
+            int nErr = cvCameraCSLib.CM_GetFrame(m_hCamHandle, json1, ref w, ref h, ref srcbpp, ref bpp, ref channels, srcrawArray, rawArray);
+            if (nErr != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                string szMsg = "";
+                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+                MessageBox.Show(szMsg);
+                btn_Meas.IsEnabled = true;
+                button1.IsEnabled = true;
+                return;
+            }
 
-            bool hasColorCalibration = TryGetSelectedCalibrationFiles(false, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles)
-                && calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+            bool hasColorCalibration = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
+            bool hasCieResult = hasColorCalibration && HasNativeCieResult(w, h, channels);
 
             ShowImageInView(srcrawArray, (int)srcbpp, (int)channels, (int)w, (int)h);
 
-            if (hasColorCalibration)
+            if (hasCieResult)
             {
                 AttachLiveCvcieResult(w, h, bpp, channels);
+            }
+            else if (hasColorCalibration)
+            {
+                ShowMissingCieResultMessage();
             }
 
             btn_Meas.IsEnabled = true;
