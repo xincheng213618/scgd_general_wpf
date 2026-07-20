@@ -114,8 +114,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
-        private static void SaveLocalPreferences()
+        private void SaveDeviceConfig()
         {
+            Device.SaveConfig();
+        }
+
+        private void SaveLocalPreferences()
+        {
+            SaveDeviceConfig();
             ConfigHandler.GetInstance().SaveConfigs();
         }
 
@@ -233,6 +239,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
                 ApplyCameraIdOptions(cameraIds);
+                string selectedCameraId = GetSelectedCameraId();
+                if (!string.IsNullOrWhiteSpace(selectedCameraId))
+                {
+                    Device.Config.CameraID = selectedCameraId;
+                    SaveDeviceConfig();
+                }
                 log.Info($"Camera ID scan completed. Model={cameraModel}, Count={summary.Cameras.Count}, Took={summary.Elapsed.TotalMilliseconds:F0}ms.");
             }
             catch (Exception ex)
@@ -278,6 +290,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
+            UpdateCurrentConfigFromUi(GetSelectedCameraId());
             _localRealtimePipeline.Stop(resetRealtime: true);
             if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
             {
@@ -327,11 +340,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private string GetSelectedCameraId()
         {
+            string editorText = cb_CM_ID.Text?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(editorText))
+                return editorText;
             if (cb_CM_ID.SelectedItem is ComboBoxItem item)
                 return item.Content?.ToString() ?? string.Empty;
             if (cb_CM_ID.SelectedItem is string cameraId)
                 return cameraId;
-            return cb_CM_ID.Text?.Trim() ?? string.Empty;
+            return string.Empty;
         }
 
         private int GetSelectedChannelCount()
@@ -625,16 +641,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void cb_CM_ID_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (m_hCamHandle == IntPtr.Zero) return;
-            string cameraId = GetSelectedCameraId();
-            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
-
             if (_isInitializingCameraIdSelection)
             {
                 return;
             }
 
+            if (m_hCamHandle == IntPtr.Zero) return;
+            string cameraId = cb_CM_ID.SelectedItem switch
+            {
+                ComboBoxItem item => item.Content?.ToString()?.Trim() ?? string.Empty,
+                string selectedCameraId => selectedCameraId.Trim(),
+                _ => GetSelectedCameraId()
+            };
+            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, cameraId);
             Device.Config.CameraID = cameraId;
+            SaveDeviceConfig();
         }
 
         private void cb_get_mode_SelectionChanged(object sender, SelectionChangedEventArgs e)
