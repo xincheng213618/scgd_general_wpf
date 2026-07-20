@@ -99,8 +99,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             target.CameraModel = CameraModel;
             target.TakeImageMode = TakeImageMode;
             target.ImageBpp = ImageBpp;
-            target.GainMin = CameraParameterLimit.GainMin;
-            target.GainMax = CameraParameterLimit.GainMax;
             target.ExpTimeMax = CameraParameterLimit.ExpMax;
             target.ExpTimeMin = CameraParameterLimit.ExpMin;
         }

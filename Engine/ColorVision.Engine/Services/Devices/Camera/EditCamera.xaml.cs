@@ -58,7 +58,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
 
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.VideoConfig));
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ZBDebayer));
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 

@@ -1,14 +1,12 @@
 ﻿#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
-using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -16,18 +14,20 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using System.Collections.Generic;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
-using System.Linq;
 using cvColorVision;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -89,6 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
+            EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
 
@@ -174,29 +175,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        private VideoReader? _cameraVideoControl;
-        public VideoReader CameraVideoControl
-        {
-            get => _cameraVideoControl ??= new VideoReader();
-            set => _cameraVideoControl = value;
-        }
+        public DefaultRealtimeCameraConfig RealtimeCameraConfig { get; } = DefaultRealtimeCameraConfig.Current;
+        public RelayCommand EditRealtimeCameraConfigCommand { get; set; }
 
-        public override void RestartRCService()
+        private void EditRealtimeCameraConfig()
         {
-            if (DService.IsVideoOpen)
+            new PropertyEditorWindow(RealtimeCameraConfig)
             {
-                CameraVideoControl?.Close();
-                var msgrecode = DService.Close();
-                log.Info("正在关闭视频模式");
-                msgrecode.MsgSucessed += (s,e) =>
-                {
-                    DService.IsVideoOpen = false;
-                    DService.DeviceStatus = DeviceStatusType.Closed;
-                    base.RestartRCService();
-                };
-                return;
-            }
-            base.RestartRCService();
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
         }
 
         private PhyCamera lastPhyCamera;
@@ -391,8 +379,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public override void Dispose()
         {
             this.PhyCamera?.ReleaseDeviceCamera();
-
-            _cameraVideoControl?.Dispose();
             DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);

@@ -230,119 +230,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
-        public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;OnPropertyChanged();
-                if (value)
-                {
-                    Application.Current.MainWindow.Closing += (s, e) =>
-                    {
-                        if (DeviceStatus == DeviceStatusType.LiveOpened)
-                        {
-                            Close();
-                        }
-                    };
-                }
-            } }
-        private bool _IsVideoOpen;
-
-
-
-
-        public MsgRecord OpenVideo()
-        {
-            CurrentTakeImageMode = TakeImageMode.Live;
-            bool IsLocal = true;
-
-            var Params = new Dictionary<string, object>() { { "RemoteIp", "127.0.0.1" }, { "RemotePort", "25558" }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
-            MsgSend msg = new()
-            {
-                EventName = "OpenLive",
-                Params = Params
-            };
-            Params.Add("FlipMode", CVImageFlipMode.None);
-            return PublishAsyncClient(msg);
-        }
-        public TakeImageMode CurrentTakeImageMode { get; set; }
-
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
-            CurrentTakeImageMode = TakeImageMode;
             MsgSend msg = new()
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
+                Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp } }
             };
             return PublishAsyncClient(msg);
         }
-
-        public MsgRecord SetFlip()
-        {
-            var Params = new Dictionary<string, object>() { };
-            MsgSend msg = new()
-            {
-                EventName = "SetParam",
-                Params = Params
-            };
-            var Func = new List<ParamFunction>();
-            Func.Add(new ParamFunction() { Name = "CM_SetFlip", Params = new Dictionary<string, object>() { { "FlipMode", Device.DisplayConfig.FlipMode } } });
-            Params.Add("Func", Func);
-            return PublishAsyncClient(msg);
-        }
-
-
-        public MsgRecord SetExp()
-        {
-            var Params = new Dictionary<string, object>() { };
-
-            MsgSend msg = new()
-            {
-                EventName = "SetParam",
-                Params = Params
-            };
-            var Func = new List<ParamFunction>();
-            if (Config.IsExpThree && !IsVideoOpen)
-            {
-                var FunParams = new Dictionary<string, object>() { };
-                FunParams.Add("nIndex", 0);
-                FunParams.Add("dExp", Device.DisplayConfig.ExpTimeR);
-
-                var FunParams1 = new Dictionary<string, object>() { };
-                FunParams1.Add("nIndex", 1);
-                FunParams1.Add("dExp", Device.DisplayConfig.ExpTimeG);
-
-                var FunParams2 = new Dictionary<string, object>() { };
-                FunParams2.Add("nIndex", 2);
-                FunParams2.Add("dExp", Device.DisplayConfig.ExpTimeB);
-
-                var FunParamss = new List<Dictionary<string, object>>();
-                FunParamss.Add(FunParams);
-                FunParamss.Add(FunParams1);
-                FunParamss.Add(FunParams2);
-
-                foreach (var item in FunParamss)
-                {
-                    var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
-                    Func.Add(Fun);
-                }
-                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Device.DisplayConfig.Gain } } });
-            }
-            else
-            {
-                var FunParams = new Dictionary<string, object>() { };
-                FunParams.Add("dExp", Device.DisplayConfig.ExpTime);
-                var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
-                Func.Add(Fun);
-                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Device.DisplayConfig.Gain } } });
-            }
-
-
-            if (Config.CFW.IsUseCFW && Config.CFW.IsNDPort)
-            {
-                Func.Add(new ParamFunction() { Name = "CM_SetNDPort", Params = new Dictionary<string, object>(){ { "NDPort",Config.NDPort } } });
-            }
-            Params.Add("Func", Func);
-            return PublishAsyncClient(msg);
-        }
-
 
         public MsgRecord SetNDPort()
         {
@@ -424,15 +320,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
 
-            Params.Add("ScaleFactor", Config.ScaleFactor);
+            Params.Add("ScaleFactor",1);
             Params.Add("Gain", Device.DisplayConfig.Gain);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 40000);
         }  
 
-
-        public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
         public MsgRecord AutoFocus(AutoFocusParam param)
