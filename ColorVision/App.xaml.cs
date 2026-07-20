@@ -205,6 +205,8 @@ namespace ColorVision
                 }
             }
 
+            Rbac.ApplicationUsageTracker.StartSession();
+
             CopilotMcpServer.Instance.ApplyConfig();
             LanRemoteControlService.Instance.ApplyConfig();
 
@@ -272,6 +274,7 @@ namespace ColorVision
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
+            Rbac.ApplicationUsageTracker.StopSession();
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             if (!_isSessionEnding)
                 Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();

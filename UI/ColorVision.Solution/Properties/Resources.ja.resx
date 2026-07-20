@@ -770,4 +770,24 @@
   <data name="Sol_Rbac_Close" xml:space="preserve">
     <value>閉じる</value>
   </data>
+  <data name="Sol_UserCenter_Profile" xml:space="preserve"><value>プロフィール</value></data>
+  <data name="Sol_UserCenter_Description" xml:space="preserve"><value>アカウントと利用状況の概要</value></data>
+  <data name="Sol_UserCenter_CurrentSession" xml:space="preserve"><value>今回の稼働</value></data>
+  <data name="Sol_UserCenter_TotalRuntime" xml:space="preserve"><value>累計稼働時間</value></data>
+  <data name="Sol_UserCenter_LaunchCount" xml:space="preserve"><value>起動回数</value></data>
+  <data name="Sol_UserCenter_TotalFlowCount" xml:space="preserve"><value>フロー実行総数</value></data>
+  <data name="Sol_UserCenter_Last7CompletionRate" xml:space="preserve"><value>過去7日完了率</value></data>
+  <data name="Sol_UserCenter_FlowActivity" xml:space="preserve"><value>フローアクティビティ</value></data>
+  <data name="Sol_UserCenter_RefreshStatistics" xml:space="preserve"><value>フロー統計を更新</value></data>
+  <data name="Sol_UserCenter_AccountOverview" xml:space="preserve"><value>アカウント概要</value></data>
+  <data name="Sol_UserCenter_AccountUpdated" xml:space="preserve"><value>アカウント更新日時</value></data>
+  <data name="Sol_UserCenter_FirstUsage" xml:space="preserve"><value>初回利用記録</value></data>
+  <data name="Sol_UserCenter_FlowInsights" xml:space="preserve"><value>フロー分析</value></data>
+  <data name="Sol_UserCenter_Last7Executions" xml:space="preserve"><value>過去7日の実行</value></data>
+  <data name="Sol_UserCenter_AverageFlowDuration" xml:space="preserve"><value>平均フロー時間</value></data>
+  <data name="Sol_UserCenter_ActiveDays" xml:space="preserve"><value>アクティブ日数</value></data>
+  <data name="Sol_UserCenter_BusiestDay" xml:space="preserve"><value>最も活発な日</value></data>
+  <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>最終起動</value></data>
+  <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>少</value></data>
+  <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
 </root>

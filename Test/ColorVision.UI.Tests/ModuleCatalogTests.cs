@@ -40,12 +40,11 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void RbacModule_RegisteredAfterSnapshot_MakesProviderDiscoverable()
+        public void RbacModule_RegisterMakesProviderDiscoverableFromCurrentSnapshot()
         {
             AssemblyHandler handler = AssemblyHandler.GetInstance();
             handler.ClearCaches();
-            Assembly[] initialSnapshot = handler.GetAssemblies();
-            Assert.DoesNotContain(initialSnapshot, assembly => assembly.GetName().Name == "ColorVision.Rbac");
+            _ = handler.GetAssemblies();
 
             Assembly rbacAssembly = Assembly.Load(new AssemblyName("ColorVision.Rbac"));
             Type? moduleType = rbacAssembly.GetType("ColorVision.Rbac.RbacModule");

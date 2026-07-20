@@ -770,4 +770,24 @@
   <data name="Sol_Rbac_Close" xml:space="preserve">
     <value>Fermer</value>
   </data>
+  <data name="Sol_UserCenter_Profile" xml:space="preserve"><value>Profil</value></data>
+  <data name="Sol_UserCenter_Description" xml:space="preserve"><value>Aperçu du compte et de l’utilisation</value></data>
+  <data name="Sol_UserCenter_CurrentSession" xml:space="preserve"><value>Session actuelle</value></data>
+  <data name="Sol_UserCenter_TotalRuntime" xml:space="preserve"><value>Durée totale</value></data>
+  <data name="Sol_UserCenter_LaunchCount" xml:space="preserve"><value>Lancements</value></data>
+  <data name="Sol_UserCenter_TotalFlowCount" xml:space="preserve"><value>Exécutions totales des flux</value></data>
+  <data name="Sol_UserCenter_Last7CompletionRate" xml:space="preserve"><value>Achèvement sur 7 jours</value></data>
+  <data name="Sol_UserCenter_FlowActivity" xml:space="preserve"><value>Activité des flux</value></data>
+  <data name="Sol_UserCenter_RefreshStatistics" xml:space="preserve"><value>Actualiser les statistiques des flux</value></data>
+  <data name="Sol_UserCenter_AccountOverview" xml:space="preserve"><value>Aperçu du compte</value></data>
+  <data name="Sol_UserCenter_AccountUpdated" xml:space="preserve"><value>Compte mis à jour</value></data>
+  <data name="Sol_UserCenter_FirstUsage" xml:space="preserve"><value>Première utilisation enregistrée</value></data>
+  <data name="Sol_UserCenter_FlowInsights" xml:space="preserve"><value>Analyse des flux</value></data>
+  <data name="Sol_UserCenter_Last7Executions" xml:space="preserve"><value>Exécutions sur 7 jours</value></data>
+  <data name="Sol_UserCenter_AverageFlowDuration" xml:space="preserve"><value>Durée moyenne des flux</value></data>
+  <data name="Sol_UserCenter_ActiveDays" xml:space="preserve"><value>Jours actifs</value></data>
+  <data name="Sol_UserCenter_BusiestDay" xml:space="preserve"><value>Jour le plus actif</value></data>
+  <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>Dernier lancement</value></data>
+  <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>Moins</value></data>
+  <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>Plus</value></data>
 </root>

@@ -1,216 +1,381 @@
-﻿<Window x:Class="ColorVision.Rbac.RbacManagerWindow"
+<Window x:Class="ColorVision.Rbac.RbacManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
         xmlns:properties="clr-namespace:ColorVision.Solution.Properties;assembly=ColorVision.Solution"
-        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:RbacManager}"
-        Title="{x:Static properties:Resources.UserCenter}" Height="500" Width="700"
+        d:DataContext="{d:DesignInstance local:RbacManagerWindow}"
+        Title="{x:Static properties:Resources.UserCenter}"
+        Width="1040" Height="780"
         Background="Transparent"
         AllowsTransparency="True"
         WindowStyle="None"
-        Initialized="Window_Initialized"
-        WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Initialized="Window_Initialized"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="RbacStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="SectionCard" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="12"/>
+                <Setter Property="Padding" Value="22"/>
+            </Style>
+
+            <Style x:Key="SectionTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+
+            <Style x:Key="MetricValue" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="20"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="TextTrimming" Value="None"/>
+            </Style>
+
+            <Style x:Key="MetricLabel" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="0,5,0,0"/>
+            </Style>
+
+            <Style x:Key="DetailLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+
+            <Style x:Key="DetailValue" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="13"/>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
-    
-    <Border Background="{DynamicResource GlobalBackground}" CornerRadius="12"
-            BorderBrush="{DynamicResource BordrBrush}" BorderThickness="1">
+
+    <Border Background="{DynamicResource GlobalBackground}"
+            BorderBrush="{DynamicResource BordrBrush}"
+            BorderThickness="1"
+            CornerRadius="12">
         <Border.Effect>
-            <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" Opacity="0.25" BlurRadius="12"/>
+            <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" Opacity="0.28" BlurRadius="16"/>
         </Border.Effect>
+
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="54"/>
+                <RowDefinition Height="58"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- 关闭按钮 -->
-            <Button Grid.Row="0" Style="{StaticResource RbacCloseButton}" 
-                    Click="BtnClose_Click"
-                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0"
-                    Panel.ZIndex="10"/>
-
-            <!-- 标题栏 -->
-            <Border Grid.Row="0" Background="{DynamicResource StatusBarBackgroundBrush}" 
-                    CornerRadius="12,12,0,0" Padding="20,15">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE77B;" 
-                               FontFamily="Segoe MDL2 Assets" 
-                               FontSize="22" 
-                               Foreground="White"
-                               VerticalAlignment="Center"
-                               Margin="0,0,10,0"/>
-                    <TextBlock Text="{x:Static properties:Resources.UserCenter}" 
-                               FontSize="18" 
-                               FontWeight="Bold"
-                               Foreground="White"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
+            <Border Grid.Row="0"
+                    Background="{DynamicResource StatusBarBackgroundBrush}"
+                    CornerRadius="12,12,0,0"
+                    Padding="20,0">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE77B;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="20"
+                                   Foreground="White"
+                                   Margin="0,0,10,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.UserCenter}"
+                                   FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+                    </StackPanel>
+                    <Button Style="{StaticResource RbacCloseButton}"
+                            Click="BtnClose_Click"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Foreground="White"/>
+                </Grid>
             </Border>
 
-            <!-- 操作按钮区域 -->
-            <Border Grid.Row="1" Background="{DynamicResource ButtonBackground}" Padding="20,12"
-                    BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="0,0,0,1">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Command="{Binding LoginCommand}" 
-                            Style="{StaticResource ModernButton}"
-                            Margin="0,0,10,0"
-                            Visibility="{Binding LoginButtonVisibility}"
-                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LoginTooltip}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.LoginOrSwitch}"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding EditCommand}" 
-                            Style="{StaticResource SecondaryButton}"
-                            Margin="0,0,10,0"
-                            Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_EditUserTooltip}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.EditInfo}"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="BtnChangePassword"
-                            Click="BtnChangePassword_Click"
-                            Style="{StaticResource SecondaryButton}"
-                            Margin="0,0,10,0"
-                            Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdTooltip}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdLabel}"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding OpenUserManagerCommand}" 
-                            Style="{StaticResource ModernButton}"
-                            Visibility="{Binding AdminButtonVisibility}"
-                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_UserMgmtTooltip}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.UserManagement}"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Click="BtnLogout_Click" 
-                            Style="{StaticResource SecondaryButton}"
-                            Margin="10,0,0,0"
-                            Visibility="{Binding LoggedInButtonVisibility}"
-                            ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LogoutTooltip}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
-                            <TextBlock Text="{x:Static properties:Resources.Sign_out}"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
+            <Border Grid.Row="1"
+                    Background="{DynamicResource GlobalBackground}"
+                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                    BorderThickness="0,0,0,1"
+                    Padding="24,0">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{x:Static local:UserCenterText.Profile}" FontSize="15" FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Static local:UserCenterText.Description}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Command="{Binding LoginCommand}"
+                                Style="{StaticResource ModernButton}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding LoginButtonVisibility}"
+                                ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LoginTooltip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.LoginOrSwitch}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding EditCommand}"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding LoggedInButtonVisibility}"
+                                ToolTip="{x:Static properties:Resources.Sol_RbacMgr_EditUserTooltip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.EditInfo}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="BtnChangePassword_Click"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding LoggedInButtonVisibility}"
+                                ToolTip="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdTooltip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.Sol_RbacMgr_ChangePwdLabel}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding OpenUserManagerCommand}"
+                                Style="{StaticResource ModernButton}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding AdminButtonVisibility}"
+                                ToolTip="{x:Static properties:Resources.Sol_RbacMgr_UserMgmtTooltip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.UserManagement}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="BtnLogout_Click"
+                                Style="{StaticResource SecondaryButton}"
+                                Visibility="{Binding LoggedInButtonVisibility}"
+                                ToolTip="{x:Static properties:Resources.Sol_RbacMgr_LogoutTooltip}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="{x:Static properties:Resources.Sign_out}"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
             </Border>
 
-            <!-- 用户信息卡片 -->
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="20">
-                <Border Background="{DynamicResource GlobalBackground}" 
-                        CornerRadius="8" 
-                        BorderBrush="{DynamicResource GlobalBorderBrush1}" 
-                        BorderThickness="1"
-                        Padding="25"
-                        Margin="10">
-                    <Grid>
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="42,28,42,34">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" HorizontalAlignment="Center">
+                        <Border Width="92" Height="92"
+                                Background="{DynamicResource ButtonBackground}"
+                                BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                BorderThickness="1"
+                                CornerRadius="46"
+                                Padding="5">
+                            <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" Width="80" Height="80"/>
+                        </Border>
+                        <TextBlock Text="{Binding CurrentUserDisplay}"
+                                   FontSize="27"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,14,0,0"/>
+                        <TextBlock Text="{Binding ProfileSubtitle}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" Style="{StaticResource SectionCard}" Padding="0" Margin="0,26,0,0">
+                        <UniformGrid Columns="5" Height="88">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentSessionDisplay}" Style="{StaticResource MetricValue}"/>
+                                <TextBlock Text="{x:Static local:UserCenterText.CurrentSession}" Style="{StaticResource MetricLabel}"/>
+                            </StackPanel>
+                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TotalRunTimeDisplay}" Style="{StaticResource MetricValue}"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.TotalRuntime}" Style="{StaticResource MetricLabel}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding LaunchCountDisplay}" Style="{StaticResource MetricValue}"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.LaunchCount}" Style="{StaticResource MetricLabel}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TotalFlowCountDisplay}" Style="{StaticResource MetricValue}"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.TotalFlowCount}" Style="{StaticResource MetricLabel}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1,0,0,0">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding CompletionRateDisplay}" Style="{StaticResource MetricValue}"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.Last7CompletionRate}" Style="{StaticResource MetricLabel}"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </Border>
+
+                    <Border Grid.Row="2" Style="{StaticResource SectionCard}" Margin="0,18,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <StackPanel>
+                                    <TextBlock Text="{x:Static local:UserCenterText.FlowActivity}" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="{Binding ActivitySummaryDisplay}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                    <TextBlock Text="{Binding ActivityRangeDisplay}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               FontSize="12"
+                                               Margin="0,0,12,0"/>
+                                    <Button Style="{StaticResource SecondaryButton}"
+                                            Padding="9,5"
+                                            Click="BtnRefreshStatistics_Click"
+                                            ToolTip="{x:Static local:UserCenterText.RefreshStatistics}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{x:Static properties:Resources.Refresh}" FontSize="12"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,18,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ItemsControl ItemsSource="{Binding ActivityDays}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Vertical" Height="98"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="12" Height="12" Margin="1"
+                                                    CornerRadius="2"
+                                                    Background="{DynamicResource StatusBarBackgroundBrush}"
+                                                    Opacity="{Binding Intensity}"
+                                                    ToolTip="{Binding ToolTip}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <StackPanel Grid.Column="1" Margin="18,0,0,0" VerticalAlignment="Bottom">
+                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityLess}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.12"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.35"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.55"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}" Opacity="0.75"/>
+                                        <Border Width="12" Height="12" Margin="2" CornerRadius="2" Background="{DynamicResource StatusBarBackgroundBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{x:Static local:UserCenterText.ActivityMore}" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Grid.Row="2"
+                                    Background="{DynamicResource GlobalBackground}"
+                                    BorderBrush="{DynamicResource GlobalBorderBrush1}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,7"
+                                    Margin="0,10,0,0"
+                                    Visibility="{Binding StatisticsStatusVisibility}">
+                                <TextBlock Text="{Binding StatisticsStatusDisplay}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           FontSize="12"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="3" Margin="0,18,0,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="18"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 头像区域 -->
-                        <Border Grid.Column="0" 
-                                Background="{DynamicResource ButtonBackground}" 
-                                CornerRadius="8" 
-                                Padding="15"
-                                Margin="0,0,25,0">
+                        <Border Grid.Column="0" Style="{StaticResource SectionCard}">
                             <StackPanel>
-                                <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" 
-                                             Width="96" 
-                                             Height="96"/>
-                                <TextBlock Text="{Binding CurrentUserDisplay}" 
-                                           HorizontalAlignment="Center"
-                                           FontWeight="SemiBold"
-                                           FontSize="14"
-                                           Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
-                            
-                            <!-- 用户详细信息 -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock FontSize="20" FontWeight="Bold" Margin="0,0,0,15"
-                                           Foreground="{DynamicResource StatusBarBackgroundBrush}">
-                                    <Run Text="{x:Static properties:Resources.WelcomeBack}"/>
-                                    <Run Text="{Binding CurrentUserDisplay}"/>
-                                </TextBlock>
-                                
-                                <!-- 信息网格 -->
+                                <TextBlock Text="{x:Static local:UserCenterText.AccountOverview}" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static properties:Resources.UserId}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding UserIdDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static properties:Resources.Role}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding UserRoleDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static properties:Resources.PermissionMode}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding PermissionModeDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static local:UserCenterText.AccountUpdated}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding AccountUpdatedDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    
-                                    <!-- 用户ID -->
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{x:Static properties:Resources.UserId}" FontWeight="SemiBold" Margin="0,0,20,10" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Config.LoginResult.User.Id}" Margin="0,0,0,10"/>
-                                    
-                                    <!-- 用户名 -->
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Static properties:Resources.UserName}" FontWeight="SemiBold" Margin="0,0,20,10" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Config.LoginResult.User.Username}" Margin="0,0,0,10"/>
-                                   
-                                    
-                                    <!-- 权限模式 -->
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{x:Static properties:Resources.PermissionMode}" FontWeight="SemiBold" Margin="0,0,20,10" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Config.LoginResult.UserDetail.PermissionMode}" Margin="0,0,0,10"/>
-                                    
-                                    <!-- 登录时间 -->
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="{x:Static properties:Resources.LoginTime}" FontWeight="SemiBold" Margin="0,0,20,10" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Config.LoginResult.User.UpdatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Margin="0,0,0,10" Opacity="0.6"/>
+                                    <TextBlock Text="{x:Static local:UserCenterText.FirstUsage}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding FirstLaunchDisplay}" Style="{StaticResource DetailValue}"/>
                                 </Grid>
                             </StackPanel>
-                        </Grid>
-                    </Border>
-                </ScrollViewer>
-                
-                <!-- 底部信息栏 -->
-                <Border Grid.Row="3" 
-                        Background="{DynamicResource ButtonBackground}" 
-                        BorderBrush="{DynamicResource GlobalBorderBrush1}" 
-                        BorderThickness="0,1,0,0"
-                        Padding="20,10"
-                        CornerRadius="0,0,12,12">
-                    <TextBlock HorizontalAlignment="Center" 
-                               Opacity="0.5" 
-                               FontSize="11">
-                        <Run Text="ColorVision RBAC "/>
-                        <Run Text="{x:Static properties:Resources.UserManagementSystem}"/>
-                        <Run Text=" | "/>
-                        <Run Text="Version 2.0"/>
-                    </TextBlock>
-                </Border>
-            </Grid>
-        </Border>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static local:UserCenterText.FlowInsights}" Style="{StaticResource SectionTitle}" Margin="0,0,0,16"/>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static local:UserCenterText.Last7Executions}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding Last7DayFlowCountDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static local:UserCenterText.AverageFlowDuration}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding AverageFlowDurationDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static local:UserCenterText.ActiveDays}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding ActiveDaysDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,11">
+                                    <TextBlock Text="{x:Static local:UserCenterText.BusiestDay}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding BusiestDayDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                                <Grid>
+                                    <TextBlock Text="{x:Static local:UserCenterText.LastLaunch}" Style="{StaticResource DetailLabel}"/>
+                                    <TextBlock Text="{Binding LastLaunchDisplay}" Style="{StaticResource DetailValue}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Border>
 </Window>

@@ -770,4 +770,24 @@
   <data name="Sol_Rbac_Close" xml:space="preserve">
     <value>Закрыть</value>
   </data>
+  <data name="Sol_UserCenter_Profile" xml:space="preserve"><value>Профиль</value></data>
+  <data name="Sol_UserCenter_Description" xml:space="preserve"><value>Обзор учетной записи и использования</value></data>
+  <data name="Sol_UserCenter_CurrentSession" xml:space="preserve"><value>Текущий сеанс</value></data>
+  <data name="Sol_UserCenter_TotalRuntime" xml:space="preserve"><value>Общее время работы</value></data>
+  <data name="Sol_UserCenter_LaunchCount" xml:space="preserve"><value>Запуски</value></data>
+  <data name="Sol_UserCenter_TotalFlowCount" xml:space="preserve"><value>Всего запусков процессов</value></data>
+  <data name="Sol_UserCenter_Last7CompletionRate" xml:space="preserve"><value>Выполнение за 7 дней</value></data>
+  <data name="Sol_UserCenter_FlowActivity" xml:space="preserve"><value>Активность процессов</value></data>
+  <data name="Sol_UserCenter_RefreshStatistics" xml:space="preserve"><value>Обновить статистику процессов</value></data>
+  <data name="Sol_UserCenter_AccountOverview" xml:space="preserve"><value>Обзор учетной записи</value></data>
+  <data name="Sol_UserCenter_AccountUpdated" xml:space="preserve"><value>Учетная запись обновлена</value></data>
+  <data name="Sol_UserCenter_FirstUsage" xml:space="preserve"><value>Первая запись использования</value></data>
+  <data name="Sol_UserCenter_FlowInsights" xml:space="preserve"><value>Аналитика процессов</value></data>
+  <data name="Sol_UserCenter_Last7Executions" xml:space="preserve"><value>Запуски за 7 дней</value></data>
+  <data name="Sol_UserCenter_AverageFlowDuration" xml:space="preserve"><value>Средняя длительность процесса</value></data>
+  <data name="Sol_UserCenter_ActiveDays" xml:space="preserve"><value>Активные дни</value></data>
+  <data name="Sol_UserCenter_BusiestDay" xml:space="preserve"><value>Самый активный день</value></data>
+  <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>Последний запуск</value></data>
+  <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>Меньше</value></data>
+  <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>Больше</value></data>
 </root>
