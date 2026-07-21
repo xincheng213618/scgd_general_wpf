@@ -101,6 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; OnPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
+        public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
 
     }
 
