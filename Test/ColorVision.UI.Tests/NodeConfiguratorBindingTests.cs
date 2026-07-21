@@ -1,6 +1,11 @@
 #pragma warning disable CA1707
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow.NodeConfigurator;
+using ColorVision.Engine.Templates.Flow.Nodes;
+using FlowEngineLib.PropertyEditor;
+using HandyControl.Interactivity;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -61,6 +66,8 @@ public class NodeConfiguratorBindingTests
 
                 var selectorPanel = Assert.IsType<DockPanel>(Assert.Single(panel.Children));
                 var comboBox = Assert.Single(selectorPanel.Children.OfType<HandyControl.Controls.ComboBox>());
+                Assert.True(comboBox.IsEditable);
+                Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(comboBox));
                 Assert.Equal("First", comboBox.SelectedValue);
 
                 comboBox.SelectedValue = "Second";
@@ -71,9 +78,40 @@ public class NodeConfiguratorBindingTests
                 Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
                 Assert.Equal("First", comboBox.SelectedValue);
 
-                comboBox.SelectedIndex = -1;
-                comboBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateSource();
+                Assert.Empty(selectorPanel.Children.OfType<Button>());
+                ControlCommands.Clear.Execute(null, comboBox);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                Assert.Equal(-1, comboBox.SelectedIndex);
                 Assert.Equal(string.Empty, node.Title);
+
+                const string cameraTemplateName = "UnitTest.Camera.Template";
+                var cameraTemplate = new TemplateModel<CameraRunParam>(cameraTemplateName, new CameraRunParam { Name = cameraTemplateName });
+                TemplateCameraRunParam.Params.Add(cameraTemplate);
+                try
+                {
+                    var localCameraNode = new LocalCameraNode { CamTempName = cameraTemplateName };
+                    FlowNodePropertyEditorRegistration.EnsureRegistered();
+                    var cameraTemplateProperty = typeof(LocalCameraNode).GetProperty(nameof(LocalCameraNode.CamTempName));
+                    Assert.NotNull(cameraTemplateProperty);
+
+                    DockPanel cameraTemplateEditor = new FlowCameraRunTemplateEditor().GenProperties(cameraTemplateProperty, localCameraNode);
+                    var cameraTemplateCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(cameraTemplateEditor));
+                    Assert.True(cameraTemplateCombo.IsEditable);
+                    Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(cameraTemplateCombo));
+                    Assert.Equal(cameraTemplateName, ((TemplateBase)cameraTemplateCombo.SelectedItem).Key);
+
+                    Assert.DoesNotContain(
+                        FindVisualChildren<Button>(cameraTemplateEditor),
+                        button => button.Content is TextBlock { Text: "\uE711" });
+                    ControlCommands.Clear.Execute(null, cameraTemplateCombo);
+
+                    Assert.Equal(-1, cameraTemplateCombo.SelectedIndex);
+                    Assert.Equal(string.Empty, localCameraNode.CamTempName);
+                }
+                finally
+                {
+                    TemplateCameraRunParam.Params.Remove(cameraTemplate);
+                }
 
                 var filterConfig = new AdvancedFilterConfig();
                 var advancedOptions = new PropertyEditorAdvancedOptions(property => property.Name == nameof(AdvancedFilterConfig.AdvancedValue));

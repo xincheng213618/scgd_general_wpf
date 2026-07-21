@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
+                IsEditable = true,
                 SelectedValuePath = "Key",
                 DisplayMemberPath = "Key",
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")

@@ -93,6 +93,7 @@ namespace ColorVision.Engine.PropertyEditor
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = 0,
                 Style = PropertyEditorHelper.ComboBoxSmallStyle,
+                IsEditable = true,
                 DisplayMemberPath = "Key",
                 SelectedValuePath = "Value",
                 HorizontalAlignment = HorizontalAlignment.Stretch
