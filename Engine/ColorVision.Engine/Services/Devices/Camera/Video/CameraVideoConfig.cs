@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 
@@ -13,12 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             _Port = Common.Utilities.Tool.GetFreePort(DeafutPort);
         }
         [DisplayName("主机")]
-        public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
-
-        private void NotifyPropertyChanged()
-        {
-            throw new NotImplementedException();
-        }
+        public string Host { get => _Host; set { _Host = value; OnPropertyChanged(); } }
 
         private string _Host = "127.0.0.1";
 
@@ -35,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 _Port = value <= 0 ? 0 : value >= 65535 ? 65535 : value;
 
-                NotifyPropertyChanged();
+                OnPropertyChanged();
             }
         }
         private int _Port;
@@ -49,8 +45,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 if (_Capacity != value)
                 {
                     _Capacity = value;
-                    NotifyPropertyChanged();
-                    NotifyPropertyChanged(nameof(CapacityText));
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(CapacityText));
                 }
             }
         }
