@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -23,6 +24,11 @@ namespace ProjectARVRPro.Process.Chessboard
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
             ChessboardDynamicViewTestResult testResult = new ChessboardDynamicViewTestResult();
             ChessboardViewTestResult chessboardResult = testResult.ChessboardViewTestResult;
+            string contrastResultName = string.IsNullOrWhiteSpace(Config.ChessboardContrastResultName)
+                ? "Chessboard_Contrast"
+                : Config.ChessboardContrastResultName.Trim();
+            bool databaseContrastFound = false;
+            bool databaseContrastLoaded = false;
 
             try
             {
@@ -50,24 +56,78 @@ namespace ProjectARVRPro.Process.Chessboard
                         }
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains("Chessboard_Contrast"))
+                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName?.Contains(contrastResultName, StringComparison.Ordinal) == true)
                     {
+                        databaseContrastFound = true;
                         var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                         if (details.Count == 1)
                         {
                             var view = new PoiAnalysisDetailViewReslut(details[0]);
                             if (view.PoiAnalysisResult?.result == null)
+                            {
+                                log?.Error($"Chessboard Dynamic数据库结果内容无效: resultName={contrastResultName}");
                                 continue;
+                            }
 
                             view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             chessboardResult.ChessboardContrast = Build(
-                                "Chessboard_Contrast",
+                                contrastResultName,
                                 view.PoiAnalysisResult.result.Value,
                                 recipeConfig.ChessboardContrast.Min,
                                 recipeConfig.ChessboardContrast.Max);
                             ctx.Result.Result &= chessboardResult.ChessboardContrast.TestResult;
+                            databaseContrastLoaded = true;
+                            log?.Info($"Chessboard Dynamic对比度来源: database, resultName={contrastResultName}");
                         }
+                        else
+                            log?.Error($"Chessboard Dynamic数据库结果明细无效: resultName={contrastResultName}, detailCount={details.Count}");
                     }
+                }
+
+                if (databaseContrastFound && !databaseContrastLoaded)
+                    return false;
+
+                if (!databaseContrastFound)
+                {
+                    var calculation = ChessboardContrastCalculator.CalculateAndApply(
+                        chessboardResult.PoixyuvDatas,
+                        Config.RowCount,
+                        Config.ColumnCount,
+                        Config.FirstPointIsBlack,
+                        Config.StrayLightCoefficient);
+                    if (!calculation.Success)
+                    {
+                        log?.Error($"Chessboard Dynamic本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
+                        return false;
+                    }
+
+                    chessboardResult.AverageBlackLuminance = new ObjectiveTestItem
+                    {
+                        Name = "Average_Black_Luminance",
+                        Unit = "cd/m^2",
+                        Value = calculation.CorrectedDarkLuminance,
+                        TestValue = calculation.CorrectedDarkLuminance.ToString(Config.ShowConfig)
+                    };
+                    double correctedContrast = recipeConfig.ChessboardContrast.Apply(calculation.CorrectedContrast);
+                    chessboardResult.ChessboardContrast = Build(
+                        contrastResultName,
+                        correctedContrast,
+                        recipeConfig.ChessboardContrast.Min,
+                        recipeConfig.ChessboardContrast.Max);
+                    ctx.Result.Result &= chessboardResult.ChessboardContrast.TestResult;
+
+                    log?.Info(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Chessboard Dynamic对比度来源: local, resultName={0}, rows={1}, columns={2}, firstPointIsBlack={3}, a={4}, LB={5}, LD={6}, LD'={7}, CR'={8}",
+                        contrastResultName,
+                        calculation.RowCount,
+                        calculation.ColumnCount,
+                        Config.FirstPointIsBlack,
+                        Config.StrayLightCoefficient,
+                        calculation.BrightLuminance,
+                        calculation.RawDarkLuminance,
+                        calculation.CorrectedDarkLuminance,
+                        calculation.CorrectedContrast));
                 }
 
                 testResult.Items = CollectItems(chessboardResult);
@@ -159,6 +219,8 @@ namespace ProjectARVRPro.Process.Chessboard
         private static ObservableCollection<ObjectiveTestItem> CollectItems(ChessboardTestResult result)
         {
             ObservableCollection<ObjectiveTestItem> items = new ObservableCollection<ObjectiveTestItem>();
+            if (result.AverageBlackLuminance != null)
+                items.Add(result.AverageBlackLuminance);
             if (result.ChessboardContrast != null)
                 items.Add(result.ChessboardContrast);
             return items;
