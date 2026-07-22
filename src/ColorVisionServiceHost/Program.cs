@@ -33,6 +33,7 @@ internal static class Program
     private static async Task<int> RunConsoleAsync()
     {
         using CancellationTokenSource cts = new();
+        ApplicationUpdateScanProtectionService.Default.Start();
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;
@@ -56,6 +57,7 @@ internal static class Program
         }
 
         ServiceHostLog.Write("Console host stopped.");
+        ApplicationUpdateScanProtectionService.Default.Dispose();
         return 0;
     }
 

@@ -801,6 +801,7 @@ namespace ColorVision.Update
         {
             string? tempRoot = null;
             ExitUpdateHandoffState? handoffState = null;
+            string? scanProtectionId = null;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
@@ -821,6 +822,7 @@ namespace ColorVision.Update
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                scanProtectionId = ApplicationUpdateScanProtection.TryBegin(tempRoot);
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
 
@@ -861,6 +863,7 @@ namespace ColorVision.Update
                 if (!canUpdateWithoutElevation && !allowElevationFallback)
                 {
                     log.Info("Skipped exit-time update because ColorVisionServiceHost could not prepare the application directory silently.");
+                    ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                     ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
@@ -876,7 +879,8 @@ namespace ColorVision.Update
                     Environment.ProcessId,
                     handoffState,
                     repairServiceHost: !canUpdateWithoutElevation,
-                    restartApplication: restartApplication);
+                    restartApplication: restartApplication,
+                    scanProtectionId: scanProtectionId);
                 File.WriteAllText(batchFilePath, batchContent);
 
                 // 设置批处理文件的启动信息
@@ -905,6 +909,7 @@ namespace ColorVision.Update
                     log.Error("Failed to start incremental update batch.", ex);
                     if (showErrors)
                         MessageBox.Show(ex.Message);
+                    ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                     ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
@@ -915,6 +920,7 @@ namespace ColorVision.Update
                 log.Error("Failed to prepare incremental update.", ex);
                 if (showErrors)
                     MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
+                ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                 ExitUpdateHandoff.Clear(handoffState);
                 TryDeleteUpdateStage(tempRoot);
                 return false;
@@ -965,7 +971,8 @@ namespace ColorVision.Update
             int originalProcessId,
             ExitUpdateHandoffState handoffState,
             bool repairServiceHost,
-            bool restartApplication)
+            bool restartApplication,
+            string? scanProtectionId)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
@@ -978,6 +985,7 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
             ExternalUpdateBatchScript.AppendSessionVariables(sb, originalProcessId, handoffState);
+            sb.AppendLine($"set \"{ApplicationUpdateScanProtection.ProtectionIdEnvironmentVariable}={EscapeForBatchValue(scanProtectionId ?? string.Empty)}\"");
             sb.AppendLine($"set \"REPAIR_SERVICE_HOST={(repairServiceHost ? "1" : "0")}\"");
             sb.AppendLine($"set \"RESTART_APPLICATION={(restartApplication ? "1" : "0")}\"");
             sb.AppendLine($"set \"SERVICE_NAME={ServiceHostProtocol.ServiceName}\"");

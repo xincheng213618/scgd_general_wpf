@@ -150,6 +150,23 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ExitUpdateBatchPropagatesScanProtectionIdToRestartedApplication()
+        {
+            const string protectionId = "0123456789abcdef0123456789abcdef";
+            string batch = BuildApplicationBatch(
+                @"C:\Update Root\ColorVision",
+                @"C:\Update Root",
+                @"D:\ColorVision",
+                "ColorVision.exe",
+                scanProtectionId: protectionId);
+
+            Assert.Contains(
+                $"set \"{ApplicationUpdateScanProtection.ProtectionIdEnvironmentVariable}={protectionId}\"",
+                batch,
+                StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task ExitUpdateBatchReopensApplicationWhenLaunchWasRequested()
         {
             string tempRoot = Path.Combine(_rootDirectory, "Requested Reopen Root");
@@ -227,7 +244,8 @@ namespace ColorVision.UI.Tests
             string executableName,
             bool repairServiceHost = false,
             bool restartApplication = true,
-            int originalProcessId = 999999)
+            int originalProcessId = 999999,
+            string? scanProtectionId = null)
         {
             MethodInfo method = typeof(AutoUpdater).GetMethod(
                 "CreateIncrementalUpdateBatch",
@@ -247,7 +265,8 @@ namespace ColorVision.UI.Tests
                 originalProcessId,
                 handoffState,
                 repairServiceHost,
-                restartApplication])!;
+                restartApplication,
+                scanProtectionId])!;
         }
 
         private static string CreateProbeExecutable(string directory)

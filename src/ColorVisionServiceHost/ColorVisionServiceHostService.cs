@@ -18,6 +18,7 @@ internal sealed class ColorVisionServiceHostService : ServiceBase
     protected override void OnStart(string[] args)
     {
         ServiceHostLog.Write("Service starting.");
+        ApplicationUpdateScanProtectionService.Default.Start();
         _cancellationTokenSource = new CancellationTokenSource();
         ServiceHostPipeServer server = new(new ServiceHostCommandHandler());
         _runTask = Task.Run(() => server.RunAsync(_cancellationTokenSource.Token));
@@ -27,6 +28,7 @@ internal sealed class ColorVisionServiceHostService : ServiceBase
     protected override void OnStop()
     {
         ServiceHostLog.Write("Service stopping.");
+        ApplicationUpdateScanProtectionService.Default.Dispose();
         _cancellationTokenSource?.Cancel();
         try
         {

@@ -81,6 +81,32 @@ namespace ColorVision.UI.Tests
             Assert.True(process.ExitCode == 0, $"Windows PowerShell parser rejected the generated script.{Environment.NewLine}{output}{Environment.NewLine}{error}");
         }
 
+        [Fact]
+        public void EqualServiceHostAssembliesAreAlreadyCurrent()
+        {
+            string sourceExecutable = Path.Combine(_rootDirectory, "Source", "ColorVisionServiceHost.exe");
+            string installedExecutable = Path.Combine(_rootDirectory, "Installed", "ColorVisionServiceHost.exe");
+            Directory.CreateDirectory(Path.GetDirectoryName(sourceExecutable)!);
+            Directory.CreateDirectory(Path.GetDirectoryName(installedExecutable)!);
+            File.WriteAllText(Path.ChangeExtension(sourceExecutable, ".dll"), "same-content");
+            File.WriteAllText(Path.ChangeExtension(installedExecutable, ".dll"), "same-content");
+
+            Assert.True(ServiceHostCommandHandler.AreServiceHostBinariesCurrent(sourceExecutable, installedExecutable));
+        }
+
+        [Fact]
+        public void ChangedServiceHostAssemblyRequiresSelfUpdate()
+        {
+            string sourceExecutable = Path.Combine(_rootDirectory, "Source", "ColorVisionServiceHost.exe");
+            string installedExecutable = Path.Combine(_rootDirectory, "Installed", "ColorVisionServiceHost.exe");
+            Directory.CreateDirectory(Path.GetDirectoryName(sourceExecutable)!);
+            Directory.CreateDirectory(Path.GetDirectoryName(installedExecutable)!);
+            File.WriteAllText(Path.ChangeExtension(sourceExecutable, ".dll"), "new-content");
+            File.WriteAllText(Path.ChangeExtension(installedExecutable, ".dll"), "old-content");
+
+            Assert.False(ServiceHostCommandHandler.AreServiceHostBinariesCurrent(sourceExecutable, installedExecutable));
+        }
+
         private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
         public void Dispose()

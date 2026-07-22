@@ -343,6 +343,7 @@ namespace ColorVision
         {
             ContentRendered -= MainWindow_ContentRendered;
             ProgramTimer.StopAndReport();
+            Update.ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();

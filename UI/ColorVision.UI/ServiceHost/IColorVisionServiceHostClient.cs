@@ -19,6 +19,10 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> PrepareApplicationUpdateAsync(string? serviceHostPackageDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> BeginApplicationUpdateScanProtectionAsync(string updateRoot, int lifetimeSeconds = 180, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> CompleteApplicationUpdateScanProtectionAsync(string protectionId, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> RegisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -115,6 +119,24 @@ namespace ColorVision.UI.ServiceHost
             return string.IsNullOrWhiteSpace(serviceHostPackageDirectory)
                 ? SendAsync("prepare-application-update", requestTimeout, cancellationToken)
                 : SendAsync("prepare-application-update", new { serviceHostPackageDirectory }, requestTimeout, cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> BeginApplicationUpdateScanProtectionAsync(string updateRoot, int lifetimeSeconds = 180, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "begin-application-update-scan-protection",
+                new { updateRoot, lifetimeSeconds },
+                timeout ?? TimeSpan.FromSeconds(30),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> CompleteApplicationUpdateScanProtectionAsync(string protectionId, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "complete-application-update-scan-protection",
+                new { protectionId },
+                timeout ?? TimeSpan.FromSeconds(30),
+                cancellationToken);
         }
 
         public Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
