@@ -15,11 +15,12 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceMarkdownPresenter));
         private static readonly ConditionalWeakTable<WebView2, RenderState> RenderStates = new();
 
-        public static async Task RenderAsync(WebView2 webView, string? markdown, string emptyMessage)
+        public static async Task RenderAsync(WebView2 webView, string? markdown, string emptyMessage, CancellationToken cancellationToken = default)
         {
             if (webView == null)
                 return;
 
+            cancellationToken.ThrowIfCancellationRequested();
             string normalizedMarkdown = markdown ?? string.Empty;
             string renderKey = $"{emptyMessage}\n{normalizedMarkdown}";
             RenderState state = RenderStates.GetOrCreateValue(webView);
@@ -29,6 +30,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             try
             {
                 await WebViewService.EnsureWebViewInitializedAsync(webView);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (webView.CoreWebView2 == null)
                     return;
 
@@ -36,8 +38,13 @@ namespace ColorVision.UI.Desktop.Marketplace
                     ? $"<div style='padding:24px 0;color:#6b7280;font-style:italic;'>{System.Net.WebUtility.HtmlEncode(emptyMessage)}</div>"
                     : Markdown.ToHtml(normalizedMarkdown);
 
+                cancellationToken.ThrowIfCancellationRequested();
                 WebViewService.RenderMarkdown(webView, html);
                 state.LastRenderKey = renderKey;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
