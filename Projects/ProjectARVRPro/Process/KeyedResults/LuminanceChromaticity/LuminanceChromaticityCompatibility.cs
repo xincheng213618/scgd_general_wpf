@@ -1,6 +1,6 @@
 using ProjectARVRPro.Process.W255;
 
-namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
+namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     internal static class LuminanceChromaticityCompatibility
     {

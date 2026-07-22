@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.RGB.FieldOfView
+namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
 {
     public class FieldOfViewRecipeConfig : ViewModelBase, IRecipeConfig
     {

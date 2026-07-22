@@ -59,6 +59,7 @@ ProjectARVRPro
 │   ├── ProcessMeta.cs              #   流程元数据：名称、模板、IsEnabled、PictureSwitchConfig、配置
 │   ├── ProcessGroup.cs             #   流程组：按产品/场景组织测试方案
 │   ├── PictureSwitchConfig.cs      #   每步执行前的雷鸟切图配置
+│   ├── KeyedResults/               #   按可配置 Key 写入类型化结果字典的流程与通用解析
 │   └── [各测试子目录]              #   每个测试类型按需包含 Process / ProcessConfig / TestResult / RecipeConfig
 │
 ├── Recipe/                         # Recipe（限值 + 一次函数修正）系统

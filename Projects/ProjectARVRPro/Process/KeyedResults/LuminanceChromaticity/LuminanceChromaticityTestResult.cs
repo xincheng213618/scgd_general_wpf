@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
-namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
+namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     public class LuminanceChromaticityViewTestResult : LuminanceChromaticityTestResult
     {

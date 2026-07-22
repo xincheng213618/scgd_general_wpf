@@ -1,6 +1,6 @@
 #pragma warning disable CA1707,CA1805,CA1847,CS8603,CS8604
 using ColorVision.Common.MVVM;
-using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using System.IO;
 using System.Text;
 

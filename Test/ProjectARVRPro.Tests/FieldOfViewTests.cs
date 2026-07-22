@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using ProjectARVRPro.Exports;
-using ProjectARVRPro.Process.RGB.FieldOfView;
+using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using System.IO;
 using Xunit;
 
@@ -28,7 +29,7 @@ namespace ProjectARVRPro.Tests
             var result = new ObjectiveTestResult();
             var fieldOfViewResult = CreateResult();
 
-            result.SetFieldOfViewResult("White", fieldOfViewResult);
+            KeyedTestResultWriter.Write(result, "White", fieldOfViewResult);
 
             Assert.Same(fieldOfViewResult, result.FieldOfViewTestResults["White"]);
             Assert.Same(fieldOfViewResult.HorizontalFieldOfViewAngle, result.W51TestResult.HorizontalFieldOfViewAngle);
@@ -41,9 +42,9 @@ namespace ProjectARVRPro.Tests
         public void EquivalentKeyCasingUpdatesOneDictionaryEntry()
         {
             var result = new ObjectiveTestResult();
-            result.SetFieldOfViewResult("White", CreateResult());
+            KeyedTestResultWriter.Write(result, "White", CreateResult());
 
-            result.SetFieldOfViewResult(" white ", CreateResult());
+            KeyedTestResultWriter.Write(result, " white ", CreateResult());
 
             Assert.Single(result.FieldOfViewTestResults);
             Assert.True(result.FieldOfViewTestResults.ContainsKey("White"));
@@ -55,7 +56,7 @@ namespace ProjectARVRPro.Tests
         {
             var result = new ObjectiveTestResult();
 
-            result.SetFieldOfViewResult("LeftEye", CreateResult());
+            KeyedTestResultWriter.Write(result, "LeftEye", CreateResult());
             var record = ObjectiveTestResultRecord.Create(new ProjectARVRReuslt(), result);
 
             Assert.Null(result.W51TestResult);
@@ -68,7 +69,7 @@ namespace ProjectARVRPro.Tests
         public void ResolverReadsTypedDictionariesCaseInsensitively()
         {
             var result = new ObjectiveTestResult();
-            result.SetFieldOfViewResult("White", CreateResult());
+            KeyedTestResultWriter.Write(result, "White", CreateResult());
             var resolver = new ObjectiveTestResultValueResolver(result);
 
             Assert.Equal(24.1, resolver.Find("white", "HorizontalFieldOfViewAngle")?.Value);
@@ -82,7 +83,7 @@ namespace ProjectARVRPro.Tests
             try
             {
                 var result = new ObjectiveTestResult();
-                result.SetFieldOfViewResult("White", CreateResult());
+                KeyedTestResultWriter.Write(result, "White", CreateResult());
 
                 ObjectiveTestResultCsvExporter.ExportToCsv(result, filePath);
                 string csv = File.ReadAllText(filePath);

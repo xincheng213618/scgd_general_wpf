@@ -14,7 +14,7 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
+namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     public class LuminanceChromaticityProcess : ProcessBase<LuminanceChromaticityProcessConfig>
     {
@@ -42,7 +42,7 @@ namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 var objectiveResult = JsonConvert.DeserializeObject<LuminanceChromaticityTestResult>(ctx.Result.ViewResultJson) ?? new();
-                ctx.ObjectiveTestResult.SetLuminanceChromaticityResult(Config.GetOutputKey(), objectiveResult);
+                KeyedTestResultWriter.Write(ctx.ObjectiveTestResult, Config.GetOutputKey(), objectiveResult);
                 return Task.FromResult(true);
             }
             catch (Exception ex)

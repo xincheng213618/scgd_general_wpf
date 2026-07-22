@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace ProjectARVRPro.Process.RGB.FieldOfView
+namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
 {
     public class FieldOfViewProcess : ProcessBase<FieldOfViewProcessConfig>
     {
@@ -45,7 +45,7 @@ namespace ProjectARVRPro.Process.RGB.FieldOfView
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 var objectiveResult = JsonConvert.DeserializeObject<FieldOfViewTestResult>(ctx.Result.ViewResultJson) ?? new();
-                ctx.ObjectiveTestResult.SetFieldOfViewResult(Config.GetOutputKey(), objectiveResult);
+                KeyedTestResultWriter.Write(ctx.ObjectiveTestResult, Config.GetOutputKey(), objectiveResult);
                 return Task.FromResult(true);
             }
             catch (Exception ex)

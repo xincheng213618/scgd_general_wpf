@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.RGB.FieldOfView
+namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
 {
     public class FieldOfViewProcessConfig : ProcessConfigBase
     {

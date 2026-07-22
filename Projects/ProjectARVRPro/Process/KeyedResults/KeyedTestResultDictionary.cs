@@ -1,4 +1,4 @@
-namespace ProjectARVRPro.Process
+namespace ProjectARVRPro.Process.KeyedResults
 {
     internal static class KeyedTestResultDictionary
     {

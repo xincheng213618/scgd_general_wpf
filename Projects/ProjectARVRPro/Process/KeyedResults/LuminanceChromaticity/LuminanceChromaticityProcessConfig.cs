@@ -1,7 +1,7 @@
 #pragma warning disable CA1707
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
+namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     public class LuminanceChromaticityProcessConfig : ProcessConfigBase
     {

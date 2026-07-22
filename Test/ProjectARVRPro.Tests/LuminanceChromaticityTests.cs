@@ -1,7 +1,8 @@
 using Newtonsoft.Json;
 using ProjectARVRPro.Exports;
 using ProjectARVRPro.LegacyARVR;
-using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
+using ProjectARVRPro.Process.KeyedResults;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using System.IO;
 using Xunit;
 
@@ -32,7 +33,7 @@ namespace ProjectARVRPro.Tests
                 CenterCorrelatedColorTemperature = new ObjectiveTestItem { Name = "CenterCorrelatedColorTemperature", Value = 6500 },
                 CenterLuminance = new ObjectiveTestItem { Name = "CenterLuminance", Value = 123.45 }
             };
-            result.SetLuminanceChromaticityResult("White", luminanceResult);
+            KeyedTestResultWriter.Write(result, "White", luminanceResult);
 
             var resolver = new ObjectiveTestResultValueResolver(result);
 
@@ -48,7 +49,7 @@ namespace ProjectARVRPro.Tests
         {
             var result = new ObjectiveTestResult();
 
-            result.SetLuminanceChromaticityResult("Red", new LuminanceChromaticityTestResult());
+            KeyedTestResultWriter.Write(result, "Red", new LuminanceChromaticityTestResult());
 
             Assert.Null(result.W255TestResult);
             Assert.True(result.LuminanceChromaticityTestResults.ContainsKey("Red"));
@@ -61,7 +62,7 @@ namespace ProjectARVRPro.Tests
             try
             {
                 var result = new ObjectiveTestResult();
-                result.SetLuminanceChromaticityResult("White", new LuminanceChromaticityTestResult
+                KeyedTestResultWriter.Write(result, "White", new LuminanceChromaticityTestResult
                 {
                     CenterLuminance = new ObjectiveTestItem
                     {
@@ -93,7 +94,7 @@ namespace ProjectARVRPro.Tests
                 CenterKey = "P_9"
             };
             var result = new ObjectiveTestResult();
-            result.SetLuminanceChromaticityResult(config.GetOutputKey(), new LuminanceChromaticityTestResult
+            KeyedTestResultWriter.Write(result, config.GetOutputKey(), new LuminanceChromaticityTestResult
             {
                 CenterLuminance = new ObjectiveTestItem { Name = "CenterLuminance", Value = 25.5 }
             });

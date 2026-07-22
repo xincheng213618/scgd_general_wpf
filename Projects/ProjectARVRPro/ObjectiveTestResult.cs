@@ -7,8 +7,8 @@ using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
-using ProjectARVRPro.Process.RGB.FieldOfView;
-using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
+using ProjectARVRPro.Process.KeyedResults.FieldOfView;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
@@ -92,28 +92,6 @@ namespace ProjectARVRPro
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
         public string TotalResultString => TotalResult?"PASS":"Fail";
-
-        public void SetLuminanceChromaticityResult(string key, LuminanceChromaticityTestResult result)
-        {
-            ArgumentNullException.ThrowIfNull(result);
-            string outputKey = KeyedTestResultDictionary.NormalizeKey(key, "White");
-            LuminanceChromaticityTestResults ??= new();
-            KeyedTestResultDictionary.Set(LuminanceChromaticityTestResults, outputKey, result);
-
-            if (KeyedTestResultDictionary.IsKey(outputKey, "White"))
-                W255TestResult = LuminanceChromaticityCompatibility.ToW255TestResult(result);
-        }
-
-        public void SetFieldOfViewResult(string key, FieldOfViewTestResult result)
-        {
-            ArgumentNullException.ThrowIfNull(result);
-            string outputKey = KeyedTestResultDictionary.NormalizeKey(key, "White");
-            FieldOfViewTestResults ??= new();
-            KeyedTestResultDictionary.Set(FieldOfViewTestResults, outputKey, result);
-
-            if (KeyedTestResultDictionary.IsKey(outputKey, "White"))
-                W51TestResult = FieldOfViewCompatibility.ToW51TestResult(result);
-        }
 
     }
 

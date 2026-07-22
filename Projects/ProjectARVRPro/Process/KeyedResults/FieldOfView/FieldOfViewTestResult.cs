@@ -1,7 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.FindLightArea;
 
-namespace ProjectARVRPro.Process.RGB.FieldOfView
+namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
 {
     public class FieldOfViewViewTestResult : FieldOfViewTestResult
     {

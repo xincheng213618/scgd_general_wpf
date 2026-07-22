@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 
-namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
+namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 {
     public class LuminanceChromaticityRecipeConfig : ViewModelBase, IRecipeConfig
     {

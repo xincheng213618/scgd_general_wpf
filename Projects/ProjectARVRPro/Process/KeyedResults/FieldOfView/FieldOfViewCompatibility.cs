@@ -1,6 +1,6 @@
 using ProjectARVRPro.Process.W51;
 
-namespace ProjectARVRPro.Process.RGB.FieldOfView
+namespace ProjectARVRPro.Process.KeyedResults.FieldOfView
 {
     internal static class FieldOfViewCompatibility
     {
