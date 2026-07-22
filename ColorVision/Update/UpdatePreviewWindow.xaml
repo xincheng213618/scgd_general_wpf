@@ -60,17 +60,8 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Visibility="{Binding HostVersionVisibility}">
-                    <TextBlock HorizontalAlignment="Right"
-                               FontSize="13"
-                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
-                               TextWrapping="Wrap">
-                        <Run Text="{x:Static properties:Resources.UpdatePreviewHostVersionLabel}" />
-                        <Run Text=" " />
-                        <Run Foreground="{DynamicResource UpdateDialog.TextPrimary}"
-                             FontWeight="SemiBold"
-                             Text="{Binding HostVersionValue, Mode=OneWay}" />
-                    </TextBlock>
-                    <TextBlock Margin="0,8,0,0"
+
+                    <TextBlock 
                                HorizontalAlignment="Right"
                                Cursor="Hand"
                                FontSize="13"
