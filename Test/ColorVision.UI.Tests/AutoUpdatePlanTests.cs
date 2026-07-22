@@ -425,6 +425,32 @@ namespace ColorVision.UI.Tests
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false));
         }
 
+        [Theory]
+        [InlineData(true, true, true, true, true, false, true)]
+        [InlineData(true, true, false, true, true, true, false)]
+        [InlineData(true, false, false, true, true, false, false)]
+        [InlineData(true, true, true, false, true, false, false)]
+        [InlineData(true, true, false, true, true, false, true)]
+        public void UpdateCheckReuseRequiresTheSameScopeAndCompatiblePluginCoverage(
+            bool existingApplication,
+            bool existingPlugins,
+            bool existingCurrentHostPlugins,
+            bool requestedApplication,
+            bool requestedPlugins,
+            bool requestedCurrentHostPlugins,
+            bool expected)
+        {
+            Assert.Equal(
+                expected,
+                CombinedUpdateCoordinator.CanReuseUpdateCheckOptions(
+                    existingApplication,
+                    existingPlugins,
+                    existingCurrentHostPlugins,
+                    requestedApplication,
+                    requestedPlugins,
+                    requestedCurrentHostPlugins));
+        }
+
         [Fact]
         public void PluginOnlySelectionDescribesRestartWithoutBackup()
         {

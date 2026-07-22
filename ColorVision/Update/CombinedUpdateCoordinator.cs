@@ -37,8 +37,11 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CombinedUpdateCoordinator));
         private static readonly SemaphoreSlim _locker = new(1, 1);
+        private static readonly object _updateCheckLock = new();
         private static readonly object _prefetchLock = new();
+        private static readonly TimeSpan SharedUpdateCheckDuration = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan PrefetchDelay = TimeSpan.FromSeconds(30);
+        private static SharedUpdateCheck? _sharedUpdateCheck;
         private static AutoUpdatePlan? _pendingStartupApplicationPlan;
         private static CombinedPluginUpdatePlan? _pendingStartupPluginPlan;
         private static CancellationTokenSource? _prefetchCancellation;
@@ -52,7 +55,7 @@ namespace ColorVision.Update
 
         public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
-            await _locker.WaitAsync(cancellationToken);
+            bool lockTaken = false;
             try
             {
                 AutoUpdatePlan? applicationPlan = null;
@@ -64,10 +67,13 @@ namespace ColorVision.Update
                 {
                     try
                     {
-                        (applicationPlan, pluginPlan) = await BuildUpdatePlansAsync(
+                        (applicationPlan, pluginPlan) = await GetUpdatePlansAsync(
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
+                            includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                             cancellationToken: previewCancellation.Token);
+                        await _locker.WaitAsync(previewCancellation.Token);
+                        lockTaken = true;
 
                         if (currentWindow.IsClosed)
                             return;
@@ -144,7 +150,8 @@ namespace ColorVision.Update
             }
             finally
             {
-                _locker.Release();
+                if (lockTaken)
+                    _locker.Release();
             }
         }
 
@@ -162,7 +169,7 @@ namespace ColorVision.Update
             await _locker.WaitAsync(cancellationToken);
             try
             {
-                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await GetUpdatePlansAsync(
                     includeApplicationUpdates: includeApplicationUpdates,
                     includePluginUpdates: includePluginUpdates,
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: true,
@@ -463,10 +470,152 @@ namespace ColorVision.Update
 
         private static Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildPendingStartupPlansAsync(CancellationToken cancellationToken)
         {
-            return BuildUpdatePlansAsync(
+            return GetUpdatePlansAsync(
                 includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
                 includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                 cancellationToken: cancellationToken);
+        }
+
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> GetUpdatePlansAsync(
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            CancellationToken cancellationToken)
+        {
+            bool includeCurrentHostPlugins = includeApplicationUpdates
+                && includePluginUpdates
+                && includeCurrentHostPluginUpdatesWhenFullApplicationUpdate;
+            SharedUpdateCheck sharedCheck;
+            bool reused;
+            bool wasInProgress;
+            lock (_updateCheckLock)
+            {
+                reused = _sharedUpdateCheck != null
+                    && CanReuseSharedUpdateCheck(
+                        _sharedUpdateCheck,
+                        includeApplicationUpdates,
+                        includePluginUpdates,
+                        includeCurrentHostPlugins);
+                if (reused)
+                {
+                    sharedCheck = _sharedUpdateCheck!;
+                }
+                else
+                {
+                    sharedCheck = new SharedUpdateCheck(
+                        includeApplicationUpdates,
+                        includePluginUpdates,
+                        includeCurrentHostPlugins,
+                        BuildSharedUpdateCheckAsync(
+                            includeApplicationUpdates,
+                            includePluginUpdates,
+                            includeCurrentHostPlugins));
+                    _sharedUpdateCheck = sharedCheck;
+                }
+
+                wasInProgress = !sharedCheck.Task.IsCompleted;
+            }
+
+            if (reused)
+            {
+                log.Info(wasInProgress
+                    ? "Reusing the update check already in progress."
+                    : "Reusing the recent update check result.");
+            }
+
+            UpdatePlanCheckResult result = await sharedCheck.Task.WaitAsync(cancellationToken);
+            return CopyUpdatePlansForConsumer(
+                result,
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPlugins);
+        }
+
+        private static async Task<UpdatePlanCheckResult> BuildSharedUpdateCheckAsync(
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+                CancellationToken.None);
+            return new UpdatePlanCheckResult(applicationPlan, pluginPlan, DateTimeOffset.UtcNow);
+        }
+
+        private static bool CanReuseSharedUpdateCheck(
+            SharedUpdateCheck sharedCheck,
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            if (!CanReuseUpdateCheckOptions(
+                sharedCheck.IncludeApplicationUpdates,
+                sharedCheck.IncludePluginUpdates,
+                sharedCheck.IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate))
+            {
+                return false;
+            }
+
+            if (!sharedCheck.Task.IsCompleted)
+                return true;
+
+            return sharedCheck.Task.IsCompletedSuccessfully
+                && DateTimeOffset.UtcNow - sharedCheck.Task.Result.CompletedAt <= SharedUpdateCheckDuration;
+        }
+
+        internal static bool CanReuseUpdateCheckOptions(
+            bool existingIncludesApplicationUpdates,
+            bool existingIncludesPluginUpdates,
+            bool existingIncludesCurrentHostPlugins,
+            bool requestedIncludesApplicationUpdates,
+            bool requestedIncludesPluginUpdates,
+            bool requestedIncludesCurrentHostPlugins)
+        {
+            return existingIncludesApplicationUpdates == requestedIncludesApplicationUpdates
+                && existingIncludesPluginUpdates == requestedIncludesPluginUpdates
+                && (!requestedIncludesCurrentHostPlugins || existingIncludesCurrentHostPlugins);
+        }
+
+        private static (AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan) CopyUpdatePlansForConsumer(
+            UpdatePlanCheckResult result,
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            AutoUpdatePlan? applicationPlan = includeApplicationUpdates && result.ApplicationPlan != null
+                ? new AutoUpdatePlan
+                {
+                    CurrentVersion = result.ApplicationPlan.CurrentVersion,
+                    LatestVersion = result.ApplicationPlan.LatestVersion,
+                    VersionsToApply = result.ApplicationPlan.VersionsToApply.ToArray(),
+                    IsIncremental = result.ApplicationPlan.IsIncremental,
+                }
+                : null;
+            bool canUsePluginPlan = includePluginUpdates
+                && result.PluginPlan != null
+                && (applicationPlan?.IsIncremental != false || includeCurrentHostPluginUpdatesWhenFullApplicationUpdate);
+            CombinedPluginUpdatePlan? pluginPlan = canUsePluginPlan
+                ? ClonePluginPlan(result.PluginPlan!)
+                : null;
+            return (applicationPlan, pluginPlan);
+        }
+
+        private static CombinedPluginUpdatePlan ClonePluginPlan(CombinedPluginUpdatePlan source)
+        {
+            CombinedPluginUpdatePlan clone = new() { HostVersion = source.HostVersion };
+            clone.Updates.AddRange(source.Updates.Select(item => new CombinedPluginUpdateItem
+            {
+                Plugin = item.Plugin,
+                VersionInfo = item.VersionInfo,
+            }));
+            clone.SkippedIncompatiblePlugins.AddRange(source.SkippedIncompatiblePlugins);
+            return clone;
         }
 
         private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(
@@ -511,6 +660,17 @@ namespace ColorVision.Update
             log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
             return (applicationPlan, pluginPlan);
         }
+
+        private sealed record UpdatePlanCheckResult(
+            AutoUpdatePlan? ApplicationPlan,
+            CombinedPluginUpdatePlan? PluginPlan,
+            DateTimeOffset CompletedAt);
+
+        private sealed record SharedUpdateCheck(
+            bool IncludeApplicationUpdates,
+            bool IncludePluginUpdates,
+            bool IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            Task<UpdatePlanCheckResult> Task);
 
         internal static Version? ResolvePluginPlanHostVersion(
             AutoUpdatePlan? applicationPlan,
