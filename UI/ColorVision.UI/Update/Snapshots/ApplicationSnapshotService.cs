@@ -455,7 +455,7 @@ namespace ColorVision.Update
             try
             {
                 using Process restoreProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
-                Environment.Exit(0);
+                ApplicationUpdateShutdown.Request();
             }
             catch
             {
@@ -488,7 +488,7 @@ namespace ColorVision.Update
             sb.AppendLine("if %ERRORLEVEL% GEQ 8 goto fail");
             ExternalUpdateBatchScript.AppendLog(sb, "Snapshot restore completed.");
             ExternalUpdateBatchScript.AppendRestartAndComplete(sb, restartArguments: null);
-            sb.AppendLine("start \"\" cmd /c \"ping -n 4 127.0.0.1 >nul & rd /s /q \\\"%STAGE%\\\" 2>nul\"");
+            sb.AppendLine("start \"\" /d \"%TEMP%\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%STAGE%\" 2^>nul");
             sb.AppendLine("exit /b 0");
             sb.AppendLine(":fail");
             ExternalUpdateBatchScript.AppendLog(sb, "Snapshot restore failed.");

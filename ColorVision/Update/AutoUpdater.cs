@@ -901,7 +901,7 @@ namespace ColorVision.Update
                 {
                     using Process updateProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
                     if (restartApplication)
-                        Environment.Exit(0);
+                        ApplicationUpdateShutdown.Request();
                     return true;
                 }
                 catch (Exception ex)
@@ -1056,7 +1056,7 @@ namespace ColorVision.Update
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":schedule_cleanup");
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            sb.AppendLine("start \"\" /d \"%TEMP%\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
             sb.AppendLine("exit /b 0");
             return sb.ToString();
         }
@@ -1125,7 +1125,7 @@ namespace ColorVision.Update
             {
                 ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 Process.Start(startInfo);
-                Environment.Exit(0);
+                ApplicationUpdateShutdown.Request();
             }
             catch (Exception ex)
             {

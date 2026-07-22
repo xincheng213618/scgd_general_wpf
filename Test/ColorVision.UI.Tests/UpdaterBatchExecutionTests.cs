@@ -39,7 +39,7 @@ namespace ColorVision.UI.Tests
                 BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, restartApplication: false),
                 new UTF8Encoding(false));
 
-            BatchResult result = await RunBatchAsync(batchPath);
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
 
             Assert.True(result.ExitCode == 0, result.ToString());
             Assert.True(
@@ -67,7 +67,7 @@ namespace ColorVision.UI.Tests
                 BuildApplicationBatch(stageDirectory, tempRoot, invalidTarget, "ColorVisionTestProbe.exe", restartApplication: false),
                 new UTF8Encoding(false));
 
-            BatchResult result = await RunBatchAsync(batchPath);
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
 
             Assert.NotEqual(0, result.ExitCode);
             Assert.Equal("not a directory", File.ReadAllText(invalidTarget));
@@ -91,7 +91,7 @@ namespace ColorVision.UI.Tests
             ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(targetDirectory, tempRoot, Path.Combine(_rootDirectory, "PluginState"));
             PluginUpdater.GenerateBatchFile(batchPath, targetDirectory, executableName, int.MaxValue, handoffState, restartArguments: null);
 
-            BatchResult result = await RunBatchAsync(batchPath);
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
 
             Assert.True(result.ExitCode == 0, result.ToString());
             Assert.Equal("plugin", File.ReadAllText(Path.Combine(targetDirectory, "Plugins", "third.party", "payload.txt")));
@@ -147,6 +147,9 @@ namespace ColorVision.UI.Tests
             Assert.Contains("tasklist /fi \"PID eq %ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Waiting for original application process to exit.", batch, StringComparison.Ordinal);
+            Assert.Contains("Original application process exited normally.", batch, StringComparison.Ordinal);
+            Assert.Contains("Original application process exit timed out; forcing termination.", batch, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -193,7 +196,7 @@ namespace ColorVision.UI.Tests
                 BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, restartApplication: false),
                 new UTF8Encoding(false));
 
-            BatchResult result = await RunBatchAsync(batchPath);
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
 
             Assert.True(result.ExitCode == 0, result.ToString());
             Assert.True(await WaitForFileAsync(openedMarkerPath), result.ToString());
@@ -226,7 +229,7 @@ namespace ColorVision.UI.Tests
             {
                 ["ProgramData"] = fakeProgramData,
                 ["PATH"] = fakeTools + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
-            });
+            }, tempRoot);
 
             string installedServiceHost = Path.Combine(fakeProgramData, "ColorVision", "ServiceHost", "ColorVisionServiceHost.exe");
             Assert.True(result.ExitCode == 0, result.ToString());
@@ -276,7 +279,10 @@ namespace ColorVision.UI.Tests
             return executableName;
         }
 
-        private static async Task<BatchResult> RunBatchAsync(string batchPath, IReadOnlyDictionary<string, string>? environment = null)
+        private static async Task<BatchResult> RunBatchAsync(
+            string batchPath,
+            IReadOnlyDictionary<string, string>? environment = null,
+            string? workingDirectory = null)
         {
             ProcessStartInfo startInfo = new("cmd.exe")
             {
@@ -286,6 +292,8 @@ namespace ColorVision.UI.Tests
                 RedirectStandardError = true,
                 Arguments = "/d /c call \"%COLORVISION_TEST_BATCH%\"",
             };
+            if (!string.IsNullOrWhiteSpace(workingDirectory))
+                startInfo.WorkingDirectory = workingDirectory;
             startInfo.Environment["COLORVISION_TEST_BATCH"] = batchPath;
             if (environment != null)
             {

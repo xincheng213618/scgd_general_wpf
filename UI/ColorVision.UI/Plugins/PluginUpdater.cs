@@ -72,7 +72,7 @@ namespace ColorVision.UI.Plugins
                 }
 
                 using Process updateProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
-                Environment.Exit(0);
+                ApplicationUpdateShutdown.Request();
             }
             catch (Exception ex)
             {
@@ -108,7 +108,7 @@ namespace ColorVision.UI.Plugins
         /// <summary>
         /// Updates one or more plugins from their downloaded ZIP archives.
         /// 1. Extracts all ZIPs to a unique temporary staging directory under %TEMP%.
-        /// 2. Generates a batch script to kill the main process, replace the old plugin files with the new ones, and restart the application.
+        /// 2. Generates a batch script that waits for the main process to exit, replaces the old plugin files, and restarts the application.
         /// </summary>
         /// <param name="downloadPaths">Full paths to the downloaded plugin ZIP files.</param>
         public static void UpdatePlugin(params string[] downloadPaths) => UpdatePluginWithRestartArguments("-c MenuPluginManager", downloadPaths);
@@ -173,7 +173,7 @@ namespace ColorVision.UI.Plugins
                 // 主程序、插件和组合更新共用同一份完整程序快照策略。
                 ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 using Process updateProcess = ExitUpdateHandoff.Start(handoffState, psi);
-                Environment.Exit(0);
+                ApplicationUpdateShutdown.Request();
             }
             catch (Exception ex)
             {
@@ -410,7 +410,7 @@ namespace ColorVision.UI.Plugins
 
             sb.AppendLine(":schedule_cleanup");
             sb.AppendLine(Properties.Resources.EchoSchedulingCleanup);
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            sb.AppendLine("start \"\" /d \"%TEMP%\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
 
@@ -460,7 +460,7 @@ namespace ColorVision.UI.Plugins
             builder.AppendLine("exit /b 0");
             builder.AppendLine();
             builder.AppendLine(":schedule_cleanup");
-            builder.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            builder.AppendLine("start \"\" /d \"%TEMP%\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
             builder.AppendLine("exit /b 0");
             builder.AppendLine();
             ExternalUpdateBatchScript.AppendWaitForOriginalProcess(builder);

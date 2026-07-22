@@ -22,17 +22,23 @@ namespace ColorVision.Update
         public static void AppendWaitForOriginalProcess(StringBuilder builder)
         {
             builder.AppendLine(":wait_for_original_process");
+            AppendLog(builder, "Waiting for original application process to exit.");
             builder.AppendLine("set \"WAIT_ATTEMPTS=0\"");
             builder.AppendLine(":wait_for_original_process_loop");
             builder.AppendLine("tasklist /fi \"PID eq %ORIGINAL_PID%\" /nh 2>nul | findstr /r /c:\"[ ]%ORIGINAL_PID%[ ]\" >nul");
-            builder.AppendLine("if errorlevel 1 exit /b 0");
+            builder.AppendLine("if errorlevel 1 goto wait_for_original_process_completed");
             builder.AppendLine("set /a WAIT_ATTEMPTS+=1");
             builder.AppendLine("if %WAIT_ATTEMPTS% GEQ 15 goto wait_for_original_process_timeout");
             builder.AppendLine("ping -n 2 127.0.0.1 >nul");
             builder.AppendLine("goto wait_for_original_process_loop");
             builder.AppendLine(":wait_for_original_process_timeout");
+            AppendLog(builder, "Original application process exit timed out; forcing termination.");
             builder.AppendLine("taskkill /f /pid \"%ORIGINAL_PID%\" >nul 2>nul");
             builder.AppendLine("ping -n 2 127.0.0.1 >nul");
+            AppendLog(builder, "Original application process was forced to exit.");
+            builder.AppendLine("exit /b 0");
+            builder.AppendLine(":wait_for_original_process_completed");
+            AppendLog(builder, "Original application process exited normally.");
             builder.AppendLine("exit /b 0");
         }
 

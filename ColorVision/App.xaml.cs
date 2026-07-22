@@ -274,6 +274,8 @@ namespace ColorVision
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
+            Stopwatch exitStopwatch = Stopwatch.StartNew();
+            log.Info("Application exit cleanup started.");
             Rbac.ApplicationUsageTracker.StopSession();
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             if (!_isSessionEnding)
@@ -283,6 +285,7 @@ namespace ColorVision
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
+            log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
             //Environment.Exit(0);
         }
     }
