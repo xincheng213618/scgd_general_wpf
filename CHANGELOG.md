@@ -1,5 +1,11 @@
 #   CHANGELOG
 
+## [1.4.10.106] 2026.07.22
+
+1. 修复 Marketplace 快速切换插件或刷新后详情仍显示上一插件 README 的问题，详情渲染现在以最后一次选择为准。
+2. Service Host 管理窗口增加 com0com 状态、虚拟串口对创建和删除功能。
+3. SMU 流程节点的源量程和限制量程增加电压、电流预设下拉选项，同时保留自定义数值输入。
+
 ## [1.4.10.90] 2026.07.17
 
 1. 移除未使用的 Visual Studio `.sln/.slnx` 导入逻辑及 `Microsoft.VisualStudio.SolutionPersistence` 依赖，解决方案继续统一使用 `.cvsln`。
