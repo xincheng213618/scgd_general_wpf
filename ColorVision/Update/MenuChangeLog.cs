@@ -1,6 +1,5 @@
-﻿using ColorVision.Properties;
+using ColorVision.Properties;
 using ColorVision.UI.Menus;
-using System.Windows;
 
 namespace ColorVision.Update
 {
@@ -12,7 +11,7 @@ namespace ColorVision.Update
 
         public override void Execute()
         {
-            new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            ChangelogPage.Open();
         }
     }
 }

@@ -18,7 +18,6 @@ using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -383,13 +382,7 @@ namespace ColorVision
 
                 if (Config.LastOpenedVersion != currentVersion)
                 {
-                    string changelogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
-                    if (File.Exists(changelogPath))
-                    {
-                        var editor = new WebView2Editor();
-                        editor.Open(changelogPath);
-                    }
-
+                    ChangelogPage.Open();
                     Config.LastOpenedVersion = currentVersion;
                 }
             }
