@@ -37,10 +37,12 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <TextBox Grid.Column="1" Text="{Binding Config.BaseLocation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SelectBaseLocationCommand}" Padding="12,4"/>
+                    <Button Grid.Column="2" Content="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenBaseLocationCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SelectBaseLocationCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- 一键安装包 -->

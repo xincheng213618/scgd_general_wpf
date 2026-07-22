@@ -9,7 +9,7 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceInstallViewModel
     {
-        private void DoBackupNow()
+        private void DoBackupNow(string? database = null)
         {
             try
             {
@@ -21,7 +21,9 @@ namespace WindowsServicePlugin.ServiceManager
                     return;
                 }
 
-                mySqlManager.BackupDatabase(log.Info);
+                mySqlManager.BackupDatabase(
+                    string.IsNullOrWhiteSpace(database) ? mySqlManager.Config.Database : database,
+                    log.Info);
             }
             catch (Exception ex)
             {

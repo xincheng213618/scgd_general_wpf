@@ -276,9 +276,6 @@
   <data name="UpdateConfig" xml:space="preserve">
     <value>更新設定</value>
   </data>
-  <data name="LegacyAppConfig" xml:space="preserve">
-    <value>舊版App.config</value>
-  </data>
   <data name="Update" xml:space="preserve">
     <value>更新</value>
   </data>
@@ -449,5 +446,32 @@
   </data>
   <data name="Vc2013Runtime" xml:space="preserve">
     <value>VC++ 2013</value>
+  </data>
+  <data name="ServiceStatusNotInstalled" xml:space="preserve">
+    <value>未安裝</value>
+  </data>
+  <data name="ServiceStatusPaused" xml:space="preserve">
+    <value>已暫停</value>
+  </data>
+  <data name="ServiceStatusPausing" xml:space="preserve">
+    <value>正在暫停</value>
+  </data>
+  <data name="ServiceStatusResuming" xml:space="preserve">
+    <value>正在繼續</value>
+  </data>
+  <data name="ServiceStatusRunning" xml:space="preserve">
+    <value>執行中</value>
+  </data>
+  <data name="ServiceStatusStarting" xml:space="preserve">
+    <value>正在啟動</value>
+  </data>
+  <data name="ServiceStatusStopped" xml:space="preserve">
+    <value>已停止</value>
+  </data>
+  <data name="ServiceStatusStopping" xml:space="preserve">
+    <value>正在停止</value>
+  </data>
+  <data name="ServiceStatusUnknown" xml:space="preserve">
+    <value>未知</value>
   </data>
 </root>

@@ -46,19 +46,14 @@ namespace WindowsServicePlugin.ServiceManager
         public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
         private string _ProgressText = string.Empty;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Kept as an instance property for change notification and command binding.")]
-        public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
-        public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
-
-
         public RelayCommand OneKeyStartCommand { get; }
         public RelayCommand OneKeyStopCommand { get; }
         public RelayCommand UpdateConfigCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand SetBasePathCommand { get; }
+        public RelayCommand OpenBaseLocationCommand { get; }
         public RelayCommand OpenFolderCommand { get; }
-        public RelayCommand OpenLegacyConfigCommand { get; }
         public RelayCommand ServiceInstallCommand { get; }
         public RelayCommand ServiceUninstallCommand { get; }
         public RelayCommand ServiceStartCommand { get; }
@@ -91,8 +86,8 @@ namespace WindowsServicePlugin.ServiceManager
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             SetBasePathCommand = new RelayCommand(a => SetBasePath());
+            OpenBaseLocationCommand = new RelayCommand(a => OpenBaseLocation());
             OpenFolderCommand = new RelayCommand(a => OpenServiceFolder(a as ServiceEntry));
-            OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
             ServiceInstallCommand = new RelayCommand(a => _ = InstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry entry && !entry.IsInstalled && HasResolvableServiceExecutable(entry));
             ServiceUninstallCommand = new RelayCommand(a => _ = UninstallManagedServiceAsync(a as ServiceEntry), a => !IsBusy && a is ServiceEntry { IsInstalled: true });
             ServiceStartCommand = new RelayCommand(a => _ = ControlManagedServiceAsync(a as ServiceEntry, ServiceHostServiceOperation.Start), a => !IsBusy && a is ServiceEntry { IsInstalled: true, IsRunning: false });
@@ -150,9 +145,6 @@ namespace WindowsServicePlugin.ServiceManager
 
         public void RefreshAll()
         {
-            OnPropertyChanged(nameof(LegacyConfigPath));
-            OnPropertyChanged(nameof(HasLegacyConfig));
-
             foreach (var svc in Services)
             {
                 svc.RefreshStatus();
@@ -166,6 +158,14 @@ namespace WindowsServicePlugin.ServiceManager
             }
             RefreshMySqlStatus();
             RefreshMqttStatus();
+            try
+            {
+                ColorVision.Engine.Services.RC.ServiceConfig.Instance.RefreshInstalledServices();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("刷新 Engine 服务版本信息失败", ex);
+            }
             CommandManager.InvalidateRequerySuggested();
 
             // 获取当前版本

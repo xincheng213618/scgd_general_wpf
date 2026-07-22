@@ -27,7 +27,7 @@ namespace WindowsServicePlugin.ServiceManager
         public bool IsPackaged { get; set; } = true;
 
         public string StatusText { get => _StatusText; set { _StatusText = value; OnPropertyChanged(); } }
-        private string _StatusText = "未知";
+        private string _StatusText = ServiceStatusText.Unknown;
 
         public string VersionText { get => _VersionText; set { _VersionText = value; OnPropertyChanged(); } }
         private string _VersionText = string.Empty;
@@ -55,15 +55,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 var status = WinServiceHelper.GetServiceStatus(ServiceName);
                 IsRunning = status == ServiceControllerStatus.Running;
-                StatusText = status switch
-                {
-                    ServiceControllerStatus.Running => "运行中",
-                    ServiceControllerStatus.Stopped => "已停止",
-                    ServiceControllerStatus.StartPending => "正在启动",
-                    ServiceControllerStatus.StopPending => "正在停止",
-                    ServiceControllerStatus.Paused => "已暂停",
-                    _ => status.ToString()
-                };
+                StatusText = ServiceStatusText.FromServiceControllerStatus(status);
 
                 var svcPath = WinServiceHelper.GetServiceInstallPath(ServiceName);
                 if (!string.IsNullOrEmpty(svcPath) && File.Exists(svcPath))
@@ -76,7 +68,7 @@ namespace WindowsServicePlugin.ServiceManager
             else
             {
                 IsRunning = false;
-                StatusText = "未安装";
+                StatusText = ServiceStatusText.NotInstalled;
                 VersionText = "";
             }
         }

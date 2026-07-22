@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.4.3.24 - 2026-07-23
 
 ### Added
 
@@ -27,6 +27,9 @@
 - Changed SQL execution to read SQL text with UTF-8/GB18030 detection and send UTF-8
   to `mysql.exe`.
 - Defaulted service MySQL database usage to `color_vision_4xx`.
+- Added version-aware database migration: CVWindowsService releases before 4.0 use
+  `color_vision`, 4.0 and later use `color_vision_4xx`, and preserved resource data
+  is restored into the target database before service config is switched.
 
 ### Kept
 

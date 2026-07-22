@@ -367,8 +367,6 @@ namespace WindowsServicePlugin.ServiceManager
                 SetSetting("RCName", ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName);
 
                 config.Save(filePath);
-                OnPropertyChanged(nameof(LegacyConfigPath));
-                OnPropertyChanged(nameof(HasLegacyConfig));
                 log.Info($"已同步旧版配置: {filePath}");
             }
             catch (Exception ex)

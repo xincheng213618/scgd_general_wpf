@@ -1240,6 +1240,156 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 正在检查 ColorVision Service Host 的安装和运行状态。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardChecking {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardChecking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 ColorVision 后台服务 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardHeader {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardHeader", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 安装后台服务 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardInstallAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardInstallAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 服务管理器依赖 ColorVision Service Host 执行需要管理员权限的安装和维护操作。点击“安装后台服务”后，Windows 会请求一次管理员授权。
+        ///
+        ///安装包：{0} 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardNotInstalledFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardNotInstalledFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 后台服务安装包不存在：{0} 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardPackageMissingFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardPackageMissingFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 后台服务已安装并正常运行（版本 {0}）。
+        ///
+        ///服务管理器现在可以安全地安装、更新和控制本机服务。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardReadyFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardReadyFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 重新检查 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardRecheckAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardRecheckAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 修复并启动 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardRepairAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardRepairAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 重试 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardRetryAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardRetryAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 无法确认后台服务状态，请重试。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardStatusUnknown {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardStatusUnknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 后台服务已安装（版本 {0}），但当前没有运行。请修复并启动后再继续。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardStoppedFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardStoppedFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未找到可用的后台服务安装包，因此无法继续初始化。
+        ///
+        ///安装包：{0} 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardUnavailableFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardUnavailableFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 更新后台服务 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardUpdateAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardUpdateAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 后台服务需要更新或修复。当前版本：{0}；安装包版本：{1}。完成后才能进入服务管理器。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardUpdateFormat {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardUpdateFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在准备 ColorVision Service Host。安装或修复时可能会请求管理员权限，请完成系统提示。 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardWorking {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardWorking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在处理… 的本地化字符串。
+        /// </summary>
+        public static string ServiceHostWizardWorkingAction {
+            get {
+                return ResourceManager.GetString("ServiceHostWizardWorkingAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 未找到 Shell Extension:\n{0} 的本地化字符串。
         /// </summary>
         public static string ShellExtensionNotFound {

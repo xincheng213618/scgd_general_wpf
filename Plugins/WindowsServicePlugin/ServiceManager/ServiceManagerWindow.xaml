@@ -33,6 +33,7 @@
                 <DockPanel Margin="0,0,0,8">
                     <TextBlock Text="{x:Static res:Resources.BaseInstallRootLabel}" VerticalAlignment="Center" Width="80"/>
                     <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.SetDirectory}" Command="{Binding SetBasePathCommand}" Margin="8,0,0,0" Padding="12,4"/>
+                    <Button DockPanel.Dock="Right" Content="{x:Static res:Resources.OpenFolder}" Command="{Binding OpenBaseLocationCommand}" Margin="8,0,0,0" Padding="12,4"/>
                     <TextBox Text="{Binding Config.BaseLocation, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" IsReadOnly="True"/>
                 </DockPanel>
 
@@ -43,8 +44,6 @@
                     <Button Content="{x:Static res:Resources.OneKeyStop}" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
                     <Button Content="{x:Static res:Resources.UpdateConfig}" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="{x:Static res:Resources.LegacyAppConfig}" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
-                            Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
                     <Button Content="{x:Static res:Resources.Update}" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
                             Style="{StaticResource ButtonPrimary}" ToolTip="{x:Static res:Resources.OpenInstallManagerToolTip}"/>
                 </WrapPanel>

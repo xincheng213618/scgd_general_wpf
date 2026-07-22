@@ -628,10 +628,6 @@ namespace ColorVision.Copilot
             ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
 
-            CurrentLiveContextSummaryText.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
-            CurrentLiveContextBorder.Padding = isCompactComposer ? new Thickness(8, 6, 8, 6) : new Thickness(10, 7, 10, 7);
-            CurrentLiveContextActionButton.Padding = isCompactComposer ? new Thickness(8, 3, 8, 3) : new Thickness(10, 4, 10, 4);
-
             UpdateEmptyStateVisibility();
         }
 

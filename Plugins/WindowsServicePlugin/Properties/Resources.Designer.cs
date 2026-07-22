@@ -331,15 +331,6 @@ namespace WindowsServicePlugin.Properties {
         }
 
         /// <summary>
-        ///   查找类似 旧版App.config 的本地化字符串。
-        /// </summary>
-        public static string LegacyAppConfig {
-            get {
-                return ResourceManager.GetString("LegacyAppConfig", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   查找类似 检测到旧版配置：{0} 的本地化字符串。
         /// </summary>
         public static string LegacyConfigDetectedFormat {
@@ -885,6 +876,87 @@ namespace WindowsServicePlugin.Properties {
         public static string ServicePackageZipFilter {
             get {
                 return ResourceManager.GetString("ServicePackageZipFilter", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未安装 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusNotInstalled {
+            get {
+                return ResourceManager.GetString("ServiceStatusNotInstalled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已暂停 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusPaused {
+            get {
+                return ResourceManager.GetString("ServiceStatusPaused", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在暂停 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusPausing {
+            get {
+                return ResourceManager.GetString("ServiceStatusPausing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在继续 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusResuming {
+            get {
+                return ResourceManager.GetString("ServiceStatusResuming", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 运行中 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusRunning {
+            get {
+                return ResourceManager.GetString("ServiceStatusRunning", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在启动 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusStarting {
+            get {
+                return ResourceManager.GetString("ServiceStatusStarting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已停止 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusStopped {
+            get {
+                return ResourceManager.GetString("ServiceStatusStopped", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在停止 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusStopping {
+            get {
+                return ResourceManager.GetString("ServiceStatusStopping", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未知 的本地化字符串。
+        /// </summary>
+        public static string ServiceStatusUnknown {
+            get {
+                return ResourceManager.GetString("ServiceStatusUnknown", resourceCulture);
             }
         }
 

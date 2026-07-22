@@ -27,11 +27,11 @@ namespace ColorVision.Copilot
         {
             ActiveDocumentPath = activeDocumentPath ?? string.Empty;
             SolutionDirectoryPath = solutionDirectoryPath ?? string.Empty;
+            LiveContext = CloneLiveContext(liveContext);
             Attachments = (attachments ?? Array.Empty<CopilotAttachmentItem>())
                 .Where(attachment => attachment != null)
-                .Select(attachment => attachment.CreateSnapshot())
+                .Select(attachment => CreateAttachmentSnapshot(attachment, LiveContext))
                 .ToArray();
-            LiveContext = CloneLiveContext(liveContext);
             ConversationHistory = conversationHistory == null
                 ? CopilotConversationHistorySnapshot.Empty
                 : new CopilotConversationHistorySnapshot(conversationHistory.ModelMessages, conversationHistory.VisibleMessages);
@@ -59,6 +59,30 @@ namespace ColorVision.Copilot
                     })
                     .ToArray(),
             };
+        }
+
+        private static CopilotAttachmentItem CreateAttachmentSnapshot(
+            CopilotAttachmentItem attachment,
+            CopilotLiveContext? liveContext)
+        {
+            var snapshot = attachment.CreateSnapshot();
+            if (liveContext == null
+                || snapshot.Type != CopilotAttachmentType.Context
+                || string.IsNullOrWhiteSpace(snapshot.Source)
+                || !string.Equals(snapshot.Source, liveContext.SourceId, StringComparison.Ordinal)
+                || liveContext.SnapshotItems.Count == 0)
+            {
+                return snapshot;
+            }
+
+            var latestContent = CopilotConversationRequestBuilder.BuildContextAttachmentContent(liveContext.SnapshotItems);
+            if (string.IsNullOrWhiteSpace(latestContent))
+                return snapshot;
+
+            snapshot.Value = latestContent;
+            if (!string.IsNullOrWhiteSpace(liveContext.AttachmentTitle))
+                snapshot.Title = liveContext.AttachmentTitle.Trim();
+            return snapshot;
         }
     }
 

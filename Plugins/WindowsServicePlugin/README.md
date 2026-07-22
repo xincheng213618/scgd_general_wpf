@@ -50,17 +50,29 @@ For a full service package, the installer:
 - copies `CommonDll` into the packaged service folders and removes the temporary
   `CommonDll` directory;
 - unregisters and re-registers the packaged Windows services;
-- synchronizes service config files before database SQL execution;
-- optionally executes `SQL/color_vision_all.sql`;
+- maps the installed and target CVWindowsService versions to their source and
+  target databases;
+- optionally executes `SQL/color_vision_all.sql`, restores preserved resource
+  data into the target database, and refreshes the business-user grant;
+- switches and synchronizes service config files only after database migration
+  succeeds;
 - optionally starts the managed services.
 
 Incremental update packages are not supported by this workflow.
 
 ## MySQL
 
-The MySQL workflow defaults to the `color_vision_4xx` database and the `cv` business
-user. SQL files are read as UTF-8 when possible, with GB18030 fallback, and are sent
-to `mysql.exe` as UTF-8 to avoid Chinese text import failures.
+The MySQL workflow uses the CVWindowsService major version as the maintained
+database compatibility boundary:
+
+| CVWindowsService version | Database |
+| --- | --- |
+| `< 4.0` | `color_vision` |
+| `>= 4.0` | `color_vision_4xx` |
+
+The default business user is `cv`. SQL files are read as UTF-8 when possible,
+with GB18030 fallback, and are sent to `mysql.exe` as UTF-8 to avoid Chinese text
+import failures.
 
 MySQL installed from a ZIP is placed beside the service root, for example:
 

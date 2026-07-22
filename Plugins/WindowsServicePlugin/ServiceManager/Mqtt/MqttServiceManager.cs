@@ -23,7 +23,7 @@ namespace WindowsServicePlugin.ServiceManager
             Config.ServiceName = "mosquitto";
             Config.IsInstalled = WinServiceHelper.IsServiceExisted(Config.ServiceName);
             Config.IsRunning = Config.IsInstalled && WinServiceHelper.IsServiceRunning(Config.ServiceName);
-            Config.Status = Config.IsRunning ? "运行中" : (Config.IsInstalled ? "已停止" : "未安装");
+            Config.Status = ServiceStatusText.FromInstallationState(Config.IsInstalled, Config.IsRunning);
 
             Config.ExePath = services.FirstOrDefault(s => string.Equals(s.ServiceName, Config.ServiceName, StringComparison.OrdinalIgnoreCase))?.ExePath
                 ?? WinServiceHelper.GetServiceInstallPath(Config.ServiceName)

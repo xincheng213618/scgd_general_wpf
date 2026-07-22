@@ -1908,6 +1908,7 @@ namespace ColorVision.Copilot
                 {
                     ResetPreviewImage();
                     OnPropertyChanged(nameof(BadgeText));
+                    OnPropertyChanged(nameof(IconGlyph));
                     OnPropertyChanged(nameof(DisplayLabel));
                 }
             }
@@ -1965,6 +1966,15 @@ namespace ColorVision.Copilot
             CopilotAttachmentType.Image => CopilotUiText.ImageBadge,
             CopilotAttachmentType.WebPage => CopilotUiText.WebPageBadge,
             _ => CopilotUiText.ContextBadge,
+        };
+
+        [JsonIgnore]
+        public string IconGlyph => Type switch
+        {
+            CopilotAttachmentType.File => "\uE8A5",
+            CopilotAttachmentType.Image => "\uEB9F",
+            CopilotAttachmentType.WebPage => "\uE774",
+            _ => "\uE723",
         };
 
         [JsonIgnore]

@@ -43,18 +43,61 @@ namespace WindowsServicePlugin.ServiceManager
                     try
                     {
                         int progress = 0;
+                        var serviceManager = ServiceManagerViewModel.Instance;
+                        bool hasServiceWork = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked;
+
+                        Version? sourceServiceVersion = null;
+                        if (ServicePackageVersionResolver.TryGetInstalledVersion(basePath, out Version installedServiceVersion))
+                        {
+                            sourceServiceVersion = installedServiceVersion;
+                        }
+
+                        string sourceDatabase = ServiceDatabaseVersionMap.ResolveDatabaseName(
+                            sourceServiceVersion,
+                            serviceManager.MySqlManager.Config.Database);
+                        Version? targetServiceVersion = sourceServiceVersion;
+
+                        if (InstallServiceChecked)
+                        {
+                            if (string.IsNullOrWhiteSpace(ServicePackagePath) || !File.Exists(ServicePackagePath))
+                                throw new InvalidOperationException("已勾选服务包，但未选择有效的 CVWindowsService 完整安装包");
+
+                            if (!IsFullServicePackageZip(ServicePackagePath))
+                                throw new InvalidOperationException("当前安装流程只支持完整服务包，请选择 CVWindowsService 完整安装包");
+
+                            if (!ServicePackageVersionResolver.TryGetPackageVersion(ServicePackagePath, out Version packageVersion))
+                                throw new InvalidOperationException("无法从 CVWindowsService 安装包读取版本，已停止安装以避免选择错误的目标数据库");
+
+                            targetServiceVersion = packageVersion;
+                        }
+
+                        string targetDatabase = ServiceDatabaseVersionMap.ResolveDatabaseName(targetServiceVersion, sourceDatabase);
+                        bool crossesDatabaseBoundary = !string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase);
+
+                        log.Info(sourceServiceVersion == null
+                            ? $"未读取到当前 CVWindowsService 版本，源数据库沿用当前配置: {sourceDatabase}"
+                            : $"当前 CVWindowsService 版本: {sourceServiceVersion}，源数据库: {sourceDatabase}");
+                        log.Info(targetServiceVersion == null
+                            ? $"未读取到目标 CVWindowsService 版本，目标数据库沿用源数据库: {targetDatabase}"
+                            : $"目标 CVWindowsService 版本: {targetServiceVersion}，目标数据库: {targetDatabase}");
+
+                        serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
+                        bool mysqlWasInstalledAtStart = serviceManager.MySqlManager.Config.IsInstalled || serviceManager.MySqlManager.Helper.IsInstalled;
+                        if (mysqlWasInstalledAtStart && crossesDatabaseBoundary && !AutoUpdateDatabase)
+                        {
+                            throw new InvalidOperationException(
+                                $"CVWindowsService 将跨数据库版本更新（{sourceDatabase} -> {targetDatabase}），请勾选“更新数据库到最近版本”后重试");
+                        }
 
                         // 1. 备份数据库
                         if (BackupBeforeInstall)
                         {
                             SetProgress(progress += 5, "备份数据库...");
-                            DoBackupNow();
+                            DoBackupNow(sourceDatabase);
                         }
 
                         bool servicesStoppedForInstall = false;
                         bool mysqlInstalledThisRun = false;
-                        var serviceManager = ServiceManagerViewModel.Instance;
-                        bool hasServiceWork = InstallServiceChecked || InstallMySqlChecked || InstallMqttChecked;
 
                         // 2. 备份服务文件夹
                         if (BackupServiceBeforeInstall && InstallServiceChecked)
@@ -81,14 +124,15 @@ namespace WindowsServicePlugin.ServiceManager
                                 throw new InvalidOperationException("已勾选 MySQL，但未选择有效的 MySQL ZIP 安装包");
 
                             SetProgress(progress += 15, "安装 MySQL...");
-                            serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
-                            bool mysqlWasInstalled = serviceManager.MySqlManager.Config.IsInstalled || serviceManager.MySqlManager.Helper.IsInstalled;
-                            bool mysqlInstalled = serviceManager.MySqlManager.InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, log.Info).GetAwaiter().GetResult();
+                            bool mysqlInstalled = serviceManager.MySqlManager
+                                .InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, log.Info, targetDatabase)
+                                .GetAwaiter()
+                                .GetResult();
                             if (!mysqlInstalled)
                             {
                                 throw new InvalidOperationException("MySQL 安装失败");
                             }
-                            mysqlInstalledThisRun = !mysqlWasInstalled;
+                            mysqlInstalledThisRun = !mysqlWasInstalledAtStart;
                         }
 
                         // 4. 安装 MQTT
@@ -104,13 +148,6 @@ namespace WindowsServicePlugin.ServiceManager
                         // 5. 安装/更新服务包
                         if (InstallServiceChecked)
                         {
-                            if (string.IsNullOrWhiteSpace(ServicePackagePath) || !File.Exists(ServicePackagePath))
-                                throw new InvalidOperationException("已勾选服务包，但未选择有效的 CVWindowsService 完整安装包");
-
-                            if (!IsFullServicePackageZip(ServicePackagePath))
-                            {
-                                throw new InvalidOperationException("当前安装流程只支持完整服务包，请选择 CVWindowsService 完整安装包");
-                            }
                             // 完整安装包：全量解压 + 重新注册服务。
                             SetProgress(progress += 20, "安装 CVWindowsService...");
                             StopLegacyManagementToolProcesses();
@@ -134,6 +171,22 @@ namespace WindowsServicePlugin.ServiceManager
 
                                 string installRoot = ResolveServiceInstallRoot(basePath);
                                 log.Info($"服务安装根目录: {installRoot}");
+                                if (ServicePackageVersionResolver.TryGetInstalledVersion(installRoot, out Version extractedVersion))
+                                {
+                                    if (targetServiceVersion != null && extractedVersion != targetServiceVersion)
+                                    {
+                                        throw new InvalidOperationException(
+                                            $"解压后的 CVWindowsService 版本 {extractedVersion} 与安装包版本 {targetServiceVersion} 不一致");
+                                    }
+
+                                    targetServiceVersion = extractedVersion;
+                                    targetDatabase = ServiceDatabaseVersionMap.GetDatabaseName(extractedVersion);
+                                    log.Info($"已确认安装后的 CVWindowsService 版本: {targetServiceVersion}，目标数据库: {targetDatabase}");
+                                }
+                                else
+                                {
+                                    log.Info($"未能从解压目录复核版本，继续使用安装包版本 {targetServiceVersion}");
+                                }
                                 DeleteCommonDllAfterUpdate(installRoot);
 
                                 SetProgress(progress += 5, "注册/更新服务...");
@@ -147,32 +200,44 @@ namespace WindowsServicePlugin.ServiceManager
                             }
                         }
 
-                        // 6. 同步配置
-                        if (hasServiceWork)
+                        // 6. 更新数据库。跨版本时始终从旧服务对应的库备份，并回写到新服务对应的库。
+                        if ((mysqlInstalledThisRun || AutoUpdateDatabase)
+                            && string.IsNullOrWhiteSpace(MySqlServiceManager.ResolveColorVisionAllSqlPath(basePath)))
                         {
-                            SetProgress(progress += 10, "同步配置...");
-                            serviceManager.ApplyConfigAndRefreshAfterInstall();
+                            throw new InvalidOperationException("未找到安装版本的 color_vision_all.sql，无法更新数据库");
                         }
 
-                        // 7. 更新数据库
+                        bool databaseUpdated = false;
                         if (mysqlInstalledThisRun)
                         {
                             SetProgress(progress += 15, "初始化数据库...");
-                            if (!InitializeColorVisionDatabase(basePath))
+                            if (!InitializeColorVisionDatabase(basePath, targetDatabase))
                             {
                                 throw new InvalidOperationException("初始化数据库失败");
                             }
-
-                            serviceManager.ApplyConfigAndRefreshAfterInstall();
+                            databaseUpdated = true;
                         }
                         else if (AutoUpdateDatabase)
                         {
                             SetProgress(progress += 15, "更新数据库到最近版本...");
-                            if (!ExecuteColorVisionAllSql(basePath))
+                            if (!ExecuteColorVisionAllSql(basePath, sourceDatabase, targetDatabase))
                             {
                                 throw new InvalidOperationException("更新数据库到最近版本失败");
                             }
+                            databaseUpdated = true;
+                        }
 
+                        // 7. 数据库成功后再切换配置，避免失败时让服务提前指向空的目标库。
+                        if (databaseUpdated && !serviceManager.MySqlManager.CreateOrUpdateUser(targetDatabase, log.Info))
+                        {
+                            throw new InvalidOperationException($"业务用户无法访问目标数据库 {targetDatabase}");
+                        }
+
+                        serviceManager.MySqlManager.ApplyDatabaseName(targetDatabase);
+                        log.Info($"已应用目标数据库配置: {targetDatabase}");
+                        if (hasServiceWork || databaseUpdated)
+                        {
+                            SetProgress(progress += 10, "同步配置...");
                             serviceManager.ApplyConfigAndRefreshAfterInstall();
                         }
 
@@ -1276,14 +1341,14 @@ namespace WindowsServicePlugin.ServiceManager
             return basePath;
         }
 
-        private bool ExecuteColorVisionAllSql(string basePath)
+        private bool ExecuteColorVisionAllSql(string basePath, string sourceDatabase, string targetDatabase)
         {
-            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, log.Info);
+            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, sourceDatabase, targetDatabase, log.Info);
         }
 
-        private bool InitializeColorVisionDatabase(string basePath)
+        private bool InitializeColorVisionDatabase(string basePath, string targetDatabase)
         {
-            return ServiceManagerViewModel.Instance.MySqlManager.InitializeColorVisionDatabase(basePath, log.Info);
+            return ServiceManagerViewModel.Instance.MySqlManager.InitializeColorVisionDatabase(basePath, targetDatabase, log.Info);
         }
 
         private bool InstallVc2013Runtime()

@@ -10,17 +10,6 @@ namespace WindowsServicePlugin.ServiceManager
     /// </summary>
     public partial class ServiceManagerViewModel
     {
-        private void OpenLegacyConfigFile()
-        {
-            string? filePath = GetLegacyAppConfigPath();
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                log.Info("旧版 App.config 不存在");
-                return;
-            }
-            PlatformHelper.OpenFolderAndSelectFile(filePath);
-        }
-
         private void OpenServiceFolder(ServiceEntry? entry)
         {
             if (entry == null)
@@ -37,6 +26,16 @@ namespace WindowsServicePlugin.ServiceManager
             PlatformHelper.OpenFolder(path);
         }
 
+        private void OpenBaseLocation()
+        {
+            if (string.IsNullOrWhiteSpace(Config.BaseLocation) || !Directory.Exists(Config.BaseLocation))
+            {
+                log.Info($"安装根目录不存在: {Config.BaseLocation}");
+                return;
+            }
+            PlatformHelper.OpenFolder(Config.BaseLocation);
+        }
+
         private void SetBasePath()
         {
             using var dlg = new System.Windows.Forms.FolderBrowserDialog
@@ -48,8 +47,6 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 Config.BaseLocation = dlg.SelectedPath;
                 SaveServiceManagerConfig();
-                OnPropertyChanged(nameof(LegacyConfigPath));
-                OnPropertyChanged(nameof(HasLegacyConfig));
                 RefreshAll();
             }
         }

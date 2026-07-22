@@ -276,9 +276,6 @@
   <data name="UpdateConfig" xml:space="preserve">
     <value>Update Config</value>
   </data>
-  <data name="LegacyAppConfig" xml:space="preserve">
-    <value>Legacy App.config</value>
-  </data>
   <data name="Update" xml:space="preserve">
     <value>Update</value>
   </data>
@@ -449,5 +446,32 @@
   </data>
   <data name="Vc2013Runtime" xml:space="preserve">
     <value>VC++ 2013</value>
+  </data>
+  <data name="ServiceStatusNotInstalled" xml:space="preserve">
+    <value>Не установлено</value>
+  </data>
+  <data name="ServiceStatusPaused" xml:space="preserve">
+    <value>Приостановлено</value>
+  </data>
+  <data name="ServiceStatusPausing" xml:space="preserve">
+    <value>Приостанавливается</value>
+  </data>
+  <data name="ServiceStatusResuming" xml:space="preserve">
+    <value>Возобновляется</value>
+  </data>
+  <data name="ServiceStatusRunning" xml:space="preserve">
+    <value>Работает</value>
+  </data>
+  <data name="ServiceStatusStarting" xml:space="preserve">
+    <value>Запускается</value>
+  </data>
+  <data name="ServiceStatusStopped" xml:space="preserve">
+    <value>Остановлено</value>
+  </data>
+  <data name="ServiceStatusStopping" xml:space="preserve">
+    <value>Останавливается</value>
+  </data>
+  <data name="ServiceStatusUnknown" xml:space="preserve">
+    <value>Неизвестно</value>
   </data>
 </root>
