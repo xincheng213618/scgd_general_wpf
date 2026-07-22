@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
-    [DisplayAlgorithm(55, "畸变2.0", "Json")]
+    [DisplayAlgorithm(55, "畸变2.0", "ARVR")]
 
     public class AlgorithmDistortion2 : DisplayAlgorithmBase
     {
