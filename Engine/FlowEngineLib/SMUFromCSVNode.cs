@@ -8,6 +8,8 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUFromCSVNode.SrcRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUFromCSVNode.LmtRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
 public class SMUFromCSVNode : SMUBaseNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUFromCSVNode));

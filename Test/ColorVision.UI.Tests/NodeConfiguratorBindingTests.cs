@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow.NodeConfigurator;
 using ColorVision.Engine.Templates.Flow.Nodes;
+using FlowEngineLib;
 using FlowEngineLib.PropertyEditor;
 using HandyControl.Interactivity;
 using ST.Library.UI.NodeEditor;
@@ -113,6 +114,37 @@ public class NodeConfiguratorBindingTests
                     TemplateCameraRunParam.Params.Remove(cameraTemplate);
                 }
 
+                var smuNode = new SMUNode
+                {
+                    SrcRng = 6,
+                    LmtRng = 3000
+                };
+                smuNode.Create();
+                FlowNodePropertyEditorRegistration.EnsureRegistered();
+
+                Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUNode), nameof(SMUNode.SrcRng)));
+                Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUFromCSVNode), nameof(SMUFromCSVNode.LmtRng)));
+
+                PropertyInfo sourceRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.SrcRng))!;
+                PropertyInfo limitRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.LmtRng))!;
+                var sourceRangeEditor = new FlowSmuRangeEditor().GenProperties(sourceRangeProperty, smuNode);
+                var limitRangeEditor = new FlowSmuRangeEditor().GenProperties(limitRangeProperty, smuNode);
+                var sourceRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(sourceRangeEditor));
+                var limitRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(limitRangeEditor));
+
+                Assert.True(sourceRangeCombo.IsEditable);
+                Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(sourceRangeCombo));
+                Assert.Equal(new[] { 0.1, 1, 6, 40 }, GetNumericItems(sourceRangeCombo));
+                Assert.Equal(new[] { 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 3000 }, GetNumericItems(limitRangeCombo));
+
+                sourceRangeCombo.Text = "2.5";
+                sourceRangeCombo.GetBindingExpression(ComboBox.TextProperty)?.UpdateSource();
+                Assert.Equal(2.5, smuNode.SrcRng);
+
+                smuNode.Source = SourceType.Current_I;
+                Assert.Equal(new[] { 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 3000 }, GetNumericItems(sourceRangeCombo));
+                Assert.Equal(new[] { 0.1, 1, 6, 40 }, GetNumericItems(limitRangeCombo));
+
                 var filterConfig = new AdvancedFilterConfig();
                 var advancedOptions = new PropertyEditorAdvancedOptions(property => property.Name == nameof(AdvancedFilterConfig.AdvancedValue));
                 StackPanel propertyEditor = PropertyEditorHelper.GenPropertyEditorControl(filterConfig, advancedOptions: advancedOptions);
@@ -162,6 +194,11 @@ public class NodeConfiguratorBindingTests
             .OfType<PropertyInfo>()
             .Select(property => property.Name)
             .ToList();
+    }
+
+    private static double[] GetNumericItems(ItemsControl comboBox)
+    {
+        return comboBox.Items.Cast<object>().Select(item => double.Parse(item.ToString()!, System.Globalization.CultureInfo.CurrentCulture)).ToArray();
     }
 
     private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject

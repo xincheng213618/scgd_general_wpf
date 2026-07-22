@@ -31,18 +31,26 @@ using FlowEngineLib.PropertyEditor;
 using System;
 using System.Collections;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.PropertyEditor
 {
     internal static class FlowNodePropertyEditorRegistration
     {
+        private const string SmuRangeNumberFormat = "0.0################";
+
+        // Flow SMU parameters use V for voltage and mA for current.
+        private static readonly double[] Keithley2600VoltageRanges = { 0.1, 1, 6, 40 };
+        private static readonly double[] Keithley2600CurrentRangesMilliampere = { 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 3000 };
+
         private static int _registered;
 
         public static void EnsureRegistered()
@@ -60,6 +68,7 @@ namespace ColorVision.Engine.PropertyEditor
             FlowPropertyEditorRegistry.Register<FlowPoiOutputTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiOutputParam()));
             FlowPropertyEditorRegistry.Register<FlowPoiGenCaliTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiGenCalParam()));
             FlowPropertyEditorRegistry.Register<FlowSmuTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateSMUParam()));
+            FlowPropertyEditorRegistry.Register<FlowSmuRangeEditor>(CreateSmuRangeEditor);
             FlowPropertyEditorRegistry.Register<FlowSensorTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, CreateSensorTemplate(obj)));
             FlowPropertyEditorRegistry.Register<FlowDataLoadTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateDataLoad()));
             FlowPropertyEditorRegistry.Register<FlowCaliAngleShiftJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateCaliAngleShift()));
@@ -71,6 +80,80 @@ namespace ColorVision.Engine.PropertyEditor
             FlowPropertyEditorRegistry.Register<FlowLedCheck2JsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateLedCheck2()));
             FlowPropertyEditorRegistry.Register<FlowOledAoiJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateOLEDAOI()));
             FlowPropertyEditorRegistry.Register<FlowKbJsonTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateKB()));
+        }
+
+        private static DockPanel CreateSmuRangeEditor(PropertyInfo property, object obj)
+        {
+            bool isSourceRange = string.Equals(property.Name, nameof(SMUFromCSVNode.SrcRng), StringComparison.OrdinalIgnoreCase);
+            bool isLimitRange = string.Equals(property.Name, nameof(SMUFromCSVNode.LmtRng), StringComparison.OrdinalIgnoreCase);
+            if (property.PropertyType != typeof(double) || (!isSourceRange && !isLimitRange))
+                return new TextboxPropertiesEditor().GenProperties(property, obj);
+
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            var combo = new HandyControl.Controls.ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = PropertyEditorHelper.ControlMinWidth,
+                Style = PropertyEditorHelper.ComboBoxSmallStyle,
+                IsEditable = true,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
+
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            binding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+            binding.Converter = SmuRangeValueConverter.Instance;
+            combo.SetBinding(ComboBox.TextProperty, binding);
+
+            void RefreshItems()
+            {
+                SourceType source = obj.GetType().GetProperty(nameof(SMUFromCSVNode.Source))?.GetValue(obj) is SourceType sourceType
+                    ? sourceType
+                    : SourceType.Voltage_V;
+                bool useVoltageRanges = (source == SourceType.Voltage_V) == isSourceRange;
+                double[] ranges = useVoltageRanges ? Keithley2600VoltageRanges : Keithley2600CurrentRangesMilliampere;
+
+                combo.ItemsSource = ranges.Select(SmuRangeValueConverter.Format).ToArray();
+                combo.ToolTip = useVoltageRanges ? "电压量程（V）" : "电流量程（mA）";
+                combo.GetBindingExpression(ComboBox.TextProperty)?.UpdateTarget();
+            }
+
+            RefreshItems();
+
+            if (obj is INotifyPropertyChanged notifyPropertyChanged)
+            {
+                bool isSubscribed = true;
+                PropertyChangedEventHandler sourceChanged = (_, args) =>
+                {
+                    if (string.IsNullOrEmpty(args.PropertyName) || string.Equals(args.PropertyName, nameof(SMUFromCSVNode.Source), StringComparison.Ordinal))
+                        RefreshItems();
+                };
+
+                notifyPropertyChanged.PropertyChanged += sourceChanged;
+                combo.Unloaded += (_, _) =>
+                {
+                    if (!isSubscribed)
+                        return;
+
+                    notifyPropertyChanged.PropertyChanged -= sourceChanged;
+                    isSubscribed = false;
+                };
+                combo.Loaded += (_, _) =>
+                {
+                    if (isSubscribed)
+                        return;
+
+                    notifyPropertyChanged.PropertyChanged += sourceChanged;
+                    isSubscribed = true;
+                    RefreshItems();
+                };
+            }
+
+            dockPanel.Children.Add(textBlock);
+            dockPanel.Children.Add(combo);
+            return dockPanel;
         }
 
         private static DockPanel CreateTemplateEditor(PropertyInfo property, object obj, ITemplate? template)
@@ -284,6 +367,31 @@ namespace ColorVision.Engine.PropertyEditor
             property.SetValue(obj, value);
             if (obj is CVCommonNode node)
                 node.nodeEvent?.Invoke(node, new FlowEngineNodeEventArgs());
+        }
+
+        private sealed class SmuRangeValueConverter : IValueConverter
+        {
+            public static SmuRangeValueConverter Instance { get; } = new();
+
+            public static string Format(double value) => value.ToString(SmuRangeNumberFormat, CultureInfo.CurrentCulture);
+
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                return value is double range ? range.ToString(SmuRangeNumberFormat, culture) : string.Empty;
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                string text = value?.ToString()?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(text))
+                    return 0d;
+
+                if (double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, culture, out double range)
+                    || double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out range))
+                    return range;
+
+                return Binding.DoNothing;
+            }
         }
     }
 }

@@ -87,6 +87,7 @@ public sealed class FlowPoiReviseTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiOutputTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiGenCaliTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowSmuTemplateEditor : FlowPropertyEditorProxy { }
+public sealed class FlowSmuRangeEditor : FlowPropertyEditorProxy { }
 public sealed class FlowSensorTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowDataLoadTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowCaliAngleShiftJsonTemplateEditor : FlowPropertyEditorProxy { }

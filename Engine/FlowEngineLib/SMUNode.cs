@@ -4,6 +4,8 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUNode.SrcRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUNode.LmtRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
 public class SMUNode : SMUBaseNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUNode));
