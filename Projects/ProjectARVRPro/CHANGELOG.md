@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.7.50] 2026.07.22
+
+1. Chessboard 与 Chessboard Dynamic 的杂散光补偿改为只修正暗格平均亮度，保留单格POI原始亮度，避免单个偏低暗格误判整项计算失败。
+2. 自定义 IProcess 执行失败时明确将当前结果记为失败，不再提示并不存在的内置解析回退。
+3. Chessboard 结果图优先使用 POI_XYZ 主结果图路径。
+
 ## [1.1.7.48] 2026.07.22
 
 1. Chessboard 与 Chessboard Dynamic 在数据库缺少对比度结果时，支持根据 POI 在本地计算棋盘格对比度。

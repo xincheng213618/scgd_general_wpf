@@ -63,18 +63,13 @@ namespace ProjectARVRPro.Process.Chessboard
             if (!double.IsFinite(brightLuminance) || !double.IsFinite(rawDarkLuminance) || !double.IsFinite(offset))
                 return Fail("棋盘格亮暗区均值或补偿量无效。");
 
-            var correctedDarkValues = darkPoints.Select(point => point.Y - offset).ToArray();
-            if (correctedDarkValues.Any(value => !double.IsFinite(value) || value <= 0))
-                return Fail("修正后的暗格POI亮度必须大于0，请检查杂散光系数和POI数据。");
+            double correctedDarkLuminance = rawDarkLuminance - offset;
+            if (!double.IsFinite(correctedDarkLuminance) || correctedDarkLuminance <= 0)
+                return Fail("修正后的暗格平均亮度必须大于0，请检查杂散光系数和POI数据。");
 
-            double correctedDarkLuminance = correctedDarkValues.Average();
             double correctedContrast = brightLuminance / correctedDarkLuminance;
-            if (!double.IsFinite(correctedDarkLuminance) || correctedDarkLuminance <= 0 || !double.IsFinite(correctedContrast))
-                return Fail("修正后的暗区均值或棋盘格对比度无效。");
-
-            // 所有校验通过后再修改工作副本，避免失败时产生部分修正的数据。
-            for (int i = 0; i < darkPoints.Count; i++)
-                darkPoints[i].Y = correctedDarkValues[i];
+            if (!double.IsFinite(correctedContrast))
+                return Fail("修正后的棋盘格对比度无效。");
 
             return new ChessboardContrastCalculationResult
             {

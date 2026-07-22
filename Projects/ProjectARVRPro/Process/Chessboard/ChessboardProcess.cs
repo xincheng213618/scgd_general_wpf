@@ -42,6 +42,7 @@ namespace ProjectARVRPro.Process.Chessboard
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)

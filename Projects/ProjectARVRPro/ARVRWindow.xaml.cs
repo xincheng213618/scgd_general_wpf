@@ -935,7 +935,14 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
+                        string failureMessage = $"自定义 IProcess 执行失败: {meta.Name} -> {meta.ProcessTypeName}";
+                        log.Error($"{failureMessage}，当前结果按失败处理");
+                        result.FlowStatus = FlowStatus.Failed;
+                        RecordFlowFailure(failureMessage);
+                        TryAttachCapturedImage(result);
+                        ViewResultManager.Save(result);
+                        SaveObjectiveTestResultRecord(result);
+                        return;
                     }
                 }
                 else

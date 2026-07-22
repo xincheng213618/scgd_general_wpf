@@ -8,7 +8,7 @@ namespace ProjectARVRPro.Tests
     public class ChessboardContrastCalculatorTests
     {
         [Fact]
-        public void AutoInfersSquareAndCorrectsBlackPoiWorkingData()
+        public void AutoInfersSquareAndCorrectsDarkAverageWithoutMutatingPoi()
         {
             var points = CreateGrid(4, 4, firstPointIsBlack: true, brightLuminance: 180, darkLuminance: 1.2)
                 .OrderByDescending(point => point.Point.PixelX + point.Point.PixelY * 7)
@@ -23,7 +23,7 @@ namespace ProjectARVRPro.Tests
             Assert.Equal(1.2, result.RawDarkLuminance, 6);
             Assert.Equal(0.66, result.CorrectedDarkLuminance, 6);
             Assert.Equal(272.7272727, result.CorrectedContrast, 6);
-            AssertGridLuminance(points, firstPointIsBlack: true, expectedBright: 180, expectedDark: 0.66);
+            AssertGridLuminance(points, firstPointIsBlack: true, expectedBright: 180, expectedDark: 1.2);
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace ProjectARVRPro.Tests
             Assert.Equal(5, result.ColumnCount);
             Assert.Equal(1, result.CorrectedDarkLuminance, 6);
             Assert.Equal(100, result.CorrectedContrast, 6);
-            AssertGridLuminance(points, firstPointIsBlack: false, expectedBright: 100, expectedDark: 1);
+            AssertGridLuminance(points, firstPointIsBlack: false, expectedBright: 100, expectedDark: 2);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace ProjectARVRPro.Tests
         }
 
         [Fact]
-        public void InvalidCorrectedDarkValueDoesNotPartiallyMutatePoi()
+        public void InvalidCorrectedDarkAverageDoesNotMutatePoi()
         {
             var points = CreateGrid(4, 4, firstPointIsBlack: true, brightLuminance: 100, darkLuminance: 0.5);
             var originalValues = points.Select(point => point.Y).ToArray();
@@ -67,6 +67,22 @@ namespace ProjectARVRPro.Tests
 
             Assert.False(result.Success);
             Assert.Contains("必须大于0", result.ErrorMessage);
+            Assert.Equal(originalValues, points.Select(point => point.Y));
+        }
+
+        [Fact]
+        public void LowIndividualDarkPoiDoesNotRejectValidCorrectedAverage()
+        {
+            var points = CreateGrid(4, 4, firstPointIsBlack: true, brightLuminance: 100, darkLuminance: 5);
+            points.First(point => point.Point.PixelX == 0 && point.Point.PixelY == 0).Y = 0.5;
+            var originalValues = points.Select(point => point.Y).ToArray();
+
+            var result = ChessboardContrastCalculator.CalculateAndApply(points, 0, 0, true, 0.036);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(4.4375, result.RawDarkLuminance, 6);
+            Assert.Equal(0.8375, result.CorrectedDarkLuminance, 6);
+            Assert.Equal(119.402985, result.CorrectedContrast, 6);
             Assert.Equal(originalValues, points.Select(point => point.Y));
         }
 
