@@ -29,6 +29,7 @@ namespace ProjectARVRPro.Process.Chessboard
                 : Config.ChessboardContrastResultName.Trim();
             bool databaseContrastFound = false;
             bool databaseContrastLoaded = false;
+            ChessboardContrastCalculationResult? calculation = null;
 
             try
             {
@@ -87,20 +88,29 @@ namespace ProjectARVRPro.Process.Chessboard
                 if (databaseContrastFound && !databaseContrastLoaded)
                     return false;
 
-                if (!databaseContrastFound)
+                if (!databaseContrastFound || Config.SaveCsv)
                 {
-                    var calculation = ChessboardContrastCalculator.CalculateAndApply(
+                    calculation = ChessboardContrastCalculator.Calculate(
                         chessboardResult.PoixyuvDatas,
                         Config.RowCount,
                         Config.ColumnCount,
-                        Config.FirstPointIsBlack,
-                        Config.StrayLightCoefficient);
+                        Config.FirstPointColor,
+                        Config.StrayLightCoefficient,
+                        Config.AllowNegativeCorrectedDarkLuminance);
                     if (!calculation.Success)
                     {
-                        log?.Error($"Chessboard Dynamic本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
-                        return false;
-                    }
+                        if (!databaseContrastFound)
+                        {
+                            log?.Error($"Chessboard Dynamic本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
+                            return false;
+                        }
 
+                        log?.Warn($"Chessboard Dynamic本地CSV分析失败，保留数据库对比度并导出基础POI数据: resultName={contrastResultName}, message={calculation.ErrorMessage}");
+                    }
+                }
+
+                if (!databaseContrastFound && calculation?.Success == true)
+                {
                     chessboardResult.AverageBlackLuminance = new ObjectiveTestItem
                     {
                         Name = "Average_Black_Luminance",
@@ -118,12 +128,13 @@ namespace ProjectARVRPro.Process.Chessboard
 
                     log?.Info(string.Format(
                         CultureInfo.InvariantCulture,
-                        "Chessboard Dynamic对比度来源: local, resultName={0}, rows={1}, columns={2}, firstPointIsBlack={3}, a={4}, LB={5}, LD={6}, LD'={7}, CR'={8}",
+                        "Chessboard Dynamic对比度来源: local, resultName={0}, rows={1}, columns={2}, requestedFirstPointColor={3}, resolvedFirstPointColor={4}, a={5}, LB={6}, LD={7}, LD'={8}, CR'={9}",
                         contrastResultName,
                         calculation.RowCount,
                         calculation.ColumnCount,
-                        Config.FirstPointIsBlack,
-                        Config.StrayLightCoefficient,
+                        calculation.RequestedFirstPointColor,
+                        calculation.ResolvedFirstPointColor,
+                        calculation.StrayLightCoefficient,
                         calculation.BrightLuminance,
                         calculation.RawDarkLuminance,
                         calculation.CorrectedDarkLuminance,
@@ -135,7 +146,14 @@ namespace ProjectARVRPro.Process.Chessboard
                 ctx.ObjectiveTestResult.DynamicTestResults[GetOutputName()] = testResult.Items;
                 if (Config.SaveCsv)
                 {
-                    ChessboardCsvExporter.SavePoixyuvDatas(chessboardResult.PoixyuvDatas, ctx, GetOutputName());
+                    ChessboardCsvExporter.SavePoixyuvDatas(
+                        chessboardResult.PoixyuvDatas,
+                        ctx,
+                        GetOutputName(),
+                        calculation,
+                        chessboardResult.ChessboardContrast?.Value,
+                        contrastResultName,
+                        databaseContrastFound ? "database" : "local");
                 }
                 return true;
             }

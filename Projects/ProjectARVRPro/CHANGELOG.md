@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.7.51] 2026.07.22
+
+1. Chessboard 与 Chessboard Dynamic 的左上角颜色增加 Auto、Black、White 选项；Auto 根据两组交替格平均亮度自动识别黑白格，并兼容旧版 `FirstPointIsBlack` 配置。
+2. 棋盘格 CSV 在原有 POI 列末尾增加 `cell_color`，并追加黑白格亮度均值、最小值、最大值、均匀性、杂散光修正量及最终对比度。
+3. 增加“允许显示负值修正结果”开关，启用后可保留修正后的负暗格均值和负对比度；socket JSON 继续保持原有字段结构。
+
 ## [1.1.7.50] 2026.07.22
 
 1. Chessboard 与 Chessboard Dynamic 的杂散光补偿改为只修正暗格平均亮度，保留单格POI原始亮度，避免单个偏低暗格误判整项计算失败。
