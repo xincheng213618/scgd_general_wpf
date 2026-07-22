@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,6 +33,7 @@ namespace ColorVision.Update
             ContentRendered += UpdatePreviewWindow_ContentRendered;
             Closing += (_, _) =>
             {
+                SaveUpdateOptions();
                 if (Context.IsChecking)
                 {
                     SuppressPostCheckMessage = true;
@@ -69,6 +71,7 @@ namespace ColorVision.Update
             if (!Context.CanConfirm)
                 return;
 
+            SaveUpdateOptions();
             ResultAction = UpdatePreviewAction.UpdateNow;
             DialogResult = true;
         }
@@ -94,6 +97,20 @@ namespace ColorVision.Update
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             }.ShowDialog();
+            Context.CreateSnapshotBeforeUpdate = ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate;
+        }
+
+        private void DisableSystemProxyForUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates = Context.DisableSystemProxyForUpdates;
+            ConfigService.Instance.SaveConfigs();
+        }
+
+        private void SaveUpdateOptions()
+        {
+            ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate = Context.CreateSnapshotBeforeUpdate;
+            UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates = Context.DisableSystemProxyForUpdates;
+            ConfigService.Instance.SaveConfigs();
         }
     }
 }

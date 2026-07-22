@@ -903,4 +903,19 @@
   <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>バックグラウンドサービスの更新または修復が必要です。インストール済み：{0}、パッケージ：{1}。サービスマネージャーを開く前に完了してください。</value></data>
   <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>バックグラウンドサービスのパッケージがありません：{0}</value></data>
   <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>バックグラウンドサービスの状態を確認できませんでした。再試行してください。</value></data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前にプログラムのスナップショットを作成</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>有効にすると、アプリ、プラグイン、または統合更新の前にプログラム全体のスナップショットを1つ作成します。更新時間が長くなる場合があります。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>システム プロキシを使用しない</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>有効にすると、更新確認とマーケットプレイスの要求は公開サービスへ直接接続します。無効の場合は Windows のシステム プロキシを使用します。変更は次の要求から適用されます。</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>更新前にプログラムのスナップショットを作成</value>
+  </data>
 </root>

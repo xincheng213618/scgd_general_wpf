@@ -905,4 +905,19 @@
   <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>背景服務需要更新或修復。目前版本：{0}；安裝套件版本：{1}。完成後才能進入服務管理器。</value></data>
   <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>背景服務安裝套件不存在：{0}</value></data>
   <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>無法確認背景服務狀態，請重試。</value></data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前建立程式快照</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>啟用後，主程式、外掛程式或組合更新前都會建立一次完整程式快照，可能延長更新時間。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>不使用系統代理伺服器</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>更新前建立程式快照</value>
+  </data>
 </root>

@@ -526,4 +526,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>Checkbox</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Créer un instantané du programme avant la mise à jour</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>Lorsque cette option est activée, un instantané complet du programme est créé avant une mise à jour de l’application, d’un plug-in ou combinée. Cela peut allonger la mise à jour.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Ne pas utiliser le proxy système</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>Lorsque cette option est activée, les recherches de mises à jour et les requêtes du marketplace se connectent directement au service public. Sinon, le proxy système Windows est utilisé. La modification s’applique à la requête suivante.</value>
+  </data>
 </root>

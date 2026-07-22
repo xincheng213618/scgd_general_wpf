@@ -480,6 +480,37 @@ namespace ColorVision.Update
 
         public bool HasDeferredPluginUpdates => Items.Any(item => item.Kind == UpdatePreviewItemKind.Plugin && item.IsSelectionLocked);
 
+        public bool CreateSnapshotBeforeUpdate
+        {
+            get => _createSnapshotBeforeUpdate;
+            set
+            {
+                if (_createSnapshotBeforeUpdate == value)
+                    return;
+
+                _createSnapshotBeforeUpdate = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectionSummary));
+                OnPropertyChanged(nameof(SelectionSummaryVisibility));
+                OnPropertyChanged(nameof(FooterInfoVisibility));
+            }
+        }
+        private bool _createSnapshotBeforeUpdate;
+
+        public bool DisableSystemProxyForUpdates
+        {
+            get => _disableSystemProxyForUpdates;
+            set
+            {
+                if (_disableSystemProxyForUpdates == value)
+                    return;
+
+                _disableSystemProxyForUpdates = value;
+                OnPropertyChanged();
+            }
+        }
+        private bool _disableSystemProxyForUpdates;
+
         public string HeaderSummaryText
         {
             get
@@ -509,10 +540,16 @@ namespace ColorVision.Update
                 if (IsChecking)
                     return string.Empty;
 
-                if (HasApplicationUpdates)
-                    return Resources.UpdatePreviewSelectionRestartRequired;
-
                 Collection<string> segments = new();
+
+                if (HasApplicationUpdates)
+                {
+                    if (CreateSnapshotBeforeUpdate)
+                        segments.Add(Resources.UpdatePreviewSelectionCreatesSnapshot);
+
+                    segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
+                    return string.Join(" · ", segments);
+                }
 
                 if (HasDeferredPluginUpdates)
                     segments.Add(Resources.UpdatePreviewSelectionDefersPluginUpdates);
@@ -527,6 +564,9 @@ namespace ColorVision.Update
                 {
                     segments.Add(Resources.UpdatePreviewSelectionIncludesRequired);
                 }
+
+                if (CreateSnapshotBeforeUpdate)
+                    segments.Add(Resources.UpdatePreviewSelectionCreatesSnapshot);
 
                 if (HasSelectableItems || HasAlwaysIncludedItems)
                     segments.Add(Resources.UpdatePreviewSelectionRestartRequired);
@@ -567,6 +607,7 @@ namespace ColorVision.Update
             EmptyStateMessage = source.EmptyStateMessage;
             StateGlyph = source.StateGlyph;
             HostVersionValue = source.HostVersionValue;
+            // Update options intentionally stay unchanged so choices made while checking are preserved.
             ConfirmButtonText = source._confirmButtonBaseText;
             CancelButtonText = source.CancelButtonText;
             IsUpdating = source.IsUpdating;

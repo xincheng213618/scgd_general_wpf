@@ -903,4 +903,19 @@
   <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>Фоновую службу необходимо обновить или исправить. Установлено: {0}; пакет: {1}. Завершите этот шаг перед открытием диспетчера служб.</value></data>
   <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>Пакет фоновой службы отсутствует: {0}</value></data>
   <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>Не удалось подтвердить состояние фоновой службы. Повторите попытку.</value></data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Создавать снимок программы перед обновлением</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>Если включено, перед обновлением приложения, плагинов или комбинированным обновлением создаётся один полный снимок программы. Это может увеличить время обновления.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Не использовать системный прокси-сервер</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>Если включено, проверка обновлений и запросы магазина подключаются к общедоступной службе напрямую. Если выключено, используется системный прокси Windows. Изменение применяется к следующему запросу.</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>Создать снимок программы перед обновлением</value>
+  </data>
 </root>

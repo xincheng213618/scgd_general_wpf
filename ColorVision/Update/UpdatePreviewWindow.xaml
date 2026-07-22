@@ -77,6 +77,20 @@
                                Foreground="{DynamicResource UpdateDialog.TextSecondary}"
                                MouseLeftButtonUp="ApplicationSnapshotsLink_MouseLeftButtonUp"
                                Text="{x:Static properties:Resources.UpdatePreviewApplicationSnapshotsLink}" />
+                    <CheckBox Margin="0,10,0,0"
+                              HorizontalAlignment="Right"
+                              Content="{x:Static properties:Resources.CreateSnapshotBeforeUpdate}"
+                              IsChecked="{Binding CreateSnapshotBeforeUpdate, Mode=TwoWay}"
+                              IsEnabled="{Binding CanCancel}"
+                              ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}"
+                              Visibility="{Binding ItemsListVisibility}" />
+                    <CheckBox Margin="0,8,0,0"
+                              HorizontalAlignment="Right"
+                              Click="DisableSystemProxyForUpdates_Click"
+                              Content="{x:Static properties:Resources.DisableSystemProxyForUpdates}"
+                              IsChecked="{Binding DisableSystemProxyForUpdates, Mode=TwoWay}"
+                              IsEnabled="{Binding CanCancel}"
+                              ToolTip="{x:Static properties:Resources.DisableSystemProxyForUpdatesDescription}" />
                 </StackPanel>
             </Grid>
 

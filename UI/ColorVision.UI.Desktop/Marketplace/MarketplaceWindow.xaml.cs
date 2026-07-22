@@ -69,10 +69,28 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _manager.SelectedInstalledPlugin = _manager.Plugins.FirstOrDefault();
             }
 
+            _ = RefreshInstalledVersionsOnOpenAsync(_windowCancellation!.Token);
+
             this.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Delete,
                 (s, args) => _manager.SelectedInstalledPlugin?.Delete(),
                 (s, args) => args.CanExecute = _manager.SelectedInstalledPlugin != null));
+        }
+
+        private async Task RefreshInstalledVersionsOnOpenAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _manager!.RefreshVersionsAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Initial marketplace version refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Initial marketplace version refresh failed.", ex);
+            }
         }
 
         private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -125,7 +143,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             try
             {
-                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken);
+                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken, forceRefresh: true);
 
                 if (_manager?.IsMarketplaceTabActive == true)
                 {

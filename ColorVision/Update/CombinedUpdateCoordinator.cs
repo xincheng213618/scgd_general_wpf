@@ -67,7 +67,6 @@ namespace ColorVision.Update
                         (applicationPlan, pluginPlan) = await BuildUpdatePlansAsync(
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
-                            forceRefresh: true,
                             cancellationToken: previewCancellation.Token);
 
                         if (currentWindow.IsClosed)
@@ -466,7 +465,6 @@ namespace ColorVision.Update
             return BuildUpdatePlansAsync(
                 includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
                 includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
-                forceRefresh: true,
                 cancellationToken: cancellationToken);
         }
 
@@ -474,7 +472,6 @@ namespace ColorVision.Update
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate = false,
-            bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
             if (!WindowsNetworkState.IsConnectedToInternet())
@@ -483,14 +480,20 @@ namespace ColorVision.Update
                 return (null, null);
             }
 
-            AutoUpdatePlan? applicationPlan = null;
-            if (includeApplicationUpdates)
-            {
-                applicationPlan = await AutoUpdater.GetUpdatePlanAsync(forceRefresh, cancellationToken);
-            }
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            MarketplaceManager? marketplaceManager = includePluginUpdates ? MarketplaceManager.GetInstance() : null;
+            Task<AutoUpdatePlan?> applicationTask = includeApplicationUpdates
+                ? AutoUpdater.GetUpdatePlanAsync(forceRefresh: false, cancellationToken)
+                : Task.FromResult<AutoUpdatePlan?>(null);
+            Task pluginVersionsTask = marketplaceManager != null
+                ? marketplaceManager.RefreshVersionsAsync(cancellationToken)
+                : Task.CompletedTask;
+
+            await Task.WhenAll(applicationTask, pluginVersionsTask);
+            AutoUpdatePlan? applicationPlan = await applicationTask;
 
             CombinedPluginUpdatePlan? pluginPlan = null;
-            if (includePluginUpdates)
+            if (marketplaceManager != null)
             {
                 Version? hostVersion = ResolvePluginPlanHostVersion(
                     applicationPlan,
@@ -498,10 +501,13 @@ namespace ColorVision.Update
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate);
                 if (hostVersion != null)
                 {
-                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(hostVersion, cancellationToken);
+                    pluginPlan = await marketplaceManager.BuildCombinedUpdatePlanFromCurrentVersionsAsync(
+                        hostVersion,
+                        cancellationToken);
                 }
             }
 
+            log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
             return (applicationPlan, pluginPlan);
         }
 

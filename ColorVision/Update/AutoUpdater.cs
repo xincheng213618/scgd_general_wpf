@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -21,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Linq;
-using System.Net;
 
 namespace ColorVision.Update
 {
@@ -55,11 +55,10 @@ namespace ColorVision.Update
     public static class AutoUpdater
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
-        private static readonly HttpClient _metadataClient = new() { Timeout = TimeSpan.FromSeconds(15) };
         private static readonly SemaphoreSlim _latestVersionSemaphore = new(1, 1);
         private static readonly object _latestVersionCacheLock = new();
         private static readonly TimeSpan MetadataRequestTimeout = TimeSpan.FromSeconds(4);
-        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromMinutes(5);
         private static string? _cachedLatestVersionUrl;
         private static Version? _cachedLatestVersion;
         private static DateTimeOffset _cachedLatestVersionAt = DateTimeOffset.MinValue;
@@ -127,43 +126,45 @@ namespace ColorVision.Update
 
         public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
             {
                 log.Warn("Failed to fetch update metadata: update service URL is empty.");
                 return new Version();
             }
 
+            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
+                return freshCachedVersion;
+
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
+                if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
+                {
+                    log.Info("Windows reports no internet connectivity; using cached update metadata.");
+                    return offlineCachedVersion;
+                }
+
                 log.Info("Skipped update metadata check because Windows reports no internet connectivity.");
                 return new Version();
-            }
-
-            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
-            {
-                return freshCachedVersion;
             }
 
             await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
                 if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
-                {
                     return freshCachedVersion;
-                }
 
-                using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeoutSource.CancelAfter(MetadataRequestTimeout);
-                using HttpRequestMessage request = new(HttpMethod.Get, url);
-                ApplyAuthorizationHeader(request);
-                string? cachedETag = forceRefresh ? null : GetCachedLatestVersionETag(url);
-                if (!string.IsNullOrWhiteSpace(cachedETag))
-                {
-                    request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
-                }
-
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token);
+                string? cachedETag = GetCachedLatestVersionETag(url);
+                using HttpResponseMessage response = await UpdateHttpClientProvider.SendWithTransientRetryAsync(
+                    () =>
+                    {
+                        HttpRequestMessage request = new(HttpMethod.Get, url);
+                        ApplyAuthorizationHeader(request);
+                        if (!string.IsNullOrWhiteSpace(cachedETag))
+                            request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
+                        return request;
+                    },
+                    MetadataRequestTimeout,
+                    cancellationToken);
                 if (response.StatusCode == HttpStatusCode.NotModified
                     && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
                 {
@@ -172,12 +173,14 @@ namespace ColorVision.Update
                 }
 
                 response.EnsureSuccessStatusCode();
-                string payload = await response.Content.ReadAsStringAsync(timeoutSource.Token);
-                versionString = ExtractVersionString(payload);
+                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                string versionString = ExtractVersionString(payload);
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
                     log.Warn($"Invalid update version payload from {url}: {versionString}");
-                    return new Version();
+                    return TryGetAnyCachedLatestVersion(url, out Version invalidPayloadCachedVersion)
+                        ? invalidPayloadCachedVersion
+                        : new Version();
                 }
 
                 SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
@@ -189,23 +192,33 @@ namespace ColorVision.Update
             }
             catch (HttpRequestException ex)
             {
-                log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return UseCachedVersionAfterFailure(url, $"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
             }
             catch (OperationCanceledException ex)
             {
-                log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return UseCachedVersionAfterFailure(url, $"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
             }
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return new Version();
+                return TryGetAnyCachedLatestVersion(url, out Version cachedVersion) ? cachedVersion : new Version();
             }
             finally
             {
                 _latestVersionSemaphore.Release();
             }
+        }
+
+        private static Version UseCachedVersionAfterFailure(string url, string warning)
+        {
+            if (TryGetAnyCachedLatestVersion(url, out Version cachedVersion))
+            {
+                log.Warn($"{warning} Using the last successful response.");
+                return cachedVersion;
+            }
+
+            log.Warn(warning);
+            return new Version();
         }
 
         private static bool TryGetFreshCachedLatestVersion(string url, out Version version)
@@ -267,9 +280,7 @@ namespace ColorVision.Update
             lock (_latestVersionCacheLock)
             {
                 if (string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase))
-                {
                     _cachedLatestVersionAt = DateTimeOffset.UtcNow;
-                }
             }
         }
 
@@ -855,6 +866,8 @@ namespace ColorVision.Update
                     return false;
                 }
 
+                ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
+
                 string batchContent = CreateIncrementalUpdateBatch(
                     stageDirectory,
                     tempRoot,
@@ -1102,6 +1115,7 @@ namespace ColorVision.Update
 
             try
             {
+                ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 Process.Start(startInfo);
                 Environment.Exit(0);
             }

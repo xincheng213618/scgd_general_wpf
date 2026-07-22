@@ -78,8 +78,15 @@ namespace ColorVision.Update
     {
         private const string ManifestFileName = "snapshot-manifest.json";
         private const string DefaultSnapshotFileName = "default.zip";
+        private const int MaxAutomaticUpdateSnapshots = 3;
+        private const int CopyBufferSize = 1024 * 1024;
         private static readonly ILog log = LogManager.GetLogger(typeof(ApplicationSnapshotService));
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+        private static readonly object SnapshotCreationLock = new();
+        private static readonly HashSet<string> AlreadyCompressedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".7z", ".avi", ".cvx", ".cvxp", ".gif", ".gz", ".jpeg", ".jpg", ".mp3", ".mp4", ".pdf", ".png", ".rar", ".webp", ".zip"
+        };
 
         public static ApplicationSnapshotService Instance { get; } = new();
 
@@ -91,19 +98,6 @@ namespace ColorVision.Update
 
         private ApplicationSnapshotService()
         {
-        }
-
-        public Task<ApplicationSnapshotInfo> EnsureDefaultSnapshotAsync(CancellationToken cancellationToken = default)
-        {
-            if (File.Exists(DefaultSnapshotPath))
-            {
-                if (TryReadSnapshotInfo(DefaultSnapshotPath, out ApplicationSnapshotInfo? snapshotInfo) && snapshotInfo != null)
-                    return Task.FromResult(snapshotInfo);
-
-                MoveUnreadableSnapshotToRecovery(DefaultSnapshotPath);
-            }
-
-            return CreateDefaultSnapshotAsync(force: true, cancellationToken);
         }
 
         public Task<ApplicationSnapshotInfo> CreateDefaultSnapshotAsync(bool force, CancellationToken cancellationToken = default)
@@ -123,12 +117,35 @@ namespace ColorVision.Update
             }, cancellationToken);
         }
 
+        public ApplicationSnapshotInfo CreateUpdateSnapshot(string versionTarget = "", CancellationToken cancellationToken = default)
+        {
+            Directory.CreateDirectory(SnapshotDirectory);
+            string version = GetCurrentVersionText();
+            string fileName = $"ColorVision-update-{SanitizeFilePart(version)}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.zip";
+            ApplicationSnapshotInfo snapshot = CreateSnapshotCore(
+                Path.Combine(SnapshotDirectory, fileName),
+                SnapshotKind.Update,
+                versionTarget,
+                overwrite: false,
+                cancellationToken);
+            TrimAutomaticUpdateSnapshots();
+            return snapshot;
+        }
+
+        public ApplicationSnapshotInfo? CreateUpdateSnapshotIfEnabled(string versionTarget = "", CancellationToken cancellationToken = default)
+        {
+            if (!ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate)
+                return null;
+
+            log.Info("Creating a full application snapshot before update.");
+            return CreateUpdateSnapshot(versionTarget, cancellationToken);
+        }
+
         public ApplicationSnapshotInfo GetSnapshotInfo(string snapshotPath)
         {
             if (string.IsNullOrWhiteSpace(snapshotPath) || !File.Exists(snapshotPath))
                 throw new FileNotFoundException("Snapshot file does not exist.", snapshotPath);
 
-            EnsureSnapshotArchiveReadable(snapshotPath);
             return ReadSnapshotInfo(snapshotPath);
         }
 
@@ -154,18 +171,15 @@ namespace ColorVision.Update
                 yield return Environments.DirApplicationSnapshots;
         }
 
-        public async Task DeleteSnapshotAsync(ApplicationSnapshotInfo snapshot, CancellationToken cancellationToken = default)
+        public Task DeleteSnapshotAsync(ApplicationSnapshotInfo snapshot, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
 
-            await Task.Run(() =>
+            return Task.Run(() =>
             {
                 if (File.Exists(snapshot.FilePath))
                     File.Delete(snapshot.FilePath);
-            }, cancellationToken).ConfigureAwait(false);
-
-            if (snapshot.IsDefault)
-                await CreateDefaultSnapshotAsync(force: true, cancellationToken).ConfigureAwait(false);
+            }, cancellationToken);
         }
 
         public Task RestoreSnapshotAsync(ApplicationSnapshotInfo snapshot, CancellationToken cancellationToken = default)
@@ -175,6 +189,14 @@ namespace ColorVision.Update
         }
 
         private static ApplicationSnapshotInfo CreateSnapshotCore(string snapshotPath, SnapshotKind kind, string versionTarget, bool overwrite, CancellationToken cancellationToken)
+        {
+            lock (SnapshotCreationLock)
+            {
+                return CreateSnapshotCoreLocked(snapshotPath, kind, versionTarget, overwrite, cancellationToken);
+            }
+        }
+
+        private static ApplicationSnapshotInfo CreateSnapshotCoreLocked(string snapshotPath, SnapshotKind kind, string versionTarget, bool overwrite, CancellationToken cancellationToken)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
 
@@ -205,10 +227,11 @@ namespace ColorVision.Update
                     foreach (string filePath in Directory.EnumerateFiles(programDirectory, "*", SearchOption.AllDirectories))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        AddFileEntry(archive, programDirectory, filePath);
+                        if (ShouldIncludeSnapshotFile(programDirectory, filePath))
+                            AddFileEntry(archive, programDirectory, filePath);
                     }
 
-                    ZipArchiveEntry manifestEntry = archive.CreateEntry(ManifestFileName, CompressionLevel.Optimal);
+                    ZipArchiveEntry manifestEntry = archive.CreateEntry(ManifestFileName, CompressionLevel.Fastest);
                     using Stream manifestStream = manifestEntry.Open();
                     JsonSerializer.Serialize(manifestStream, manifest, JsonOptions);
                 }
@@ -229,16 +252,76 @@ namespace ColorVision.Update
                 .Replace(Path.DirectorySeparatorChar, '/')
                 .Replace(Path.AltDirectorySeparatorChar, '/');
 
-            ZipArchiveEntry entry = archive.CreateEntry(relativePath, CompressionLevel.Optimal);
+            CompressionLevel compressionLevel = AlreadyCompressedExtensions.Contains(Path.GetExtension(filePath))
+                ? CompressionLevel.NoCompression
+                : CompressionLevel.Fastest;
+            ZipArchiveEntry entry = archive.CreateEntry(relativePath, compressionLevel);
             using Stream entryStream = entry.Open();
-            using FileStream sourceStream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            sourceStream.CopyTo(entryStream);
+            using FileStream sourceStream = new(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                CopyBufferSize,
+                FileOptions.SequentialScan);
+            sourceStream.CopyTo(entryStream, CopyBufferSize);
+        }
+
+        internal static bool ShouldIncludeSnapshotFile(string rootDirectory, string filePath)
+        {
+            string relativePath = Path.GetRelativePath(rootDirectory, filePath);
+            string[] parts = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (parts.Length > 1 && string.Equals(parts[0], "log", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string extension = Path.GetExtension(filePath);
+            return !string.Equals(extension, ".pdb", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(extension, ".tmp", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(Path.GetFileName(filePath), "update.bat", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void TrimAutomaticUpdateSnapshots()
+        {
+            try
+            {
+                TrimAutomaticUpdateSnapshots(SnapshotDirectory, MaxAutomaticUpdateSnapshots);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                log.Warn($"Failed to trim automatic update snapshots: {ex.Message}");
+            }
+        }
+
+        internal static int TrimAutomaticUpdateSnapshots(string snapshotDirectory, int maximumCount)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumCount);
+            if (!Directory.Exists(snapshotDirectory))
+                return 0;
+
+            ApplicationSnapshotInfo[] obsoleteSnapshots = Directory
+                .EnumerateFiles(snapshotDirectory, "*.zip", SearchOption.TopDirectoryOnly)
+                .Select(TryReadSnapshotInfoOrIgnore)
+                .OfType<ApplicationSnapshotInfo>()
+                .Where(item => item.IsUpdate)
+                .OrderByDescending(item => item.CreatedAt)
+                .Skip(maximumCount)
+                .ToArray();
+
+            foreach (ApplicationSnapshotInfo snapshot in obsoleteSnapshots)
+            {
+                File.Delete(snapshot.FilePath);
+                log.Info($"Removed obsolete automatic update snapshot: {snapshot.FilePath}");
+            }
+
+            return obsoleteSnapshots.Length;
         }
 
         private static ApplicationSnapshotInfo ReadSnapshotInfo(string snapshotPath)
         {
             FileInfo fileInfo = new(snapshotPath);
-            ApplicationSnapshotManifest? manifest = TryReadManifest(snapshotPath);
+            using ZipArchive archive = ZipFile.OpenRead(snapshotPath);
+            _ = archive.Entries.Count;
+            ApplicationSnapshotManifest? manifest = ReadManifest(archive, snapshotPath);
             bool isDefault = string.Equals(fileInfo.Name, DefaultSnapshotFileName, StringComparison.OrdinalIgnoreCase)
                 || manifest?.IsDefault == true;
             bool isUpdate = string.Equals(manifest?.SnapshotKind, SnapshotKind.Update.ToString(), StringComparison.OrdinalIgnoreCase)
@@ -269,7 +352,6 @@ namespace ColorVision.Update
         {
             try
             {
-                EnsureSnapshotArchiveReadable(snapshotPath);
                 snapshotInfo = ReadSnapshotInfo(snapshotPath);
                 return true;
             }
@@ -279,17 +361,6 @@ namespace ColorVision.Update
                 snapshotInfo = null;
                 return false;
             }
-        }
-
-        private static void EnsureSnapshotArchiveReadable(string snapshotPath)
-        {
-            using ZipArchive archive = ZipFile.OpenRead(snapshotPath);
-            _ = archive.Entries.Count;
-        }
-
-        internal static string MoveUnreadableSnapshotToRecovery(string snapshotPath)
-        {
-            return MoveSnapshotToRecovery(snapshotPath, "unreadable");
         }
 
         internal static void PromoteCompletedSnapshot(string completedSnapshotPath, string snapshotPath)
@@ -321,19 +392,18 @@ namespace ColorVision.Update
             return recoveryPath;
         }
 
-        private static ApplicationSnapshotManifest? TryReadManifest(string snapshotPath)
+        private static ApplicationSnapshotManifest? ReadManifest(ZipArchive archive, string snapshotPath)
         {
+            ZipArchiveEntry? entry = archive.GetEntry(ManifestFileName);
+            if (entry == null)
+                return null;
+
             try
             {
-                using ZipArchive archive = ZipFile.OpenRead(snapshotPath);
-                ZipArchiveEntry? entry = archive.GetEntry(ManifestFileName);
-                if (entry == null)
-                    return null;
-
                 using Stream stream = entry.Open();
                 return JsonSerializer.Deserialize<ApplicationSnapshotManifest>(stream);
             }
-            catch (Exception ex)
+            catch (JsonException ex)
             {
                 log.Warn($"Failed to read snapshot manifest: {snapshotPath}. {ex.Message}");
                 return null;

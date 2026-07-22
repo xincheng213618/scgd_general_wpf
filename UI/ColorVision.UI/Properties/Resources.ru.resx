@@ -526,4 +526,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>Checkbox</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Создавать снимок программы перед обновлением</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>Если включено, перед обновлением приложения, плагинов или комбинированным обновлением создаётся один полный снимок программы. Это может увеличить время обновления.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Не использовать системный прокси-сервер</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>Если включено, проверка обновлений и запросы магазина подключаются к общедоступной службе напрямую. Если выключено, используется системный прокси Windows. Изменение применяется к следующему запросу.</value>
+  </data>
 </root>

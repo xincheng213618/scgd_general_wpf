@@ -526,4 +526,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>複選框</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前建立程式快照</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>啟用後，主程式、外掛程式或組合更新前都會建立一次完整程式快照，可能延長更新時間。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>不使用系統代理伺服器</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
+  </data>
 </root>

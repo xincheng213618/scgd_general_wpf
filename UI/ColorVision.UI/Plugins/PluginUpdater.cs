@@ -169,6 +169,9 @@ namespace ColorVision.UI.Plugins
                     psi.Verb = "runas";
                     psi.WindowStyle = ProcessWindowStyle.Normal;
                 }
+
+                // 主程序、插件和组合更新共用同一份完整程序快照策略。
+                ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 using Process updateProcess = ExitUpdateHandoff.Start(handoffState, psi);
                 Environment.Exit(0);
             }

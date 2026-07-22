@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using ColorVision.UI;
 using ColorVision.Update;
 
@@ -38,22 +39,6 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
 
         Assert.NotEqual(legacyDirectory, ApplicationSnapshotService.Instance.SnapshotDirectory);
         Assert.StartsWith(legacyDirectory + Path.DirectorySeparatorChar, ApplicationSnapshotService.Instance.SnapshotDirectory);
-    }
-
-    [Fact]
-    public void UnreadableDefaultSnapshotIsMovedToRecoveryInsteadOfDeleted()
-    {
-        string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");
-        Directory.CreateDirectory(snapshotDirectory);
-        string defaultSnapshotPath = Path.Combine(snapshotDirectory, "default.zip");
-        File.WriteAllText(defaultSnapshotPath, "recover me");
-
-        string recoveryPath = ApplicationSnapshotService.MoveUnreadableSnapshotToRecovery(defaultSnapshotPath);
-
-        Assert.False(File.Exists(defaultSnapshotPath));
-        Assert.True(File.Exists(recoveryPath));
-        Assert.Equal(Path.Combine(snapshotDirectory, "Recovery"), Path.GetDirectoryName(recoveryPath));
-        Assert.Equal("recover me", File.ReadAllText(recoveryPath));
     }
 
     [Fact]
@@ -113,6 +98,68 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
         Assert.Equal(1, removedCount);
         Assert.False(File.Exists(shellExtensionPath));
         Assert.True(File.Exists(applicationPath));
+    }
+
+    [Fact]
+    public void SnapshotFilterSkipsTransientFilesButKeepsRuntimeFiles()
+    {
+        string programDirectory = Path.Combine(_tempDirectory, "program");
+
+        Assert.False(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "log", "ColorVision.log")));
+        Assert.False(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "ColorVision.pdb")));
+        Assert.False(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "cache.tmp")));
+        Assert.False(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "update.bat")));
+        Assert.True(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "ColorVision.exe")));
+        Assert.True(ApplicationSnapshotService.ShouldIncludeSnapshotFile(programDirectory, Path.Combine(programDirectory, "runtimes", "win-x64", "native", "runtime.dll")));
+    }
+
+    [Fact]
+    public async Task DeletingDefaultSnapshotDoesNotRecreateIt()
+    {
+        ApplicationSnapshotService service = ApplicationSnapshotService.Instance;
+        Directory.CreateDirectory(service.SnapshotDirectory);
+        File.WriteAllText(service.DefaultSnapshotPath, "snapshot");
+        ApplicationSnapshotInfo snapshot = new()
+        {
+            FilePath = service.DefaultSnapshotPath,
+            FileName = "default.zip",
+            Version = "1.0.0",
+            VersionTarget = string.Empty,
+            CreatedAt = DateTime.Now,
+            SizeBytes = new FileInfo(service.DefaultSnapshotPath).Length,
+            IsDefault = true,
+            IsUpdate = false,
+        };
+
+        await service.DeleteSnapshotAsync(snapshot);
+
+        Assert.False(File.Exists(service.DefaultSnapshotPath));
+    }
+
+    [Fact]
+    public void AutomaticUpdateSnapshotRetentionKeepsOnlyNewestThree()
+    {
+        string snapshotDirectory = Path.Combine(_tempDirectory, "retention");
+        Directory.CreateDirectory(snapshotDirectory);
+        for (int index = 0; index < 5; index++)
+        {
+            string snapshotPath = Path.Combine(snapshotDirectory, $"ColorVision-update-1.0.0-{index}.zip");
+            using (ZipFile.Open(snapshotPath, ZipArchiveMode.Create))
+            {
+            }
+            File.SetCreationTime(snapshotPath, new DateTime(2026, 7, 1).AddDays(index));
+        }
+
+        string userSnapshotPath = Path.Combine(snapshotDirectory, "ColorVision-1.0.0-user.zip");
+        using (ZipFile.Open(userSnapshotPath, ZipArchiveMode.Create))
+        {
+        }
+
+        int removedCount = ApplicationSnapshotService.TrimAutomaticUpdateSnapshots(snapshotDirectory, 3);
+
+        Assert.Equal(2, removedCount);
+        Assert.Equal(3, Directory.EnumerateFiles(snapshotDirectory, "ColorVision-update-*.zip").Count());
+        Assert.True(File.Exists(userSnapshotPath));
     }
 
     public void Dispose()

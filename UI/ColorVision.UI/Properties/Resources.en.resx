@@ -648,4 +648,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>Checkbox</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Create a program snapshot before updating</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>When enabled, one full program snapshot is created before an application, plugin, or combined update. This may increase update time.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Do not use the system proxy</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>When enabled, update checks and marketplace requests connect directly to the public service. When disabled, the Windows system proxy is used. Changes apply to the next request.</value>
+  </data>
 </root>

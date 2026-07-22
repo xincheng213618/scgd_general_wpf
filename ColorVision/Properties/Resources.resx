@@ -944,4 +944,19 @@
   <data name="ServiceHostWizardStatusUnknown" xml:space="preserve">
     <value>无法确认后台服务状态，请重试。</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前创建程序快照</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>开启后，主程序、插件或组合更新前都会创建一次完整程序快照，可能延长更新时间。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>不使用系统代理</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>更新前创建程序快照</value>
+  </data>
 </root>

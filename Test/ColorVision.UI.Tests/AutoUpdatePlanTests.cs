@@ -20,6 +20,42 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void UpdateSnapshotOptionDefaultsToDisabled()
+        {
+            ApplicationSnapshotConfig config = new();
+
+            Assert.False(config.CreateSnapshotBeforeUpdate);
+        }
+
+        [Fact]
+        public void UpdateNetworkOptionDefaultsToDirectConnection()
+        {
+            UpdateNetworkConfig config = new();
+
+            Assert.True(config.DisableSystemProxyForUpdates);
+        }
+
+        [Fact]
+        public void PreviewStateTransitionPreservesUpdateOptionsMadeWhileChecking()
+        {
+            UpdatePreviewDialogContext checkingContext = new()
+            {
+                CreateSnapshotBeforeUpdate = true,
+                DisableSystemProxyForUpdates = true,
+            };
+            UpdatePreviewDialogContext loadedContext = new()
+            {
+                CreateSnapshotBeforeUpdate = false,
+                DisableSystemProxyForUpdates = false,
+            };
+
+            checkingContext.CopyFrom(loadedContext);
+
+            Assert.True(checkingContext.CreateSnapshotBeforeUpdate);
+            Assert.True(checkingContext.DisableSystemProxyForUpdates);
+        }
+
+        [Fact]
         public void SameSeriesBuildJumpUsesOrderedIncrementalPackages()
         {
             AutoUpdatePlan? plan = AutoUpdater.BuildUpdatePlan(new Version(1, 4, 7, 11), new Version(1, 4, 9, 14));
@@ -404,6 +440,28 @@ namespace ColorVision.UI.Tests
 
             Assert.Equal(2, segments.Length);
             Assert.Equal(Resources.UpdatePreviewSelectionRestartRequired, segments[1]);
+        }
+
+        [Fact]
+        public void PluginOnlySelectionDescribesOptionalUpdateSnapshot()
+        {
+            UpdatePreviewDialogContext context = new()
+            {
+                IsChecking = false,
+                CreateSnapshotBeforeUpdate = true,
+            };
+            context.Items.Add(new UpdatePreviewItem
+            {
+                Kind = UpdatePreviewItemKind.Plugin,
+                IsSelectable = true,
+                IsSelected = true,
+            });
+
+            string[] segments = context.SelectionSummary.Split(" · ", StringSplitOptions.None);
+
+            Assert.Equal(3, segments.Length);
+            Assert.Equal(Resources.UpdatePreviewSelectionCreatesSnapshot, segments[1]);
+            Assert.Equal(Resources.UpdatePreviewSelectionRestartRequired, segments[2]);
         }
 
         private static void WriteValidIncrementalPackage(string packagePath)

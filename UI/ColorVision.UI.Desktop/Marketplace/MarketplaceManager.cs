@@ -101,7 +101,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 if (item.Value.Manifest != null)
                 {
-                    // skipIndividualCheck=true: batch check will provide versions
+                    // Version state is populated by the batch update check.
                     PluginInfoVM info = new PluginInfoVM(item.Value, skipIndividualCheck: true);
                     info.PropertyChanged += (s, e) =>
                     {
@@ -114,32 +114,14 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
             }
 
-            _ = RunStartupRefreshAsync();
- 
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(DownloadPackageAsync), logger: log);
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             RestartCommand = new RelayCommand(a => Restart());
-            RefreshVersionsCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(RefreshVersionsAsync), logger: log);
+            RefreshVersionsCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(token => RefreshVersionsAsync(token, forceRefresh: true)), logger: log);
             UpdateAllCommand = new AsyncRelayCommand(_ => RunUserOperationAsync(UpdateAllAsync), logger: log);
 
             SelectedInstalledPlugin = Plugins.FirstOrDefault();
-        }
-
-        private async Task RunStartupRefreshAsync()
-        {
-            try
-            {
-                await RefreshVersionsAsync().ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                log.Debug("Initial marketplace version refresh canceled.");
-            }
-            catch (Exception ex)
-            {
-                log.Error("Initial marketplace version refresh failed.", ex);
-            }
         }
 
         private async Task RunUserOperationAsync(Func<CancellationToken, Task> operation)
@@ -212,7 +194,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 : SelectedInstalledPlugin;
         }
 
-        public async Task RefreshVersionsAsync(CancellationToken cancellationToken = default)
+        public async Task RefreshVersionsAsync(CancellationToken cancellationToken = default, bool forceRefresh = false)
         {
             bool lockTaken = false;
             try
@@ -220,46 +202,21 @@ namespace ColorVision.UI.Desktop.Marketplace
                 await _refreshVersionsLock.WaitAsync(cancellationToken);
                 lockTaken = true;
 
-                var enabledPlugins = Plugins.Where(p => p.PluginInfo.Enabled && !string.IsNullOrWhiteSpace(p.PackageName)).ToList();
+                List<PluginInfoVM> enabledPlugins = GetEnabledVersionedPlugins();
                 if (enabledPlugins.Count == 0)
                 {
                     UpdateAvailableCount = 0;
                     return;
                 }
 
-                var client = MarketplaceClient.GetInstance();
-                Dictionary<string, string?> versions = new(StringComparer.OrdinalIgnoreCase);
-
-                try
+                Dictionary<string, string?> versions = await MarketplaceClient.GetInstance().BatchVersionCheckAsync(
+                    enabledPlugins.Select(plugin => plugin.PackageName!),
+                    forceRefresh,
+                    cancellationToken);
+                foreach (PluginInfoVM plugin in enabledPlugins)
                 {
-                    versions = await client.BatchVersionCheckAsync(enabledPlugins.Select(p => p.PackageName!).ToList(), cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Batch version check failed, falling back to individual checks: {ex.Message}");
-                }
-
-                var fallbackTasks = new List<Task>();
-                foreach (var plugin in enabledPlugins)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
                     if (versions.TryGetValue(plugin.PackageName!, out string? version) && !string.IsNullOrWhiteSpace(version))
-                    {
                         plugin.SetVersionFromBatchCheck(version);
-                    }
-                    else
-                    {
-                        fallbackTasks.Add(plugin.CheckVersionAsync(cancellationToken));
-                    }
-                }
-
-                if (fallbackTasks.Count > 0)
-                {
-                    await Task.WhenAll(fallbackTasks);
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
@@ -273,6 +230,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             catch (Exception ex)
             {
                 log.Warn($"RefreshVersionsAsync failed: {ex.Message}");
+                throw;
             }
             finally
             {
@@ -283,38 +241,38 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        public async Task<CombinedPluginUpdatePlan> BuildCombinedUpdatePlanAsync(Version hostVersion, CancellationToken cancellationToken = default)
+        public async Task<CombinedPluginUpdatePlan> BuildCombinedUpdatePlanAsync(
+            Version hostVersion,
+            CancellationToken cancellationToken = default,
+            bool forceRefresh = false)
         {
-            await RefreshVersionsAsync(cancellationToken);
+            await RefreshVersionsAsync(cancellationToken, forceRefresh);
+            return await BuildCombinedUpdatePlanFromCurrentVersionsAsync(hostVersion, cancellationToken, forceRefresh);
+        }
 
-            CombinedPluginUpdatePlan plan = new() { HostVersion = hostVersion };
-            var pluginsToCheck = Plugins
-                .Where(plugin => plugin.PluginInfo.Enabled && plugin.HasUpdate && !string.IsNullOrWhiteSpace(plugin.PackageName))
+        public async Task<CombinedPluginUpdatePlan> BuildCombinedUpdatePlanFromCurrentVersionsAsync(
+            Version hostVersion,
+            CancellationToken cancellationToken = default,
+            bool forceRefreshDetails = false)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            List<PluginInfoVM> pluginsToCheck = GetEnabledVersionedPlugins()
+                .Where(plugin => plugin.HasUpdate)
                 .ToList();
-
+            CombinedPluginUpdatePlan plan = new() { HostVersion = hostVersion };
             if (pluginsToCheck.Count == 0)
                 return plan;
 
             MarketplaceClient client = MarketplaceClient.GetInstance();
-            foreach (var plugin in pluginsToCheck)
+            using SemaphoreSlim detailConcurrency = new(4, 4);
+            Task<PluginPlanCandidate>[] detailTasks = pluginsToCheck.Select(async plugin =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                await detailConcurrency.WaitAsync(cancellationToken);
                 try
                 {
-                    MarketplacePluginDetail? detail = await client.GetPluginDetailAsync(plugin.PackageName!, cancellationToken);
+                    MarketplacePluginDetail? detail = await client.GetPluginDetailAsync(plugin.PackageName!, forceRefreshDetails, cancellationToken);
                     MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(plugin.AssemblyVersion, detail, hostVersion);
-                    if (candidate != null)
-                    {
-                        plan.Updates.Add(new CombinedPluginUpdateItem
-                        {
-                            Plugin = plugin,
-                            VersionInfo = candidate,
-                        });
-                    }
-                    else
-                    {
-                        plan.SkippedIncompatiblePlugins.Add(plugin.Name ?? plugin.PackageName ?? "Unknown");
-                    }
+                    return new PluginPlanCandidate(plugin, candidate, detail != null);
                 }
                 catch (OperationCanceledException)
                 {
@@ -322,12 +280,46 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
                 catch (Exception ex)
                 {
-                    log.Warn($"BuildCombinedUpdatePlanAsync failed for {plugin.PackageName}: {ex.Message}");
+                    log.Warn($"Plugin detail check failed for {plugin.PackageName}: {ex.Message}");
+                    return new PluginPlanCandidate(plugin, null, false);
+                }
+                finally
+                {
+                    detailConcurrency.Release();
+                }
+            }).ToArray();
+
+            PluginPlanCandidate[] candidates = await Task.WhenAll(detailTasks);
+            foreach (PluginPlanCandidate result in candidates)
+            {
+                if (result.Candidate != null)
+                {
+                    plan.Updates.Add(new CombinedPluginUpdateItem
+                    {
+                        Plugin = result.Plugin,
+                        VersionInfo = result.Candidate,
+                    });
+                }
+                else if (result.HasDetail)
+                {
+                    plan.SkippedIncompatiblePlugins.Add(result.Plugin.Name ?? result.Plugin.PackageName ?? "Unknown");
                 }
             }
 
+            log.Info($"Plugin update plan completed. Candidates={pluginsToCheck.Count}, Updates={plan.Updates.Count}, Skipped={plan.SkippedIncompatiblePlugins.Count}, Took={stopwatch.ElapsedMilliseconds}ms.");
             return plan;
         }
+
+        private List<PluginInfoVM> GetEnabledVersionedPlugins()
+        {
+            return Plugins
+                .Where(plugin => plugin.PluginInfo.Enabled
+                    && !string.IsNullOrWhiteSpace(plugin.PackageName)
+                    && plugin.AssemblyVersion != null)
+                .ToList();
+        }
+
+        private sealed record PluginPlanCandidate(PluginInfoVM Plugin, MarketplacePluginVersionInfo? Candidate, bool HasDetail);
 
         public bool StartCombinedUpdate(CombinedPluginUpdatePlan plan, string? restartArguments = null, Action? noRestartAction = null, CancellationToken cancellationToken = default)
         {
