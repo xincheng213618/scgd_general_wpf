@@ -1,4 +1,5 @@
 using log4net;
+using ColorVision.Update;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -11,6 +12,7 @@ namespace ColorVision.UI.Desktop.Download
         private readonly object _processLock = new();
         private readonly string _aria2cPath;
         private Process? _process;
+        private bool? _disableSystemProxy;
 
         public Aria2Daemon()
         {
@@ -28,6 +30,16 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        public bool IsRunningForNetworkMode(bool disableSystemProxy)
+        {
+            lock (_processLock)
+            {
+                return _process != null
+                    && !_process.HasExited
+                    && _disableSystemProxy == disableSystemProxy;
+            }
+        }
+
         public int PreparePort(int port)
         {
             if (!IsPortInUse(port))
@@ -40,7 +52,7 @@ namespace ColorVision.UI.Desktop.Download
             return FindAvailablePort(port + 1);
         }
 
-        public void Start(int port, string rpcSecret, DownloadManagerConfig config)
+        public void Start(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy)
         {
             lock (_processLock)
             {
@@ -50,15 +62,20 @@ namespace ColorVision.UI.Desktop.Download
                 var psi = new ProcessStartInfo
                 {
                     FileName = _aria2cPath,
-                    Arguments = BuildArguments(port, rpcSecret, config),
+                    Arguments = BuildArguments(port, rpcSecret, config, disableSystemProxy),
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
+                UpdateNetworkConfig.ConfigureChildProcessProxyEnvironment(psi, disableSystemProxy);
+                log.Info(disableSystemProxy
+                    ? "Starting aria2c with inherited proxy environment disabled."
+                    : "Starting aria2c with inherited proxy environment enabled.");
 
                 _process = new Process { StartInfo = psi };
                 _process.Start();
+                _disableSystemProxy = disableSystemProxy;
 
                 // Discard output to prevent buffer deadlock.
                 _process.StandardOutput.ReadToEndAsync();
@@ -73,6 +90,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 processToStop = _process;
                 _process = null;
+                _disableSystemProxy = null;
             }
 
             try
@@ -118,15 +136,19 @@ namespace ColorVision.UI.Desktop.Download
             {
                 processToDispose = _process;
                 _process = null;
+                _disableSystemProxy = null;
             }
 
             processToDispose?.Dispose();
         }
 
-        private static string BuildArguments(int port, string rpcSecret, DownloadManagerConfig config)
+        private static string BuildArguments(int port, string rpcSecret, DownloadManagerConfig config, bool disableSystemProxy)
         {
             string args = $"--enable-rpc --rpc-listen-port={port} --rpc-secret={rpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=true --allow-overwrite=false --summary-interval=0 -j {config.MaxConcurrentTasks}" +
                 $" --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true --stop-with-process={Environment.ProcessId}";
+
+            if (disableSystemProxy)
+                args += " --all-proxy= --http-proxy= --https-proxy= --ftp-proxy=";
 
             if (config.EnableSpeedLimit)
             {

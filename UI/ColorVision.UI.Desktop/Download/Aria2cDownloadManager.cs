@@ -2,6 +2,7 @@
 using log4net;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
+using ColorVision.Update;
 using ColorVision.UI;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -53,6 +54,7 @@ namespace ColorVision.UI.Desktop.Download
         private readonly Aria2Daemon _daemon;
         private readonly Aria2RpcClient _rpcClient;
         private readonly DownloadReuseService _reuseService;
+        private readonly SemaphoreSlim _daemonLifecycleLock = new(1, 1);
 
         private int _rpcPort = 6800;
         private const string RpcSecret = "ColorVisionDL";
@@ -283,13 +285,32 @@ namespace ColorVision.UI.Desktop.Download
             if (IsDisposingOrDisposed)
                 return;
 
-            if (_daemon.IsRunning)
+            bool disableSystemProxy = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates;
+            if (_daemon.IsRunningForNetworkMode(disableSystemProxy))
                 return;
 
-            await StartAria2cDaemonAsync();
+            await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (IsDisposingOrDisposed)
+                    return;
+
+                disableSystemProxy = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates;
+                if (_daemon.IsRunningForNetworkMode(disableSystemProxy))
+                    return;
+
+                if (_daemon.IsRunning)
+                    await Task.Run(StopAria2cDaemon).ConfigureAwait(false);
+
+                await StartAria2cDaemonAsync(disableSystemProxy).ConfigureAwait(false);
+            }
+            finally
+            {
+                _daemonLifecycleLock.Release();
+            }
         }
 
-        private async Task StartAria2cDaemonAsync()
+        private async Task StartAria2cDaemonAsync(bool disableSystemProxy)
         {
             if (IsDisposingOrDisposed)
                 return;
@@ -309,7 +330,7 @@ namespace ColorVision.UI.Desktop.Download
                 _rpcPort = preparedPort;
             }
 
-            _daemon.Start(_rpcPort, RpcSecret, Config);
+            _daemon.Start(_rpcPort, RpcSecret, Config, disableSystemProxy);
 
             // Wait for RPC to be ready
             for (int i = 0; i < 30; i++)

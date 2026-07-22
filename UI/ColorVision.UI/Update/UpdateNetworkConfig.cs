@@ -1,6 +1,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -9,6 +11,14 @@ namespace ColorVision.Update
 {
     public sealed class UpdateNetworkConfig : ViewModelBase, IConfig
     {
+        private static readonly string[] ProxyEnvironmentVariableNames =
+        [
+            "ALL_PROXY",
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "FTP_PROXY",
+        ];
+
         public static UpdateNetworkConfig Instance => ConfigService.Instance.GetRequiredService<UpdateNetworkConfig>();
 
         [ConfigSetting(Order = 520, Section = ConfigSettingConstants.SectionBasic, Description = "DisableSystemProxyForUpdatesDescription")]
@@ -26,6 +36,19 @@ namespace ColorVision.Update
             }
         }
         private bool _disableSystemProxyForUpdates = true;
+
+        public static void ConfigureChildProcessProxyEnvironment(ProcessStartInfo startInfo, bool disableSystemProxy)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+            if (!disableSystemProxy)
+                return;
+
+            string[] inheritedProxyVariables = startInfo.Environment.Keys
+                .Where(key => ProxyEnvironmentVariableNames.Contains(key, StringComparer.OrdinalIgnoreCase))
+                .ToArray();
+            foreach (string variableName in inheritedProxyVariables)
+                startInfo.Environment.Remove(variableName);
+        }
     }
 
     public static class UpdateHttpClientProvider

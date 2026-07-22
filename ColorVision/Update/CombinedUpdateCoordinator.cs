@@ -83,6 +83,7 @@ namespace ColorVision.Update
                             return;
 
                         context.CopyFrom(loadedContext);
+                        Aria2cDownloadManager.GetInstance().PreloadAria2cAsync();
                     }
                     catch (OperationCanceledException)
                     {
