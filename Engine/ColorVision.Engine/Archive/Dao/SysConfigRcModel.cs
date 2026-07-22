@@ -1,13 +1,8 @@
-﻿#pragma warning disable CA1863
-using ColorVision.Database;
-using ColorVision.Engine.Services.RC;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
+﻿using ColorVision.Database;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows;
 using ColorVision.Engine.Utilities;
 using ColorVision.Engine.Properties;
 
@@ -73,25 +68,6 @@ namespace ColorVision.Engine.Archive.Dao
         public SysConfigRcModel? GetByCode(string code)
         {
             return this.GetByParam(new Dictionary<string, object>() { { "code", code } });
-        }
-    }
-    public class MenuConfigArchive1 : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(MenuArchive);
-
-        public override string Header => ColorVision.Engine.Properties.Resources.ServiceRegistryCenterConfig;
-
-        public override void Execute()
-        {
-            SysConfigRcModel sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
-            if (sysConfigRcModel == null)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_RCConfigInfoNotFound, RCSetting.Instance.Config.RCName), "ColorVision");
-                return;
-            }
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sysConfigRcModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.Submited += (s, e) => { SysConfigRcDao.Instance.Save(sysConfigRcModel); };
-            propertyEditorWindow.ShowDialog();
         }
     }
 }

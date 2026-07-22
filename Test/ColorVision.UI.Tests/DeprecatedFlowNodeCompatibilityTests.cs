@@ -19,6 +19,10 @@ public class DeprecatedFlowNodeCompatibilityTests
     [InlineData("FlowEngineLib.Node.Algorithm.AlgComplianceMathNode")]
     [InlineData("FlowEngineLib.Node.Algorithm.AlgComplianceJudgmentNode")]
     [InlineData("FlowEngineLib.Node.Algorithm.AlgComplianceContrastNode")]
+    [InlineData("FlowEngineLib.Node.Algorithm.TPAlgorithmNode")]
+    [InlineData("FlowEngineLib.Node.Algorithm.TPAlgorithm2Node")]
+    [InlineData("FlowEngineLib.Node.Camera.CalibrationROINode")]
+    [InlineData("FlowEngineLib.Node.Camera.CameraROINode")]
     public void DeprecatedNode_IsExcludedFromCatalogAndSavedCanvasStillLoads(string typeName)
     {
         var nodeType = typeof(FlowEngineLib.Base.CVCommonNode).Assembly.GetType(typeName, throwOnError: true)!;

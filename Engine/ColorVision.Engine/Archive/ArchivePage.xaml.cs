@@ -1,5 +1,6 @@
-﻿#pragma warning disable CS0168
+﻿#pragma warning disable CS0168, CA1863
 using ColorVision.Database;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using NPOI.SS.Formula.Functions;
@@ -144,19 +145,67 @@ namespace ColorVision.Engine.Archive.Dao
             }
         }
 
-        private void Setting_Click(object sender, RoutedEventArgs e)
+        private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+            if (sender is Button button && button.ContextMenu != null)
+            {
+                button.ContextMenu.PlacementTarget = button;
+                button.ContextMenu.IsOpen = true;
+            }
+        }
+
+        private void ArchiveServerConfig_Click(object sender, RoutedEventArgs e)
+        {
+            GlobleCfgdModel? globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
+            if (globleCfgdModel == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ArchiveServerConfigNotFound_Resetting, "ColorVision");
+                string sql = "INSERT INTO `cv`.`t_scgd_sys_globle_cfg` (`id`, `code`, `name`, `cfg_type`, `cfg_value`, `is_deleted`, `is_enabled`, `remark`, `tenant_id`) VALUES (3, 'arch_db', '归档服务数据库', 10, '{\\\"Name\\\":null,\\\"Host\\\":\\\"localhost\\\",\\\"Port\\\":3306,\\\"UserName\\\":\\\"cv\\\",\\\"UserPwd\\\":\\\"9p9DMdywXwaTbAXt0oJkUnAb\\\",\\\"Database\\\":\\\"color_vision_arch_2025\\\"}', 0, 1, NULL, 0);\r\n";
+                MySqlControl.BatchExecuteNonQuery(sql);
+                globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
+            }
+            if (globleCfgdModel == null)
+                return;
+
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };
+            propertyEditorWindow.ShowDialog();
+        }
+
+        private void ArchiveConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            string sql = "ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `excluding_images` TINYINT(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `del_local_file` tinyint(1) NOT NULL DEFAULT '0';  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `data_save_hours` int(11) NOT NULL DEFAULT '0';";
+            MySqlControl.BatchExecuteNonQuery(sql);
+
+            SysConfigRcModel? sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
+            if (sysConfigRcModel == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RcConfigInfoNotFound, "ColorVision");
+                return;
+            }
+            ConfigArchivedModel? configArchivedModel = ConfigArchivedDao.Instance.GetById(sysConfigRcModel.ArchivedId);
             if (configArchivedModel == null)
             {
-                MessageBox.Show(ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound, "ColorVision");
+                return;
             }
-            else
+
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+            propertyEditorWindow.ShowDialog();
+        }
+
+        private void ServiceRegistryCenterConfig_Click(object sender, RoutedEventArgs e)
+        {
+            SysConfigRcModel? sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
+            if (sysConfigRcModel == null)
             {
-                PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
-                propertyEditorWindow.ShowDialog();
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_RCConfigInfoNotFound, RCSetting.Instance.Config.RCName), "ColorVision");
+                return;
             }
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sysConfigRcModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { SysConfigRcDao.Instance.Save(sysConfigRcModel); };
+            propertyEditorWindow.ShowDialog();
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
