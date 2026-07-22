@@ -5,6 +5,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Validate
 {
+    [System.Obsolete("Deprecated validation-template menu retained for compatibility.")]
     public class ExportDicComply : MenuItemBase
     {
         public override string OwnerGuid => nameof(ExportComply);

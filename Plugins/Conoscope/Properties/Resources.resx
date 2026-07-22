@@ -1203,12 +1203,6 @@
   <data name="ThemeDark" xml:space="preserve">
     <value>暗色</value>
   </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>粉色</value>
-  </data>
-  <data name="ThemeCyan" xml:space="preserve">
-    <value>青色</value>
-  </data>
   <data name="WindowTitleConoscope" xml:space="preserve">
     <value>Conoscope</value>
   </data>

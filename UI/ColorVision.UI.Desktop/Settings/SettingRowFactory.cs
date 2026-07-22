@@ -104,10 +104,11 @@ namespace ColorVision.UI.Desktop.Settings
             Grid.SetColumn(textPanel, 0);
             row.Children.Add(textPanel);
 
+            bool useCompactEditor = UsesCompactInlineEditor(entry);
             var editorHost = new Border
             {
-                Width = 288,
-                MinWidth = 228,
+                Width = useCompactEditor ? double.NaN : 288,
+                MinWidth = useCompactEditor ? 0 : 228,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = CreatePropertyEditor(entry)
@@ -116,6 +117,12 @@ namespace ColorVision.UI.Desktop.Settings
             row.Children.Add(editorHost);
 
             return CreateRowShell(row, isLast, rowIndex);
+        }
+
+        private static bool UsesCompactInlineEditor(SettingEntry entry)
+        {
+            Type? propertyType = entry.PropertyInfo?.PropertyType;
+            return propertyType != null && (Nullable.GetUnderlyingType(propertyType) ?? propertyType) == typeof(bool);
         }
 
         private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)

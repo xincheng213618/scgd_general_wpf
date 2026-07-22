@@ -77,20 +77,6 @@ namespace ColorVision.Copilot
                     "dark",
                     "dark theme",
                 },
-                [Theme.Pink] = new[]
-                {
-                    "粉色",
-                    "粉红",
-                    "pink",
-                    "pink theme",
-                },
-                [Theme.Cyan] = new[]
-                {
-                    "青色",
-                    "青蓝",
-                    "cyan",
-                    "cyan theme",
-                },
             };
 
         public static bool HasThemeIntent(string? text)
@@ -156,8 +142,6 @@ namespace ColorVision.Copilot
                 Theme.UseSystem => "System",
                 Theme.Light => "Light",
                 Theme.Dark => "Dark",
-                Theme.Pink => "Pink",
-                Theme.Cyan => "Cyan",
                 _ => theme.ToString(),
             };
         }

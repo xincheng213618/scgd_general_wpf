@@ -289,7 +289,12 @@ namespace ColorVision.UI.Menus
 
         private static bool IsConcreteMenuCandidate(Type? type)
         {
-            return type != null && type.IsClass && !type.IsAbstract && !type.IsInterface && !type.ContainsGenericParameters;
+            return type != null
+                && type.IsClass
+                && !type.IsAbstract
+                && !type.IsInterface
+                && !type.ContainsGenericParameters
+                && !type.IsDefined(typeof(ObsoleteAttribute), inherit: false);
         }
 
         private static bool HasPublicParameterlessConstructor(Type type)

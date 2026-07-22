@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
@@ -177,9 +176,6 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                     case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
                         context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.ImageCompound:
-                        context.AddTemplateJsonPanel(nameof(node.TempName), "ImageCompound", new TemplateCompoundImg());
-                        break;
                     case FlowEngineLib.Algorithm.AlgorithmType.十字计算:
                         context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new TemplateFindCross());
                         break;
@@ -192,6 +188,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         }
     }
 
+    [System.Obsolete("Deprecated configurator retained for existing compliance flow nodes.")]
     [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgComplianceMathNode))]
     public class AlgComplianceMathNodeConfigurator : NodeConfiguratorBase
     {

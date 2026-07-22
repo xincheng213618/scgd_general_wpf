@@ -190,20 +190,19 @@ namespace Conoscope
 
             // Theme selector
             cbTheme.Items.Clear();
-            var themeNames = new[] { Theme.UseSystem, Theme.Light, Theme.Dark, Theme.Pink, Theme.Cyan };
-            var themeDisplayNames = new[]
+            foreach (Theme theme in ThemeManager.SupportedThemes)
             {
-                $"{Properties.Resources.GroupConfig}: {Properties.Resources.ThemeSystem}",
-                Properties.Resources.ThemeLight,
-                Properties.Resources.ThemeDark,
-                Properties.Resources.ThemePink,
-                Properties.Resources.ThemeCyan
-            };
-            for (int i = 0; i < themeNames.Length; i++)
-            {
-                cbTheme.Items.Add(new ComboBoxItem { Content = themeDisplayNames[i], Tag = themeNames[i] });
-                if (themeNames[i] == ThemeConfig.Instance.Theme)
-                    cbTheme.SelectedIndex = i;
+                string displayName = theme switch
+                {
+                    Theme.UseSystem => $"{Properties.Resources.GroupConfig}: {Properties.Resources.ThemeSystem}",
+                    Theme.Light => Properties.Resources.ThemeLight,
+                    Theme.Dark => Properties.Resources.ThemeDark,
+                    _ => theme.ToString()
+                };
+
+                cbTheme.Items.Add(new ComboBoxItem { Content = displayName, Tag = theme });
+                if (theme == ThemeConfig.Instance.Theme)
+                    cbTheme.SelectedIndex = cbTheme.Items.Count - 1;
             }
         }
 

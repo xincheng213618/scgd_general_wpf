@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
+[System.Obsolete("Deprecated compliance flow node retained for loading existing flows.")]
 public class AlgComplianceContrastNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgComplianceContrastNode));

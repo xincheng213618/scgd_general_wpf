@@ -500,6 +500,10 @@ public class STNodeTreeView : Control
 			}
 			return false;
 		}
+		if (stNodeType.IsDefined(typeof(ObsoleteAttribute), inherit: false))
+		{
+			return false;
+		}
 		STNodeAttribute nodeAttribute = GetNodeAttribute(stNodeType);
 		if (nodeAttribute == null)
 		{

@@ -3,6 +3,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.MQTT;
 
 [STNode("/10 MQTT")]
+[System.Obsolete("Deprecated MQTT flow node retained for loading existing flows.")]
 public class MQTTPublishHub : STNodeInHub
 {
 	private string _Server;

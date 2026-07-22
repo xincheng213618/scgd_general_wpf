@@ -169,15 +169,6 @@ namespace ColorVision.Themes.Properties {
         }
         
         /// <summary>
-        ///   查找类似 青色 的本地化字符串。
-        /// </summary>
-        public static string ThemeCyan {
-            get {
-                return ResourceManager.GetString("ThemeCyan", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 深色 的本地化字符串。
         /// </summary>
         public static string ThemeDark {
@@ -192,15 +183,6 @@ namespace ColorVision.Themes.Properties {
         public static string ThemeLight {
             get {
                 return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粉色 的本地化字符串。
-        /// </summary>
-        public static string ThemePink {
-            get {
-                return ResourceManager.GetString("ThemePink", resourceCulture);
             }
         }
         

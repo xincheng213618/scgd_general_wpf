@@ -290,25 +290,27 @@ namespace ColorVision.Engine.Templates.Flow
 
         private IReadOnlyList<CopilotFlowNodeTypeContextSnapshot> GetCopilotFlowNodeCatalog()
         {
-            var types = View?.STNodeEditorMain?.GetTypes() ?? Array.Empty<Type>();
+            var types = (View?.STNodeEditorMain?.GetTypes() ?? Array.Empty<Type>())
+                .Where(IsVisibleFlowNodeType)
+                .ToArray();
             var signature = string.Join("\n", types.Select(GetNodeTypeKey).OrderBy(value => value, StringComparer.Ordinal));
             if (string.Equals(signature, _copilotNodeCatalogSignature, StringComparison.Ordinal))
                 return _copilotNodeCatalog;
 
             var catalog = new List<CopilotFlowNodeTypeContextSnapshot>();
-            foreach (var type in types.Where(type => type != null && !type.IsAbstract && typeof(STNode).IsAssignableFrom(type)))
+            foreach (var type in types)
             {
                 try
                 {
-                    var attribute = type.GetCustomAttribute<STNodeAttribute>();
+                    var attribute = type.GetCustomAttribute<STNodeAttribute>()!;
                     var node = Activator.CreateInstance(type) as STNode;
                     catalog.Add(new CopilotFlowNodeTypeContextSnapshot
                     {
                         TypeKey = GetNodeTypeKey(type),
                         RuntimeType = type.FullName ?? type.Name,
-                        CategoryPath = attribute?.Path ?? string.Empty,
+                        CategoryPath = attribute.Path ?? string.Empty,
                         Title = node?.Title ?? type.Name,
-                        Description = attribute?.DisplayDescription ?? string.Empty,
+                        Description = attribute.DisplayDescription ?? string.Empty,
                         NodeType = node is CVCommonNode commonNode ? commonNode.NodeType ?? string.Empty : string.Empty,
                         DefaultDeviceCode = node is CVCommonNode commonNode1 ? commonNode1.DeviceCode ?? string.Empty : string.Empty,
                         Properties = BuildNodePropertySchemas(type),
@@ -354,6 +356,15 @@ namespace ColorVision.Engine.Templates.Flow
                 nodeType.RuntimeType,
                 nodeType.TypeKey,
             }.Any(value => value.Contains(query, StringComparison.CurrentCultureIgnoreCase));
+        }
+
+        private static bool IsVisibleFlowNodeType(Type type)
+        {
+            return type != null
+                && !type.IsAbstract
+                && typeof(STNode).IsAssignableFrom(type)
+                && !type.IsDefined(typeof(ObsoleteAttribute), inherit: false)
+                && type.GetCustomAttribute<STNodeAttribute>() != null;
         }
 
         private IReadOnlyList<CopilotFlowNodeContextSnapshot> BuildNodeSnapshots()
@@ -631,7 +642,8 @@ namespace ColorVision.Engine.Templates.Flow
                 throw new InvalidOperationException("Flow node position must be between -100000 and 100000.");
 
             var type = View?.STNodeEditorMain?.GetTypes()
-                .FirstOrDefault(candidate => string.Equals(GetNodeTypeKey(candidate), typeKey, StringComparison.Ordinal));
+                .FirstOrDefault(candidate => IsVisibleFlowNodeType(candidate)
+                    && string.Equals(GetNodeTypeKey(candidate), typeKey, StringComparison.Ordinal));
             if (type == null || type.IsAbstract || !typeof(STNode).IsAssignableFrom(type))
                 throw new InvalidOperationException($"The Flow node type is not loaded: {typeKey}");
 

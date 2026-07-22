@@ -11,7 +11,7 @@
 | 图像转换输出不对 | `ImageFormat`、`Channel`、上游图像参数、输出文件名 |
 | 校准模板面板不出现 | 选中的 `DeviceCalibration` / `DeviceCamera` 是否有 `PhyCamera` |
 | 双输入校准无 POI | `IN_POI` 上游是否返回有效 `MasterId` |
-| 旧色差校正异常 | `TemplateCaliAngleShift`、Deprecated JSON 模板和 handler |
+| 旧色差校正节点找不到 | 节点已从目录隐藏；仅保留类型用于旧流程反序列化 |
 
 ## 真实入口
 
@@ -24,7 +24,7 @@
 | 单输入校准 | `CalibrationNode` | `FlowEngineLib/Algorithm/CalibrationNode.cs` | 曝光模板、图像、可选 POI 参数 |
 | 双输入校准 | `Calibration2InNode` | `Node/OLED/Calibration2InNode.cs` | 第二输入的 `MasterId` 写入 `POI_MasterId` |
 | 校准 ROI | `CalibrationROINode` | `Node/Camera/CalibrationROINode.cs` | 发送 `SetROI`，不执行完整校准 |
-| 旧色差校正 | `AlgorithmCaliNode` | `Node/Algorithm/AlgorithmCaliNode.cs` | 兼容 `CaliAngleShift` JSON 模板 |
+| 旧色差校正 | `AlgorithmCaliNode` | `Node/Algorithm/AlgorithmCaliNode.cs` | 不提供新建入口，仅兼容旧流程解析 |
 
 ## 节点矩阵
 
@@ -46,7 +46,7 @@
 | 单输入校准 | 可写曝光模板、图像、`IsSaveCIE` 和可选 POI 模板 |
 | 双输入校准 | 不直接设置 `POIParam`，而是引用第二输入的 POI 结果 |
 | 校准 ROI | 只设置 ROI，不保存校准结果文件 |
-| 旧色差校正 | `CaliAngleShift` 在 Deprecated JSON 目录，按兼容链维护 |
+| 旧色差校正 | Engine 模板、调试 UI 和结果 handler 已移除；节点类型保留但不标记 `STNodeAttribute` |
 
 ## Engine 配置器
 
@@ -54,8 +54,6 @@
 | --- | --- | --- |
 | `CalibrationNodeConfigurator` | `CalibrationNode` | 设备选择、图像路径、按 `PhyCamera` 添加 `TemplateCalibrationParam` |
 | Camera node configurators | 多个相机节点 | 根据 `DeviceCamera.PhyCamera` 添加校准模板选择器 |
-| `AlgorithmCaliNodeConfigurator` | `AlgorithmCaliNode` | Algorithm 设备、图像路径、`TemplateCaliAngleShift` |
-
 Flow 节点类本身只定义属性和参数对象；真正让用户选设备、图像路径和模板的是 `NodeConfigurator/`。
 
 ## 验收
@@ -67,11 +65,11 @@ Flow 节点类本身只定义属性和参数对象；真正让用户选设备、
 | 单输入校准 | 请求包含 `CalibrationData`、`ExpTemplateParam`、`IsSaveCIE` |
 | 双输入校准 | `POI_MasterId` 不是 `-1` |
 | 校准 ROI | `SetROI` 后设备端 ROI 更新 |
-| 旧色差校正 | `TemplateCaliAngleShift` 可加载，`CaliAngleShift` 结果可展示 |
+| 旧色差校正 | 新建节点目录不显示；包含该类型的旧流程可正常反序列化 |
 
 ## 维护要求
 
 - 新增转换类型时，同步枚举、算法服务解释、节点 UI、测试样例和本页矩阵。
 - 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode`、`CalibrationNodeConfigurator`。
 - 修改 `PhyCamera` 关系时，回归校准模板选择器。
-- 新需求优先走当前 JSON V2 或强类型模板规范，不优先扩展 Deprecated 链。
+- 新需求走当前 JSON V2 或强类型模板规范，不恢复已移除的 Deprecated 链。

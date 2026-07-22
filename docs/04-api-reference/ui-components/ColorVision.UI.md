@@ -35,6 +35,8 @@
 
 主程序启动后先初始化 `ConfigHandler` / `Environments`，再由 `PluginLoader` 加载插件程序集。程序集进入 `AssemblyHandler` 后，`MenuManager`、`ConfigSettingManager`、`PropertyEditor`、`StatusBarManager` 和 `SearchManager` 才能扫描到扩展点。排查 UI 入口缺失时，先确认插件或程序集是否进入发现集合，再看具体扩展点。
 
+`MenuManager` 会跳过标记 `Obsolete` 的菜单项和菜单提供者。需要下线入口但暂时保留实现代码时，应标记对应根菜单、静态子项和动态 Provider，避免隐藏父项后仍执行后台数据查询。
+
 ## 常见修改
 
 | 需求 | 优先入口 | 同步检查 |

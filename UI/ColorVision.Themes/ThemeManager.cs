@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,7 +16,7 @@ namespace ColorVision.Themes
     {
         public static ThemeManager Current { get; set; } = new ThemeManager();
 
-        public static IReadOnlyList<Theme> SupportedThemes { get; } = Array.AsReadOnly(new[]
+        public static ReadOnlyCollection<Theme> SupportedThemes { get; } = Array.AsReadOnly(new[]
         {
             Theme.UseSystem,
             Theme.Light,

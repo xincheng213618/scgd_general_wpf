@@ -12,7 +12,7 @@
 | 设备命令 | `MQTTServiceBase` | 构造 `MsgRecord`，发送 `MsgSend`，按 `MsgID` 匹配 `MsgReturn`，处理超时 |
 | 设备配置绑定 | `MQTTDeviceService<T>` | 从设备 `Config` 读取 `SendTopic`、`SubscribeTopic` |
 | 消息类型 | `MsgSend`、`MsgReturn`、`MQTTMessageLib/*EventEnum` | EventName、DeviceCode、Token、参数和返回码 |
-| Flow MQTT 节点 | `FlowEngineLib/MQTT/` | 可视化流程中的 publish/subscribe hub |
+| Flow MQTT 节点 | `FlowEngineLib/MQTT/`、`MQTTCustom*Node.cs` | 4 个旧节点已标记 `Obsolete`，不再出现在新建节点/右键目录中；类型仍保留以加载旧流程 |
 
 ## 命令执行链
 
@@ -35,7 +35,7 @@
 | 新增设备命令 | 对应 `Services/Devices/*/MQTT*.cs` | `EventName`、参数 JSON、超时、返回码 |
 | 改设备 topic | `DeviceServiceConfig`、设备配置 UI | `SendTopic` 和 `SubscribeTopic` 不要写反 |
 | 改返回处理 | `MQTTServiceBase` 或具体 `MQTT*` 回调 | `MsgID` 匹配、失败码、超时状态 |
-| Flow MQTT 节点 | `FlowEngineLib/MQTT/` | 节点订阅、取消订阅、重连后恢复 |
+| 旧 Flow MQTT 节点兼容 | `FlowEngineLib/MQTT/`、`MQTTCustom*Node.cs` | 只维护旧流程反序列化和运行兼容，不再作为可新建节点暴露 |
 
 ## 新增设备命令模板
 

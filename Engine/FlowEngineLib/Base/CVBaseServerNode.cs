@@ -366,10 +366,12 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			eventName = operatorCode;
 		}
+		#pragma warning disable CS0618
 		if (e.TargetOption.Owner.GetType() == typeof(MQTTSubscribeHub))
 		{
 			((MQTTSubscribeHub)owner).SetEventInfo(e.TargetOption, eventName, GetRecvTopic(), m_nodeName, m_deviceCode);
 		}
+		#pragma warning restore CS0618
 	}
 
 	protected void DoTransferToServer(CVStartCFC action, STNodeOptionEventArgs e)

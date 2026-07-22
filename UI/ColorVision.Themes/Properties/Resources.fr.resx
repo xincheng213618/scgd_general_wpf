@@ -141,16 +141,11 @@
   <data name="Theme" xml:space="preserve">
     <value>thème</value>
   </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>rose</value>
-  </data>
   <data name="MenuTheme" xml:space="preserve">
     <value>Sujet (H)</value>
   </data>
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>Suivez le système</value>
-  </data>  <data name="ThemeCyan" xml:space="preserve">
-    <value>Cyan</value>
   </data>
   <data name="Yes" xml:space="preserve">
     <value>Oui</value>
