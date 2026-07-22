@@ -42,8 +42,7 @@ namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 var objectiveResult = JsonConvert.DeserializeObject<LuminanceChromaticityTestResult>(ctx.Result.ViewResultJson) ?? new();
-                ctx.ObjectiveTestResult.LuminanceChromaticityTestResults ??= new();
-                ctx.ObjectiveTestResult.LuminanceChromaticityTestResults[Config.GetOutputKey()] = objectiveResult;
+                ctx.ObjectiveTestResult.SetLuminanceChromaticityResult(Config.GetOutputKey(), objectiveResult);
                 return Task.FromResult(true);
             }
             catch (Exception ex)
@@ -98,12 +97,14 @@ namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
         private void SetCenterResults(IProcessExecutionContext ctx, LuminanceChromaticityTestResult testResult, PoiResultCIExyuvData poi)
         {
             var recipe = Config.RecipeConfig;
+            testResult.CenterCorrelatedColorTemperature = CreateItem("CenterCorrelatedColorTemperature", poi.CCT, recipe.CenterCorrelatedColorTemperature, "F4", "K");
             testResult.CenterLuminance = CreateItem("CenterLuminance", poi.Y, recipe.CenterLuminance, "F4", "nit");
             testResult.CenterCIE1931ChromaticCoordinatesx = CreateItem("CenterCIE1931ChromaticCoordinatesx", poi.x, recipe.CenterCIE1931ChromaticCoordinatesx, "F4");
             testResult.CenterCIE1931ChromaticCoordinatesy = CreateItem("CenterCIE1931ChromaticCoordinatesy", poi.y, recipe.CenterCIE1931ChromaticCoordinatesy, "F4");
             testResult.CenterCIE1976ChromaticCoordinatesu = CreateItem("CenterCIE1976ChromaticCoordinatesu", poi.u, recipe.CenterCIE1976ChromaticCoordinatesu, "F4");
             testResult.CenterCIE1976ChromaticCoordinatesv = CreateItem("CenterCIE1976ChromaticCoordinatesv", poi.v, recipe.CenterCIE1976ChromaticCoordinatesv, "F4");
 
+            ctx.Result.Result &= testResult.CenterCorrelatedColorTemperature.TestResult;
             ctx.Result.Result &= testResult.CenterLuminance.TestResult;
             ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
             ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;

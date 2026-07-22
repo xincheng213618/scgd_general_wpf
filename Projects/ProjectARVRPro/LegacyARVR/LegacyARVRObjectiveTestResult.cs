@@ -58,8 +58,6 @@ namespace ProjectARVRPro.LegacyARVR
         public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } }
         private bool _TotalResult = false;
 
-        public string Msg { get; set; } = string.Empty;
-
         public string TotalResultString => TotalResult ? "PASS" : "Fail";
 
         public bool FlowWhiteTestReslut { get; set; } = false;
@@ -231,10 +229,8 @@ namespace ProjectARVRPro.LegacyARVR
 
             // Ghost: 新版无此数据
             // CenterCorrelatedColorTemperature: 新版无此数据
-
             // TotalResult
             legacy.TotalResult = src.TotalResult;
-            legacy.Msg = src.Msg;
 
             // Flow结果标志：根据子结果是否存在判断
             legacy.FlowWhiteTestReslut = src.W255TestResult != null;

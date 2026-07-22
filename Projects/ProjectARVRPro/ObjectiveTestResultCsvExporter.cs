@@ -78,6 +78,18 @@ namespace ProjectARVRPro
             }
         }
 
+        private static void CollectRowsFromKeyedResults<T>(IReadOnlyDictionary<string, T>? results, List<string> rows)
+        {
+            if (results == null)
+                return;
+
+            foreach (KeyValuePair<string, T> item in results)
+            {
+                if (item.Value is not null)
+                    CollectRows(item.Value, item.Key, rows);
+            }
+        }
+
 
         private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
         {
@@ -96,7 +108,16 @@ namespace ProjectARVRPro
                     prop.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
-                    prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults))
+                    prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults))
+                    continue;
+
+                if (prop.Name == nameof(ObjectiveTestResult.W255TestResult) &&
+                    KeyedTestResultDictionary.TryGetValue(results.LuminanceChromaticityTestResults, "White", out _))
+                    continue;
+
+                if (prop.Name == nameof(ObjectiveTestResult.W51TestResult) &&
+                    KeyedTestResultDictionary.TryGetValue(results.FieldOfViewTestResults, "White", out _))
                     continue;
 
                 if (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string))
@@ -139,23 +160,9 @@ namespace ProjectARVRPro
                 }
             }
 
-            if (results.DynamicMTFHV058TestResults != null)
-            {
-                foreach (var kvp in results.DynamicMTFHV058TestResults)
-                {
-                    if (kvp.Value != null)
-                        CollectRows(kvp.Value, kvp.Key, rows);
-                }
-            }
-
-            if (results.LuminanceChromaticityTestResults != null)
-            {
-                foreach (var kvp in results.LuminanceChromaticityTestResults)
-                {
-                    if (kvp.Value != null)
-                        CollectRows(kvp.Value, kvp.Key, rows);
-                }
-            }
+            CollectRowsFromKeyedResults(results.DynamicMTFHV058TestResults, rows);
+            CollectRowsFromKeyedResults(results.LuminanceChromaticityTestResults, rows);
+            CollectRowsFromKeyedResults(results.FieldOfViewTestResults, rows);
 
             if (results.DynamicPoixyuvDatas != null)
             {

@@ -21,6 +21,6 @@ namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
         public LuminanceChromaticityRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
         private LuminanceChromaticityRecipeConfig _RecipeConfig = new();
 
-        public string GetOutputKey() => string.IsNullOrWhiteSpace(Key) ? "White" : Key.Trim();
+        public string GetOutputKey() => KeyedTestResultDictionary.NormalizeKey(Key, "White");
     }
 }

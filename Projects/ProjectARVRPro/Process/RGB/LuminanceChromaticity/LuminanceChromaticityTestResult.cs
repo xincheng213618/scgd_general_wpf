@@ -13,6 +13,7 @@ namespace ProjectARVRPro.Process.RGB.LuminanceChromaticity
         public List<PoixyuvData> PoixyuvDatas { get; set; } = new();
         public ObjectiveTestItem LuminanceUniformity { get; set; } = new();
         public ObjectiveTestItem ColorUniformity { get; set; } = new();
+        public ObjectiveTestItem CenterCorrelatedColorTemperature { get; set; } = new();
         public ObjectiveTestItem CenterLuminance { get; set; } = new();
         public ObjectiveTestItem CenterCIE1931ChromaticCoordinatesx { get; set; } = new();
         public ObjectiveTestItem CenterCIE1931ChromaticCoordinatesy { get; set; } = new();
