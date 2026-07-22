@@ -115,4 +115,45 @@ namespace ColorVision.UI.ServiceHost
             return $"{(Success ? "OK" : "FAILED")}: {Message}{Environment.NewLine}{dataText}";
         }
     }
+
+    public sealed class Com0ComStatusInfo
+    {
+        public bool Installed { get; set; }
+
+        public string SetupExecutablePath { get; set; } = string.Empty;
+
+        public string Version { get; set; } = string.Empty;
+
+        public string DriverState { get; set; } = string.Empty;
+
+        public List<Com0ComPairInfo> Pairs { get; set; } = [];
+
+        public List<int> AvailablePortNumbers { get; set; } = [];
+
+        public Com0ComPortPairSuggestion? SuggestedPair { get; set; }
+
+        public string Output { get; set; } = string.Empty;
+    }
+
+    public sealed class Com0ComPortPairSuggestion
+    {
+        public int PortA { get; set; }
+
+        public int PortB { get; set; }
+    }
+
+    public sealed class Com0ComPairInfo
+    {
+        public int PairNumber { get; set; }
+
+        public string PortA { get; set; } = string.Empty;
+
+        public string PortB { get; set; } = string.Empty;
+
+        public string InternalPortA { get; set; } = string.Empty;
+
+        public string InternalPortB { get; set; } = string.Empty;
+
+        public string DisplayName => $"{PortA} ↔ {PortB}";
+    }
 }

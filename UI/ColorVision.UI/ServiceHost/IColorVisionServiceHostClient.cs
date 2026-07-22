@@ -43,6 +43,14 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> TerminateServiceAsync(string serviceName, string? executablePath = null, int timeoutSeconds = 20, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> CreateCom0ComPairAsync(int? portA = null, int? portB = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> DeleteCom0ComPairAsync(int pairNumber, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
     }
 
     public sealed class ColorVisionServiceHostClient : IColorVisionServiceHostClient
@@ -260,6 +268,34 @@ namespace ColorVision.UI.ServiceHost
                     timeoutSeconds,
                 },
                 timeout ?? TimeSpan.FromSeconds(60),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync("com0com-status", timeout ?? TimeSpan.FromSeconds(10), cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync("com0com-list", timeout ?? TimeSpan.FromSeconds(45), cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> CreateCom0ComPairAsync(int? portA = null, int? portB = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "com0com-create-pair",
+                new { portA, portB },
+                timeout ?? TimeSpan.FromMinutes(4),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> DeleteCom0ComPairAsync(int pairNumber, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "com0com-delete-pair",
+                new { pairNumber },
+                timeout ?? TimeSpan.FromMinutes(4),
                 cancellationToken);
         }
 
