@@ -36,8 +36,6 @@ namespace ColorVision.UI
                     {
                         Theme.Light => "#5649B0",
                         Theme.Dark => "#A79CF1",
-                        Theme.Pink => "#F06292", // 粉色主题选中颜色
-                        Theme.Cyan => "#00BCD4", // 青色主题选中颜色
                         _ => "#A79CF1" // 默认颜色
                     });
                 }

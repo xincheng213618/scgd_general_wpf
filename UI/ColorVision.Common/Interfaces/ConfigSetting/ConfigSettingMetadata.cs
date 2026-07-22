@@ -1,6 +1,12 @@
 ﻿using System;
 namespace ColorVision.UI
 {
+    public enum ConfigSettingLayout
+    {
+        Inline,
+        Wide
+    }
+
     public static class ConfigSettingConstants
     {
         public const string Universal  = "Universal";
@@ -41,6 +47,11 @@ namespace ColorVision.UI
         /// Section name used to group settings inside a navigation group.
         /// </summary>
         public string Section { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Layout used by property editors in the settings window.
+        /// </summary>
+        public ConfigSettingLayout Layout { get; set; } = ConfigSettingLayout.Inline;
 
         public ConfigSettingType Type { get; set; } = ConfigSettingType.Property;
         /// <summary>

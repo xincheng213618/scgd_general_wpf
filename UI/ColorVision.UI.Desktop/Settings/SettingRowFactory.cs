@@ -84,6 +84,13 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static Border CreatePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
         {
+            return entry.Metadata.Layout == ConfigSettingLayout.Wide
+                ? CreateWidePropertySettingRow(entry, isLast, rowIndex)
+                : CreateInlinePropertySettingRow(entry, isLast, rowIndex);
+        }
+
+        private static Border CreateInlinePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        {
             var row = new Grid
             {
                 MinHeight = 50,
@@ -107,6 +114,24 @@ namespace ColorVision.UI.Desktop.Settings
             };
             Grid.SetColumn(editorHost, 1);
             row.Children.Add(editorHost);
+
+            return CreateRowShell(row, isLast, rowIndex);
+        }
+
+        private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        {
+            var row = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            var textPanel = CreateSettingTextPanel(entry);
+            textPanel.Margin = new Thickness(0, 0, 0, 12);
+            row.Children.Add(textPanel);
+
+            var editor = CreatePropertyEditor(entry, useWideLayout: true);
+            editor.HorizontalAlignment = HorizontalAlignment.Stretch;
+            row.Children.Add(editor);
 
             return CreateRowShell(row, isLast, rowIndex);
         }
@@ -302,7 +327,7 @@ namespace ColorVision.UI.Desktop.Settings
             return stackPanel;
         }
 
-        private static FrameworkElement CreatePropertyEditor(SettingEntry entry)
+        private static FrameworkElement CreatePropertyEditor(SettingEntry entry, bool useWideLayout = false)
         {
             try
             {
@@ -317,8 +342,19 @@ namespace ColorVision.UI.Desktop.Settings
                 dockPanel.VerticalAlignment = VerticalAlignment.Center;
 
                 RemoveInlinePropertyLabel(dockPanel, entry);
-                dockPanel.LastChildFill = ShouldFillLastChild(dockPanel);
-                ApplyEditorSizing(dockPanel);
+                dockPanel.LastChildFill = useWideLayout || ShouldFillLastChild(dockPanel);
+                if (useWideLayout)
+                {
+                    foreach (UIElement child in dockPanel.Children)
+                    {
+                        if (child is FrameworkElement element)
+                            element.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    }
+                }
+                else
+                {
+                    ApplyEditorSizing(dockPanel);
+                }
                 return dockPanel;
             }
             catch (Exception ex)

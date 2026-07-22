@@ -3,18 +3,6 @@ using ColorVision.UI.Menus;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
-    public class MenuThirdPartyApps : GlobalMenuBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => Properties.Resources.ThirdPartyApps;
-        public override int Order => 200;
-
-        public override void Execute()
-        {
-            ThirdPartyAppsWindow.ShowInstance();
-        }
-    }
-
     public class ThirdPartyAppsRightMenuItemProvider : IRightMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()

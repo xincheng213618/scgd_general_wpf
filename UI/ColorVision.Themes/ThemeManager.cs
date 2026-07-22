@@ -15,6 +15,15 @@ namespace ColorVision.Themes
     {
         public static ThemeManager Current { get; set; } = new ThemeManager();
 
+        public static IReadOnlyList<Theme> SupportedThemes { get; } = Array.AsReadOnly(new[]
+        {
+            Theme.UseSystem,
+            Theme.Light,
+            Theme.Dark
+        });
+
+        public static Theme NormalizeTheme(Theme theme) => theme is Theme.UseSystem or Theme.Light or Theme.Dark ? theme : Theme.UseSystem;
+
         public ThemeManager()
         {
             DelayedInitialize();
@@ -49,6 +58,7 @@ namespace ColorVision.Themes
 
         public void ApplyTheme(Application app, Theme theme)
         {
+            theme = NormalizeTheme(theme);
             if (CurrentTheme == theme)
                 return;
             CurrentTheme = theme;
@@ -80,21 +90,6 @@ namespace ColorVision.Themes
             "/ColorVision.Themes;component/Themes/White.xaml",
         };
 
-        public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
-        {
-            "/ColorVision.Themes;component/Themes/HPink.xaml",
-            "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Themes;component/Themes/White.xaml",
-            "/ColorVision.Themes;component/Themes/Pink.xaml",
-        };
-        public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
-        {
-            "/ColorVision.Themes;component/Themes/HCyan.xaml",
-            "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Themes;component/Themes/White.xaml",
-            "/ColorVision.Themes;component/Themes/Cyan.xaml",
-        };
-
         private void ApplyActTheme(Application app, Theme theme)
         {
             if (CurrentUITheme == theme) return;
@@ -103,6 +98,7 @@ namespace ColorVision.Themes
 
         public void ApplyThemeChanged(Application app, Theme theme)
         {
+            theme = NormalizeTheme(theme);
             switch (theme)
             {
                 case Theme.Light:
@@ -119,30 +115,6 @@ namespace ColorVision.Themes
                     break;
                 case Theme.Dark:
                     foreach (var item in ResourceDictionaryDark)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    break;
-                case Theme.Pink:
-                    foreach (var item in ResourceDictionaryPink)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    foreach (var item in ResourceDictionaryBase)
-                    {
-                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
-                        app.Resources.MergedDictionaries.Add(dictionary);
-                    }
-                    break;
-                case Theme.Cyan:
-                    foreach (var item in ResourceDictionaryCyan)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
@@ -244,45 +216,6 @@ namespace ColorVision.Themes
                     attribute = 1;
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
-                    break;
-
-                case Theme.Pink:
-                    // Disable dark mode
-                    attribute = 0;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
-
-                    // Set caption color to pink
-                    ///颜色值的字节顺序被调整了
-                    // 原始颜色值: #E8A6C1
-                    // 1. 分解为 RGB 分量:
-                    //    红色 (Red) = E8
-                    //    绿色 (Green) = A6
-                    //    蓝色 (Blue) = C1
-                    // 2. 调整字节顺序:
-                    //    蓝色 (Blue) = C1
-                    //    绿色 (Green) = A6
-                    //    红色 (Red) = E8
-                    // 3. 重新组合为新的十六进制表示:
-                    //    新的颜色值 = 0xFFC1A6E8
-
-                    // 设置标题栏颜色为 #E8A6C1
-                    attribute = 0xC1A6E8;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
-                    break;
-
-                case Theme.Cyan:
-                    // Disable dark mode
-                    attribute = 0;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
-
-                    // 设置标题栏颜色为 #00796B
-                    attribute = 0x6B7900;
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
-                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
-
                     break;
 
                 case Theme.Light:

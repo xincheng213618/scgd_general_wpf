@@ -57,6 +57,12 @@ namespace ColorVision.UI
         /// </summary>
         public string Section { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Controls whether the editor is rendered beside the title or across the full setting row.
+        /// Use <see cref="ConfigSettingLayout.Wide"/> for visual or otherwise space-intensive custom editors.
+        /// </summary>
+        public ConfigSettingLayout Layout { get; set; } = ConfigSettingLayout.Inline;
+
         public ConfigSettingAttribute() { }
     }
 }

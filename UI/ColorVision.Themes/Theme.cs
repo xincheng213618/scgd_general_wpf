@@ -9,10 +9,6 @@ namespace ColorVision.Themes
         [Description("ThemeLight")]
         Light,
         [Description("ThemeDark")]
-        Dark,
-        [Description("ThemePink")]
-        Pink,
-        [Description("ThemeCyan")] // 添加青色主题
-        Cyan
+        Dark
     };
 }
