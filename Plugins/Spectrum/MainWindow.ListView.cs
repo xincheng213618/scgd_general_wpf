@@ -232,6 +232,7 @@ namespace Spectrum
             CloseCieWindow();
             Manager.SmuController.Close();
             logOutput?.Dispose();
+            nativeLogOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

@@ -32,6 +32,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
@@ -55,8 +56,14 @@
             </Button>
         </Grid>
 
+        <Border x:Name="ResourceInitializationBanner" Grid.Row="1" Padding="10,6" Background="#332196F3" BorderBrush="#802196F3" BorderThickness="0,1">
+            <DockPanel>
+                <ProgressBar x:Name="ResourceInitializationProgress" Width="110" Height="6" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="#2196F3" IsIndeterminate="True" />
+                <TextBlock x:Name="ResourceInitializationText" FontWeight="SemiBold" Text="{x:Static properties:Resources.CvCameraInitializing}" />
+            </DockPanel>
+        </Border>
 
-        <xcad:DockingManager x:Name="DockingManager" Grid.Row="1" Background="Transparent" BorderThickness="0">
+        <xcad:DockingManager x:Name="DockingManager" Grid.Row="2" Background="Transparent" BorderThickness="0" IsEnabled="False">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
 
@@ -68,7 +75,7 @@
                                     <StackPanel x:Name="MainStackPanel">
 
                                         <!--  ═══ 光谱仪连接 (Spectrometer Connection) ═══  -->
-                                        <GroupBox Header="{x:Static properties:Resources.SpectrometerConnection}">
+                                        <GroupBox x:Name="SpectrometerConnectionGroup" Header="{x:Static properties:Resources.SpectrometerConnection}" IsEnabled="False">
                                             <StackPanel>
                                                 <StackPanel Visibility="{Binding IsConnected, Converter={StaticResource bool2VisibilityConverter1}}">
                                                     <Button Margin="0,0,0,4" Command="{Binding GetSpectrSerialNumberCommand}" Content="{x:Static properties:Resources.GetDeviceList}" />
@@ -808,7 +815,7 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
 
-        <Grid x:Name="StatusBarGrid" Grid.Row="2" />
+        <Grid x:Name="StatusBarGrid" Grid.Row="3" />
 
     </Grid>
 </Window>

@@ -6,6 +6,7 @@ using ColorVision.UI.Languages;
 using log4net;
 using log4net.Config;
 using Spectrum.License;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -43,6 +44,8 @@ namespace Spectrum
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Stopwatch startupStopwatch = Stopwatch.StartNew();
+
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -76,9 +79,13 @@ namespace Spectrum
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
             new SocketInitializer().InitializeAsync();
+            log.Info($"启动基础配置完成，耗时 {startupStopwatch.ElapsedMilliseconds} ms");
 
-            MainWindow MainWindow = new MainWindow();
-            MainWindow.Show();
+            Stopwatch windowStopwatch = Stopwatch.StartNew();
+            MainWindow mainWindow = new MainWindow();
+            log.Info($"主窗口对象创建完成，耗时 {windowStopwatch.ElapsedMilliseconds} ms，启动累计 {startupStopwatch.ElapsedMilliseconds} ms");
+            mainWindow.Show();
+            log.Info($"主窗口 Show 调用完成，启动累计 {startupStopwatch.ElapsedMilliseconds} ms");
 
         }
     }

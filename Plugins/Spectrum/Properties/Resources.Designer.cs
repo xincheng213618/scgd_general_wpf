@@ -230,6 +230,24 @@ namespace Spectrum.Properties {
                 return ResourceManager.GetString("ConnectingSourceMeter", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 软件或设备资源初始化失败： 的本地化字符串。
+        /// </summary>
+        public static string CvCameraInitializationFailed {
+            get {
+                return ResourceManager.GetString("CvCameraInitializationFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 正在初始化软件和设备资源，窗口已可响应，请稍候... 的本地化字符串。
+        /// </summary>
+        public static string CvCameraInitializing {
+            get {
+                return ResourceManager.GetString("CvCameraInitializing", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 连接失败 - 许可证检查 的本地化字符串。

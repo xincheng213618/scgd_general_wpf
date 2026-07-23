@@ -15,11 +15,13 @@ using Spectrum.Layout;
 using Spectrum.Models;
 using SpectrumResources = Spectrum.Properties.Resources;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Spectrum
 {
@@ -46,6 +48,20 @@ namespace Spectrum
     public partial class MainWindow : System.Windows.Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
+        private static readonly Lazy<Task<TimeSpan>> CvCameraResourceInitialization = new(() => Task.Run(() =>
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            log.Info("开始初始化 cvCamera 资源");
+            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+            stopwatch.Stop();
+            log.Info($"cvCamera 资源初始化完成，耗时 {stopwatch.ElapsedMilliseconds} ms");
+            return stopwatch.Elapsed;
+        }));
+        private readonly Stopwatch startupStopwatch = Stopwatch.StartNew();
+        private Task<ViewResultManager>? viewResultInitializationTask;
+        private Task<string[]>? serialPortDiscoveryTask;
+        private Task<TimeSpan>? cvCameraInitializationTask;
+        private bool absoluteSpectrumPlotInitialized;
         public static SpectrometerManager Manager => SpectrometerManager.Instance;
 
         /// <summary>
@@ -66,7 +82,9 @@ namespace Spectrum
 
         public MainWindow()
         {
+            log.Info("开始创建主窗口");
             InitializeComponent();
+            ContentRendered += Window_ContentRendered;
             Instance = this;
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
@@ -83,16 +101,29 @@ namespace Spectrum
                 CleanupSmuTimedButtons();
                 Manager.SmuController.Close();
                 Manager.Disconnect();
+                nativeLogOutput?.Dispose();
                 Instance = null;
             };
             this.Title += " - " + Assembly.GetAssembly(typeof(MainWindow))?.GetName().Version?.ToString() ?? "";
+
+            viewResultInitializationTask = Task.Run(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                ViewResultManager manager = ViewResultManager.GetInstance();
+                stopwatch.Stop();
+                log.Info($"历史结果初始化完成，数量 {manager.ViewResluts.Count}，耗时 {stopwatch.ElapsedMilliseconds} ms");
+                return manager;
+            });
+            serialPortDiscoveryTask = Task.Run(SerialPort.GetPortNames);
+            cvCameraInitializationTask = CvCameraResourceInitialization.Value;
+            log.Info($"主窗口构造函数完成，耗时 {startupStopwatch.ElapsedMilliseconds} ms");
         }
         private LogOutput? logOutput;
+        private LogLocalOutput? nativeLogOutput;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            log.Info("初始化 cvCamera 资源");
-            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             // AvalonDock theme integration
             void ThemeChange(Theme theme)
@@ -112,96 +143,119 @@ namespace Spectrum
                 _layoutRoot.Descendents().OfType<LayoutDocument>()
                     .First(d => d.ContentId == "SpectrumChart").Content);
 
+            LayoutManager.RegisterContent("LogPanel", LogGrid);
+
+            // Avoid reading a native log file before the first window render.
+            ShowNativeLogPlaceholder();
+            LayoutManager.RegisterContent("NativeLogPanel", NativeLogGrid);
+
+            // Load saved layout if exists
+            LayoutManager.LoadLayout();
+            stopwatch.Stop();
+            log.Info($"主窗口框架初始化完成，耗时 {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        private async void Window_ContentRendered(object? sender, EventArgs e)
+        {
+            ContentRendered -= Window_ContentRendered;
+            log.Info($"主窗口首次内容已呈现，耗时 {startupStopwatch.ElapsedMilliseconds} ms");
+
+            await Dispatcher.Yield(DispatcherPriority.Background);
+
+            try
+            {
+                await InitializeDeferredWindowAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Error("主窗口延后初始化失败", ex);
+                if (!IsLoaded)
+                {
+                    return;
+                }
+
+                DockingManager.IsEnabled = true;
+                ResourceInitializationProgress.IsIndeterminate = false;
+                ResourceInitializationProgress.Value = 0;
+                ResourceInitializationText.Text = SpectrumResources.CvCameraInitializationFailed + ex.GetBaseException().Message;
+            }
+        }
+
+        private async Task InitializeDeferredWindowAsync()
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            long phaseStarted = 0;
+            List<string> phases = new();
+
+            void MarkPhase(string name)
+            {
+                long elapsed = stopwatch.ElapsedMilliseconds;
+                phases.Add($"{name}={elapsed - phaseStarted}ms");
+                phaseStarted = elapsed;
+            }
+
+            SpectrometerManager manager = Manager;
+            manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
+
+            ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues<SpectrometerType>().Cast<SpectrometerType>()
+                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
+
+            SetEmissionSP100Config.Instance.EditChanged += (s, e) =>
+            {
+                if (SpectrometerHandle == IntPtr.Zero)
+                {
+                    return;
+                }
+
+                log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
+                int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
+                if (ret == 1)
+                    log.Info("SP100 参数设置成功");
+                else
+                    log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
+            };
+
             if (MainWindowConfig.Instance.LogControlVisibility)
             {
                 logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
                 LogGrid.Children.Add(logOutput);
             }
-            LayoutManager.RegisterContent("LogPanel", LogGrid);
+            MarkPhase("模型与日志控件");
 
-            // Initialize native C++ spectrometer log panel
-            InitializeNativeLogPanel();
-            LayoutManager.RegisterContent("NativeLogPanel", NativeLogGrid);
-
-            // Load saved layout if exists
-            LayoutManager.LoadLayout();
-
-            ViewResultManager.ListView = ViewResultList;
-
-            // Wire up adaptive auto dark execution for gear settings dialog
-            Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
-
+            await Dispatcher.Yield(DispatcherPriority.Background);
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
+            MarkPhase("菜单");
 
+            await Dispatcher.Yield(DispatcherPriority.Background);
             StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
+            MarkPhase("状态栏");
 
-            ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues<SpectrometerType>().Cast<SpectrometerType>()
-                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
-
-            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-
-            SetEmissionSP100Config.Instance.EditChanged += (s, e) =>
+            string[] portNames;
+            try
             {
-                if (SpectrometerHandle != IntPtr.Zero)
-                {
-                    log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
-                    int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    if (ret == 1)
-                        log.Info("SP100 参数设置成功");
-                    else
-                        log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
-                }
-
-            };
-            string[] portNames = SerialPort.GetPortNames();
-            List<int> BaudRates = new List<int>() { 9600,115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
-            ComboBoxPort.ItemsSource = portNames;
-            ComboBoxSerial.ItemsSource = BaudRates;
-
-            string title = SpectrumResources.相对光谱曲线;
-            wpfplot1.Plot.XLabel(SpectrumResources.波长Nm);
-            wpfplot1.Plot.YLabel(SpectrumResources.相对光谱);
-            wpfplot1.Plot.Axes.Title.Label.Text = title;
-            wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
-            wpfplot1.Plot.Axes.Title.Label.Text = title;
-            wpfplot1.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
-            wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
-
-            wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = 380;
-            wpfplot1.Plot.Axes.Bottom.Max = 780;
-            wpfplot1.Plot.Axes.Left.Min = -0.05;
-            wpfplot1.Plot.Axes.Left.Max = 1;
-
-            // Add visible spectrum rainbow color bar below the plot
-            AddSpectrumColorBar(wpfplot1);
-
-            string titleAbsolute = SpectrumResources.AbsoluteSpectrumCurve;
-            wpfplot2.Plot.XLabel(SpectrumResources.波长Nm);
-            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum);
-            wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
-            wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
-            wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
-            wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
-            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.Bottom.Min = 380;
-            wpfplot2.Plot.Axes.Bottom.Max = 780;
-
-            AddSpectrumColorBar(wpfplot2);
-
-            if (ViewResultSpectrums.Count != 0)
+                portNames = await (serialPortDiscoveryTask ?? Task.Run(SerialPort.GetPortNames));
+            }
+            catch (Exception ex)
             {
-                foreach (var item in ViewResultSpectrums)
-                {
-                    item.Gen();
-                    ScatterPlots.Add(item.ScatterPlot);
-                    AbsoluteScatterPlots.Add(item.AbsoluteScatterPlot);
-                }
-
+                log.Warn("串口枚举失败", ex);
+                portNames = Array.Empty<string>();
             }
 
-            ViewResultList.ItemsSource = ViewResultSpectrums;
+            ComboBoxPort.ItemsSource = portNames;
+            ComboBoxSerial.ItemsSource = new List<int>() { 9600, 115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
+            MarkPhase("串口");
+
+            InitializeRelativeSpectrumPlot();
+            MarkPhase("首张曲线");
+
+            ViewResultManager viewResultManager = await (viewResultInitializationTask ?? Task.Run(ViewResultManager.GetInstance));
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            viewResultManager.ListView = ViewResultList;
+            ViewResultList.ItemsSource = viewResultManager.ViewResluts;
             if (ViewResultList.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -209,15 +263,112 @@ namespace Spectrum
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            this.DataContext = Manager;
 
+            DataContext = manager;
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, CopyVisibleColumns, (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
             InitializeSmuTimedButtons();
+            MarkPhase("历史结果与绑定");
+
+            DockingManager.IsEnabled = true;
             _ = AutoConnectSmuIfNeededAsync();
+
+            try
+            {
+                await (cvCameraInitializationTask ?? CvCameraResourceInitialization.Value);
+            }
+            catch (Exception ex)
+            {
+                log.Error("cvCamera 资源初始化失败", ex);
+                if (!IsLoaded)
+                {
+                    return;
+                }
+
+                ResourceInitializationProgress.IsIndeterminate = false;
+                ResourceInitializationProgress.Value = 0;
+                ResourceInitializationText.Text = SpectrumResources.CvCameraInitializationFailed + ex.GetBaseException().Message;
+                return;
+            }
+
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            SpectrometerConnectionGroup.IsEnabled = true;
+            ResourceInitializationBanner.Visibility = Visibility.Collapsed;
+            MarkPhase("设备资源");
+            stopwatch.Stop();
+            log.Info($"主窗口功能初始化完成，耗时 {stopwatch.ElapsedMilliseconds} ms；{string.Join(", ", phases)}");
+
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+            {
+                if (!IsLoaded)
+                {
+                    return;
+                }
+
+                Stopwatch nativeLogStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    InitializeNativeLogPanel();
+                    nativeLogStopwatch.Stop();
+                    log.Info($"原生日志面板初始化完成，耗时 {nativeLogStopwatch.ElapsedMilliseconds} ms");
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("加载光谱仪原生日志面板失败", ex);
+                    ShowNativeLogPlaceholder();
+                }
+            }));
+        }
+
+        private void InitializeRelativeSpectrumPlot()
+        {
+            string title = SpectrumResources.相对光谱曲线;
+            string fontName = Fonts.Detect(title);
+            wpfplot1.Plot.XLabel(SpectrumResources.波长Nm);
+            wpfplot1.Plot.YLabel(SpectrumResources.相对光谱);
+            wpfplot1.Plot.Axes.Title.Label.Text = title;
+            wpfplot1.Plot.Axes.Title.Label.FontName = fontName;
+            wpfplot1.Plot.Axes.Left.Label.FontName = fontName;
+            wpfplot1.Plot.Axes.Bottom.Label.FontName = fontName;
+            wpfplot1.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
+            wpfplot1.Plot.Axes.Bottom.Min = 380;
+            wpfplot1.Plot.Axes.Bottom.Max = 780;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
+            wpfplot1.Plot.Axes.Left.Max = 1;
+            AddSpectrumColorBar(wpfplot1);
+        }
+
+        private void EnsureAbsoluteSpectrumPlotInitialized()
+        {
+            if (absoluteSpectrumPlotInitialized)
+            {
+                return;
+            }
+
+            string title = SpectrumResources.AbsoluteSpectrumCurve;
+            string fontName = Fonts.Detect(title);
+            wpfplot2.Plot.XLabel(SpectrumResources.波长Nm);
+            wpfplot2.Plot.YLabel(SpectrumResources.AbsoluteSpectrum);
+            wpfplot2.Plot.Axes.Title.Label.Text = title;
+            wpfplot2.Plot.Axes.Title.Label.FontName = fontName;
+            wpfplot2.Plot.Axes.Left.Label.FontName = fontName;
+            wpfplot2.Plot.Axes.Bottom.Label.FontName = fontName;
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.SetLimitsY(-0.05, 1);
+            wpfplot2.Plot.Axes.Bottom.Min = 380;
+            wpfplot2.Plot.Axes.Bottom.Max = 780;
+            wpfplot2.Plot.Axes.Left.Min = -0.05;
+            wpfplot2.Plot.Axes.Left.Max = 1;
+            AddSpectrumColorBar(wpfplot2);
+            absoluteSpectrumPlotInitialized = true;
         }
 
         private async Task AutoConnectSmuIfNeededAsync()
@@ -248,24 +399,34 @@ namespace Spectrum
         /// </summary>
         private void InitializeNativeLogPanel()
         {
+            nativeLogOutput?.Dispose();
+            nativeLogOutput = null;
+            NativeLogGrid.Children.Clear();
+
             string? logPath = Spectrum.License.MenuSpectrometerNativeLog.FindSpectrometerLogFile(AppDomain.CurrentDomain.BaseDirectory);
             if (!string.IsNullOrEmpty(logPath))
             {
-                var nativeLogOutput = new LogLocalOutput(logPath, System.Text.Encoding.GetEncoding("GB2312"));
+                nativeLogOutput = new LogLocalOutput(logPath, System.Text.Encoding.GetEncoding("GB2312"));
                 NativeLogGrid.Children.Add(nativeLogOutput);
             }
             else
             {
-                // Show a placeholder message when no log file is found yet
-                var placeholder = new TextBlock
-                {
-                    Text = SpectrumResources.NativeLogPlaceholder,
-                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                    VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                    Foreground = System.Windows.Media.Brushes.Gray
-                };
-                NativeLogGrid.Children.Add(placeholder);
+                ShowNativeLogPlaceholder();
             }
+        }
+
+        private void ShowNativeLogPlaceholder()
+        {
+            nativeLogOutput?.Dispose();
+            nativeLogOutput = null;
+            NativeLogGrid.Children.Clear();
+            NativeLogGrid.Children.Add(new TextBlock
+            {
+                Text = SpectrumResources.NativeLogPlaceholder,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Foreground = System.Windows.Media.Brushes.Gray
+            });
         }
     }
 }

@@ -298,6 +298,8 @@
   <data name="DataSource" xml:space="preserve"><value>数据来源</value></data>
   <data name="AbsoluteSpectrumCurve" xml:space="preserve"><value>绝对光谱曲线</value></data>
   <data name="NativeLogPlaceholder" xml:space="preserve"><value>光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。</value></data>
+  <data name="CvCameraInitializing" xml:space="preserve"><value>正在初始化软件和设备资源，窗口已可响应，请稍候...</value></data>
+  <data name="CvCameraInitializationFailed" xml:space="preserve"><value>软件或设备资源初始化失败：</value></data>
   <data name="SampleLabel" xml:space="preserve"><value>样品</value></data>
   <data name="OperationInProgressPleaseWait" xml:space="preserve"><value>正在执行任务，请稍后</value></data>
   <data name="ZeroCalibrationSuccess" xml:space="preserve"><value>校零成功</value></data>

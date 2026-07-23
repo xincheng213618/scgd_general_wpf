@@ -201,10 +201,9 @@ namespace ColorVision.UI.LogImp
                 lock (_fileLock)
                 {
                     using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(fileStream, Encoding);
 
                     LogViewer.MaxEntries = Config.MaxLines;
-                    LogViewer.SetEntries(ReadDisplayEntries(reader), Config.LogReverse);
+                    LogViewer.SetEntries(ReadDisplayEntries(fileStream), Config.LogReverse);
                     _lastReadPosition = fileStream.Length;
                 }
 
@@ -223,13 +222,20 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        private List<LogEntry> ReadDisplayEntries(StreamReader reader)
+        private List<LogEntry> ReadDisplayEntries(FileStream fileStream)
         {
             if (Config.MaxLines <= 0)
             {
-                return LogEntryParser.FromLines(ReadAllLines(reader));
+                fileStream.Seek(0, SeekOrigin.Begin);
+                using var fullReader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
+                return LogEntryParser.FromLines(ReadAllLines(fullReader));
             }
 
+            long tailStart = SupportsByteTailSearch(fileStream, Encoding)
+                ? FindTailStart(fileStream, Config.MaxLines)
+                : 0;
+            fileStream.Seek(tailStart, SeekOrigin.Begin);
+            using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: tailStart == 0, leaveOpen: true);
             var tailLines = new Queue<string>(Config.MaxLines);
             string? tailLine;
             while ((tailLine = reader.ReadLine()) != null)
@@ -243,6 +249,64 @@ namespace ColorVision.UI.LogImp
             }
 
             return LogEntryParser.FromLines(tailLines);
+        }
+
+        private static bool SupportsByteTailSearch(FileStream fileStream, Encoding encoding)
+        {
+            if (encoding.CodePage is 1200 or 1201 or 12000 or 12001)
+            {
+                return false;
+            }
+
+            Span<byte> preamble = stackalloc byte[4];
+            fileStream.Seek(0, SeekOrigin.Begin);
+            int bytesRead = fileStream.Read(preamble);
+            fileStream.Seek(0, SeekOrigin.Begin);
+
+            if (bytesRead >= 2
+                && (preamble[0] == 0xFF && preamble[1] == 0xFE
+                    || preamble[0] == 0xFE && preamble[1] == 0xFF))
+            {
+                return false;
+            }
+
+            return bytesRead < 4
+                || preamble[0] != 0x00
+                || preamble[1] != 0x00
+                || preamble[2] != 0xFE
+                || preamble[3] != 0xFF;
+        }
+
+        private static long FindTailStart(FileStream fileStream, int maxLines)
+        {
+            const int BufferSize = 64 * 1024;
+            byte[] buffer = new byte[BufferSize];
+            long position = fileStream.Length;
+            int newlineCount = 0;
+
+            while (position > 0)
+            {
+                int bytesToRead = (int)Math.Min(BufferSize, position);
+                position -= bytesToRead;
+                fileStream.Seek(position, SeekOrigin.Begin);
+                fileStream.ReadExactly(buffer.AsSpan(0, bytesToRead));
+
+                for (int i = bytesToRead - 1; i >= 0; i--)
+                {
+                    if (buffer[i] != (byte)'\n')
+                    {
+                        continue;
+                    }
+
+                    newlineCount++;
+                    if (newlineCount > maxLines)
+                    {
+                        return position + i + 1;
+                    }
+                }
+            }
+
+            return 0;
         }
 
         private static IEnumerable<string> ReadAllLines(TextReader reader)
