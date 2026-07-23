@@ -23,6 +23,8 @@ namespace ColorVision.UI.Tests
         [InlineData("service-install")]
         [InlineData("service-restart")]
         [InlineData("firewall-allow-application")]
+        [InlineData("registry-set-values")]
+        [InlineData("registry-delete-key")]
         [InlineData("begin-application-update-scan-protection")]
         [InlineData("complete-application-update-scan-protection")]
         [InlineData("com0com-status")]

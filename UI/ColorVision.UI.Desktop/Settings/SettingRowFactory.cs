@@ -84,9 +84,14 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static Border CreatePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
         {
-            return entry.Metadata.Layout == ConfigSettingLayout.Wide
+            Border row = entry.Metadata.Layout == ConfigSettingLayout.Wide
                 ? CreateWidePropertySettingRow(entry, isLast, rowIndex)
                 : CreateInlinePropertySettingRow(entry, isLast, rowIndex);
+
+            if (entry.PropertyInfo != null && entry.Metadata.Source != null)
+                PropertyEditorHelper.ApplyVisibilityBinding(row, entry.PropertyInfo, entry.Metadata.Source);
+
+            return row;
         }
 
         private static Border CreateInlinePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
@@ -199,9 +204,26 @@ namespace ColorVision.UI.Desktop.Settings
         private static FrameworkElement CreateClassSettingsPage(SettingEntry entry, ViewModelBase viewModel, bool showTitle)
         {
             var propertyEntries = CreateClassPropertyEntries(entry, viewModel);
-            FrameworkElement content = propertyEntries.Count == 0
+            var stackPanel = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            if (propertyEntries.Count > 0)
+                stackPanel.Children.Add(CreateRowsCard(propertyEntries));
+
+            if (entry.Metadata.ViewType != null)
+            {
+                FrameworkElement actions = GetOrCreateCustomContent(entry);
+                PrepareCustomContent(actions);
+                if (stackPanel.Children.Count > 0)
+                    actions.Margin = new Thickness(0, 12, 0, 0);
+                stackPanel.Children.Add(actions);
+            }
+
+            FrameworkElement content = stackPanel.Children.Count == 0
                 ? CreateEmptyState(SettingResources.EditorUnavailable)
-                : CreateRowsCard(propertyEntries);
+                : stackPanel;
 
             return showTitle ? CreateTitledCustomPage(entry, content) : content;
         }
@@ -214,13 +236,15 @@ namespace ColorVision.UI.Desktop.Settings
             for (int index = 0; index < properties.Count; index++)
             {
                 var property = properties[index];
+                var configSetting = property.GetCustomAttribute<ConfigSettingAttribute>();
                 var metadata = new ConfigSettingMetadata
                 {
                     Group = pageEntry.Group,
-                    Name = string.Empty,
-                    Description = string.Empty,
-                    Section = pageEntry.SectionKey,
-                    Order = pageEntry.Metadata.Order + index,
+                    Name = configSetting?.Name ?? string.Empty,
+                    Description = configSetting?.Description ?? string.Empty,
+                    Section = string.IsNullOrWhiteSpace(configSetting?.Section) ? pageEntry.SectionKey : configSetting.Section,
+                    Layout = configSetting?.Layout ?? ConfigSettingLayout.Inline,
+                    Order = configSetting?.Order ?? pageEntry.Metadata.Order + index,
                     Type = ConfigSettingType.Property,
                     BindingName = property.Name,
                     Source = source
@@ -241,6 +265,7 @@ namespace ColorVision.UI.Desktop.Settings
                 .Where(property => property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true)
                 .Where(property => CanCreateEditor(property))
                 .OrderBy(property => GetInheritanceDepth(property.DeclaringType ?? type))
+                .ThenBy(property => property.GetCustomAttribute<ConfigSettingAttribute>()?.Order ?? int.MaxValue)
                 .ThenBy(property => property.GetCustomAttribute<DisplayAttribute>()?.GetOrder() ?? int.MaxValue)
                 .ThenBy(property => property.MetadataToken)
                 .ToList();

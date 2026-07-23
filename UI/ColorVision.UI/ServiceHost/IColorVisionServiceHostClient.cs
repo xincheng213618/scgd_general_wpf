@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -30,6 +31,10 @@ namespace ColorVision.UI.ServiceHost
         Task<ServiceHostResponse> UnregisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> AllowFirewallApplicationAsync(string appPath, string profile, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> SetLocalMachineRegistryValuesAsync(string keyPath, IReadOnlyCollection<ServiceHostRegistryValue> values, IReadOnlyCollection<string>? deleteValueNames = null, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> DeleteLocalMachineRegistryKeyAsync(string keyPath, bool recursive = false, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> RepairMySqlServiceAsync(string serviceName, string mysqldExePath, int timeoutSeconds = 60, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
@@ -171,6 +176,36 @@ namespace ColorVision.UI.ServiceHost
             return SendAsync(
                 "firewall-allow-application",
                 new { appPath, profile },
+                timeout ?? TimeSpan.FromSeconds(15),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> SetLocalMachineRegistryValuesAsync(string keyPath, IReadOnlyCollection<ServiceHostRegistryValue> values, IReadOnlyCollection<string>? deleteValueNames = null, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            var serializedValues = values.Select(value => new
+            {
+                value.Name,
+                kind = value.Kind.ToString(),
+                value.Value,
+            }).ToArray();
+            return SendAsync(
+                "registry-set-values",
+                new
+                {
+                    keyPath,
+                    registryView = registryView.ToString(),
+                    values = serializedValues,
+                    deleteValueNames = deleteValueNames?.ToArray() ?? [],
+                },
+                timeout ?? TimeSpan.FromSeconds(15),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> DeleteLocalMachineRegistryKeyAsync(string keyPath, bool recursive = false, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "registry-delete-key",
+                new { keyPath, recursive, registryView = registryView.ToString() },
                 timeout ?? TimeSpan.FromSeconds(15),
                 cancellationToken);
         }

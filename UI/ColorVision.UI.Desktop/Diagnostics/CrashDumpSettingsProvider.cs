@@ -11,7 +11,8 @@ namespace ColorVision.UI.Desktop.Diagnostics
                     Name = "崩溃转储",
                     Description = "配置 Windows Error Reporting 转储，并保存或收集当前进程的诊断文件。",
                     Order = 85,
-                    Type = ConfigSettingType.TabItem,
+                    Type = ConfigSettingType.Class,
+                    Source = CrashDumpConfiguration.Current,
                     ViewType = typeof(CrashDumpSettingsControl)
                 }
             };

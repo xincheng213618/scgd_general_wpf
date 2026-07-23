@@ -596,7 +596,7 @@ namespace ColorVision.UI
             throw new ArgumentException("Expression must select a property, for example: x => x.Mode.", nameof(propertyExpression));
         }
 
-        private static void ApplyVisibilityBinding(DockPanel dockPanel, PropertyInfo property, object obj)
+        public static void ApplyVisibilityBinding(FrameworkElement element, PropertyInfo property, object obj)
         {
             var visibleAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
             if (visibleAttr == null)
@@ -627,7 +627,7 @@ namespace ColorVision.UI
             }
 
             binding.Converter = converter;
-            dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
+            element.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
         public static StackPanel GenPropertyEditorControl(

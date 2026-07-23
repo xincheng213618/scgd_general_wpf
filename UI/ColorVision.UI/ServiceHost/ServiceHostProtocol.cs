@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Win32;
 using System.IO;
 using System.Text;
 
@@ -115,6 +116,8 @@ namespace ColorVision.UI.ServiceHost
             return $"{(Success ? "OK" : "FAILED")}: {Message}{Environment.NewLine}{dataText}";
         }
     }
+
+    public sealed record ServiceHostRegistryValue(string Name, RegistryValueKind Kind, object Value);
 
     public sealed class Com0ComStatusInfo
     {
