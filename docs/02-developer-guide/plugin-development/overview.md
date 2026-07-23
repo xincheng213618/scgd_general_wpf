@@ -10,9 +10,7 @@ ColorVision 的插件以独立目录部署在主程序运行目录下的 `Plugin
 - 插件 manifest 模型位于 `UI/ColorVision.UI/Plugins/PluginManifest.cs`
 - 插件装载逻辑位于 `UI/ColorVision.UI/Plugins/PluginLoader.cs`
 
-## 关键组成
-
-### 1. 插件接口
+## 1. 插件接口
 
 仓库里当前可见的基础接口非常轻量：
 
@@ -25,17 +23,12 @@ public interface IPlugin
 }
 ```
 
-如果只是做一个简单插件入口，通常从 `IPluginBase` 开始更方便。
+## 2. manifest.json
 
-### 2. manifest.json
-
-插件目录通常需要提供 `manifest.json`。当前清单对象至少包含 `id`、`manifest_version`、`name`、`version`、`requires`、`description`、`dllpath`、`author`、`url`、`entry_point` 和 `icon`。
-
-其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
-
+插件目录通常需要提供 `manifest.json`。当前清单对象至少包含 `id`、`manifest_version`、`name`、`version`、`requires`、`description`、`dllpath`、`author`、`url`、`entry_point` 和 `icon`。其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
 插件还可通过可选的 `copilot_agents` 数组声明专用只读 Agent 角色。角色只在插件启用且 DLL 成功加载后注册；禁用或移除插件会同步注销。插件只能选择 `WorkspaceReadOnly`（`SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory`）或 `PublicWeb`（`WebSearch`、`FetchUrl`）之一，不能混合两个信任域，也不能声明 Shell、数据库、写入或递归委派能力。示例与全部字段见 [Copilot Agent Runtime](../core-concepts/copilot-agent-runtime.md)。
 
-### 3. 装载流程
+## 3. 装载流程
 
 主程序启动后，`PluginLoader` 会：
 
@@ -99,7 +92,4 @@ MyPlugin.dll
 2. 理解装载阶段时看 [插件生命周期](./lifecycle.md)。
 3. 参考现成插件时，从 [现有插件能力说明](../../04-api-reference/plugins/README.md) 进入 Conoscope、Spectrum 或 SystemMonitor。
 
-## 说明
-
-- 旧版文档里出现的 `IPluginContext`、异步生命周期接口和独立插件宿主模型，并不是当前仓库主路径里直接可见的基础接口。
-- 如果文档和代码不一致，以 `UI/ColorVision.Common/Interfaces/IPlugin.cs`、`UI/ColorVision.UI/Plugins/PluginLoader.cs` 和现有插件项目为准。
+旧版文档里出现的 `IPluginContext`、异步生命周期接口和独立插件宿主模型，并不是当前仓库主路径里直接可见的基础接口；如果文档和代码不一致，以 `UI/ColorVision.Common/Interfaces/IPlugin.cs`、`UI/ColorVision.UI/Plugins/PluginLoader.cs` 和现有插件项目为准。

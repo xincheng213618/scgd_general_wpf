@@ -66,6 +66,7 @@ export default withMermaid(
     srcExclude: [
       '**/_*.md',
       '**/.*',
+      '**/AGENTS.md',
       'node_modules/**',
       'en/**',
       'zh-tw/**',

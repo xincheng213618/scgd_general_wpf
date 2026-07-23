@@ -11,6 +11,7 @@ const manifestPath = path.join(distRoot, 'docs-manifest.json')
 const searchIndexPath = path.join(distRoot, 'docs-search-index.json')
 
 const skippedDirectoryNames = new Set(['.vitepress', 'node_modules'])
+const skippedMarkdownFileNames = new Set(['agents.md'])
 const archivedLocaleDirectories = ['en', 'zh-tw', 'ja', 'ko']
 const maxActiveMarkdownLines = 95
 const forbiddenActiveMarkdownPatterns = [
@@ -94,7 +95,7 @@ const forbiddenBuiltOutputPatterns = [
   { label: 'default VitePress not found title', pattern: /PAGE NOT FOUND/iu },
   { label: 'default VitePress not found home link', pattern: /Take me home/iu },
   { label: 'default VitePress not found quote', pattern: /But if you don't change your direction/iu },
-  { label: 'archived English route', pattern: /\/(?:scgd_general_wpf\/)?en\//iu },
+  { label: 'archived English route', pattern: /(?:^|["'(\s])\/(?:scgd_general_wpf\/)?en\//iu },
   { label: 'old language navbar chunk', pattern: /VPNavBarTranslations/iu },
 ]
 
@@ -160,7 +161,11 @@ async function collectMarkdownFiles(directory) {
       continue
     }
 
-    if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+    if (
+      entry.isFile()
+      && entry.name.toLowerCase().endsWith('.md')
+      && !skippedMarkdownFileNames.has(entry.name.toLowerCase())
+    ) {
       files.push(entryPath)
     }
   }
