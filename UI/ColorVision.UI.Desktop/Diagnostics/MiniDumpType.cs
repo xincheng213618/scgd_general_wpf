@@ -1,9 +1,10 @@
-﻿namespace EventVWR.Dump
+namespace ColorVision.UI.Desktop.Diagnostics
 {
     /// <summary>
-    /// https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/ne-minidumpapiset-minidump_type
+    /// Flags accepted by MiniDumpWriteDump when WER is configured for a custom dump.
     /// </summary>
-    public enum MinidumpType
+    [Flags]
+    public enum MiniDumpType
     {
         MiniDumpNormal = 0x00000000,
         MiniDumpWithDataSegs = 0x00000001,
@@ -30,7 +31,7 @@
         MiniDumpWithAvxXStateContext = 0x00200000,
         MiniDumpWithIptTrace = 0x00400000,
         MiniDumpScanInaccessiblePartialPages = 0x00800000,
-        MiniDumpFilterWriteCombinedMemory,
+        MiniDumpFilterWriteCombinedMemory = 0x01000000,
         MiniDumpValidTypeFlags = 0x01ffffff
     }
 }

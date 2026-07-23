@@ -19,7 +19,6 @@
 | Conoscope | `Plugins/Conoscope/` | `1.4.6.1` | `1.4.6.9` | Tool 菜单 `VAM`，ImageEditor 右键打开 | 锥镜/VAM 图像观察、关注点、参考轴、预处理、色域和对比度分析、MVS 观察相机 | manifest 版本与程序集版本不同；MVS 依赖海康 `MvCameraControl.dll`；关注点逻辑是插件本地实现 |
 | Spectrum | `Plugins/Spectrum/` | `1.0` | `2.3.3.1` | Tool 菜单光谱窗口，Spectrum 窗口级菜单/状态栏，Socket JSON 指令 | 光谱仪连接、标定分组、测量、EQE、CIE、SQLite 结果、许可证、Socket 远程控制 | manifest 版本与程序集版本不同；依赖光谱仪 native DLL、OpenCV、串口、许可证；Socket 指令需要窗口和设备状态配合 |
 | SystemMonitor | `Plugins/SystemMonitor/` | `1.0.1` | `1.4.3.3` | Tool 菜单，设置页，主程序状态栏 | CPU/RAM/磁盘/网络/进程/GPU/缓存监控和状态栏投影 | 性能计数器可能初始化失败并降级；监控单例位于 `ColorVision.UI.Configs` 命名空间 |
-| EventVWR | `Plugins/EventVWR/` | `1.0` | `1.1.8.1` | Help 菜单事件窗口，Help 菜单 Dump 子菜单 | Windows Application 错误事件查看、WER LocalDumps 配置、当前进程 Dump 保存 | HKLM 注册表写入和 Dump 操作需要管理员权限；事件窗口不是完整日志平台 |
 | WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `1.0` | `1.4.3.17` | Help 菜单服务管理器，向导入口 | CVWindowsService 安装/注册/启动停止、MySQL/MQTT 安装配置、服务目录和配置同步 | 会改 Windows 服务、MySQL、MQTT 和本机文件；需要管理员权限；不支持增量服务包 |
 
 `manifest.version` 和 `.csproj VersionPrefix` 当前并不总是相同。交付时要同时确认：
@@ -36,7 +35,6 @@
 | Conoscope | `MenuConoscopeWindow` -> Tool / `VAM` | `ConoscopeWindow` Ribbon、View 菜单、`MenuMVSVideo` | 插件窗口内部状态 | `ConoscopeConfig` 和预处理设置窗口 | 无 | `ConoscopeImageViewContextMenu` 接入 ImageEditor 右键菜单 |
 | Spectrum | `MenuSpectrumWindow` -> Tool | `LoadMenuForWindow("Spectrum", menu)`，包含帮助、布局、许可证、原生日志等菜单 | `SpectrumStatusBarProvider`，目标窗口 `Spectrum` | 多个 `ConfigService` 配置对象 | 5 个 `ISocketJsonHandler` | Quartz 任务、SQLite 结果、许可证同步 |
 | SystemMonitor | `SystemMonitorProvider` -> Tool | 无独立复杂菜单 | `SystemMonitorIStatusBarProvider` | `IConfigSettingProvider` | 无 | `SystemMonitorControl` 同时用于设置页和窗口 |
-| EventVWR | `ExportEventWindow` -> Help；`MenuDump` -> Help | Dump 子菜单由 `IMenuItemProvider` 生成 | 无 | `DumpConfig` 写注册表，不是普通设置页 | 无 | `IFeedbackLogCollector` 风格的 Dump 文件收集能力 |
 | WindowsServicePlugin | `MenuServiceManager` -> Help | 服务管理窗口内部命令 | 无 | `ServiceManagerConfig`、`MySqlServiceConfig`、`MqttServiceConfig` | 无 | `InstallServiceManager` 作为向导步骤入口 |
 
 ## 外部依赖和运行时边界
@@ -46,7 +44,6 @@
 | Conoscope | MVS 观察相机、`MvCameraControl.dll` | 关注点/参考轴/预处理配置，CSV 导出 | 普通图像分析通常不需要管理员；相机驱动由系统环境决定 | MVS SDK 是否安装、图像是否可打开、关注点是否记录、导出文件是否生成 |
 | Spectrum | SP100/SP10 光谱仪、Shutter、CFW、SMU、串口、native 光谱仪 DLL | `AppData\Spectromer\Config\Spectrum.db`、标定分组、许可证目录、CIE 图片资源 | 通常不需要管理员；设备驱动和许可证要就绪 | 设备连接日志、许可证同步、标定分组、Socket 服务、SQLite 结果库 |
 | SystemMonitor | Windows 性能计数器、CUDA 信息、网络接口 | 应用缓存和日志目录统计 | 清理缓存取决于目标目录权限 | 性能计数器初始化、配置开关、状态栏 provider 是否刷新 |
-| EventVWR | Windows EventLog、Windows Error Reporting LocalDumps | Dump 输出目录、HKLM LocalDumps 注册表项 | 事件窗口入口和 Dump 写入需要管理员模式 | 是否管理员、注册表路径、DumpFolder、Windows Application 日志 |
 | WindowsServicePlugin | Windows 服务、MySQL、MQTT、服务包 ZIP | `BaseLocation`、`cfg/*.config`、MySQL ZIP、MQTT installer、服务数据库 SQL、备份目录 | 大部分操作需要管理员模式 | 服务状态、BaseLocation、安装包结构、MySQL/MQTT 状态、CFG 同步日志 |
 
 ## 构建和打包矩阵
@@ -56,7 +53,6 @@
 | Conoscope | `dotnet build Plugins/Conoscope/Conoscope.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Conoscope` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Conoscope/` | `Conoscope.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、MVS/native 依赖 |
 | Spectrum | `dotnet build Plugins/Spectrum/Spectrum.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat Spectrum` 或专用 `Scripts\build_spectrum.py` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/Spectrum/` | `Spectrum.dll`、`manifest.json`、`README.md`、`CHANGELOG.md`、`Magiude.dat`、`WavaLength.dat`、CIE 图片、光谱仪 native DLL |
 | SystemMonitor | `dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat SystemMonitor` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/SystemMonitor/` | `SystemMonitor.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
-| EventVWR | `dotnet build Plugins/EventVWR/EventVWR.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat EventVWR` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/EventVWR/` | `EventVWR.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
 | WindowsServicePlugin | `dotnet build Plugins/WindowsServicePlugin/WindowsServicePlugin.csproj -c Release -p:Platform=x64` | `Scripts\package_plugin.bat WindowsServicePlugin` | `ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/WindowsServicePlugin/` | `WindowsServicePlugin.dll`、`manifest.json`、`README.md`、`CHANGELOG.md` |
 
 通用 `.cvxp` 打包逻辑在 `Scripts/package_cvxp.py`：
@@ -76,7 +72,6 @@
 | Conoscope | 打开 Tool -> VAM；导入一张 CVCIE 或示例图；新增/移动关注点；执行色域或对比度分析；导出 CSV | 窗口、Ribbon、当前视图快捷区、关注点 overlay、结果窗口和 CSV 均正常 |
 | Spectrum | 打开 Spectrum；检查状态栏；执行无设备状态查询；有设备时连接、校零、测量、导出；启用 Socket 后发送 `SpectrumStatus` | 状态栏显示连接/SN/标定组；测量结果落库；Socket 返回正确 Code/Msg |
 | SystemMonitor | 打开性能监控窗口；切换状态栏开关；刷新磁盘/网络/进程；执行清理缓存前确认目录 | 监控数据刷新，状态栏能动态增删，失败项不会拖垮整个插件 |
-| EventVWR | 以管理员模式打开事件窗口；查看 Application 错误；切换 DumpType；保存当前进程 Dump；清理 Dump 配置 | 事件列表可加载，注册表项写入/清理符合预期，Dump 文件生成 |
 | WindowsServicePlugin | 以管理员模式打开服务管理器；刷新服务状态；选择测试服务根目录；验证配置文件打开；在测试环境执行安装流程 | 服务状态可读，配置同步日志明确，失败时不会带旧配置继续启动 |
 
 ## 维护风险清单
@@ -87,5 +82,5 @@
 | PostBuild 复制 README/CHANGELOG 大小写不一致 | 构建成功但插件目录缺帮助文件 | 检查项目文件里的 `README.md`、`CHANGELOG.md` 与复制脚本大小写 |
 | 插件依赖宿主共享 DLL | 单独复制插件 DLL 后运行失败 | 打包时使用 `shared_files.json`，现场检查主程序目录 `ColorVision.*.dll` 版本 |
 | native DLL 未进入插件包 | Spectrum 或 Conoscope 设备链路运行时失败 | 抽检 `.cvxp` 内容，确认光谱仪 DLL、MVS DLL、OpenCV runtime 是否在正确位置 |
-| 需要管理员的插件按普通权限测试 | EventVWR Dump 或 WindowsServicePlugin 操作失败 | 文档和烟测明确标注管理员模式，不把权限失败当成功能缺陷 |
+| 需要管理员的插件按普通权限测试 | WindowsServicePlugin 操作失败 | 文档和烟测明确标注管理员模式，不把权限失败当成功能缺陷 |
 | Socket handler 已编译但服务未启用 | 外部客户端连不上 Spectrum 指令 | 检查 `ColorVision.SocketProtocol` 配置、端口、协议模式、插件程序集是否加载 |

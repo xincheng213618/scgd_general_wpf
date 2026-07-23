@@ -835,31 +835,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region AutoLayout
         public ConnectionInfo[] ConnectionInfo { get; set; }
-        public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2); OnPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.ClientSize.Width / 2f, STNodeEditor.ClientSize.Height / 2f); OnPropertyChanged(); } }
         public void AutoSize()
         {
-            // Calculate the centers
-            var boundsCenterX = STNodeEditor.Bounds.Width / 2;
-            var boundsCenterY = STNodeEditor.Bounds.Height / 2;
-
-            // Calculate the scale factor to fit CanvasValidBounds within Bounds
-            var scaleX = (float)STNodeEditor.Bounds.Width / (float)STNodeEditor.CanvasValidBounds.Width;
-            var scaleY = (float)STNodeEditor.Bounds.Height / (float)STNodeEditor.CanvasValidBounds.Height;
-            CanvasScale = Math.Min(scaleX, scaleY);
-            CanvasScale = CanvasScale > 1 ? 1 : CanvasScale;
-            // Apply the scale
-            STNodeEditor.ScaleCanvas(CanvasScale, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2);
-
-            var validBoundsCenterX = STNodeEditor.CanvasValidBounds.Width / 2;
-
-            // Align to top-left with a small margin
-            var offsetX = 10 - STNodeEditor.CanvasValidBounds.X * CanvasScale;
-            var offsetY = 10 - STNodeEditor.CanvasValidBounds.Y * CanvasScale;
-
-
-            // Move the canvas
-            STNodeEditor.MoveCanvas(offsetX, STNodeEditor.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
-            STNodeEditor.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
+            STNodeEditor.FitCanvasToNodes();
+            OnPropertyChanged(nameof(CanvasScale));
         }
 
         private const int AutoLayoutHorizontalSpacing = 220;

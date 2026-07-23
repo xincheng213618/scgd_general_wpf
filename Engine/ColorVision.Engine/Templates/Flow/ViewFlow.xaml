@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Column="0" x:Name="Grid1">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
+                <st:STNodeEditor x:Name="STNodeEditorMain" x:FieldModifier="public" LimitCanvasToContentBounds="False" ShowLocation="False" MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
         </Grid>
         <ProgressBar x:Name="ProgressBar1" Visibility="Collapsed" Grid.Row="1" Maximum="100" Style="{StaticResource ProgressBarFlat}" Value="{Binding FlowEngineManager.BatchProgress}"/>
@@ -70,6 +70,9 @@
                                     <RotateTransform x:Name="rotateTransform3" CenterX="12" CenterY="12"/>
                                 </Image.RenderTransform>
                             </Image>
+                        </Button>
+                        <Button Command="{Binding AutoSizeCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="适应全部节点">
+                            <TextBlock Text="&#xE9A6;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
                         <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageClear}"/>

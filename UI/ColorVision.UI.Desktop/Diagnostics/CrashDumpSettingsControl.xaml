@@ -1,0 +1,90 @@
+<UserControl x:Class="ColorVision.UI.Desktop.Diagnostics.CrashDumpSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinHeight="360">
+    <StackPanel HorizontalAlignment="Stretch">
+        <Border CornerRadius="8"
+                BorderThickness="1"
+                Padding="24"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}">
+            <StackPanel>
+                <TextBlock Text="Windows 崩溃转储"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock Text="崩溃时由 Windows Error Reporting 自动保存 Dump；也可以随时保存当前进程用于诊断。系统设置写入 HKLM，需要管理员权限。"
+                           Margin="0,6,0,20"
+                           FontSize="13"
+                           Opacity="0.68"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="转储类型" Margin="0,0,12,14" VerticalAlignment="Center"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <ComboBox x:Name="DumpTypeComboBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,14"
+                              MinHeight="32" DisplayMemberPath="DisplayName"
+                              SelectionChanged="DumpTypeComboBox_SelectionChanged"/>
+
+                    <TextBlock Grid.Row="1" Text="最多保留" Margin="0,0,12,14" VerticalAlignment="Center"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBox x:Name="DumpCountTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,14"
+                             MinHeight="32" VerticalContentAlignment="Center"/>
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="个" Margin="8,0,0,14" VerticalAlignment="Center"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+
+                    <TextBlock Grid.Row="2" Text="保存目录" Margin="0,0,12,14" VerticalAlignment="Center"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <TextBox x:Name="DumpFolderTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,14"
+                             MinHeight="32" VerticalContentAlignment="Center"/>
+                    <Button Grid.Row="2" Grid.Column="2" Margin="8,0,0,14" Padding="12,5"
+                            Content="选择" Click="BrowseFolderButton_Click"/>
+
+                    <Grid x:Name="CustomFlagsPanel" Grid.Row="3" Grid.ColumnSpan="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="自定义标志" Margin="0,0,12,14" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBox x:Name="CustomFlagsTextBox" Grid.Column="1" Margin="0,0,0,14"
+                                 MinHeight="32" VerticalContentAlignment="Center"/>
+                    </Grid>
+                </Grid>
+
+                <WrapPanel Margin="0,6,0,0">
+                    <Button Padding="14,6" Content="应用系统设置" Click="ApplyButton_Click"/>
+                    <Button Margin="8,0,0,0" Padding="14,6" Content="清除系统设置" Click="ClearButton_Click"/>
+                    <Button x:Name="SaveDumpButton" Margin="8,0,0,0" Padding="14,6"
+                            Content="保存当前进程 Dump" Click="SaveDumpButton_Click"/>
+                    <Button Margin="8,0,0,0" Padding="14,6" Content="打开目录" Click="OpenFolderButton_Click"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Margin="0,12,0,0"
+                CornerRadius="8"
+                BorderThickness="1"
+                Padding="14,10"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}">
+            <TextBlock x:Name="StatusTextBlock"
+                       FontSize="12.5"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -12,7 +12,17 @@ namespace ColorVision.UI.Plugins
     public static class PluginLoader
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoader));
+        private static readonly HashSet<string> RetiredPluginIds = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "EventVWR"
+        };
+
         public static PluginLoaderrConfig Config => PluginLoaderrConfig.Instance;
+
+        internal static bool IsRetiredPlugin(string? pluginId)
+        {
+            return !string.IsNullOrWhiteSpace(pluginId) && RetiredPluginIds.Contains(pluginId);
+        }
 
         public static void LoadPlugins()
         {
@@ -109,6 +119,15 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.Manifest = manifest; // 更新manifest
                         }
 
+                        if (IsRetiredPlugin(manifest.Id))
+                        {
+                            pluginInfo.Enabled = false;
+                            pluginInfo.Name = manifest.Name;
+                            pluginInfo.Description = manifest.Description;
+                            log.Info($"Skipped retired plugin '{manifest.Id}'. Its functionality is built into ColorVision.");
+                            continue;
+                        }
+
                         if (!pluginInfo.Enabled)
                             continue;
 
@@ -199,6 +218,12 @@ namespace ColorVision.UI.Plugins
                     {
                         // 没有manifest，按目录名加载DLL（不加入 Plugins 字典）
                         string dirName = Path.GetFileName(directory);
+                        if (IsRetiredPlugin(dirName))
+                        {
+                            log.Info($"Skipped retired plugin directory '{directory}'.");
+                            continue;
+                        }
+
                         dllPath = Path.Combine(directory, dirName + ".dll");
                         if (File.Exists(dllPath))
                         {

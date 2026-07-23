@@ -7,7 +7,6 @@
 从当前源码树看，`Plugins/` 下实际可对上的项目是：
 
 - [Plugins/Conoscope/README.md](Conoscope/README.md)：锥镜相关采集、预处理和分析插件。
-- [Plugins/EventVWR/README.md](EventVWR/README.md)：Windows 事件查看与 Dump 管理。
 - [Plugins/Spectrum/README.md](Spectrum/README.md)：光谱仪测试与色彩分析。
 - [Plugins/SystemMonitor/README.md](SystemMonitor/README.md)：系统性能监控与状态栏显示。
 - [Plugins/WindowsServicePlugin/README.md](WindowsServicePlugin/README.md)：Windows 服务和相关运维工具。
@@ -15,7 +14,6 @@
 同时还能看到若干辅助文件：
 
 - `Conoscope.bat`
-- `EventVWR.bat`
 - `Spectrum.bat`
 - `SystemMonitor.bat`
 - `WindowsServicePlugin.bat`
@@ -52,7 +50,7 @@
 
 1. 先看 [UI/ColorVision.UI/Plugins/PluginLoader.cs](../UI/ColorVision.UI/Plugins/PluginLoader.cs)，理解插件发现和装载模型。
 2. 再看各插件自己的 `manifest.json` 和 `.csproj`，确认它到底是不是当前工作区里的真实项目。
-3. 最后进入具体插件目录，例如 [Plugins/Spectrum/README.md](Spectrum/README.md) 或 [Plugins/EventVWR/README.md](EventVWR/README.md)。
+3. 最后进入具体插件目录，例如 [Plugins/Spectrum/README.md](Spectrum/README.md) 或 [Plugins/SystemMonitor/README.md](SystemMonitor/README.md)。
 
 ## 当前已知的文档漂移
 

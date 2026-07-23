@@ -427,12 +427,12 @@ namespace ColorVision.Engine.Services.Flow
             {
                 if (e.Key == Key.Add)
                 {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.ClientSize.Width / 2f, STNodeEditorMain.ClientSize.Height / 2f);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.ClientSize.Width / 2f, STNodeEditorMain.ClientSize.Height / 2f);
                     e.Handled = true;
                 }
             }

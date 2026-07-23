@@ -9,7 +9,6 @@
 | Conoscope | `Plugins/Conoscope/` | `Conoscope` | VAM/锥镜图像观察、关注点、色域和对比度分析 | [Conoscope](./standard-plugins/conoscope.md) |
 | Spectrum | `Plugins/Spectrum/` | `Spectrum` | 光谱仪连接、标定、测量、EQE、SQLite 结果 | [Spectrum](./standard-plugins/spectrum.md) |
 | SystemMonitor | `Plugins/SystemMonitor/` | `SystemMonitor` | 性能监控、状态栏、磁盘/网络/进程信息 | [SystemMonitor](./standard-plugins/system-monitor.md) |
-| EventVWR | `Plugins/EventVWR/` | `EventVWR` | Windows 事件错误查看、Dump 配置 | [EventVWR](./standard-plugins/eventvwr.md) |
 | WindowsServicePlugin | `Plugins/WindowsServicePlugin/` | `WindowsServicePlugin` | CVWindowsService 安装、注册、MySQL/MQTT 配置 | [WindowsServicePlugin](./standard-plugins/windows-service.md) |
 
 ## 装载模型
