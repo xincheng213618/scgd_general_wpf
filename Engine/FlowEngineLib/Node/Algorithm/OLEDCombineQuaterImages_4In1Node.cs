@@ -34,6 +34,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName1 = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -49,6 +50,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName2 = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -64,6 +66,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName3 = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -79,6 +82,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName4 = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -92,6 +96,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNodeHub
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

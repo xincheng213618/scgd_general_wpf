@@ -54,6 +54,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		{
 			_ImgSaveMode = value;
 			setImgValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -67,6 +68,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_ImgSaveName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -80,6 +82,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_AvgCount = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -93,6 +96,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_Gain = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -107,6 +111,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		{
 			_ExpTime = value;
 			m_ctrl_exp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -120,6 +125,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_IsAutoExp = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -133,6 +139,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_AutoExpTempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -146,6 +153,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_IsWithND = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -160,6 +168,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		{
 			_CaliTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -173,6 +182,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_FlipMode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -187,6 +197,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		{
 			_AlgTempName = value;
 			setAOIValue();
+			OnPropertyChanged();
 		}
 	}
 
@@ -200,6 +211,7 @@ public class AOILocatePixelsCameraNode : CVBaseServerNode
 		set
 		{
 			_Channel = value;
+			OnPropertyChanged();
 		}
 	}
 

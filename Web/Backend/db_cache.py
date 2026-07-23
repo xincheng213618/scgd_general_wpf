@@ -8,6 +8,7 @@ and a key-value cache layer backed by the cache_entry table.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -296,6 +297,9 @@ class CacheManager:
             CREATE INDEX IF NOT EXISTS idx_job_runs_status ON job_runs(status);
         """
         )
+        from db.schema_version import ensure_schema_version
+
+        ensure_schema_version(db)
         db.commit()
         db.close()
 
@@ -499,14 +503,48 @@ class CacheManager:
     # -------------------------------------------------------------------
 
     def backup_db(self, dest_path: Path) -> bool:
-        """Create a backup of the database file. Returns True on success."""
-        import shutil
+        """Create a transactionally consistent, integrity-checked backup."""
+        source_key = os.path.normcase(os.path.abspath(str(self._db_path)))
+        destination_key = os.path.normcase(os.path.abspath(str(dest_path)))
+        if source_key == destination_key:
+            print("[db] backup failed: destination must differ from source")
+            return False
+
+        temp_path = dest_path.with_name(
+            f".{dest_path.name}.{os.getpid()}.{id(self):x}.tmp"
+        )
+        source: sqlite3.Connection | None = None
+        target: sqlite3.Connection | None = None
         try:
-            shutil.copy2(str(self._db_path), str(dest_path))
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path.unlink(missing_ok=True)
+            source = self.get_db()
+            target = sqlite3.connect(str(temp_path), timeout=15)
+            source.backup(target)
+            target.commit()
+            check = target.execute("PRAGMA quick_check").fetchone()
+            if not check or str(check[0]).lower() != "ok":
+                raise sqlite3.DatabaseError(
+                    f"backup integrity check failed: {check[0] if check else 'no result'}"
+                )
+            target.close()
+            target = None
+            source.close()
+            source = None
+            os.replace(temp_path, dest_path)
             return True
         except Exception as exc:
             print(f"[db] backup failed: {exc}")
             return False
+        finally:
+            if target is not None:
+                target.close()
+            if source is not None:
+                source.close()
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     def get_db_status(self) -> dict[str, Any]:
         """Return database status information for admin dashboard."""

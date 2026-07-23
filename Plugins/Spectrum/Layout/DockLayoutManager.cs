@@ -4,6 +4,7 @@ using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using ColorVision.UI;
 using log4net;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -75,6 +76,7 @@ namespace Spectrum.Layout
         public void LoadLayout()
         {
             if (!File.Exists(LayoutFilePath)) return;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
                 var serializer = new XmlLayoutSerializer(_dockingManager);
@@ -85,11 +87,13 @@ namespace Spectrum.Layout
                 };
                 using var stream = new StreamReader(LayoutFilePath);
                 serializer.Deserialize(stream);
-                log.Info("窗口布局已加载");
+                stopwatch.Stop();
+                log.Info($"窗口布局已加载，耗时 {stopwatch.ElapsedMilliseconds} ms");
             }
             catch (Exception ex)
             {
-                log.Warn("加载窗口布局失败, 将使用默认布局", ex);
+                stopwatch.Stop();
+                log.Warn($"加载窗口布局失败, 将使用默认布局，耗时 {stopwatch.ElapsedMilliseconds} ms", ex);
             }
         }
 

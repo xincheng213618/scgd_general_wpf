@@ -757,4 +757,24 @@
   <data name="Sol_Rbac_Close" xml:space="preserve">
     <value>关闭</value>
   </data>
+  <data name="Sol_UserCenter_Profile" xml:space="preserve"><value>个人资料</value></data>
+  <data name="Sol_UserCenter_Description" xml:space="preserve"><value>账户与使用概览</value></data>
+  <data name="Sol_UserCenter_CurrentSession" xml:space="preserve"><value>本次运行</value></data>
+  <data name="Sol_UserCenter_TotalRuntime" xml:space="preserve"><value>累计运行</value></data>
+  <data name="Sol_UserCenter_LaunchCount" xml:space="preserve"><value>启动次数</value></data>
+  <data name="Sol_UserCenter_TotalFlowCount" xml:space="preserve"><value>流程执行总数</value></data>
+  <data name="Sol_UserCenter_Last7CompletionRate" xml:space="preserve"><value>近 7 日完成率</value></data>
+  <data name="Sol_UserCenter_FlowActivity" xml:space="preserve"><value>流程活动</value></data>
+  <data name="Sol_UserCenter_RefreshStatistics" xml:space="preserve"><value>刷新流程统计</value></data>
+  <data name="Sol_UserCenter_AccountOverview" xml:space="preserve"><value>账户概览</value></data>
+  <data name="Sol_UserCenter_AccountUpdated" xml:space="preserve"><value>账户更新时间</value></data>
+  <data name="Sol_UserCenter_FirstUsage" xml:space="preserve"><value>首次使用记录</value></data>
+  <data name="Sol_UserCenter_FlowInsights" xml:space="preserve"><value>流程洞察</value></data>
+  <data name="Sol_UserCenter_Last7Executions" xml:space="preserve"><value>近 7 日执行</value></data>
+  <data name="Sol_UserCenter_AverageFlowDuration" xml:space="preserve"><value>平均流程时长</value></data>
+  <data name="Sol_UserCenter_ActiveDays" xml:space="preserve"><value>活跃天数</value></data>
+  <data name="Sol_UserCenter_BusiestDay" xml:space="preserve"><value>最活跃日期</value></data>
+  <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>最近启动</value></data>
+  <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>少</value></data>
+  <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>多</value></data>
 </root>

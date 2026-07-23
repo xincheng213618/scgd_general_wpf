@@ -12,15 +12,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
         public MQTTAlgorithm DService { get; set; }
-        public AlgorithmView View { get; set; }
+        private readonly Lazy<AlgorithmView> _view;
+        public AlgorithmView View => _view.Value;
 
         public DisplayAlgorithmConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayAlgorithmConfig>(Config.Code);
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTAlgorithm(this, Config);
-
-            View = new AlgorithmView();
+            _view = new Lazy<AlgorithmView>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new AlgorithmView()
+                : Application.Current.Dispatcher.Invoke(() => new AlgorithmView()));
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });

@@ -36,6 +36,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private CancellationTokenSource? _windowCancellation = new();
         private CancellationTokenSource? _selectionCancellation;
         private CancellationTokenSource? _refreshCancellation;
+        private CancellationTokenSource? _detailRefreshCancellation;
 
         public MarketplaceWindow()
         {
@@ -52,6 +53,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _manager?.CancelActiveOperations();
                 CancelAndDispose(ref _selectionCancellation);
                 CancelAndDispose(ref _refreshCancellation);
+                CancelAndDispose(ref _detailRefreshCancellation);
                 CancelAndDispose(ref _windowCancellation);
             };
         }
@@ -67,14 +69,29 @@ namespace ColorVision.UI.Desktop.Marketplace
                 _manager.SelectedInstalledPlugin = _manager.Plugins.FirstOrDefault();
             }
 
+            _ = RefreshInstalledVersionsOnOpenAsync(_windowCancellation!.Token);
+
             this.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Delete,
                 (s, args) => _manager.SelectedInstalledPlugin?.Delete(),
                 (s, args) => args.CanExecute = _manager.SelectedInstalledPlugin != null));
         }
 
-        private bool IsRefreshChangedX;
-        private bool IsRefreshChangedY;
+        private async Task RefreshInstalledVersionsOnOpenAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _manager!.RefreshVersionsAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                log.Debug("Initial marketplace version refresh canceled.");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Initial marketplace version refresh failed.", ex);
+            }
+        }
 
         private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -89,8 +106,6 @@ namespace ColorVision.UI.Desktop.Marketplace
             try
             {
                 _manager.IsMarketplaceTabActive = MainTabControl.SelectedIndex == 1;
-                IsRefreshChangedX = false;
-                IsRefreshChangedY = false;
 
                 if (_manager.IsMarketplaceTabActive)
                 {
@@ -98,7 +113,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                await RefreshSelectedDetailAsync(cancellationToken);
+                await RefreshCurrentDetailAsync(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -128,16 +143,14 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             try
             {
-                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken);
+                await MarketplaceManager.GetInstance().RefreshVersionsAsync(cancellationToken, forceRefresh: true);
 
                 if (_manager?.IsMarketplaceTabActive == true)
                 {
                     await _manager.RefreshMarketplaceCatalogAsync(cancellationToken);
                 }
-                else
-                {
-                    await RefreshSelectedDetailAsync(cancellationToken);
-                }
+
+                await RefreshCurrentDetailAsync(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -156,15 +169,29 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
         }
 
-        private Task RenderMarkdownAsync(Microsoft.Web.WebView2.Wpf.WebView2 webView, string? markdown, string emptyMessage)
+        private Task RenderMarkdownAsync(Microsoft.Web.WebView2.Wpf.WebView2 webView, string? markdown, string emptyMessage, CancellationToken cancellationToken)
         {
-            return MarketplaceMarkdownPresenter.RenderAsync(webView, markdown, emptyMessage);
+            return MarketplaceMarkdownPresenter.RenderAsync(webView, markdown, emptyMessage, cancellationToken);
         }
 
-        private async Task RefreshSelectedDetailAsync(CancellationToken cancellationToken = default)
+        private async Task RefreshCurrentDetailAsync(CancellationToken cancellationToken = default)
+        {
+            CancellationTokenSource operationCancellation = CreateLinkedOperationCancellation(ref _detailRefreshCancellation, cancellationToken);
+            try
+            {
+                object? detailContext = _manager?.CurrentDetailContext;
+                await RefreshSelectedDetailAsync(detailContext, operationCancellation.Token);
+            }
+            finally
+            {
+                ClearOperationCancellation(ref _detailRefreshCancellation, operationCancellation);
+            }
+        }
+
+        private async Task RefreshSelectedDetailAsync(object? detailContext, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            switch (BorderContent.DataContext)
+            switch (detailContext)
             {
                 case PluginInfoVM pluginInfoVM:
                     SetDetailPanelMode(DetailPanelMode.Installed);
@@ -187,18 +214,14 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context, CancellationToken cancellationToken)
         {
-            if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
+            if (TabControl1.SelectedIndex == 0)
             {
-                IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty);
-                cancellationToken.ThrowIfCancellationRequested();
+                await RenderMarkdownAsync(webViewReadMe, context.Readme, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
             }
 
-            if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
+            if (TabControl1.SelectedIndex == 1)
             {
-                IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
-                cancellationToken.ThrowIfCancellationRequested();
+                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
             }
 
             if (TabControl1.SelectedIndex == 3)
@@ -209,18 +232,14 @@ namespace ColorVision.UI.Desktop.Marketplace
 
         private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM, CancellationToken cancellationToken)
         {
-            if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
+            if (TabControl1.SelectedIndex == 0)
             {
-                IsRefreshChangedX = true;
-                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty);
-                cancellationToken.ThrowIfCancellationRequested();
+                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README, DesktopResources.MarketplaceReadmeEmpty, cancellationToken);
             }
 
-            if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
+            if (TabControl1.SelectedIndex == 1)
             {
-                IsRefreshChangedY = true;
-                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty);
-                cancellationToken.ThrowIfCancellationRequested();
+                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog, DesktopResources.MarketplaceChangelogEmpty, cancellationToken);
             }
 
             if (TabControl1.SelectedIndex == 2)
@@ -230,6 +249,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             if (TabControl1.SelectedIndex == 3)
             {
+                DependentsListView.ItemsSource = null;
                 if (pluginInfoVM.PluginInfo?.DepsJson != null)
                 {
                     var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
@@ -351,7 +371,7 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             try
             {
-                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+                await RefreshCurrentDetailAsync();
             }
             catch (OperationCanceledException)
             {
@@ -368,11 +388,9 @@ namespace ColorVision.UI.Desktop.Marketplace
             if (e.PropertyName != nameof(MarketplaceManager.CurrentDetailContext))
                 return;
 
-            IsRefreshChangedX = false;
-            IsRefreshChangedY = false;
             try
             {
-                await RefreshSelectedDetailAsync(_windowCancellation?.Token ?? CancellationToken.None);
+                await RefreshCurrentDetailAsync();
             }
             catch (OperationCanceledException)
             {
@@ -390,11 +408,13 @@ namespace ColorVision.UI.Desktop.Marketplace
             MarketplaceDetailScrollViewer.Visibility = mode == DetailPanelMode.Marketplace ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private CancellationTokenSource CreateLinkedOperationCancellation(ref CancellationTokenSource? operationCancellation)
+        private CancellationTokenSource CreateLinkedOperationCancellation(ref CancellationTokenSource? operationCancellation, CancellationToken cancellationToken = default)
         {
             CancelAndDispose(ref operationCancellation);
             CancellationToken windowToken = _windowCancellation?.Token ?? CancellationToken.None;
-            operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(windowToken);
+            operationCancellation = cancellationToken.CanBeCanceled
+                ? CancellationTokenSource.CreateLinkedTokenSource(windowToken, cancellationToken)
+                : CancellationTokenSource.CreateLinkedTokenSource(windowToken);
             return operationCancellation;
         }
 

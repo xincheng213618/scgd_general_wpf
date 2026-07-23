@@ -776,4 +776,24 @@
   <data name="Sol_Rbac_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="Sol_UserCenter_Profile" xml:space="preserve"><value>Profile</value></data>
+  <data name="Sol_UserCenter_Description" xml:space="preserve"><value>Account and usage overview</value></data>
+  <data name="Sol_UserCenter_CurrentSession" xml:space="preserve"><value>Current session</value></data>
+  <data name="Sol_UserCenter_TotalRuntime" xml:space="preserve"><value>Total runtime</value></data>
+  <data name="Sol_UserCenter_LaunchCount" xml:space="preserve"><value>Launches</value></data>
+  <data name="Sol_UserCenter_TotalFlowCount" xml:space="preserve"><value>Total flow runs</value></data>
+  <data name="Sol_UserCenter_Last7CompletionRate" xml:space="preserve"><value>7-day completion</value></data>
+  <data name="Sol_UserCenter_FlowActivity" xml:space="preserve"><value>Flow activity</value></data>
+  <data name="Sol_UserCenter_RefreshStatistics" xml:space="preserve"><value>Refresh flow statistics</value></data>
+  <data name="Sol_UserCenter_AccountOverview" xml:space="preserve"><value>Account overview</value></data>
+  <data name="Sol_UserCenter_AccountUpdated" xml:space="preserve"><value>Account updated</value></data>
+  <data name="Sol_UserCenter_FirstUsage" xml:space="preserve"><value>First usage record</value></data>
+  <data name="Sol_UserCenter_FlowInsights" xml:space="preserve"><value>Flow insights</value></data>
+  <data name="Sol_UserCenter_Last7Executions" xml:space="preserve"><value>Last 7 days</value></data>
+  <data name="Sol_UserCenter_AverageFlowDuration" xml:space="preserve"><value>Average flow duration</value></data>
+  <data name="Sol_UserCenter_ActiveDays" xml:space="preserve"><value>Active days</value></data>
+  <data name="Sol_UserCenter_BusiestDay" xml:space="preserve"><value>Busiest day</value></data>
+  <data name="Sol_UserCenter_LastLaunch" xml:space="preserve"><value>Last launch</value></data>
+  <data name="Sol_UserCenter_ActivityLess" xml:space="preserve"><value>Less</value></data>
+  <data name="Sol_UserCenter_ActivityMore" xml:space="preserve"><value>More</value></data>
 </root>

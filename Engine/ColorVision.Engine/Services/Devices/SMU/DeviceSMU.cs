@@ -9,6 +9,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
+using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -93,13 +94,16 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
         public MQTTSMU DService { get; set; }
 
-        public ViewSMU View { get; set; }
+        private readonly Lazy<ViewSMU> _view;
+        public ViewSMU View => _view.Value;
         public DisplaySMUConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSMU(this);
-            View = new ViewSMU();
+            _view = new Lazy<ViewSMU>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new ViewSMU()
+                : Application.Current.Dispatcher.Invoke(() => new ViewSMU()));
             this.SetIconResource("SMUDrawingImage");
 
             EditCommand = new RelayCommand(a =>

@@ -31,6 +31,7 @@ public class CamMotorNode : CVBaseServerNode
 		set
 		{
 			SetRunType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -44,6 +45,7 @@ public class CamMotorNode : CVBaseServerNode
 		set
 		{
 			_bAbs = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -57,6 +59,7 @@ public class CamMotorNode : CVBaseServerNode
 		set
 		{
 			_Pos = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -70,6 +73,7 @@ public class CamMotorNode : CVBaseServerNode
 		set
 		{
 			_Aperture = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -83,6 +87,7 @@ public class CamMotorNode : CVBaseServerNode
 		set
 		{
 			_AutoFocusTemp = value;
+			OnPropertyChanged();
 		}
 	}
 

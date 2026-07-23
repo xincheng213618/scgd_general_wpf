@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -21,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Linq;
-using System.Net;
 
 namespace ColorVision.Update
 {
@@ -52,26 +52,18 @@ namespace ColorVision.Update
     }
 
 
-    public class AutoUpdater : ViewModelBase
+    public static class AutoUpdater
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
-        private static readonly HttpClient _metadataClient = new() { Timeout = TimeSpan.FromSeconds(15) };
         private static readonly SemaphoreSlim _latestVersionSemaphore = new(1, 1);
         private static readonly object _latestVersionCacheLock = new();
         private static readonly TimeSpan MetadataRequestTimeout = TimeSpan.FromSeconds(4);
-        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromMinutes(5);
         private static string? _cachedLatestVersionUrl;
         private static Version? _cachedLatestVersion;
         private static DateTimeOffset _cachedLatestVersionAt = DateTimeOffset.MinValue;
         private static string? _cachedLatestVersionETag;
-        private static AutoUpdater _instance;
-        private static readonly object _locker = new();
-        public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
-
         public static string UpdateUrl => BuildAppApiUrl("latest-version");
-
-        public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; OnPropertyChanged(); } }
-        private Version _LatestVersion;
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
@@ -86,13 +78,13 @@ namespace ColorVision.Update
                 : Environments.DirApplicationFullPackageCache;
         }
 
-        public async Task ForceUpdate(CancellationToken cancellationToken = default)
+        public static async Task ForceUpdate(CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
-            if (LatestVersion == new Version()) return;
+            Version latestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh: true, cancellationToken: cancellationToken);
+            if (latestVersion == new Version()) return;
             await InvokeOnUiThreadAsync(() =>
             {
-                StartFullUpdate(LatestVersion);
+                StartFullUpdate(latestVersion);
             });
         }
 
@@ -134,43 +126,45 @@ namespace ColorVision.Update
 
         public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            string? versionString = null;
             if (string.IsNullOrWhiteSpace(url))
             {
                 log.Warn("Failed to fetch update metadata: update service URL is empty.");
                 return new Version();
             }
 
+            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
+                return freshCachedVersion;
+
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
+                if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
+                {
+                    log.Info("Windows reports no internet connectivity; using cached update metadata.");
+                    return offlineCachedVersion;
+                }
+
                 log.Info("Skipped update metadata check because Windows reports no internet connectivity.");
                 return new Version();
-            }
-
-            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
-            {
-                return freshCachedVersion;
             }
 
             await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
                 if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
-                {
                     return freshCachedVersion;
-                }
 
-                using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                timeoutSource.CancelAfter(MetadataRequestTimeout);
-                using HttpRequestMessage request = new(HttpMethod.Get, url);
-                ApplyAuthorizationHeader(request);
-                string? cachedETag = forceRefresh ? null : GetCachedLatestVersionETag(url);
-                if (!string.IsNullOrWhiteSpace(cachedETag))
-                {
-                    request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
-                }
-
-                using HttpResponseMessage response = await _metadataClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutSource.Token);
+                string? cachedETag = GetCachedLatestVersionETag(url);
+                using HttpResponseMessage response = await UpdateHttpClientProvider.SendWithTransientRetryAsync(
+                    () =>
+                    {
+                        HttpRequestMessage request = new(HttpMethod.Get, url);
+                        ApplyAuthorizationHeader(request);
+                        if (!string.IsNullOrWhiteSpace(cachedETag))
+                            request.Headers.TryAddWithoutValidation("If-None-Match", cachedETag);
+                        return request;
+                    },
+                    MetadataRequestTimeout,
+                    cancellationToken);
                 if (response.StatusCode == HttpStatusCode.NotModified
                     && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
                 {
@@ -179,12 +173,14 @@ namespace ColorVision.Update
                 }
 
                 response.EnsureSuccessStatusCode();
-                string payload = await response.Content.ReadAsStringAsync(timeoutSource.Token);
-                versionString = ExtractVersionString(payload);
+                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                string versionString = ExtractVersionString(payload);
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
                     log.Warn($"Invalid update version payload from {url}: {versionString}");
-                    return new Version();
+                    return TryGetAnyCachedLatestVersion(url, out Version invalidPayloadCachedVersion)
+                        ? invalidPayloadCachedVersion
+                        : new Version();
                 }
 
                 SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
@@ -196,23 +192,33 @@ namespace ColorVision.Update
             }
             catch (HttpRequestException ex)
             {
-                log.Warn($"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return UseCachedVersionAfterFailure(url, $"Failed to fetch update metadata from {url}: {ex.GetBaseException().Message}");
             }
             catch (OperationCanceledException ex)
             {
-                log.Warn($"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
-                return new Version();
+                return UseCachedVersionAfterFailure(url, $"Timed out fetching update metadata from {url}: {ex.GetBaseException().Message}");
             }
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return new Version();
+                return TryGetAnyCachedLatestVersion(url, out Version cachedVersion) ? cachedVersion : new Version();
             }
             finally
             {
                 _latestVersionSemaphore.Release();
             }
+        }
+
+        private static Version UseCachedVersionAfterFailure(string url, string warning)
+        {
+            if (TryGetAnyCachedLatestVersion(url, out Version cachedVersion))
+            {
+                log.Warn($"{warning} Using the last successful response.");
+                return cachedVersion;
+            }
+
+            log.Warn(warning);
+            return new Version();
         }
 
         private static bool TryGetFreshCachedLatestVersion(string url, out Version version)
@@ -274,20 +280,18 @@ namespace ColorVision.Update
             lock (_latestVersionCacheLock)
             {
                 if (string.Equals(_cachedLatestVersionUrl, url, StringComparison.OrdinalIgnoreCase))
-                {
                     _cachedLatestVersionAt = DateTimeOffset.UtcNow;
-                }
             }
         }
 
-        public async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, CancellationToken cancellationToken = default)
+        public static async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            LatestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, cancellationToken);
-            if (LatestVersion == new Version())
+            Version latestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, cancellationToken);
+            if (latestVersion == new Version())
                 return null;
 
             Version? currentVersion = CurrentVersion;
-            return currentVersion == null ? null : BuildUpdatePlan(currentVersion, LatestVersion);
+            return currentVersion == null ? null : BuildUpdatePlan(currentVersion, latestVersion);
         }
 
         internal static AutoUpdatePlan? BuildUpdatePlan(Version currentVersion, Version latestVersion)
@@ -320,7 +324,7 @@ namespace ColorVision.Update
             string? cachedInstaller = GetCachedFullInstallerPath(version);
             if (cachedInstaller != null)
             {
-                UpdateApplication(cachedInstaller, isIncrement: false);
+                StartDownloadedFullInstaller(cachedInstaller);
                 return;
             }
 
@@ -359,7 +363,7 @@ namespace ColorVision.Update
 
                 if (packagePaths.Count == 1)
                 {
-                    UpdateApplication(packagePaths[0], isIncrement: false);
+                    StartDownloadedFullInstaller(packagePaths[0]);
                     return;
                 }
 
@@ -394,16 +398,16 @@ namespace ColorVision.Update
                 string fileName = plan.IsIncremental
                     ? GetIncrementalPackageFileName(version)
                     : GetReleasePackageFileName(version);
-                if (FindReadyApplicationPackagePath(downloadDirectory, fileName, plan.IsIncremental) != null)
+                if (FindReadyApplicationPackagePath(downloadDirectory, fileName, plan.IsIncremental, version) != null)
                     continue;
 
                 string canonicalPath = Path.Combine(downloadDirectory, fileName);
-                _ = MoveInvalidApplicationPackageToRecovery(canonicalPath, plan.IsIncremental);
+                _ = MoveInvalidApplicationPackageToRecovery(canonicalPath, plan.IsIncremental, version);
 
                 string downloadUrl = plan.IsIncremental
                     ? GetIncrementalPackageDownloadUrl(version)
                     : GetReleasePackageDownloadUrl(version);
-                downloads.Add(DownloadPackageAsync(downloadUrl, downloadDirectory, fileName, plan.IsIncremental, cancellationToken));
+                downloads.Add(DownloadPackageAsync(downloadUrl, downloadDirectory, fileName, plan.IsIncremental, version, cancellationToken));
             }
 
             if (downloads.Count > 0)
@@ -432,7 +436,7 @@ namespace ColorVision.Update
             string downloadDirectory = GetApplicationPackageCacheDirectory(isIncremental: true);
             foreach (Version version in plan.VersionsToApply.Distinct())
             {
-                string? packagePath = FindReadyApplicationPackagePath(downloadDirectory, GetIncrementalPackageFileName(version), isIncremental: true);
+                string? packagePath = FindReadyApplicationPackagePath(downloadDirectory, GetIncrementalPackageFileName(version), isIncremental: true, version);
                 if (packagePath == null)
                 {
                     packagePaths = Array.Empty<string>();
@@ -451,10 +455,11 @@ namespace ColorVision.Update
             return FindReadyApplicationPackagePath(
                 GetApplicationPackageCacheDirectory(isIncremental: false),
                 GetReleasePackageFileName(version),
-                isIncremental: false);
+                isIncremental: false,
+                version);
         }
 
-        internal static string? FindReadyApplicationPackagePath(string directory, string canonicalFileName, bool isIncremental)
+        internal static string? FindReadyApplicationPackagePath(string directory, string canonicalFileName, bool isIncremental, Version? expectedVersion = null)
         {
             try
             {
@@ -462,7 +467,7 @@ namespace ColorVision.Update
                     return null;
 
                 string canonicalPath = Path.Combine(directory, canonicalFileName);
-                if (IsApplicationPackageFileReady(canonicalPath, isIncremental))
+                if (IsApplicationPackageFileReady(canonicalPath, isIncremental, expectedVersion))
                     return canonicalPath;
 
                 string canonicalStem = Path.GetFileNameWithoutExtension(canonicalFileName);
@@ -470,7 +475,7 @@ namespace ColorVision.Update
                 return Directory.EnumerateFiles(directory, $"*{extension}", SearchOption.TopDirectoryOnly)
                     .Where(path => IsUniqueDownloadVariant(Path.GetFileNameWithoutExtension(path), canonicalStem))
                     .OrderByDescending(File.GetLastWriteTimeUtc)
-                    .FirstOrDefault(path => IsApplicationPackageFileReady(path, isIncremental));
+                    .FirstOrDefault(path => IsApplicationPackageFileReady(path, isIncremental, expectedVersion));
             }
             catch (Exception ex)
             {
@@ -506,6 +511,7 @@ namespace ColorVision.Update
             string downloadDirectory,
             string fileName,
             bool isIncremental,
+            Version expectedVersion,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -528,10 +534,10 @@ namespace ColorVision.Update
                 }
 
                 bool ready = task.Status == DownloadStatus.Completed
-                    && IsApplicationPackageFileReady(task.SavePath, isIncremental);
+                    && IsApplicationPackageFileReady(task.SavePath, isIncremental, expectedVersion);
                 if (!ready && task.Status == DownloadStatus.Completed)
                 {
-                    _ = MoveInvalidApplicationPackageToRecovery(task.SavePath, isIncremental);
+                    _ = MoveInvalidApplicationPackageToRecovery(task.SavePath, isIncremental, expectedVersion);
                 }
 
                 completion.TrySetResult(ready);
@@ -678,21 +684,78 @@ namespace ColorVision.Update
             }
         }
 
-        internal static bool IsApplicationPackageFileReady(string? filePath, bool isIncremental)
+        private static Version? GetIncrementalPackageVersion(string filePath)
         {
-            return isIncremental
-                ? IsIncrementalPackageFileReady(filePath)
-                : IsFullInstallerFileReady(filePath);
+            string temporaryDirectory = Path.Combine(Path.GetTempPath(), $"ColorVisionPackageVersion-{Guid.NewGuid():N}");
+            try
+            {
+                using ZipArchive archive = ZipFile.OpenRead(filePath);
+                ZipArchiveEntry? executableEntry = archive.Entries.FirstOrDefault(entry =>
+                    string.Equals(entry.FullName.Replace('\\', '/').TrimStart('/'), "ColorVision.exe", StringComparison.OrdinalIgnoreCase));
+                if (executableEntry == null)
+                    return null;
+
+                Directory.CreateDirectory(temporaryDirectory);
+                string executablePath = Path.Combine(temporaryDirectory, "ColorVision.exe");
+                using (Stream source = executableEntry.Open())
+                using (FileStream destination = File.Create(executablePath))
+                    source.CopyTo(destination);
+                return GetExecutableVersion(executablePath);
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                TryDeleteUpdateStage(temporaryDirectory);
+            }
         }
 
-        internal static string? MoveInvalidApplicationPackageToRecovery(string? filePath, bool isIncremental)
+        private static Version? GetExecutableVersion(string filePath)
+        {
+            try
+            {
+                FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(filePath);
+                return ParseExecutableVersion(versionInfo.FileVersion) ?? ParseExecutableVersion(versionInfo.ProductVersion);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static Version? ParseExecutableVersion(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string versionText = new(value.TakeWhile(character => char.IsDigit(character) || character == '.').ToArray());
+            return Version.TryParse(versionText.Trim('.'), out Version? version) ? version : null;
+        }
+
+        internal static bool IsApplicationPackageFileReady(string? filePath, bool isIncremental, Version? expectedVersion = null)
+        {
+            bool structurallyReady = isIncremental
+                ? IsIncrementalPackageFileReady(filePath)
+                : IsFullInstallerFileReady(filePath);
+            if (!structurallyReady || expectedVersion == null)
+                return structurallyReady;
+
+            Version? packageVersion = isIncremental
+                ? GetIncrementalPackageVersion(filePath!)
+                : GetExecutableVersion(filePath!);
+            return packageVersion == expectedVersion;
+        }
+
+        internal static string? MoveInvalidApplicationPackageToRecovery(string? filePath, bool isIncremental, Version? expectedVersion = null)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(filePath)
                     || !File.Exists(filePath)
                     || File.Exists(filePath + ".aria2")
-                    || IsApplicationPackageFileReady(filePath, isIncremental))
+                    || IsApplicationPackageFileReady(filePath, isIncremental, expectedVersion))
                 {
                     return null;
                 }
@@ -713,24 +776,10 @@ namespace ColorVision.Update
             }
         }
 
-        private static void UpdateApplication(string downloadPath, bool isIncrement)
+        private static void StartDownloadedFullInstaller(string downloadPath)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-
-            if (isIncrement)
-            {
-                RestartIsIncrementApplication(downloadPath);
-            }
-            else
-            {
-                RestartApplication(downloadPath);
-            }
-        }
-
-
-        public static void RestartIsIncrementApplication(string downloadPath)
-        {
-            RestartIsIncrementApplication(new[] { downloadPath }, null);
+            RestartApplication(downloadPath);
         }
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
@@ -752,6 +801,7 @@ namespace ColorVision.Update
         {
             string? tempRoot = null;
             ExitUpdateHandoffState? handoffState = null;
+            string? scanProtectionId = null;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
@@ -772,6 +822,7 @@ namespace ColorVision.Update
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
+                scanProtectionId = ApplicationUpdateScanProtection.TryBegin(tempRoot);
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
 
@@ -812,10 +863,13 @@ namespace ColorVision.Update
                 if (!canUpdateWithoutElevation && !allowElevationFallback)
                 {
                     log.Info("Skipped exit-time update because ColorVisionServiceHost could not prepare the application directory silently.");
+                    ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                     ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
+
+                ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
 
                 string batchContent = CreateIncrementalUpdateBatch(
                     stageDirectory,
@@ -825,7 +879,8 @@ namespace ColorVision.Update
                     Environment.ProcessId,
                     handoffState,
                     repairServiceHost: !canUpdateWithoutElevation,
-                    restartApplication: restartApplication);
+                    restartApplication: restartApplication,
+                    scanProtectionId: scanProtectionId);
                 File.WriteAllText(batchFilePath, batchContent);
 
                 // 设置批处理文件的启动信息
@@ -844,12 +899,9 @@ namespace ColorVision.Update
                 }
                 try
                 {
-                    using Process updateProcess = Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Failed to start incremental update batch.");
-                    if (!ExitUpdateHandoff.TryActivate(handoffState, updateProcess.Id))
-                        log.Debug("The incremental update started, but its handoff process ID could not be recorded.");
+                    using Process updateProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
                     if (restartApplication)
-                        Environment.Exit(0);
+                        ApplicationUpdateShutdown.Request();
                     return true;
                 }
                 catch (Exception ex)
@@ -857,6 +909,7 @@ namespace ColorVision.Update
                     log.Error("Failed to start incremental update batch.", ex);
                     if (showErrors)
                         MessageBox.Show(ex.Message);
+                    ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                     ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
@@ -867,6 +920,7 @@ namespace ColorVision.Update
                 log.Error("Failed to prepare incremental update.", ex);
                 if (showErrors)
                     MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
+                ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                 ExitUpdateHandoff.Clear(handoffState);
                 TryDeleteUpdateStage(tempRoot);
                 return false;
@@ -917,7 +971,8 @@ namespace ColorVision.Update
             int originalProcessId,
             ExitUpdateHandoffState handoffState,
             bool repairServiceHost,
-            bool restartApplication)
+            bool restartApplication,
+            string? scanProtectionId)
         {
             string executablePath = Path.Combine(programDirectory, executableName);
             StringBuilder sb = new();
@@ -929,10 +984,8 @@ namespace ColorVision.Update
             sb.AppendLine($"set \"TARGET={EscapeForBatchValue(programDirectory)}\"");
             sb.AppendLine($"set \"EXE={EscapeForBatchValue(executableName)}\"");
             sb.AppendLine($"set \"EXEPATH={EscapeForBatchValue(executablePath)}\"");
-            sb.AppendLine($"set \"ORIGINAL_PID={originalProcessId}\"");
-            sb.AppendLine($"set \"UPDATE_MARKER={EscapeForBatchValue(handoffState.MarkerPath)}\"");
-            sb.AppendLine($"set \"REOPEN_REQUEST={EscapeForBatchValue(handoffState.ReopenRequestPath)}\"");
-            sb.AppendLine($"set \"UPDATE_TOKEN={handoffState.LaunchToken}\"");
+            ExternalUpdateBatchScript.AppendSessionVariables(sb, originalProcessId, handoffState);
+            sb.AppendLine($"set \"{ApplicationUpdateScanProtection.ProtectionIdEnvironmentVariable}={EscapeForBatchValue(scanProtectionId ?? string.Empty)}\"");
             sb.AppendLine($"set \"REPAIR_SERVICE_HOST={(repairServiceHost ? "1" : "0")}\"");
             sb.AppendLine($"set \"RESTART_APPLICATION={(restartApplication ? "1" : "0")}\"");
             sb.AppendLine($"set \"SERVICE_NAME={ServiceHostProtocol.ServiceName}\"");
@@ -944,6 +997,7 @@ namespace ColorVision.Update
             sb.AppendLine("set \"SERVICE_LOG=%SERVICE_DEST%\\install.log\"");
             sb.AppendLine();
             sb.AppendLine("call :wait_for_original_process");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update started.");
             sb.AppendLine("call :skip_shell_extension_files");
             sb.AppendLine("if errorlevel 1 goto fail");
             sb.AppendLine();
@@ -952,19 +1006,7 @@ namespace ColorVision.Update
             sb.AppendLine("call :repair_service_host");
             sb.AppendLine("goto success");
             sb.AppendLine();
-            sb.AppendLine(":wait_for_original_process");
-            sb.AppendLine("set \"WAIT_ATTEMPTS=0\"");
-            sb.AppendLine(":wait_for_original_process_loop");
-            sb.AppendLine("tasklist /fi \"PID eq %ORIGINAL_PID%\" /nh 2>nul | findstr /r /c:\"[ ]%ORIGINAL_PID%[ ]\" >nul");
-            sb.AppendLine("if errorlevel 1 exit /b 0");
-            sb.AppendLine("set /a WAIT_ATTEMPTS+=1");
-            sb.AppendLine("if %WAIT_ATTEMPTS% GEQ 15 goto wait_for_original_process_timeout");
-            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
-            sb.AppendLine("goto wait_for_original_process_loop");
-            sb.AppendLine(":wait_for_original_process_timeout");
-            sb.AppendLine("taskkill /f /pid \"%ORIGINAL_PID%\" >nul 2>nul");
-            sb.AppendLine("ping -n 2 127.0.0.1 >nul");
-            sb.AppendLine("exit /b 0");
+            ExternalUpdateBatchScript.AppendWaitForOriginalProcess(sb);
             sb.AppendLine();
             sb.AppendLine(":skip_shell_extension_files");
             sb.AppendLine("for /r \"%STAGE%\" %%F in (ColorVision.ShellExtension*) do (");
@@ -987,11 +1029,13 @@ namespace ColorVision.Update
             AppendServiceHostRepairBatch(sb);
             sb.AppendLine();
             sb.AppendLine(":success");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update completed.");
             sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":fail");
+            ExternalUpdateBatchScript.AppendLog(sb, "Application update failed.");
             sb.AppendLine("call :complete_handoff");
             sb.AppendLine("call :schedule_cleanup");
             sb.AppendLine("exit /b 1");
@@ -1012,7 +1056,7 @@ namespace ColorVision.Update
             sb.AppendLine("exit /b 0");
             sb.AppendLine();
             sb.AppendLine(":schedule_cleanup");
-            sb.AppendLine("start \"\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
+            sb.AppendLine("start \"\" /d \"%TEMP%\" /b cmd /d /c ping -n 4 127.0.0.1 ^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul");
             sb.AppendLine("exit /b 0");
             return sb.ToString();
         }
@@ -1079,8 +1123,9 @@ namespace ColorVision.Update
 
             try
             {
+                ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 Process.Start(startInfo);
-                Environment.Exit(0);
+                ApplicationUpdateShutdown.Request();
             }
             catch (Exception ex)
             {

@@ -19,6 +19,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -34,6 +35,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +49,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeHub
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -23,7 +23,7 @@ namespace ColorVision.Update
         {
             try
             {
-                await AutoUpdater.GetInstance().ForceUpdate();
+                await AutoUpdater.ForceUpdate();
             }
             catch (OperationCanceledException)
             {

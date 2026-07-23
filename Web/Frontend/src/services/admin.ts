@@ -8,11 +8,17 @@ import type {
   DocsStatus,
   PublishIntegrityReport,
   ScheduledJob,
+  TrafficStatsResponse,
 } from '../types/admin'
 import { getJson, postJson } from './request'
 
 export function getAdminStats() {
   return getJson<AdminStats>('/api/admin/stats/overview')
+}
+
+export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {
+  const search = new URLSearchParams({ days: String(days), limit: String(limit) })
+  return getJson<TrafficStatsResponse>(`/api/admin/stats/traffic?${search.toString()}`, signal)
 }
 
 export function getCacheStatus() {

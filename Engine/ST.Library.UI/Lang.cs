@@ -22,10 +22,10 @@ public static class Lang
 
 	public static string Get(string key)
 	{
-		return GetOrDefault(key, "[" + key + "]");
+		return GetOrDefault(key);
 	}
 
-	public static string GetOrDefault(string key, string fallback)
+	public static string GetOrDefault(string key)
 	{
 		try
 		{
@@ -44,7 +44,7 @@ public static class Lang
 			catch { }
 		}
 
-		return fallback;
+		return key;
 	}
 
 }

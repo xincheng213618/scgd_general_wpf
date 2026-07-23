@@ -8,7 +8,6 @@
 
 | 项目 | 源码目录 | 入口 |
 | --- | --- | --- |
-| ProjectARVRLite | `Projects/ProjectARVRLite/` | [ProjectARVRLite](./project-arvr-lite.md) |
 | ProjectARVRPro | `Projects/ProjectARVRPro/` | [ProjectARVRPro](./project-arvr-pro.md) |
 | ProjectARVRPro.IntegrationDemo | `Projects/ProjectARVRPro.IntegrationDemo/` | [Integration Demo](./project-arvr-pro-integration-demo.md) |
 | ProjectKB | `Projects/ProjectKB/` | [ProjectKB](./project-kb.md) |

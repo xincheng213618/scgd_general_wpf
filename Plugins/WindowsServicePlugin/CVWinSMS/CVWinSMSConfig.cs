@@ -18,60 +18,7 @@ namespace WindowsServicePlugin.CVWinSMS
         public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; } }
         private string _CVWinSMSPath = string.Empty;
 
-        [JsonIgnore]
-        public string BaseLocation { 
-            
-            get
-            {
-                if (dic.TryGetValue("BaseLocation", out string location))
-                    return location;
-                return string.Empty;
-            }
-        }
-
-        [JsonIgnore]
-        Dictionary<string, string> dic = new Dictionary<string, string>();
-
-        public void Init()
-        {
-            try
-            {
-                string filePath = Directory.GetParent(CVWinSMSPath) + @"\config\App.config";
-                if (!File.Exists(filePath))
-                {
-                    return;
-                }
-                XDocument config = XDocument.Load(filePath);
-                var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
-
-                if (appSettings != null)
-                {
-                    foreach (var setting in appSettings)
-                    {
-                        string key = setting.Attribute("key")?.Value;
-                        string value = setting.Attribute("value")?.Value;
-                        if (key != null && value != null)
-                        {
-                            if (!dic.TryAdd(key, value))
-                            {
-                                dic[key] = value;
-                            }
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                return;
-            }
-        }
-
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
-
-        [DisplayName("CVWinSMSIsAutoUpdate")]
-        [Description("CVWinSMSIsAutoUpdateDescription")]
-        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
-        private bool _IsAutoUpdate = true;
     }
 }

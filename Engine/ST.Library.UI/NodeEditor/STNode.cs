@@ -5,13 +5,16 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows.Forms;
 
 namespace ST.Library.UI.NodeEditor;
 
-public abstract class STNode
+public abstract class STNode : INotifyPropertyChanged
 {
+	public event PropertyChangedEventHandler PropertyChanged;
+
 	private STNodeEditor _Owner;
 
 	private bool _IsSelected;
@@ -205,20 +208,28 @@ public abstract class STNode
 		}
 	}
 
-	public string Title
+    [STNodeProperty("Title", "Title", true)]
+    [Browsable(true)]
+    public string Title
 	{
 		get
 		{
 			return _Title;
 		}
-		protected set
+		set
 		{
 			_Title = value;
 			if (_AutoSize)
 			{
 				BuildSize(bBuildNode: true, bBuildMark: true, bRedraw: true);
 			}
+			OnPropertyChanged();
 		}
+	}
+
+	protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
+	{
+		PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 	}
 
 	public string Mark

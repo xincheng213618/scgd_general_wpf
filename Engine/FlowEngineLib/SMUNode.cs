@@ -4,6 +4,8 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUNode.SrcRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUNode.LmtRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
 public class SMUNode : SMUBaseNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUNode));
@@ -19,6 +21,7 @@ public class SMUNode : SMUBaseNode
 		{
 			_source = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -33,6 +36,7 @@ public class SMUNode : SMUBaseNode
 		{
 			_channel = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +51,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_begin_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -61,6 +66,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_end_val = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -74,6 +80,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_limitVal = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -88,6 +95,7 @@ public class SMUNode : SMUBaseNode
 		{
 			m_point_num = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -101,6 +109,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_IsAutoRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -114,6 +123,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_SrcRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -127,6 +137,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_LmtRng = value;
+			OnPropertyChanged();
 		}
 	}
 

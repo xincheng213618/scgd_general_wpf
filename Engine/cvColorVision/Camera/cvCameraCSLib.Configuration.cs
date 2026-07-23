@@ -89,7 +89,8 @@ namespace cvColorVision
 
         //新的修改参数
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_UpdateCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void UpdateCfgJson(IntPtr handle, ConfigType eType, string jsonCfg);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public unsafe static extern bool UpdateCfgJson(IntPtr handle, ConfigType eType, string jsonCfg);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "UpdateExpTimeCfgJson", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool UpdateExpTimeCfgJson(IntPtr handle, string jsonCfg);

@@ -1,6 +1,7 @@
 #pragma warning disable CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -28,6 +29,20 @@ namespace ColorVision.Update
         public string ProgramDirectory => AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         public string CurrentVersion => ApplicationSnapshotService.GetCurrentVersionText();
+
+        public bool CreateSnapshotBeforeUpdate
+        {
+            get => ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate;
+            set
+            {
+                if (ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate == value)
+                    return;
+
+                ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate = value;
+                ConfigService.Instance.SaveConfigs();
+                OnPropertyChanged();
+            }
+        }
 
         public ApplicationSnapshotInfo? SelectedSnapshot
         {
@@ -86,9 +101,8 @@ namespace ColorVision.Update
         private async void ApplicationSnapshotsWindow_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= ApplicationSnapshotsWindow_Loaded;
-            await RunBusyAsync("正在检查默认快照...", async () =>
+            await RunBusyAsync("正在加载快照...", async () =>
             {
-                await _snapshotService.EnsureDefaultSnapshotAsync().ConfigureAwait(true);
                 await RefreshSnapshotsAsync().ConfigureAwait(true);
                 StatusText = "快照已加载";
             }).ConfigureAwait(true);
@@ -129,19 +143,16 @@ namespace ColorVision.Update
             if (selectedSnapshot == null)
                 return;
 
-            string message = selectedSnapshot.IsDefault
-                ? "删除默认快照后会立即重建，确定继续？"
-                : $"确定删除 {selectedSnapshot.FileName}？";
+            string message = $"确定删除 {selectedSnapshot.FileName}？删除后不会自动重建。";
 
             if (MessageBox.Show(this, message, "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
             await RunBusyAsync("正在删除快照...", async () =>
             {
-                bool wasDefault = selectedSnapshot.IsDefault;
                 await _snapshotService.DeleteSnapshotAsync(selectedSnapshot).ConfigureAwait(true);
-                await RefreshSnapshotsAsync(wasDefault ? _snapshotService.DefaultSnapshotPath : null).ConfigureAwait(true);
-                StatusText = wasDefault ? "默认快照已重建" : "快照已删除";
+                await RefreshSnapshotsAsync().ConfigureAwait(true);
+                StatusText = "快照已删除";
             }).ConfigureAwait(true);
         }
 

@@ -34,6 +34,22 @@ GET /api/plugins
   → Return results
 ```
 
+### Compact Public Read Models
+
+The React client uses bounded projections while the default responses remain
+unchanged for legacy consumers:
+
+| Endpoint | Compact contract |
+|----------|------------------|
+| `GET /api/site/home?view=compact` | Home-only release counters, previews, update/tool summaries, recent changes, and docs |
+| `GET /api/site/changelog?view=compact` | Latest version and rendered changelog only |
+| `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
+
+Windows filters (`major_minor`, `branch`, `kind`, and `era`) apply before exact
+counts and pagination. `page_size` and `android_page_size` accept `20..200`.
+Each returned group reports its full filtered `visible_count` and the current
+slice's `page_item_count`; no group repeats an owning `items` collection.
+
 ## Quick Start
 
 ```bash
@@ -89,6 +105,7 @@ no inbound port or arbitrary command channel is opened.
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
 | GET `/api/admin/stats/overview` | `stats:read` |
+| GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -137,7 +154,53 @@ no inbound port or arbitrary command channel is opened.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/stats/overview` | Download and index statistics |
+| GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
+| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, response volume, and recorder health |
+
+`days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
+percentages in the range `0..100`. Response volume is based only on the existing
+HTTP `Content-Length` header. A missing or invalid header is counted as zero, so
+analytics never buffers or consumes streamed/file responses.
+
+`summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
+not a cross-day unique-person count, because the privacy identifier rotates every
+UTC day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
+within-day unique counts. Client aggregates therefore expose
+`clients[].uniqueVisitorDays`; the API deliberately does not publish a misleading
+multi-day `uniqueVisitors` field.
+
+#### Access Analytics Privacy and Retention
+
+Access analytics stores daily aggregate counters rather than request logs. Route
+statistics use the Flask route template (for example `/api/plugins/<plugin_id>`),
+not the raw URL. Query strings and referrer paths are never accepted by the event
+boundary. User-agent strings are reduced in memory to `desktop`, `mobile`,
+`tablet`, `bot`, or `other`, and are not stored verbatim. A visitor is represented
+by a daily HMAC derived from the configured application secret and remote address;
+the raw address is never persisted, and identifiers cannot be linked across days.
+
+Health/readiness probes, static assets, media, favicon/brand assets, and the stats
+or performance-observability endpoints themselves are excluded. Production
+requests enqueue sanitized events into a bounded in-memory queue and a background
+worker writes grouped SQLite
+transactions. Queue saturation or write failures drop only the analytics event;
+they do not delay or fail the HTTP response. Recorder state is returned as
+`pending`, `dropped`, `lastError`, `lastFlushAt`, and `capacity`.
+
+Configuration defaults:
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `access_analytics_enabled` | `true` | Enable request aggregation |
+| `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
+| `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
+| `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
+| `access_analytics_retention_days` | `90` | UTC daily aggregates retained by the scheduled cleanup |
+
+The same scheduled retention pass also removes expired access rows from
+recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
+admin backup is scrubbed to the current cutoff before it is reported as
+successful, so database snapshots cannot bypass visitor retention.
 
 ## Admin Pages
 
@@ -148,6 +211,7 @@ no inbound port or arbitrary command channel is opened.
 | `/admin/api-keys` | API Key lifecycle management |
 | `/admin/jobs` | Scheduled job management |
 | `/admin/audit` | Audit log viewer |
+| `/admin/traffic` | Privacy-preserving request traffic and recorder health |
 
 ## API Key Authentication
 
@@ -203,6 +267,7 @@ curl -X POST http://localhost:9998/api/packages/publish \
 | `update_index_check` | 10 min | Compare Update directory signature; refresh only if changed |
 | `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
+| `access_analytics_retention` | 1 day | Delete access aggregates older than the configured retention window |
 | `startup_index_check` | Once | Ensure all indexes are populated on startup |
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.

@@ -17,7 +17,7 @@ namespace ColorVision.UI
         /// </summary>
         public static Assembly[] GetAssemblies(this Application application)
         {
-            return AssemblyHandler.Instance.RefreshAssemblies();
+            return AssemblyHandler.Instance.GetAssemblies();
         }
     }
 
@@ -44,12 +44,41 @@ namespace ColorVision.UI
         };
 
         private Assembly[]? _assemblies;
+        private readonly HashSet<Assembly> _registeredAssemblies = new();
+        private readonly ConcurrentDictionary<Assembly, Type[]> _assemblyTypeCache = new();
         private readonly ConcurrentDictionary<Type, List<Type>> _implementationTypeCache = new();
         private readonly object _assembliesLock = new();
 
         private AssemblyHandler()
         {
             AssemblyService.SetInstance(this);
+        }
+
+        /// <summary>
+        /// Registers an assembly that intentionally contributes application features.
+        /// Registration also updates an existing discovery snapshot so correctness no
+        /// longer depends on whether the assembly was loaded before the first scan.
+        /// </summary>
+        public void RegisterAssembly(Assembly assembly)
+        {
+            ArgumentNullException.ThrowIfNull(assembly);
+            if (assembly.IsDynamic)
+                throw new ArgumentException("Dynamic assemblies cannot be registered as application modules.", nameof(assembly));
+
+            lock (_assembliesLock)
+            {
+                if (!_registeredAssemblies.Add(assembly))
+                    return;
+
+                if (_assemblies != null
+                    && IsCustomAssembly(assembly.GetName().Name, assembly)
+                    && TryLoadAssemblyTypes(assembly, out _))
+                {
+                    _assemblies = _assemblies.Append(assembly).Distinct().ToArray();
+                }
+
+                _implementationTypeCache.Clear();
+            }
         }
 
         /// <summary>
@@ -121,23 +150,42 @@ namespace ColorVision.UI
         /// <summary>
         /// Safely loads types from an assembly
         /// </summary>
-        private static bool TryLoadAssemblyTypes(Assembly assembly)
+        private bool TryLoadAssemblyTypes(Assembly assembly, out Type[] types)
         {
+            if (_assemblyTypeCache.TryGetValue(assembly, out types!))
+                return true;
+
             try
             {
-                _ = assembly.GetTypes();
+                types = assembly.GetTypes();
+                _assemblyTypeCache.TryAdd(assembly, types);
                 return true;
             }
             catch (ReflectionTypeLoadException ex)
             {
+                types = Array.Empty<Type>();
                 Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
                 return false;
             }
             catch (Exception ex)
             {
+                types = Array.Empty<Type>();
                 Log.Error($"Unexpected error loading types from assembly '{assembly.FullName}': {ex.Message}", ex);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Gets the cached loadable types for an application assembly.
+        /// Assembly metadata is immutable after load, so sharing this snapshot avoids
+        /// repeating RuntimeModule.GetTypes across every startup discovery surface.
+        /// </summary>
+        public IReadOnlyList<Type> GetTypes(Assembly assembly)
+        {
+            ArgumentNullException.ThrowIfNull(assembly);
+            return TryLoadAssemblyTypes(assembly, out Type[] types)
+                ? types
+                : Array.Empty<Type>();
         }
 
         /// <summary>
@@ -148,10 +196,12 @@ namespace ColorVision.UI
             lock (_assembliesLock)
             {
                 var customAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Concat(_registeredAssemblies)
+                    .Distinct()
                     .Where(assembly =>
                     {
                         string? name = assembly.GetName().Name;
-                        return IsCustomAssembly(name, assembly) && TryLoadAssemblyTypes(assembly);
+                        return IsCustomAssembly(name, assembly) && TryLoadAssemblyTypes(assembly, out _);
                     })
                     .ToArray();
 
@@ -212,29 +262,8 @@ namespace ColorVision.UI
 
                 foreach (var assembly in assemblies)
                 {
-                    try
-                    {
-                        var types = assembly.GetTypes()
-                            .Where(t => IsInstantiableImplementation(t, key));
-
-                        implementationTypes.AddRange(types);
-                    }
-                    catch (ReflectionTypeLoadException ex)
-                    {
-                        Log.Error($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}", ex);
-
-                        // Try to salvage successfully loaded types
-                        if (ex.Types != null)
-                        {
-                            var loadedTypes = ex.Types
-                                .Where(t => t != null && IsInstantiableImplementation(t, key));
-                            implementationTypes.AddRange(loadedTypes!);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"Error processing assembly '{assembly.FullName}': {ex.Message}", ex);
-                    }
+                    implementationTypes.AddRange(GetTypes(assembly)
+                        .Where(t => IsInstantiableImplementation(t, key)));
                 }
 
                 if (Log.IsDebugEnabled)
@@ -295,6 +324,7 @@ namespace ColorVision.UI
             lock (_assembliesLock)
             {
                 _assemblies = null;
+                _assemblyTypeCache.Clear();
                 _implementationTypeCache.Clear();
             }
         }

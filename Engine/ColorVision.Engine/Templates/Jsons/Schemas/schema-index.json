@@ -14,11 +14,11 @@
     },
     {
       "code": "CaliAngleShift",
-      "reason": "Template folder is under Deprecated; schema is intentionally not maintained."
+      "reason": "Deprecated template implementation was removed; schema is intentionally not maintained."
     },
     {
       "code": "CompoundImg",
-      "reason": "Template folder is under Deprecated; schema is intentionally not maintained."
+      "reason": "Deprecated template implementation was removed; schema is intentionally not maintained."
     }
   ],
   "schemas": [

@@ -18,6 +18,7 @@ public class AlgorithmKBOutputNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

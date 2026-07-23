@@ -8,6 +8,71 @@ export interface AdminStats {
   latestReleaseVersion: string
   pluginCatalogCached: boolean
   dbSizeBytes: number
+  visitsToday: number
+  uniqueVisitorsToday: number
+  avgResponseMsToday: number
+  errorResponsesToday: number
+}
+
+export interface TrafficSummary {
+  periodStart: string
+  periodEnd: string
+  days: number
+  visits: number
+  uniqueVisitorDays: number
+  avgResponseMs: number
+  errorResponses: number
+  errorRate: number
+  totalResponseBytes: number
+}
+
+export interface TrafficDayStats {
+  day: string
+  visits: number
+  uniqueVisitors: number
+  avgResponseMs: number
+  maxResponseMs: number
+  errorResponses: number
+  errorRate: number
+  totalDurationMs: number
+  totalResponseBytes: number
+}
+
+export interface TrafficRouteStats {
+  route: string
+  method: string
+  visits: number
+  errorResponses: number
+  errorRate: number
+  avgResponseMs: number
+  maxResponseMs: number
+  responseBytes: number
+}
+
+export interface TrafficClientStats {
+  client: 'desktop' | 'mobile' | 'tablet' | 'bot' | 'other'
+  visits: number
+  uniqueVisitorDays: number
+  share: number
+  errorResponses: number
+  avgResponseMs: number
+}
+
+export interface TrafficRecorderStatus {
+  pending: number
+  dropped: number
+  lastError: string | null
+  lastFlushAt?: string | null
+  capacity?: number
+}
+
+export interface TrafficStatsResponse {
+  summary: TrafficSummary
+  today: TrafficDayStats
+  daily: TrafficDayStats[]
+  topRoutes: TrafficRouteStats[]
+  clients: TrafficClientStats[]
+  recorder: TrafficRecorderStatus
 }
 
 export interface CacheStatus {

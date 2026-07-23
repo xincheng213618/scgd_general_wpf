@@ -3,7 +3,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from page_contexts import build_browse_page_context, build_index_page_context, build_releases_page_context
+from page_contexts import (
+    build_browse_page_context,
+    build_compact_index_page_context,
+    build_compact_releases_page_context,
+    build_index_page_context,
+    build_releases_page_context,
+)
 
 
 class PageContextsTests(unittest.TestCase):
@@ -147,6 +153,81 @@ class PageContextsTests(unittest.TestCase):
 
         self.assertTrue(context["archive_visible_groups"][0]["is_expanded"])
         self.assertFalse(context["archive_visible_groups"][1]["is_expanded"])
+
+    def test_build_compact_releases_page_context_paginates_globally_without_item_duplication(self):
+        app_info = self._sample_app_info()
+        app_info["android_releases"] = [{"version": "1.2.0.1", "platform": "android"}]
+        app_info["current_android_releases"] = list(app_info["android_releases"])
+        app_info["archived_android_releases"] = [{"version": "1.1.0.1", "platform": "android"}]
+        context = build_compact_releases_page_context(app_info, page=2, page_size=2)
+
+        self.assertEqual(context["archive_visible_item_count"], 3)
+        self.assertEqual(context["archive_visible_group_count"], 2)
+        self.assertEqual(context["archive_page"], 2)
+        self.assertEqual(context["archive_total_pages"], 2)
+        self.assertEqual(context["archive_page_item_count"], 1)
+        self.assertEqual(context["archive_page_group_count"], 1)
+        self.assertTrue(context["archive_has_previous"])
+        self.assertFalse(context["archive_has_next"])
+        group = context["archive_visible_groups"][0]
+        self.assertEqual(group["branch"], "1.0.0")
+        self.assertNotIn("items", group)
+        self.assertEqual(len(group["visible_items"]), 1)
+        self.assertEqual(group["page_item_count"], 1)
+        self.assertNotIn("archive_timeline_groups", context["app_info"])
+        self.assertNotIn("android_releases", context["app_info"])
+        self.assertEqual(len(context["app_info"]["archived_android_releases"]), 1)
+        self.assertEqual(context["android_page"], 1)
+        self.assertEqual(context["android_total_item_count"], 1)
+
+    def test_compact_group_totals_remain_global_when_one_group_spans_pages(self):
+        app_info = self._sample_app_info()
+        group_items = []
+        for fix in range(150):
+            is_archive = fix % 2 == 0
+            group_items.append({
+                "version": f"2.0.0.{fix}",
+                "kind": "ZIP" if is_archive else "EXE",
+                "kind_label": "ZIP 归档" if is_archive else "安装包",
+                "era": "archive" if is_archive else "installer",
+                "era_label": "压缩归档时代" if is_archive else "安装包时代",
+                "relative_path": f"History/2.0/2.0.0/{fix}",
+            })
+        app_info["archive_timeline_groups"] = [{
+            "major_minor": "2.0",
+            "branch": "2.0.0",
+            "items": group_items,
+            "count": 150,
+        }]
+        app_info["archived_android_releases"] = []
+
+        first = build_compact_releases_page_context(app_info, page=1, page_size=100)
+        second = build_compact_releases_page_context(app_info, page=2, page_size=100)
+
+        for context, expected_page_count in ((first, 100), (second, 50)):
+            group = context["archive_visible_groups"][0]
+            self.assertEqual(group["visible_count"], 150)
+            self.assertEqual(group["page_item_count"], expected_page_count)
+            self.assertEqual(group["visible_kind_summary"], "ZIP 归档 · 安装包")
+            self.assertEqual(group["visible_era_summary"], "压缩归档时代 · 安装包时代")
+
+    def test_build_compact_index_page_context_has_only_home_consumed_fields(self):
+        context = build_compact_index_page_context({
+            "app_info": self._sample_app_info(),
+            "update_summary": {"canonical_count": 2},
+            "tool_summary": {"file_count": 3},
+            "recent_change_dashboard": [{"title": "change"}],
+            "docs": {"total": 1},
+            "overview": [{"name": "must not leak"}],
+        })
+
+        self.assertEqual(
+            set(context),
+            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs"},
+        )
+        self.assertNotIn("archive_recent", context["app_info"])
+        self.assertNotIn("archive_timeline_groups", context["app_info"])
+        self.assertEqual(context["app_info"]["current_count"], 1)
 
     def test_build_index_page_context_includes_recent_change_dashboard(self):
         overview = [

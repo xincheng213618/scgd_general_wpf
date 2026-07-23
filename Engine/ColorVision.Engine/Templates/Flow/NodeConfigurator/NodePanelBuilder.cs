@@ -1,10 +1,13 @@
 #pragma warning disable CS8625
 using ColorVision.Engine.Templates.Jsons;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
@@ -33,157 +36,99 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             };
         }
 
-        public void AddTemplateCollectionPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
+        private (DockPanel Panel, HandyControl.Controls.ComboBox ComboBox) CreateTemplateSelector<T>(string propertyName, string signName, IEnumerable<TemplateModel<T>> itemSource) where T : ParamBase
         {
+            var property = _context.Node.GetType().GetProperty(propertyName);
+            if (property?.PropertyType != typeof(string) || !property.CanWrite)
+                throw new InvalidOperationException($"{_context.Node.GetType().Name}.{propertyName} must be a writable string property.");
+
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(CreateSignLabel(signName));
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
-                SelectedValuePath = "Value",
+                IsEditable = true,
+                SelectedValuePath = "Key",
                 DisplayMemberPath = "Key",
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
             };
-
             HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
             comboBox.ItemsSource = itemSource;
-            var selectedItem = itemSource.FirstOrDefault(x => x.Key == tempName);
-            if (selectedItem != null)
-                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
+            comboBox.SetBinding(Selector.SelectedValueProperty, new Binding(propertyName)
             {
-                string selectedName = string.Empty;
+                Source = _context.Node,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+                Converter = EmptySelectionConverter.Instance
+            });
 
-                if (comboBox.SelectedValue is T templateModel)
-                {
-                    selectedName = templateModel.Name;
-                }
-                updateStorageAction(selectedName);
-                _context.RefreshPropertyEditor();
-            };
-
-            dockPanel.Children.Add(comboBox);
-            _context.SignStackPanel.Children.Add(dockPanel);
+            return (dockPanel, comboBox);
         }
 
-        public void AddTemplateJsonPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
+        private static Button CreateOpenTemplateEditorButton(ITemplate template, ComboBox comboBox)
         {
-            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(CreateSignLabel(signName));
-            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-            {
-                SelectedValuePath = "Value",
-                DisplayMemberPath = "Key",
-                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
-            };
-
-            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-            comboBox.ItemsSource = template.TemplateParams;
-            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
-            if (selectedItem != null)
-                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                string selectedName = string.Empty;
-
-                if (comboBox.SelectedValue is T templateModel)
-                {
-                    selectedName = templateModel.Name;
-                }
-                updateStorageAction(selectedName);
-                _context.RefreshPropertyEditor();
-            };
-
             TextBlock textBlock = new TextBlock
             {
                 Text = "\uE713",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 FontFamily = new FontFamily("Segoe MDL2 Assets"),
                 FontSize = 15,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             };
 
-            Button openTemplateEditorButton = new Button
+            Button button = new Button
             {
                 Width = 20,
                 Padding = new Thickness(2),
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(5, 0, 0, 0),
+                Content = textBlock
             };
-            openTemplateEditorButton.Content = textBlock;
-            openTemplateEditorButton.Click += (s, e) =>
+            button.Click += (_, _) =>
             {
-                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            };
-
-            DockPanel.SetDock(openTemplateEditorButton, Dock.Right);
-            dockPanel.Children.Add(openTemplateEditorButton);
-
-            dockPanel.Children.Add(comboBox);
-
-            _context.SignStackPanel.Children.Add(dockPanel);
-        }
-
-        public void AddTemplatePanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
-        {
-            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(CreateSignLabel(signName));
-
-            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-            {
-                SelectedValuePath = "Value",
-                DisplayMemberPath = "Key",
-                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
-            };
-            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-            comboBox.ItemsSource = template.TemplateParams;
-            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
-            if (selectedItem != null)
-                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                string selectedName = string.Empty;
-
-                if (comboBox.SelectedValue is T templateModel)
+                new TemplateEditorWindow(template, comboBox.SelectedIndex)
                 {
-                    selectedName = templateModel.Name;
-                }
-                updateStorageAction(selectedName);
-                _context.RefreshPropertyEditor();
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.ShowDialog();
             };
-
-            TextBlock textBlock = new TextBlock
-            {
-                Text = "\uE713",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                FontSize = 15,
-                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
-            };
-
-            Button openTemplateEditorButton = new Button
-            {
-                Width = 20,
-                Padding = new Thickness(2),
-                BorderThickness = new Thickness(0),
-                Margin = new Thickness(5, 0, 0, 0),
-            };
-            openTemplateEditorButton.Content = textBlock;
-            openTemplateEditorButton.Click += (s, e) =>
-            {
-                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            };
-
-            DockPanel.SetDock(openTemplateEditorButton, Dock.Right);
-            dockPanel.Children.Add(openTemplateEditorButton);
-
-            dockPanel.Children.Add(comboBox);
-
-            _context.SignStackPanel.Children.Add(dockPanel);
+            return button;
         }
 
+        public void AddTemplateCollectionPanel<T>(string propertyName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
+        {
+            var selector = CreateTemplateSelector(propertyName, signName, itemSource);
+            selector.Panel.Children.Add(selector.ComboBox);
+            _context.SignStackPanel.Children.Add(selector.Panel);
+        }
+
+        public void AddTemplateJsonPanel<T>(string propertyName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
+        {
+            var selector = CreateTemplateSelector(propertyName, signName, template.TemplateParams);
+            Button openTemplateEditorButton = CreateOpenTemplateEditorButton(template, selector.ComboBox);
+            DockPanel.SetDock(openTemplateEditorButton, Dock.Right);
+            selector.Panel.Children.Add(openTemplateEditorButton);
+            selector.Panel.Children.Add(selector.ComboBox);
+            _context.SignStackPanel.Children.Add(selector.Panel);
+        }
+
+        public void AddTemplatePanel<T>(string propertyName, string signName, ITemplate<T> template) where T : ParamModBase, new()
+        {
+            var selector = CreateTemplateSelector(propertyName, signName, template.TemplateParams);
+            Button openTemplateEditorButton = CreateOpenTemplateEditorButton(template, selector.ComboBox);
+            DockPanel.SetDock(openTemplateEditorButton, Dock.Right);
+            selector.Panel.Children.Add(openTemplateEditorButton);
+            selector.Panel.Children.Add(selector.ComboBox);
+            _context.SignStackPanel.Children.Add(selector.Panel);
+        }
+
+        private sealed class EmptySelectionConverter : IValueConverter
+        {
+            public static EmptySelectionConverter Instance { get; } = new EmptySelectionConverter();
+
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value;
+
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => value ?? string.Empty;
+        }
     }
 }

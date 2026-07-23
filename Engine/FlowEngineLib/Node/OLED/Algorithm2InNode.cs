@@ -30,6 +30,7 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -44,6 +45,7 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -57,6 +59,7 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -70,6 +73,7 @@ public class Algorithm2InNode : CVBaseServerNodeHub
 		set
 		{
 			_IsAdd = value;
+			OnPropertyChanged();
 		}
 	}
 

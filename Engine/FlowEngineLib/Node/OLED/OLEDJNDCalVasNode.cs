@@ -26,6 +26,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		set
 		{
 			_OrderIndex = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -39,6 +40,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +69,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -79,6 +83,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeHub
 		set
 		{
 			_IsAdd = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -3,6 +3,7 @@ import { Alert, Button, Card, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getChangelog } from '../services/site'
+import { sanitizeHtml } from '../utils/sanitizeHtml'
 
 export function ChangelogPage() {
   const [data, setData] = useState<{ latest_version?: string; changelog_html?: string } | null>(null)
@@ -10,10 +11,22 @@ export function ChangelogPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getChangelog()
-      .then((payload) => setData(payload.app_info))
-      .catch((err) => setError(err instanceof Error ? err.message : '更新说明加载失败'))
-      .finally(() => setLoading(false))
+    let mounted = true
+    const controller = new AbortController()
+    getChangelog(controller.signal)
+      .then((payload) => {
+        if (mounted) setData(payload.app_info)
+      })
+      .catch((err) => {
+        if (mounted) setError(err instanceof Error ? err.message : '更新说明加载失败')
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => {
+      mounted = false
+      controller.abort()
+    }
   }, [])
 
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} />
@@ -33,7 +46,7 @@ export function ChangelogPage() {
       </Card>
       <Card title="变更记录">
         {data.changelog_html ? (
-          <div className="markdown-body" dangerouslySetInnerHTML={{ __html: data.changelog_html }} />
+          <div className="markdown-body" dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.changelog_html) }} />
         ) : (
           <Typography.Text type="secondary">未检测到 CHANGELOG.md</Typography.Text>
         )}

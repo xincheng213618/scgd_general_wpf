@@ -55,6 +55,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		set
 		{
 			_AvgCount = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -68,6 +69,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		set
 		{
 			_Gain = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -82,6 +84,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_ExpTime = value;
 			m_ctrl_exp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -96,6 +99,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_CaliTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -109,6 +113,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		set
 		{
 			_FlipMode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -123,6 +128,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_POITempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -137,6 +143,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_POIFilterTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -151,6 +158,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_POIReviseTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -165,6 +173,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -179,6 +188,7 @@ public class LVXRCameraNode : CVBaseServerNode
 		{
 			_XRTempName = value;
 			m_ctrl_algTemp.Value = _XRTempName;
+			OnPropertyChanged();
 		}
 	}
 

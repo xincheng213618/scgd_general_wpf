@@ -501,7 +501,6 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 var dockPanel = FlowNodePropertyPanel.Instance;
                 if (dockPanel == null) return;
-                dockPanel.EditorHelper = this;
                 signPanel = dockPanel.SignStackPanel;
             }
             else
@@ -543,11 +542,8 @@ namespace ColorVision.Engine.Templates.Flow
                     Node = STNodeEditor.ActiveNode,
                     SignStackPanel = signPanel,
                     STNodeEditor = STNodeEditor,
-                    PropertyStackPanel = StackPanel,
-                    OnActiveChanged = RefreshActiveNodePropertyPanel
+                    Refresh = RefreshActiveNodePropertyPanel
                 };
-                if (STNodeEditor.ActiveNode is CVCommonNode commonNode)
-                    context.RebindNodeEvent(commonNode, nameof(RefreshActiveNodePropertyPanel), RefreshActiveNodePropertyPanel);
                 configurator.Configure(context);
             }
 
@@ -558,7 +554,8 @@ namespace ColorVision.Engine.Templates.Flow
             StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
                 STNodeEditor.ActiveNode,
                 resourceManager,
-                metadataProvider: FlowNodePropertyMetadataProvider.Instance));
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance,
+                advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
@@ -580,14 +577,26 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region ContextMenu
 
-        private static string LocalizeNodeMenuPath(string path)
+        private static readonly string[] CoreNodeMenuAssemblyPrefixes =
+        {
+            "FlowEngineLib/",
+            "ColorVision.Engine/",
+        };
+
+        internal static string LocalizeNodeMenuPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
                 return path;
 
-            string displayPath = path.StartsWith("FlowEngineLib/", StringComparison.Ordinal)
-                ? path.Substring("FlowEngineLib/".Length)
-                : path;
+            string displayPath = path;
+            foreach (string prefix in CoreNodeMenuAssemblyPrefixes)
+            {
+                if (!displayPath.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+
+                displayPath = displayPath.Substring(prefix.Length);
+                break;
+            }
 
             return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
         }
@@ -838,31 +847,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region AutoLayout
         public ConnectionInfo[] ConnectionInfo { get; set; }
-        public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2); OnPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.ClientSize.Width / 2f, STNodeEditor.ClientSize.Height / 2f); OnPropertyChanged(); } }
         public void AutoSize()
         {
-            // Calculate the centers
-            var boundsCenterX = STNodeEditor.Bounds.Width / 2;
-            var boundsCenterY = STNodeEditor.Bounds.Height / 2;
-
-            // Calculate the scale factor to fit CanvasValidBounds within Bounds
-            var scaleX = (float)STNodeEditor.Bounds.Width / (float)STNodeEditor.CanvasValidBounds.Width;
-            var scaleY = (float)STNodeEditor.Bounds.Height / (float)STNodeEditor.CanvasValidBounds.Height;
-            CanvasScale = Math.Min(scaleX, scaleY);
-            CanvasScale = CanvasScale > 1 ? 1 : CanvasScale;
-            // Apply the scale
-            STNodeEditor.ScaleCanvas(CanvasScale, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2);
-
-            var validBoundsCenterX = STNodeEditor.CanvasValidBounds.Width / 2;
-
-            // Align to top-left with a small margin
-            var offsetX = 10 - STNodeEditor.CanvasValidBounds.X * CanvasScale;
-            var offsetY = 10 - STNodeEditor.CanvasValidBounds.Y * CanvasScale;
-
-
-            // Move the canvas
-            STNodeEditor.MoveCanvas(offsetX, STNodeEditor.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
-            STNodeEditor.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
+            STNodeEditor.FitCanvasToNodes();
+            OnPropertyChanged(nameof(CanvasScale));
         }
 
         private const int AutoLayoutHorizontalSpacing = 220;

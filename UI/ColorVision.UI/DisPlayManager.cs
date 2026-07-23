@@ -21,7 +21,7 @@ namespace ColorVision.UI
         /// <summary>
         /// 注册视图控件到 DockViewManager。
         /// 控件只需是 UserControl，标题通过 title 参数传入。
-        /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
+        /// 双击控件时激活对应视图，单击只保留控件自身的选择和编辑行为。
         /// </summary>
  
 
@@ -36,8 +36,6 @@ namespace ColorVision.UI
                     {
                         Theme.Light => "#5649B0",
                         Theme.Dark => "#A79CF1",
-                        Theme.Pink => "#F06292", // 粉色主题选中颜色
-                        Theme.Cyan => "#00BCD4", // 青色主题选中颜色
                         _ => "#A79CF1" // 默认颜色
                     });
                 }
@@ -51,26 +49,36 @@ namespace ColorVision.UI
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
             if (disPlayControl is UserControl userControl)
+                RegisterSelectionInput(disPlayControl, userControl);
+        }
+
+        internal static void RegisterSelectionInput(IDisPlayControl disPlayControl, UserControl userControl)
+        {
+            userControl.Focusable = true;
+            userControl.PreviewMouseDown += (s, e) =>
             {
-                userControl.Focusable = true;
-                userControl.MouseDown += (s, e) =>
-                {
-                    DisPlayManager.GetInstance().SelectControl(disPlayControl);
-                    userControl.Focus();
-                };
-            }
+                DisPlayManager.GetInstance().SelectControl(disPlayControl);
+            };
+            userControl.MouseDown += (s, e) =>
+            {
+                userControl.Focus();
+            };
         }
 
         public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
         {
             var manager = DockViewManager.GetInstance();
-            manager.AddView(viewControl);
             if (!string.IsNullOrEmpty(title))
-                manager.ViewTitles[viewControl] = title;
+                manager.SetViewTitle(viewControl, title);
+            manager.AddView(viewControl);
 
-            userControl.PreviewMouseDown += (s, e) =>
+            userControl.MouseDoubleClick += (s, e) =>
             {
-                manager.SelectView(viewControl);
+                if (e.ChangedButton != MouseButton.Left)
+                    return;
+
+                manager.ActiveView(viewControl);
+                e.Handled = true;
             };
         }
     }
@@ -140,16 +148,7 @@ namespace ColorVision.UI
             RebuildPanel();
 
             if (IDisPlayControls.Count > 0)
-            {
-                int index = DisPlayManagerConfig.Instance.LastSelectIndex;
-                if (index < 0 || index >= IDisPlayControls.Count)
-                {
-                    index = 0;
-                    DisPlayManagerConfig.Instance.LastSelectIndex = index;
-                }
-
-                SelectControl(IDisPlayControls[index]);
-            }
+                RestoreLastSelectedControl();
         }
 
         private void IDisPlayControls_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -158,6 +157,47 @@ namespace ColorVision.UI
                 return;
 
             RebuildPanel();
+        }
+
+        /// <summary>
+        /// Replaces the complete display-control snapshot and rebuilds the visual
+        /// panel once. Startup service discovery can otherwise trigger a full panel
+        /// rebuild for every device added to the observable collection.
+        /// </summary>
+        public void ReplaceControls(IEnumerable<IDisPlayControl> controls)
+        {
+            ArgumentNullException.ThrowIfNull(controls);
+            _suppressCollectionChanged = true;
+            try
+            {
+                IDisPlayControls.Clear();
+                foreach (IDisPlayControl control in controls)
+                {
+                    IDisPlayControls.Add(control);
+                }
+            }
+            finally
+            {
+                _suppressCollectionChanged = false;
+            }
+
+            RestoreControl();
+            RestoreLastSelectedControl();
+        }
+
+        private void RestoreLastSelectedControl()
+        {
+            if (IDisPlayControls.Count == 0)
+                return;
+
+            int index = DisPlayManagerConfig.Instance.LastSelectIndex;
+            if (index < 0 || index >= IDisPlayControls.Count)
+            {
+                index = 0;
+                DisPlayManagerConfig.Instance.LastSelectIndex = index;
+            }
+
+            SelectControl(IDisPlayControls[index]);
         }
 
         public void SelectControl(IDisPlayControl disPlayControl)

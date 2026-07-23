@@ -36,6 +36,7 @@ public class AlgorithmNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -49,6 +50,7 @@ public class AlgorithmNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -62,8 +64,9 @@ public class AlgorithmNode : CVBaseServerNode
 		set
 		{
 			_POITempName = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 	[STNodeProperty("图像文件", "图像文件", true)]
 	[System.ComponentModel.DataAnnotations.Display(Order = -100)]
@@ -77,8 +80,9 @@ public class AlgorithmNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 	[STNodeProperty("颜色", "颜色", true)]
 	public CVOLED_COLOR Color
@@ -91,6 +95,7 @@ public class AlgorithmNode : CVBaseServerNode
 		{
 			_Color = value;
 			m_ctrl_color.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -104,6 +109,7 @@ public class AlgorithmNode : CVBaseServerNode
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

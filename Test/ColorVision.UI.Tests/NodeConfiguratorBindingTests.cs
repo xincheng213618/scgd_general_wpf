@@ -1,0 +1,216 @@
+#pragma warning disable CA1707
+using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow.NodeConfigurator;
+using ColorVision.Engine.Templates.Flow.Nodes;
+using FlowEngineLib;
+using FlowEngineLib.PropertyEditor;
+using HandyControl.Interactivity;
+using ST.Library.UI.NodeEditor;
+using System.Collections.ObjectModel;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using System.Windows.Threading;
+
+namespace ColorVision.UI.Tests;
+
+public class NodeConfiguratorBindingTests
+{
+    private sealed class AdvancedFilterConfig
+    {
+        public string StandardValue { get; set; } = "Standard";
+        public string AdvancedValue { get; set; } = "Advanced";
+    }
+
+    [Fact]
+    public void PropertyEditors_BindAndFilterAdvancedProperties()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                Application application = Application.Current ?? new Application();
+                application.Resources["GlobalTextBrush"] = Brushes.Black;
+                application.Resources["GlobalBorderBrush"] = Brushes.Transparent;
+                application.Resources["BorderBrush"] = Brushes.Gray;
+                application.Resources["PrimaryBrush"] = Brushes.DodgerBlue;
+                application.Resources["GlobalBackground"] = Brushes.White;
+                application.Resources["PrimaryTextBrush"] = Brushes.Black;
+                application.Resources["SecondaryTextBrush"] = Brushes.Gray;
+                application.Resources["ButtonCommand"] = new Style(typeof(Button));
+                application.Resources["ComboBox.Small"] = new Style(typeof(ComboBox));
+                application.Resources["TextBox.Small"] = new Style(typeof(TextBox));
+                application.Resources["ComboBoxPlus.Small"] = new Style(typeof(HandyControl.Controls.ComboBox));
+                application.Resources["bool2VisibilityConverter"] = new BooleanToVisibilityConverter();
+
+                var node = new STNodeHub { Title = "First" };
+                var panel = new StackPanel();
+                var context = new NodeConfiguratorContext
+                {
+                    Node = node,
+                    SignStackPanel = panel
+                };
+                var templates = new ObservableCollection<TemplateModel<ParamModBase>>
+                {
+                    new("First", new ParamModBase { Name = "First" }),
+                    new("Second", new ParamModBase { Name = "Second" })
+                };
+
+                context.AddTemplateCollectionPanel(nameof(node.Title), "Template", templates);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+
+                var selectorPanel = Assert.IsType<DockPanel>(Assert.Single(panel.Children));
+                var comboBox = Assert.Single(selectorPanel.Children.OfType<HandyControl.Controls.ComboBox>());
+                Assert.True(comboBox.IsEditable);
+                Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(comboBox));
+                Assert.Equal("First", comboBox.SelectedValue);
+
+                comboBox.SelectedValue = "Second";
+                comboBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateSource();
+                Assert.Equal("Second", node.Title);
+
+                node.Title = "First";
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                Assert.Equal("First", comboBox.SelectedValue);
+
+                Assert.Empty(selectorPanel.Children.OfType<Button>());
+                ControlCommands.Clear.Execute(null, comboBox);
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                Assert.Equal(-1, comboBox.SelectedIndex);
+                Assert.Equal(string.Empty, node.Title);
+
+                const string cameraTemplateName = "UnitTest.Camera.Template";
+                var cameraTemplate = new TemplateModel<CameraRunParam>(cameraTemplateName, new CameraRunParam { Name = cameraTemplateName });
+                TemplateCameraRunParam.Params.Add(cameraTemplate);
+                try
+                {
+                    var localCameraNode = new LocalCameraNode { CamTempName = cameraTemplateName };
+                    FlowNodePropertyEditorRegistration.EnsureRegistered();
+                    var cameraTemplateProperty = typeof(LocalCameraNode).GetProperty(nameof(LocalCameraNode.CamTempName));
+                    Assert.NotNull(cameraTemplateProperty);
+
+                    DockPanel cameraTemplateEditor = new FlowCameraRunTemplateEditor().GenProperties(cameraTemplateProperty, localCameraNode);
+                    var cameraTemplateCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(cameraTemplateEditor));
+                    Assert.True(cameraTemplateCombo.IsEditable);
+                    Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(cameraTemplateCombo));
+                    Assert.Equal(cameraTemplateName, ((TemplateBase)cameraTemplateCombo.SelectedItem).Key);
+
+                    Assert.DoesNotContain(
+                        FindVisualChildren<Button>(cameraTemplateEditor),
+                        button => button.Content is TextBlock { Text: "\uE711" });
+                    ControlCommands.Clear.Execute(null, cameraTemplateCombo);
+
+                    Assert.Equal(-1, cameraTemplateCombo.SelectedIndex);
+                    Assert.Equal(string.Empty, localCameraNode.CamTempName);
+                }
+                finally
+                {
+                    TemplateCameraRunParam.Params.Remove(cameraTemplate);
+                }
+
+                var smuNode = new SMUNode
+                {
+                    SrcRng = 6,
+                    LmtRng = 3000
+                };
+                smuNode.Create();
+                FlowNodePropertyEditorRegistration.EnsureRegistered();
+
+                Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUNode), nameof(SMUNode.SrcRng)));
+                Assert.Equal(typeof(FlowSmuRangeEditor), FlowNodePropertyEditorAttribute.Resolve(typeof(SMUFromCSVNode), nameof(SMUFromCSVNode.LmtRng)));
+
+                PropertyInfo sourceRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.SrcRng))!;
+                PropertyInfo limitRangeProperty = typeof(SMUNode).GetProperty(nameof(SMUNode.LmtRng))!;
+                var sourceRangeEditor = new FlowSmuRangeEditor().GenProperties(sourceRangeProperty, smuNode);
+                var limitRangeEditor = new FlowSmuRangeEditor().GenProperties(limitRangeProperty, smuNode);
+                var sourceRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(sourceRangeEditor));
+                var limitRangeCombo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(limitRangeEditor));
+
+                Assert.True(sourceRangeCombo.IsEditable);
+                Assert.True(HandyControl.Controls.InfoElement.GetShowClearButton(sourceRangeCombo));
+                Assert.Equal(new[] { 0.1, 1, 6, 40 }, GetNumericItems(sourceRangeCombo));
+                Assert.Equal(new[] { 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 3000 }, GetNumericItems(limitRangeCombo));
+
+                sourceRangeCombo.Text = "2.5";
+                sourceRangeCombo.GetBindingExpression(ComboBox.TextProperty)?.UpdateSource();
+                Assert.Equal(2.5, smuNode.SrcRng);
+
+                smuNode.Source = SourceType.Current_I;
+                Assert.Equal(new[] { 0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000, 3000 }, GetNumericItems(sourceRangeCombo));
+                Assert.Equal(new[] { 0.1, 1, 6, 40 }, GetNumericItems(limitRangeCombo));
+
+                var filterConfig = new AdvancedFilterConfig();
+                var advancedOptions = new PropertyEditorAdvancedOptions(property => property.Name == nameof(AdvancedFilterConfig.AdvancedValue));
+                StackPanel propertyEditor = PropertyEditorHelper.GenPropertyEditorControl(filterConfig, advancedOptions: advancedOptions);
+
+                Assert.Equal(new[] { nameof(AdvancedFilterConfig.StandardValue) }, GetDisplayedPropertyNames(propertyEditor));
+                ToggleButton advancedToggle = Assert.Single(FindVisualChildren<ToggleButton>(propertyEditor));
+                Assert.Equal(Dock.Right, DockPanel.GetDock(advancedToggle));
+                Assert.IsType<Canvas>(advancedToggle.Content);
+                Assert.IsType<StackPanel>(Assert.Single(propertyEditor.Children));
+
+                advancedToggle.IsChecked = true;
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                Assert.True(advancedOptions.ShowAdvancedProperties);
+                Assert.Equal(
+                    new[] { nameof(AdvancedFilterConfig.AdvancedValue), nameof(AdvancedFilterConfig.StandardValue) }.Order(),
+                    GetDisplayedPropertyNames(propertyEditor).Order());
+
+                advancedToggle = Assert.Single(FindVisualChildren<ToggleButton>(propertyEditor));
+                advancedToggle.IsChecked = false;
+                Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                Assert.False(advancedOptions.ShowAdvancedProperties);
+                Assert.Equal(new[] { nameof(AdvancedFilterConfig.StandardValue) }, GetDisplayedPropertyNames(propertyEditor));
+
+                StackPanel defaultEditor = PropertyEditorHelper.GenPropertyEditorControl(filterConfig);
+                Assert.Empty(FindVisualChildren<ToggleButton>(defaultEditor));
+                Assert.IsType<Border>(Assert.Single(defaultEditor.Children));
+                Assert.Equal(2, GetDisplayedPropertyNames(defaultEditor).Count);
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (failure != null)
+            ExceptionDispatchInfo.Capture(failure).Throw();
+    }
+
+    private static List<string> GetDisplayedPropertyNames(DependencyObject root)
+    {
+        return FindVisualChildren<DockPanel>(root)
+            .Select(panel => panel.Tag)
+            .OfType<PropertyInfo>()
+            .Select(property => property.Name)
+            .ToList();
+    }
+
+    private static double[] GetNumericItems(ItemsControl comboBox)
+    {
+        return comboBox.Items.Cast<object>().Select(item => double.Parse(item.ToString()!, System.Globalization.CultureInfo.CurrentCulture)).ToArray();
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            if (child is T match)
+                yield return match;
+
+            foreach (T descendant in FindVisualChildren<T>(child))
+                yield return descendant;
+        }
+    }
+}

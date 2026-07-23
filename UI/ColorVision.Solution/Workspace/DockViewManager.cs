@@ -46,6 +46,13 @@ namespace ColorVision.Solution.Workspace
                 SelectDocument(doc);
             };
 
+            manager.ViewAddedHandler = control => EnsureDocument(control);
+            manager.ViewTitleChangedHandler = (control, title) =>
+            {
+                if (_viewDocuments.TryGetValue(control, out var document))
+                    document.Title = title;
+            };
+
             manager.ShowAllViewsHandler = () =>
             {
                 foreach (var control in manager.Views)

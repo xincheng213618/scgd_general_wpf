@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -19,6 +20,10 @@ namespace ColorVision.UI.ServiceHost
 
         Task<ServiceHostResponse> PrepareApplicationUpdateAsync(string? serviceHostPackageDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
+        Task<ServiceHostResponse> BeginApplicationUpdateScanProtectionAsync(string updateRoot, int lifetimeSeconds = 180, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> CompleteApplicationUpdateScanProtectionAsync(string protectionId, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
         Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> RegisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -26,6 +31,10 @@ namespace ColorVision.UI.ServiceHost
         Task<ServiceHostResponse> UnregisterThumbnailAsync(string appDirectory, string? thumbnailCacheDirectory = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> AllowFirewallApplicationAsync(string appPath, string profile, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> SetLocalMachineRegistryValuesAsync(string keyPath, IReadOnlyCollection<ServiceHostRegistryValue> values, IReadOnlyCollection<string>? deleteValueNames = null, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> DeleteLocalMachineRegistryKeyAsync(string keyPath, bool recursive = false, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> RepairMySqlServiceAsync(string serviceName, string mysqldExePath, int timeoutSeconds = 60, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
@@ -42,6 +51,14 @@ namespace ColorVision.UI.ServiceHost
         Task<ServiceHostResponse> RestartServiceAsync(string serviceName, int timeoutSeconds = 60, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
         Task<ServiceHostResponse> TerminateServiceAsync(string serviceName, string? executablePath = null, int timeoutSeconds = 20, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> CreateCom0ComPairAsync(int? portA = null, int? portB = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+
+        Task<ServiceHostResponse> DeleteCom0ComPairAsync(int pairNumber, TimeSpan? timeout = null, CancellationToken cancellationToken = default);
 
     }
 
@@ -109,6 +126,24 @@ namespace ColorVision.UI.ServiceHost
                 : SendAsync("prepare-application-update", new { serviceHostPackageDirectory }, requestTimeout, cancellationToken);
         }
 
+        public Task<ServiceHostResponse> BeginApplicationUpdateScanProtectionAsync(string updateRoot, int lifetimeSeconds = 180, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "begin-application-update-scan-protection",
+                new { updateRoot, lifetimeSeconds },
+                timeout ?? TimeSpan.FromSeconds(30),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> CompleteApplicationUpdateScanProtectionAsync(string protectionId, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "complete-application-update-scan-protection",
+                new { protectionId },
+                timeout ?? TimeSpan.FromSeconds(30),
+                cancellationToken);
+        }
+
         public Task<ServiceHostResponse> RegisterFileAssociationsAsync(string appPath, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
         {
             return SendAsync(
@@ -141,6 +176,36 @@ namespace ColorVision.UI.ServiceHost
             return SendAsync(
                 "firewall-allow-application",
                 new { appPath, profile },
+                timeout ?? TimeSpan.FromSeconds(15),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> SetLocalMachineRegistryValuesAsync(string keyPath, IReadOnlyCollection<ServiceHostRegistryValue> values, IReadOnlyCollection<string>? deleteValueNames = null, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            var serializedValues = values.Select(value => new
+            {
+                value.Name,
+                kind = value.Kind.ToString(),
+                value.Value,
+            }).ToArray();
+            return SendAsync(
+                "registry-set-values",
+                new
+                {
+                    keyPath,
+                    registryView = registryView.ToString(),
+                    values = serializedValues,
+                    deleteValueNames = deleteValueNames?.ToArray() ?? [],
+                },
+                timeout ?? TimeSpan.FromSeconds(15),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> DeleteLocalMachineRegistryKeyAsync(string keyPath, bool recursive = false, RegistryView registryView = RegistryView.Default, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "registry-delete-key",
+                new { keyPath, recursive, registryView = registryView.ToString() },
                 timeout ?? TimeSpan.FromSeconds(15),
                 cancellationToken);
         }
@@ -260,6 +325,34 @@ namespace ColorVision.UI.ServiceHost
                     timeoutSeconds,
                 },
                 timeout ?? TimeSpan.FromSeconds(60),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> GetCom0ComStatusAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync("com0com-status", timeout ?? TimeSpan.FromSeconds(10), cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> ListCom0ComPairsAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync("com0com-list", timeout ?? TimeSpan.FromSeconds(45), cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> CreateCom0ComPairAsync(int? portA = null, int? portB = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "com0com-create-pair",
+                new { portA, portB },
+                timeout ?? TimeSpan.FromMinutes(4),
+                cancellationToken);
+        }
+
+        public Task<ServiceHostResponse> DeleteCom0ComPairAsync(int pairNumber, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(
+                "com0com-delete-pair",
+                new { pairNumber },
+                timeout ?? TimeSpan.FromMinutes(4),
                 cancellationToken);
         }
 

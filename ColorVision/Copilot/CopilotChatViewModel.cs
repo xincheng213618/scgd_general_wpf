@@ -171,7 +171,7 @@ namespace ColorVision.Copilot
             AddContextAttachmentCommand = new RelayCommand(_ => AddContextAttachment(), _ => !IsBusy);
             AddWebPageAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddWebPageAttachmentAsync, "附加网页"), _ => !IsBusy);
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
-            AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => HasCurrentLiveContext);
+            AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => CanAttachCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
             BranchConversationCommand = new RelayCommand<CopilotChatMessage>(BranchConversation, CanBranchConversation);
             EditMessageCommand = new RelayCommand<CopilotChatMessage>(BeginEditMessage, CanEditMessage);
@@ -389,8 +389,8 @@ namespace ColorVision.Copilot
         public ICommand AttachCurrentLiveContextCommand { get; }
 
         public string AttachmentMenuToolTip => IsBusy
-            ? "Attachments are locked while the assistant is responding."
-            : "附件仅用于下一条消息。图片会先由当前模型读取实际像素（最多 4 张、单张 5 MB），因此模型需要支持视觉输入。";
+            ? "响应期间无法更改附件"
+            : "添加附件";
 
         public ICommand CopyMessageCommand { get; }
 
@@ -472,6 +472,8 @@ namespace ColorVision.Copilot
 
         public bool HasAttachments => Attachments.Count > 0;
 
+        public bool HasComposerAttachmentItems => HasAttachments || HasAvailableCurrentLiveContext;
+
         public bool HasActiveDocument => !string.IsNullOrWhiteSpace(_activeDocumentPath);
 
         public bool IsActiveDocumentAttached => HasActiveDocument && Attachments.Any(item =>
@@ -517,44 +519,25 @@ namespace ColorVision.Copilot
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
-        public string CurrentLiveContextTitle => _currentLiveContext?.Title ?? string.Empty;
+        public bool HasAvailableCurrentLiveContext => _currentLiveContext?.SnapshotItems?.Count > 0
+            && !IsCurrentLiveContextAttached;
 
-        public string CurrentLiveContextSummary => _currentLiveContext?.Summary ?? string.Empty;
-
-        public bool CanAttachCurrentLiveContext => _currentLiveContext != null;
+        public bool CanAttachCurrentLiveContext => !IsBusy && HasAvailableCurrentLiveContext;
 
         public bool IsCurrentLiveContextAttached => _currentLiveContext != null
             && SelectedConversation?.Attachments.Any(item => item.Type == CopilotAttachmentType.Context
                 && string.Equals(item.Source, _currentLiveContext.SourceId, StringComparison.Ordinal)) == true;
 
-        public string CurrentLiveContextStatusText => IsCurrentLiveContextAttached ? "Attached" : "Available";
-
-        public string CurrentLiveContextToolTip
+        public string CurrentLiveContextAttachmentLabel
         {
             get
             {
-                if (_currentLiveContext == null)
-                    return string.Empty;
-
-                var builder = new StringBuilder();
-                builder.AppendLine(Properties.Resources.CopilotCurrentWindowContext);
-
-                if (!string.IsNullOrWhiteSpace(_currentLiveContext.Title))
-                    builder.AppendLine(_currentLiveContext.Title.Trim());
-
-                if (!string.IsNullOrWhiteSpace(_currentLiveContext.Summary))
-                {
-                    builder.AppendLine();
-                    builder.AppendLine(_currentLiveContext.Summary.Trim());
-                }
-
-                builder.AppendLine();
-                builder.Append(IsCurrentLiveContextAttached ? "Already attached to this conversation." : "Ready to attach to this question.");
-                return builder.ToString();
+                var label = string.IsNullOrWhiteSpace(_currentLiveContext?.AttachmentTitle)
+                    ? _currentLiveContext?.Title
+                    : _currentLiveContext.AttachmentTitle;
+                return string.IsNullOrWhiteSpace(label) ? "上下文" : label.Trim();
             }
         }
-
-        public string CurrentLiveContextActionText => IsCurrentLiveContextAttached ? Properties.Resources.CopilotUpdateSnapshot : Properties.Resources.CopilotAttachToQuestion;
 
         public string EmptyStateText => _config.IsConfigured
             ? Properties.Resources.CopilotSelectHistoryOrNew
@@ -819,6 +802,7 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(PrimaryActionGlyph));
                 OnPropertyChanged(nameof(PrimaryActionToolTip));
                 OnPropertyChanged(nameof(AttachmentMenuToolTip));
+                OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
                 OnPropertyChanged(nameof(CanSteerCurrentRun));
                 OnPropertyChanged(nameof(CanCancelAgentRun));
                 OnPropertyChanged(nameof(CanPauseAgentRun));
@@ -2146,13 +2130,11 @@ namespace ColorVision.Copilot
         private void OnCurrentLiveContextStateChanged()
         {
             OnPropertyChanged(nameof(HasCurrentLiveContext));
-            OnPropertyChanged(nameof(CurrentLiveContextTitle));
-            OnPropertyChanged(nameof(CurrentLiveContextSummary));
+            OnPropertyChanged(nameof(HasAvailableCurrentLiveContext));
+            OnPropertyChanged(nameof(HasComposerAttachmentItems));
             OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
             OnPropertyChanged(nameof(IsCurrentLiveContextAttached));
-            OnPropertyChanged(nameof(CurrentLiveContextStatusText));
-            OnPropertyChanged(nameof(CurrentLiveContextToolTip));
-            OnPropertyChanged(nameof(CurrentLiveContextActionText));
+            OnPropertyChanged(nameof(CurrentLiveContextAttachmentLabel));
             RefreshComposerTokenEstimate();
             CommandManager.InvalidateRequerySuggested();
         }

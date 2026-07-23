@@ -23,6 +23,7 @@ public class SMUSweepModelNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -36,6 +37,7 @@ public class SMUSweepModelNode : CVBaseServerNode
 		set
 		{
 			m_IsCloseOutput = value;
+			OnPropertyChanged();
 		}
 	}
 

@@ -43,7 +43,7 @@ def build_plugin_related_docs(plugin_id: str) -> list[dict[str, str]]:
         "cvwindowsservice": ("Windows Service 插件", "windows-service"),
         "systemmonitor": ("System Monitor 插件", "system-monitor"),
         "spectrum": ("Spectrum 插件", "spectrum"),
-        "eventvwr": ("EventVWR 插件", "eventvwr"),
+        "eventvwr": ("崩溃诊断（已内置）", "eventvwr"),
         "conoscope": ("Conoscope 插件", "conoscope"),
     }
     standard = standard_docs.get(str(plugin_id or "").lower())
@@ -403,6 +403,7 @@ def build_plugin_detail_api_result(
                 "changeLogHtml": changelog_html,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
+                "hashPending": bool(pkg.get("hashPending")),
                 "downloadCount": 0,
                 "createdAt": pkg["modified"],
                 "source": pkg.get("source", "current"),
@@ -417,6 +418,7 @@ def build_plugin_detail_api_result(
                 "changeLogHtml": changelog_html,
                 "fileSize": pkg["size"],
                 "fileHash": pkg.get("fileHash"),
+                "hashPending": bool(pkg.get("hashPending")),
                 "downloadCount": 0,
                 "createdAt": pkg["modified"],
                 "source": pkg.get("source", "archive"),

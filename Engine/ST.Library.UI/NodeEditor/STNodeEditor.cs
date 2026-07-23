@@ -65,6 +65,8 @@ public class STNodeEditor : Control
 
 	private bool _ShowLocation = true;
 
+	private bool _LimitCanvasToContentBounds = true;
+
 	private bool _EnableBlankLeftDragCanvas = true;
 
 	private STNodeCollection _Nodes;
@@ -297,6 +299,20 @@ public class STNodeEditor : Control
 		{
 			_ShowLocation = value;
 			Invalidate();
+		}
+	}
+
+	[Description("获取或设置移动和缩放画布时是否限制在 Node 内容范围内")]
+	[DefaultValue(true)]
+	public bool LimitCanvasToContentBounds
+	{
+		get
+		{
+			return _LimitCanvasToContentBounds;
+		}
+		set
+		{
+			_LimitCanvasToContentBounds = value;
 		}
 	}
 
@@ -1216,6 +1232,11 @@ public class STNodeEditor : Control
 		m_lst_node_out.Clear();
 		foreach (STNode node in _Nodes)
 		{
+			if (!rect.IntersectsWith(node.Rectangle))
+			{
+				m_lst_node_out.Add(node.Location);
+				continue;
+			}
 			if (_ShowBorder)
 			{
 				OnDrawNodeBorder(dt, node);
@@ -1224,10 +1245,6 @@ public class STNodeEditor : Control
 			if (!string.IsNullOrEmpty(node.Mark))
 			{
 				node.OnDrawMark(dt);
-			}
-			if (!rect.IntersectsWith(node.Rectangle))
-			{
-				m_lst_node_out.Add(node.Location);
 			}
 		}
 	}
@@ -2170,30 +2187,33 @@ public class STNodeEditor : Control
 
 	public void MoveCanvas(float x, float y, bool bAnimation, CanvasMoveArgs ma)
 	{
-		if (_Nodes.Count == 0)
+		if (_LimitCanvasToContentBounds && _Nodes.Count == 0)
 		{
 			m_real_canvas_x = (m_real_canvas_y = 10f);
 			return;
 		}
-		int num = (int)((float)(_CanvasValidBounds.Left + 50) * _CanvasScale);
-		int num2 = (int)((float)(_CanvasValidBounds.Top + 50) * _CanvasScale);
-		int num3 = (int)((float)(_CanvasValidBounds.Right - 50) * _CanvasScale);
-		int num4 = (int)((float)(_CanvasValidBounds.Bottom - 50) * _CanvasScale);
-		if ((float)num3 + x < 0f)
+		if (_LimitCanvasToContentBounds)
 		{
-			x = -num3;
-		}
-		if ((float)(base.Width - num) < x)
-		{
-			x = base.Width - num;
-		}
-		if ((float)num4 + y < 0f)
-		{
-			y = -num4;
-		}
-		if ((float)(base.Height - num2) < y)
-		{
-			y = base.Height - num2;
+			int num = (int)((float)(_CanvasValidBounds.Left + 50) * _CanvasScale);
+			int num2 = (int)((float)(_CanvasValidBounds.Top + 50) * _CanvasScale);
+			int num3 = (int)((float)(_CanvasValidBounds.Right - 50) * _CanvasScale);
+			int num4 = (int)((float)(_CanvasValidBounds.Bottom - 50) * _CanvasScale);
+			if ((float)num3 + x < 0f)
+			{
+				x = -num3;
+			}
+			if ((float)(base.Width - num) < x)
+			{
+				x = base.Width - num;
+			}
+			if ((float)num4 + y < 0f)
+			{
+				y = -num4;
+			}
+			if ((float)(base.Height - num2) < y)
+			{
+				y = base.Height - num2;
+			}
 		}
 		if (bAnimation)
 		{
@@ -2210,13 +2230,14 @@ public class STNodeEditor : Control
 		{
 			m_real_canvas_x = (_CanvasOffsetX = x);
 			m_real_canvas_y = (_CanvasOffsetY = y);
+			Invalidate();
 		}
 		OnCanvasMoved(EventArgs.Empty);
 	}
 
 	public void ScaleCanvas(float f, float x, float y)
 	{
-		if (_Nodes.Count == 0)
+		if (_LimitCanvasToContentBounds && _Nodes.Count == 0)
 		{
 			_CanvasScale = 1f;
 		}
@@ -2238,6 +2259,23 @@ public class STNodeEditor : Control
 			OnCanvasScaled(EventArgs.Empty);
 			Invalidate();
 		}
+	}
+
+	public void FitCanvasToNodes(float maximumScale = 1f)
+	{
+		if (_Nodes.Count == 0 || base.ClientSize.Width <= 0 || base.ClientSize.Height <= 0 || _CanvasValidBounds.Width <= 0 || _CanvasValidBounds.Height <= 0)
+		{
+			return;
+		}
+		float scaleX = (float)base.ClientSize.Width / _CanvasValidBounds.Width;
+		float scaleY = (float)base.ClientSize.Height / _CanvasValidBounds.Height;
+		float scale = Math.Min(Math.Min(scaleX, scaleY), maximumScale);
+		float centerX = base.ClientSize.Width / 2f;
+		float centerY = base.ClientSize.Height / 2f;
+		ScaleCanvas(scale, centerX, centerY);
+		float contentCenterX = _CanvasValidBounds.Left + _CanvasValidBounds.Width / 2f;
+		float contentCenterY = _CanvasValidBounds.Top + _CanvasValidBounds.Height / 2f;
+		MoveCanvas(centerX - contentCenterX * _CanvasScale, centerY - contentCenterY * _CanvasScale, bAnimation: false, CanvasMoveArgs.All);
 	}
 
 	public ConnectionInfo[] GetConnectionInfo()

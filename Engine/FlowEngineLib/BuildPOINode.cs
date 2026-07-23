@@ -47,6 +47,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -61,6 +62,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_RePOITemplateName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -75,6 +77,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_LayoutROITemplate = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -89,6 +92,7 @@ public class BuildPOINode : CVBaseServerNode
 		{
 			_BuildType = value;
 			setBuildType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -103,6 +107,7 @@ public class BuildPOINode : CVBaseServerNode
 		{
 			_PrefixName = value;
 			setOutputPre();
+			OnPropertyChanged();
 		}
 	}
 
@@ -116,6 +121,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			setPOIType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -129,6 +135,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			setHeight(value, syncWid: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -142,6 +149,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			setWidth(value, syncHei: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -157,6 +165,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -170,6 +179,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_CAD_PosFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -184,6 +194,7 @@ public class BuildPOINode : CVBaseServerNode
 		{
 			_POIOutput = value;
 			setOutputPre();
+			OnPropertyChanged();
 		}
 	}
 
@@ -197,6 +208,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -211,6 +223,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_SavePOITempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -224,6 +237,7 @@ public class BuildPOINode : CVBaseServerNode
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

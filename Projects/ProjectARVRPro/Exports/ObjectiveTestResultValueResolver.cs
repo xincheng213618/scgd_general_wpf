@@ -1,4 +1,4 @@
-using ProjectARVRPro.Process;
+using ProjectARVRPro.Process.KeyedResults;
 using System.Collections;
 using System.Reflection;
 
@@ -22,13 +22,12 @@ namespace ProjectARVRPro.Exports
             if (dynamicItem != null)
                 return dynamicItem;
 
-            ObjectiveTestItem? mtf058Item = FindDynamicMTFHV058(testScreenName, itemName);
-            if (mtf058Item != null)
-                return mtf058Item;
-
-            ObjectiveTestItem? luminanceChromaticityItem = FindLuminanceChromaticity(testScreenName, itemName);
-            if (luminanceChromaticityItem != null)
-                return luminanceChromaticityItem;
+            ObjectiveTestItem? keyedItem =
+                FindKeyedResult(_result.FieldOfViewTestResults, testScreenName, itemName) ??
+                FindKeyedResult(_result.LuminanceChromaticityTestResults, testScreenName, itemName) ??
+                FindKeyedResult(_result.DynamicMTFHV058TestResults, testScreenName, itemName);
+            if (keyedItem != null)
+                return keyedItem;
 
             object? screen = FindScreenObject(testScreenName);
             return FindItem(screen, itemName);
@@ -58,23 +57,9 @@ namespace ProjectARVRPro.Exports
                 string.Equals(item.Name, itemName, StringComparison.OrdinalIgnoreCase));
         }
 
-        private ObjectiveTestItem? FindDynamicMTFHV058(string testScreenName, string itemName)
+        private static ObjectiveTestItem? FindKeyedResult<T>(IReadOnlyDictionary<string, T>? results, string testScreenName, string itemName)
         {
-            if (_result.DynamicMTFHV058TestResults == null)
-                return null;
-
-            if (!_result.DynamicMTFHV058TestResults.TryGetValue(testScreenName, out var result))
-                return null;
-
-            return FindItem(result, itemName);
-        }
-
-        private ObjectiveTestItem? FindLuminanceChromaticity(string testScreenName, string itemName)
-        {
-            if (_result.LuminanceChromaticityTestResults == null)
-                return null;
-
-            if (!_result.LuminanceChromaticityTestResults.TryGetValue(testScreenName, out var result))
+            if (!KeyedTestResultDictionary.TryGetValue(results, testScreenName, out T? result))
                 return null;
 
             return FindItem(result, itemName);
@@ -88,7 +73,8 @@ namespace ProjectARVRPro.Exports
                     property.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
-                    property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults))
+                    property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
+                    property.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults))
                     continue;
 
                 string displayName = property.GetCustomAttributes(false)

@@ -18,6 +18,7 @@ public class CalibrationLoopNode : CVBaseLoopServerNode<CalibrationNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

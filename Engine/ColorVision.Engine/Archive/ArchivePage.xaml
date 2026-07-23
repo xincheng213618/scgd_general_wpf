@@ -23,7 +23,15 @@
             <Grid>
                 <DockPanel Margin="5" >
                     <Button  Content="{x:Static properties:Resources.SaveToLoacal}" DockPanel.Dock="Right" Click="Save_Click" Margin="10,0"/>
-                    <Button  Content="{x:Static properties:Resources.Settings}" DockPanel.Dock="Right" Click="Setting_Click" Margin="10,0"/>
+                    <Button  Content="{x:Static properties:Resources.Settings}" DockPanel.Dock="Right" Click="Settings_Click" Margin="10,0">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom">
+                                <MenuItem Header="{x:Static properties:Resources.ArchiveServerConfig}" Click="ArchiveServerConfig_Click"/>
+                                <MenuItem Header="{x:Static properties:Resources.ArchiveConfiguration}" Click="ArchiveConfiguration_Click"/>
+                                <MenuItem Header="{x:Static properties:Resources.ServiceRegistryCenterConfig}" Click="ServiceRegistryCenterConfig_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
                     <Button  Content="{x:Static properties:Resources.AdvanceSearch}" DockPanel.Dock="Right" Click="AdvanceQuery_Click" Margin="5,0,0,0"/>
                     <Button  Content="{x:Static properties:Resources.Search}" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />

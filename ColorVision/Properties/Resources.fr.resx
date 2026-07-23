@@ -365,12 +365,6 @@
   <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
     <value>{0} mises à jour de plugins</value>
   </data>
-  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
-    <value>{0} mises à jour de thèmes</value>
-  </data>
-  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
-    <value>{0} autres mises à jour</value>
-  </data>
   <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
     <value>{0} / {1} plugins sélectionnés</value>
   </data>
@@ -892,5 +886,36 @@
 
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>Association de fichiers</value>
+  </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve"><value>Service d’arrière-plan ColorVision</value></data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve"><value>Traitement en cours…</value></data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve"><value>Vérifier à nouveau</value></data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve"><value>Réessayer</value></data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve"><value>Installer le service</value></data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve"><value>Réparer et démarrer</value></data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve"><value>Mettre à jour le service</value></data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve"><value>Préparation de ColorVision Service Host. Windows peut demander une autorisation administrateur pendant l’installation ou la réparation.</value></data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve"><value>Vérification de l’installation et de l’état de ColorVision Service Host.</value></data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve"><value>Le service d’arrière-plan est installé et en cours d’exécution (version {0}).&#xA;&#xA;Le gestionnaire de services peut maintenant installer, mettre à jour et contrôler les services locaux.</value></data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve"><value>Le package du service d’arrière-plan est introuvable. La configuration ne peut pas continuer.&#xA;&#xA;Package : {0}</value></data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve"><value>Le gestionnaire de services utilise ColorVision Service Host pour les opérations nécessitant des droits administrateur. Windows demandera une autorisation après le choix « Installer le service ».&#xA;&#xA;Package : {0}</value></data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve"><value>Le service d’arrière-plan est installé (version {0}), mais il n’est pas démarré. Réparez-le et démarrez-le avant de continuer.</value></data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>Le service d’arrière-plan doit être mis à jour ou réparé. Installé : {0} ; package : {1}. Terminez cette étape avant d’ouvrir le gestionnaire de services.</value></data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>Le package du service d’arrière-plan n’existe pas : {0}</value></data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>L’état du service d’arrière-plan n’a pas pu être confirmé. Réessayez.</value></data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Créer un instantané du programme avant la mise à jour</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>Lorsque cette option est activée, un instantané complet du programme est créé avant une mise à jour de l’application, d’un plug-in ou combinée. Cela peut allonger la mise à jour.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Ne pas utiliser le proxy système</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>Lorsque cette option est activée, les recherches de mises à jour et les requêtes du marketplace se connectent directement au service public. Sinon, le proxy système Windows est utilisé. La modification s’applique à la requête suivante.</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>Créer un instantané du programme avant la mise à jour</value>
   </data>
 </root>

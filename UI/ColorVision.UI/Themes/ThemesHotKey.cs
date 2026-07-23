@@ -26,7 +26,7 @@ namespace ColorVision.UI.Desktop.Themes
 
             List<MenuItemMetadata> menuItemMetas = new List<MenuItemMetadata>();
 
-            foreach (var item in Enum.GetValues<Theme>().Cast<Theme>())
+            foreach (Theme item in ThemeManager.SupportedThemes)
             {
                 RelayCommand relayCommand = new RelayCommand(a =>
                 {
@@ -60,17 +60,9 @@ namespace ColorVision.UI.Desktop.Themes
 
         private void Execute()
         {
-            // 获取当前主题的索引
-            int currentThemeIndex = (int)(ThemeManager.Current.CurrentTheme ?? Theme.UseSystem);
-
-            // 获取主题总数，缓存以避免重复计算
-            int themeCount = Enum.GetValues<Theme>().Length;
-
-            // 计算下一个主题的索引
-            int nextThemeIndex = (currentThemeIndex + 1) % themeCount;
-
-            // 更新当前主题
-            Theme newTheme = (Theme)nextThemeIndex;
+            Theme currentTheme = ThemeManager.Current.CurrentTheme ?? Theme.UseSystem;
+            int currentThemeIndex = ThemeManager.SupportedThemes.IndexOf(currentTheme);
+            Theme newTheme = ThemeManager.SupportedThemes[(currentThemeIndex + 1) % ThemeManager.SupportedThemes.Count];
             ThemeConfig.Instance.Theme = newTheme;
 
             // 应用新主题

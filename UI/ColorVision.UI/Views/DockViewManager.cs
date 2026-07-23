@@ -40,6 +40,16 @@ namespace ColorVision.UI.Views
         public Action<Control>? SelectViewHandler { get; set; }
 
         /// <summary>
+        /// 新视图注册后的回调。用于宿主在延迟创建视图时补建文档标签页。
+        /// </summary>
+        public Action<Control>? ViewAddedHandler { get; set; }
+
+        /// <summary>
+        /// 视图标题注册或更新后的回调。
+        /// </summary>
+        public Action<Control, string>? ViewTitleChangedHandler { get; set; }
+
+        /// <summary>
         /// 将所有已注册视图创建为文档标签页的回调
         /// </summary>
         public Action? ShowAllViewsHandler { get; set; }
@@ -56,6 +66,7 @@ namespace ColorVision.UI.Views
             if (control == null) return -1;
             if (Views.Contains(control)) return Views.IndexOf(control);
             Views.Add(control);
+            ViewAddedHandler?.Invoke(control);
             return Views.IndexOf(control);
         }
 
@@ -67,7 +78,20 @@ namespace ColorVision.UI.Views
             if (control == null) return -1;
             if (Views.Contains(control)) return Views.IndexOf(control);
             Views.Insert(Math.Clamp(index, 0, Views.Count), control);
+            ViewAddedHandler?.Invoke(control);
             return Views.IndexOf(control);
+        }
+
+        /// <summary>
+        /// 设置视图标题，并同步已创建的文档标签页。
+        /// </summary>
+        public void SetViewTitle(Control control, string title)
+        {
+            if (control == null || string.IsNullOrEmpty(title))
+                return;
+
+            ViewTitles[control] = title;
+            ViewTitleChangedHandler?.Invoke(control, title);
         }
 
         /// <summary>
@@ -83,9 +107,6 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void ActiveView(Control control)
         {
-            if (LastActiveView == control)
-                return;
-
             if (!Views.Contains(control))
                 AddView(control);
             ActiveViewHandler?.Invoke(control);
@@ -105,7 +126,12 @@ namespace ColorVision.UI.Views
         /// </summary>
         public event Action<Control?>? ActiveViewChanged;
 
-        public void RaiseActiveViewChanged(Control? control) => ActiveViewChanged?.Invoke(control);
+        public void RaiseActiveViewChanged(Control? control)
+        {
+            if (control != null)
+                LastActiveView = control;
+            ActiveViewChanged?.Invoke(control);
+        }
 
         /// <summary>
         /// 仅切换到指定视图的标签页，不激活（不抢焦点）
@@ -115,6 +141,7 @@ namespace ColorVision.UI.Views
             if (!Views.Contains(control))
                 AddView(control);
             SelectViewHandler?.Invoke(control);
+            LastActiveView = control;
         }
 
         /// <summary>

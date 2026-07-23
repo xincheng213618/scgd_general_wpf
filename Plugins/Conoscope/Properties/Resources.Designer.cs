@@ -3845,15 +3845,6 @@ namespace Conoscope.Properties {
         }
         
         /// <summary>
-        ///   查找类似 青色 的本地化字符串。
-        /// </summary>
-        public static string ThemeCyan {
-            get {
-                return ResourceManager.GetString("ThemeCyan", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 暗色 的本地化字符串。
         /// </summary>
         public static string ThemeDark {
@@ -3868,15 +3859,6 @@ namespace Conoscope.Properties {
         public static string ThemeLight {
             get {
                 return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粉色 的本地化字符串。
-        /// </summary>
-        public static string ThemePink {
-            get {
-                return ResourceManager.GetString("ThemePink", resourceCulture);
             }
         }
         

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.3.11218.70 d18.3
+VisualStudioVersion = 18.3.11218.70
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决方案项", "{61C6DABF-289A-41CD-B85D-F0AA9D8C6947}"
 	ProjectSection(SolutionItems) = preProject
@@ -31,6 +31,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.SocketProtocol", "ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj", "{301C9DC7-916C-BCE1-DC85-6800F2C5BB30}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Database", "ColorVision.Database\ColorVision.Database.csproj", "{44CA6B5C-6BB5-0003-6D7B-3A021B63494A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.ImageTools", "ColorVision.ImageTools\ColorVision.ImageTools.csproj", "{61A13650-5552-4F2D-AF42-62AF5406DEDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Rbac", "ColorVision.Rbac\ColorVision.Rbac.csproj", "{291284E2-4AC0-42D0-8EC5-6197D89115AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -188,6 +192,38 @@ Global
 		{44CA6B5C-6BB5-0003-6D7B-3A021B63494A}.Release|x64.Build.0 = Release|x64
 		{44CA6B5C-6BB5-0003-6D7B-3A021B63494A}.Release|x86.ActiveCfg = Release|x64
 		{44CA6B5C-6BB5-0003-6D7B-3A021B63494A}.Release|x86.Build.0 = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|Any CPU.Build.0 = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|ARM64.Build.0 = Debug|ARM64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|x64.ActiveCfg = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|x64.Build.0 = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|x86.ActiveCfg = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Debug|x86.Build.0 = Debug|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|Any CPU.ActiveCfg = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|Any CPU.Build.0 = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|ARM64.ActiveCfg = Release|ARM64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|ARM64.Build.0 = Release|ARM64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x64.ActiveCfg = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x64.Build.0 = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x86.ActiveCfg = Release|x64
+		{61A13650-5552-4F2D-AF42-62AF5406DEDC}.Release|x86.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|Any CPU.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|ARM64.Build.0 = Debug|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x64.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x64.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x86.ActiveCfg = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Debug|x86.Build.0 = Debug|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|Any CPU.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|Any CPU.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|ARM64.ActiveCfg = Release|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|ARM64.Build.0 = Release|ARM64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x64.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x64.Build.0 = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x86.ActiveCfg = Release|x64
+		{291284E2-4AC0-42D0-8EC5-6197D89115AA}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -204,7 +240,7 @@ Global
 		{44CA6B5C-6BB5-0003-6D7B-3A021B63494A} = {CC28D563-3E82-4852-82C0-A06609BB416C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_PrefixTranslations = False
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_PrefixTranslations = False
 	EndGlobalSection
 EndGlobal

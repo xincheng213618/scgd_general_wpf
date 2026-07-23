@@ -46,7 +46,9 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16" TextElement.Foreground="{DynamicResource GlobalTextBrush}">
+    <TabControl x:Name="ManagerTabs" Margin="12" TextElement.Foreground="{DynamicResource GlobalTextBrush}">
+        <TabItem Header="Service Host">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -211,4 +213,120 @@
             </Border>
         </Grid>
     </Grid>
+        </TabItem>
+
+        <TabItem x:Name="Com0ComTab" Header="com0com" Visibility="Collapsed">
+            <Grid Margin="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,14" LastChildFill="False">
+                    <StackPanel DockPanel.Dock="Left">
+                        <TextBlock Text="com0com Virtual Serial Port Pairs" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock x:Name="Com0ComSummaryText" Margin="0,6,0,0" Text="Checking..." />
+                        <TextBlock x:Name="Com0ComPathText"
+                                   Margin="0,3,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button x:Name="Com0ComRefreshButton"
+                            DockPanel.Dock="Right"
+                            Content="Refresh"
+                            Style="{StaticResource ActionButtonStyle}"
+                            Click="Com0ComRefreshButton_Click" />
+                </DockPanel>
+
+                <Border Grid.Row="1" Style="{StaticResource SectionBorderStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Create Pair" Style="{StaticResource SectionTitleStyle}" />
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="140" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Port A" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="Com0ComPortAComboBox"
+                                      Grid.Column="1"
+                                      Height="30"
+                                      IsEditable="False"
+                                      IsTextSearchEnabled="True"
+                                      MaxDropDownHeight="320"
+                                      SelectionChanged="Com0ComPortComboBox_SelectionChanged" />
+                            <TextBlock Grid.Column="3" Text="Port B" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="Com0ComPortBComboBox"
+                                      Grid.Column="4"
+                                      Height="30"
+                                      IsEditable="False"
+                                      IsTextSearchEnabled="True"
+                                      MaxDropDownHeight="320"
+                                      SelectionChanged="Com0ComPortComboBox_SelectionChanged" />
+                            <Button x:Name="Com0ComCreateButton"
+                                    Grid.Column="6"
+                                    Content="Create Pair"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Margin="0"
+                                    Click="Com0ComCreateButton_Click" />
+                        </Grid>
+                        <TextBlock Grid.Row="2"
+                                   Margin="0,8,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="Available port numbers are detected automatically. Select two different numbers to create a pair." />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2" Style="{StaticResource SectionBorderStyle}" Margin="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Port Pairs" Style="{StaticResource SectionTitleStyle}" />
+                        <DataGrid x:Name="Com0ComPairsGrid"
+                                  Grid.Row="1"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionUnit="FullRow"
+                                  SelectionChanged="Com0ComPairsGrid_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Pair" Binding="{Binding PairNumber}" Width="70" />
+                                <DataGridTextColumn Header="Port A" Binding="{Binding PortA}" Width="*" />
+                                <DataGridTextColumn Header="Port B" Binding="{Binding PortB}" Width="*" />
+                                <DataGridTextColumn Header="Internal A" Binding="{Binding InternalPortA}" Width="120" />
+                                <DataGridTextColumn Header="Internal B" Binding="{Binding InternalPortB}" Width="120" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <DockPanel Grid.Row="2" Margin="0,10,0,0" LastChildFill="True">
+                            <Button x:Name="Com0ComDeleteButton"
+                                    DockPanel.Dock="Right"
+                                    Content="Delete Selected"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Margin="8,0,0,0"
+                                    Click="Com0ComDeleteButton_Click" />
+                            <TextBlock x:Name="Com0ComPairCountText"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" />
+                        </DockPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </TabItem>
+    </TabControl>
 </Window>

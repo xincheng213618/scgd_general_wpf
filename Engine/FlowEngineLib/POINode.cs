@@ -32,6 +32,7 @@ public class POINode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +48,7 @@ public class POINode : CVBaseServerNode
 		{
 			_FilterTemplateName = value;
 			setFilterReviseTemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -62,6 +64,7 @@ public class POINode : CVBaseServerNode
 		{
 			_ReviseTemplateName = value;
 			setFilterReviseTemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -77,6 +80,7 @@ public class POINode : CVBaseServerNode
 		{
 			_OutputTemplateName = value;
 			m_ctrl_outtemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -92,6 +96,7 @@ public class POINode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -105,6 +110,7 @@ public class POINode : CVBaseServerNode
 		set
 		{
 			_IsCCTWave = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -118,6 +124,7 @@ public class POINode : CVBaseServerNode
 		set
 		{
 			_IsSubPixel = value;
+			OnPropertyChanged();
 		}
 	}
 

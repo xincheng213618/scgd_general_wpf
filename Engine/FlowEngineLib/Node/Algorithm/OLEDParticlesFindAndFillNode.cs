@@ -22,6 +22,7 @@ public class OLEDParticlesFindAndFillNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -35,6 +36,7 @@ public class OLEDParticlesFindAndFillNode : CVBaseServerNode
 		set
 		{
 			SetParticlesType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -50,6 +52,7 @@ public class OLEDParticlesFindAndFillNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -63,6 +66,7 @@ public class OLEDParticlesFindAndFillNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

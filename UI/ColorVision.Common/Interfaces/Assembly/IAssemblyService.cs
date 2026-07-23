@@ -5,6 +5,7 @@ namespace ColorVision.UI
 {
     public interface IAssemblyService
     {
+        void RegisterAssembly(Assembly assembly);
         Assembly[] GetAssemblies();
         Assembly[] RefreshAssemblies();
 

@@ -104,8 +104,6 @@ namespace ColorVision.Themes.Controls
         public static Color GetTransparentColor() => ThemeManager.Current.CurrentUITheme switch
         {
             Theme.Dark => Color.FromArgb(180, 0, 0, 0),
-            Theme.Pink => Color.FromArgb(200, 249, 188, 211),// 粉色背景
-            Theme.Cyan => Color.FromArgb(200, 202, 224, 228), // 青色背景
             Theme.UseSystem or Theme.Light or _ => Color.FromArgb(200, 255, 255, 255),
         };
 
@@ -113,8 +111,6 @@ namespace ColorVision.Themes.Controls
         public static SolidColorBrush GetThemeBackGround() => ThemeManager.Current.CurrentUITheme switch
         {
             Theme.Dark => Brushes.Black,
-            Theme.Pink => new SolidColorBrush(Color.FromRgb(0xF9, 0xBC, 0xD3)),// 粉色背景
-            Theme.Cyan => new SolidColorBrush(Color.FromRgb(0xCA, 0xE0, 0xE4)), // 青色背景
             Theme.UseSystem or Theme.Light or _ => Brushes.White,
         };
 

@@ -14,6 +14,7 @@ internal class CustomSimulator : BaseSimulator
 		set
 		{
 			nodeCode = value;
+			OnPropertyChanged();
 		}
 	}
 

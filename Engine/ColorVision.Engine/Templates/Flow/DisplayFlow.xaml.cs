@@ -15,6 +15,7 @@ using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
@@ -120,6 +121,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
             EnsureTimedButtonOperations();
+            ServiceConfig.Instance.PropertyChanged += ServiceConfig_PropertyChanged;
 
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s, e) =>
@@ -149,6 +151,26 @@ namespace ColorVision.Engine.Templates.Flow
         {
             string version = ServiceConfig.Instance.RegistrationCenterServiceInfo.FileVersion;
             return string.IsNullOrWhiteSpace(version) ? Properties.Resources.RestartService : string.Format(Properties.Resources.Flow_RestartServiceVersionFormat, version);
+        }
+
+        private void ServiceConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!string.Equals(e.PropertyName, nameof(ServiceConfig.RegistrationCenterServiceInfo), StringComparison.Ordinal))
+                return;
+
+            if (Dispatcher.CheckAccess())
+            {
+                RefreshRestartServicesButton();
+            }
+            else
+            {
+                _ = Dispatcher.BeginInvoke(new Action(RefreshRestartServicesButton));
+            }
+        }
+
+        private void RefreshRestartServicesButton()
+        {
+            this.TryGetTimedButtonOperations()?.RefreshIdleState(RestartServicesButton);
         }
 
         private double GetExpectedRestartDurationMs()
@@ -223,9 +245,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static void RefreshSavedServiceInfo()
         {
-            ServiceConfig.Instance.RegistrationCenterServiceInfo = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("RegistrationCenterService");
-            ServiceConfig.Instance.CVMainService_x64Info = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("CVMainService_x64");
-            ServiceConfig.Instance.CVMainService_devInfo = ColorVision.Engine.Services.RC.ServiceInfo.FromServiceName("CVMainService_dev");
+            ServiceConfig.Instance.RefreshInstalledServices();
         }
 
 
@@ -796,6 +816,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             _refreshCts?.Cancel();
             _refreshCts?.Dispose();
+            ServiceConfig.Instance.PropertyChanged -= ServiceConfig_PropertyChanged;
             this.DisposeTimedButtonOperations();
             timer.Dispose();
             GC.SuppressFinalize(this);

@@ -2,10 +2,12 @@
 
 import base64
 import copy
+import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import app as marketplace_app
 from db_cache import CacheManager
@@ -136,6 +138,133 @@ class ArtifactIndexTests(unittest.TestCase):
 
         result = refresh_release_index(self.cache, self.storage)
         self.assertEqual(result["indexed_count"], 0)
+        db = self.cache.get_db()
+        row = db.execute("SELECT * FROM release_index WHERE version = '1.0.0.1'").fetchone()
+        db.close()
+        self.assertIsNone(row)
+
+    def test_update_and_tool_tombstones_are_physically_deleted(self):
+        update_path = self._create_update("1.0.0.1")
+        tool_path = self._create_tool("OldTool.exe")
+        from services.artifact_index import refresh_tool_index, refresh_update_index
+        refresh_update_index(self.cache, self.storage)
+        refresh_tool_index(self.cache, self.storage)
+
+        update_path.unlink()
+        tool_path.unlink()
+        refresh_update_index(self.cache, self.storage)
+        refresh_tool_index(self.cache, self.storage)
+
+        db = self.cache.get_db()
+        update_row = db.execute("SELECT * FROM update_index WHERE filename = 'ColorVision-Update-[1.0.0.1].cvx'").fetchone()
+        tool_row = db.execute("SELECT * FROM tool_index WHERE name = 'OldTool.exe'").fetchone()
+        db.close()
+        self.assertIsNone(update_row)
+        self.assertIsNone(tool_row)
+
+    def test_scan_failures_preserve_old_indexes_and_set_error_state(self):
+        self._create_release("1.0.0.1")
+        self._create_update("1.0.0.1")
+        self._create_tool("Tool.exe")
+        from services.artifact_index import (
+            get_index_state,
+            refresh_release_index,
+            refresh_tool_index,
+            refresh_update_index,
+        )
+        refresh_release_index(self.cache, self.storage)
+        refresh_update_index(self.cache, self.storage)
+        refresh_tool_index(self.cache, self.storage)
+
+        cases = (
+            ("releases", "release_index", "_scan_release_artifacts", refresh_release_index),
+            ("updates", "update_index", "_scan_update_packages", refresh_update_index),
+            ("tools", "tool_index", "_scan_tool_entries", refresh_tool_index),
+        )
+        for scope, table, scanner, refresh in cases:
+            with self.subTest(scope=scope), patch(
+                f"services.artifact_index.{scanner}", side_effect=OSError(f"{scope} unavailable")
+            ):
+                result = refresh(self.cache, self.storage)
+                self.assertTrue(result["errors"])
+                db = self.cache.get_db()
+                active_count = db.execute(
+                    f"SELECT COUNT(*) AS cnt FROM {table} WHERE is_deleted = 0"
+                ).fetchone()["cnt"]
+                db.close()
+                self.assertEqual(active_count, 1)
+                state = get_index_state(self.cache, scope)
+                self.assertEqual(state["status"], "error")
+                self.assertIn("unavailable", state["last_error"])
+
+    def test_unavailable_storage_root_does_not_clear_release_index(self):
+        self._create_release("1.0.0.1")
+        from services.artifact_index import get_index_state, refresh_release_index
+        refresh_release_index(self.cache, self.storage)
+        missing_storage = self.root / "offline-storage"
+
+        result = refresh_release_index(self.cache, missing_storage)
+
+        self.assertTrue(result["errors"])
+        db = self.cache.get_db()
+        count = db.execute(
+            "SELECT COUNT(*) AS cnt FROM release_index WHERE is_deleted = 0"
+        ).fetchone()["cnt"]
+        db.close()
+        self.assertEqual(count, 1)
+        self.assertEqual(get_index_state(self.cache, "releases")["status"], "error")
+
+    def test_release_signature_uses_directory_entries_without_stating_history_files(self):
+        history_file = self._create_release("1.0.0.1", in_history=True)
+        from services.artifact_index import _release_signature
+        original_stat = Path.stat
+
+        def guarded_stat(path, *args, **kwargs):
+            if path == history_file:
+                raise AssertionError("history files must not be stat'ed")
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(Path, "stat", new=guarded_stat):
+            before = _release_signature(self.storage)
+
+        second = history_file.with_name("ColorVision-1.0.0.2.exe")
+        second.write_bytes(b"release-2")
+        with patch.object(Path, "stat", new=guarded_stat):
+            after_add = _release_signature(self.storage)
+        second.unlink()
+        with patch.object(Path, "stat", new=guarded_stat):
+            after_delete = _release_signature(self.storage)
+
+        self.assertNotEqual(before, after_add)
+        self.assertNotEqual(after_add, after_delete)
+
+    def test_release_signature_preserves_subsecond_root_mtime_precision(self):
+        release = self._create_release("1.0.0.1")
+        from services.artifact_index import _release_signature
+        base_ns = 1_700_000_000_000_000_000
+        os.utime(release, ns=(base_ns, base_ns))
+        first = _release_signature(self.storage)
+        os.utime(release, ns=(base_ns + 100_000_000, base_ns + 100_000_000))
+        second = _release_signature(self.storage)
+
+        self.assertNotEqual(first, second)
+
+    def test_release_signature_detects_same_name_history_file_overwrite(self):
+        release = self._create_release("1.0.0.1", in_history=True)
+        from services.artifact_index import _release_signature
+
+        branch = release.parent
+        branch_stat = branch.stat()
+        first = _release_signature(self.storage)
+
+        release.write_bytes(b"replacement-release-with-a-different-size")
+        os.utime(
+            branch,
+            ns=(branch_stat.st_atime_ns, branch_stat.st_mtime_ns),
+        )
+        second = _release_signature(self.storage)
+
+        self.assertNotEqual(first, second)
 
     def test_release_index_state_updated(self):
         self._create_release("1.0.0.1")
@@ -146,6 +275,196 @@ class ArtifactIndexTests(unittest.TestCase):
         self.assertIsNotNone(state)
         self.assertEqual(state["status"], "ready")
         self.assertGreater(state["item_count"], 0)
+
+    def test_compact_release_read_model_keeps_group_totals_across_pages(self):
+        for fix in range(150):
+            suffix = ".zip" if fix % 2 == 0 else ".exe"
+            self._create_release(f"2.0.0.{fix}", suffix=suffix, in_history=True)
+
+        from services.artifact_index import (
+            get_compact_releases_from_index,
+            refresh_release_index,
+        )
+        refresh_release_index(self.cache, self.storage)
+
+        first = get_compact_releases_from_index(self.cache, page=1, page_size=100)
+        second = get_compact_releases_from_index(self.cache, page=2, page_size=100)
+
+        self.assertIsNotNone(first)
+        self.assertIsNotNone(second)
+        for payload, expected_page_count in ((first, 100), (second, 50)):
+            group = payload["archive_visible_groups"][0]
+            self.assertEqual(group["visible_count"], 150)
+            self.assertEqual(group["page_item_count"], expected_page_count)
+            self.assertIn("ZIP 归档", group["visible_kind_summary"])
+            self.assertIn("安装包", group["visible_kind_summary"])
+            self.assertIn("压缩归档时代", group["visible_era_summary"])
+            self.assertIn("安装包时代", group["visible_era_summary"])
+
+    def test_compact_releases_bounds_5000_archived_android_rows(self):
+        rows = []
+        for index in range(5000):
+            version = f"3.0.{index // 1000}.{index % 1000}"
+            filename = f"ColorVision-Android-{version}.apk"
+            rows.append((
+                f"History/3.0/3.0.{index // 1000}/{filename}",
+                version,
+                filename,
+                1024 + index,
+                "APK",
+                "Android 安装包",
+                "android",
+                "Android 应用",
+                "archive",
+                "3.0",
+                f"3.0.{index // 1000}",
+                f"2026-01-{(index % 28) + 1:02d}T00:00:00+00:00",
+                f"2026-01-{(index % 28) + 1:02d} 00:00",
+                f"ColorVision Android {version}",
+            ))
+        db = self.cache.get_db()
+        db.executemany(
+            """INSERT INTO release_index
+               (relative_path, version, filename, size, kind, kind_label, era,
+                era_label, source, major_minor, branch, modified,
+                modified_display, display_title, is_deleted)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+            rows,
+        )
+        db.execute(
+            """INSERT INTO index_state (scope, signature, status, item_count)
+               VALUES ('releases', 'bulk-test', 'ready', 5000)
+               ON CONFLICT(scope) DO UPDATE SET status = 'ready', item_count = 5000"""
+        )
+        db.commit()
+        db.close()
+
+        response = self.client.get(
+            "/api/site/releases?view=compact&android_page=2&android_page_size=20"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertNotIn("android_releases", payload["app_info"])
+        self.assertEqual(payload["app_info"]["android_count"], 5000)
+        self.assertEqual(payload["app_info"]["archive_android_count"], 5000)
+        self.assertEqual(len(payload["app_info"]["archived_android_releases"]), 20)
+        self.assertEqual(payload["android_page"], 2)
+        self.assertEqual(payload["android_page_size"], 20)
+        self.assertEqual(payload["android_total_pages"], 250)
+        self.assertEqual(payload["android_total_item_count"], 5000)
+        self.assertTrue(payload["android_has_previous"])
+        self.assertTrue(payload["android_has_next"])
+        self.assertLess(len(json.dumps(payload, ensure_ascii=False).encode("utf-8")), 64 * 1024)
+
+    def test_compact_routes_do_not_call_full_legacy_release_builders(self):
+        self._create_release("2.0.0.1")
+        self._create_release("1.0.0.1", in_history=True)
+        (self.storage / "CHANGELOG.md").write_text("## 2.0.0.1\n- bounded", encoding="utf-8")
+        from services.artifact_index import refresh_release_index
+        refresh_release_index(self.cache, self.storage)
+
+        with patch.object(
+            marketplace_app.SERVICES,
+            "get_request_release_app_info",
+            side_effect=AssertionError("legacy releases builder must not run"),
+        ):
+            releases = self.client.get("/api/site/releases?view=compact&page_size=20")
+        with patch.object(
+            marketplace_app.SERVICES,
+            "get_request_home_app_info",
+            side_effect=AssertionError("legacy home builder must not run"),
+        ):
+            home = self.client.get("/api/site/home?view=compact")
+        with patch.object(
+            marketplace_app.SERVICES,
+            "get_request_changelog_app_info",
+            side_effect=AssertionError("legacy changelog builder must not run"),
+        ):
+            changelog = self.client.get("/api/site/changelog?view=compact")
+
+        self.assertEqual(releases.status_code, 200)
+        self.assertEqual(home.status_code, 200)
+        self.assertEqual(changelog.status_code, 200)
+        self.assertEqual(set(changelog.get_json()["app_info"]), {"latest_version", "changelog_html"})
+
+    def test_artifact_refresh_persists_pre_scan_signature_for_all_scopes(self):
+        self._create_release("1.0.0.1")
+        self._create_update("1.0.0.1")
+        self._create_tool("Tool-1.exe")
+        import services.artifact_index as artifact_index
+        from services.scheduler import _run_artifact_index_check
+
+        cases = (
+            (
+                "releases", "release_index", artifact_index._release_signature,
+                artifact_index._scan_release_artifacts, artifact_index.refresh_release_index,
+                "_scan_release_artifacts", lambda: self._create_release("2.0.0.1"),
+            ),
+            (
+                "updates", "update_index", artifact_index._update_signature,
+                artifact_index._scan_update_packages, artifact_index.refresh_update_index,
+                "_scan_update_packages", lambda: self._create_update("2.0.0.1"),
+            ),
+            (
+                "tools", "tool_index", artifact_index._tool_signature,
+                artifact_index._scan_tool_entries, artifact_index.refresh_tool_index,
+                "_scan_tool_entries", lambda: self._create_tool("Tool-2.exe"),
+            ),
+        )
+        for scope, table, signature_fn, scanner, refresh, scanner_name, mutate in cases:
+            with self.subTest(scope=scope):
+                pre_scan_signature = signature_fn(self.storage)
+
+                def scan_then_mutate(storage, _scanner=scanner, _mutate=mutate):
+                    snapshot = _scanner(storage)
+                    _mutate()
+                    return snapshot
+
+                with patch(
+                    f"services.artifact_index.{scanner_name}",
+                    side_effect=scan_then_mutate,
+                ):
+                    result = refresh(self.cache, self.storage)
+
+                self.assertTrue(result["changed_during_refresh"])
+                state = artifact_index.get_index_state(self.cache, scope)
+                self.assertEqual(state["signature"], pre_scan_signature)
+                self.assertNotEqual(state["signature"], signature_fn(self.storage))
+                db = self.cache.get_db()
+                before_count = db.execute(
+                    f"SELECT COUNT(*) AS cnt FROM {table} WHERE is_deleted = 0"
+                ).fetchone()["cnt"]
+                db.close()
+                self.assertEqual(before_count, 1)
+
+                summary = _run_artifact_index_check(self.cache, self.storage, scope)
+                self.assertIn("Refreshed", summary)
+                db = self.cache.get_db()
+                after_count = db.execute(
+                    f"SELECT COUNT(*) AS cnt FROM {table} WHERE is_deleted = 0"
+                ).fetchone()["cnt"]
+                db.close()
+                self.assertEqual(after_count, 2)
+
+    def test_artifact_refresh_single_flight_is_nonblocking_for_all_scopes(self):
+        import services.artifact_index as artifact_index
+
+        cases = (
+            ("releases", artifact_index.refresh_release_index),
+            ("updates", artifact_index.refresh_update_index),
+            ("tools", artifact_index.refresh_tool_index),
+        )
+        for scope, refresh in cases:
+            with self.subTest(scope=scope):
+                lock = artifact_index._REFRESH_LOCKS[scope]
+                self.assertTrue(lock.acquire(blocking=False))
+                try:
+                    result = refresh(self.cache, self.storage)
+                finally:
+                    lock.release()
+                self.assertTrue(result["skipped"])
+                self.assertEqual(result["duration_ms"], 0)
 
     # -------------------------------------------------------------------
     # Update index tests

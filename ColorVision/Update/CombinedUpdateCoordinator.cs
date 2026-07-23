@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -38,8 +37,11 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CombinedUpdateCoordinator));
         private static readonly SemaphoreSlim _locker = new(1, 1);
+        private static readonly object _updateCheckLock = new();
         private static readonly object _prefetchLock = new();
+        private static readonly TimeSpan SharedUpdateCheckDuration = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan PrefetchDelay = TimeSpan.FromSeconds(30);
+        private static SharedUpdateCheck? _sharedUpdateCheck;
         private static AutoUpdatePlan? _pendingStartupApplicationPlan;
         private static CombinedPluginUpdatePlan? _pendingStartupPluginPlan;
         private static CancellationTokenSource? _prefetchCancellation;
@@ -53,38 +55,41 @@ namespace ColorVision.Update
 
         public static async Task StartInteractiveAsync(CancellationToken cancellationToken = default)
         {
-            await _locker.WaitAsync(cancellationToken);
+            bool lockTaken = false;
             try
             {
                 AutoUpdatePlan? applicationPlan = null;
                 CombinedPluginUpdatePlan? pluginPlan = null;
-                UpdatePreviewDialogContext context = CreateCheckingContext();
+                UpdatePreviewDialogContext context = UpdatePreviewContextFactory.CreateCheckingContext();
                 using CancellationTokenSource previewCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 UpdatePreviewWindow window = new(context, async currentWindow =>
                 {
                     try
                     {
-                        (applicationPlan, pluginPlan) = await BuildUpdatePlansAsync(
+                        (applicationPlan, pluginPlan) = await GetUpdatePlansAsync(
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
-                            forceRefresh: true,
+                            includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                             cancellationToken: previewCancellation.Token);
+                        await _locker.WaitAsync(previewCancellation.Token);
+                        lockTaken = true;
 
                         if (currentWindow.IsClosed)
                             return;
 
                         if (!HasUpdates(applicationPlan, pluginPlan))
                         {
-                            context.CopyFrom(CreateNoUpdatesContext(pluginPlan));
+                            context.CopyFrom(UpdatePreviewContextFactory.CreateNoUpdatesContext(pluginPlan));
                             return;
                         }
 
-                        UpdatePreviewDialogContext loadedContext = BuildUpdatePreviewContext(applicationPlan, pluginPlan, isStartupCheck: false);
+                        UpdatePreviewDialogContext loadedContext = UpdatePreviewContextFactory.Build(applicationPlan, pluginPlan, isStartupCheck: false);
                         if (currentWindow.IsClosed)
                             return;
 
                         context.CopyFrom(loadedContext);
+                        Aria2cDownloadManager.GetInstance().PreloadAria2cAsync();
                     }
                     catch (OperationCanceledException)
                     {
@@ -145,7 +150,8 @@ namespace ColorVision.Update
             }
             finally
             {
-                _locker.Release();
+                if (lockTaken)
+                    _locker.Release();
             }
         }
 
@@ -163,7 +169,7 @@ namespace ColorVision.Update
             await _locker.WaitAsync(cancellationToken);
             try
             {
-                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await GetUpdatePlansAsync(
                     includeApplicationUpdates: includeApplicationUpdates,
                     includePluginUpdates: includePluginUpdates,
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: true,
@@ -205,7 +211,7 @@ namespace ColorVision.Update
                     return;
                 }
 
-                UpdatePreviewDialogContext defaultContext = BuildUpdatePreviewContext(applicationPlan, pluginPlan, isStartupCheck: true);
+                UpdatePreviewDialogContext defaultContext = UpdatePreviewContextFactory.Build(applicationPlan, pluginPlan, isStartupCheck: true);
                 await FinishPendingPrefetchAsync(cancellationToken);
                 ApplySelectedApplicationChoices(
                     ref applicationPlan,
@@ -382,11 +388,17 @@ namespace ColorVision.Update
                     log.Info("Skipped exit-time application update because the incremental packages are incomplete.");
             }
 
+            Version pluginHostVersion = applicationPackagesReady && applicationPlan != null
+                ? applicationPlan.LatestVersion
+                : applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion ?? pluginPlan?.HostVersion ?? new Version();
+            CombinedPluginUpdatePlan? exitPluginPlan = pluginPlan?.CreateCompatibleSubset(pluginHostVersion);
             IReadOnlyList<string> pluginPackagePaths = Array.Empty<string>();
-            bool hasPluginUpdates = pluginPlan?.HasUpdates == true;
-            bool pluginPackagesReady = hasPluginUpdates && TryGetCachedPluginPackagePaths(pluginPlan!, out pluginPackagePaths);
+            bool hasPluginUpdates = exitPluginPlan?.HasUpdates == true;
+            bool pluginPackagesReady = hasPluginUpdates && TryGetCachedPluginPackagePaths(exitPluginPlan!, out pluginPackagePaths);
             if (hasPluginUpdates && !pluginPackagesReady)
                 log.Info("Skipped exit-time plugin update because one or more plugin packages are incomplete.");
+            if (pluginPlan?.HasUpdates == true && exitPluginPlan?.HasUpdates != true)
+                log.Info($"Skipped exit-time plugin update because the cached plugins require a newer ColorVision host than {pluginHostVersion}.");
 
             ExitUpdateContent content = DetermineExitUpdateContent(
                 applicationPlan != null,
@@ -458,18 +470,158 @@ namespace ColorVision.Update
 
         private static Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildPendingStartupPlansAsync(CancellationToken cancellationToken)
         {
-            return BuildUpdatePlansAsync(
+            return GetUpdatePlansAsync(
                 includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
                 includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
-                forceRefresh: true,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                 cancellationToken: cancellationToken);
+        }
+
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> GetUpdatePlansAsync(
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            CancellationToken cancellationToken)
+        {
+            bool includeCurrentHostPlugins = includeApplicationUpdates
+                && includePluginUpdates
+                && includeCurrentHostPluginUpdatesWhenFullApplicationUpdate;
+            SharedUpdateCheck sharedCheck;
+            bool reused;
+            bool wasInProgress;
+            lock (_updateCheckLock)
+            {
+                reused = _sharedUpdateCheck != null
+                    && CanReuseSharedUpdateCheck(
+                        _sharedUpdateCheck,
+                        includeApplicationUpdates,
+                        includePluginUpdates,
+                        includeCurrentHostPlugins);
+                if (reused)
+                {
+                    sharedCheck = _sharedUpdateCheck!;
+                }
+                else
+                {
+                    sharedCheck = new SharedUpdateCheck(
+                        includeApplicationUpdates,
+                        includePluginUpdates,
+                        includeCurrentHostPlugins,
+                        BuildSharedUpdateCheckAsync(
+                            includeApplicationUpdates,
+                            includePluginUpdates,
+                            includeCurrentHostPlugins));
+                    _sharedUpdateCheck = sharedCheck;
+                }
+
+                wasInProgress = !sharedCheck.Task.IsCompleted;
+            }
+
+            if (reused)
+            {
+                log.Info(wasInProgress
+                    ? "Reusing the update check already in progress."
+                    : "Reusing the recent update check result.");
+            }
+
+            UpdatePlanCheckResult result = await sharedCheck.Task.WaitAsync(cancellationToken);
+            return CopyUpdatePlansForConsumer(
+                result,
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPlugins);
+        }
+
+        private static async Task<UpdatePlanCheckResult> BuildSharedUpdateCheckAsync(
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+                CancellationToken.None);
+            return new UpdatePlanCheckResult(applicationPlan, pluginPlan, DateTimeOffset.UtcNow);
+        }
+
+        private static bool CanReuseSharedUpdateCheck(
+            SharedUpdateCheck sharedCheck,
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            if (!CanReuseUpdateCheckOptions(
+                sharedCheck.IncludeApplicationUpdates,
+                sharedCheck.IncludePluginUpdates,
+                sharedCheck.IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+                includeApplicationUpdates,
+                includePluginUpdates,
+                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate))
+            {
+                return false;
+            }
+
+            if (!sharedCheck.Task.IsCompleted)
+                return true;
+
+            return sharedCheck.Task.IsCompletedSuccessfully
+                && DateTimeOffset.UtcNow - sharedCheck.Task.Result.CompletedAt <= SharedUpdateCheckDuration;
+        }
+
+        internal static bool CanReuseUpdateCheckOptions(
+            bool existingIncludesApplicationUpdates,
+            bool existingIncludesPluginUpdates,
+            bool existingIncludesCurrentHostPlugins,
+            bool requestedIncludesApplicationUpdates,
+            bool requestedIncludesPluginUpdates,
+            bool requestedIncludesCurrentHostPlugins)
+        {
+            return existingIncludesApplicationUpdates == requestedIncludesApplicationUpdates
+                && existingIncludesPluginUpdates == requestedIncludesPluginUpdates
+                && (!requestedIncludesCurrentHostPlugins || existingIncludesCurrentHostPlugins);
+        }
+
+        private static (AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan) CopyUpdatePlansForConsumer(
+            UpdatePlanCheckResult result,
+            bool includeApplicationUpdates,
+            bool includePluginUpdates,
+            bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
+        {
+            AutoUpdatePlan? applicationPlan = includeApplicationUpdates && result.ApplicationPlan != null
+                ? new AutoUpdatePlan
+                {
+                    CurrentVersion = result.ApplicationPlan.CurrentVersion,
+                    LatestVersion = result.ApplicationPlan.LatestVersion,
+                    VersionsToApply = result.ApplicationPlan.VersionsToApply.ToArray(),
+                    IsIncremental = result.ApplicationPlan.IsIncremental,
+                }
+                : null;
+            bool canUsePluginPlan = includePluginUpdates
+                && result.PluginPlan != null
+                && (applicationPlan?.IsIncremental != false || includeCurrentHostPluginUpdatesWhenFullApplicationUpdate);
+            CombinedPluginUpdatePlan? pluginPlan = canUsePluginPlan
+                ? ClonePluginPlan(result.PluginPlan!)
+                : null;
+            return (applicationPlan, pluginPlan);
+        }
+
+        private static CombinedPluginUpdatePlan ClonePluginPlan(CombinedPluginUpdatePlan source)
+        {
+            CombinedPluginUpdatePlan clone = new() { HostVersion = source.HostVersion };
+            clone.Updates.AddRange(source.Updates.Select(item => new CombinedPluginUpdateItem
+            {
+                Plugin = item.Plugin,
+                VersionInfo = item.VersionInfo,
+            }));
+            clone.SkippedIncompatiblePlugins.AddRange(source.SkippedIncompatiblePlugins);
+            return clone;
         }
 
         private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate = false,
-            bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
             if (!WindowsNetworkState.IsConnectedToInternet())
@@ -478,14 +630,20 @@ namespace ColorVision.Update
                 return (null, null);
             }
 
-            AutoUpdatePlan? applicationPlan = null;
-            if (includeApplicationUpdates)
-            {
-                applicationPlan = await AutoUpdater.GetInstance().GetUpdatePlanAsync(forceRefresh, cancellationToken);
-            }
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            MarketplaceManager? marketplaceManager = includePluginUpdates ? MarketplaceManager.GetInstance() : null;
+            Task<AutoUpdatePlan?> applicationTask = includeApplicationUpdates
+                ? AutoUpdater.GetUpdatePlanAsync(forceRefresh: false, cancellationToken)
+                : Task.FromResult<AutoUpdatePlan?>(null);
+            Task pluginVersionsTask = marketplaceManager != null
+                ? marketplaceManager.RefreshVersionsAsync(cancellationToken)
+                : Task.CompletedTask;
+
+            await Task.WhenAll(applicationTask, pluginVersionsTask);
+            AutoUpdatePlan? applicationPlan = await applicationTask;
 
             CombinedPluginUpdatePlan? pluginPlan = null;
-            if (includePluginUpdates)
+            if (marketplaceManager != null)
             {
                 Version? hostVersion = ResolvePluginPlanHostVersion(
                     applicationPlan,
@@ -493,12 +651,26 @@ namespace ColorVision.Update
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate);
                 if (hostVersion != null)
                 {
-                    pluginPlan = await MarketplaceManager.GetInstance().BuildCombinedUpdatePlanAsync(hostVersion, cancellationToken);
+                    pluginPlan = await marketplaceManager.BuildCombinedUpdatePlanFromCurrentVersionsAsync(
+                        hostVersion,
+                        cancellationToken);
                 }
             }
 
+            log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
             return (applicationPlan, pluginPlan);
         }
+
+        private sealed record UpdatePlanCheckResult(
+            AutoUpdatePlan? ApplicationPlan,
+            CombinedPluginUpdatePlan? PluginPlan,
+            DateTimeOffset CompletedAt);
+
+        private sealed record SharedUpdateCheck(
+            bool IncludeApplicationUpdates,
+            bool IncludePluginUpdates,
+            bool IncludeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
+            Task<UpdatePlanCheckResult> Task);
 
         internal static Version? ResolvePluginPlanHostVersion(
             AutoUpdatePlan? applicationPlan,
@@ -537,7 +709,7 @@ namespace ColorVision.Update
                 return;
             }
 
-            await StartPluginUpdateAsync(pluginPlan!, showNoUpdatesMessage);
+            StartPluginUpdate(pluginPlan!, showNoUpdatesMessage);
         }
 
         private static bool HasUpdates(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
@@ -574,7 +746,7 @@ namespace ColorVision.Update
             }
         }
 
-        private static async Task StartPluginUpdateAsync(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
+        private static void StartPluginUpdate(CombinedPluginUpdatePlan pluginPlan, bool showNoUpdatesMessage)
         {
             if (!pluginPlan.HasUpdates)
             {
@@ -597,8 +769,6 @@ namespace ColorVision.Update
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Resources.UpdatePreviewNoPluginUpdates, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            await Task.CompletedTask;
         }
 
         private static async Task StartIncrementalCombinedUpdateAsync(AutoUpdatePlan applicationPlan, CombinedPluginUpdatePlan pluginPlan)
@@ -652,45 +822,6 @@ namespace ColorVision.Update
                 : CombinedIncrementalCompletionAction.ApplyApplicationOnly;
         }
 
-        private static UpdatePreviewDialogContext CreateCheckingContext()
-        {
-            return new UpdatePreviewDialogContext
-            {
-                Heading = Resources.UpdatePreviewCheckingHeading,
-                Summary = Resources.UpdatePreviewCheckingSummary,
-                CheckingTitle = Resources.UpdatePreviewScanningTitle,
-                CheckingSummary = Resources.UpdatePreviewCheckingSummary,
-                StateGlyph = "\uE895",
-                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
-                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
-                CancelButtonText = Resources.UpdatePreviewCancelButtonText,
-                IsChecking = true,
-            };
-        }
-
-        private static UpdatePreviewDialogContext CreateNoUpdatesContext(CombinedPluginUpdatePlan? pluginPlan)
-        {
-            string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
-            string emptyMessage = pluginPlan?.SkippedIncompatiblePlugins.Count > 0
-                ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewSkippedIncompatibleUpdatesFormat, string.Join(listSeparator, pluginPlan.SkippedIncompatiblePlugins))
-                : Resources.UpdatePreviewNoInstallableUpdatesMessage;
-
-            return new UpdatePreviewDialogContext
-            {
-                Heading = Resources.UpdatePreviewAlreadyLatestHeading,
-                Summary = Resources.UpdatePreviewDialogSummaryNoUpdates,
-                CheckingTitle = Resources.UpdatePreviewScanningTitle,
-                CheckingSummary = Resources.UpdatePreviewCheckingSummary,
-                EmptyStateTitle = Resources.UpdatePreviewAlreadyLatestHeading,
-                EmptyStateMessage = emptyMessage,
-                StateGlyph = "\uE73E",
-                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
-                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
-                CancelButtonText = Resources.UpdatePreviewCloseButtonText,
-                IsChecking = false,
-            };
-        }
-
         private static void ApplySelectedPluginUpdates(CombinedPluginUpdatePlan? pluginPlan, UpdatePreviewDialogContext context)
         {
             if (pluginPlan == null || !pluginPlan.HasUpdates)
@@ -701,7 +832,7 @@ namespace ColorVision.Update
                 .Select(item => item.ItemId)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(GetPluginItemId(item)));
+            pluginPlan.Updates.RemoveAll(item => !selectedPluginIds.Contains(UpdatePreviewContextFactory.GetPluginItemId(item)));
         }
 
         private static void ApplySelectedApplicationChoices(ref AutoUpdatePlan? applicationPlan, ApplicationUpdateMode selectedMode)
@@ -726,221 +857,6 @@ namespace ColorVision.Update
             return context.Items.FirstOrDefault(item => string.Equals(item.ItemId, "application", StringComparison.OrdinalIgnoreCase))?.ApplicationUpdateMode
                 ?? ApplicationUpdateMode.Incremental;
         }
-
-        private static UpdatePreviewDialogContext BuildUpdatePreviewContext(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool isStartupCheck)
-        {
-            UpdatePreviewDialogContext context = new()
-            {
-                Heading = BuildPreviewHeading(applicationPlan, pluginPlan),
-                Summary = BuildDialogSummary(applicationPlan, pluginPlan),
-                HostVersionValue = (applicationPlan?.CurrentVersion ?? AutoUpdater.CurrentVersion)?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
-                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
-                CancelButtonText = isStartupCheck ? Resources.UpdatePreviewLaterButtonText : Resources.UpdatePreviewCancelButtonText,
-            };
-
-            if (applicationPlan != null)
-            {
-                string incrementalSummary = string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationCardSummaryIncrementalFormat, applicationPlan.VersionsToApply.Count);
-                string fullSummary = Resources.UpdatePreviewApplicationCardSummaryFull;
-                UpdatePreviewItem previewItem = new()
-                {
-                    ItemId = "application",
-                    Kind = applicationPlan.IsIncremental ? UpdatePreviewItemKind.ApplicationIncremental : UpdatePreviewItemKind.Application,
-                    Category = applicationPlan.IsIncremental ? Resources.UpdatePreviewApplicationIncrementalCategory : Resources.UpdatePreviewApplicationUpdateCategory,
-                    Name = "ColorVision",
-                    SecondaryLabel = applicationPlan.IsIncremental
-                        ? string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewApplicationIncrementalPackagesFormat, applicationPlan.VersionsToApply.Count)
-                        : Resources.UpdatePreviewApplicationFullPackageLabel,
-                    CurrentVersion = applicationPlan.CurrentVersion.ToString(),
-                    TargetVersion = applicationPlan.LatestVersion.ToString(),
-                    Summary = applicationPlan.IsIncremental ? incrementalSummary : fullSummary,
-                    IsSelectable = false,
-                    CanChooseApplicationUpdateMode = applicationPlan.IsIncremental,
-                    ApplicationUpdateMode = applicationPlan.IsIncremental ? ApplicationUpdateMode.Incremental : ApplicationUpdateMode.Full,
-                };
-
-                previewItem.ConfigureApplicationUpdateModePresentation(applicationPlan.VersionsToApply.Count, incrementalSummary, fullSummary);
-                context.Items.Add(previewItem);
-            }
-
-            if (pluginPlan?.HasUpdates == true)
-            {
-                foreach (CombinedPluginUpdateItem item in pluginPlan.Updates)
-                {
-                    string pluginName = GetPluginDisplayName(item);
-                    string pluginItemId = GetPluginItemId(item);
-                    string currentVersion = item.Plugin.AssemblyVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion;
-
-                    UpdatePreviewItem previewItem = new()
-                    {
-                        ItemId = pluginItemId,
-                        Kind = UpdatePreviewItemKind.Plugin,
-                        Category = Resources.UpdatePreviewPluginUpdateCategory,
-                        Name = pluginName,
-                        SecondaryLabel = BuildPluginSecondaryLabel(item, pluginName),
-                        CurrentVersion = currentVersion,
-                        TargetVersion = item.VersionInfo.Version,
-                        HostRequirement = string.IsNullOrWhiteSpace(item.VersionInfo.RequiresVersion)
-                            ? string.Empty
-                            : item.VersionInfo.RequiresVersion,
-                        Summary = BuildPluginCardSummary(item),
-                        IsSelectable = true,
-                        IsSelected = true,
-                    };
-
-                    context.Items.Add(previewItem);
-                }
-            }
-
-            return context;
-        }
-
-        private static string BuildDialogSummary(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
-        {
-            int updateCount = (applicationPlan != null ? 1 : 0) + (pluginPlan?.Updates.Count ?? 0);
-            if (updateCount == 0)
-                return Resources.UpdatePreviewDialogSummaryNoUpdates;
-
-            List<string> updateKinds = BuildUpdateKinds(applicationPlan, pluginPlan);
-            StringBuilder builder = new();
-            string listSeparator = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName is "zh" or "ja" ? "、" : ", ";
-
-            if (updateKinds.Count > 1)
-                builder.Append(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryWithKinds, updateCount, string.Join(listSeparator, updateKinds)));
-            else
-                builder.Append(string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummaryDefault, updateCount));
-
-            if (pluginPlan?.SkippedIncompatiblePlugins.Count > 0)
-                builder.Append($" {string.Format(CultureInfo.CurrentCulture, Resources.UpdatePreviewDialogSummarySkippedCount, pluginPlan.SkippedIncompatiblePlugins.Count)}");
-
-            return builder.ToString();
-        }
-
-        private static string BuildPluginCardSummary(CombinedPluginUpdateItem item)
-        {
-            string? note = !string.IsNullOrWhiteSpace(item.VersionInfo.ChangeLog)
-                ? item.VersionInfo.ChangeLog
-                : item.Plugin.PluginInfo?.ChangeLog;
-
-            if (string.IsNullOrWhiteSpace(note))
-            {
-                note = item.Plugin.Description;
-            }
-
-            if (string.IsNullOrWhiteSpace(note))
-            {
-                return NormalizeUpdateSummary(item.Plugin.Description);
-            }
-
-            return NormalizeUpdateSummary(note);
-        }
-
-        private static string BuildPreviewHeading(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
-        {
-            return applicationPlan != null || pluginPlan?.HasUpdates == true
-                ? Resources.UpdatePreviewFoundUpdatesHeading
-                : Resources.CheckForUpdates;
-        }
-
-        private static List<string> BuildUpdateKinds(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan)
-        {
-            List<string> kinds = new();
-
-            if (applicationPlan != null)
-                kinds.Add(Resources.UpdatePreviewUpdateKindApplication);
-
-            if (pluginPlan?.HasUpdates == true)
-                kinds.Add(Resources.UpdatePreviewUpdateKindPlugin);
-
-            return kinds;
-        }
-
-        private static string BuildPluginSecondaryLabel(CombinedPluginUpdateItem item, string pluginName)
-        {
-            string[] candidates =
-            {
-                item.Plugin.PackageName ?? string.Empty,
-                item.Plugin.AssemblyName ?? string.Empty,
-            };
-
-            return candidates
-                .Select(candidate => candidate?.Trim() ?? string.Empty)
-                .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate)
-                    && !string.Equals(candidate, pluginName, StringComparison.OrdinalIgnoreCase))
-                ?? string.Empty;
-        }
-
-        private static string NormalizeUpdateSummary(string? text)
-        {
-            string fallback = Properties.Resources.UpdateCompatibilityStability;
-            const int maxLength = 160;
-
-            if (string.IsNullOrWhiteSpace(text))
-                return fallback;
-
-            string normalized = text
-                .Replace("\r\n", "\n")
-                .Replace('\r', '\n')
-                .Trim();
-
-            List<string> lines = normalized
-                .Split('\n')
-                .Select(line => line.Trim())
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Where(line => !line.StartsWith('#'))
-                .Where(line => !line.Equals("CHANGELOG", StringComparison.OrdinalIgnoreCase))
-                .Where(line => !line.Equals("Changelog", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (lines.Count == 0)
-                return fallback;
-
-            List<string> paragraph = new();
-            foreach (string line in lines)
-            {
-                if (paragraph.Count > 0 && IsLikelyParagraphBoundary(line))
-                    break;
-
-                paragraph.Add(line.TrimStart('-', '*', ' '));
-            }
-
-            string result = string.Join(" ", paragraph).Trim();
-            if (string.IsNullOrWhiteSpace(result))
-                return fallback;
-
-            if (result.Length > maxLength)
-                result = result[..maxLength].TrimEnd() + "…";
-
-            return result;
-        }
-
-        private static bool IsLikelyParagraphBoundary(string line)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-                return true;
-
-            return line.StartsWith("- ", StringComparison.Ordinal)
-                || line.StartsWith("* ", StringComparison.Ordinal)
-                || line.StartsWith("##", StringComparison.Ordinal)
-                || line.StartsWith("###", StringComparison.Ordinal);
-        }
-
-        private static string GetPluginDisplayName(CombinedPluginUpdateItem item)
-        {
-            return item.Plugin.Name
-                ?? item.Plugin.PluginInfo?.Name
-                ?? item.Plugin.PackageName
-                ?? item.Plugin.AssemblyName
-                ?? Properties.Resources.UpdateUnnamedPlugin;
-        }
-
-        private static string GetPluginItemId(CombinedPluginUpdateItem item)
-        {
-            return item.Plugin.PackageName
-                ?? item.Plugin.AssemblyName
-                ?? GetPluginDisplayName(item);
-        }
-
 
         private static void ShowNoUpdatesMessage(CombinedPluginUpdatePlan? pluginPlan)
         {

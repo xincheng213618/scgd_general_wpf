@@ -45,6 +45,7 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_AvgCount = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -58,6 +59,7 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_Gain = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -72,6 +74,7 @@ public class BaseCameraNode : CVBaseServerNode
 		{
 			_ExpTime = value;
 			m_ctrl_exp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -87,6 +90,7 @@ public class BaseCameraNode : CVBaseServerNode
 		{
 			_CaliTempName = value;
 			m_ctrl_caliTemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -100,6 +104,7 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_FlipMode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -115,6 +120,7 @@ public class BaseCameraNode : CVBaseServerNode
 		{
 			_POITempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -130,6 +136,7 @@ public class BaseCameraNode : CVBaseServerNode
 		{
 			_POIFilterTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -145,6 +152,7 @@ public class BaseCameraNode : CVBaseServerNode
 		{
 			_POIReviseTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 

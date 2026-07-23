@@ -38,7 +38,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         [JsonIgnore]
         public string Status { get => _status; set { _status = value ?? string.Empty; OnPropertyChanged(); } }
-        private string _status = "未知";
+        private string _status = ServiceStatusText.Unknown;
 
         [JsonIgnore]
         public bool IsInstalled { get => _isInstalled; set { _isInstalled = value; OnPropertyChanged(); } }

@@ -87,14 +87,13 @@ public sealed class FlowPoiReviseTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiOutputTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiGenCaliTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowSmuTemplateEditor : FlowPropertyEditorProxy { }
+public sealed class FlowSmuRangeEditor : FlowPropertyEditorProxy { }
 public sealed class FlowSensorTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowDataLoadTemplateEditor : FlowPropertyEditorProxy { }
-public sealed class FlowCaliAngleShiftJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowBlackMuraJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowImageRoiJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiAnalysisJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowImageCroppingTemplateEditor : FlowPropertyEditorProxy { }
-public sealed class FlowCompoundImgJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowLedCheck2JsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowOledAoiJsonTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowKbJsonTemplateEditor : FlowPropertyEditorProxy { }

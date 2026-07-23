@@ -365,12 +365,6 @@
   <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
     <value>{0} 個外掛更新</value>
   </data>
-  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
-    <value>{0} 個主題更新</value>
-  </data>
-  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
-    <value>{0} 個其他更新</value>
-  </data>
   <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
     <value>已選擇 {0} / {1} 個外掛</value>
   </data>
@@ -892,5 +886,38 @@
 
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>檔案關聯</value>
+  </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve">
+    <value>ColorVision 背景服務</value>
+  </data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve"><value>處理中…</value></data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve"><value>重新檢查</value></data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve"><value>重試</value></data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve"><value>安裝背景服務</value></data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve"><value>修復並啟動</value></data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve"><value>更新背景服務</value></data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve"><value>正在準備 ColorVision Service Host。安裝或修復時可能會要求系統管理員權限，請完成 Windows 提示。</value></data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve"><value>正在檢查 ColorVision Service Host 的安裝與執行狀態。</value></data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve"><value>背景服務已安裝並正常執行（版本 {0}）。&#xA;&#xA;服務管理器現在可以安全地安裝、更新及控制本機服務。</value></data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve"><value>找不到可用的背景服務安裝套件，因此無法繼續初始化。&#xA;&#xA;安裝套件：{0}</value></data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve"><value>服務管理器依賴 ColorVision Service Host 執行需要系統管理員權限的安裝與維護操作。按下「安裝背景服務」後，Windows 會要求一次授權。&#xA;&#xA;安裝套件：{0}</value></data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve"><value>背景服務已安裝（版本 {0}），但目前未執行。請先修復並啟動再繼續。</value></data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve"><value>背景服務需要更新或修復。目前版本：{0}；安裝套件版本：{1}。完成後才能進入服務管理器。</value></data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve"><value>背景服務安裝套件不存在：{0}</value></data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve"><value>無法確認背景服務狀態，請重試。</value></data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前建立程式快照</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>啟用後，主程式、外掛程式或組合更新前都會建立一次完整程式快照，可能延長更新時間。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>不使用系統代理伺服器</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>啟用後，更新檢查與外掛市集請求會直接連線到公網服務；停用時使用 Windows 系統代理。變更會從下一次請求生效。</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>更新前建立程式快照</value>
   </data>
 </root>

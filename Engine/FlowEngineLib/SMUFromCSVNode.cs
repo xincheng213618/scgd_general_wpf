@@ -8,6 +8,8 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUFromCSVNode.SrcRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
+[FlowEngineLib.PropertyEditor.FlowNodePropertyEditorAttribute(nameof(SMUFromCSVNode.LmtRng), typeof(FlowEngineLib.PropertyEditor.FlowSmuRangeEditor))]
 public class SMUFromCSVNode : SMUBaseNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUFromCSVNode));
@@ -25,6 +27,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		{
 			_source = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -39,6 +42,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		{
 			_channel = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -55,6 +59,7 @@ public class SMUFromCSVNode : SMUBaseNode
 			_csvFileName = value;
 			LoadFromCsv(_csvFileName);
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 
@@ -68,6 +73,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		set
 		{
 			_IsAutoRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -81,6 +87,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		set
 		{
 			_SrcRng = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -94,6 +101,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		set
 		{
 			_LmtRng = value;
+			OnPropertyChanged();
 		}
 	}
 

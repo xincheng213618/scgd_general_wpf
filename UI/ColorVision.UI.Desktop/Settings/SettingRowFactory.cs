@@ -84,6 +84,18 @@ namespace ColorVision.UI.Desktop.Settings
 
         private static Border CreatePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
         {
+            Border row = entry.Metadata.Layout == ConfigSettingLayout.Wide
+                ? CreateWidePropertySettingRow(entry, isLast, rowIndex)
+                : CreateInlinePropertySettingRow(entry, isLast, rowIndex);
+
+            if (entry.PropertyInfo != null && entry.Metadata.Source != null)
+                PropertyEditorHelper.ApplyVisibilityBinding(row, entry.PropertyInfo, entry.Metadata.Source);
+
+            return row;
+        }
+
+        private static Border CreateInlinePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        {
             var row = new Grid
             {
                 MinHeight = 50,
@@ -97,16 +109,41 @@ namespace ColorVision.UI.Desktop.Settings
             Grid.SetColumn(textPanel, 0);
             row.Children.Add(textPanel);
 
+            bool useCompactEditor = UsesCompactInlineEditor(entry);
             var editorHost = new Border
             {
-                Width = 288,
-                MinWidth = 228,
+                Width = useCompactEditor ? double.NaN : 288,
+                MinWidth = useCompactEditor ? 0 : 228,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Child = CreatePropertyEditor(entry)
             };
             Grid.SetColumn(editorHost, 1);
             row.Children.Add(editorHost);
+
+            return CreateRowShell(row, isLast, rowIndex);
+        }
+
+        private static bool UsesCompactInlineEditor(SettingEntry entry)
+        {
+            Type? propertyType = entry.PropertyInfo?.PropertyType;
+            return propertyType != null && (Nullable.GetUnderlyingType(propertyType) ?? propertyType) == typeof(bool);
+        }
+
+        private static Border CreateWidePropertySettingRow(SettingEntry entry, bool isLast, int rowIndex)
+        {
+            var row = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            var textPanel = CreateSettingTextPanel(entry);
+            textPanel.Margin = new Thickness(0, 0, 0, 12);
+            row.Children.Add(textPanel);
+
+            var editor = CreatePropertyEditor(entry, useWideLayout: true);
+            editor.HorizontalAlignment = HorizontalAlignment.Stretch;
+            row.Children.Add(editor);
 
             return CreateRowShell(row, isLast, rowIndex);
         }
@@ -167,9 +204,26 @@ namespace ColorVision.UI.Desktop.Settings
         private static FrameworkElement CreateClassSettingsPage(SettingEntry entry, ViewModelBase viewModel, bool showTitle)
         {
             var propertyEntries = CreateClassPropertyEntries(entry, viewModel);
-            FrameworkElement content = propertyEntries.Count == 0
+            var stackPanel = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            if (propertyEntries.Count > 0)
+                stackPanel.Children.Add(CreateRowsCard(propertyEntries));
+
+            if (entry.Metadata.ViewType != null)
+            {
+                FrameworkElement actions = GetOrCreateCustomContent(entry);
+                PrepareCustomContent(actions);
+                if (stackPanel.Children.Count > 0)
+                    actions.Margin = new Thickness(0, 12, 0, 0);
+                stackPanel.Children.Add(actions);
+            }
+
+            FrameworkElement content = stackPanel.Children.Count == 0
                 ? CreateEmptyState(SettingResources.EditorUnavailable)
-                : CreateRowsCard(propertyEntries);
+                : stackPanel;
 
             return showTitle ? CreateTitledCustomPage(entry, content) : content;
         }
@@ -182,13 +236,15 @@ namespace ColorVision.UI.Desktop.Settings
             for (int index = 0; index < properties.Count; index++)
             {
                 var property = properties[index];
+                var configSetting = property.GetCustomAttribute<ConfigSettingAttribute>();
                 var metadata = new ConfigSettingMetadata
                 {
                     Group = pageEntry.Group,
-                    Name = string.Empty,
-                    Description = string.Empty,
-                    Section = pageEntry.SectionKey,
-                    Order = pageEntry.Metadata.Order + index,
+                    Name = configSetting?.Name ?? string.Empty,
+                    Description = configSetting?.Description ?? string.Empty,
+                    Section = string.IsNullOrWhiteSpace(configSetting?.Section) ? pageEntry.SectionKey : configSetting.Section,
+                    Layout = configSetting?.Layout ?? ConfigSettingLayout.Inline,
+                    Order = configSetting?.Order ?? pageEntry.Metadata.Order + index,
                     Type = ConfigSettingType.Property,
                     BindingName = property.Name,
                     Source = source
@@ -209,6 +265,7 @@ namespace ColorVision.UI.Desktop.Settings
                 .Where(property => property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true)
                 .Where(property => CanCreateEditor(property))
                 .OrderBy(property => GetInheritanceDepth(property.DeclaringType ?? type))
+                .ThenBy(property => property.GetCustomAttribute<ConfigSettingAttribute>()?.Order ?? int.MaxValue)
                 .ThenBy(property => property.GetCustomAttribute<DisplayAttribute>()?.GetOrder() ?? int.MaxValue)
                 .ThenBy(property => property.MetadataToken)
                 .ToList();
@@ -302,7 +359,7 @@ namespace ColorVision.UI.Desktop.Settings
             return stackPanel;
         }
 
-        private static FrameworkElement CreatePropertyEditor(SettingEntry entry)
+        private static FrameworkElement CreatePropertyEditor(SettingEntry entry, bool useWideLayout = false)
         {
             try
             {
@@ -317,8 +374,19 @@ namespace ColorVision.UI.Desktop.Settings
                 dockPanel.VerticalAlignment = VerticalAlignment.Center;
 
                 RemoveInlinePropertyLabel(dockPanel, entry);
-                dockPanel.LastChildFill = ShouldFillLastChild(dockPanel);
-                ApplyEditorSizing(dockPanel);
+                dockPanel.LastChildFill = useWideLayout || ShouldFillLastChild(dockPanel);
+                if (useWideLayout)
+                {
+                    foreach (UIElement child in dockPanel.Children)
+                    {
+                        if (child is FrameworkElement element)
+                            element.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    }
+                }
+                else
+                {
+                    ApplyEditorSizing(dockPanel);
+                }
                 return dockPanel;
             }
             catch (Exception ex)

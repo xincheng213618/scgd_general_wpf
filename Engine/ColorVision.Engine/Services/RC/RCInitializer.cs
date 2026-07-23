@@ -1,4 +1,5 @@
 ﻿#pragma warning disable
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
@@ -50,7 +51,7 @@ namespace ColorVision.Engine.Services.RC
         }
     }
 
-    public class ServiceConfig:IConfig
+    public class ServiceConfig : ViewModelBase, IConfig
     {
         public static ServiceConfig Instance => ConfigService.Instance.GetRequiredService<ServiceConfig>();
 
@@ -60,13 +61,37 @@ namespace ColorVision.Engine.Services.RC
 
         public string CVArchService { get; set; }
 
-        public ServiceInfo RegistrationCenterServiceInfo { get; set; } = new ServiceInfo();
+        public ServiceInfo RegistrationCenterServiceInfo { get => _registrationCenterServiceInfo; set => SetProperty(ref _registrationCenterServiceInfo, value); }
+        private ServiceInfo _registrationCenterServiceInfo = new();
 
-        public ServiceInfo CVMainService_devInfo { get; set; } = new ServiceInfo();
+        public ServiceInfo CVMainService_devInfo { get => _cvMainServiceDevInfo; set => SetProperty(ref _cvMainServiceDevInfo, value); }
+        private ServiceInfo _cvMainServiceDevInfo = new();
 
-        public ServiceInfo CVMainService_x64Info { get; set; } = new ServiceInfo();
+        public ServiceInfo CVMainService_x64Info { get => _cvMainServiceX64Info; set => SetProperty(ref _cvMainServiceX64Info, value); }
+        private ServiceInfo _cvMainServiceX64Info = new();
 
-        public ServiceInfo CVArchServiceInfo { get; set; } = new ServiceInfo();
+        public ServiceInfo CVArchServiceInfo { get => _cvArchServiceInfo; set => SetProperty(ref _cvArchServiceInfo, value); }
+        private ServiceInfo _cvArchServiceInfo = new();
+
+        public void RefreshInstalledServices()
+        {
+            RegistrationCenterServiceInfo = ServiceInfo.FromServiceName("RegistrationCenterService");
+            CVMainService_devInfo = ServiceInfo.FromServiceName("CVMainService_dev");
+            CVMainService_x64Info = ServiceInfo.FromServiceName("CVMainService_x64");
+            CVArchServiceInfo = ServiceInfo.FromServiceName("CVArchService");
+
+            // 服务掉线/被 Windows 更新移除时，不能用空路径覆盖之前保存的可执行文件路径。
+            UpdateSavedServicePath(RegistrationCenterServiceInfo, path => RegistrationCenterService = path);
+            UpdateSavedServicePath(CVMainService_devInfo, path => CVMainService_dev = path);
+            UpdateSavedServicePath(CVMainService_x64Info, path => CVMainService_x64 = path);
+            UpdateSavedServicePath(CVArchServiceInfo, path => CVArchService = path);
+        }
+
+        private static void UpdateSavedServicePath(ServiceInfo serviceInfo, Action<string> updatePath)
+        {
+            if (serviceInfo.Exists && File.Exists(serviceInfo.ExecutablePath))
+                updatePath(serviceInfo.ExecutablePath);
+        }
     }
 
 
@@ -85,17 +110,7 @@ namespace ColorVision.Engine.Services.RC
         public async Task SetServiceConfig()
         {
             await Task.Delay(1000);
-            // 获取详细信息
-            ServiceConfig.Instance.RegistrationCenterServiceInfo = ServiceInfo.FromServiceName("RegistrationCenterService");
-            ServiceConfig.Instance.CVMainService_devInfo = ServiceInfo.FromServiceName("CVMainService_dev");
-            ServiceConfig.Instance.CVMainService_x64Info = ServiceInfo.FromServiceName("CVMainService_x64");
-            ServiceConfig.Instance.CVArchServiceInfo = ServiceInfo.FromServiceName("CVArchService");
-
-            // 服务掉线/被 Windows 更新移除时，不能用空路径覆盖之前保存的可执行文件路径。
-            UpdateSavedServicePath(ServiceConfig.Instance.RegistrationCenterServiceInfo, path => ServiceConfig.Instance.RegistrationCenterService = path);
-            UpdateSavedServicePath(ServiceConfig.Instance.CVMainService_devInfo, path => ServiceConfig.Instance.CVMainService_dev = path);
-            UpdateSavedServicePath(ServiceConfig.Instance.CVMainService_x64Info, path => ServiceConfig.Instance.CVMainService_x64 = path);
-            UpdateSavedServicePath(ServiceConfig.Instance.CVArchServiceInfo, path => ServiceConfig.Instance.CVArchService = path);
+            ServiceConfig.Instance.RefreshInstalledServices();
         }
 
         public override async Task InitializeAsync()
@@ -221,10 +236,5 @@ namespace ColorVision.Engine.Services.RC
             }
         }
 
-        private static void UpdateSavedServicePath(ServiceInfo serviceInfo, Action<string> updatePath)
-        {
-            if (serviceInfo.Exists && File.Exists(serviceInfo.ExecutablePath))
-                updatePath(serviceInfo.ExecutablePath);
-        }
     }
 }

@@ -9,6 +9,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
+    [System.Obsolete("Deprecated third-party-template menu retained for compatibility.")]
     public class MenuThirdPartyAlgorithms: MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
@@ -17,6 +18,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
     }
 
 
+    [System.Obsolete("Deprecated third-party-template menu provider retained for compatibility.")]
     public class MenuItemProviderSensor : IMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()

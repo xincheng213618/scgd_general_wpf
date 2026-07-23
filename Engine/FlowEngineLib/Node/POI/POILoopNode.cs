@@ -18,6 +18,7 @@ public class POILoopNode : CVBaseLoopServerNode<POINodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

@@ -49,8 +49,8 @@
 
 ## 推荐参考实现
 
-- `Plugins/EventVWR/EventVWRPlugins.cs`
-- `Plugins/EventVWR/Dump/MenuDump.cs`
+- `Plugins/SystemMonitor/SystemMonitorControl.xaml.cs`
+- `Plugins/WindowsServicePlugin/ServiceManager/MenuServiceManager.cs`
 - `Plugins/SystemMonitor/SystemMonitorControl.xaml.cs`
 - `Plugins/README.md`
 

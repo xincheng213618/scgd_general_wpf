@@ -65,10 +65,10 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			base.DeviceCode = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
-	[STNodeProperty("Token", "Token", true)]
 	public string Token
 	{
 		get
@@ -78,8 +78,9 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_Token = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 
 	[STNodeProperty("允许失败继续", "服务返回Fail时按正常流程继续", true)]
@@ -92,6 +93,7 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_ContinueOnFail = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -105,13 +107,9 @@ public class CVBaseServerNode : CVCommonNode
 		set
 		{
 			_MaxTime = value;
+			OnPropertyChanged();
 		}
 	}
-
-    [STNodeProperty("Subtitle", "Subtitle", false, true)]
-    public string Subtitle { get => _Subtitle; set { _Subtitle = value; } }
-    private string _Subtitle = string.Empty;
-
     public string TempDisName => _TempName;
 
 	public string DefaultPublishTopic => m_nodeType + "/CMD/" + m_nodeName;
@@ -151,11 +149,6 @@ public class CVBaseServerNode : CVCommonNode
 
     public override string OnGetDrawTitle()
 	{
-		if (!string.IsNullOrWhiteSpace(Subtitle))
-		{
-            return $"{Subtitle}";
-
-        }
         return $"{base.Title}";
 	}
 
@@ -373,10 +366,12 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			eventName = operatorCode;
 		}
+		#pragma warning disable CS0618
 		if (e.TargetOption.Owner.GetType() == typeof(MQTTSubscribeHub))
 		{
 			((MQTTSubscribeHub)owner).SetEventInfo(e.TargetOption, eventName, GetRecvTopic(), m_nodeName, m_deviceCode);
 		}
+		#pragma warning restore CS0618
 	}
 
 	protected void DoTransferToServer(CVStartCFC action, STNodeOptionEventArgs e)

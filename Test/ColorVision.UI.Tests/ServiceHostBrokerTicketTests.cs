@@ -23,6 +23,14 @@ namespace ColorVision.UI.Tests
         [InlineData("service-install")]
         [InlineData("service-restart")]
         [InlineData("firewall-allow-application")]
+        [InlineData("registry-set-values")]
+        [InlineData("registry-delete-key")]
+        [InlineData("begin-application-update-scan-protection")]
+        [InlineData("complete-application-update-scan-protection")]
+        [InlineData("com0com-status")]
+        [InlineData("com0com-list")]
+        [InlineData("com0com-create-pair")]
+        [InlineData("com0com-delete-pair")]
         public void OtherPrivilegedCommandsStillRequireBrokerTicket(string command)
         {
             Assert.True(ServiceHostClient.RequiresBrokerTicket(command));

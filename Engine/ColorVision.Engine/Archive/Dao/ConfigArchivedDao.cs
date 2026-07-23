@@ -56,10 +56,13 @@ namespace ColorVision.Engine.Archive.Dao
         }
 
 
-        public MySqlConfig GetArchMySqlConfig()
+        public MySqlConfig? GetArchMySqlConfig()
         {
-            MySqlConfig mySqlConfig = JsonConvert.DeserializeObject<MySqlConfig>(GetArchDB().CfgValue);
-            return mySqlConfig;
+            GlobleCfgdModel? globleCfgdModel = GetArchDB();
+            if (globleCfgdModel == null || string.IsNullOrWhiteSpace(globleCfgdModel.CfgValue))
+                return null;
+
+            return JsonConvert.DeserializeObject<MySqlConfig>(globleCfgdModel.CfgValue);
         }
 
 

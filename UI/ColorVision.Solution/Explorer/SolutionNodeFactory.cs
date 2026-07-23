@@ -1,5 +1,3 @@
-using ColorVision.Solution.FileMeta;
-using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
 using log4net;
 using System.Diagnostics;
@@ -22,8 +20,6 @@ namespace ColorVision.Solution.Explorer
             lock (_registryLock)
             {
                 if (_registriesInitialized) return;
-                FolderMetaRegistry.RegisterFolderMetasFromAssemblies();
-                FileMetaRegistry.RegisterFileMetasFromAssemblies();
                 NewItemTemplateRegistry.Initialize();
                 ProjectTemplateRegistry.Initialize();
                 ProjectProviderRegistry.Initialize();
@@ -38,38 +34,20 @@ namespace ColorVision.Solution.Explorer
                 && project != null
                 && (solutionExplorer == null || solutionExplorer.IsProjectIncluded(project)))
             {
-                return new ProjectNode(CreateFolderMeta(project.ProjectDirectory), project, solutionExplorer);
+                return new ProjectNode(project, solutionExplorer);
             }
 
-            return new FolderNode(CreateFolderMeta(directoryInfo));
+            return new FolderNode(directoryInfo);
         }
 
         internal static ProjectNode CreateProjectNode(ProjectDefinition project, SolutionExplorer solutionExplorer)
         {
-            return new ProjectNode(CreateFolderMeta(project.ProjectDirectory), project, solutionExplorer);
-        }
-
-        private static IFolderMeta CreateFolderMeta(DirectoryInfo directoryInfo)
-        {
-            var folderMetaType = FolderMetaRegistry.GetFolderMetaType(directoryInfo);
-            return folderMetaType != null
-                ? (IFolderMeta)Activator.CreateInstance(folderMetaType, directoryInfo)!
-                : new BaseFolder(directoryInfo);
+            return new ProjectNode(project, solutionExplorer);
         }
 
         public static FileNode CreateFileNode(FileInfo fileInfo)
         {
-            return new FileNode(CreateFileMeta(fileInfo));
-        }
-
-        internal static IFileMeta CreateFileMeta(FileInfo fileInfo)
-        {
-            var extension = fileInfo.Extension;
-            var fileMetaType = FileMetaRegistry.GetFileMetaTypeByExtension(extension);
-
-            if (fileMetaType != null)
-                return (IFileMeta)Activator.CreateInstance(fileMetaType, fileInfo)!;
-            return new CommonFile(fileInfo);
+            return new FileNode(fileInfo);
         }
 
         public static void CreateNewFolder(SolutionNode parent, string parentFullName)

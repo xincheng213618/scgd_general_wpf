@@ -26,10 +26,11 @@ export async function parseResponse<T>(response: Response): Promise<T> {
   return payload as T
 }
 
-export async function getJson<T>(url: string): Promise<T> {
+export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
     credentials: 'same-origin',
     headers: { Accept: 'application/json' },
+    signal,
   })
   return parseResponse<T>(response)
 }

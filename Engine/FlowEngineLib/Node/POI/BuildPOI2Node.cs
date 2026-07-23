@@ -44,6 +44,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -58,6 +59,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		{
 			_BuildType = value;
 			setBuildType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -72,6 +74,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		{
 			_PrefixName = value;
 			setOutputPre();
+			OnPropertyChanged();
 		}
 	}
 
@@ -85,6 +88,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			setPOIType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -98,6 +102,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			setHeight(value, syncWid: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -111,6 +116,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			setWidth(value, syncHei: true);
+			OnPropertyChanged();
 		}
 	}
 
@@ -126,6 +132,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -140,6 +147,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		{
 			_POIOutput = value;
 			setOutputPre();
+			OnPropertyChanged();
 		}
 	}
 
@@ -153,6 +161,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -166,6 +175,7 @@ public class BuildPOI2Node : CVBaseServerNodeHub
 		set
 		{
 			_SavePOITempName = value;
+			OnPropertyChanged();
 		}
 	}
 

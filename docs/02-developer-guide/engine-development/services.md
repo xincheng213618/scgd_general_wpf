@@ -39,7 +39,7 @@
 | Calibration | `Services/Devices/Calibration/` | `DeviceCalibration` | `MQTTCalibration` | 校准命令、文件和校准结果 |
 | Motor | `Services/Devices/Motor/` | `DeviceMotor` | `MQTTMotor` | 电机回零、移动、位置读取和光阑控制 |
 | Flow | `Services/Devices/FlowDevice/` | `DeviceFlowDevice` | `MQTTFlowDevice` | 流程设备服务 |
-| ThirdPartyAlgorithms | `Services/Devices/ThirdPartyAlgorithms/` | `DeviceThirdPartyAlgorithms` | `MQTTThirdPartyAlgorithms` | 第三方算法接入 |
+| ThirdPartyAlgorithms | `Services/Devices/ThirdPartyAlgorithms/` | `DeviceThirdPartyAlgorithms` | `MQTTThirdPartyAlgorithms` | 第三方算法接入；原“第三方模板设置”主菜单及动态子项已标记 `Obsolete` 并隐藏，设备侧能力仍保留 |
 
 ## 新增设备服务步骤
 

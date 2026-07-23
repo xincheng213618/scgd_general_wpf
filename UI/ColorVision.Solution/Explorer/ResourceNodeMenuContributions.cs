@@ -1,5 +1,4 @@
 using ColorVision.UI.Menus;
-using ColorVision.Solution.FileMeta;
 using System.IO;
 
 namespace ColorVision.Solution.Explorer
@@ -12,11 +11,8 @@ namespace ColorVision.Solution.Explorer
 
         public bool IsApplicable(SolutionMenuContext context)
         {
-            return context.PrimaryNode is FileNode
-            {
-                FileMeta: IScriptFileMeta,
-                FileInfo.Exists: true,
-            };
+            return context.PrimaryNode is FileNode fileNode
+                && ScriptFileSupport.CanRun(fileNode.FileInfo);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
@@ -91,13 +87,6 @@ namespace ColorVision.Solution.Explorer
                     Order = 20,
                     Header = "问 AI 总结此文件夹",
                     Command = folderNode.AskCopilotSummarizeFolderCommand,
-                },
-                new MenuItemMetadata
-                {
-                    GuidId = "Fusion",
-                    Order = 50,
-                    Header = "景深融合(_F)",
-                    Command = folderNode.OpenFusionCommand,
                 },
             ];
         }

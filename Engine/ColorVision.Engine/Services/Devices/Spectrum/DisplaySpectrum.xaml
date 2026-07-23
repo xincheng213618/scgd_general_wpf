@@ -27,22 +27,6 @@
                 <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <Button Padding="3" Background="Transparent" BorderThickness="0" Command="{Binding RefreshCommand}" DockPanel.Dock="Right">
-                <Button.Triggers>
-                    <EventTrigger RoutedEvent="Button.Click">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </Button.Triggers>
-                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE72C;" ToolTip="{x:Static properties:Resources.Refresh}">
-                    <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6" />
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-            </Button>
             <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">

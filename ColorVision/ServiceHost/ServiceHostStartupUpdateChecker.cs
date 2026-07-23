@@ -4,6 +4,14 @@ using System.Threading.Tasks;
 
 namespace ColorVision.ServiceHost
 {
+    internal enum ServiceHostStartupAction
+    {
+        None,
+        Start,
+        SelfUpdate,
+        InstallOrRepair,
+    }
+
     internal static class ServiceHostStartupUpdateChecker
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceHostStartupUpdateChecker));
@@ -17,33 +25,11 @@ namespace ColorVision.ServiceHost
             _isChecking = true;
             try
             {
-                ServiceHostStatus status = await ColorVisionServiceHostManager.QueryStatusAsync().ConfigureAwait(true);
-                if (!status.IsPackageAvailable || status.PackageVersion == null)
-                    return;
-
-                if (!status.NeedsInstall && !status.NeedsUpdate)
-                    return;
-
-                if (status.CanSelfUpdate)
-                {
-                    ServiceHostOperationResult selfUpdateResult = await ColorVisionServiceHostManager.SelfUpdateAsync().ConfigureAwait(true);
-                    if (selfUpdateResult.Success)
-                    {
-                        log.Info($"ColorVisionServiceHost silent update started: {status.RunningVersion} -> {status.PackageVersion}");
-                        return;
-                    }
-
-                    log.Warn($"ColorVisionServiceHost silent update failed; falling back to elevated install: {selfUpdateResult.Summary}");
-                }
-
-                ServiceHostOperationResult installResult = await ColorVisionServiceHostManager.InstallAsync().ConfigureAwait(true);
-                if (installResult.Success)
-                {
-                    log.Info($"ColorVisionServiceHost elevated update completed: {status.InstalledVersion} -> {status.PackageVersion}");
-                    return;
-                }
-
-                log.Warn($"ColorVisionServiceHost elevated update failed: {installResult.Summary}");
+                ServiceHostEnsureResult result = await ColorVisionServiceHostManager.EnsureReadyAsync().ConfigureAwait(true);
+                if (result.Success)
+                    log.Info(result.Summary);
+                else
+                    log.Warn($"ColorVisionServiceHost startup readiness failed: {result.Summary}");
             }
             catch (Exception ex)
             {
@@ -53,6 +39,26 @@ namespace ColorVision.ServiceHost
             {
                 _isChecking = false;
             }
+        }
+
+        internal static ServiceHostStartupAction ResolveAction(ServiceHostStatus status)
+        {
+            if (!status.IsPackageAvailable || status.PackageVersion == null)
+                return ServiceHostStartupAction.None;
+
+            if (status.State == ServiceHostInstallState.Stopped && status.HasCurrentOrNewerInstalledVersion)
+                return ServiceHostStartupAction.Start;
+
+            if (status.WouldInstallDowngrade)
+                return ServiceHostStartupAction.None;
+
+            if (status.NeedsUpdate)
+                return status.CanSelfUpdate ? ServiceHostStartupAction.SelfUpdate : ServiceHostStartupAction.InstallOrRepair;
+
+            if (ColorVisionServiceHostManager.IsReadyForPackagedVersion(status))
+                return ServiceHostStartupAction.None;
+
+            return ServiceHostStartupAction.InstallOrRepair;
         }
     }
 }

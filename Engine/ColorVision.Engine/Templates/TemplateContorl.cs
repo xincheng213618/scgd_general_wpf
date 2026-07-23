@@ -4,6 +4,7 @@ using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -52,29 +53,42 @@ namespace ColorVision.Engine.Templates
         {
             Init();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-                Application.Current.Dispatcher.Invoke(() => Init());
+                Application.Current.Dispatcher.Invoke(Init);
         }
 
-        private static async void Init()
+        private static void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
-            foreach (var assembly in Application.Current.GetAssemblies())
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch phaseStopwatch = Stopwatch.StartNew();
+            List<IITemplateLoad> templateLoaders = AssemblyHandler.GetInstance().LoadImplementations<IITemplateLoad>();
+            long discoveryMilliseconds = phaseStopwatch.ElapsedMilliseconds;
+            List<(string Name, long Milliseconds)> loaderTimings = new(templateLoaders.Count);
+            foreach (var templateLoader in templateLoaders)
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
+                phaseStopwatch.Restart();
+                try
                 {
-                    try
-                    {
-                        if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
-                        {
-                            iITemplateLoad.Load();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
+                    templateLoader.Load();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+                finally
+                {
+                    loaderTimings.Add((templateLoader.GetType().Name, phaseStopwatch.ElapsedMilliseconds));
                 }
             }
+
+            totalStopwatch.Stop();
+            string slowestLoaders = string.Join(", ", loaderTimings
+                .OrderByDescending(timing => timing.Milliseconds)
+                .Take(10)
+                .Select(timing => $"{timing.Name}={timing.Milliseconds}ms"));
+            log.Info($"Template initialization completed. Loaders={templateLoaders.Count}, " +
+                $"Discovery={discoveryMilliseconds}ms, Load={loaderTimings.Sum(timing => timing.Milliseconds)}ms, " +
+                $"Total={totalStopwatch.ElapsedMilliseconds}ms, Slowest=[{slowestLoaders}].");
         }
 
         public static Dictionary<string, ITemplate> ITemplateNames { get; set; } = new Dictionary<string, ITemplate>();

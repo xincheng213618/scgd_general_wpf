@@ -19,6 +19,7 @@ public class SpectrumLoopNode : CVBaseLoopServerNode<SpectrumNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

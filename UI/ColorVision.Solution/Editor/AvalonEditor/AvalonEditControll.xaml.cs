@@ -120,7 +120,7 @@ namespace ColorVision.Solution.Editor.AvalonEditor
             dlg.CheckFileExists = true;
             if (dlg.ShowDialog() ?? false)
             {
-                EditorManager.Instance.TryOpenFile(dlg.FileName);
+                ResourceOpenService.Instance.TryOpenWithFeedback(dlg.FileName);
             }
         }
 

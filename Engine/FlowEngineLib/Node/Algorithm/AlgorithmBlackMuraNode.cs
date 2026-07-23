@@ -22,6 +22,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -37,6 +38,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -50,6 +52,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 		set
 		{
 			setOIndex(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -64,6 +67,7 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 		set
 		{
 			_SavePOITempName = value;
+			OnPropertyChanged();
 		}
 	}
 

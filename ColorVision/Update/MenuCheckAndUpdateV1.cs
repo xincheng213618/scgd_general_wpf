@@ -1,4 +1,3 @@
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Windows;
@@ -20,7 +19,6 @@ namespace ColorVision.Update
 
         public override string InputGestureText => "Ctrl + U";
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute() => _ = CombinedUpdateCoordinator.StartInteractiveAsync();
     }
 }

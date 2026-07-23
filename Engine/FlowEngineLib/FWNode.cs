@@ -24,6 +24,7 @@ public class FWNode : CVBaseServerNode
 		{
 			_Port = value;
 			m_ctrl_port.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -38,6 +39,7 @@ public class FWNode : CVBaseServerNode
 		{
 			_ModelType = value;
 			setModelType(value);
+			OnPropertyChanged();
 		}
 	}
 

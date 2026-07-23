@@ -103,7 +103,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private CancellationTokenSource? calibrationRestartCts;
 
         public MQTTSpectrum DService { get; set; }
-        public ViewSpectrum View { get; set; }
+        private readonly Lazy<ViewSpectrum> _view;
+        public ViewSpectrum View => _view.Value;
         public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
@@ -137,7 +138,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            View = new ViewSpectrum(this);
+            _view = new Lazy<ViewSpectrum>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new ViewSpectrum(this)
+                : Application.Current.Dispatcher.Invoke(() => new ViewSpectrum(this)));
             this.SetIconResource("DISpectrumIcon");
 
             Config.EnsureCalibrationGroups();

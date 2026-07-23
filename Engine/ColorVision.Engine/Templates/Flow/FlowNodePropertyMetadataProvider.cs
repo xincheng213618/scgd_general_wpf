@@ -22,7 +22,10 @@ namespace ColorVision.Engine.Templates.Flow
             "Token",
         };
 
-        public static bool ShowDebugProperties { get; set; }
+        public static PropertyEditorAdvancedOptions AdvancedOptions { get; } = new(propertyInfo => DefaultHiddenProperties.Contains(propertyInfo.Name))
+        {
+            ToolTip = Properties.Resources.Flow_ShowAdvancedPropertiesTooltip
+        };
 
         private FlowNodePropertyMetadataProvider()
         {
@@ -41,7 +44,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return false;
             }
 
-            return ShowDebugProperties || !DefaultHiddenProperties.Contains(propertyInfo.Name);
+            return true;
         }
 
         public string? GetDisplayName(PropertyInfo propertyInfo)
@@ -73,7 +76,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (string.IsNullOrWhiteSpace(resourceKey))
                 return resourceKey;
 
-            return Lang.GetOrDefault(resourceKey, resourceKey);
+            return Lang.GetOrDefault(resourceKey);
         }
     }
 }

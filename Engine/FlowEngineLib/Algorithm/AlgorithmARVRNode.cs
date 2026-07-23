@@ -31,6 +31,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -45,6 +46,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -58,6 +60,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		set
 		{
 			_POITempName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -73,6 +76,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -87,6 +91,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		{
 			_Color = value;
 			m_ctrl_color.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -100,6 +105,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -113,6 +119,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

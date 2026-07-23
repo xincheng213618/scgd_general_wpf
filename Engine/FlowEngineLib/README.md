@@ -1,6 +1,6 @@
 # FlowEngineLib
 
-> 版本: 1.6.1 | 目标框架: .NET 8.0 Windows / .NET Framework 4.7.2
+> 目标框架: .NET 8.0 Windows / .NET 10.0 Windows（以 `FlowEngineLib.csproj` 为准）
 
 ## 🎯 功能定位
 
@@ -215,6 +215,40 @@ public class FlowEngineControl
 | **算法节点** | 算法处理 | 图像处理、数据分析 |
 | **控制节点** | 流程控制 | 条件判断、流程跳转 |
 | **结束节点** | 流程结束 | 结果收集、清理工作 |
+
+<!-- MAINTAINER-WORKFLOW: FLOWENGINELIB-DLL-SYNC -->
+## 维护者流程：服务 DLL 对比与选择性合并
+
+> [!IMPORTANT]
+> 本节是服务侧 `FlowEngineLib.dll` 同步流程的仓库内记录。以后只需说明“按 FlowEngineLib DLL 对比合并流程处理”并提供 DLL 路径，无需重复描述完整步骤。
+
+### 合并边界
+
+- 服务 DLL 通常是 `net472` 和本地 DLL 引用；本仓库使用 `net8.0-windows;net10.0-windows`、`PackageReference` 和 `ProjectReference`，不能整库覆盖。
+- 保留仓库已有的 MQTT/并发处理、流程停止与结束语义、`FlowEngineLocalization`、`_MinTime` / `_IsPublishStatus` 的有意删除，以及仅保存不执行的 `FlowTimeout`。
+- 新增流程节点必须保留服务端的完整命名空间、类型名、枚举名、命令字符串和 `STNode` 分类，避免旧流程反序列化失败；只适配仓库已有约定，例如 `OnPropertyChanged`。
+- 未明确要求时，不联动版本号、发布、提交或推送。
+
+### 操作步骤
+
+1. 校验传入 DLL 路径和依赖目录。当前服务依赖目录是 `C:\Users\17917\Desktop\CVWindowsService\InstallTool`；遇到 `Deskt2op` 等路径时先用 `Test-Path` 核实。
+2. 保留 `InstallTool\FlowEngineLib.dll` 作为已安装基线。传入 DLL 放到同一目录时使用 `FlowEngineLib.<version>.dll`，不要覆盖基线。
+3. 使用与本机 ILSpy 匹配版本的官方 `ilspycmd`，将传入 DLL 反编译到桌面的版本化目录，并通过 `--referencepath` 指向 `InstallTool`。
+4. 将已安装基线 DLL 反编译到临时目录，先比较“基线版本 → 新版本”，只定位本次服务发布的真实增量。
+5. 再逐项对照 `Engine\FlowEngineLib`。检查新增/修改文件、公开类型和公开成员；必要时构建仓库程序集后用 Mono.Cecil 交叉核验，避免漏掉同名文件中的 API 变化。
+6. 只合并确认需要的功能补丁，不覆盖仓库侧完整文件。
+7. 构建、检查命令映射和最终工作区，保持无关的用户修改不变。
+
+```powershell
+dotnet build .\Engine\FlowEngineLib\FlowEngineLib.csproj -p:Platform=x64 --no-restore -m:1 /nodeReuse:false -v:minimal
+git status --short
+```
+
+### 已处理服务基线
+
+- [x] `2026.7.21.0`：已合并 `PGGECS_DemuraNode`、`PGGECS_KeyNode` 及对应枚举，保留 `/06 PG` 分类并增加仓库侧 `OnPropertyChanged`。
+- [x] `2026.7.21.0`：未合并 `FlowLocalizationHelper`，仓库已有 `FlowEngineLocalization`。
+- [x] `2026.7.21.0`：未合并服务侧 `CVBaseServerNodeHub` 完成路径；仓库已有更完整的结束与同流程处理，服务侧反编译路径还可能重复传递完成数据。
 
 ## 开发调试
 

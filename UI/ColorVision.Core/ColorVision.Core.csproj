@@ -38,6 +38,21 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
+		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_flann4130.dll" Link="runtimes\win-x64\native\opencv_flann4130.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_features2d4130.dll" Link="runtimes\win-x64\native\opencv_features2d4130.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_calib3d4130.dll" Link="runtimes\win-x64\native\opencv_calib3d4130.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
 		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_highgui4130.dll" Link="runtimes\win-x64\native\opencv_highgui4130.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>

@@ -340,6 +340,32 @@ class MarketplaceDataService:
             **build_app_release_context(releases),
         }
 
+    def build_compact_home_app_info(self) -> dict[str, Any] | None:
+        """Read the compact home release model directly from a ready index."""
+        if self._cache_manager is None:
+            return None
+        from services.artifact_index import get_compact_home_releases_from_index
+
+        indexed = get_compact_home_releases_from_index(self._cache_manager)
+        if indexed is None:
+            return None
+        return {"latest_version": self._latest_version(), **indexed}
+
+    def build_compact_release_page(self, **kwargs: Any) -> dict[str, Any] | None:
+        """Read independently paged desktop/Android releases from SQLite."""
+        if self._cache_manager is None:
+            return None
+        from services.artifact_index import get_compact_releases_from_index
+
+        indexed = get_compact_releases_from_index(self._cache_manager, **kwargs)
+        if indexed is None:
+            return None
+        indexed["app_info"] = {
+            "latest_version": self._latest_version(),
+            **indexed.get("app_info", {}),
+        }
+        return indexed
+
     def build_home_app_info(self) -> dict[str, Any]:
         changelog_path = self._storage() / "CHANGELOG.md"
         changelog = self._read_text_file(changelog_path) or ""
@@ -398,14 +424,43 @@ class MarketplaceDataService:
             "release_timeline": release_timeline,
         }
 
+    def build_compact_changelog_app_info(self) -> dict[str, Any]:
+        """Build only the fields consumed by the compact changelog page."""
+        changelog_path = self._storage() / "CHANGELOG.md"
+        changelog = self._read_text_file(changelog_path) or ""
+        signature = changelog_signature(changelog_path)
+        return {
+            "latest_version": self._latest_version(),
+            "changelog_html": self._render_markdown_cached(
+                cache_key="markdown:changelog_full:v1",
+                signature=f"full:{signature}",
+                text=changelog,
+            ),
+        }
+
     def get_request_home_app_info(self) -> dict[str, Any]:
         return self.request_cached_value("home_app_info", self.build_home_app_info)
+
+    def get_request_compact_home_app_info(self) -> dict[str, Any] | None:
+        return self.request_cached_value(
+            "compact_home_app_info",
+            self.build_compact_home_app_info,
+        )
 
     def get_request_release_app_info(self) -> dict[str, Any]:
         return self.request_cached_value("release_app_info", self.build_release_app_info)
 
+    def get_request_compact_release_page(self, **kwargs: Any) -> dict[str, Any] | None:
+        return self.build_compact_release_page(**kwargs)
+
     def get_request_changelog_app_info(self) -> dict[str, Any]:
         return self.request_cached_value("changelog_app_info", self.build_changelog_app_info)
+
+    def get_request_compact_changelog_app_info(self) -> dict[str, Any]:
+        return self.request_cached_value(
+            "compact_changelog_app_info",
+            self.build_compact_changelog_app_info,
+        )
 
     def build_home_tool_preview(self) -> dict[str, Any]:
         cached = self._get_cache_entry(self._cache.home_tool_preview_cache_key)

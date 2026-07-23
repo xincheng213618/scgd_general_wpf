@@ -20,6 +20,7 @@ public class OLEDImageCroppingNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -35,6 +36,7 @@ public class OLEDImageCroppingNode : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

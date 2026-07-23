@@ -86,7 +86,12 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             EditTemplateJson.SetParam(TemplateParams[index].Value);
         }
-        public EditKBTemplateJson EditTemplateJson { get; set; } = new EditKBTemplateJson();
+        private EditKBTemplateJson? _editTemplateJson;
+        public EditKBTemplateJson EditTemplateJson
+        {
+            get => _editTemplateJson ??= new EditKBTemplateJson();
+            set => _editTemplateJson = value;
+        }
 
         public override UserControl GetUserControl()
         {

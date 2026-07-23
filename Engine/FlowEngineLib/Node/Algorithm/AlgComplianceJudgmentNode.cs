@@ -4,6 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
+[System.Obsolete("Deprecated compliance flow node retained for loading existing flows.")]
 public class AlgComplianceJudgmentNode : CVBaseServerNode
 {
 	private bool _IsBreak;
@@ -21,6 +22,7 @@ public class AlgComplianceJudgmentNode : CVBaseServerNode
 		{
 			_IsBreak = value;
 			setBreak();
+			OnPropertyChanged();
 		}
 	}
 

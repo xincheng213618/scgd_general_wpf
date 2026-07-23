@@ -676,9 +676,9 @@ namespace ColorVision.FileIO
                         }
                     }
 
-                    // Write image dimensions and bit depth
-                    bw.Write((uint)fileInfo.Rows);
+                    // The CV file header stores width (Cols) before height (Rows).
                     bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Rows);
                     bw.Write((uint)fileInfo.Bpp);
 
                     // Write Data
@@ -785,9 +785,9 @@ namespace ColorVision.FileIO
                         }
                     }
 
-                    // Write image dimensions and bit depth
-                    bw.Write((uint)fileInfo.Rows);
+                    // The CV file header stores width (Cols) before height (Rows).
                     bw.Write((uint)fileInfo.Cols);
+                    bw.Write((uint)fileInfo.Rows);
                     bw.Write((uint)fileInfo.Bpp);
 
                     // Write Data

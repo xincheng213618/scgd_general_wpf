@@ -36,6 +36,7 @@ public class AlgDataLoadNode2 : CVBaseServerNode
 		{
 			_DataDeviceCode = value;
 			m_ctrl_dev.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -50,6 +51,7 @@ public class AlgDataLoadNode2 : CVBaseServerNode
 		{
 			_SerialNumber = value;
 			m_ctrl_sn.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -64,6 +66,7 @@ public class AlgDataLoadNode2 : CVBaseServerNode
 		{
 			_ResultType = value;
 			m_ctrl_rt.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -78,6 +81,7 @@ public class AlgDataLoadNode2 : CVBaseServerNode
 		{
 			_DataZIndex = value;
 			m_ctrl_zindex.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

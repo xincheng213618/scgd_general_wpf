@@ -37,9 +37,9 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         public void RunScript(string filePath)
         {
+            ActivatePanel();
             var terminalControl = GetActiveTerminalControl();
             if (terminalControl == null) return;
-            ActivatePanel();
             terminalControl.RunScript(filePath);
         }
 
@@ -48,9 +48,9 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         public void SendCommand(string command)
         {
+            ActivatePanel();
             var terminalControl = GetActiveTerminalControl();
             if (terminalControl == null) return;
-            ActivatePanel();
             terminalControl.SendCommand(command);
         }
 
@@ -61,9 +61,9 @@ namespace ColorVision.Solution.Terminal
 
         public bool TrySendCommand(string command, string workingDirectory)
         {
+            ActivatePanel();
             var terminalControl = GetActiveTerminalControl();
             if (terminalControl == null) return false;
-            ActivatePanel();
             terminalControl.SendCommand(command, workingDirectory);
             return true;
         }
@@ -73,10 +73,10 @@ namespace ColorVision.Solution.Terminal
             if (commands.Count == 0)
                 return false;
 
+            ActivatePanel();
             var terminalControl = GetActiveTerminalControl();
             if (terminalControl == null)
                 return false;
-            ActivatePanel();
             terminalControl.SendCommandBatch(commands);
             return true;
         }
@@ -116,16 +116,23 @@ namespace ColorVision.Solution.Terminal
             var layoutManager = WorkspaceManager.LayoutManager;
             if (layoutManager == null) return;
 
-            var grid = new Grid();
-            var terminalControl = new TerminalControl();
-            grid.Children.Add(terminalControl);
+            layoutManager.RegisterPanel(
+                TerminalService.PanelId,
+                () =>
+                {
+                    var grid = new Grid();
+                    var terminalControl = new TerminalControl();
+                    grid.Children.Add(terminalControl);
 
-            if (Application.Current != null)
-                Application.Current.Exit += (_, _) => terminalControl.Dispose();
+                    if (Application.Current != null)
+                        Application.Current.Exit += (_, _) => terminalControl.Dispose();
 
-            TerminalService.GetInstance().SetTerminalControl(terminalControl);
-
-            layoutManager.RegisterPanel(TerminalService.PanelId, grid, "终端", PanelPosition.Bottom, isDefaultVisible: false);
+                    TerminalService.GetInstance().SetTerminalControl(terminalControl);
+                    return grid;
+                },
+                "终端",
+                PanelPosition.Bottom,
+                isDefaultVisible: false);
         }
     }
 }

@@ -1,45 +1,47 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.NativeMethods;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Media;
 using ColorVision.FileIO;
 using ColorVision.UI.Menus;
 using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Windows;
 using ColorVision.Solution.Explorer;
-using ColorVision.Solution.FileMeta;
 using System.ComponentModel;
 using SolutionFileNode = ColorVision.Solution.Explorer.FileNode;
 
 namespace ColorVision.Engine.Impl.CVFile
 {
-    [FileExtension(".cvraw", ".cvcie")]
-    public class FileCVCIE : FileMetaBase
+    internal sealed class CvcieFileActions
     {
-        public override int Order => 99;
-        public override string Name { get; set; }
-
-        public FileCVCIE()
+        private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-        }
+            ".cvcie",
+            ".cvraw",
+        };
+
+        public FileInfo FileInfo { get; }
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ExportBMPCommand { get; set; }
         public RelayCommand ExportTIFFCommand { get; set; }
         public RelayCommand ExportPNGCommand { get; set; }
         
-        public FileCVCIE(FileInfo fileInfo)
+        public CvcieFileActions(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
-            Name = FileInfo.Name;
-            Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
             ExportCommand = new RelayCommand(a => Export(), a => true);
             ExportBMPCommand = new RelayCommand(a => ExportAS(ImageFormat.Bmp), A => true);
             ExportTIFFCommand = new RelayCommand(a => ExportAS(ImageFormat.Tiff), A => true);
             ExportPNGCommand = new RelayCommand(a => ExportAS(ImageFormat.Png), A => true);
+        }
+
+        public static bool Supports(FileInfo fileInfo)
+        {
+            return fileInfo.Exists && SupportedExtensions.Contains(fileInfo.Extension);
         }
 
         public void Export()
@@ -96,16 +98,13 @@ namespace ColorVision.Engine.Impl.CVFile
 
         public bool IsApplicable(SolutionMenuContext context)
         {
-            return context.PrimaryNode is SolutionFileNode
-            {
-                FileMeta: FileCVCIE,
-                FileInfo.Exists: true,
-            };
+            return context.PrimaryNode is SolutionFileNode fileNode
+                && CvcieFileActions.Supports(fileNode.FileInfo);
         }
 
         public IEnumerable<MenuItemMetadata> CreateMenuItems(SolutionMenuContext context)
         {
-            var fileMeta = (FileCVCIE)((SolutionFileNode)context.PrimaryNode).FileMeta;
+            var actions = new CvcieFileActions(((SolutionFileNode)context.PrimaryNode).FileInfo);
             return
             [
                 new MenuItemMetadata
@@ -120,7 +119,7 @@ namespace ColorVision.Engine.Impl.CVFile
                     GuidId = "ExportBmp",
                     Header = ColorVision.Engine.Properties.Resources.ExportTo + " BMP",
                     Order = 2,
-                    Command = fileMeta.ExportBMPCommand,
+                    Command = actions.ExportBMPCommand,
                 },
                 new MenuItemMetadata
                 {
@@ -128,7 +127,7 @@ namespace ColorVision.Engine.Impl.CVFile
                     GuidId = "ExportTIF",
                     Header = ColorVision.Engine.Properties.Resources.ExportTo + " TIFF",
                     Order = 3,
-                    Command = fileMeta.ExportTIFFCommand,
+                    Command = actions.ExportTIFFCommand,
                 },
                 new MenuItemMetadata
                 {
@@ -136,7 +135,7 @@ namespace ColorVision.Engine.Impl.CVFile
                     GuidId = "ExportPNG",
                     Header = ColorVision.Engine.Properties.Resources.ExportTo + " PNG",
                     Order = 3,
-                    Command = fileMeta.ExportPNGCommand,
+                    Command = actions.ExportPNGCommand,
                 },
                 new MenuItemMetadata
                 {
@@ -144,7 +143,7 @@ namespace ColorVision.Engine.Impl.CVFile
                     GuidId = "ExportAs",
                     Header = ColorVision.Engine.Properties.Resources.ExportTo,
                     Order = 1,
-                    Command = fileMeta.ExportCommand,
+                    Command = actions.ExportCommand,
                 },
             ];
         }

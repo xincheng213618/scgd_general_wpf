@@ -24,6 +24,7 @@ public class SMUReaderNode : CVBaseServerNode
 		{
 			_WaitTime = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

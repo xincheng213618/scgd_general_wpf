@@ -10,12 +10,14 @@ using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace ColorVision.UI
 {
@@ -594,7 +596,7 @@ namespace ColorVision.UI
             throw new ArgumentException("Expression must select a property, for example: x => x.Mode.", nameof(propertyExpression));
         }
 
-        private static void ApplyVisibilityBinding(DockPanel dockPanel, PropertyInfo property, object obj)
+        public static void ApplyVisibilityBinding(FrameworkElement element, PropertyInfo property, object obj)
         {
             var visibleAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
             if (visibleAttr == null)
@@ -625,37 +627,68 @@ namespace ColorVision.UI
             }
 
             binding.Converter = converter;
-            dockPanel.SetBinding(UIElement.VisibilityProperty, binding);
+            element.SetBinding(UIElement.VisibilityProperty, binding);
         }
 
         public static StackPanel GenPropertyEditorControl(
             object obj,
             ResourceManager? resourceManager = null,
             bool showCategoryHeader = true,
-            IPropertyEditorMetadataProvider? metadataProvider = null)
+            IPropertyEditorMetadataProvider? metadataProvider = null,
+            PropertyEditorAdvancedOptions? advancedOptions = null)
         {
             var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-            var previousProvider = MetadataProviderContext.Value;
+            if (advancedOptions == null)
+                return GenerateWithMetadataProvider(obj, resourceManager, visited, showCategoryHeader, metadataProvider);
 
-            if (metadataProvider != null)
+            var propertyPanel = new StackPanel();
+            void Rebuild()
             {
-                MetadataProviderContext.Value = metadataProvider;
+                var generatedPanel = GenerateWithMetadataProvider(obj, resourceManager, visited, showCategoryHeader, metadataProvider, advancedOptions, Rebuild);
+                propertyPanel.Children.Clear();
+                while (generatedPanel.Children.Count > 0)
+                {
+                    UIElement child = generatedPanel.Children[0];
+                    generatedPanel.Children.RemoveAt(0);
+                    propertyPanel.Children.Add(child);
+                }
             }
+
+            Rebuild();
+            return propertyPanel;
+        }
+
+        private static StackPanel GenerateWithMetadataProvider(
+            object obj,
+            ResourceManager? resourceManager,
+            HashSet<object> visited,
+            bool showCategoryHeader,
+            IPropertyEditorMetadataProvider? metadataProvider,
+            PropertyEditorAdvancedOptions? advancedOptions = null,
+            Action? advancedChanged = null)
+        {
+            var previousProvider = MetadataProviderContext.Value;
+            if (metadataProvider != null)
+                MetadataProviderContext.Value = metadataProvider;
 
             try
             {
-                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader);
+                return GenPropertyEditorControl(obj, resourceManager, visited, showCategoryHeader, advancedOptions, advancedChanged);
             }
             finally
             {
                 if (metadataProvider != null)
-                {
                     MetadataProviderContext.Value = previousProvider;
-                }
             }
         }
 
-        private static StackPanel GenPropertyEditorControl(object obj, ResourceManager? resourceManager, HashSet<object> visited, bool showCategoryHeader = true)
+        private static StackPanel GenPropertyEditorControl(
+            object obj,
+            ResourceManager? resourceManager,
+            HashSet<object> visited,
+            bool showCategoryHeader = true,
+            PropertyEditorAdvancedOptions? advancedOptions = null,
+            Action? advancedChanged = null)
         {
             if (obj == null) return new StackPanel();
             if (!visited.Add(obj)) return new StackPanel();
@@ -715,49 +748,67 @@ namespace ColorVision.UI
 
                 var propertyPanel = new StackPanel();
                 CollectProperties(obj);
-                
+                bool hasAdvancedProperties = advancedOptions != null && categoryGroups.Values.SelectMany(properties => properties).Any(property => advancedOptions.IsAdvancedProperty(property));
+                bool hasStandardProperties = advancedOptions == null || categoryGroups.Values.SelectMany(properties => properties).Any(property => !advancedOptions.IsAdvancedProperty(property));
+                bool advancedToggleAdded = false;
+
                 foreach (var categoryGroup in categoryGroups)
                 {
-                    var border = new Border
+                    var visibleProperties = advancedOptions?.ShowAdvancedProperties == false
+                        ? categoryGroup.Value.Where(property => !advancedOptions.IsAdvancedProperty(property)).ToList()
+                        : categoryGroup.Value;
+                    bool addAdvancedToggle = showCategoryHeader && hasAdvancedProperties && !advancedToggleAdded && (visibleProperties.Count > 0 || !hasStandardProperties);
+                    if (visibleProperties.Count == 0 && !addAdvancedToggle)
+                        continue;
+
+                    bool useIntegratedLayout = advancedOptions?.UseIntegratedCategoryLayout == true;
+                    var stackPanel = new StackPanel
                     {
-                        BorderThickness = new Thickness(1),
-                        CornerRadius = new CornerRadius(5),
-                        Margin = new Thickness(0, 0, 0, 5),
+                        Margin = useIntegratedLayout
+                            ? new Thickness(5, 4, 5, 6)
+                            : showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5),
                         Tag = categoryGroup.Key
                     };
-                    border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
-                    border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-
-                    var stackPanel = new StackPanel { Margin = showCategoryHeader ? new Thickness(5, 5, 5, 0) : new Thickness(5) };
 
 
                     if (showCategoryHeader)
                     {
-                        var categoryHeader = new TextBlock
-                        {
-                            Text = categoryGroup.Key,
-                            FontWeight = FontWeights.Bold,
-                            Foreground = GlobalTextBrush,
-                            Margin = new Thickness(0, 0, 0, 5)
-                        };
-                        categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                        var categoryHeader = CreateCategoryHeader(categoryGroup.Key, addAdvancedToggle ? advancedOptions : null, advancedChanged);
                         stackPanel.Children.Add(categoryHeader);
+                        advancedToggleAdded |= addAdvancedToggle;
                     }
 
 
-                    border.Child = stackPanel;
-
-                    foreach (var property in categoryGroup.Value)
+                    int propertyEditorCount = 0;
+                    foreach (var property in visibleProperties)
                     {
                         if (TryCreatePropertyDockPanel(property, obj, visited, out var dockPanel))
                         {
                             stackPanel.Children.Add(dockPanel);
+                            propertyEditorCount++;
                         }
                     }
 
-                    if (showCategoryHeader ? stackPanel.Children.Count > 1 : stackPanel.Children.Count > 0)
+                    if (propertyEditorCount > 0 || addAdvancedToggle)
                     {
-                        propertyPanel.Children.Add(border);
+                        if (useIntegratedLayout)
+                        {
+                            propertyPanel.Children.Add(stackPanel);
+                        }
+                        else
+                        {
+                            var border = new Border
+                            {
+                                BorderThickness = new Thickness(1),
+                                CornerRadius = new CornerRadius(5),
+                                Margin = new Thickness(0, 0, 0, 5),
+                                Tag = categoryGroup.Key,
+                                Child = stackPanel
+                            };
+                            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+                            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+                            propertyPanel.Children.Add(border);
+                        }
                     }
                 }
 
@@ -767,6 +818,109 @@ namespace ColorVision.UI
             finally
             {
                 visited.Remove(obj);
+            }
+        }
+
+        private static DockPanel CreateCategoryHeader(string title, PropertyEditorAdvancedOptions? advancedOptions, Action? advancedChanged)
+        {
+            var header = new DockPanel
+            {
+                LastChildFill = true,
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+
+            if (advancedOptions != null)
+            {
+                Canvas icon = CreateAdvancedFilterIcon(advancedOptions.ShowAdvancedProperties);
+
+                var toggle = new ToggleButton
+                {
+                    Width = 24,
+                    Height = 20,
+                    Padding = new Thickness(0),
+                    Margin = new Thickness(5, -2, 0, 0),
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    Content = icon,
+                    IsChecked = advancedOptions.ShowAdvancedProperties,
+                    ToolTip = advancedOptions.ToolTip,
+                    Focusable = false
+                };
+                AutomationProperties.SetName(toggle, advancedOptions.ToolTip);
+                toggle.Checked += (_, _) =>
+                {
+                    if (advancedOptions.ShowAdvancedProperties)
+                        return;
+
+                    advancedOptions.ShowAdvancedProperties = true;
+                    advancedChanged?.Invoke();
+                };
+                toggle.Unchecked += (_, _) =>
+                {
+                    if (!advancedOptions.ShowAdvancedProperties)
+                        return;
+
+                    advancedOptions.ShowAdvancedProperties = false;
+                    advancedChanged?.Invoke();
+                };
+                DockPanel.SetDock(toggle, Dock.Right);
+                header.Children.Add(toggle);
+            }
+
+            var titleText = new TextBlock
+            {
+                Text = title,
+                FontWeight = FontWeights.Bold,
+                Foreground = GlobalTextBrush
+            };
+            titleText.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            header.Children.Add(titleText);
+            return header;
+        }
+
+        private static Canvas CreateAdvancedFilterIcon(bool isActive)
+        {
+            const double iconSize = 16;
+            string brushKey = isActive ? "PrimaryBrush" : "GlobalTextBrush";
+            var icon = new Canvas
+            {
+                Width = iconSize,
+                Height = iconSize,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false,
+                SnapsToDevicePixels = true
+            };
+
+            AddSlider(3.5, 6.5);
+            AddSlider(8, 11);
+            AddSlider(12.5, 4.5);
+            return icon;
+
+            void AddSlider(double y, double knobX)
+            {
+                var line = new Line
+                {
+                    X1 = 1.5,
+                    X2 = 14.5,
+                    Y1 = y,
+                    Y2 = y,
+                    StrokeThickness = 1.25,
+                    StrokeStartLineCap = PenLineCap.Round,
+                    StrokeEndLineCap = PenLineCap.Round
+                };
+                line.SetResourceReference(Shape.StrokeProperty, brushKey);
+                icon.Children.Add(line);
+
+                var knob = new Ellipse
+                {
+                    Width = 3.5,
+                    Height = 3.5
+                };
+                knob.SetResourceReference(Shape.FillProperty, brushKey);
+                Canvas.SetLeft(knob, knobX - 1.75);
+                Canvas.SetTop(knob, y - 1.75);
+                icon.Children.Add(knob);
             }
         }
 

@@ -1,0 +1,44 @@
+<UserControl x:Class="ColorVision.UI.Desktop.Diagnostics.CrashDumpSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinHeight="150">
+    <StackPanel HorizontalAlignment="Stretch">
+        <Border CornerRadius="8"
+                BorderThickness="1"
+                Padding="18"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}">
+            <StackPanel>
+                <TextBlock Text="系统操作"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+                <TextBlock Text="普通用户模式下，应用和清除操作通过 ColorVision Service Host 写入 HKLM；管理员模式可直接写入。手动保存仅写入上方目录。"
+                           Margin="0,5,0,14"
+                           FontSize="12.5"
+                           Opacity="0.68"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+
+                <WrapPanel>
+                    <Button x:Name="ApplyButton" Padding="14,6" Content="应用系统设置" Click="ApplyButton_Click"/>
+                    <Button x:Name="ClearButton" Margin="8,0,0,0" Padding="14,6" Content="清除系统设置" Click="ClearButton_Click"/>
+                    <Button x:Name="SaveDumpButton" Margin="8,0,0,0" Padding="14,6"
+                            Content="保存当前进程 Dump" Click="SaveDumpButton_Click"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Margin="0,12,0,0"
+                CornerRadius="8"
+                BorderThickness="1"
+                Padding="14,10"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}">
+            <TextBlock x:Name="StatusTextBlock"
+                       FontSize="12.5"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+        </Border>
+    </StackPanel>
+</UserControl>

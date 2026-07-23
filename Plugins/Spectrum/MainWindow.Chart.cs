@@ -215,6 +215,7 @@ namespace Spectrum
 
             if (IsShowingAbsoluteSpectrum)
             {
+                EnsureAbsoluteSpectrumPlotInitialized();
                 wpfplot1.Visibility = Visibility.Collapsed;
                 wpfplot2.Visibility = Visibility.Visible;
                 SpectrumTypeText.Text = SpectrumResources.AbsoluteSpectrum;
@@ -236,6 +237,7 @@ namespace Spectrum
             if (IsShowingAbsoluteSpectrum)
             {
                 wpfplot2.Plot.Clear();
+                AddSpectrumColorBar(wpfplot2);
                 LastMulSelectComparsion = null;
                 if (MulComparison)
                 {

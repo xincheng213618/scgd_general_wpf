@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/12 第三方算法")]
+[System.Obsolete("Deprecated third-party algorithm flow node retained for loading existing flows.")]
 public class TPAlgorithmNode : CVBaseServerNode
 {
 	private TPAlgorithmType _Algorithm;
@@ -24,6 +25,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			_Algorithm = value;
 			setAlgorithmType();
+			OnPropertyChanged();
 		}
 	}
 
@@ -38,6 +40,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			operatorCode = value;
 			m_ctrl_op.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -52,6 +55,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -67,6 +71,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

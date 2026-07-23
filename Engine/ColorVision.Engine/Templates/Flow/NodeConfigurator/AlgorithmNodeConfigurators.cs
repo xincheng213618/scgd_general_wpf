@@ -8,7 +8,6 @@ using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
-using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.DetectScreenDefects;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
@@ -35,9 +34,9 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode)context.Node;
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.FindAAArea, new TemplateAAFindPoints());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.LightAreaLocation, new TemplateRoi());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "FocusPoints", new TemplateFocusPoints());
+            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.FindAAArea, new TemplateAAFindPoints());
+            context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LightAreaLocation, new TemplateRoi());
+            context.AddTemplatePanel(nameof(node.TempName), "FocusPoints", new TemplateFocusPoints());
         }
     }
 
@@ -47,8 +46,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode)context.Node;
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.PixelLedCheck, new TemplateLedCheck());
+            context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.SubPixelLedCheck, new TemplateLedCheck2());
+            context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.PixelLedCheck, new TemplateLedCheck());
         }
     }
 
@@ -58,8 +57,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node)context.Node;
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "GhostQK", new TemplateGhostQK());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "Ghost", new TemplateGhost());
+            context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
+            context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
         }
     }
 
@@ -77,40 +76,40 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 switch (node.Algorithm)
                 {
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.MTF:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "MTF", new TemplateMTF());
-                        context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
+                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new TemplateMTF());
+                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "SFR", new TemplateSFR());
-                        context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
+                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
+                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "DFOV", new TemplateDFOV());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "FOV", new TemplateFOV());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
+                        context.AddTemplatePanel(nameof(node.TempName), "FOV", new TemplateFOV());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.Distortion, new TemplateDistortion2());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.Distortion, new TemplateDistortionParam());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortion2());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.Distortion, new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "SFR_FindROI", new TemplateSFRFindROI());
-                        context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
+                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.双目融合:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BinocularFusion, new TemplateBinocularFusion());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.BinocularFusion, new TemplateBinocularFusion());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.十字计算:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.CrossCalc, new TemplateFindCross());
-                        context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "ROI", new TemplatePoi());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new TemplateFindCross());
+                        context.AddTemplatePanel(nameof(node.POITempName), "ROI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmARVRType.屏幕缺陷检测:
-                    context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.ScreenDefectDetection, new TemplateDetectScreenDefects());
+                    context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.ScreenDefectDetection, new TemplateDetectScreenDefects());
                         break;
                     default:
                         break;
                 }
             }
-            context.RebindNodeEvent(node, nameof(AlgorithmARVRNodeConfigurator), Refresh);
+            context.ReconfigureOnPropertyChanged(node, nameof(node.Algorithm));
             Refresh();
         }
     }
@@ -125,73 +124,71 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             void Refresh()
             {
                 context.SignStackPanel.Children.Clear();
-                context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
+                context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
 
                 switch (node.Algorithm)
                 {
                     case FlowEngineLib.Algorithm.AlgorithmType.MTF:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "MTF", new TemplateMTF());
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "MTF2", new TemplateMTF2());
+                        context.AddTemplatePanel(nameof(node.TempName), "MTF", new TemplateMTF());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "MTF2", new TemplateMTF2());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "SFR", new TemplateSFR());
+                        context.AddTemplatePanel(nameof(node.TempName), "SFR", new TemplateSFR());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "DFOV", new TemplateDFOV());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "FOV", new TemplateFOV());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "DFOV", new TemplateDFOV());
+                        context.AddTemplatePanel(nameof(node.TempName), "FOV", new TemplateFOV());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "GhostQK", new TemplateGhostQK());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "Ghost", new TemplateGhost());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "GhostQK", new TemplateGhostQK());
+                        context.AddTemplatePanel(nameof(node.TempName), "Ghost", new TemplateGhost());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "Distortion2", new TemplateDistortion2());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "Distortion", new TemplateDistortionParam());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "Distortion2", new TemplateDistortion2());
+                        context.AddTemplatePanel(nameof(node.TempName), "Distortion", new TemplateDistortionParam());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.LedCheck, new TemplateLedCheck());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LedCheck, new TemplateLedCheck());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.LedStripCheckV2, new TemplateLEDStripDetectionV2());
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.LedStripCheck, new TemplateLEDStripDetection());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.LedStripCheckV2, new TemplateLEDStripDetectionV2());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.LedStripCheck, new TemplateLEDStripDetection());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.发光区检测:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.FindLightArea, new TemplateFocusPoints());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightArea, new TemplateFocusPoints());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.FindLightAreaOLED, new TemplateRoi());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.FindLightAreaOLED, new TemplateRoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.JND:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "JND", new TemplateJND());
+                        context.AddTemplatePanel(nameof(node.TempName), "JND", new TemplateJND());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "SFR_FindROI", new TemplateSFRFindROI());
-                        context.AddTemplatePanel(name => node.POITempName = name, node.POITempName, "POI", new TemplatePoi());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), "SFR_FindROI", new TemplateSFRFindROI());
+                        context.AddTemplatePanel(nameof(node.POITempName), "POI", new TemplatePoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.双目融合:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.BinocularFusion, new TemplateBinocularFusion());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.BinocularFusion, new TemplateBinocularFusion());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.AABuildPoints, new TemplateAAFindPoints());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.AABuildPoints, new TemplateAAFindPoints());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, Properties.Resources.ImageCrop, new TemplateImageCropping());
-                        break;
-                    case FlowEngineLib.Algorithm.AlgorithmType.ImageCompound:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "ImageCompound", new TemplateCompoundImg());
+                        context.AddTemplatePanel(nameof(node.TempName), Properties.Resources.ImageCrop, new TemplateImageCropping());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.十字计算:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, Properties.Resources.CrossCalc, new TemplateFindCross());
+                        context.AddTemplateJsonPanel(nameof(node.TempName), Properties.Resources.CrossCalc, new TemplateFindCross());
                         break;
                     default:
                         break;
                 }
             }
-            context.RebindNodeEvent(node, nameof(AlgorithmNodeConfigurator), Refresh);
+            context.ReconfigureOnPropertyChanged(node, nameof(node.Algorithm));
             Refresh();
         }
     }
 
+    [System.Obsolete("Deprecated configurator retained for existing compliance flow nodes.")]
     [NodeConfigurator(typeof(FlowEngineLib.Node.Algorithm.AlgComplianceMathNode))]
     public class AlgComplianceMathNodeConfigurator : NodeConfiguratorBase
     {
@@ -205,16 +202,16 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                 switch (node.ComplianceMath)
                 {
                     case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
-                        context.AddTemplateCollectionPanel(name => node.TempName = name, node.TempName, "CIE", new ObservableCollection<TemplateModel<ValidateParam>>(TemplateComplyParam.CIEParams.SelectMany(p => p.Value)));
+                        context.AddTemplateCollectionPanel(nameof(node.TempName), "CIE", new ObservableCollection<TemplateModel<ValidateParam>>(TemplateComplyParam.CIEParams.SelectMany(p => p.Value)));
                         break;
                     case FlowEngineLib.Node.Algorithm.ComplianceMathType.JND:
-                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "JND", new TemplateComplyParam("Comply.JND"));
+                        context.AddTemplatePanel(nameof(node.TempName), "JND", new TemplateComplyParam("Comply.JND"));
                         break;
                     default:
                         break;
                 }
             }
-            context.RebindNodeEvent(node, nameof(AlgComplianceMathNodeConfigurator), Refresh);
+            context.ReconfigureOnPropertyChanged(node, nameof(node.ComplianceMath));
             Refresh();
         }
     }

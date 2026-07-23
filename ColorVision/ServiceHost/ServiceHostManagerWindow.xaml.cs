@@ -26,6 +26,7 @@ namespace ColorVision.ServiceHost
             "ColorVisionServiceHost.log");
 
         private ServiceHostStatus? _lastStatus;
+        private Com0ComStatusInfo? _com0ComStatus;
         private bool _isBusy;
         private readonly ModuleLogViewerBinder _logBinder;
 
@@ -90,6 +91,63 @@ namespace ColorVision.ServiceHost
         private async void StatusButton_Click(object sender, RoutedEventArgs e)
         {
             await RunClientCommandAsync("Status", token => ColorVisionServiceHostClient.Default.StatusAsync(cancellationToken: token), refreshAfter: true, useBusyState: false).ConfigureAwait(true);
+        }
+
+        private async void Com0ComRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetBusy(true);
+            try
+            {
+                await RefreshCom0ComAsync(_lastStatus?.State == ServiceHostInstallState.Running).ConfigureAwait(true);
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        }
+
+        private async void Com0ComCreateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Com0ComPortAComboBox.SelectedItem is not int portA
+                || Com0ComPortBComboBox.SelectedItem is not int portB
+                || portA == portB)
+            {
+                MessageBox.Show(this, "Select two different available port numbers.", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            await RunCom0ComOperationAsync(
+                "Create com0com Pair",
+                token => ColorVisionServiceHostClient.Default.CreateCom0ComPairAsync(portA, portB, cancellationToken: token)).ConfigureAwait(true);
+        }
+
+        private void Com0ComPortComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            UpdateButtonAvailability();
+        }
+
+        private async void Com0ComDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Com0ComPairsGrid.SelectedItem is not Com0ComPairInfo pair)
+                return;
+
+            MessageBoxResult result = MessageBox.Show(
+                this,
+                $"Delete com0com pair {pair.DisplayName}?",
+                "ColorVision",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            await RunCom0ComOperationAsync(
+                $"Delete com0com Pair {pair.PairNumber}",
+                token => ColorVisionServiceHostClient.Default.DeleteCom0ComPairAsync(pair.PairNumber, cancellationToken: token)).ConfigureAwait(true);
+        }
+
+        private void Com0ComPairsGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            UpdateButtonAvailability();
         }
 
         private async void WriteMarkerButton_Click(object sender, RoutedEventArgs e)
@@ -209,6 +267,36 @@ namespace ColorVision.ServiceHost
             }
         }
 
+        private async Task RunCom0ComOperationAsync(
+            string name,
+            Func<CancellationToken, Task<ServiceHostResponse>> operation)
+        {
+            SetBusy(true);
+            AppendLog($"> {name}");
+            try
+            {
+                ServiceHostResponse response = await operation(CancellationToken.None).ConfigureAwait(true);
+                AppendLog(response.ToDisplayText());
+                MessageBox.Show(
+                    this,
+                    response.Success ? response.Message : response.ToDisplayText(),
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    response.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"{name} failed.", ex);
+                AppendLog(ex.ToString());
+                MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                await RefreshCom0ComAsync(_lastStatus?.State == ServiceHostInstallState.Running).ConfigureAwait(true);
+                SetBusy(false);
+            }
+        }
+
         private async Task RunThumbnailCommandAsync(string command, string label, string successMessage, string failureFormat)
         {
             SetBusy(true);
@@ -273,6 +361,7 @@ namespace ColorVision.ServiceHost
                 ServiceHostStatus status = await ColorVisionServiceHostManager.QueryStatusAsync().ConfigureAwait(true);
                 _lastStatus = status;
                 UpdateStatusView(status);
+                await RefreshCom0ComAsync(status.State == ServiceHostInstallState.Running).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -280,11 +369,109 @@ namespace ColorVision.ServiceHost
                 StateText.Text = "Unknown";
                 ActionHintText.Text = "Refresh failed";
                 AppendLog(ex.Message);
+                HideCom0ComTab();
             }
             finally
             {
                 UpdateButtonAvailability();
             }
+        }
+
+        private async Task RefreshCom0ComAsync(bool serviceRunning)
+        {
+            if (!serviceRunning)
+            {
+                HideCom0ComTab();
+                return;
+            }
+
+            try
+            {
+                ServiceHostResponse statusResponse = await ColorVisionServiceHostClient.Default
+                    .GetCom0ComStatusAsync(cancellationToken: CancellationToken.None)
+                    .ConfigureAwait(true);
+                Com0ComStatusInfo? status = statusResponse.Data?.ToObject<Com0ComStatusInfo>();
+                if (!statusResponse.Success || status?.Installed != true)
+                {
+                    HideCom0ComTab();
+                    return;
+                }
+
+                Com0ComTab.Visibility = Visibility.Visible;
+                _com0ComStatus = status;
+                UpdateCom0ComView(status);
+
+                ServiceHostResponse listResponse = await ColorVisionServiceHostClient.Default
+                    .ListCom0ComPairsAsync(cancellationToken: CancellationToken.None)
+                    .ConfigureAwait(true);
+                Com0ComStatusInfo? listedStatus = listResponse.Data?.ToObject<Com0ComStatusInfo>();
+                if (listResponse.Success && listedStatus?.Installed == true)
+                {
+                    _com0ComStatus = listedStatus;
+                    UpdateCom0ComView(listedStatus);
+                }
+                else
+                {
+                    _com0ComStatus = null;
+                    Com0ComSummaryText.Text = $"Installed, but pair listing failed: {listResponse.Message}";
+                    Com0ComPairsGrid.ItemsSource = null;
+                    ClearCom0ComPortChoices();
+                    Com0ComPairCountText.Text = "Pair list unavailable";
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to query com0com status.", ex);
+                HideCom0ComTab();
+            }
+            finally
+            {
+                UpdateButtonAvailability();
+            }
+        }
+
+        private void UpdateCom0ComView(Com0ComStatusInfo status)
+        {
+            string version = string.IsNullOrWhiteSpace(status.Version) ? "unknown" : status.Version;
+            Com0ComSummaryText.Text = $"Version {version} · Driver {status.DriverState}";
+            Com0ComPathText.Text = status.SetupExecutablePath;
+            Com0ComPairsGrid.ItemsSource = status.Pairs;
+            Com0ComPairCountText.Text = status.Pairs.Count == 1 ? "1 pair" : $"{status.Pairs.Count} pairs";
+            UpdateCom0ComPortChoices(status);
+        }
+
+        private void UpdateCom0ComPortChoices(Com0ComStatusInfo status)
+        {
+            int? selectedPortA = Com0ComPortAComboBox.SelectedItem is int portA ? portA : null;
+            int? selectedPortB = Com0ComPortBComboBox.SelectedItem is int portB ? portB : null;
+            Com0ComPortAComboBox.ItemsSource = status.AvailablePortNumbers;
+            Com0ComPortBComboBox.ItemsSource = status.AvailablePortNumbers;
+
+            Com0ComPortAComboBox.SelectedItem = selectedPortA.HasValue && status.AvailablePortNumbers.Contains(selectedPortA.Value)
+                ? selectedPortA.Value
+                : status.SuggestedPair?.PortA;
+            Com0ComPortBComboBox.SelectedItem = selectedPortB.HasValue && status.AvailablePortNumbers.Contains(selectedPortB.Value)
+                ? selectedPortB.Value
+                : status.SuggestedPair?.PortB;
+        }
+
+        private void ClearCom0ComPortChoices()
+        {
+            Com0ComPortAComboBox.ItemsSource = null;
+            Com0ComPortBComboBox.ItemsSource = null;
+        }
+
+        private void HideCom0ComTab()
+        {
+            if (ReferenceEquals(ManagerTabs.SelectedItem, Com0ComTab))
+                ManagerTabs.SelectedIndex = 0;
+            Com0ComTab.Visibility = Visibility.Collapsed;
+            _com0ComStatus = null;
+            Com0ComPairsGrid.ItemsSource = null;
+            ClearCom0ComPortChoices();
+            Com0ComSummaryText.Text = "Not available";
+            Com0ComPathText.Text = string.Empty;
+            Com0ComPairCountText.Text = string.Empty;
         }
 
         private void UpdateStatusView(ServiceHostStatus status)
@@ -344,6 +531,13 @@ namespace ColorVision.ServiceHost
             OpenInstalledButton.IsEnabled = enabled;
             OpenLogButton.IsEnabled = enabled;
             CopyStatusButton.IsEnabled = enabled;
+            bool canManageCom0Com = enabled && isRunning && _com0ComStatus?.Installed == true;
+            bool hasValidPortSelection = Com0ComPortAComboBox.SelectedItem is int portA
+                && Com0ComPortBComboBox.SelectedItem is int portB
+                && portA != portB;
+            Com0ComRefreshButton.IsEnabled = enabled && isRunning;
+            Com0ComCreateButton.IsEnabled = canManageCom0Com && hasValidPortSelection;
+            Com0ComDeleteButton.IsEnabled = canManageCom0Com && Com0ComPairsGrid.SelectedItem is Com0ComPairInfo;
         }
 
         private static string FormatVersion(Version? version)

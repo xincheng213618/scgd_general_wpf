@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
 using System.IO;
@@ -58,7 +59,7 @@ namespace WindowsServicePlugin.ServiceManager
         private bool _isVc2013InstallVisible = true;
 
         public bool AutoUpdateDatabase { get => _autoUpdateDatabase; set { _autoUpdateDatabase = value; OnPropertyChanged(); } }
-        private bool _autoUpdateDatabase;
+        private bool _autoUpdateDatabase = true;
 
         public bool BackupBeforeInstall { get => _backupBeforeInstall; set { _backupBeforeInstall = value; OnPropertyChanged(); } }
         private bool _backupBeforeInstall;
@@ -104,6 +105,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand DownloadVc2013InstallerCommand { get; }
         public RelayCommand OnlineDownloadCommand { get; }
         public RelayCommand SelectBaseLocationCommand { get; }
+        public RelayCommand OpenBaseLocationCommand { get; }
 
         public ServiceInstallViewModel()
         {
@@ -124,6 +126,7 @@ namespace WindowsServicePlugin.ServiceManager
             DownloadVc2013InstallerCommand = new RelayCommand(a => _ = DownloadVc2013InstallerAsync(), a => !IsBusy);
             OnlineDownloadCommand = new RelayCommand(a => _ = OnlineDownloadAsync(), a => !IsBusy);
             SelectBaseLocationCommand = new RelayCommand(a => SelectBaseLocation(), a => !IsBusy);
+            OpenBaseLocationCommand = new RelayCommand(a => OpenBaseLocation());
             RefreshInstallComponentState();
         }
 
@@ -144,6 +147,16 @@ namespace WindowsServicePlugin.ServiceManager
             Config.BaseLocation = dlg.SelectedPath;
             ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
             OnPropertyChanged(nameof(Config));
+        }
+
+        private void OpenBaseLocation()
+        {
+            if (string.IsNullOrWhiteSpace(Config.BaseLocation) || !Directory.Exists(Config.BaseLocation))
+            {
+                log.Info($"安装根目录不存在: {Config.BaseLocation}");
+                return;
+            }
+            PlatformHelper.OpenFolder(Config.BaseLocation);
         }
 
         private void SelectServicePackage()

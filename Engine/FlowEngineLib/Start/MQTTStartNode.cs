@@ -33,6 +33,7 @@ public class MQTTStartNode : BaseStartNode
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -46,6 +47,7 @@ public class MQTTStartNode : BaseStartNode
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 

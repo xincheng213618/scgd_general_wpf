@@ -8,6 +8,7 @@ namespace FlowEngineLib.Node.PG;
 public class PGNode : CVBaseServerNode
 {
 	private PGCommCmdType _PGCmd;
+	private int _IndexFrame;
 
 	private STNodeEditText<PGCommCmdType> m_ctrl_editText;
 
@@ -22,11 +23,23 @@ public class PGNode : CVBaseServerNode
 		{
 			_PGCmd = value;
 			m_ctrl_editText.Value = _PGCmd;
+			OnPropertyChanged();
 		}
 	}
 
 	[STNodeProperty("指定画面", "指定画面", true)]
-	public int IndexFrame { get; set; }
+	public int IndexFrame
+	{
+		get
+		{
+			return _IndexFrame;
+		}
+		set
+		{
+			_IndexFrame = value;
+			OnPropertyChanged();
+		}
+	}
 
 	public PGNode()
 		: base("PG", "PG", "SVR.PG.Default", "DEV.PG.Default")

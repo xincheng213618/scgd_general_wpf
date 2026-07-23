@@ -25,7 +25,12 @@ namespace ColorVision.Engine.Templates
             IsUserControl = true;  
         }
 
-        public EditDictionaryMode EditDictionaryMode { get; set; } = new EditDictionaryMode();
+        private EditDictionaryMode? _editDictionaryMode;
+        public EditDictionaryMode EditDictionaryMode
+        {
+            get => _editDictionaryMode ??= new EditDictionaryMode();
+            set => _editDictionaryMode = value;
+        }
 
         public override UserControl GetUserControl()
         {

@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Solution.FolderMeta;
+using ColorVision.Common.NativeMethods;
+using ColorVision.Solution.Editor;
 using System.IO;
 using System.Windows;
 
@@ -36,11 +37,12 @@ namespace ColorVision.Solution.Explorer
         public override bool IsStartupProject => _isStartupProject;
         private bool _isStartupProject;
 
-        public ProjectNode(IFolderMeta folderMeta, ProjectDefinition project, SolutionExplorer? solutionExplorer = null)
-            : base(folderMeta)
+        public ProjectNode(ProjectDefinition project, SolutionExplorer? solutionExplorer = null)
+            : base(project.ProjectDirectory)
         {
             Project = project;
             SolutionExplorer = solutionExplorer;
+            Icon = FileIcon.GetFileIconImageSource(project.ProjectFile.FullName);
             string projectName = string.IsNullOrWhiteSpace(project.Name) ? DirectoryInfo.Name : project.Name;
             Name1 = string.IsNullOrWhiteSpace(project.LoadError) ? projectName : $"{projectName} (加载失败)";
             CanReName = false;
@@ -212,7 +214,7 @@ namespace ColorVision.Solution.Explorer
 
         private void EditProjectFile()
         {
-            EditorManager.Instance.TryOpenFile(Project.ProjectFile.FullName);
+            ResourceOpenService.Instance.TryOpenWith(Project.ProjectFile.FullName, "colorvision.text");
         }
 
         private void InitializeExternalProjectWatcher()

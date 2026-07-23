@@ -9,7 +9,6 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
 using log4net;
 using Newtonsoft.Json;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 
@@ -68,16 +67,16 @@ namespace ColorVision.Solution
         /// 工程打开的时候
         /// </summary>
         public event EventHandler SolutionLoaded;
+        public event EventHandler? CurrentWorkspaceChanged;
         /// <summary>
         /// 当前工作区关闭的时候；事件参数包含用户打开的文件夹、项目或解决方案路径。
         /// </summary>
         public event EventHandler<SolutionWorkspaceEventArgs>? SolutionClosed;
 
-        public ObservableCollection<SolutionExplorer> SolutionExplorers { get; set; }
         public SolutionExplorer? CurrentSolutionExplorer
         {
             get => _CurrentSolutionExplorer;
-            set
+            private set
             {
                 if (ReferenceEquals(_CurrentSolutionExplorer, value))
                     return;
@@ -90,6 +89,7 @@ namespace ColorVision.Solution
                 MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Configuration);
                 MenuManager.GetInstance().RefreshMenuItemsByGuid(SolutionMenuIds.Platform);
                 System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+                CurrentWorkspaceChanged?.Invoke(this, EventArgs.Empty);
             }
         }
         private SolutionExplorer? _CurrentSolutionExplorer;
@@ -153,11 +153,9 @@ namespace ColorVision.Solution
         {
             _tryCloseWorkspaceDocuments = tryCloseWorkspaceDocuments
                 ?? TryCloseWorkspaceDocumentsCore;
-            ColorVision.UI.FileProcessorFactory.GetInstance().ResourceOpenHandler ??=
-                Editor.ResourceOpenService.Instance.RouteFileProcessorOpen;
+            ColorVision.UI.FileProcessorFactory.GetInstance().ResourceOpenHandlerAsync ??=
+                Editor.ResourceOpenService.Instance.RouteFileProcessorOpenAsync;
             RecentWorkspaces.Changed += RecentWorkspaces_Changed;
-
-            SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
             if (restoreLastWorkspace && Application.Current != null)
             {
@@ -202,7 +200,7 @@ namespace ColorVision.Solution
             Directory.CreateDirectory(defaultRoot);
             string defaultSolution = Path.Combine(defaultRoot, "Default");
             Directory.CreateDirectory(defaultSolution);
-            CreateSolution(defaultSolution);
+            await CreateSolutionAsync(defaultSolution);
         }
 
         private void RecentWorkspaces_Changed(object? sender, EventArgs e)
@@ -361,83 +359,6 @@ namespace ColorVision.Solution
             }
         }
 
-        public bool OpenFolder(string folderPath)
-        {
-            return TryOpenFolder(folderPath, out _);
-        }
-
-        public bool TryOpenFolder(string folderPath, out string errorMessage)
-        {
-            if (!Directory.Exists(folderPath))
-            {
-                errorMessage = $"文件夹不存在：{folderPath}";
-                return false;
-            }
-            return TryOpenSolution(folderPath, out errorMessage);
-        }
-
-        internal static bool TryResolveOpenTarget(
-            string path,
-            out string solutionPath,
-            out string historyPath,
-            out string displayName,
-            out string errorMessage)
-        {
-            solutionPath = string.Empty;
-            historyPath = string.Empty;
-            displayName = string.Empty;
-            errorMessage = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                errorMessage = "要打开的资源路径为空。";
-                return false;
-            }
-
-            string normalizedPath = NormalizeWorkspacePath(path);
-
-            if (Directory.Exists(normalizedPath))
-            {
-                DirectoryInfo directoryInfo = new(normalizedPath);
-                solutionPath = ResolveDirectorySolutionPath(directoryInfo);
-                historyPath = directoryInfo.FullName;
-                displayName = directoryInfo.Name;
-                if (File.Exists(solutionPath))
-                    return true;
-                errorMessage = $"无法为文件夹创建工作区：{directoryInfo.FullName}";
-                return false;
-            }
-
-            if (File.Exists(normalizedPath) && IsNativeSolutionFilePath(normalizedPath))
-            {
-                FileInfo fileInfo = new(normalizedPath);
-                solutionPath = fileInfo.FullName;
-                historyPath = fileInfo.FullName;
-                displayName = Path.GetFileNameWithoutExtension(fileInfo.Name);
-                return true;
-            }
-
-            if (File.Exists(normalizedPath)
-                && IsProjectFilePath(normalizedPath)
-                && TryCreateImplicitProjectSolution(
-                    new FileInfo(normalizedPath),
-                    out solutionPath,
-                    out displayName,
-                    out errorMessage))
-            {
-                historyPath = Path.GetFullPath(normalizedPath);
-                return true;
-            }
-
-            if (File.Exists(normalizedPath) && IsProjectFilePath(normalizedPath))
-                return false;
-
-            errorMessage = File.Exists(normalizedPath)
-                ? $"不支持打开此文件：{normalizedPath}"
-                : $"要打开的资源不存在：{normalizedPath}";
-            return false;
-        }
-
         internal static async Task<SolutionOpenTargetResolution> ResolveOpenTargetAsync(
             string path,
             CancellationToken cancellationToken = default)
@@ -513,18 +434,6 @@ namespace ColorVision.Solution
                 ErrorMessage: File.Exists(normalizedPath)
                     ? $"不支持打开此文件：{normalizedPath}"
                     : $"要打开的资源不存在：{normalizedPath}");
-        }
-
-        internal static bool TryCreateImplicitProjectSolution(
-            FileInfo projectFile,
-            out string solutionPath,
-            out string displayName)
-        {
-            return TryCreateImplicitProjectSolution(
-                projectFile,
-                out solutionPath,
-                out displayName,
-                out _);
         }
 
         internal static bool TryCreateImplicitProjectSolution(
@@ -606,76 +515,6 @@ namespace ColorVision.Solution
                     cancellationToken);
         }
 
-        public bool OpenSolution(string FullPath)
-        {
-            return TryOpenSolution(FullPath, out _);
-        }
-
-        public bool TryOpenSolution(string fullPath, out string errorMessage)
-        {
-            if (IsCurrentWorkspacePath(fullPath))
-            {
-                CancelWorkspaceOpen();
-                errorMessage = string.Empty;
-                return true;
-            }
-            CancelWorkspaceOpen();
-            if (!TryResolveOpenTarget(
-                fullPath,
-                out string solutionPath,
-                out string historyPath,
-                out string displayName,
-                out errorMessage))
-            {
-                log.Warn($"无法解析要打开的解决方案或工作区: {fullPath}, {errorMessage}");
-                return false;
-            }
-
-            FileInfo fileInfo = new(solutionPath);
-            var candidateEnvironment = new SolutionEnvironments
-            {
-                SolutionDir = Directory.GetParent(fileInfo.FullName)?.FullName ?? string.Empty,
-                SolutionPath = fileInfo.FullName,
-                SolutionExt = fileInfo.Extension,
-                SolutionName = fileInfo.Name,
-                SolutionFileName = displayName,
-            };
-            SolutionExplorer candidateExplorer;
-            try
-            {
-                candidateExplorer = new SolutionExplorer(candidateEnvironment);
-            }
-            catch (Exception ex) when (ex is IOException
-                or UnauthorizedAccessException
-                or JsonException
-                or InvalidDataException
-                or ArgumentException
-                or NotSupportedException)
-            {
-                log.Warn($"打开解决方案失败: {solutionPath}", ex);
-                errorMessage = $"无法打开解决方案：{ex.Message}";
-                return false;
-            }
-
-            if (!TryCloseCurrentWorkspaceDocuments())
-            {
-                candidateExplorer.Dispose();
-                errorMessage = "切换工作区已取消。";
-                return false;
-            }
-
-            DisposeSolutionExplorers();
-            SolutionEnvironments = candidateEnvironment;
-            CurrentWorkspacePath = historyPath;
-            CurrentSolutionExplorer = candidateExplorer;
-            SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
-            SolutionExplorers.Add(candidateExplorer);
-            RecentWorkspaces.Touch(historyPath, fullPath);
-            SolutionLoaded?.Invoke(historyPath, EventArgs.Empty);
-            errorMessage = string.Empty;
-            return true;
-        }
-
         internal async Task<SolutionOpenOperationResult> OpenSolutionAsync(
             string fullPath,
             CancellationToken cancellationToken = default)
@@ -749,12 +588,11 @@ namespace ColorVision.Solution
                     return new SolutionOpenOperationResult(false, "打开工作区已取消。", Canceled: true);
                 }
 
-                DisposeSolutionExplorers();
+                DisposeCurrentSolutionExplorer();
                 SolutionEnvironments = candidateEnvironment;
                 CurrentWorkspacePath = resolution.HistoryPath;
                 CurrentSolutionExplorer = candidateExplorer;
                 SolutionEnvironments.SolutionDir = candidateExplorer.DirectoryInfo.FullName;
-                SolutionExplorers.Add(candidateExplorer);
                 RecentWorkspaces.Touch(resolution.HistoryPath, fullPath);
                 SolutionLoaded?.Invoke(resolution.HistoryPath, EventArgs.Empty);
                 return new SolutionOpenOperationResult(true);
@@ -859,7 +697,7 @@ namespace ColorVision.Solution
                 return false;
 
             string workspacePath = CurrentWorkspacePath;
-            DisposeSolutionExplorers();
+            DisposeCurrentSolutionExplorer();
             CurrentSolutionExplorer = null;
             SolutionEnvironments = new SolutionEnvironments();
             SolutionClosed?.Invoke(this, new SolutionWorkspaceEventArgs(workspacePath));
@@ -901,55 +739,36 @@ namespace ColorVision.Solution
             }
         }
 
-        public bool OpenProject(string projectPath)
+        public async Task<bool> CreateSolutionAsync(
+            string solutionDirectoryPath,
+            CancellationToken cancellationToken = default)
         {
-            return TryOpenProject(projectPath, out _);
+            if (!Directory.Exists(solutionDirectoryPath))
+                Directory.CreateDirectory(solutionDirectoryPath);
+
+            DirectoryInfo directoryInfo = new(solutionDirectoryPath);
+            string solutionPath = Path.Combine(directoryInfo.FullName, directoryInfo.Name + ".cvsln");
+
+            SolutionConfigStore.Save(solutionPath, new SolutionConfig { ProjectMode = SolutionProjectMode.Explicit });
+
+            SolutionCreated?.Invoke(solutionPath, EventArgs.Empty);
+            SolutionOpenOperationResult result = await OpenSolutionAsync(solutionPath, cancellationToken);
+            return result.Succeeded;
         }
 
-        public bool TryOpenProject(string projectPath, out string errorMessage)
+        private void DisposeCurrentSolutionExplorer()
         {
-            if (!File.Exists(projectPath))
+            if (CurrentSolutionExplorer is not { } explorer)
+                return;
+
+            try
             {
-                errorMessage = $"项目文件不存在：{projectPath}";
-                return false;
+                explorer.Dispose();
             }
-            if (!IsProjectFilePath(projectPath))
+            catch (Exception ex)
             {
-                errorMessage = $"不支持此项目文件：{projectPath}";
-                return false;
+                log.Warn($"释放旧工程资源失败: {ex.Message}", ex);
             }
-            return TryOpenSolution(projectPath, out errorMessage);
-        }
-
-        public bool CreateSolution(string SolutionDirectoryPath)
-        {
-            if (!Directory.Exists(SolutionDirectoryPath))
-                Directory.CreateDirectory(SolutionDirectoryPath);
-
-            DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
-            string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
-
-            SolutionConfigStore.Save(slnName, new SolutionConfig { ProjectMode = SolutionProjectMode.Explicit });
-
-            SolutionCreated?.Invoke(slnName, new EventArgs());
-            OpenSolution(slnName);
-            return true;
-        }
-
-        private void DisposeSolutionExplorers()
-        {
-            foreach (var explorer in SolutionExplorers.ToList())
-            {
-                try
-                {
-                    explorer.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"释放旧工程资源失败: {ex.Message}", ex);
-                }
-            }
-            SolutionExplorers.Clear();
         }
         public static void OpenSolutionWindow()
         {
@@ -960,12 +779,14 @@ namespace ColorVision.Solution
         public void NewCreateWindow()
         {
             NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            newCreatWindow.Closed += delegate
+            newCreatWindow.Closed += async (_, _) =>
             {
                 if (newCreatWindow.IsCreate)
                 {
-                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    CreateSolution(SolutionDirectoryPath);
+                    string solutionDirectoryPath = Path.Combine(
+                        newCreatWindow.NewCreateViewMode.DirectoryPath,
+                        newCreatWindow.NewCreateViewMode.Name);
+                    await CreateSolutionAsync(solutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();

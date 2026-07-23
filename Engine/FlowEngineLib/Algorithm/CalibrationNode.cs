@@ -37,6 +37,7 @@ public class CalibrationNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -51,6 +52,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_ExpTempName = value;
 			m_ctrl_temp_exp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -66,6 +68,7 @@ public class CalibrationNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -80,6 +83,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_IsSaveCIE = value;
 			m_ctrl_saveCIE.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -94,6 +98,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_POITempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -108,6 +113,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_POIFilterTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -122,6 +128,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_POIReviseTempName = value;
 			setPOITemp();
+			OnPropertyChanged();
 		}
 	}
 
@@ -136,6 +143,7 @@ public class CalibrationNode : CVBaseServerNode
 		{
 			_OutputTemplateName = value;
 			m_ctrl_outtemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

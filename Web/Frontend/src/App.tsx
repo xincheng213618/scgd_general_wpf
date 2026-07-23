@@ -1,31 +1,63 @@
 import { App as AntApp, ConfigProvider, theme } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { AdminLayout } from './layouts/AdminLayout'
+import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
-import { ApiKeysPage } from './pages/ApiKeysPage'
-import { AuditPage } from './pages/AuditPage'
-import { BrowsePage } from './pages/BrowsePage'
-import { CachePage } from './pages/CachePage'
-import { ChangelogPage } from './pages/ChangelogPage'
-import { Dashboard } from './pages/Dashboard'
-import { FilesPage } from './pages/FilesPage'
-import { HomePage } from './pages/HomePage'
-import { JobsPage } from './pages/JobsPage'
-import { LoginPage } from './pages/LoginPage'
-import { PluginDetailPage } from './pages/PluginDetailPage'
-import { PluginsPage } from './pages/PluginsPage'
-import { PublishPage } from './pages/PublishPage'
-import { ReleasesPage } from './pages/ReleasesPage'
-import { SettingsPage } from './pages/SettingsPage'
-import { ToolsPage } from './pages/ToolsPage'
-import { TransferPage } from './pages/TransferPage'
-import { UpdatesPage } from './pages/UpdatesPage'
 import { getSession } from './services/auth'
 import type { ThemeMode } from './types/admin'
 import type { AuthSession } from './types/site'
 
 const themeStorageKey = 'colorvision-web-theme'
+
+const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })))
+const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
+const AuditPage = lazy(() => import('./pages/AuditPage').then((module) => ({ default: module.AuditPage })))
+const BrowsePage = lazy(() => import('./pages/BrowsePage').then((module) => ({ default: module.BrowsePage })))
+const CachePage = lazy(() => import('./pages/CachePage').then((module) => ({ default: module.CachePage })))
+const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })))
+const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
+const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
+const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
+const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
+const PluginsPage = lazy(() => import('./pages/PluginsPage').then((module) => ({ default: module.PluginsPage })))
+const PublishPage = lazy(() => import('./pages/PublishPage').then((module) => ({ default: module.PublishPage })))
+const ReleasesPage = lazy(() => import('./pages/ReleasesPage').then((module) => ({ default: module.ReleasesPage })))
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
+const ToolsPage = lazy(() => import('./pages/ToolsPage').then((module) => ({ default: module.ToolsPage })))
+const TrafficPage = lazy(() => import('./pages/TrafficPage').then((module) => ({ default: module.TrafficPage })))
+const TransferPage = lazy(() => import('./pages/TransferPage').then((module) => ({ default: module.TransferPage })))
+const UpdatesPage = lazy(() => import('./pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })))
+
+function RouteFallback() {
+  return <div className="route-loading" role="status">页面加载中…</div>
+}
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Route chunk failed to load', error, info)
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <main className="route-error" role="alert">
+          <h1>页面资源加载失败</h1>
+          <p>网站可能刚刚完成更新，请重新载入最新版本。</p>
+          <button type="button" onClick={() => window.location.reload()}>重新载入</button>
+        </main>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function useResolvedTheme(mode: ThemeMode) {
   const [systemDark, setSystemDark] = useState(false)
@@ -103,150 +135,63 @@ function App() {
     }
   }, [])
 
+  const publicLayout = (
+    <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
+      <Suspense fallback={<RouteFallback />}>
+        <Outlet />
+      </Suspense>
+    </PublicLayout>
+  )
+
+  const adminLayout = (
+    <Suspense fallback={<RouteFallback />}>
+      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
+      </AdminLayout>
+    </Suspense>
+  )
+
   return (
     <ConfigProvider theme={configTheme}>
       <AntApp>
         <BrowserRouter>
-          <Routes>
+          <RouteErrorBoundary>
+            <Routes>
+            <Route element={publicLayout}>
+              <Route index element={<HomePage />} />
+              <Route path="plugins" element={<PluginsPage />} />
+              <Route path="plugins/:pluginId" element={<PluginDetailPage />} />
+              <Route path="releases" element={<ReleasesPage />} />
+              <Route path="changelog" element={<ChangelogPage />} />
+              <Route path="updates" element={<UpdatesPage />} />
+              <Route path="tools" element={<ToolsPage />} />
+              <Route path="browse/*" element={<BrowsePage />} />
+              <Route path="transfer" element={<TransferPage session={session} />} />
+            </Route>
             <Route
-              path="/"
+              path="/login"
               element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <HomePage />
-                </PublicLayout>
+                <Suspense fallback={<RouteFallback />}>
+                  <LoginPage onLoggedIn={refreshSession} />
+                </Suspense>
               }
             />
-            <Route
-              path="/plugins"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <PluginsPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/plugins/:pluginId"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <PluginDetailPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/releases"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <ReleasesPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/changelog"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <ChangelogPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/updates"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <UpdatesPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/tools"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <ToolsPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/browse/*"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <BrowsePage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/transfer"
-              element={
-                <PublicLayout mode={mode} setMode={setMode} session={session} onSessionChanged={refreshSession}>
-                  <TransferPage session={session} />
-                </PublicLayout>
-              }
-            />
-            <Route path="/login" element={<LoginPage onLoggedIn={refreshSession} />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <Dashboard />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/publish"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <PublishPage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/files"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <FilesPage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/cache"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <CachePage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/jobs"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <JobsPage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/api-keys"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <ApiKeysPage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/audit"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <AuditPage />
-                </AdminLayout>
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
-                  <SettingsPage mode={mode} setMode={setMode} />
-                </AdminLayout>
-              }
-            />
+            <Route path="/admin" element={adminLayout}>
+              <Route index element={<Dashboard />} />
+              <Route path="publish" element={<PublishPage />} />
+              <Route path="files" element={<FilesPage />} />
+              <Route path="cache" element={<CachePage />} />
+              <Route path="jobs" element={<JobsPage />} />
+              <Route path="api-keys" element={<ApiKeysPage />} />
+              <Route path="audit" element={<AuditPage />} />
+              <Route path="traffic" element={<TrafficPage />} />
+              <Route path="settings" element={<SettingsPage mode={mode} setMode={setMode} />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            </Routes>
+          </RouteErrorBoundary>
         </BrowserRouter>
       </AntApp>
     </ConfigProvider>

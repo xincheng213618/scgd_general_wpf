@@ -447,9 +447,21 @@ JSON
 
   "LuminanceChromaticityTestResults": {
 
+   "White": { ... },
+
    "W25": { ... }
 
   },
+
+  "FieldOfViewTestResults": {
+
+   "White": { ... }
+
+  },
+
+  "W255TestResult": { ... }, // 亮色度 Key=White 时的兼容字段
+
+  "W51TestResult": { ... },  // 视场角 Key=White 时的兼容字段
 
   "MTFHVTestResult": { ... },
 

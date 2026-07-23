@@ -5,7 +5,9 @@ using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Engine.Services
@@ -113,20 +115,27 @@ namespace ColorVision.Engine.Services
             }
 
             string logDir = Path.Combine(serviceBaseDir, "log");
+            Dictionary<string, string> latestModuleLogs = GetLatestModuleLogs(logDir, serviceLogs);
 
             foreach (var (panelId, title, logFilePrefix) in serviceLogs)
             {
                 try
                 {
-                    string? logPath = GetLogFilePath(serviceBaseDir, logDir, logFilePrefix);
+                    string? logPath = logFilePrefix == null
+                        ? LogFileHelper.GetLatestMainLogPath(serviceBaseDir)
+                        : latestModuleLogs.GetValueOrDefault(logFilePrefix);
                     if (string.IsNullOrEmpty(logPath))
                     {
                         log.Debug($"No log file found for {panelId} under {serviceName}, skipping");
                         continue;
                     }
 
-                    var logOutput = new LogLocalOutput(logPath, ServiceLogEncoding);
-                    layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom, isDefaultVisible: false);
+                    layoutManager.RegisterPanel(
+                        panelId,
+                        () => new LogLocalOutput(logPath, ServiceLogEncoding),
+                        title,
+                        PanelPosition.Bottom,
+                        isDefaultVisible: false);
                     log.Info($"Registered service log panel: {title} -> {logPath}");
                 }
                 catch (Exception ex)
@@ -134,6 +143,53 @@ namespace ColorVision.Engine.Services
                     log.Debug($"Failed to register service log panel {panelId}: {ex.Message}");
                 }
             }
+        }
+
+        private static Dictionary<string, string> GetLatestModuleLogs(
+            string logDir,
+            (string PanelId, string Title, string? LogFilePrefix)[] serviceLogs)
+        {
+            string[] prefixes = serviceLogs
+                .Select(logDefinition => logDefinition.LogFilePrefix)
+                .Where(prefix => !string.IsNullOrEmpty(prefix))
+                .Cast<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (prefixes.Length == 0 || !Directory.Exists(logDir))
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            (string Path, string Name, DateTime CreationTimeUtc)[] files;
+            try
+            {
+                files = Directory.EnumerateFiles(logDir, "*.log", SearchOption.TopDirectoryOnly)
+                    .Select(path =>
+                    {
+                        FileInfo file = new(path);
+                        return (Path: file.FullName, file.Name, file.CreationTimeUtc);
+                    })
+                    .ToArray();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                log.Debug($"Unable to enumerate service logs under '{logDir}': {ex.Message}");
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var latestLogs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string prefix in prefixes)
+            {
+                string? latestPath = files
+                    .Where(file => file.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(file => file.CreationTimeUtc)
+                    .Select(file => file.Path)
+                    .FirstOrDefault();
+                if (latestPath != null)
+                {
+                    latestLogs[prefix] = latestPath;
+                }
+            }
+
+            return latestLogs;
         }
 
         /// <summary>

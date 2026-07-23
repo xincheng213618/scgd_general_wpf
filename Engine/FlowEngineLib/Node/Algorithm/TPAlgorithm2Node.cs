@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/12 第三方算法")]
+[System.Obsolete("Deprecated third-party algorithm flow node retained for loading existing flows.")]
 public class TPAlgorithm2Node : CVBaseServerNodeHub
 {
 	private STNodeEditText<string> m_ctrl_op;
@@ -20,6 +21,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeHub
 		{
 			operatorCode = value;
 			m_ctrl_op.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -33,6 +35,7 @@ public class TPAlgorithm2Node : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

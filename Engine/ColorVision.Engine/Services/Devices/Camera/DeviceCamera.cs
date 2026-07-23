@@ -1,14 +1,13 @@
 ﻿#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
-using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -16,18 +15,20 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor.Settings;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using System.Collections.Generic;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
-using System.Linq;
 using cvColorVision;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -48,19 +49,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; OnPropertyChanged(); } }
         private PhyCamera? _PhyCamera;
-        public ViewCamera View { get; set; }
+        private readonly Lazy<ViewCamera> _view;
+        public ViewCamera View => _view.Value;
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
+        internal LocalCameraSession LocalCameraSession { get; }
 
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
+            LocalCameraSession = new LocalCameraSession(this);
             DService = new MQTTCamera(this);
-
-            View = new ViewCamera(this);
+            _view = new Lazy<ViewCamera>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new ViewCamera(this)
+                : Application.Current.Dispatcher.Invoke(() => new ViewCamera(this)));
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
@@ -81,16 +86,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 PhyCamera.DeviceCamera = this;
             }
 
-            RefreshCommand = new RelayCommand(a => Save());
-
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
 
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
+            EditRealtimeCameraConfigCommand = new RelayCommand(_ => EditRealtimeCameraConfig());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
 
-            this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
+            this.ContextMenu.Items.Add(new MenuItem
+            {
+                Header = "Log",
+                Command = new RelayCommand(_ => FlowEngineManager.GetInstance().WindowsServiceX64.OpenLog())
+            });
             this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
 
 
@@ -168,24 +176,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
-        public VideoReader CameraVideoControl { get; set; } = new VideoReader();
+        public DefaultRealtimeCameraConfig RealtimeCameraConfig { get; } = DefaultRealtimeCameraConfig.Current;
+        public RelayCommand EditRealtimeCameraConfigCommand { get; set; }
 
-        public override void RestartRCService()
+        private void EditRealtimeCameraConfig()
         {
-            if (DService.IsVideoOpen)
+            new PropertyEditorWindow(RealtimeCameraConfig)
             {
-                CameraVideoControl?.Close();
-                var msgrecode = DService.Close();
-                log.Info("正在关闭视频模式");
-                msgrecode.MsgSucessed += (s,e) =>
-                {
-                    DService.IsVideoOpen = false;
-                    DService.DeviceStatus = DeviceStatusType.Closed;
-                    base.RestartRCService();
-                };
-                return;
-            }
-            base.RestartRCService();
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
         }
 
         private PhyCamera lastPhyCamera;
@@ -379,8 +379,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
+            LocalCameraSession.Dispose();
             this.PhyCamera?.ReleaseDeviceCamera();
-
             DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);

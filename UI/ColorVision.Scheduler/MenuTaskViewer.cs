@@ -1,24 +1,7 @@
 ﻿using ColorVision.UI;
-using ColorVision.UI.Menus;
-using System.Windows;
 
 namespace ColorVision.Scheduler
 {
-    public class MenuTaskViewer : GlobalMenuBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-
-        public override int Order => 10;
-
-        public override string Header => Properties.Resources.TaskViewerWindow;
-
-        public override void Execute()
-        {
-            QuartzSchedulerManager.GetInstance();
-            new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-    }
-
     public class TaskViewerInitializer : InitializerBase
     {
 
@@ -29,7 +12,6 @@ namespace ColorVision.Scheduler
         public override async Task InitializeAsync()
         {
             QuartzSchedulerManager.GetInstance();
-            await Task.Delay(0);
         }
     }
 }

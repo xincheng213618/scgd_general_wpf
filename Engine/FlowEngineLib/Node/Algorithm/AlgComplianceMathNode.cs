@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/09 合规验证")]
+[System.Obsolete("Deprecated compliance flow node retained for loading existing flows.")]
 public class AlgComplianceMathNode : CVBaseServerNode
 {
 	private ComplianceMathType _ComplianceMath;
@@ -26,6 +27,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -39,6 +41,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		set
 		{
 			SetMathType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +56,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		{
 			_IsBreak = value;
 			setBreak();
+			OnPropertyChanged();
 		}
 	}
 

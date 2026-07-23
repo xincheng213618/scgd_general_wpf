@@ -1,5 +1,6 @@
 using ColorVision.Update;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using Resources = ColorVision.Properties.Resources;
@@ -16,6 +17,42 @@ namespace ColorVision.UI.Tests
             Assert.NotNull(config);
             Assert.False(config.IsAutoUpdate);
             Assert.Null(typeof(AutoUpdateConfig).GetProperty("SkippedVersion"));
+        }
+
+        [Fact]
+        public void UpdateSnapshotOptionDefaultsToDisabled()
+        {
+            ApplicationSnapshotConfig config = new();
+
+            Assert.False(config.CreateSnapshotBeforeUpdate);
+        }
+
+        [Fact]
+        public void UpdateNetworkOptionDefaultsToDirectConnection()
+        {
+            UpdateNetworkConfig config = new();
+
+            Assert.True(config.DisableSystemProxyForUpdates);
+        }
+
+        [Fact]
+        public void PreviewStateTransitionPreservesUpdateOptionsMadeWhileChecking()
+        {
+            UpdatePreviewDialogContext checkingContext = new()
+            {
+                CreateSnapshotBeforeUpdate = true,
+                DisableSystemProxyForUpdates = true,
+            };
+            UpdatePreviewDialogContext loadedContext = new()
+            {
+                CreateSnapshotBeforeUpdate = false,
+                DisableSystemProxyForUpdates = false,
+            };
+
+            checkingContext.CopyFrom(loadedContext);
+
+            Assert.True(checkingContext.CreateSnapshotBeforeUpdate);
+            Assert.True(checkingContext.DisableSystemProxyForUpdates);
         }
 
         [Fact]
@@ -210,6 +247,39 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ApplicationPackageCacheRejectsAValidPackageWithTheWrongTargetVersion()
+        {
+            string tempDirectory = Directory.CreateTempSubdirectory("ColorVisionPackageVersionTest-").FullName;
+            string sourceExecutable = typeof(AutoUpdater).Assembly.Location;
+            string? fileVersion = FileVersionInfo.GetVersionInfo(sourceExecutable).FileVersion;
+            Assert.True(Version.TryParse(fileVersion, out Version? expectedVersion));
+            Version wrongVersion = new(expectedVersion.Major, expectedVersion.Minor, expectedVersion.Build, expectedVersion.Revision + 1);
+            string packagePath = Path.Combine(tempDirectory, $"ColorVision-Update-[{expectedVersion}].cvx");
+            string installerPath = Path.Combine(tempDirectory, $"ColorVision-{expectedVersion}.exe");
+
+            try
+            {
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry("ColorVision.exe");
+                    using Stream source = File.OpenRead(sourceExecutable);
+                    using Stream destination = entry.Open();
+                    source.CopyTo(destination);
+                }
+                File.Copy(sourceExecutable, installerPath);
+
+                Assert.True(AutoUpdater.IsApplicationPackageFileReady(packagePath, isIncremental: true, expectedVersion));
+                Assert.False(AutoUpdater.IsApplicationPackageFileReady(packagePath, isIncremental: true, wrongVersion));
+                Assert.True(AutoUpdater.IsApplicationPackageFileReady(installerPath, isIncremental: false, expectedVersion));
+                Assert.False(AutoUpdater.IsApplicationPackageFileReady(installerPath, isIncremental: false, wrongVersion));
+            }
+            finally
+            {
+                Directory.Delete(tempDirectory, true);
+            }
+        }
+
+        [Fact]
         public void IncrementalCacheAcceptsAriaUniqueNameWhenCanonicalDownloadIsIncomplete()
         {
             string tempDirectory = Directory.CreateTempSubdirectory("ColorVisionUniqueIncrementalCacheTest-").FullName;
@@ -355,6 +425,32 @@ namespace ColorVision.UI.Tests
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false));
         }
 
+        [Theory]
+        [InlineData(true, true, true, true, true, false, true)]
+        [InlineData(true, true, false, true, true, true, false)]
+        [InlineData(true, false, false, true, true, false, false)]
+        [InlineData(true, true, true, false, true, false, false)]
+        [InlineData(true, true, false, true, true, false, true)]
+        public void UpdateCheckReuseRequiresTheSameScopeAndCompatiblePluginCoverage(
+            bool existingApplication,
+            bool existingPlugins,
+            bool existingCurrentHostPlugins,
+            bool requestedApplication,
+            bool requestedPlugins,
+            bool requestedCurrentHostPlugins,
+            bool expected)
+        {
+            Assert.Equal(
+                expected,
+                CombinedUpdateCoordinator.CanReuseUpdateCheckOptions(
+                    existingApplication,
+                    existingPlugins,
+                    existingCurrentHostPlugins,
+                    requestedApplication,
+                    requestedPlugins,
+                    requestedCurrentHostPlugins));
+        }
+
         [Fact]
         public void PluginOnlySelectionDescribesRestartWithoutBackup()
         {
@@ -370,6 +466,28 @@ namespace ColorVision.UI.Tests
 
             Assert.Equal(2, segments.Length);
             Assert.Equal(Resources.UpdatePreviewSelectionRestartRequired, segments[1]);
+        }
+
+        [Fact]
+        public void PluginOnlySelectionDescribesOptionalUpdateSnapshot()
+        {
+            UpdatePreviewDialogContext context = new()
+            {
+                IsChecking = false,
+                CreateSnapshotBeforeUpdate = true,
+            };
+            context.Items.Add(new UpdatePreviewItem
+            {
+                Kind = UpdatePreviewItemKind.Plugin,
+                IsSelectable = true,
+                IsSelected = true,
+            });
+
+            string[] segments = context.SelectionSummary.Split(" · ", StringSplitOptions.None);
+
+            Assert.Equal(3, segments.Length);
+            Assert.Equal(Resources.UpdatePreviewSelectionCreatesSnapshot, segments[1]);
+            Assert.Equal(Resources.UpdatePreviewSelectionRestartRequired, segments[2]);
         }
 
         private static void WriteValidIncrementalPackage(string packagePath)

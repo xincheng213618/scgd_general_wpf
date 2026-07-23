@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -81,11 +82,9 @@ namespace ColorVision.Engine.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
+            List<IDisPlayControl> displayControls = new() { FlowEngineManager.GetInstance().DisplayFlow };
 
             ResetCopilotDisplayDeviceMap();
-            DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
@@ -93,12 +92,12 @@ namespace ColorVision.Engine.Services
                     if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                     {
                         _copilotDisplayDevices[disPlayControl] = device;
-                        DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
+                        displayControls.Add(disPlayControl);
                     }
                 }
             }
 
-            DisPlayManager.GetInstance().RestoreControl();
+            DisPlayManager.GetInstance().ReplaceControls(displayControls);
             DisPlayManager_SelectedControlChanged(this, EventArgs.Empty);
         }
         /// <summary>
@@ -106,10 +105,11 @@ namespace ColorVision.Engine.Services
         /// </summary>
         public void GenDeviceDisplayControl()
         {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
+            Stopwatch phaseStopwatch = Stopwatch.StartNew();
             LastGenControl = new ObservableCollection<DeviceService>();
+            List<IDisPlayControl> displayControls = new() { FlowEngineManager.GetInstance().DisplayFlow };
             ResetCopilotDisplayDeviceMap();
-            DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -122,26 +122,38 @@ namespace ColorVision.Engine.Services
                             if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                             {
                                 _copilotDisplayDevices[disPlayControl] = device;
-                                DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
+                                displayControls.Add(disPlayControl);
                             }
                         }
                     }
                 }
             }
             LastGenControl = DeviceServices;
+            long controlCreationMilliseconds = phaseStopwatch.ElapsedMilliseconds;
 
-            DisPlayManager.GetInstance().RestoreControl();
+            phaseStopwatch.Restart();
+            DisPlayManager.GetInstance().ReplaceControls(displayControls);
+            long panelBuildMilliseconds = phaseStopwatch.ElapsedMilliseconds;
             DisPlayManager_SelectedControlChanged(this, EventArgs.Empty);
+            totalStopwatch.Stop();
+            log.Info($"Device display controls generated. Controls={displayControls.Count}, " +
+                $"Creation={controlCreationMilliseconds}ms, PanelBuild={panelBuildMilliseconds}ms, " +
+                $"Total={totalStopwatch.ElapsedMilliseconds}ms.");
         }
 
 
         public void LoadServices()
         {
+            Stopwatch totalStopwatch = Stopwatch.StartNew();
             ClearCurrentCopilotDeviceContext();
             ResetCopilotDisplayDeviceMap();
             LastGenControl?.Clear();
+            Stopwatch phaseStopwatch = Stopwatch.StartNew();
             List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
+            long dictionaryLoadMs = phaseStopwatch.ElapsedMilliseconds;
+            ServiceResourceSnapshot resourceSnapshot = LoadServiceResourceSnapshot();
 
+            phaseStopwatch.Restart();
             TypeServices.Clear();
             foreach (var sysDictionaryModel in SysDictionaryModels)
             {
@@ -160,24 +172,31 @@ namespace ColorVision.Engine.Services
 
             foreach (var typeService1 in TypeServices)
             {
-                List<SysResourceModel> sysResourceModelServices = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type",(int)typeService1.ServiceTypes }, { "pid",null} ,{ "tenant_id", 0}, { "is_delete", 0} });
-                foreach (var sysResourceModel in sysResourceModelServices)
+                foreach (SysResourceModel sysResourceModel in resourceSnapshot.GetRootServices((int)typeService1.ServiceTypes))
                 {
                     TerminalService terminalService = new TerminalService(sysResourceModel);
                     typeService1.AddChild(terminalService);
                     TerminalServices.Add(terminalService);
                 }
             }
+            long terminalBuildMs = phaseStopwatch.ElapsedMilliseconds;
 
+            phaseStopwatch.Restart();
+            Dictionary<ServiceTypes, (int Count, long Milliseconds)> deviceCreationStats = new();
             DeviceServices.Clear();
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var terminalService in TerminalServices)
             {
-                var sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == terminalService.SysResourceModel.Id && it.TenantId == 0 && it.IsEnable == true && it.IsDelete == false).ToList();
-                foreach (var sysResourceModel in sysResourceModels)
+                foreach (SysResourceModel sysResourceModel in resourceSnapshot
+                    .GetActiveChildren(terminalService.SysResourceModel.Id)
+                    .Where(resource => resource.TenantId == 0))
                 {
+                    Stopwatch deviceStopwatch = Stopwatch.StartNew();
                     DeviceService? deviceService = DeviceServiceFactoryRegistry.CreateService(sysResourceModel);
+                    deviceStopwatch.Stop();
+                    ServiceTypes serviceType = (ServiceTypes)sysResourceModel.Type;
+                    deviceCreationStats.TryGetValue(serviceType, out (int Count, long Milliseconds) currentStats);
+                    deviceCreationStats[serviceType] = (currentStats.Count + 1, currentStats.Milliseconds + deviceStopwatch.ElapsedMilliseconds);
 
                     if (deviceService != null  )
                     {
@@ -186,14 +205,15 @@ namespace ColorVision.Engine.Services
                     }
                 }
             }
+            long deviceBuildMs = phaseStopwatch.ElapsedMilliseconds;
 
+            phaseStopwatch.Restart();
             GroupResources.Clear();
 
 
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = Db.Queryable<SysResourceModel>().Where(it => it.Pid == deviceService.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
-                foreach (var sysResourceModel in sysResourceModels)
+                foreach (SysResourceModel sysResourceModel in resourceSnapshot.GetActiveChildren(deviceService.SysResourceModel.Id))
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
@@ -214,11 +234,130 @@ namespace ColorVision.Engine.Services
                 }
             }
 
-            foreach (var groupResource in GroupResources)
+            foreach (GroupResource groupResource in GroupResources.ToArray())
             {
-                LoadgroupResource(groupResource);
+                LoadGroupResource(groupResource, resourceSnapshot, new HashSet<int>());
             }
+            long childResourceBuildMs = phaseStopwatch.ElapsedMilliseconds;
             ServiceChanged?.Invoke(this, new EventArgs());
+            totalStopwatch.Stop();
+            string deviceTimings = string.Join(", ", deviceCreationStats
+                .OrderByDescending(item => item.Value.Milliseconds)
+                .Select(item => $"{item.Key}={item.Value.Count}/{item.Value.Milliseconds}ms"));
+            log.Info($"Service hierarchy loaded. Types={TypeServices.Count}, Terminals={TerminalServices.Count}, Devices={DeviceServices.Count}, Groups={GroupResources.Count}, Dictionary={dictionaryLoadMs}ms, Terminals={terminalBuildMs}ms, Devices={deviceBuildMs}ms [{deviceTimings}], Children={childResourceBuildMs}ms, Total={totalStopwatch.ElapsedMilliseconds}ms.");
+        }
+
+        private static ServiceResourceSnapshot LoadServiceResourceSnapshot()
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            using var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = MySqlControl.GetConnectionString(),
+                DbType = SqlSugar.DbType.MySql,
+                IsAutoCloseConnection = true
+            });
+
+            List<SysResourceModel> rootServices = db.Queryable<SysResourceModel>()
+                .Where(resource => resource.Pid == null && resource.TenantId == 0 && resource.IsDelete == false)
+                .ToList();
+            List<SysResourceModel> activeChildren = db.Queryable<SysResourceModel>()
+                .Where(resource => resource.Pid != null && resource.IsEnable == true && resource.IsDelete == false)
+                .ToList();
+            List<SysResourceGoupModel> groupLinks = db.Queryable<SysResourceGoupModel>().ToList();
+            int[] linkedResourceIds = groupLinks
+                .Select(link => link.ResourceId)
+                .Distinct()
+                .ToArray();
+            List<SysResourceModel> linkedResources = linkedResourceIds.Length == 0
+                ? new List<SysResourceModel>()
+                : db.Queryable<SysResourceModel>()
+                    .Where(resource => linkedResourceIds.Contains(resource.Id))
+                    .ToList();
+
+            stopwatch.Stop();
+            log.Info($"Service resource snapshot loaded. Roots={rootServices.Count}, ActiveChildren={activeChildren.Count}, GroupLinks={groupLinks.Count}, Queries=4, Took={stopwatch.ElapsedMilliseconds} ms.");
+            return new ServiceResourceSnapshot(rootServices, activeChildren, groupLinks, linkedResources);
+        }
+
+        private void LoadGroupResource(
+            GroupResource groupResource,
+            ServiceResourceSnapshot snapshot,
+            HashSet<int> ancestorGroupIds)
+        {
+            int groupId = groupResource.SysResourceModel.Id;
+            if (!ancestorGroupIds.Add(groupId))
+            {
+                log.Warn($"Skip cyclic service group reference at resource {groupId}.");
+                return;
+            }
+
+            try
+            {
+                foreach (SysResourceModel sysResourceModel in snapshot.GetGroupItems(groupId))
+                {
+                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                    {
+                        GroupResource nestedGroup = new(sysResourceModel);
+                        LoadGroupResource(nestedGroup, snapshot, ancestorGroupIds);
+                        groupResource.AddChild(nestedGroup);
+                        GroupResources.Add(nestedGroup);
+                    }
+                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 50)
+                    {
+                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                        groupResource.AddChild(calibrationResource);
+                    }
+                    else
+                    {
+                        ServiceBase serviceResource = new(sysResourceModel);
+                        groupResource.AddChild(serviceResource);
+                    }
+                }
+            }
+            finally
+            {
+                ancestorGroupIds.Remove(groupId);
+            }
+        }
+
+        private sealed class ServiceResourceSnapshot
+        {
+            private readonly ILookup<int, SysResourceModel> _rootServicesByType;
+            private readonly ILookup<int, SysResourceModel> _activeChildrenByParentId;
+            private readonly Dictionary<int, IReadOnlyList<SysResourceModel>> _groupItemsByGroupId;
+
+            public ServiceResourceSnapshot(
+                IEnumerable<SysResourceModel> rootServices,
+                IEnumerable<SysResourceModel> activeChildren,
+                IEnumerable<SysResourceGoupModel> groupLinks,
+                IEnumerable<SysResourceModel> linkedResources)
+            {
+                _rootServicesByType = rootServices.ToLookup(resource => resource.Type);
+                _activeChildrenByParentId = activeChildren
+                    .Where(resource => resource.Pid.HasValue)
+                    .ToLookup(resource => resource.Pid!.Value);
+
+                Dictionary<int, SysResourceModel> resourcesById = linkedResources
+                    .GroupBy(resource => resource.Id)
+                    .ToDictionary(group => group.Key, group => group.First());
+                _groupItemsByGroupId = groupLinks
+                    .GroupBy(link => link.GroupId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => (IReadOnlyList<SysResourceModel>)group
+                            .Where(link => resourcesById.ContainsKey(link.ResourceId))
+                            .Select(link => resourcesById[link.ResourceId])
+                            .ToArray());
+            }
+
+            public IEnumerable<SysResourceModel> GetRootServices(int serviceType) => _rootServicesByType[serviceType];
+
+            public IEnumerable<SysResourceModel> GetActiveChildren(int parentId) => _activeChildrenByParentId[parentId];
+
+            public IEnumerable<SysResourceModel> GetGroupItems(int groupId) =>
+                _groupItemsByGroupId.TryGetValue(groupId, out IReadOnlyList<SysResourceModel>? resources)
+                    ? resources
+                    : Array.Empty<SysResourceModel>();
         }
 
         internal bool HasCurrentCopilotDeviceSurface()

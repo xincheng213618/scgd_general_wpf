@@ -32,6 +32,7 @@ public class POIReviseNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -46,6 +47,7 @@ public class POIReviseNode : CVBaseServerNodeHub
 		{
 			_Output = value;
 			m_ctrl_out_temp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -60,6 +62,7 @@ public class POIReviseNode : CVBaseServerNodeHub
 		{
 			_POIPointName = value;
 			m_ctrl_poi.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -73,6 +76,7 @@ public class POIReviseNode : CVBaseServerNodeHub
 		set
 		{
 			_IsSelfResultRevise = value;
+			OnPropertyChanged();
 		}
 	}
 

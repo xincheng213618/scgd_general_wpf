@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Win32;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.ServiceProcess;
 
@@ -83,9 +84,13 @@ internal sealed class ServiceHostCommandHandler
                 "write-demo-marker" => WriteDemoMarker(request.RequestId),
                 "self-update" => SelfUpdate(request),
                 "prepare-application-update" => PrepareApplicationUpdateAccess(request, context),
+                "begin-application-update-scan-protection" => ApplicationUpdateScanProtectionService.Default.Begin(request, context),
+                "complete-application-update-scan-protection" => ApplicationUpdateScanProtectionService.Default.Complete(request, context),
                 "run-maintenance-task" => RunMaintenanceTask(request, GetRequiredDataValue(request, "taskId")),
                 "register-file-associations" => RunMaintenanceTask(request, "register-file-associations"),
                 "firewall-allow-application" => FirewallCommandService.AllowApplication(request),
+                "registry-set-values" => RegistryCommandService.SetValues(request),
+                "registry-delete-key" => RegistryCommandService.DeleteKey(request),
                 "install-mysql-from-zip" => InstallMySqlFromZip(request),
                 "install-existing-mysql-service" => RepairMySqlService(request),
                 "repair-mysql-service" => RepairMySqlService(request),
@@ -95,6 +100,10 @@ internal sealed class ServiceHostCommandHandler
                 "service-stop" => StopWindowsService(request),
                 "service-restart" => RestartWindowsService(request),
                 "service-terminate" => TerminateWindowsService(request),
+                "com0com-status" => Com0ComCommandService.GetStatus(request, includePairs: false),
+                "com0com-list" => Com0ComCommandService.GetStatus(request, includePairs: true),
+                "com0com-create-pair" => Com0ComCommandService.CreatePair(request),
+                "com0com-delete-pair" => Com0ComCommandService.DeletePair(request),
                 "register-thumbnail" => RunMaintenanceTask(request, "register-thumbnail"),
                 "unregister-thumbnail" => RunMaintenanceTask(request, "unregister-thumbnail"),
                 _ => ServiceHostResponse.FromObject(request.RequestId, false, $"Unsupported command: {command}"),
@@ -242,6 +251,19 @@ internal sealed class ServiceHostCommandHandler
         Version? currentVersion = GetExecutableVersion(currentExe);
         if (sourceVersion != null && currentVersion != null && sourceVersion < currentVersion)
             return ServiceHostResponse.FromObject(requestId, false, $"Refusing to downgrade service host: {currentVersion} -> {sourceVersion}");
+        if (sourceVersion != null
+            && currentVersion != null
+            && sourceVersion == currentVersion
+            && AreServiceHostBinariesCurrent(sourceExe, currentExe))
+        {
+            return ServiceHostResponse.FromObject(requestId, true, "service host is already current", new
+            {
+                packageDirectory,
+                installedDirectory = GetInstallDirectory(),
+                sourceVersion = sourceVersion.ToString(),
+                currentVersion = currentVersion.ToString(),
+            });
+        }
 
         string updateDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -331,6 +353,16 @@ internal sealed class ServiceHostCommandHandler
             TryDeleteDirectory(stagedDirectory);
             throw;
         }
+    }
+
+    internal static bool AreServiceHostBinariesCurrent(string sourceExecutable, string installedExecutable)
+    {
+        string sourceAssembly = Path.ChangeExtension(sourceExecutable, ".dll");
+        string installedAssembly = Path.ChangeExtension(installedExecutable, ".dll");
+        return File.Exists(sourceAssembly)
+            && File.Exists(installedAssembly)
+            && SHA256.HashData(File.ReadAllBytes(sourceAssembly))
+                .SequenceEqual(SHA256.HashData(File.ReadAllBytes(installedAssembly)));
     }
 
     private static void TryDeleteDirectory(string directory)
@@ -1031,6 +1063,16 @@ internal sealed class ServiceHostCommandHandler
             "} catch {",
             "    Write-Step (\"Self update failed: \" + $_.Exception.Message)",
             "    $exitCode = 1",
+            "    try {",
+            "        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue",
+            "        if ($service -and $service.Status -ne 'Running') {",
+            "            Start-Service -Name $serviceName -ErrorAction Stop",
+            "            $service.WaitForStatus('Running', [TimeSpan]::FromSeconds(30))",
+            "        }",
+            "        Write-Step \"Service host restarted after failed self update.\"",
+            "    } catch {",
+            "        Write-Step (\"Failed to restart service host after self update failure: \" + $_.Exception.Message)",
+            "    }",
             "} finally {",
             "    Remove-Item -LiteralPath $source -Recurse -Force -ErrorAction SilentlyContinue",
             "    Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",

@@ -11,9 +11,10 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         public override Task Initialize()
         {
-            MenuItemManagerService.ApplySettings();
-
-            MenuManager.GetInstance().RebuildAllMenus();
+            if (MenuItemManagerService.ApplySettings())
+            {
+                MenuManager.GetInstance().RebuildAllMenus();
+            }
 
             return Task.CompletedTask;
         }

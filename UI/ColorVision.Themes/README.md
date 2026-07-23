@@ -4,13 +4,13 @@
 
 ## 功能定位
 
-主题管理和样式系统，提供五种预设主题（系统/浅色/深色/粉色/青色）、自定义控件、值转换器和窗口样式。
+主题管理和样式系统，提供三种预设主题（系统/浅色/深色）、自定义控件、值转换器和窗口样式。
 
 ## 主要功能
 
 ### 主题管理
 - **ThemeManager** — 主题切换核心类，支持运行时动态切换
-- **五种主题** — UseSystem / Light / Dark / Pink / Cyan
+- **三种主题** — UseSystem / Light / Dark
 - **系统主题跟随** — 自动适配 Windows 系统主题
 - **标题栏颜色** — SetWindowTitleBarColor 匹配主题
 - **配置持久化** — 主题选择自动保存
@@ -21,8 +21,6 @@
 | `Base.xaml` | 基础共享样式 |
 | `Dark.xaml` | 深色主题 |
 | `White.xaml` | 浅色主题 |
-| `Pink.xaml` | 粉色主题（标题栏 #E8A6C1） |
-| `Cyan.xaml` | 青色主题（标题栏 #00796B） |
 | `Menu.xaml` / `GroupBox.xaml` / `Icons.xaml` | 通用控件样式 |
 
 ### 自定义控件

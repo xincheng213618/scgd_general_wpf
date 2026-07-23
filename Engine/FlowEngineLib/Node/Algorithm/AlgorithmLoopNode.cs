@@ -19,6 +19,7 @@ public class AlgorithmLoopNode : CVBaseLoopServerNode<AlgorithmNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

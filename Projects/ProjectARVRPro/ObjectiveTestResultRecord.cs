@@ -57,7 +57,9 @@ namespace ProjectARVRPro
         {
             if (result == null) return false;
             return HasFovData(result.W51TestResult?.HorizontalFieldOfViewAngle, result.W51TestResult?.VerticalFieldOfViewAngle, result.W51TestResult?.DiagonalFieldOfViewAngle)
-                || HasFovData(result.W255TestResult?.HorizontalFieldOfViewAngle, result.W255TestResult?.VerticalFieldOfViewAngle, result.W255TestResult?.DiagonalFieldOfViewAngle);
+                || HasFovData(result.W255TestResult?.HorizontalFieldOfViewAngle, result.W255TestResult?.VerticalFieldOfViewAngle, result.W255TestResult?.DiagonalFieldOfViewAngle)
+                || result.FieldOfViewTestResults?.Values.Any(item =>
+                    item != null && HasFovData(item.HorizontalFieldOfViewAngle, item.VerticalFieldOfViewAngle, item.DiagonalFieldOfViewAngle)) == true;
         }
 
         private static bool HasFovData(ObjectiveTestItem? horizontal, ObjectiveTestItem? vertical, ObjectiveTestItem? diagonal)

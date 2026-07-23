@@ -25,7 +25,7 @@ namespace ColorVision.Solution.Explorer
             SolutionExplorer solutionExplorer,
             SolutionItemDefinition definition,
             string fullPath)
-            : base(SolutionNodeFactory.CreateFileMeta(new FileInfo(fullPath)))
+            : base(new FileInfo(fullPath))
         {
             _solutionExplorer = solutionExplorer;
             Definition = definition;
@@ -47,6 +47,7 @@ namespace ColorVision.Solution.Explorer
             FileInfo = new FileInfo(fullPath);
             FullPath = FileInfo.FullName;
             Name1 = FileInfo.Exists ? FileInfo.Name : $"{FileInfo.Name} (缺失)";
+            Icon = Common.NativeMethods.FileIcon.GetFileIconImageSource(FileInfo.FullName);
             CanCopy = FileInfo.Exists;
             NotifyPropertyChanged(nameof(Name));
             NotifyPropertyChanged(nameof(FileInfo));

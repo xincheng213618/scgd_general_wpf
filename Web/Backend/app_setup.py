@@ -6,6 +6,7 @@ Extracted from app.py to keep the main module as a thin assembly layer.
 
 from __future__ import annotations
 
+import atexit
 import json
 import sqlite3
 from pathlib import Path
@@ -73,6 +74,12 @@ def _dynamic_config():
     return _app.CONFIG
 
 
+def _dynamic_db_path():
+    """Read the active DB path so queued analytics never cross test databases."""
+    import app as _app
+    return Path(_app.DB_PATH)
+
+
 def create_app_and_context():
     """Create Flask app, CacheManager, services, and context.
 
@@ -97,6 +104,17 @@ def create_app_and_context():
     conn = cache.get_db()
     ensure_schema_version(conn)
     conn.close()
+
+    from services.access_analytics import AccessAnalyticsRecorder
+
+    access_recorder = AccessAnalyticsRecorder(
+        queue_capacity=int(config.get("access_analytics_queue_size", 4096) or 4096),
+        batch_size=int(config.get("access_analytics_batch_size", 128) or 128),
+        flush_interval_seconds=float(
+            config.get("access_analytics_flush_interval_seconds", 0.5) or 0.5
+        ),
+    )
+    atexit.register(access_recorder.close)
 
     # Helpers — get_db reads from app.DB_PATH so test mutations are reflected
     def get_db():
@@ -182,6 +200,7 @@ def create_app_and_context():
         "get_db": get_db, "get_upload_auth": get_upload_auth, "json_error": json_error,
         "require_upload_auth": require_upload_auth, "read_text_file": read_text_file,
         "render_markdown_cached": render_markdown_cached,
+        "access_recorder": access_recorder,
     }
 
 
@@ -198,7 +217,7 @@ def register_error_handlers(app):
         return exc
 
 
-def register_slow_request_logging(app, ctx: MarketplaceContext):
+def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=None):
     import time as _time
 
     @app.before_request
@@ -218,6 +237,43 @@ def register_slow_request_logging(app, ctx: MarketplaceContext):
                 })
                 if len(ctx.slow_requests) > 100:
                     ctx.slow_requests.pop(0)
+            if access_recorder is not None:
+                try:
+                    from services.access_analytics import (
+                        build_access_event,
+                        should_record_access,
+                    )
+
+                    route_rule = request.url_rule.rule if request.url_rule is not None else None
+                    config = _dynamic_config()
+                    if (
+                        config.get("access_analytics_enabled", True)
+                        and should_record_access(route_rule, request.method)
+                    ):
+                        content_length = 0
+                        raw_content_length = response.headers.get("Content-Length")
+                        if raw_content_length:
+                            try:
+                                content_length = max(0, int(raw_content_length))
+                            except (TypeError, ValueError):
+                                content_length = 0
+                        event = build_access_event(
+                            route_template=route_rule,
+                            method=request.method,
+                            status_code=response.status_code,
+                            duration_ms=duration_ms,
+                            response_bytes=content_length,
+                            secret_key=str(config.get("secret_key", "")),
+                            remote_addr=request.remote_addr,
+                            user_agent=request.headers.get("User-Agent", ""),
+                        )
+                        access_recorder.submit(
+                            event,
+                            db_path=_dynamic_db_path(),
+                            synchronous=bool(app.config.get("TESTING")),
+                        )
+                except Exception as exc:
+                    print(f"[access_analytics] request event dropped: {exc}")
         return response
 
 
@@ -373,6 +429,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_plugin_catalog_from_index=lambda c, dc: __import__("services.plugin_index", fromlist=["get_plugin_catalog_from_index"]).get_plugin_catalog_from_index(c, dc),
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
+        get_access_recorder_status=helpers["access_recorder"].status,
     ))
 
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes

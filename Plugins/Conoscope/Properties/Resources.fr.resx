@@ -1080,12 +1080,6 @@ Nombre : {2}</value>
   <data name="ThemeDark" xml:space="preserve">
     <value>Sombre</value>
   </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>Rose</value>
-  </data>
-  <data name="ThemeCyan" xml:space="preserve">
-    <value>Cyan</value>
-  </data>
   <data name="WindowTitleConoscope" xml:space="preserve">
     <value>Conoscope</value>
   </data>

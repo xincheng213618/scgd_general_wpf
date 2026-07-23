@@ -7,7 +7,7 @@
     xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-    mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Closing="Window_Closing"
+    mc:Ignorable="d" Title="COLOR VISION" Width="1400" Height="900" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
     Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -41,7 +41,7 @@
             </Grid.ColumnDefinitions>
 
             <!--  Left Panel - Controls  -->
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Column="0" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="10,5">
                     <TextBlock Margin="0,0,0,6" FontSize="16" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
 
@@ -71,10 +71,11 @@
                     </DockPanel>
 
                     <DockPanel Margin="0,3">
-                        <Button x:Name="btn_RefreshCameraId" Width="56" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" />
+                        <Button x:Name="btn_RefreshCameraId" Width="64" Margin="5,0,0,0" Padding="5,2" Click="RefreshCameraIds_Click" Content="{x:Static properties:Resources.Refresh}" DockPanel.Dock="Right" ToolTip="{x:Static properties:Resources.RefreshDeviceList}" />
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CameraID}" />
                         <ComboBox x:Name="cb_CM_ID" IsEditable="True" SelectionChanged="cb_CM_ID_SelectionChanged" />
                     </DockPanel>
+                    <ProgressBar x:Name="CameraIdSearchProgress" Height="2" Margin="78,-1,0,3" IsIndeterminate="True" Visibility="Collapsed" />
 
                     <DockPanel Margin="0,3">
                         <TextBlock Width="78" Text="{x:Static properties:Resources.CaptureMode}" />
@@ -138,7 +139,7 @@
                         <DockPanel Margin="0,0,0,3">
                             <TextBlock MinWidth="50" Margin="0,0,5,0" Text="{x:Static properties:Resources.Gain}" />
                             <TextBox MinWidth="60" DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" />
-                            <hc:PreviewSlider TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1" Value="{Binding DisplayConfig.Gain}" Minimum="{Binding Config.GainMin}" Maximum="{Binding Config.GainMax}" />
+                            <hc:PreviewSlider TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1" Value="{Binding DisplayConfig.Gain}" Minimum="{Binding PhyCamera.Config.CameraParameterLimit.GainMin, FallbackValue=0, TargetNullValue=0}" Maximum="{Binding PhyCamera.Config.CameraParameterLimit.GainMax, FallbackValue=100, TargetNullValue=100}" />
                         </DockPanel>
 
                         <StackPanel Visibility="{Binding Config.IsExpThree, Converter={StaticResource bool2VisibilityConverter1}}">

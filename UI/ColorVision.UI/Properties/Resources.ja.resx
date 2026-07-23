@@ -526,4 +526,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>Checkbox</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前にプログラムのスナップショットを作成</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>有効にすると、アプリ、プラグイン、または統合更新の前にプログラム全体のスナップショットを1つ作成します。更新時間が長くなる場合があります。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>システム プロキシを使用しない</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>有効にすると、更新確認とマーケットプレイスの要求は公開サービスへ直接接続します。無効の場合は Windows のシステム プロキシを使用します。変更は次の要求から適用されます。</value>
+  </data>
 </root>

@@ -20,6 +20,9 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetBufferXYZ(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] rawArray);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_SetBufferXYZ(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, IntPtr rawBuffer);
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_ReleaseBuffer(IntPtr handle);
 
@@ -32,6 +35,12 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetFilterXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetFilterXYZ(IntPtr handle, bool bEnable,int nType, float fthreshold);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetPercentFilter", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_SetPercentFilter(IntPtr handle, bool bEnable, float maxPercent);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBymnp", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_SetBymnp(IntPtr handle, bool bEnable, float m, float n, float p);
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
@@ -90,6 +99,9 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetxyuvCCTWaveCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_GetxyuvCCTWaveCircle(IntPtr handle, int pX, int pY, ref float x, ref float y, ref float u, ref float v, ref float CCT, ref float Wave, double nRadius = 3);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetxyuvCCTWaveRect", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_GetxyuvCCTWaveRect(IntPtr handle, int pX, int pY, ref float x, ref float y, ref float u, ref float v, ref float CCT, ref float Wave, int width, int height);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetxyuvCCTWave", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_GetxyuvCCTWave(IntPtr handle, int pX, int pY, ref float x, ref float y, ref float u, ref float v, ref float CCT, ref float Wave);

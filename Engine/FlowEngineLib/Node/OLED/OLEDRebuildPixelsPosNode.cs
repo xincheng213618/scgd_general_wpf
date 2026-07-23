@@ -26,6 +26,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -41,6 +42,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeHub
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -54,6 +56,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeHub
 		set
 		{
 			_Channel = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -68,6 +71,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeHub
 		{
 			_OutputTemplateName = value;
 			m_ctrl_outtemp.Value = value;
+			OnPropertyChanged();
 		}
 	}
 

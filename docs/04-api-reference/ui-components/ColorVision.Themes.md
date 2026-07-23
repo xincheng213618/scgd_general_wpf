@@ -17,11 +17,11 @@
 
 | 能力 | 当前入口 | 说明 |
 | --- | --- | --- |
-| 主题枚举 | `Theme` | 仅有 `UseSystem`、`Light`、`Dark`、`Pink`、`Cyan` |
+| 主题枚举 | `Theme` | 仅有 `UseSystem`、`Light`、`Dark` |
 | 主题切换 | `ThemeManager` | 维护 `CurrentTheme`、`CurrentUITheme`，装载资源字典并触发变更事件 |
 | 应用入口 | `ThemeManagerExtensions` | `Application.ApplyTheme`、`Application.ForceApplyTheme` |
 | 窗口外观 | `Window.ApplyCaption`、`BaseWindow` | 更新 DWM 标题栏颜色和主题图标 |
-| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml`、`Pink.xaml`、`Cyan.xaml` | 固定资源字典集合 |
+| 主题资源 | `Themes/Base.xaml`、`Dark.xaml`、`White.xaml` | 固定资源字典集合 |
 | 附带控件 | `Controls/`、`Converter/`、`Utilities/` | 主题库内复用控件、转换器和工具 |
 
 ## 主题链路
@@ -42,11 +42,11 @@
 | 监听事件 | `SystemEvents.UserPreferenceChanged`、`SystemParameters.StaticPropertyChanged` |
 | 应用主题判断 | `Personalize\\AppsUseLightTheme` |
 | 系统主题判断 | `Personalize\\SystemUsesLightTheme` |
-| 标题栏 | 深色启用沉浸式暗色；粉色/青色设置标题栏和边框色；浅色回到系统默认 |
+| 标题栏 | 深色启用沉浸式暗色；浅色回到系统默认 |
 
 ## 边界
 
-- 主题持久化、菜单和快捷键入口在 `UI/ColorVision.UI/Themes`，不是本项目单独完成。
+- 主题持久化、预览卡编辑器、菜单和快捷键入口在 `UI/ColorVision.UI/Themes`，不是本项目单独完成。
 - `ThemesHotKey` 负责主题菜单、`Ctrl + Shift + T` 轮换和写入 `ThemeConfig.Instance.Theme`。
 - 旧文档提到的 `Theme.Custom`、`ThemeManager.ResourceDictionaryCustom`、`ThemeConfig.FollowSystem` 当前不存在。
 - 新增主题不是只加一个 XAML，还要改枚举、资源列表、标题栏逻辑、图标策略和包资源。
@@ -60,7 +60,7 @@
 | 第三方依赖 | `HandyControl` 版本和宿主输出目录依赖一致 |
 | 资源字典 | 每个内置主题切换时都能加载对应 XAML |
 | 运行时切换 | 启动后和运行时调用 `ApplyTheme` / `ForceApplyTheme` 都能更新全局资源 |
-| 窗口外观 | 深色、浅色、粉色、青色标题栏和窗口图标符合当前实现 |
+| 窗口外观 | 深色、浅色标题栏和窗口图标符合当前实现 |
 | 系统跟随 | Windows 主题变化后，`UseSystem` 能按注册表和系统事件更新 |
 | 包内资源 | `ColorVision.ico`、`ColorVision1.ico`、`uploadbg.avif` 不丢失 |
 
@@ -70,5 +70,5 @@
 | --- | --- |
 | 理解主题切换 | `ThemeManager.cs`、`ThemeManagerExtensions.cs`、`Theme.cs` |
 | 理解菜单和配置接入 | `UI/ColorVision.UI/Themes/ThemeConfig.cs`、`ThemesHotKey.cs` |
-| 检查主题资源 | `Themes/Base.xaml`、`Themes/Dark.xaml`、`Themes/White.xaml`、`Themes/Pink.xaml`、`Themes/Cyan.xaml` |
+| 检查主题资源 | `Themes/Base.xaml`、`Themes/Dark.xaml`、`Themes/White.xaml` |
 | 判断能否扩展主题 | 先查 `Theme` 枚举和 `ThemeManager`，当前没有开放注册模型 |

@@ -31,6 +31,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		{
 			_Color = value;
 			m_ctrl_color.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -44,6 +45,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -57,6 +59,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			SetFDAType(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -70,6 +73,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			_FixedLEDPoint = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -85,6 +89,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -98,6 +103,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -111,6 +117,7 @@ public class AlgorithmFindLEDNode : CVBaseServerNode
 		set
 		{
 			_ImgPosResultFile = value;
+			OnPropertyChanged();
 		}
 	}
 

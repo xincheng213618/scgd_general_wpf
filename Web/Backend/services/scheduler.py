@@ -63,6 +63,13 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "access_analytics_retention",
+        "name": "Access Analytics Retention",
+        "job_type": "analytics_retention",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
         "id": "startup_index_check",
         "name": "Startup Index Check",
         "job_type": "startup_check",
@@ -134,6 +141,8 @@ def run_job_now(
             summary = _run_artifact_index_check(cache, storage, "tools")
         elif job_id == "cache_cleanup":
             summary = _run_cache_cleanup(cache)
+        elif job_id == "access_analytics_retention":
+            summary = _run_access_analytics_retention(cache, get_db, config_getter)
         elif job_id == "startup_index_check":
             summary = _run_startup_check(cache, storage, get_db)
         else:
@@ -191,12 +200,15 @@ def _run_plugin_index_check(cache: CacheManager, storage: Path, get_db: Callable
 
     db = cache.get_db()
     try:
-        row = db.execute("SELECT signature FROM index_state WHERE scope = 'plugins'").fetchone()
+        row = db.execute(
+            "SELECT signature, status FROM index_state WHERE scope = 'plugins'"
+        ).fetchone()
         stored_sig = row["signature"] if row else ""
+        stored_status = row["status"] if row else ""
     finally:
         db.close()
 
-    if current_sig == stored_sig:
+    if current_sig == stored_sig and stored_status == "ready":
         return "No changes detected"
 
     # Signatures differ - trigger full refresh
@@ -209,7 +221,10 @@ def _run_plugin_index_check(cache: CacheManager, storage: Path, get_db: Callable
         pass
 
     result = refresh_all_plugin_index(cache, storage, download_counts=download_counts)
-    return f"Refreshed: {result['indexed_count']} indexed, {result['deleted_count']} deleted"
+    if result.get("status") == "skipped":
+        return "Plugin refresh already in progress"
+    suffix = "; changes queued for next check" if result.get("changed_during_refresh") else ""
+    return f"Refreshed: {result['indexed_count']} indexed, {result['deleted_count']} deleted{suffix}"
 
 
 def _run_artifact_index_check(cache: CacheManager, storage: Path, scope: str) -> str:
@@ -243,12 +258,19 @@ def _run_artifact_index_check(cache: CacheManager, storage: Path, scope: str) ->
     current_sig = sig_fn(storage)
     state = get_index_state(cache, scope)
     stored_sig = state.get("signature", "") if state else ""
+    stored_status = state.get("status", "") if state else ""
 
-    if current_sig == stored_sig:
+    if current_sig == stored_sig and stored_status == "ready":
         return f"{scope}: No changes detected"
 
     result = refresh_fn(cache, storage)
-    return f"{scope}: Refreshed {result['indexed_count']} items in {result['duration_ms']}ms"
+    if result.get("skipped"):
+        return f"{scope}: Refresh already in progress"
+    suffix = "; changes queued for next check" if result.get("changed_during_refresh") else ""
+    return (
+        f"{scope}: Refreshed {result['indexed_count']} items "
+        f"in {result['duration_ms']}ms{suffix}"
+    )
 
 
 def _run_cache_cleanup(cache: CacheManager) -> str:
@@ -256,15 +278,43 @@ def _run_cache_cleanup(cache: CacheManager) -> str:
     return f"Cleaned {deleted} expired cache entries"
 
 
+def _run_access_analytics_retention(
+    cache: CacheManager,
+    get_db: Callable[[], Any],
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.access_analytics import (
+        prune_access_analytics,
+        prune_access_analytics_backups,
+    )
+
+    config = config_getter()
+    retention_days = int(config.get("access_analytics_retention_days", 90) or 90)
+    result = prune_access_analytics(get_db, retention_days=retention_days)
+    backup_result = prune_access_analytics_backups(
+        cache.db_path.parent,
+        retention_days=retention_days,
+    )
+    if backup_result["errors"]:
+        raise RuntimeError("; ".join(backup_result["errors"][:3]))
+    return (
+        f"Pruned {result['deleted']} live and {backup_result['deleted']} backup "
+        f"access analytics rows before {result['cutoffDay']} "
+        f"across {backup_result['backups']} backups"
+    )
+
+
 def _run_startup_check(cache: CacheManager, storage: Path, get_db: Callable) -> str:
     """If plugin_index is empty, do a full refresh. Also check artifact indexes."""
-    from services.plugin_index import is_plugin_index_populated
+    from services.plugin_index import has_active_packages_missing_hash, is_plugin_index_populated
     from services.artifact_index import startup_check_all_indexes
 
     parts = []
 
     # Plugin index
-    if not is_plugin_index_populated(cache):
+    plugin_index_missing = not is_plugin_index_populated(cache)
+    package_hashes_missing = has_active_packages_missing_hash(cache)
+    if plugin_index_missing or package_hashes_missing:
         from services.plugin_index import refresh_all_plugin_index
         download_counts: dict[str, int] = {}
         try:
@@ -273,7 +323,8 @@ def _run_startup_check(cache: CacheManager, storage: Path, get_db: Callable) -> 
         except Exception:
             pass
         result = refresh_all_plugin_index(cache, storage, download_counts=download_counts)
-        parts.append(f"plugins: {result['indexed_count']}")
+        action = "hashes backfilled" if package_hashes_missing and not plugin_index_missing else "indexed"
+        parts.append(f"plugins: {result['indexed_count']} {action}")
     else:
         parts.append("plugins: already populated")
 

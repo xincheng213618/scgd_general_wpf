@@ -21,6 +21,7 @@ public class OLEDFindPixelDefectsForQuardImgNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -36,6 +37,7 @@ public class OLEDFindPixelDefectsForQuardImgNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -49,6 +51,7 @@ public class OLEDFindPixelDefectsForQuardImgNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

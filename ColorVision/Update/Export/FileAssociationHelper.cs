@@ -1,4 +1,3 @@
-using ColorVision.Common.MVVM;
 using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -29,32 +28,6 @@ namespace ColorVision.Update.Export
         }
     }
 
-    public class RegConfig : ViewModelBase, IConfig
-    {
-        public Version Version { get => _Version; set { _Version = value; OnPropertyChanged(); } }
-        private Version _Version = new(0, 0, 0);
-    }
-
-    public class RegInitialized : MainWindowInitializedBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
-
-        public static Version Version { get; set; } = new(1, 0, 3, 0);
-
-        public override Task Initialize()
-        {
-            RegConfig regConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
-            if (regConfig.Version < Version)
-            {
-                regConfig.Version = Version;
-                ConfigService.Instance.SaveConfigs();
-                log.Info("File association auto registration is disabled; use ColorVisionServiceHost from the update menu.");
-            }
-
-            return Task.CompletedTask;
-        }
-    }
-
     public static class FileAssociationHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));
@@ -64,11 +37,6 @@ namespace ColorVision.Update.Export
 
         private const int SHCNE_ASSOCCHANGED = 0x08000000;
         private const uint SHCNF_IDLIST = 0x0000;
-
-        public static bool RegisterAssociations()
-        {
-            return RegisterAssociationsAsync().GetAwaiter().GetResult();
-        }
 
         public static async Task<bool> RegisterAssociationsAsync()
         {

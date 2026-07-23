@@ -20,7 +20,12 @@ namespace ColorVision.Engine.Templates.BuzProduct
         {
             EditTemplate.SetParam(TemplateParams[index].Value);
         }
-        public EditTemplateBuzProduct EditTemplate { get; set; } = new EditTemplateBuzProduct();
+        private EditTemplateBuzProduct? _editTemplate;
+        public EditTemplateBuzProduct EditTemplate
+        {
+            get => _editTemplate ??= new EditTemplateBuzProduct();
+            set => _editTemplate = value;
+        }
 
         public override UserControl GetUserControl()
         {

@@ -126,24 +126,11 @@ namespace ColorVision
 
             skipNames = skipNames ?? new List<string>();
 
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (IInitializer componentInitialize in AssemblyHandler.GetInstance().LoadImplementations<IInitializer>())
             {
-                try
+                if (!skipNames.Contains(componentInitialize.Name))
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
-                    {
-                        if (Activator.CreateInstance(type) is IInitializer componentInitialize)
-                        {
-                            if (!skipNames.Contains(componentInitialize.Name))
-                            {
-                                _IComponentInitializers.Add(componentInitialize);
-                            }
-                        }
-                    }
-                }
-                catch(Exception ex)
-                {
-                    log.Error(ex);
+                    _IComponentInitializers.Add(componentInitialize);
                 }
             }
 
@@ -441,17 +428,7 @@ namespace ColorVision
                 string feature = parser.GetValue("feature");
                 if (feature != null)
                 {
-                    List<IFeatureLauncher> IFeatureLaunchers = new List<IFeatureLauncher>();
-                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    {
-                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IFeatureLauncher).IsAssignableFrom(t) && !t.IsAbstract))
-                        {
-                            if (Activator.CreateInstance(type) is IFeatureLauncher projects)
-                            {
-                                IFeatureLaunchers.Add(projects);
-                            }
-                        }
-                    }
+                    List<IFeatureLauncher> IFeatureLaunchers = AssemblyHandler.GetInstance().LoadImplementations<IFeatureLauncher>();
                     if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
                     {
                         StartupRegistryChecker.Clear();

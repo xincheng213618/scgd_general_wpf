@@ -107,6 +107,7 @@ namespace ColorVision.UI
                             Name = attr.Name,
                             Description = attr.Description,
                             Section = attr.Section,
+                            Layout = attr.Layout,
                             Type = ConfigSettingType.Property,
                             BindingName = prop.Name,
                             Source = instance,

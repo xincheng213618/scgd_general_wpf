@@ -17,6 +17,7 @@ public class TempCommonSensorNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 

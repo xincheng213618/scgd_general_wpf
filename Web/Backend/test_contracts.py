@@ -302,6 +302,33 @@ class PublicApiContracts(ContractTestBase):
         self.assertTrue(data["docs"]["featured"])
         self.assertTrue(all(item["href"].startswith("/scgd_general_wpf/") for item in data["docs"]["featured"]))
 
+    def test_compact_site_contracts_are_bounded_and_legacy_remains_available(self):
+        self.create_release("1.2.0.1")
+        self.create_release("1.1.0.1", suffix=".zip", in_history=True)
+        (self.storage / "CHANGELOG.md").write_text("## [1.2.0.1]\n- notes", encoding="utf-8")
+
+        legacy_home = self.client.get("/api/site/home").get_json()
+        legacy_releases = self.client.get("/api/site/releases").get_json()
+        compact_home = self.client.get("/api/site/home?view=compact").get_json()
+        compact_releases = self.client.get("/api/site/releases?view=compact&page=1&page_size=20").get_json()
+        compact_changelog = self.client.get("/api/site/changelog?view=compact").get_json()
+
+        self.assertIn("overview", legacy_home)
+        self.assertIn("archived_releases", legacy_releases["app_info"])
+        self.assertIn("android_releases", legacy_releases["app_info"])
+        self.assertIn("items", legacy_releases["archive_visible_groups"][0])
+        self.assertEqual(
+            set(compact_home),
+            {"app_info", "update_summary", "tool_summary", "recent_change_dashboard", "docs"},
+        )
+        self.assertIn("archive_page_item_count", compact_releases)
+        self.assertIn("android_page_item_count", compact_releases)
+        self.assertIn("android_total_item_count", compact_releases)
+        self.assertNotIn("android_releases", compact_releases["app_info"])
+        self.assertTrue(all("items" not in group for group in compact_releases["archive_visible_groups"]))
+        self.assertTrue(all("page_item_count" in group for group in compact_releases["archive_visible_groups"]))
+        self.assertEqual(set(compact_changelog["app_info"]), {"latest_version", "changelog_html"})
+
     def test_api_health_returns_ok(self):
         resp = self.client.get("/api/health")
         self.assertEqual(resp.status_code, 200)

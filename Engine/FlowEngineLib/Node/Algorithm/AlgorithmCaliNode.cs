@@ -4,12 +4,12 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Algorithm;
 
 [STNode("/03_3 校正")]
+[System.Obsolete("Deprecated calibration flow node retained for loading existing flows.")]
 public class AlgorithmCaliNode : CVBaseServerNode
 {
 	private string _OutputFileName;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
-	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowCaliAngleShiftJsonTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -19,6 +19,7 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -34,6 +35,7 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +49,7 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

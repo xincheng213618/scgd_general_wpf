@@ -23,8 +23,8 @@ function queryString(params: Record<string, string | number | undefined>) {
   return text ? `?${text}` : ''
 }
 
-export function getHome() {
-  return getJson<HomePayload>('/api/site/home')
+export function getHome(signal?: AbortSignal) {
+  return getJson<HomePayload>('/api/site/home?view=compact', signal)
 }
 
 export function getReleases(params: {
@@ -32,13 +32,18 @@ export function getReleases(params: {
   branch?: string
   kind?: string
   era?: string
-}) {
-  return getJson<ReleasesPayload>(`/api/site/releases${queryString(params)}`)
+  page?: number
+  page_size?: number
+  android_page?: number
+  android_page_size?: number
+}, signal?: AbortSignal) {
+  return getJson<ReleasesPayload>(`/api/site/releases${queryString({ view: 'compact', ...params })}`, signal)
 }
 
-export function getChangelog() {
-  return getJson<{ app_info: { latest_version?: string; changelog?: string; changelog_html?: string } }>(
-    '/api/site/changelog',
+export function getChangelog(signal?: AbortSignal) {
+  return getJson<{ app_info: { latest_version?: string; changelog_html?: string } }>(
+    '/api/site/changelog?view=compact',
+    signal,
   )
 }
 
@@ -67,7 +72,7 @@ export function getPlugins(params: {
   sortOrder?: string
   page?: number
   pageSize?: number
-}) {
+}, signal?: AbortSignal) {
   return getJson<PluginListResponse>(
     `/api/plugins${queryString({
       Keyword: params.keyword,
@@ -78,15 +83,16 @@ export function getPlugins(params: {
       Page: params.page,
       PageSize: params.pageSize,
     })}`,
+    signal,
   )
 }
 
-export function getPluginCategories() {
-  return getJson<string[]>('/api/plugins/categories')
+export function getPluginCategories(signal?: AbortSignal) {
+  return getJson<string[]>('/api/plugins/categories', signal)
 }
 
-export function getPluginDetail(pluginId: string) {
-  return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`)
+export function getPluginDetail(pluginId: string, signal?: AbortSignal) {
+  return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`, signal)
 }
 
 function getXhrErrorMessage(response: unknown, fallback: string) {

@@ -445,10 +445,5 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private void PropertyEditorClose_Click(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorHelper.HidePropertyEditor();
-        }
-
     }
 }

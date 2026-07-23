@@ -526,4 +526,16 @@
   <data name="ListItemEditor_Checkbox" xml:space="preserve">
     <value>Checkbox</value>
   </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>업데이트 전에 프로그램 스냅샷 만들기</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>사용하면 앱, 플러그인 또는 통합 업데이트 전에 전체 프로그램 스냅샷을 하나 만듭니다. 업데이트 시간이 늘어날 수 있습니다.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>시스템 프록시 사용 안 함</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>사용하면 업데이트 확인 및 마켓플레이스 요청이 공용 서비스에 직접 연결됩니다. 사용하지 않으면 Windows 시스템 프록시를 사용합니다. 변경 사항은 다음 요청부터 적용됩니다.</value>
+  </data>
 </root>

@@ -602,6 +602,13 @@ namespace ProjectARVRPro.Process
                 }
             }
 
+            if (templateProc == null)
+            {
+                templateProc = FindUniqueProcessTemplateByClassName(item.ProcessTypeFullName);
+                if (templateProc != null)
+                    log.Info($"流程类型命名空间已更新: {item.ProcessTypeFullName} -> {templateProc.GetType().FullName}");
+            }
+
             IProcess proc = templateProc?.CreateInstance();
 
             ProcessMeta meta = new ProcessMeta()
@@ -616,6 +623,21 @@ namespace ProjectARVRPro.Process
 
             meta.ApplyConfig();
             return meta;
+        }
+
+        private IProcess? FindUniqueProcessTemplateByClassName(string processTypeFullName)
+        {
+            if (string.IsNullOrWhiteSpace(processTypeFullName))
+                return null;
+
+            int separatorIndex = processTypeFullName.LastIndexOf('.');
+            string className = processTypeFullName[(separatorIndex + 1)..];
+            IProcess[] matches = Processes
+                .Where(process => string.Equals(process.GetType().Name, className, StringComparison.Ordinal))
+                .Take(2)
+                .ToArray();
+
+            return matches.Length == 1 ? matches[0] : null;
         }
 
         private void SavePersistedGroups()

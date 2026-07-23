@@ -38,7 +38,7 @@ namespace ColorVision.Copilot
 
         public bool CanHandle(CopilotAgentRequest request)
         {
-            if (request == null || request.Mode == CopilotAgentMode.Chat)
+            if (request == null || request.Mode is CopilotAgentMode.Chat or CopilotAgentMode.Diagnose)
                 return false;
 
             var context = CopilotLiveContextRegistry.Current;
@@ -54,6 +54,10 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+            if (request.Mode == CopilotAgentMode.Diagnose)
+                return Failure("Template patch preview is unavailable in Diagnose mode.", "Start a separate explicit template-edit request before creating a preview.");
+
             var payloadText = ExtractJsonObject(toolInput?.Query);
             if (string.IsNullOrWhiteSpace(payloadText))
                 return Failure("Template patch input is missing.", "The planner must provide input.query as JSON with proposed_changes, or preview_id plus apply=true.");

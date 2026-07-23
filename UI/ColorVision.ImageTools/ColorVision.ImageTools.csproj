@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-windows7.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <VersionPrefix>1.5.6.1</VersionPrefix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="SqlSugarCore" Version="5.1.4.215" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+    <ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
+    <ProjectReference Include="..\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+    <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
+    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+</Project>

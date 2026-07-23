@@ -703,4 +703,15 @@
   <data name="Treemap_Error" xml:space="preserve"><value>Error</value></data>
   <data name="Treemap_Prompt" xml:space="preserve"><value>Prompt</value></data>
   <data name="Treemap_SelectValidDir" xml:space="preserve"><value>Please select a valid directory first.</value></data>
+  <data name="Wizard_Intro" xml:space="preserve"><value>完成必要的環境檢查和服務設定後即可使用 ColorVision。</value></data>
+  <data name="Wizard_StepProgressFormat" xml:space="preserve"><value>步驟 {0} / {1}</value></data>
+  <data name="Wizard_Required" xml:space="preserve"><value>必需</value></data>
+  <data name="Wizard_Ready" xml:space="preserve"><value>已就緒</value></data>
+  <data name="Wizard_Pending" xml:space="preserve"><value>待設定</value></data>
+  <data name="Wizard_Current" xml:space="preserve"><value>目前步驟</value></data>
+  <data name="Wizard_Working" xml:space="preserve"><value>處理中</value></data>
+  <data name="Wizard_NeedsAttention" xml:space="preserve"><value>需要處理</value></data>
+  <data name="Wizard_Progress" xml:space="preserve"><value>初始化進度</value></data>
+  <data name="Wizard_Steps" xml:space="preserve"><value>設定步驟</value></data>
+  <data name="Wizard_RequiredStepPrompt" xml:space="preserve"><value>請先完成此必需步驟後再繼續。</value></data>
 </root>

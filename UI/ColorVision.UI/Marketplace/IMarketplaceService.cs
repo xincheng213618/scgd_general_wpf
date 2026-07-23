@@ -25,12 +25,6 @@ namespace ColorVision.UI.Marketplace
         Task<string?> GetLatestVersionAsync(string pluginId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Batch check versions for multiple plugins at once.
-        /// Significantly reduces network overhead compared to checking one at a time.
-        /// </summary>
-        Task<Dictionary<string, string?>> BatchVersionCheckAsync(IEnumerable<string> pluginIds, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Get the download URL for a specific plugin version.
         /// </summary>
         string GetDownloadUrl(string pluginId, string version);
@@ -127,4 +121,5 @@ namespace ColorVision.UI.Marketplace
         public DateTime CreatedAt { get; set; }
         public string? Source { get; set; }
     }
+
 }

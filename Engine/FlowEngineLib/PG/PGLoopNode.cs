@@ -19,6 +19,7 @@ public class PGLoopNode : CVBaseLoopServerNode<PGNodeProperty>
 		{
 			_params = value;
 			updateUI();
+			OnPropertyChanged();
 		}
 	}
 

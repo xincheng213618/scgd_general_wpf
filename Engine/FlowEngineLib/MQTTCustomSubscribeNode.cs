@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/10 MQTT")]
+[System.Obsolete("Deprecated MQTT flow node retained for loading existing flows.")]
 internal class MQTTCustomSubscribeNode : MQTTBaseNode
 {
 	private string _Topic;
@@ -21,6 +22,7 @@ internal class MQTTCustomSubscribeNode : MQTTBaseNode
 		set
 		{
 			_Topic = value;
+			OnPropertyChanged();
 		}
 	}
 

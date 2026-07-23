@@ -192,6 +192,135 @@ def build_releases_page_context(
     }
 
 
+def _compact_release_app_info(app_info: dict[str, Any]) -> dict[str, Any]:
+    """Keep only bounded current release payloads and aggregate counters."""
+    current_fields = {
+        "latest_version",
+        "latest_release",
+        "latest_android_release",
+        "current_releases",
+        "current_android_releases",
+        "archived_android_releases",
+    }
+    return {
+        key: value
+        for key, value in app_info.items()
+        if key in current_fields or key.endswith("_count")
+    }
+
+
+def build_compact_releases_page_context(
+    app_info: dict[str, Any],
+    *,
+    major_minor: str = "",
+    branch: str = "",
+    kind: str = "",
+    era: str = "",
+    page: int = 1,
+    page_size: int = 100,
+    android_page: int = 1,
+    android_page_size: int = 100,
+) -> dict[str, Any]:
+    """Build a bounded release archive payload without duplicating group items."""
+    major_minor = major_minor.strip()
+    branch = branch.strip()
+    kind = kind.strip().upper()
+    era = era.strip().lower()
+    has_filters = any((major_minor, branch, kind, era))
+    page = max(1, int(page))
+    page_size = max(1, int(page_size))
+    android_page = max(1, int(android_page))
+    android_page_size = max(1, int(android_page_size))
+
+    filtered_groups: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    for group in app_info.get("archive_timeline_groups", []):
+        visible_items = _group_matches_filters(
+            group,
+            major_minor=major_minor,
+            branch=branch,
+            kind=kind,
+            era=era,
+        )
+        if visible_items:
+            filtered_groups.append((group, visible_items))
+
+    visible_item_count = sum(len(items) for _, items in filtered_groups)
+    total_pages = (visible_item_count + page_size - 1) // page_size if visible_item_count else 0
+    effective_page = min(page, max(total_pages, 1))
+    page_start = (effective_page - 1) * page_size
+    page_end = min(page_start + page_size, visible_item_count)
+
+    visible_groups: list[dict[str, Any]] = []
+    cursor = 0
+    for group, group_items in filtered_groups:
+        group_start = cursor
+        group_end = cursor + len(group_items)
+        cursor = group_end
+        overlap_start = max(page_start, group_start)
+        overlap_end = min(page_end, group_end)
+        if overlap_start >= overlap_end:
+            continue
+
+        page_items = group_items[overlap_start - group_start:overlap_end - group_start]
+        group_copy = {key: value for key, value in group.items() if key != "items"}
+        group_copy["visible_items"] = page_items
+        group_copy["visible_count"] = len(group_items)
+        group_copy["page_item_count"] = len(page_items)
+        group_copy["visible_kind_summary"] = " · ".join(
+            sorted({str(item.get("kind_label", item.get("kind", ""))) for item in group_items if str(item.get("kind_label", item.get("kind", ""))).strip()})
+        )
+        group_copy["visible_era_summary"] = " · ".join(
+            sorted({str(item.get("era_label", item.get("era", ""))) for item in group_items if str(item.get("era_label", item.get("era", ""))).strip()})
+        )
+        group_copy["is_expanded"] = has_filters or not visible_groups
+        visible_groups.append(group_copy)
+
+    archived_android_releases = list(app_info.get("archived_android_releases", []))
+    android_total_item_count = len(archived_android_releases)
+    android_total_pages = (
+        (android_total_item_count + android_page_size - 1) // android_page_size
+        if android_total_item_count else 0
+    )
+    effective_android_page = min(android_page, max(android_total_pages, 1))
+    android_page_start = (effective_android_page - 1) * android_page_size
+    android_page_end = min(android_page_start + android_page_size, android_total_item_count)
+    compact_app_info = _compact_release_app_info(app_info)
+    compact_app_info["archived_android_releases"] = archived_android_releases[
+        android_page_start:android_page_end
+    ]
+
+    options = _release_filter_options(app_info, major_minor=major_minor, branch=branch, kind=kind, era=era)
+    return {
+        "app_info": compact_app_info,
+        "archive_visible_groups": visible_groups,
+        "archive_visible_group_count": len(filtered_groups),
+        "archive_visible_item_count": visible_item_count,
+        "archive_page": effective_page,
+        "archive_page_size": page_size,
+        "archive_total_pages": total_pages,
+        "archive_has_previous": effective_page > 1,
+        "archive_has_next": effective_page < total_pages,
+        "archive_page_item_count": max(0, page_end - page_start),
+        "archive_page_group_count": len(visible_groups),
+        "android_page": effective_android_page,
+        "android_page_size": android_page_size,
+        "android_total_pages": android_total_pages,
+        "android_has_previous": effective_android_page > 1,
+        "android_has_next": effective_android_page < android_total_pages,
+        "android_page_item_count": max(0, android_page_end - android_page_start),
+        "android_total_item_count": android_total_item_count,
+        "release_filters": {
+            "major_minor": major_minor,
+            "branch": branch,
+            "kind": kind,
+            "era": era,
+            "has_filters": has_filters,
+            "reset_href": "/releases",
+        },
+        **options,
+    }
+
+
 def _build_recent_change_dashboard(
     app_info: dict[str, Any],
     filesystem_spotlight: list[dict[str, Any]],
@@ -307,6 +436,31 @@ def build_index_page_context(
         "tool_items": tools_context["items"][:8],
         "tool_summary": tools_context["summary"],
         "docs": docs_summary,
+    }
+
+
+def build_compact_index_page_context(context: dict[str, Any]) -> dict[str, Any]:
+    """Project the legacy home context onto the fields consumed by Home."""
+    app_info = context.get("app_info") or {}
+    app_info_fields = (
+        "latest_version",
+        "latest_release",
+        "latest_android_release",
+        "current_preview",
+        "current_count",
+        "archive_count",
+        "android_count",
+        "current_android_count",
+        "archive_android_count",
+        "archive_timeline_count",
+        "archive_more_count",
+    )
+    return {
+        "app_info": {key: app_info[key] for key in app_info_fields if key in app_info},
+        "update_summary": context.get("update_summary") or {},
+        "tool_summary": context.get("tool_summary") or {},
+        "recent_change_dashboard": context.get("recent_change_dashboard") or [],
+        "docs": context.get("docs") or _empty_docs_home_summary(),
     }
 
 

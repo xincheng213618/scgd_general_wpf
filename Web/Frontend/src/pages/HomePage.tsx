@@ -18,14 +18,55 @@ import { downloadPath, humanSize, shortDate } from '../utils/format'
 
 const { Title, Text } = Typography
 
+function useDecorativeVideoSource() {
+  const [source, setSource] = useState<string>()
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    if (reducedMotion.matches || connection?.saveData) return
+
+    let idleId: number | undefined
+    let timeoutId: number | undefined
+    const enableVideo = () => {
+      if (!reducedMotion.matches && !connection?.saveData) {
+        setSource('/media/floral_a.mp4')
+      }
+    }
+    const schedule = () => {
+      if ('requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(enableVideo, { timeout: 2000 })
+      } else {
+        timeoutId = setTimeout(enableVideo, 600)
+      }
+    }
+
+    if (document.readyState === 'complete') {
+      schedule()
+    } else {
+      window.addEventListener('load', schedule, { once: true })
+    }
+
+    return () => {
+      window.removeEventListener('load', schedule)
+      if (idleId !== undefined) window.cancelIdleCallback(idleId)
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    }
+  }, [])
+
+  return source
+}
+
 export function HomePage() {
   const [data, setData] = useState<HomePayload | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const decorativeVideoSource = useDecorativeVideoSource()
 
   useEffect(() => {
     let mounted = true
-    getHome()
+    const controller = new AbortController()
+    getHome(controller.signal)
       .then((payload) => {
         if (mounted) setData(payload)
       })
@@ -37,6 +78,7 @@ export function HomePage() {
       })
     return () => {
       mounted = false
+      controller.abort()
     }
   }, [])
 
@@ -50,7 +92,8 @@ export function HomePage() {
   const currentCount = data.app_info.current_count ?? 0
   const androidCount = data.app_info.android_count ?? 0
   const updateCount = data.update_summary.canonical_count ?? 0
-  const toolCount = (data.tool_summary.directory_count ?? 0) + (data.tool_summary.file_count ?? data.tool_items.length ?? 0)
+  const toolCount = data.tool_summary.item_count
+    ?? (data.tool_summary.directory_count ?? 0) + (data.tool_summary.file_count ?? 0)
   const entryCount = 6
   const releaseItems = (data.app_info.current_preview || []).slice(0, 3)
   const recentItems = data.recent_change_dashboard.slice(0, 3)
@@ -142,7 +185,9 @@ export function HomePage() {
   return (
     <div className="home-landing">
       <section className="codex-style-hero">
-        <video className="hero-bg-video" src="/media/floral_a.mp4" autoPlay muted loop playsInline aria-hidden="true" />
+        {decorativeVideoSource && (
+          <video className="hero-bg-video" src={decorativeVideoSource} autoPlay muted loop playsInline aria-hidden="true" />
+        )}
         <div className="landing-hero-inner">
           <span className="home-product-icon">
             <img src="/brand/colorvision-icon.png" alt="ColorVision" />

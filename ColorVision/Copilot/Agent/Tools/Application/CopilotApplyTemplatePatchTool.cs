@@ -39,7 +39,7 @@ namespace ColorVision.Copilot
         {
             var context = CopilotLiveContextRegistry.Current;
             return request != null
-                && request.Mode != CopilotAgentMode.Chat
+                && request.Mode is not (CopilotAgentMode.Chat or CopilotAgentMode.Diagnose)
                 && context != null
                 && context.SourceId.StartsWith("template-json-editor:", StringComparison.OrdinalIgnoreCase)
                 && CopilotTemplatePatchIntentSupport.HasApplyIntent(request.UserText);
@@ -62,6 +62,8 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
+            if (request.Mode == CopilotAgentMode.Diagnose)
+                return Failure("Template patch application is unavailable in Diagnose mode.", "Start a separate explicit template-edit request before applying a preview.");
             if (!CopilotTemplatePatchIntentSupport.HasApplyIntent(request.UserText))
                 return Failure("Template patch application requires explicit user intent.", "Ask the user to explicitly apply or confirm the preview.");
 

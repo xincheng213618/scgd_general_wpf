@@ -12170,11 +12170,11 @@ namespace ColorVision.Engine.Properties {
         }
 
         /// <summary>
-        ///   查找类似 显示节点 ID、Token、设备代码等调试属性 的本地化字符串。
+        ///   查找类似 显示高级属性，如节点 ID、Token、服务名称等 的本地化字符串。
         /// </summary>
-        public static string Flow_ShowDebugPropertiesTooltip {
+        public static string Flow_ShowAdvancedPropertiesTooltip {
             get {
-                return ResourceManager.GetString("Flow_ShowDebugPropertiesTooltip", resourceCulture);
+                return ResourceManager.GetString("Flow_ShowAdvancedPropertiesTooltip", resourceCulture);
             }
         }
 

@@ -26,12 +26,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode); }
 
-        public ViewCalibration View{ get; set; }
+        private readonly Lazy<ViewCalibration> _view;
+        public ViewCalibration View => _view.Value;
 
         public DeviceCalibration(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCalibration(Config);
-            View = new ViewCalibration(this);
+            _view = new Lazy<ViewCalibration>(() => Application.Current.Dispatcher.CheckAccess()
+                ? new ViewCalibration(this)
+                : Application.Current.Dispatcher.Invoke(() => new ViewCalibration(this)));
             this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>

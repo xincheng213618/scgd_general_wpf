@@ -7,7 +7,8 @@ using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
-using ProjectARVRPro.Process.RGB.LuminanceChromaticity;
+using ProjectARVRPro.Process.KeyedResults.FieldOfView;
+using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 using ProjectARVRPro.Process.ScreenDefects;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
@@ -29,6 +30,9 @@ namespace ProjectARVRPro
 
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
+
+        [DisplayName("视场角测试")]
+        public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; } = new();
 
         [DisplayName("亮色度测试")]
         public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new();

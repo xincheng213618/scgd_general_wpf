@@ -6,6 +6,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.OLED;
 
 [STNode("/03_3 Image")]
+[System.Obsolete("Deprecated image-composition flow node retained for loading existing flows.")]
 public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmCompoundImgNode));
@@ -17,7 +18,6 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 	private int _BufferLen;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
-	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowCompoundImgJsonTemplateEditor))]
 	public string TempName
 	{
 		get
@@ -27,6 +27,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -53,6 +55,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeHub
 		set
 		{
 			_BufferLen = value;
+			OnPropertyChanged();
 		}
 	}
 

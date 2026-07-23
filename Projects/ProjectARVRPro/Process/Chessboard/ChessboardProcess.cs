@@ -8,6 +8,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
@@ -21,6 +22,12 @@ namespace ProjectARVRPro.Process.Chessboard
             var log = ctx.Log;
             ChessboardRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
             ChessboardViewTestResult testResult = new ChessboardViewTestResult();
+            string contrastResultName = string.IsNullOrWhiteSpace(Config.ChessboardContrastResultName)
+                ? "Chessboard_Contrast"
+                : Config.ChessboardContrastResultName.Trim();
+            bool databaseContrastFound = false;
+            bool databaseContrastLoaded = false;
+            ChessboardContrastCalculationResult? calculation = null;
 
 
             try
@@ -36,6 +43,7 @@ namespace ProjectARVRPro.Process.Chessboard
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)
@@ -45,8 +53,9 @@ namespace ProjectARVRPro.Process.Chessboard
                         }
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains("Chessboard_Contrast"))
+                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName?.Contains(contrastResultName, StringComparison.Ordinal) == true)
                     {
+                        databaseContrastFound = true;
                         var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                         if (details.Count == 1)
                         {
@@ -54,7 +63,7 @@ namespace ProjectARVRPro.Process.Chessboard
                             view.PoiAnalysisResult.result.Value = recipeConfig.ChessboardContrast.Apply(view.PoiAnalysisResult.result.Value);
                             var contrast = new ObjectiveTestItem
                             {
-                                Name = "Chessboard_Contrast",
+                                Name = contrastResultName,
                                 LowLimit = recipeConfig.ChessboardContrast.Min,
                                 UpLimit = recipeConfig.ChessboardContrast.Max,
                                 Value = view.PoiAnalysisResult.result.Value,
@@ -62,15 +71,85 @@ namespace ProjectARVRPro.Process.Chessboard
                             };
                             testResult.ChessboardContrast = contrast;
                             ctx.Result.Result &= contrast.TestResult;
+                            databaseContrastLoaded = true;
+                            log?.Info($"Chessboard对比度来源: database, resultName={contrastResultName}");
                         }
+                        else
+                            log?.Error($"Chessboard数据库结果明细无效: resultName={contrastResultName}, detailCount={details.Count}");
                     }
+                }
+
+                if (databaseContrastFound && !databaseContrastLoaded)
+                    return false;
+
+                if (!databaseContrastFound || Config.SaveCsv)
+                {
+                    calculation = ChessboardContrastCalculator.Calculate(
+                        testResult.PoixyuvDatas,
+                        Config.RowCount,
+                        Config.ColumnCount,
+                        Config.FirstPointColor,
+                        Config.StrayLightCoefficient,
+                        Config.AllowNegativeCorrectedDarkLuminance);
+                    if (!calculation.Success)
+                    {
+                        if (!databaseContrastFound)
+                        {
+                            log?.Error($"Chessboard本地计算失败: resultName={contrastResultName}, message={calculation.ErrorMessage}");
+                            return false;
+                        }
+
+                        log?.Warn($"Chessboard本地CSV分析失败，保留数据库对比度并导出基础POI数据: resultName={contrastResultName}, message={calculation.ErrorMessage}");
+                    }
+                }
+
+                if (!databaseContrastFound && calculation?.Success == true)
+                {
+                    double correctedContrast = recipeConfig.ChessboardContrast.Apply(calculation.CorrectedContrast);
+                    testResult.AverageBlackLuminance = new ObjectiveTestItem
+                    {
+                        Name = "Average_Black_Luminance",
+                        Unit = "cd/m^2",
+                        Value = calculation.CorrectedDarkLuminance,
+                        TestValue = calculation.CorrectedDarkLuminance.ToString("F3")
+                    };
+                    testResult.ChessboardContrast = new ObjectiveTestItem
+                    {
+                        Name = contrastResultName,
+                        LowLimit = recipeConfig.ChessboardContrast.Min,
+                        UpLimit = recipeConfig.ChessboardContrast.Max,
+                        Value = correctedContrast,
+                        TestValue = correctedContrast.ToString("F3")
+                    };
+                    ctx.Result.Result &= testResult.ChessboardContrast.TestResult;
+
+                    log?.Info(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Chessboard对比度来源: local, resultName={0}, rows={1}, columns={2}, requestedFirstPointColor={3}, resolvedFirstPointColor={4}, a={5}, LB={6}, LD={7}, LD'={8}, CR'={9}",
+                        contrastResultName,
+                        calculation.RowCount,
+                        calculation.ColumnCount,
+                        calculation.RequestedFirstPointColor,
+                        calculation.ResolvedFirstPointColor,
+                        calculation.StrayLightCoefficient,
+                        calculation.BrightLuminance,
+                        calculation.RawDarkLuminance,
+                        calculation.CorrectedDarkLuminance,
+                        calculation.CorrectedContrast));
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.ChessboardTestResult = JsonConvert.DeserializeObject<ChessboardTestResult>(ctx.Result.ViewResultJson) ?? new ChessboardTestResult();
                 if (Config.SaveCsv)
                 {
-                    ChessboardCsvExporter.SavePoixyuvDatas(testResult.PoixyuvDatas, ctx, "Chessboard");
+                    ChessboardCsvExporter.SavePoixyuvDatas(
+                        testResult.PoixyuvDatas,
+                        ctx,
+                        "Chessboard",
+                        calculation,
+                        testResult.ChessboardContrast?.Value,
+                        contrastResultName,
+                        databaseContrastFound ? "database" : "local");
                 }
                 return true;
             }
@@ -136,7 +215,11 @@ namespace ProjectARVRPro.Process.Chessboard
                 outtext += $"{item.Name}  Y:{item.Y.ToString("F2")}{Environment.NewLine}";
             }
 
-            outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            if (testResult.AverageBlackLuminance != null)
+                outtext += $"AverageBlackLuminance:{testResult.AverageBlackLuminance.TestValue}{testResult.AverageBlackLuminance.Unit}{Environment.NewLine}";
+
+            if (testResult.ChessboardContrast != null)
+                outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
         }
 

@@ -204,7 +204,7 @@ namespace ColorVision.Copilot
 
             layoutManager.RegisterPanel(
                 CopilotPanelService.PanelId,
-                CopilotPanelService.GetInstance().GetOrCreatePanel(),
+                () => CopilotPanelService.GetInstance().GetOrCreatePanel(),
                 CopilotUiText.CopilotPanelTitle,
                 PanelPosition.Right);
         }

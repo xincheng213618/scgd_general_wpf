@@ -22,25 +22,69 @@ namespace ColorVision.UI.Tests
         {
             string batchFilePath = Path.Combine(_tempDirectory, "update.bat");
             string baseDirectory = Path.Combine(_tempDirectory, "ColorVision 100%! & Caret^");
+            File.WriteAllText(batchFilePath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(baseDirectory, _tempDirectory, Path.Combine(_tempDirectory, "State"));
 
-            PluginUpdater.GenerateBatchFile(
-                batchFilePath,
-                baseDirectory,
-                "ColorVision.exe",
-                restartArguments: null);
+            try
+            {
+                PluginUpdater.GenerateBatchFile(
+                    batchFilePath,
+                    baseDirectory,
+                    "ColorVision.exe",
+                    Environment.ProcessId,
+                    handoffState,
+                    restartArguments: null);
+            }
+            finally
+            {
+                ExitUpdateHandoff.Clear(handoffState);
+            }
 
             string batch = File.ReadAllText(batchFilePath, Encoding.GetEncoding(936));
 
             Assert.Contains("robocopy \"%STAGE%\" \"%TARGET%\" *.* /E ", batch, StringComparison.Ordinal);
             Assert.Contains("setlocal DisableDelayedExpansion", batch, StringComparison.Ordinal);
             Assert.Contains(PluginUpdater.EscapeForBatchValue(baseDirectory), batch, StringComparison.Ordinal);
-            Assert.Contains("^>nul ^& rd /s /q \"%SELF_DIR%\" 2^>nul", batch, StringComparison.Ordinal);
+            Assert.Contains("^>nul ^& rd /s /q \"%UPDATE_ROOT%\" 2^>nul", batch, StringComparison.Ordinal);
             Assert.Equal(2, batch.Split("call :schedule_cleanup", StringSplitOptions.None).Length - 1);
+            Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.Ordinal);
+            Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("UPDATE_STATE", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(":rollback", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("enabledelayedexpansion", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("/MIR", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("ColorVisionBackup_", batch, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void PluginDeletionUsesOriginalProcessHandoff()
+        {
+            string batchFilePath = Path.Combine(_tempDirectory, "delete.bat");
+            string programDirectory = Path.Combine(_tempDirectory, "ColorVision");
+            File.WriteAllText(Path.Combine(_tempDirectory, "update.bat"), string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(programDirectory, _tempDirectory, Path.Combine(_tempDirectory, "DeleteState"));
+
+            try
+            {
+                PluginUpdater.GenerateDeleteBatchFile(
+                    batchFilePath,
+                    [Path.Combine(programDirectory, "Plugins", "Pattern")],
+                    Path.Combine(programDirectory, "ColorVision.exe"),
+                    Environment.ProcessId,
+                    handoffState);
+            }
+            finally
+            {
+                ExitUpdateHandoff.Clear(handoffState);
+            }
+
+            string batch = File.ReadAllText(batchFilePath, Encoding.GetEncoding(936));
+            Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.Ordinal);
+            Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(ExitUpdateHandoff.LaunchTokenEnvironmentVariable, batch, StringComparison.Ordinal);
+            Assert.Contains("if exist \"%TARGET%\" goto fail", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Plugin deletion failed.", batch, StringComparison.Ordinal);
+            Assert.Contains("update.log", batch, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

@@ -38,6 +38,7 @@ namespace ColorVision
     public partial class App : Application
     {
         private bool _isSessionEnding;
+        private ModuleCatalog? _moduleCatalog;
 
         public App()
         {
@@ -95,23 +96,37 @@ namespace ColorVision
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-            //加载DLL
-            if (File.Exists("ColorVision.Engine.dll"))
-                Assembly.LoadFrom("ColorVision.Engine.dll"); ;
-            if (File.Exists("ColorVision.Scheduler.dll"))
-                Assembly.LoadFrom("ColorVision.Scheduler.dll"); ;
-            if (File.Exists("ColorVision.ImageEditor.dll"))
-                Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
-            if (File.Exists("ColorVision.Solution.dll"))
-                Assembly.LoadFrom("ColorVision.Solution.dll"); ;
-            if (File.Exists("ColorVision.SocketProtocol.dll"))
-                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
-            if (File.Exists("ColorVision.Database.dll"))
-                Assembly.LoadFrom("ColorVision.Database.dll"); ;
-            if (File.Exists("ColorVision.UI.Desktop.dll"))
-                Assembly.LoadFrom("ColorVision.UI.Desktop.dll"); ;
+            string inputFile = parser.GetValue("input");
+            if (Update.StartupUpdatePackageHandler.Classify(inputFile) != Update.StartupUpdatePackageKind.None)
+            {
+                IntPtr existingWindow = CheckAppRunning.Check("ColorVision");
+                if (existingWindow != IntPtr.Zero)
+                {
+                    if (SingleInstanceCommandLineTransport.TrySend(existingWindow, parser.CommandLineArgs))
+                    {
+                        Environment.Exit(0);
+                        return;
+                    }
 
+                    MessageBox.Show(
+                        "无法将更新包发送到正在运行的 ColorVision，请关闭软件后重试。",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    Environment.Exit(-1);
+                    return;
+                }
 
+                if (Update.StartupUpdatePackageHandler.HandleIfUpdatePackage(inputFile))
+                {
+                    // A successful update handoff exits the process. Reaching here means preparation failed.
+                    Environment.Exit(-1);
+                    return;
+                }
+            }
+
+            _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
+            BuiltInModules.Register(_moduleCatalog);
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;
             LogConfig.Instance.SetLog();
@@ -121,7 +136,6 @@ namespace ColorVision
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
-            parser.AddArgument("input", false, "i");
             parser.AddArgument("export", false, "e");
 
             parser.Parse();
@@ -143,6 +157,27 @@ namespace ColorVision
                     return;
                 }
             }
+
+            if (StartupFileOpenPolicy.ShouldOpenBeforeMainWindow(inputFile))
+            {
+                FileOpenRouteResult openResult = File.Exists(inputFile)
+                    ? FileProcessorFactory.GetInstance().TryOpenFileAction(inputFile)
+                    : new FileOpenRouteResult(true, false, $"文件不存在：{inputFile}");
+                if (openResult.Handled)
+                {
+                    ConfigHandler.GetInstance().IsAutoSave = true;
+                    ProgramTimer.StopAndReport();
+                    if (!openResult.Succeeded)
+                    {
+                        MessageBox.Show(string.IsNullOrWhiteSpace(openResult.ErrorMessage)
+                            ? ColorVision.Properties.Resources.UnsupportedFileFormat
+                            : openResult.ErrorMessage);
+                        Environment.Exit(-1);
+                    }
+                    return;
+                }
+            }
+
             ConfigHandler.GetInstance().IsAutoSave = true;
 
             mutex = new Mutex(true, "ColorVision", out bool ownsMutex);
@@ -169,6 +204,8 @@ namespace ColorVision
                     return;
                 }
             }
+
+            Rbac.ApplicationUsageTracker.StartSession();
 
             CopilotMcpServer.Instance.ApplyConfig();
             LanRemoteControlService.Instance.ApplyConfig();
@@ -198,13 +235,15 @@ namespace ColorVision
 
             if (shouldLoadPlugins)
             {
-                PluginLoader.LoadPlugins();
+                PluginLoader.LoadPlugins(_moduleCatalog);
                 ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(
                     PluginLoader.Config.Plugins.Values,
                     ColorVision.Copilot.CopilotConfig.Instance.DisabledPluginSubagentRoles);
             }
             else
                 ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Synchronize(Array.Empty<PluginInfo>());
+
+            _moduleCatalog.Seal();
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
@@ -235,6 +274,9 @@ namespace ColorVision
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
+            Stopwatch exitStopwatch = Stopwatch.StartNew();
+            log.Info("Application exit cleanup started.");
+            Rbac.ApplicationUsageTracker.StopSession();
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
             if (!_isSessionEnding)
                 Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
@@ -243,6 +285,7 @@ namespace ColorVision
             LanRemoteControlService.Instance.Stop();
             //正常结束时清除标志位
             StartupRegistryChecker.Clear();
+            log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
             //Environment.Exit(0);
         }
     }

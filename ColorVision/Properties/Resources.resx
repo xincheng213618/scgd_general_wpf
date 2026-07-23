@@ -371,12 +371,6 @@
   <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
     <value>{0} 个插件更新</value>
   </data>
-  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
-    <value>{0} 个主题更新</value>
-  </data>
-  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
-    <value>{0} 个其他更新</value>
-  </data>
   <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
     <value>已选择 {0} / {1} 个插件</value>
   </data>
@@ -901,5 +895,68 @@
 
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>文件关联</value>
+  </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve">
+    <value>ColorVision 后台服务</value>
+  </data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve">
+    <value>正在处理…</value>
+  </data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve">
+    <value>重新检查</value>
+  </data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve">
+    <value>安装后台服务</value>
+  </data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve">
+    <value>修复并启动</value>
+  </data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve">
+    <value>更新后台服务</value>
+  </data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve">
+    <value>正在准备 ColorVision Service Host。安装或修复时可能会请求管理员权限，请完成系统提示。</value>
+  </data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve">
+    <value>正在检查 ColorVision Service Host 的安装和运行状态。</value>
+  </data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve">
+    <value>后台服务已安装并正常运行（版本 {0}）。&#xA;&#xA;服务管理器现在可以安全地安装、更新和控制本机服务。</value>
+  </data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve">
+    <value>未找到可用的后台服务安装包，因此无法继续初始化。&#xA;&#xA;安装包：{0}</value>
+  </data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve">
+    <value>服务管理器依赖 ColorVision Service Host 执行需要管理员权限的安装和维护操作。点击“安装后台服务”后，Windows 会请求一次管理员授权。&#xA;&#xA;安装包：{0}</value>
+  </data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve">
+    <value>后台服务已安装（版本 {0}），但当前没有运行。请修复并启动后再继续。</value>
+  </data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve">
+    <value>后台服务需要更新或修复。当前版本：{0}；安装包版本：{1}。完成后才能进入服务管理器。</value>
+  </data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve">
+    <value>后台服务安装包不存在：{0}</value>
+  </data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve">
+    <value>无法确认后台服务状态，请重试。</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>更新前创建程序快照</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>开启后，主程序、插件或组合更新前都会创建一次完整程序快照，可能延长更新时间。</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>不使用系统代理</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>更新前创建程序快照</value>
   </data>
 </root>

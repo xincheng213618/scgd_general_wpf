@@ -104,7 +104,7 @@ namespace ColorVision.UI
             builder.AppendLine("6. Risks and operator confirmation required");
             builder.AppendLine();
             builder.AppendLine("Do not claim that the flow was rerun, a device was controlled, or a template was changed.");
-            builder.AppendLine("If a template change is justified and an active template is available, use the guarded sequence suggest_template_patch -> preview_template_patch -> apply_template_patch; applying still requires ColorVision user approval.");
+            builder.AppendLine("This diagnosis turn is read-only: report template adjustment candidates for operator review, but do not create a template preview or alter the active template. Any template operation requires a separate explicit user request outside this diagnosis.");
 
             if (!string.IsNullOrWhiteSpace(snapshot.FocusedNodeSummary))
                 builder.AppendLine($"Diagnosis focus: {snapshot.FocusedNodeSummary}");

@@ -15,6 +15,7 @@ import { useParams } from 'react-router-dom'
 import { getPluginDetail } from '../services/site'
 import type { PluginDetail, PluginVersion } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
+import { sanitizeHtml } from '../utils/sanitizeHtml'
 
 function MarkdownPanel({
   html,
@@ -44,7 +45,7 @@ function MarkdownPanel({
       </div>
     )
   }
-  return <article className="markdown-body plugin-markdown-body" dangerouslySetInnerHTML={{ __html: html }} />
+  return <article className="markdown-body plugin-markdown-body" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
 }
 
 function versionColumns(pluginId: string): ColumnsType<PluginVersion> {
@@ -104,7 +105,13 @@ export function PluginDetailPage() {
 
   useEffect(() => {
     let mounted = true
-    getPluginDetail(pluginId)
+    const controller = new AbortController()
+    queueMicrotask(() => {
+      if (!mounted) return
+      setLoading(true)
+      setError('')
+    })
+    getPluginDetail(pluginId, controller.signal)
       .then((payload) => {
         if (mounted) setPlugin(payload)
       })
@@ -116,6 +123,7 @@ export function PluginDetailPage() {
       })
     return () => {
       mounted = false
+      controller.abort()
     }
   }, [pluginId])
 

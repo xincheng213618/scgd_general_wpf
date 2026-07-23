@@ -141,16 +141,11 @@
   <data name="Theme" xml:space="preserve">
     <value>테마</value>
   </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>분홍색</value>
-  </data>
   <data name="MenuTheme" xml:space="preserve">
     <value>테마(_H)</value>
   </data>
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>시스템 테마 사용</value>
-  </data>  <data name="ThemeCyan" xml:space="preserve">
-    <value>청록색</value>
   </data>
   <data name="Yes" xml:space="preserve">
     <value>예</value>

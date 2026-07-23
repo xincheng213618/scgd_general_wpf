@@ -19,7 +19,7 @@ namespace ColorVision.Update
             if (!AutoUpdater.IsIncrementalPackageFileReady(filePath))
                 return new FileOpenRouteResult(true, false, "不是有效的增量更新包。");
 
-            AutoUpdater.RestartIsIncrementApplication(filePath);
+            AutoUpdater.RestartIsIncrementApplication(new[] { filePath }, null);
             return new FileOpenRouteResult(true, true);
         }
     }

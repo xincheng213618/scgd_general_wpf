@@ -39,18 +39,25 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1"
-                        VerticalAlignment="Top"
-                        Orientation="Horizontal">
-                <Button Margin="0,0,8,0"
-                        Click="CreateSnapshot_Click"
-                        Content="创建快照"
-                        IsEnabled="{Binding CanRunCommand}" />
-                <Button Margin="0,0,8,0"
-                        Click="RebuildDefault_Click"
-                        Content="重建默认"
-                        IsEnabled="{Binding CanRunCommand}" />
-                <Button Click="OpenFolder_Click"
-                        Content="打开目录" />
+                        VerticalAlignment="Top">
+                <CheckBox Margin="0,0,0,10"
+                          HorizontalAlignment="Right"
+                          Content="{x:Static properties:Resources.CreateSnapshotBeforeUpdate}"
+                          IsChecked="{Binding CreateSnapshotBeforeUpdate, Mode=TwoWay}"
+                          ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}" />
+                <StackPanel HorizontalAlignment="Right"
+                            Orientation="Horizontal">
+                    <Button Margin="0,0,8,0"
+                            Click="CreateSnapshot_Click"
+                            Content="创建快照"
+                            IsEnabled="{Binding CanRunCommand}" />
+                    <Button Margin="0,0,8,0"
+                            Click="RebuildDefault_Click"
+                            Content="重建默认"
+                            IsEnabled="{Binding CanRunCommand}" />
+                    <Button Click="OpenFolder_Click"
+                            Content="打开目录" />
+                </StackPanel>
             </StackPanel>
         </Grid>
 

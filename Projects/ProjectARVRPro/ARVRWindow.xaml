@@ -289,9 +289,6 @@
                 <Button Content="结果记录" Click="ObjectiveTestResultRecord_Click"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
                 <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>

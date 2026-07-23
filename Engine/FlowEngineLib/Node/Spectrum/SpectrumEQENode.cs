@@ -50,6 +50,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_AFactor = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -63,6 +64,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_IsCustomVI = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -76,6 +78,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_Voltage = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -89,6 +92,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_Current = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -103,6 +107,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		{
 			_Temp = value;
 			m_ctrl_editText.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -117,6 +122,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		{
 			_AveNum = value;
 			m_ctrl_AveNum.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -130,6 +136,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_AutoIntTime = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -144,6 +151,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		{
 			_IsWithND = value;
 			m_ctrl_nd.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -158,6 +166,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		{
 			_SelfDark = value;
 			setDarkDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -172,6 +181,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		{
 			_AutoInitDark = value;
 			setDarkDis();
+			OnPropertyChanged();
 		}
 	}
 
@@ -185,6 +195,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_OutputDataFilename = value;
+			OnPropertyChanged();
 		}
 	}
 

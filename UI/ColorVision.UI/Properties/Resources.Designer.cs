@@ -196,6 +196,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更新前创建程序快照 的本地化字符串。
+        /// </summary>
+        public static string CreateSnapshotBeforeUpdate {
+            get {
+                return ResourceManager.GetString("CreateSnapshotBeforeUpdate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 开启后，主程序、插件或组合更新前都会创建一次完整程序快照，可能延长更新时间。 的本地化字符串。
+        /// </summary>
+        public static string CreateSnapshotBeforeUpdateDescription {
+            get {
+                return ResourceManager.GetString("CreateSnapshotBeforeUpdateDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
@@ -384,6 +402,24 @@ namespace ColorVision.UI.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 不使用系统代理 的本地化字符串。
+        /// </summary>
+        public static string DisableSystemProxyForUpdates {
+            get {
+                return ResourceManager.GetString("DisableSystemProxyForUpdates", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。 的本地化字符串。
+        /// </summary>
+        public static string DisableSystemProxyForUpdatesDescription {
+            get {
+                return ResourceManager.GetString("DisableSystemProxyForUpdatesDescription", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
         /// </summary>

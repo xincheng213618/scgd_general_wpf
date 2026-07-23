@@ -38,26 +38,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ImageChannel Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsExpThree)); OnPropertyChanged(nameof(IsChannelThree)); } }
         private ImageChannel _Channel;
 
-        public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
-
 
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; OnPropertyChanged(); } }
         private bool _UsingFileCaching;
 
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; OnPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
-        public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
-        private float _GainMin = 0;
-
-        public float GainMax { get => _GainMax; set { _GainMax = value; OnPropertyChanged(); } }
-        private float _GainMax = 100;
-
-
-        public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; OnPropertyChanged(); } }
-        private double _ScaleFactor = 1.0;
-
-        public string  ScaleFactorUnit { get => _ScaleFactorUnit; set { _ScaleFactorUnit = value; OnPropertyChanged(); } }
-        private string _ScaleFactorUnit = "Px";
 
         [JsonIgnore]
         public bool IsExpThree
@@ -112,10 +98,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen = true;
 
-
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; OnPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
+        public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
 
     }
 

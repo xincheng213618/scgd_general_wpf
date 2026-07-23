@@ -1,0 +1,98 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.P2.P2JsonAnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Height="720" Width="1040" MinHeight="560" MinWidth="820"
+        Background="#F6F7F9" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0B6B5E"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#667085"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#D9DEE5"/>
+        <SolidColorBrush x:Key="PanelBackground" Color="#FFFFFF"/>
+        <Style TargetType="Button">
+            <Setter Property="MinWidth" Value="88"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Padding" Value="12,4"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button x:Name="RunButton" Content="运行" Click="RunButton_Click"/>
+                <Button Content="清除 Overlay" Click="ClearOverlay_Click"/>
+                <Button Content="复制配置" Click="CopyConfig_Click"/>
+                <Button Content="复制结果" Click="CopyResult_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="SummaryText" DockPanel.Dock="Right"
+                       FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"
+                       VerticalAlignment="Center"/>
+        </DockPanel>
+
+        <Border Grid.Row="1" Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <DockPanel>
+                <TextBlock x:Name="InputDescriptionText" DockPanel.Dock="Left"
+                           Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <CheckBox x:Name="DrawOverlayCheckBox" Content="绘制 Overlay" IsChecked="True" Margin="12,0,12,0"/>
+                    <CheckBox x:Name="AutoClearCheckBox" Content="自动清除上次结果" IsChecked="True"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.95*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="1.25*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{StaticResource PanelBackground}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="6" Padding="8">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="配置 JSON（可直接编辑）"
+                               FontWeight="SemiBold" Margin="2,0,0,8"/>
+                    <TextBox x:Name="ConfigText" AcceptsReturn="True" AcceptsTab="True"
+                             FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap"
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Background="{StaticResource PanelBackground}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="6" Padding="8">
+                <TabControl>
+                    <TabItem Header="摘要">
+                        <DataGrid x:Name="MetricsGrid" AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False"
+                                  IsReadOnly="True" GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="字段" Binding="{Binding Name}" Width="*"/>
+                                <DataGridTextColumn Header="值" Binding="{Binding Value}" Width="1.5*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+                    <TabItem Header="结果 JSON">
+                        <TextBox x:Name="ResultText" AcceptsReturn="True" AcceptsTab="True"
+                                 FontFamily="Consolas" FontSize="12" IsReadOnly="True"
+                                 TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto"
+                                 VerticalScrollBarVisibility="Auto"/>
+                    </TabItem>
+                </TabControl>
+            </Border>
+        </Grid>
+
+        <TextBlock x:Name="StatusText" Grid.Row="3" Margin="0,10,0,0"
+                   Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
+    </Grid>
+</Window>

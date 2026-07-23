@@ -328,57 +328,6 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style x:Key="ContextActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Padding" Value="12,5" />
-            <Setter Property="MinHeight" Value="28" />
-            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chrome"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="999"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="Opacity" Value="0.92" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="Opacity" Value="0.82" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Chrome" Property="Opacity" Value="0.42" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="ContextStatusPillBorderStyle" TargetType="Border" BasedOn="{StaticResource CopilotPillBorderStyle}">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Opacity" Value="0.64" />
-        </Style>
-        <Style x:Key="ContextStatusTextStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        </Style>
         <Style x:Key="ExecutionSummaryPillBorderStyle" TargetType="Border">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -477,16 +426,43 @@
             </Setter>
         </Style>
         <Style x:Key="AttachmentChipBorderStyle" TargetType="Border">
+            <Setter Property="Width" Value="168" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="3,2" />
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+        </Style>
+        <Style x:Key="AttachmentContentButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Opacity" Value="0.9" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.72" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Opacity" Value="0.56" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="AttachmentCloseButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="18" />
-            <Setter Property="Height" Value="18" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -1449,11 +1425,10 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Border x:Name="FileDropOverlay"
-                            Grid.RowSpan="6"
+                            Grid.RowSpan="5"
                             Panel.ZIndex="20"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource PrimaryBrush}"
@@ -1553,200 +1528,111 @@
                         </Grid>
                     </Border>
 
-                    <Border x:Name="CurrentLiveContextBorder"
-                            Grid.Row="1"
-                            Margin="0,0,0,8"
-                            Padding="12,9"
-                            Style="{StaticResource CopilotInsetBorderStyle}"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            ToolTip="{Binding CurrentLiveContextToolTip}"
-                            Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid x:Name="CurrentLiveContextGrid">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel>
-                                <DockPanel LastChildFill="False">
-                                    <Border DockPanel.Dock="Right"
-                                            Margin="8,0,0,0"
-                                            Style="{StaticResource ContextStatusPillBorderStyle}">
-                                        <TextBlock Style="{StaticResource ContextStatusTextStyle}"
-                                                   Text="{Binding CurrentLiveContextStatusText}" />
-                                    </Border>
-                                    <TextBlock VerticalAlignment="Center"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                               Opacity="0.58"
-                                               Text="{x:Static properties:Resources.CopilotCurrentWindowContext}" />
-                                </DockPanel>
-                                <TextBlock Margin="0,2,0,0"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           Text="{Binding CurrentLiveContextTitle}"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="CurrentLiveContextSummaryText"
-                                           Margin="0,2,0,0"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           Opacity="0.74"
-                                           Text="{Binding CurrentLiveContextSummary}"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-
-                            <Button x:Name="CurrentLiveContextActionButton"
-                                    Grid.Column="1"
-                                    Margin="12,0,0,0"
-                                    Style="{StaticResource ContextActionButtonStyle}"
-                                    VerticalAlignment="Center"
-                                    Command="{Binding AttachCurrentLiveContextCommand}"
-                                    IsEnabled="{Binding CanAttachCurrentLiveContext}">
-                                <TextBlock Text="{Binding CurrentLiveContextActionText}" />
-                            </Button>
-                        </Grid>
-                    </Border>
-
-                    <StackPanel Grid.Row="2" Margin="0,0,0,10"
-                                Visibility="{Binding HasAttachments, Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,5"
-                                   FontSize="10"
-                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                   Opacity="0.5"
-                                   Text="附件仅随下一条消息发送" />
+                    <StackPanel Grid.Row="1" Margin="0,0,0,6"
+                                Visibility="{Binding HasComposerAttachmentItems, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
-                                      MaxHeight="104"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      VerticalScrollBarVisibility="Auto">
-                            <ItemsControl Width="{Binding ViewportWidth, ElementName=AttachmentScrollViewer}"
-                                          ItemsSource="{Binding Attachments}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type local:CopilotAttachmentItem}">
-                                        <Grid Margin="0,0,6,6">
-                                            <Border x:Name="AttachmentChip"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      PanningMode="HorizontalOnly"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <StackPanel Orientation="Horizontal">
+                                <ItemsControl ItemsSource="{Binding Attachments}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:CopilotAttachmentItem}">
+                                            <Border Margin="0,0,6,0"
                                                     Style="{StaticResource AttachmentChipBorderStyle}"
-                                                    BorderThickness="1"
-                                                    ToolTip="{Binding TooltipText}"
-                                                    Visibility="Collapsed">
-                                                <DockPanel LastChildFill="False">
-                                                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                                                               FontSize="11"
-                                                               Opacity="0.48"
-                                                               Text="{Binding BadgeText}" />
-                                                    <TextBlock Margin="7,0,0,0"
-                                                               MaxWidth="180"
-                                                               FontSize="12"
-                                                               Foreground="{DynamicResource GlobalTextBrush}"
-                                                               Opacity="0.9"
-                                                               Text="{Binding DisplayLabel}"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                    <Button Margin="7,0,0,0"
-                                                            Style="{StaticResource AttachmentCloseButtonStyle}"
-                                                            Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="↗"
-                                                            ToolTip="查看附件" />
-                                                    <Button Margin="7,0,0,0"
+                                                    ToolTip="{Binding TooltipText}">
+                                                <DockPanel LastChildFill="True">
+                                                    <Button DockPanel.Dock="Left"
+                                                            Margin="0,0,3,0"
                                                             Style="{StaticResource AttachmentCloseButtonStyle}"
                                                             Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
                                                             CommandParameter="{Binding}"
-                                                            Content="×" />
+                                                            ToolTip="移除附件">
+                                                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                                                   FontSize="8"
+                                                                   Text="&#xE711;" />
+                                                    </Button>
+                                                    <Button Style="{StaticResource AttachmentContentButtonStyle}"
+                                                            Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="查看附件">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="14" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Grid Width="14" Height="14" VerticalAlignment="Center">
+                                                                <TextBlock HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"
+                                                                           FontFamily="Segoe MDL2 Assets"
+                                                                           FontSize="11"
+                                                                           Foreground="{DynamicResource PrimaryBrush}"
+                                                                           Text="{Binding IconGlyph}" />
+                                                                <Image Source="{Binding PreviewImage}"
+                                                                       Stretch="UniformToFill" />
+                                                            </Grid>
+                                                            <TextBlock Grid.Column="1"
+                                                                       Margin="4,0,0,0"
+                                                                       VerticalAlignment="Center"
+                                                                       FontSize="11"
+                                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                                       Text="{Binding DisplayLabel}"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                        </Grid>
+                                                    </Button>
                                                 </DockPanel>
                                             </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
 
-                                            <Border x:Name="ImageAttachmentCard"
-                                                    Padding="6"
-                                                    Style="{StaticResource CopilotInsetBorderStyle}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="14"
-                                                    ToolTip="{Binding TooltipText}"
-                                                    Visibility="Collapsed">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="40" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <Border Width="36"
-                                                            Height="36"
-                                                            Style="{StaticResource CopilotInsetBorderStyle}"
-                                                            CornerRadius="10"
-                                                            ClipToBounds="True">
-                                                        <Grid>
-                                                            <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" />
-                                                            <TextBlock HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center"
-                                                                       Margin="4"
-                                                                       FontSize="10"
-                                                                       Foreground="{DynamicResource GlobalTextBrush}"
-                                                                       Opacity="0.52"
-                                                                       Text="{Binding ImageFallbackText}"
-                                                                       TextAlignment="Center"
-                                                                       TextWrapping="Wrap" />
-                                                        </Grid>
-                                                    </Border>
-
-                                                    <StackPanel Grid.Column="1"
-                                                                Margin="8,0,0,0"
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock MaxWidth="76"
-                                                                   FontSize="11"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                                   Text="{Binding DisplayLabel}"
-                                                                   TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock MaxWidth="76"
-                                                                   Margin="0,1,0,0"
-                                                                   FontSize="10"
-                                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                                   Opacity="0.5"
-                                                                   Text="{Binding ImageMetaText}"
-                                                                   TextTrimming="CharacterEllipsis" />
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="2"
-                                                                Margin="8,0,0,0"
-                                                                VerticalAlignment="Center"
-                                                                Orientation="Horizontal">
-                                                        <Button Style="{StaticResource AttachmentCloseButtonStyle}"
-                                                                Command="{Binding DataContext.OpenAttachmentCommand, Source={x:Reference Root}}"
-                                                                CommandParameter="{Binding}"
-                                                                Content="↗"
-                                                                ToolTip="查看附件" />
-                                                        <Button Margin="4,0,0,0"
-                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
-                                                                Command="{Binding DataContext.RemoveAttachmentCommand, Source={x:Reference Root}}"
-                                                                CommandParameter="{Binding}"
-                                                                Content="×"
-                                                                ToolTip="移除附件" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
+                                <Border Margin="0,0,6,0"
+                                        Style="{StaticResource AttachmentChipBorderStyle}"
+                                        Visibility="{Binding HasAvailableCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}">
+                                    <Button Style="{StaticResource AttachmentContentButtonStyle}"
+                                            AutomationProperties.Name="附加当前窗口"
+                                            Command="{Binding AttachCurrentLiveContextCommand}"
+                                            ToolTip="附加当前窗口">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="14" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.54"
+                                                       Text="&#xE710;" />
+                                            <TextBlock Grid.Column="1"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                       Text="&#xE723;" />
+                                            <TextBlock Grid.Column="2"
+                                                       Margin="4,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Text="{Binding CurrentLiveContextAttachmentLabel}"
+                                                       TextTrimming="CharacterEllipsis" />
                                         </Grid>
-
-                                        <DataTemplate.Triggers>
-                                            <DataTrigger Binding="{Binding IsImage}" Value="True">
-                                                <Setter TargetName="ImageAttachmentCard" Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsImage}" Value="False">
-                                                <Setter TargetName="AttachmentChip" Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </DataTemplate.Triggers>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                    </Button>
+                                </Border>
+                            </StackPanel>
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="2"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -1788,7 +1674,7 @@
                         </ScrollViewer>
                     </Border>
 
-                    <Grid Grid.Row="4"
+                    <Grid Grid.Row="3"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -1830,7 +1716,7 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="5" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="4" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -1853,6 +1739,9 @@
                                               Command="{Binding AttachActiveDocumentCommand}"
                                               ToolTip="将当前编辑文件作为本轮明确附件；普通 Chat 模式也能读取其正文。"
                                               ToolTipService.ShowOnDisabled="True" />
+                                    <MenuItem Header="附加当前窗口"
+                                              Command="{Binding AttachCurrentLiveContextCommand}"
+                                              Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}" />
                                     <Separator />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />

@@ -8,18 +8,21 @@ using ColorVision.Database;
 
 namespace ColorVision.Engine.Templates.Validate
 {
+    [System.Obsolete("Deprecated validation-template menu retained for compatibility.")]
     public class ExportComply : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
         public override int Order => 4;
         public override string Header => Properties.Resources.MenuValidue;
     }
+    [System.Obsolete("Deprecated validation-template menu retained for compatibility.")]
     public class ExportComplyPoint : MenuItemBase
     {
         public override string OwnerGuid => nameof(ExportComply);
         public override int Order => 2;
         public override string Header => ColorVision.Engine.Properties.Resources.ComplyPoint;
     }
+    [System.Obsolete("Deprecated validation-template menu retained for compatibility.")]
     public class ExportComplyPointList : MenuItemBase
     {
         public override string OwnerGuid => nameof(ExportComply);
@@ -27,6 +30,7 @@ namespace ColorVision.Engine.Templates.Validate
         public override string Header => ColorVision.Engine.Properties.Resources.ComplyPointList_;
     }
 
+    [System.Obsolete("Deprecated validation-template menu provider retained for compatibility.")]
     public class MenuItemProviderSensor : IMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()

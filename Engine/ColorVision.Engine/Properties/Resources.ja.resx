@@ -3235,7 +3235,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>前処理アクションを選択してください</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>種類: {0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>{0} を再起動</value></data>
-  <data name="Flow_ShowDebugPropertiesTooltip" xml:space="preserve"><value>ノード ID、Token、デバイスコードなどのデバッグプロパティを表示</value></data>
+  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>ノード ID、Token、サービス名などの高度なプロパティを表示</value></data>
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>{0} の起動に失敗しました: {1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>{0} の停止に失敗しました: {1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>フルフレーム</value></data>

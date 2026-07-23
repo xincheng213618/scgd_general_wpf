@@ -2,13 +2,11 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Solution.Editor;
-using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System.IO;
 using System.Windows;
-using System.Windows.Media;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -35,12 +33,9 @@ namespace ColorVision.Solution.Explorer
                 | SolutionContainerAction.CreateFolder
             : SolutionContainerAction.None;
 
-        public IFolderMeta FolderMeta { get; set; }
-
-        public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
+        public DirectoryInfo DirectoryInfo { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand AskCopilotSummarizeFolderCommand { get; set; }
-        public RelayCommand OpenFusionCommand { get; set; }
         private bool _childrenLoaded;
         private bool _childrenLoading;
         private bool _isExpanded;
@@ -52,11 +47,13 @@ namespace ColorVision.Solution.Explorer
         public bool AreChildrenLoaded => _childrenLoaded;
         internal bool AreChildrenLoading => _childrenLoading;
 
-        public FolderNode(IFolderMeta folder) : base()
+        public FolderNode(DirectoryInfo directoryInfo)
         {
-            FolderMeta = folder;
+            ArgumentNullException.ThrowIfNull(directoryInfo);
+            DirectoryInfo = directoryInfo;
             FullPath = DirectoryInfo.FullName;
             Name1 = DirectoryInfo.Name;
+            Icon = FileIcon.GetDirectoryIconImageSource();
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
             AddLazyPlaceholderIfNeeded();
@@ -242,7 +239,6 @@ namespace ColorVision.Solution.Explorer
         private void InitializeCommands()
         {
             AskCopilotSummarizeFolderCommand = new RelayCommand(a => AskCopilotAboutFolder(), a => DirectoryInfo.Exists);
-            OpenFusionCommand = new RelayCommand(_ => OpenFusionWithFolderImages(), _ => DirectoryInfo.Exists);
         }
 
         public override void Open()
@@ -304,22 +300,6 @@ namespace ColorVision.Solution.Explorer
                     $"Last modified: {DirectoryInfo.LastWriteTime:O}",
                 }),
             };
-        }
-
-        private void OpenFusionWithFolderImages()
-        {
-            var imageExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
-            var imageFiles = DirectoryInfo.GetFiles()
-                .Where(f => imageExts.Contains(f.Extension))
-                .OrderBy(f => f.Name, Comparer<string>.Create((a, b) => Common.NativeMethods.Shlwapi.CompareLogical(a, b)))
-                .Select(f => f.FullName);
-            var window = new Fusion.FusionWindow(imageFiles)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            window.Show();
         }
 
         private void ShowAddNewItemDialog()
@@ -475,8 +455,6 @@ namespace ColorVision.Solution.Explorer
         {
             FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
         }
-
-        public override ImageSource Icon { get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
 
         public override bool ReName(string name)
         {

@@ -14,8 +14,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.Camera.CVAOICameraNode)context.Node;
 
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+            context.AddTemplatePanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
 
@@ -26,8 +26,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (AOILocatePixelsCameraNode)context.Node;
 
-            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+            context.AddTemplatePanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
     [NodeConfigurator(typeof(FlowEngineLib.AOILocAndRegPixelsCameraNode))]
@@ -37,8 +37,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (AOILocAndRegPixelsCameraNode)context.Node;
 
-            context.AddTemplatePanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(name => node.AutoExpTempName = name, node.AutoExpTempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+            context.AddTemplatePanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.AutoExpTempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
     
@@ -50,8 +50,8 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         {
             var node = (FlowEngineLib.Node.Camera.CVAOI2CameraNode)context.Node;
 
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+            context.AddTemplatePanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
 
@@ -61,10 +61,10 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
         public override void Configure(NodeConfiguratorContext context)
         {
             var node = (FlowEngineLib.Node.Camera.CommCameraNode)context.Node;
-            context.AddTemplatePanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
-            context.AddTemplateJsonPanel(name => node.CamTempName = name, node.CamTempName, Properties.Resources.HdrTemplate, new TemplateHDR());
-            context.AddTemplatePanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
+            context.AddTemplatePanel(nameof(node.CamTempName), Properties.Resources.CameraTemplate, new TemplateCameraRunParam());
+            context.AddTemplateJsonPanel(nameof(node.CamTempName), Properties.Resources.HdrTemplate, new TemplateHDR());
+            context.AddTemplatePanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V1", new TemplateAutoExpTime());
+            context.AddTemplateJsonPanel(nameof(node.TempName), $"{Properties.Resources.ExposureTemplate} V2", new TemplateAutoExpTimeV2());
         }
     }
 }

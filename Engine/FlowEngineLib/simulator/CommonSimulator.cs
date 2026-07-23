@@ -31,6 +31,7 @@ internal class CommonSimulator : STNodeInHub
 		set
 		{
 			_Server = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -44,6 +45,7 @@ internal class CommonSimulator : STNodeInHub
 		set
 		{
 			_Port = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -57,6 +59,7 @@ internal class CommonSimulator : STNodeInHub
 		set
 		{
 			_Time = value;
+			OnPropertyChanged();
 		}
 	}
 

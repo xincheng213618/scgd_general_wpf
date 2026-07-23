@@ -123,6 +123,7 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private DateTime TokenReceivedTime = DateTime.MinValue;
         private readonly object _registLock = new object();
+        private readonly PendingServiceUpdateBuffer _pendingServiceUpdates = new();
         private DateTime LastRegistTime = DateTime.MinValue;
         private static readonly TimeSpan AutoRegistInterval = TimeSpan.FromSeconds(3);
 
@@ -248,7 +249,20 @@ namespace ColorVision.Engine.Services.RC
         }
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> services)
         {
-            foreach (var serviceTerminal in ServiceManager.GetInstance().TerminalServices)
+            MqttRCService instance = GetInstance();
+            ServiceManager? serviceManager = ServiceManager.Current;
+            if (serviceManager == null)
+            {
+                instance._pendingServiceUpdates.StoreStatuses(services);
+                return;
+            }
+
+            ApplyServiceStatus(serviceManager, services);
+        }
+
+        private static void ApplyServiceStatus(ServiceManager serviceManager, List<MQTTNodeServiceStatus> services)
+        {
+            foreach (var serviceTerminal in serviceManager.TerminalServices)
             {
                 var MQTTNodeServiceStatus = services.FirstOrDefault(x => x.ServiceCode == serviceTerminal.Code);
                 if (MQTTNodeServiceStatus == null) continue;
@@ -283,7 +297,21 @@ namespace ColorVision.Engine.Services.RC
             {
                 ServiceTokensUpdated?.Invoke(this, EventArgs.Empty);
             }));
+        }
+
+        public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        {
+            MqttRCService instance = GetInstance();
+            ServiceManager? serviceManager = ServiceManager.Current;
+            if (serviceManager == null)
+            {
+                instance._pendingServiceUpdates.StoreServices(services);
             }
+            else
+            {
+                ApplyServices(serviceManager, services);
+            }
+        }
         private void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
             logger.Debug("Refresh Token");
@@ -310,12 +338,27 @@ namespace ColorVision.Engine.Services.RC
             }
         }
 
-        public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
+        internal void ApplyPendingServiceUpdates(ServiceManager serviceManager)
+        {
+            ArgumentNullException.ThrowIfNull(serviceManager);
+            PendingServiceUpdates updates = _pendingServiceUpdates.Take();
+
+            if (updates.Services != null)
+            {
+                ApplyServices(serviceManager, updates.Services);
+            }
+            if (updates.Statuses != null)
+            {
+                ApplyServiceStatus(serviceManager, updates.Statuses);
+            }
+        }
+
+        private static void ApplyServices(ServiceManager serviceManager, Dictionary<CVServiceType, List<MQTTNodeService>> data)
         {
             foreach (var itemService in data)
             {
                 ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(itemService.Key.ToString());
-                var serviceKind  = ServiceManager.GetInstance().TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
+                var serviceKind = serviceManager.TypeServices.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
                 if (serviceKind == null) { continue; }
                 foreach (var serviceTerminal in serviceKind.VisualChildren.Cast<TerminalService>())
                 {

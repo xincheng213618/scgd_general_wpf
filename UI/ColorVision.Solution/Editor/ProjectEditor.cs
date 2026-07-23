@@ -55,15 +55,15 @@ namespace ColorVision.Solution.Editor
             Content = root;
         }
 
-        private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (_listView.SelectedItem is not FolderBrowserEntry entry)
                 return;
 
             if (entry.IsDirectory)
-                EditorManager.Instance.OpenFolderWith(entry.FullPath, typeof(ProjectEditor));
+                ResourceOpenService.Instance.TryOpenWith(entry.FullPath, "colorvision.folder.project-list");
             else
-                EditorManager.Instance.TryOpenFile(entry.FullPath);
+                await ResourceOpenService.Instance.TryOpenWithFeedbackAsync(entry.FullPath);
         }
 
         private static IReadOnlyList<FolderBrowserEntry> LoadEntries(DirectoryInfo directory)

@@ -36,10 +36,10 @@ public class CVCommonNode : STNode
 			string nodeName = m_nodeName;
 			m_nodeName = value;
 			OnNodeNameChanged(nodeName, value);
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
-	[STNodeProperty("节点类型", "节点类型", false, true, true)]
 	public string NodeType
 	{
 		get
@@ -49,8 +49,9 @@ public class CVCommonNode : STNode
 		set
 		{
 			m_nodeType = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 	[STNodeProperty("设备代码", "设备代码", false, true)]
 	public string DeviceCode
@@ -62,6 +63,7 @@ public class CVCommonNode : STNode
 		set
 		{
 			m_deviceCode = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -74,10 +76,10 @@ public class CVCommonNode : STNode
 		}
 		set
 		{
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
-	[STNodeProperty("z-index", "z-index", true, false, false)]
 	public int ZIndex
 	{
 		get
@@ -87,8 +89,9 @@ public class CVCommonNode : STNode
 		set
 		{
 			m_zIndex = value;
-		}
-	}
+            OnPropertyChanged();
+        }
+    }
 
 	public FlowEngineNodeEvent nodeEvent { get; set; }
 

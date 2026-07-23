@@ -19,6 +19,7 @@ public class AlgorithmImageROINode : CVBaseServerNode
 		set
 		{
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -34,6 +35,7 @@ public class AlgorithmImageROINode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +49,7 @@ public class AlgorithmImageROINode : CVBaseServerNode
 		set
 		{
 			_OutputFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

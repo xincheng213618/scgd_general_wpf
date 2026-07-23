@@ -1,203 +1,59 @@
-# AGENTS.md
+# ColorVision repository guidance
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+## Project facts
 
-## Project Overview
+- ColorVision is a Windows-only WPF inspection platform. The main application targets `net10.0-windows`; x64 is the primary platform. Treat `Directory.Build.props` and each project file as the source of truth because some shared libraries multi-target.
+- Strong-name signing is conditional on `ColorVision.snk`. Do not disable it when the key exists.
+- The application is modular: UI libraries live under `UI/`, engine code under `Engine/`, runtime plugins under `Plugins/`, and customer bundles under `Projects/`.
 
-ColorVision is a WPF-based professional vision inspection platform built on .NET 8/10. It uses a modular architecture supporting plugins, a visual flow engine, and device integration for photoelectric technology and color management.
+## Architecture boundaries
 
-**Key characteristics:**
-- Windows-only WPF application (net10.0-windows, x64 primary target)
-- Uses strong-name signing (conditional on ColorVision.snk existence)
-- MVVM pattern with metadata-driven PropertyGrid system
-- Plugin-based extensibility with runtime discovery
+- Put device and service implementations under `Engine/ColorVision.Engine/Services/**`.
+- Keep flow primitives in `Engine/FlowEngineLib/` and algorithm templates in `Engine/ColorVision.Engine/Templates/**`.
+- Implement result overlays through `IViewResult` and `IResultHandleBase`; drawing infrastructure belongs under `UI/ColorVision.ImageEditor/Draw/**`.
+- Use the metadata-driven PropertyGrid conventions (`Category`, `DisplayName`, `Description`, `PropertyEditorType`, and `PropertyVisibility`) instead of one-off editors where the existing system applies.
+- Keep UI-to-Engine dependencies behind existing abstractions; avoid ad-hoc cross-layer calls.
+- When working in `Native/`, `Plugins/`, `Projects/`, `Web/`, or `docs/`, also read the nearest nested `AGENTS.md`. The closest file supplies the subsystem-specific rules.
 
-## Architecture
+## Build and verification
 
-### Directory Structure
-
-```
-ColorVision/              # Main WPF application entry point
-├── ColorVision.csproj
-UI/                       # UI layer libraries
-├── ColorVision.UI/       # Main UI framework, menus, hotkeys, settings
-├── ColorVision.Themes/   # Theme management (dark/light/pink/cyan)
-├── ColorVision.ImageEditor/  # Image editor with result overlays
-├── ColorVision.Common/   # Shared UI utilities
-└── ColorVision.*/        # Other UI modules (Database, Scheduler, etc.)
-Engine/                   # Core engine layer
-├── ColorVision.Engine/   # Main engine: devices, FlowEngine, Templates, MQTT, DB
-├── FlowEngineLib/        # Visual flow engine primitives
-├── cvColorVision/        # OpenCV integration (C# wrapper)
-└── ColorVision.FileIO/   # File I/O processing
-Native/                   # C++ OpenCV helper DLL and exported algorithms
-Plugins/                  # Runtime-discovered plugins
-├── EventVWR/, Spectrum/, SystemMonitor/, Pattern/, etc.
-Projects/                 # Customer-specific project bundles
-├── ProjectARVRLite/, ProjectARVRPro/, ProjectKB/, etc.
-Backend/                  # Python Flask backend for plugin marketplace
-└── marketplace/          # Plugin distribution server
-Scripts/                  # Python build and publish scripts
-├── release.bat, build.py, build_update.py, package_cvxp.py, package_plugin.bat
-Test/                     # Native/OpenCV helper tests and other test projects
-docs/                     # VitePress documentation site
-```
-
-### Key Integration Points
-
-1. **Device/Services**: Implement under `Engine/ColorVision.Engine/Services/**`
-2. **Flow Engine**: Primitives in `Engine/FlowEngineLib/`; algorithm Templates in `Engine/ColorVision.Engine/Templates/**`
-3. **Result Overlays**: Implement `IViewResult` + `IResultHandleBase`; visuals in `UI/ColorVision.ImageEditor/Draw/**`
-4. **PropertyGrid**: Use `[Category]`, `[DisplayName]`, `[Description]`, custom `PropertyEditorType`, `PropertyVisibility` attributes
-5. **Plugin Entry**: Implement `IPlugin`/`IPluginBase`; post-build copy to `ColorVision/bin/<Config>/net8.0-windows/Plugins/<Name>/`
-6. **Native OpenCV Algorithms**: Implement under `Native/opencv_helper/**`; export through `Native/include/opencv_media_export.h`; expose to .NET through `UI/ColorVision.Core/OpenCVMediaHelper.cs`; cover with `Test/opencv_helper_test/`
-7. **BMW 4-in-1 SFR**: Native entry point is `M_CalSFRBmw4In1`; implementation lives in `Native/opencv_helper/algorithm/sfr/sfr_bmw4.*`
-
-## Build Commands
-
-### Prerequisites
-- Visual Studio 2022+ or MSBuild
-- .NET 8.0 SDK (or .NET 10.0 for newer targets)
-- Python 3.9+ (for build scripts and backend)
-
-### Build
+Run commands from the repository root in PowerShell. Use PowerShell-native syntax; before any recursive delete or move, resolve the absolute target and verify it remains inside the intended repository path. Prefer the smallest build or test that covers the change.
 
 ```powershell
-# Restore dependencies
-dotnet restore
+# Main application
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 
-# Build entire solution
-dotnet build
+# Full release solution (run in Visual Studio Developer PowerShell)
+dotnet restore .\build.sln
+msbuild .\build.sln /m /p:Configuration=Release /p:Platform=x64
 
-# Build specific project
-dotnet build ColorVision/ColorVision.csproj
-
-# Build Release x64
-dotnet build -c Release -p:Platform=x64
-
-# Run main application
-dotnet run --project ColorVision/ColorVision.csproj
+# Main managed test suite
+dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=x64
 ```
 
-### Build Scripts (Python)
+- Match the existing configuration and platform when validating native or mixed projects.
+- If verification is blocked by a running application, file lock, missing proprietary dependency, or unrelated concurrent edit, report the exact blocker and the checks that still ran. Do not terminate user processes unless the task authorizes it.
 
-Located in `Scripts/` directory:
+## Release and packaging
 
-```powershell
-# Official release: build, package, upload installer, update LATEST_RELEASE,
-# upload incremental update package, and create full zip.
-# Bump Directory.Build.props <VersionPrefix> before running.
-Scripts\release.bat
+- `Scripts\release.bat` is the only normal main-release entry point. Bump `Directory.Build.props` `VersionPrefix` first, then run the wrapper.
+- `Scripts\build.py` and `Scripts\build_update.py` are internal release steps; do not turn them into local-only release shortcuts.
+- A local installer, zip, or update package is not proof of a completed main release. Verify the upload, remote release metadata, and a downloadable artifact before reporting success.
 
-# Build plugin package
-Scripts\package_plugin.bat Pattern
+## Code conventions
 
-# Build project package
-Scripts\package_project.bat ProjectLUX
-```
+- Preserve required runtime dependencies such as `DLL/CVCommCore.dll`, `DLL/MQTTMessageLib.dll`, and `OpenCvSharp4.runtime.win` in the relevant output.
+- Use `CopyToOutputDirectory` for runtime configuration or assets when needed.
+- Optimize for direct, maintainable code rather than line count. Keep simple calls on one line; split only when it materially improves readability.
+- Do not add a forwarding overload merely to let one or two internal callers omit a result or replace an `out` value with `out _`. Keep one only when it is a genuine, reused public API shape.
 
-### Backend (Flask)
+## Completion criteria
 
-```bash
-cd Web/Backend
-pip install -r requirements.txt
-python app.py                    # Default: http://localhost:9998
-python app.py --storage H:\ColorVision --port 9999
-```
-
-### Documentation
-
-```bash
-# Dev server
-npm run docs:dev
-
-# Build docs
-npm run docs:build
-
-# Preview built docs
-npm run docs:preview
-```
-
-### Clean Build
-
-```powershell
-# Clean script
-.\clear-bin.ps1
-
-# Or manual
-dotnet clean
-Remove-Item -Recurse -Force **/bin, **/obj
-```
-
-## Test Commands
-
-```powershell
-# Run xUnit tests (Windows only)
-dotnet test Test/ColorVision.UI.Tests/
-
-# Backend tests
-cd Web/Backend
-python test_app.py
-python test_app_releases.py
-
-```
-
-## Release Rules
-
-- `Scripts\release.bat` is the only normal release entry point.
-- `Scripts\build.py` is an internal release step; it always runs remote preflight, builds with MSBuild/Advanced Installer, uploads the main installer, uploads `CHANGELOG.md`, and updates remote `LATEST_RELEASE`.
-- Do not add or use local-only release shortcuts for the main installer.
-- `Scripts\build_update.py` uploads the incremental update package and returns a failure code if upload fails.
-- Local installer/zip/cvx files are expected release artifacts, not evidence of a local-only release.
-
-## Key Configuration
-
-- `Directory.Build.props`: Global MSBuild properties (signing, versions, TFMs)
-- `ColorVision.snk`: Strong-name key (optional - signing disabled if missing)
-- `Web/Backend/config.json`: Flask backend configuration
-- `ColorVision/log4net.config`: Logging configuration (PreserveNewest)
-
-## External Dependencies
-
-Must exist at runtime:
-- `DLL/CVCommCore.dll` - CopyLocal=true
-- `DLL/MQTTMessageLib.dll` - CopyLocal=true
-- `OpenCvSharp4.runtime.win` - Keep in output
-
-## Code Conventions
-
-1. **Target Framework**: `net8.0-windows` (with `x64` platform)
-2. **Do not disable strong-name signing** if the key file exists
-3. **UI Layering**: UI ↔ Engine via abstractions; avoid ad-hoc cross-layer calls
-4. **Assets**: Use `CopyToOutputDirectory` for configs/assets as needed
-5. **Plugins**: Class Library `net8.0-windows`; add `<UseWPF>true</UseWPF>` if UI needed
-6. **Professional code over line count**: More lines are not a KPI. Keep code concise, direct, and maintainable.
-7. **Formatting discipline**: Prefer single-line calls for simple method invocations and short argument lists. Split calls across lines only when it materially improves readability, such as long expressions, nested lambdas, object initializers, or complex conditionals.
-8. **Overload discipline**: Do not add a forwarding overload solely so one or two internal callers can omit an optional result or replace an `out` value with `out _`. Call the complete method directly. Keep a forwarding overload only when it represents a genuinely common public API shape with multiple callers; when retained, write simple forwarding bodies as a concise expression-bodied member or single-line call.
-
-## Windows / PowerShell Command Rules
-
-This repository is developed on Windows. The default command shell is PowerShell.
-
-- Prefer PowerShell-native commands when executing commands or giving commands to the user.
-- Do not use Bash-only syntax such as `rm -rf`, `grep`, `sed -i`, `cat <<EOF`, `touch`, `chmod`, or `/tmp/...`.
-- Use `Get-ChildItem`, `Select-String`, `Remove-Item`, `Move-Item`, `Copy-Item`, `New-Item`, `Test-Path`, and `Resolve-Path` where appropriate.
-- Use `Remove-Item -LiteralPath <path> -Recurse -Force` for recursive deletion after confirming the resolved target path.
-- Prefer separate commands or PowerShell-compatible separators instead of assuming Bash-style command chaining.
-- For complex text or file rewrites, prefer repository tools, `apply_patch`, Python, or Node instead of fragile shell one-liners.
-
-## Plugin Development Quick Start
-
-1. Create Class Library targeting `net8.0-windows`
-2. Add `<UseWPF>true</UseWPF>` if UI needed
-3. Implement `IPlugin` or `IPluginBase` entry point
-4. Configure post-build to copy to `ColorVision/bin/<Config>/net8.0-windows/Plugins/<Name>/`
-5. See `docs/02-developer-guide/plugin-development/` for details
+- Confirm the requested behavior, run the closest relevant build/tests, inspect the final diff for scope and accidental artifacts, and report concrete evidence plus any remaining verification gap.
 
 ## References
 
 - Architecture: `docs/03-architecture/README.md`
 - Extensibility: `docs/02-developer-guide/core-concepts/extensibility.md`
-- Plugin Dev: `docs/02-developer-guide/plugin-development/overview.md`
 - Backend: `docs/02-developer-guide/backend/README.md`
-- Build Scripts: `docs/02-developer-guide/scripts/README.md`
+- Build and release scripts: `docs/02-developer-guide/scripts/README.md`

@@ -19,6 +19,7 @@ public class AlgorithmTMNode : CVBaseServerNode
 		{
 			_TempName = value;
 			setTempName(value);
+			OnPropertyChanged();
 		}
 	}
 
@@ -32,6 +33,7 @@ public class AlgorithmTMNode : CVBaseServerNode
 		set
 		{
 			_TemplateFile = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -47,6 +49,7 @@ public class AlgorithmTMNode : CVBaseServerNode
 		set
 		{
 			_ImgFileName = value;
+			OnPropertyChanged();
 		}
 	}
 

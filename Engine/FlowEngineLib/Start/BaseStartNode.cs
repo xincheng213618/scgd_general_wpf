@@ -42,6 +42,7 @@ public abstract class BaseStartNode : CVCommonNode
 		set
 		{
 			setTimeout(value);
+			OnPropertyChanged();
 		}
 	}
 

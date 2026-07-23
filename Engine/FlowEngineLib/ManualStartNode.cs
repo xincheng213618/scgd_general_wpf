@@ -21,6 +21,7 @@ internal class ManualStartNode : BaseStartNode
 		set
 		{
 			_sn = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -35,6 +36,7 @@ internal class ManualStartNode : BaseStartNode
 		{
 			_Action = value;
 			DoStartTransferData(new CVStartCFC(this, _Action, _sn));
+			OnPropertyChanged();
 		}
 	}
 

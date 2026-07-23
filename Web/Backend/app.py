@@ -110,7 +110,7 @@ require_upload_auth = _helpers["require_upload_auth"]
 # ---------------------------------------------------------------------------
 
 register_error_handlers(app)
-register_slow_request_logging(app, _ctx)
+register_slow_request_logging(app, _ctx, _helpers["access_recorder"])
 register_all_blueprints(app, _ctx, SERVICES, _helpers)
 
 # ---------------------------------------------------------------------------

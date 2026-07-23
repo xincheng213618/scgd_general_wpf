@@ -365,12 +365,6 @@
   <data name="UpdatePreviewHeaderPluginCount" xml:space="preserve">
     <value>{0} plugin updates</value>
   </data>
-  <data name="UpdatePreviewHeaderThemeCount" xml:space="preserve">
-    <value>{0} theme updates</value>
-  </data>
-  <data name="UpdatePreviewHeaderOtherCount" xml:space="preserve">
-    <value>{0} other updates</value>
-  </data>
   <data name="UpdatePreviewSelectionSelectedPluginsFormat" xml:space="preserve">
     <value>Selected {0} / {1} plugins</value>
   </data>
@@ -892,5 +886,68 @@
 
 <data name="MenuFileAssociation" xml:space="preserve">
     <value>File Association</value>
+  </data>
+  <data name="ServiceHostWizardHeader" xml:space="preserve">
+    <value>ColorVision background service</value>
+  </data>
+  <data name="ServiceHostWizardWorkingAction" xml:space="preserve">
+    <value>Working…</value>
+  </data>
+  <data name="ServiceHostWizardRecheckAction" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="ServiceHostWizardRetryAction" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="ServiceHostWizardInstallAction" xml:space="preserve">
+    <value>Install background service</value>
+  </data>
+  <data name="ServiceHostWizardRepairAction" xml:space="preserve">
+    <value>Repair and start</value>
+  </data>
+  <data name="ServiceHostWizardUpdateAction" xml:space="preserve">
+    <value>Update background service</value>
+  </data>
+  <data name="ServiceHostWizardWorking" xml:space="preserve">
+    <value>Preparing ColorVision Service Host. Windows may request administrator approval while installing or repairing it.</value>
+  </data>
+  <data name="ServiceHostWizardChecking" xml:space="preserve">
+    <value>Checking the installation and running state of ColorVision Service Host.</value>
+  </data>
+  <data name="ServiceHostWizardReadyFormat" xml:space="preserve">
+    <value>The background service is installed and running (version {0}).&#xA;&#xA;Service Manager can now safely install, update, and control local services.</value>
+  </data>
+  <data name="ServiceHostWizardUnavailableFormat" xml:space="preserve">
+    <value>The background-service package could not be found, so setup cannot continue.&#xA;&#xA;Package: {0}</value>
+  </data>
+  <data name="ServiceHostWizardNotInstalledFormat" xml:space="preserve">
+    <value>Service Manager uses ColorVision Service Host for installation and maintenance tasks that require administrator privileges. Windows will request approval once you choose “Install background service.”&#xA;&#xA;Package: {0}</value>
+  </data>
+  <data name="ServiceHostWizardStoppedFormat" xml:space="preserve">
+    <value>The background service is installed (version {0}) but is not running. Repair and start it before continuing.</value>
+  </data>
+  <data name="ServiceHostWizardUpdateFormat" xml:space="preserve">
+    <value>The background service must be updated or repaired. Installed: {0}; package: {1}. Finish this step before opening Service Manager.</value>
+  </data>
+  <data name="ServiceHostWizardPackageMissingFormat" xml:space="preserve">
+    <value>The background-service package does not exist: {0}</value>
+  </data>
+  <data name="ServiceHostWizardStatusUnknown" xml:space="preserve">
+    <value>The background-service state could not be confirmed. Try again.</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdate" xml:space="preserve">
+    <value>Create a program snapshot before updating</value>
+  </data>
+  <data name="CreateSnapshotBeforeUpdateDescription" xml:space="preserve">
+    <value>When enabled, one full program snapshot is created before an application, plugin, or combined update. This may increase update time.</value>
+  </data>
+  <data name="DisableSystemProxyForUpdates" xml:space="preserve">
+    <value>Do not use the system proxy</value>
+  </data>
+  <data name="DisableSystemProxyForUpdatesDescription" xml:space="preserve">
+    <value>When enabled, update checks and marketplace requests connect directly to the public service. When disabled, the Windows system proxy is used. Changes apply to the next request.</value>
+  </data>
+  <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
+    <value>Create a program snapshot before updating</value>
   </data>
 </root>

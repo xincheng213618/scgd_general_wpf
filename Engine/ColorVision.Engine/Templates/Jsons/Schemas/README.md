@@ -17,7 +17,7 @@ still passing JSON to the algorithm unchanged.
 Generation notes:
 
 - `KB` is intentionally excluded because it already has a dedicated editor.
-- Template folders under `Deprecated` are intentionally excluded.
+- Removed deprecated templates (`CaliAngleShift` and `CompoundImg`) are intentionally excluded.
 - `schema-index.json` lists every generated schema and its template folder.
 - If a provider test-case `defaultparam.txt` exists, `default` and
   `properties` are sourced from that provider-maintained file.

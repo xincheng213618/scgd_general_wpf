@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -11,6 +13,13 @@ namespace ColorVision.UI
         ICommand? Command { get; }
         string Description { get; }
         bool ConfigurationStatus { get; set; }
+        bool IsRequired => false;
+        bool IsBusy => false;
+        bool HasError => false;
+        string ErrorMessage => string.Empty;
+        string ActionText => string.Empty;
+        bool CanContinue => !IsBusy && (!IsRequired || ConfigurationStatus);
+        Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     }
 
@@ -46,8 +55,26 @@ namespace ColorVision.UI
         public virtual ICommand? Command => new RelayCommand(A => Execute());
         public abstract string Description { get; }
 
-        public virtual bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; OnPropertyChanged(); } }
+        public virtual bool ConfigurationStatus
+        {
+            get => _ConfigurationStatus;
+            set
+            {
+                _ConfigurationStatus = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanContinue));
+            }
+        }
         private bool _ConfigurationStatus = true;
+
+        public virtual bool IsRequired => false;
+        public virtual bool IsBusy => false;
+        public virtual bool HasError => false;
+        public virtual string ErrorMessage => string.Empty;
+        public virtual string ActionText => string.Empty;
+        public virtual bool CanContinue => !IsBusy && (!IsRequired || ConfigurationStatus);
+
+        public virtual Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public virtual void Execute()
         {

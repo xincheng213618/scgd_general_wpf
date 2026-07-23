@@ -20,7 +20,12 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         {
             EditLEDStripDetection.SetParam(TemplateParams[index].Value);
         }
-        public EditLEDStripDetection EditLEDStripDetection { get; set; } = new EditLEDStripDetection();
+        private EditLEDStripDetection? _editLEDStripDetection;
+        public EditLEDStripDetection EditLEDStripDetection
+        {
+            get => _editLEDStripDetection ??= new EditLEDStripDetection();
+            set => _editLEDStripDetection = value;
+        }
 
         public override UserControl GetUserControl()
         {

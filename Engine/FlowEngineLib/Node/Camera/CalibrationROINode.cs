@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Camera;
 
 [STNode("/11 ROI")]
+[System.Obsolete("Deprecated ROI flow node retained for loading existing flows.")]
 public class CalibrationROINode : CVBaseServerNode
 {
 	private int _ROI_X;
@@ -34,6 +35,7 @@ public class CalibrationROINode : CVBaseServerNode
 		{
 			_ROI_X = value;
 			m_ctrl_x.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -48,6 +50,7 @@ public class CalibrationROINode : CVBaseServerNode
 		{
 			_ROI_Y = value;
 			m_ctrl_y.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -62,6 +65,7 @@ public class CalibrationROINode : CVBaseServerNode
 		{
 			_ROI_Width = value;
 			m_ctrl_width.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
@@ -76,6 +80,7 @@ public class CalibrationROINode : CVBaseServerNode
 		{
 			_ROI_Height = value;
 			m_ctrl_height.Value = value;
+			OnPropertyChanged();
 		}
 	}
 
