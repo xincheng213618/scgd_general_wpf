@@ -143,7 +143,8 @@ namespace ColorVision.UI.Desktop.Diagnostics
             _configuration.DumpFolder = GetValidatedDumpFolder();
             _configuration.DumpCount = dumpCount;
             _configuration.DumpType = option.Type;
-            _configuration.CustomDumpFlags = ParseCustomDumpFlags(CustomFlagsTextBox.Text);
+            if (option.Type == CrashDumpType.Custom)
+                _configuration.CustomDumpFlags = ParseCustomDumpFlags(CustomFlagsTextBox.Text);
         }
 
         private string GetValidatedDumpFolder()

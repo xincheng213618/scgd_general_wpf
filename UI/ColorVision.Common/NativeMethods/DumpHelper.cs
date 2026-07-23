@@ -26,19 +26,33 @@ namespace ColorVision.Common.NativeMethods
             string? directory = Path.GetDirectoryName(fullPath);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
 
-            using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            using var process = Process.GetCurrentProcess();
-            bool succeeded = MiniDumpWriteDump(
-                process.Handle,
-                (uint)process.Id,
-                fileStream.SafeFileHandle.DangerousGetHandle(),
-                dumpType,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                IntPtr.Zero);
+            try
+            {
+                using var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                using var process = Process.GetCurrentProcess();
+                bool succeeded = MiniDumpWriteDump(
+                    process.Handle,
+                    (uint)process.Id,
+                    fileStream.SafeFileHandle.DangerousGetHandle(),
+                    dumpType,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
 
-            if (!succeeded)
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "MiniDumpWriteDump failed.");
+                if (!succeeded)
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "MiniDumpWriteDump failed.");
+            }
+            catch
+            {
+                try
+                {
+                    if (File.Exists(fullPath)) File.Delete(fullPath);
+                }
+                catch
+                {
+                }
+                throw;
+            }
         }
     }
 }
