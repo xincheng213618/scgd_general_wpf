@@ -577,14 +577,26 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region ContextMenu
 
-        private static string LocalizeNodeMenuPath(string path)
+        private static readonly string[] CoreNodeMenuAssemblyPrefixes =
+        {
+            "FlowEngineLib/",
+            "ColorVision.Engine/",
+        };
+
+        internal static string LocalizeNodeMenuPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
                 return path;
 
-            string displayPath = path.StartsWith("FlowEngineLib/", StringComparison.Ordinal)
-                ? path.Substring("FlowEngineLib/".Length)
-                : path;
+            string displayPath = path;
+            foreach (string prefix in CoreNodeMenuAssemblyPrefixes)
+            {
+                if (!displayPath.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+
+                displayPath = displayPath.Substring(prefix.Length);
+                break;
+            }
 
             return string.Join("/", displayPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(LocalizeNodeMenuText));
         }
