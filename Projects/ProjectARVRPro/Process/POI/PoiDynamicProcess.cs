@@ -34,6 +34,10 @@ namespace ProjectARVRPro.Process.POI
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        if (File.Exists(master.ImgFile))
+                        {
+                            ctx.Result.FileName = master.ImgFile;
+                        }
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         if (poiPoints.Count == 0) continue;
                         int id = sourcePoixyuvDatas.Count;

@@ -9,6 +9,7 @@ using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -48,6 +49,10 @@ namespace ProjectARVRPro.Process.Chessboard
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        if (File.Exists(master.ImgFile))
+                        {
+                            ctx.Result.FileName = master.ImgFile;
+                        }
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)

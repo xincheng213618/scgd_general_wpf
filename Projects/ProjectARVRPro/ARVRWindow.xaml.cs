@@ -367,7 +367,7 @@ namespace ProjectARVRPro
 
         private void ContextMenu_OpenFolderAndSelectFile()
         {
-            if (listView1.SelectedItem is ProjectARVRReuslt item)
+            if (listView1.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrWhiteSpace(item.FileName))
                 PlatformHelper.OpenFolderAndSelectFile(item.FileName);
         }
 
@@ -509,6 +509,7 @@ namespace ProjectARVRPro
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = flowTemplateKey;
+            ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -859,10 +860,14 @@ namespace ProjectARVRPro
             {
                 log.Info($"{result.Model}");
 
-                var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                if (meta?.Process != null)
+                IProcess? process = _currentFlowProcess ?? ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
+                if (process != null)
                 {
-                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {result.Model}");
+                    if (string.IsNullOrWhiteSpace(result.ProcessTypeFullName))
+                        ResultProcessResolver.Capture(result, process);
+
+                    string processTypeName = process.GetType().Name;
+                    log.Info($"使用本次流程解析器 {processTypeName} 处理 {result.Model}");
 
                     bool executed = false;
                     try
@@ -874,7 +879,7 @@ namespace ProjectARVRPro
                             ObjectiveTestResult = ObjectiveTestResult,
                             ImageView =ImageView,
                         };
-                        executed = await meta.Process.Execute(ctx);
+                        executed = await process.Execute(ctx);
                     }
                     catch (Exception ex)
                     {
@@ -919,11 +924,12 @@ namespace ProjectARVRPro
                             if (!Directory.Exists(linkPath))
                                 Directory.CreateDirectory(linkPath);
 
-                            string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
-                            string shortcutPath = linkPath;
-
-                            if (shortcutName != null)
+                            if (!string.IsNullOrWhiteSpace(result.FileName))
+                            {
+                                string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
+                                string shortcutPath = linkPath;
                                 ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, result.FileName, "");
+                            }
                         }
                         IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
@@ -935,7 +941,7 @@ namespace ProjectARVRPro
                     }
                     else
                     {
-                        string failureMessage = $"自定义 IProcess 执行失败: {meta.Name} -> {meta.ProcessTypeName}";
+                        string failureMessage = $"自定义 IProcess 执行失败: {result.Model} -> {processTypeName}";
                         log.Error($"{failureMessage}，当前结果按失败处理");
                         result.FlowStatus = FlowStatus.Failed;
                         RecordFlowFailure(failureMessage);
@@ -1199,7 +1205,7 @@ namespace ProjectARVRPro
                 {
                     try
                     {
-                        string filePath = result.FileName;
+                        string? filePath = result.FileName;
                         _ = Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
@@ -1234,8 +1240,8 @@ namespace ProjectARVRPro
             if (result.FlowStatus != FlowStatus.Completed)
                 return;
 
-            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-            if (meta?.Process == null) return;
+            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
+            if (process == null) return;
 
             try
             {
@@ -1245,7 +1251,7 @@ namespace ProjectARVRPro
                     ObjectiveTestResult = ObjectiveTestResult,
                     ImageView = ImageView,
                 };
-                meta.Process.Render(ctx);
+                process.Render(ctx);
             }
             catch (Exception ex)
             {
@@ -1255,10 +1261,11 @@ namespace ProjectARVRPro
 
         private void SaveImageResultIfNeeded(ProjectARVRReuslt result)
         {
-            if (!IsSaveImageReuslt || _isDisposed) return;
+            if (!IsSaveImageReuslt || _isDisposed || string.IsNullOrWhiteSpace(result.FileName)) return;
 
             log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
             IsSaveImageReuslt = false;
+            string sourceFileName = result.FileName;
             _ = Task.Run(async () =>
             {
                 try
@@ -1292,7 +1299,7 @@ namespace ProjectARVRPro
                     if (!Directory.Exists(linkPath))
                         Directory.CreateDirectory(linkPath);
 
-                    string fileName = Path.GetFileNameWithoutExtension(result.FileName);
+                    string fileName = Path.GetFileNameWithoutExtension(sourceFileName);
                     string filePath = Path.Combine(linkPath, $"{fileName}_{result.Model}result.png");
                     log.Info(filePath);
                     Application.Current?.Dispatcher.Invoke(() =>
@@ -1344,10 +1351,10 @@ namespace ProjectARVRPro
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
 
-            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
             Brush foreground = result.Result ? Brushes.Black : Brushes.White;
             paragraph = new Paragraph();
-            if (meta?.Process != null)
+            if (process != null)
             {
                 try
                 {
@@ -1357,7 +1364,7 @@ namespace ProjectARVRPro
                         ObjectiveTestResult = ObjectiveTestResult,
                         ImageView = ImageView,
                     };
-                    meta.Process.GenText(ctx, paragraph, foreground, outputFontSize);
+                    process.GenText(ctx, paragraph, foreground, outputFontSize);
                 }
                 catch (Exception ex)
                 {
@@ -1460,6 +1467,7 @@ namespace ProjectARVRPro
                 for (int i = 0; i < enabledMetas.Count; i++)
                 {
                     ProcessMeta meta = enabledMetas[i];
+                    _currentFlowProcess = meta.Process;
                     CurrentTestType = ProcessMetas.IndexOf(meta);
                     ProjectConfig.StepIndex = CurrentTestType;
 
@@ -1480,6 +1488,7 @@ namespace ProjectARVRPro
                     CurrentFlowResult = new ProjectARVRReuslt();
                     CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
                     CurrentFlowResult.Model = templateParam.Key;
+                    ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
                     CurrentFlowResult.TestType = CurrentTestType;
                     ProjectARVRProConfig.Instance.StepIndex = CurrentTestType;
 

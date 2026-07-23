@@ -102,6 +102,13 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def files_match(source: Path, destination: Path) -> bool:
+    return (
+        source.stat().st_size == destination.stat().st_size
+        and sha256_file(source) == sha256_file(destination)
+    )
+
+
 def validate_runtime_copy_integrity(
     solution_root: str | Path,
     runtime_directory: str | Path,
@@ -118,12 +125,51 @@ def validate_runtime_copy_integrity(
         if not project_output.is_file() or not runtime_output.is_file():
             report(f"Runtime integrity input is missing: {project_output} -> {runtime_output}")
             return False
-        if project_output.stat().st_size != runtime_output.stat().st_size or sha256_file(project_output) != sha256_file(runtime_output):
+        if not files_match(project_output, runtime_output):
             report(f"Runtime DLL differs from its project output: {project_output} -> {runtime_output}")
             return False
 
     report(f"Verified {len(project_outputs)} runtime DLL copies against their project outputs.")
     return True
+
+
+def ensure_runtime_copy_integrity(
+    solution_root: str | Path,
+    runtime_directory: str | Path,
+    *,
+    project_outputs: tuple[tuple[str, str], ...] = CRITICAL_RUNTIME_PROJECT_OUTPUTS,
+    report: Callable[[str], None] = print,
+) -> bool:
+    solution_path = Path(solution_root)
+    runtime_path = Path(runtime_directory)
+
+    for project_relative_path, runtime_name in project_outputs:
+        project_output = solution_path / project_relative_path
+        runtime_output = runtime_path / runtime_name
+        if not project_output.is_file():
+            report(f"Runtime integrity project output is missing: {project_output}")
+            return False
+        if runtime_output.is_file() and files_match(project_output, runtime_output):
+            continue
+
+        try:
+            runtime_output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(project_output, runtime_output)
+        except OSError as exc:
+            report(f"Could not repair runtime DLL copy: {project_output} -> {runtime_output}: {exc}")
+            return False
+
+        if not runtime_output.is_file() or not files_match(project_output, runtime_output):
+            report(f"Runtime DLL still differs after repair: {project_output} -> {runtime_output}")
+            return False
+        report(f"Repaired runtime DLL copy: {project_output} -> {runtime_output}")
+
+    return validate_runtime_copy_integrity(
+        solution_path,
+        runtime_path,
+        project_outputs=project_outputs,
+        report=report,
+    )
 
 
 def validate_installer_runtime_dlls(
@@ -179,7 +225,7 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
         )
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
-        if not validate_runtime_copy_integrity(solution_path.parent, runtime_directory):
+        if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
             return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False

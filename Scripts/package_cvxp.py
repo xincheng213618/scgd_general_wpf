@@ -200,6 +200,36 @@ def write_json_file(file_path: Path, data) -> None:
         json.dump(data, file, indent=2, ensure_ascii=False)
 
 
+def synchronize_manifest_version(manifest_path: Path, dll_version: str) -> tuple[bool, str]:
+    dll_version = dll_version.strip()
+    if not dll_version:
+        raise ValueError("DLL version must not be empty.")
+
+    with manifest_path.open("r", encoding="utf-8-sig") as file:
+        manifest = json.load(file)
+    _require_manifest(isinstance(manifest, dict), manifest_path, "$", "must be a JSON object")
+
+    version_keys = [
+        key
+        for key in manifest
+        if isinstance(key, str) and key.lower() == "version"
+    ]
+    previous_value = manifest[version_keys[-1]] if version_keys else None
+    previous_version = previous_value.strip() if isinstance(previous_value, str) else ""
+
+    if version_keys and all(manifest[key] == dll_version for key in version_keys):
+        return False, previous_version
+
+    if version_keys:
+        for key in version_keys:
+            manifest[key] = dll_version
+    else:
+        manifest["version"] = dll_version
+
+    write_json_file(manifest_path, manifest)
+    return True, previous_version
+
+
 def normalize_relative_path(path_value: str) -> str:
     return Path(path_value.replace("\\", "/")).as_posix()
 
@@ -561,6 +591,12 @@ def main() -> None:
     version = get_file_version(dll_path)
     if not version:
         raise RuntimeError(f"Cannot read version from: {dll_path}")
+
+    if manifest_summary.manifest_present:
+        manifest_updated, previous_manifest_version = synchronize_manifest_version(plugin_root / "manifest.json", version)
+        if manifest_updated:
+            previous_version_label = previous_manifest_version or "<missing>"
+            print(f"Updated manifest version to match primary DLL: {previous_version_label} -> {version}")
 
     shared_files = load_shared_files_manifest(shared_files_path)
     output_file = output_dir / f"{package_id}-{version}.cvxp"

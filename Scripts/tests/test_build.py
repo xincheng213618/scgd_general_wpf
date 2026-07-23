@@ -2,7 +2,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from Scripts.build import validate_installer_runtime_dlls, validate_runtime_copy_integrity
+from Scripts.build import (
+    ensure_runtime_copy_integrity,
+    validate_installer_runtime_dlls,
+    validate_runtime_copy_integrity,
+)
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 
 
@@ -66,6 +70,37 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
             project_outputs=(("Module/bin/Module.dll", "Module.dll"),),
             report=lambda _: None,
         ))
+
+    def test_runtime_copy_integrity_repairs_a_mismatched_dll(self) -> None:
+        solution_root = self.root / "source"
+        project_output = solution_root / "Module" / "bin" / "Module.dll"
+        project_output.parent.mkdir(parents=True)
+        project_output.write_bytes(b"valid module")
+        runtime_output = self.runtime_directory / "Module.dll"
+        runtime_output.write_bytes(b"corrupt module")
+
+        self.assertTrue(ensure_runtime_copy_integrity(
+            solution_root,
+            self.runtime_directory,
+            project_outputs=(("Module/bin/Module.dll", "Module.dll"),),
+            report=lambda _: None,
+        ))
+        self.assertEqual(runtime_output.read_bytes(), project_output.read_bytes())
+
+    def test_runtime_copy_integrity_repairs_a_missing_dll(self) -> None:
+        solution_root = self.root / "source"
+        project_output = solution_root / "Module" / "bin" / "Module.dll"
+        project_output.parent.mkdir(parents=True)
+        project_output.write_bytes(b"valid module")
+        runtime_output = self.runtime_directory / "Module.dll"
+
+        self.assertTrue(ensure_runtime_copy_integrity(
+            solution_root,
+            self.runtime_directory,
+            project_outputs=(("Module/bin/Module.dll", "Module.dll"),),
+            report=lambda _: None,
+        ))
+        self.assertEqual(runtime_output.read_bytes(), project_output.read_bytes())
 
     def _write_aip(self, service_host_paths: tuple[str, ...]) -> Path:
         source_paths = ["C:\\build\\ColorVision.UI.dll", *[f"C:\\build\\{path}" for path in service_host_paths]]
