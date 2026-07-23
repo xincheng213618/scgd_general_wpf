@@ -32,7 +32,7 @@ namespace ProjectARVRPro.Process.POI
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
-                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ || master.ImgFileType == ViewResultAlgType.BuildPOI)
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         if (poiPoints.Count == 0) continue;

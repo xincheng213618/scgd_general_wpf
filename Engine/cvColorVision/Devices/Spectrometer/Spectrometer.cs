@@ -60,13 +60,13 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_Close", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_Close(IntPtr handle);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadWavaLengthFile", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadWavaLengthFileW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_LoadWavaLengthFile(IntPtr handle, string szFileName);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadMagiudeFile", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadMagiudeFileW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_LoadMagiudeFile(IntPtr handle, string szFileName);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadMagiudeFileWithND", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_LoadMagiudeFileWithNDW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_LoadMagiudeFileWithND(IntPtr handle, int nIndex, string szFileName);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSrcData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]

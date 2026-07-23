@@ -34,10 +34,8 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
 
                 foreach (var master in AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id))
                 {
-                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ || master.ImgFileType == ViewResultAlgType.BuildPOI)
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-                        if (poiPoints.Count == 0) continue;
                         ReadPoiResults(ctx, master, testResult);
                     }
                     else if (master.ImgFileType == ViewResultAlgType.PoiAnalysis)

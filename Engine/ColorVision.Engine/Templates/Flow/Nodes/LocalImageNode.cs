@@ -1,5 +1,6 @@
 #pragma warning disable CA1861
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.FileIO;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -9,6 +10,7 @@ using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.Flow.Nodes
@@ -24,6 +26,12 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
         public int MasterResultType { get; set; }
 
         public string? MasterValue { get; set; }
+
+        public string? FrameId { get; set; }
+
+        public bool HasRaw { get; set; }
+
+        public bool HasCie { get; set; }
     }
 
     public class TestMessageBoxNode : CVBaseServerNode
@@ -87,14 +95,17 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 SendPayload = BuildRunPayload(start)
             });
 
-            try
+            _ = Task.Run(() =>
             {
-                FinishLocalImageNode(trans);
-            }
-            finally
-            {
-                m_trans_action.TryRemove(trans.trans_action.SerialNumber, out _);
-            }
+                try
+                {
+                    FinishLocalImageNode(trans);
+                }
+                finally
+                {
+                    m_trans_action.TryRemove(trans.trans_action.SerialNumber, out _);
+                }
+            });
         }
 
         private void FinishLocalImageNode(CVTransAction trans)
@@ -121,27 +132,47 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 return;
             }
 
-            MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
-            int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
-            if (masterId <= 0)
+            LocalFlowFrame? frame = null;
+            try
             {
-                FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
-                return;
+                frame = LocalFrameFileService.Load(fileUrl);
+                MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
+                int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+                if (masterId <= 0)
+                {
+                    FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
+                    return;
+                }
+
+                frame.MasterId = masterId;
+                action.SetCurrentFrame(frame);
+                LocalFlowFrame currentFrame = frame;
+                frame = null;
+                LocalImageResultData resultData = new()
+                {
+                    POIResult = null,
+                    TotalTime = LocalImageTotalTime,
+                    MasterId = masterId,
+                    MasterResultType = LocalImageMasterResultType,
+                    MasterValue = null,
+                    FrameId = currentFrame.FrameId.ToString("N"),
+                    HasRaw = currentFrame.HasRaw,
+                    HasCie = currentFrame.HasCie
+                };
+
+                action.MasterValue(null, masterId, LocalImageMasterResultType);
+                CVServerResponse response = new CVServerResponse(action.SerialNumber, ActionStatusEnum.Finish, "Finish", operatorCode, resultData);
+                action.AddResult(GetLocalNodeName(), response, trans.startTime);
+                TransferEnd(trans, response, 0);
             }
-
-            LocalImageResultData resultData = new()
+            catch (Exception ex)
             {
-                POIResult = null,
-                TotalTime = LocalImageTotalTime,
-                MasterId = masterId,
-                MasterResultType = LocalImageMasterResultType,
-                MasterValue = null
-            };
-
-            action.MasterValue(null, masterId, LocalImageMasterResultType);
-            CVServerResponse response = new CVServerResponse(action.SerialNumber, ActionStatusEnum.Finish, "Finish", operatorCode, resultData);
-            action.AddResult(GetLocalNodeName(), response, trans.startTime);
-            TransferEnd(trans, response, 0);
+                FailLocalNode(trans, ex.Message);
+            }
+            finally
+            {
+                frame?.Dispose();
+            }
         }
 
         private MeasureResultImgModel BuildMeasureResultImgModel(int batchId, string fileUrl)

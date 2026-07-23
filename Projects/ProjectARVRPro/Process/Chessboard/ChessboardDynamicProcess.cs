@@ -57,17 +57,6 @@ namespace ProjectARVRPro.Process.Chessboard
                         }
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.BuildPOI)
-                    {
-                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-                        int id = 0;
-                        foreach (var item in poiPoints)
-                        {
-                            var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            chessboardResult.PoixyuvDatas.Add(poi);
-                        }
-                    }
-
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName?.Contains(contrastResultName, StringComparison.Ordinal) == true)
                     {
                         databaseContrastFound = true;

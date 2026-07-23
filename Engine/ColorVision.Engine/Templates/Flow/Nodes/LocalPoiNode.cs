@@ -7,6 +7,7 @@ using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 
 namespace ColorVision.Engine.Templates.Flow.Nodes
@@ -15,7 +16,10 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
     {
         public string FrameId { get; init; } = string.Empty;
         public string TemplateName { get; init; } = string.Empty;
+        public int MasterId { get; init; }
+        public int MasterResultType { get; init; } = (int)ViewResultAlgType.POI_XYZ;
         public int PointCount { get; init; }
+        public int TotalTime { get; init; }
         public object? POIResult { get; init; }
     }
 
@@ -59,26 +63,60 @@ namespace ColorVision.Engine.Templates.Flow.Nodes
                 : TemplatePoiReviseParam.Params.FirstOrDefault(item => string.Equals(item.Key, POIReviseTempName, StringComparison.Ordinal))?.Value
                     ?? throw new InvalidOperationException($"找不到 POI 修正模板：{POIReviseTempName}");
 
-            if (!action.TryAcquireCurrentFrame(out LocalFlowFrameLease? frame) || frame == null)
+            if (!action.TryGetCurrentFrame(out LocalFlowFrame? currentFrame) || currentFrame == null)
             {
                 throw new InvalidOperationException("流程中没有可用的本地图像内存帧。");
             }
-            using (frame)
+            using (LocalFlowFrameLease frame = currentFrame.Acquire())
             {
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 LocalPoiResultSet result = LocalPoiCalculator.Calculate(frame, poi, filter, revise);
-                LocalPoiCalculator.SaveDetails(frame.MasterId, result);
-                action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
-                action.Data["LocalPoiCount"] = result.Points.Count;
-                return new LocalNodeExecutionResult
-                {
-                    Data = new LocalPoiNodeResultData
+                stopwatch.Stop();
+                int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+                ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
+                int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
+                    action,
+                    resultType,
+                    poi.Id,
+                    poi.Name,
+                    currentFrame.CvCieFilePath,
+                    string.IsNullOrWhiteSpace(DeviceCode) ? frame.Metadata.DeviceCode : DeviceCode,
+                    ZIndex,
+                    totalTime,
+                    new
                     {
-                        FrameId = result.FrameId,
-                        TemplateName = result.TemplateName,
-                        PointCount = result.Points.Count,
-                        POIResult = result.Points
-                    }
-                };
+                        CieMasterId = frame.MasterId,
+                        POITemplate = poi.Name,
+                        POIFilterTemplate = filter?.Name,
+                        POIReviseTemplate = revise?.Name,
+                        MemoryOnly = string.IsNullOrWhiteSpace(currentFrame.CvCieFilePath)
+                    });
+                try
+                {
+                    LocalPoiCalculator.SaveDetails(masterId, result);
+                    action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
+                    action.Data["LocalPoiCount"] = result.Points.Count;
+                    action.MasterValue(null, masterId, (int)resultType);
+                    return new LocalNodeExecutionResult
+                    {
+                        Data = new LocalPoiNodeResultData
+                        {
+                            FrameId = result.FrameId,
+                            TemplateName = result.TemplateName,
+                            MasterId = masterId,
+                            MasterResultType = (int)resultType,
+                            PointCount = result.Points.Count,
+                            TotalTime = totalTime,
+                            POIResult = result.Points
+                        }
+                    };
+                }
+                catch
+                {
+                    LocalPoiCalculator.DeleteDetails(masterId);
+                    LocalFlowResultPersistence.DeleteAlgorithmResult(masterId);
+                    throw;
+                }
             }
         }
     }
