@@ -32,21 +32,20 @@ namespace ProjectARVRPro.Process.POI
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
-                    if (master.ImgFileType != ViewResultAlgType.POI_XYZ || !ShouldParse(master))
-                        continue;
-
-                    if (!string.IsNullOrWhiteSpace(master.ImgFile))
-                        ctx.Result.FileName = master.ImgFile;
-
-                    var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
-                    int id = sourcePoixyuvDatas.Count;
-                    foreach (var item in poiPoints)
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ || master.ImgFileType == ViewResultAlgType.BuildPOI)
                     {
-                        var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                        sourcePoixyuvDatas.Add(poi);
-                        testResult.ViewPoixyuvDatas.Add(poi);
-                        testResult.PoixyuvDatas.Add(ToPoixyuvData(poi));
+                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        if (poiPoints.Count == 0) continue;
+                        int id = sourcePoixyuvDatas.Count;
+                        foreach (var item in poiPoints)
+                        {
+                            var poi = new PoiResultCIExyuvData(item) { Id = id++ };
+                            sourcePoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(ToPoixyuvData(poi));
+                        }
                     }
+
                 }
 
                 string outputName = GetOutputName();
@@ -122,15 +121,6 @@ namespace ProjectARVRPro.Process.POI
             }
 
             AppendPlainText(paragraph, outtext, foreground, fontSize); return;
-        }
-
-        private bool ShouldParse(AlgResultMasterModel master)
-        {
-            if (string.IsNullOrWhiteSpace(Config.TemplateName))
-                return true;
-
-            return !string.IsNullOrWhiteSpace(master.TName)
-                && master.TName.Contains(Config.TemplateName, StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetOutputName()

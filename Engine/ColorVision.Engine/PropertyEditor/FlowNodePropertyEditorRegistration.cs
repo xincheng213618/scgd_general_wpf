@@ -1,6 +1,7 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Sensor;
@@ -10,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.ImageCropping;
+using ColorVision.Engine.Templates.Jsons.AutoExpTime;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.ImageROI;
 using ColorVision.Engine.Templates.Jsons.KB;
@@ -58,6 +60,7 @@ namespace ColorVision.Engine.PropertyEditor
 
             FlowPropertyEditorRegistry.Register<FlowDeviceNameEditor>((property, obj) => new DeviceNameEditor().GenProperties(property, obj));
             FlowPropertyEditorRegistry.Register<FlowCalibrationTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, CreateCalibrationTemplate(obj)));
+            FlowPropertyEditorRegistry.Register<FlowAutoExposureTemplateEditor>((property, obj) => CreateMultiTemplateEditor(property, obj, new TemplateAutoExpTimeV2(), new TemplateAutoExpTime()));
             FlowPropertyEditorRegistry.Register<FlowCameraRunTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateCameraRunParam()));
             FlowPropertyEditorRegistry.Register<FlowAutoFocusTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateAutoFocus()));
             FlowPropertyEditorRegistry.Register<FlowPoiTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoi()));
@@ -228,6 +231,100 @@ namespace ColorVision.Engine.PropertyEditor
             Grid.SetColumn(textBlock, 0);
             Grid.SetColumn(combo, 1);
             Grid.SetColumn(editButton, buttonColumn);
+            grid.Children.Add(textBlock);
+            grid.Children.Add(combo);
+            grid.Children.Add(editButton);
+            dockPanel.Children.Add(grid);
+            return dockPanel;
+        }
+
+        private static DockPanel CreateMultiTemplateEditor(PropertyInfo property, object obj, params ITemplate[] templates)
+        {
+            if (templates.Length == 0)
+                return new TextboxPropertiesEditor().GenProperties(property, obj);
+
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var combo = new HandyControl.Controls.ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = 0,
+                Style = PropertyEditorHelper.ComboBoxSmallStyle,
+                IsEditable = true,
+                DisplayMemberPath = "Key",
+                SelectedValuePath = "Value",
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
+
+            bool isRefreshing = false;
+            void RefreshItems()
+            {
+                isRefreshing = true;
+                var items = templates.SelectMany(template => template.ItemsSource.Cast<object>()).ToList();
+                combo.ItemsSource = items;
+                SelectTemplate(combo, items, property.GetValue(obj)?.ToString());
+                isRefreshing = false;
+            }
+
+            RefreshItems();
+
+            combo.SelectionChanged += (_, _) =>
+            {
+                if (isRefreshing)
+                    return;
+
+                string selectedName = combo.SelectedItem is TemplateBase templateModel ? templateModel.Key : string.Empty;
+                SetValueAndNotify(property, obj, selectedName);
+            };
+
+            var editButton = CreateEditButton();
+            editButton.Click += (_, _) =>
+            {
+                string? templateName = property.GetValue(obj)?.ToString();
+                ITemplate selectedTemplate = templates[0];
+                int selectedIndex = 0;
+                bool selectionResolved = false;
+
+                foreach (ITemplate template in templates)
+                {
+                    int index = template.ItemsSource.Cast<object>().ToList().FindIndex(item => ReferenceEquals(item, combo.SelectedItem));
+                    if (index >= 0)
+                    {
+                        selectedTemplate = template;
+                        selectedIndex = index;
+                        selectionResolved = true;
+                        break;
+                    }
+                }
+
+                if (!selectionResolved)
+                {
+                    foreach (ITemplate template in templates)
+                    {
+                        int index = GetSelectedTemplateIndex(template, templateName, -1);
+                        if (index >= 0)
+                        {
+                            selectedTemplate = template;
+                            selectedIndex = index;
+                            break;
+                        }
+                    }
+                }
+
+                new TemplateEditorWindow(selectedTemplate, selectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                RefreshItems();
+            };
+
+            Grid.SetColumn(textBlock, 0);
+            Grid.SetColumn(combo, 1);
+            Grid.SetColumn(editButton, 2);
             grid.Children.Add(textBlock);
             grid.Children.Add(combo);
             grid.Children.Add(editButton);

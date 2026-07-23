@@ -39,11 +39,11 @@ namespace ProjectARVRPro.Process.W255
                         testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ || master.ImgFileType == ViewResultAlgType.BuildPOI)
                     {
-                        ctx.Result.FileName = master.ImgFile;
-
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        if (poiPoints.Count == 0) continue;
+
                         int id = 0;
                         testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)

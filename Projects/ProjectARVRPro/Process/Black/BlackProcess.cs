@@ -31,11 +31,11 @@ namespace ProjectARVRPro.Process.Black
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
-                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ || master.ImgFileType == ViewResultAlgType.BuildPOI)
                     {
-                        ctx.Result.FileName = master.ImgFile;
-
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        if (poiPoints.Count == 0) continue;
+
                         int id = 0;
                         foreach (var item in poiPoints)
                         {
@@ -74,6 +74,8 @@ namespace ProjectARVRPro.Process.Black
                             log?.Info("计算对比度前需要白画面亮度");
                         }
                     }
+
+
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
