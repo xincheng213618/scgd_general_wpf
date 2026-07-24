@@ -1,16 +1,10 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
-using log4net;
-using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -21,359 +15,55 @@ namespace ColorVision.Engine.Templates.Flow
 
         public FileOpenRouteResult OpenFile(string filePath)
         {
-            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
-
-            if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
-                    if (stnData != null && stnData.Length > 0)
-                    {
-                        var tempParam = new FlowParam();
-                        tempParam.DataBase64 = Convert.ToBase64String(stnData);
-                        tempParam.Name = System.IO.Path.GetFileNameWithoutExtension(filePath);
-                        flowEngineToolWindow.OpenFlowBase64(tempParam);
-                    }
-                }
-                catch (Exception)
-                {
-                    // 兼容旧格式 (.cvflow 可能是直接的 STN 文件)
-                    flowEngineToolWindow.OpenFlow(filePath);
-                }
-            }
-            else
-            {
-                flowEngineToolWindow.OpenFlow(filePath);
-            }
-
-            flowEngineToolWindow.Show();
+            FlowEngineToolWindow window = new();
+            window.OpenFlow(filePath);
+            window.Show();
             return new FileOpenRouteResult(true, true);
         }
     }
 
-
-
     /// <summary>
-    /// Interaction logic for MarkdownViewWindow.xaml
+    /// Standalone host for the same ViewFlow used by the main workspace.
     /// </summary>
-    public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
+    public partial class FlowEngineToolWindow : Window
     {
-
-        private static ILog log = LogManager.GetLogger(typeof(FlowEngineToolWindow));
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        public ViewFlow View { get; }
 
         public FlowEngineToolWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
+
+            View = new ViewFlow(FlowEngineManager.GetInstance(), true);
+            ViewHost.Content = View;
+
+            Closed += (_, _) =>
+            {
+                if (FlowEngineConfig.Instance.IsAutoEditSave &&
+                    View.HasStandaloneChanges() &&
+                    MessageBox.Show(Properties.Resources.SaveChangesPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    View.Save();
+                }
+
+                View.STNodeEditorHelper?.HidePropertyEditor();
+                View.Dispose();
+            };
         }
-
-        FlowParam FlowParam { get; set; }
-
-        public STNodeEditorHelper STNodeEditorHelper { get; set; }
 
         public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
-            FlowParam = flowParam;
-            OpenFlowBase64(flowParam);
+            View.OpenStandaloneFlowParam(flowParam, true);
         }
 
-        #region ActionCommand
-
-        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
-        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
-
-        public void ClearActionCommand()
+        public void OpenFlow(string filePath)
         {
-            UndoStack.Clear();
-            RedoStack.Clear();
-        }
-
-        public void AddActionCommand(ActionCommand actionCommand)
-        {
-            UndoStack.Add(actionCommand);
-            RedoStack.Clear();
-        }
-
-        public void Undo()
-        {
-            if (UndoStack.Count > 0)
-            {
-                var undoAction = UndoStack[^1]; // Access the last element
-                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
-                undoAction.UndoAction();
-                RedoStack.Add(undoAction);
-            }
-        }
-
-        public void Redo()
-        {
-            if (RedoStack.Count > 0)
-            {
-                var redoAction = RedoStack[^1]; // Access the last element
-                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
-                redoAction.RedoAction();
-                UndoStack.Add(redoAction);
-            }
-        }
-        #endregion
-
-        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
-
-        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length ==0)
-            {
-                if (e.Key == Key.Left)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100*CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Right)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Up)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Down)
-                {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Add)
-                {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Subtract)
-                {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-                    NotifyPropertyChanged(nameof(CanvasScale));
-                    e.Handled = true;
-                }
-            }
-            else
-            {
-
-                foreach (var item in STNodeEditorMain.GetSelectedNode())
-                {
-                    if (e.Key == Key.Left)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
-                    }
-                    else if (e.Key == Key.Right)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
-                    }
-                    else if (e.Key == Key.Up)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
-                    }
-                    else if (e.Key == Key.Down)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
-                    }
-                    if (e.Key == Key.Delete)
-                    {
-                        STNodeEditorMain.Nodes.Remove(item);
-                    }
-                }   
-            }
-
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            STNodeEditorMain.PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                {
-                    Save();
-                }
-                if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                {
-                    Refresh();
-                }
-                if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                {
-                    AutoAlignment();
-                }
-            };
-            this.DataContext = this;
-            this.Closed += (s, e) =>
-            {
-                if (FlowEngineConfig.Instance.IsAutoEditSave)
-                {
-                    if (AutoSave())
-                    {
-                        if (MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveChangesPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            Save();
-                        }
-                    }
-                }
-                STNodeEditorHelper?.HidePropertyEditor();
-
-            };
-
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
-
-            STNodeEditorHelper.SignStackPanel = SignStackPanelContainer;
-            STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
-        }
-        public void AutoAlignment()
-        {
-            STNodeEditorHelper.ApplyTreeLayout();
-            STNodeEditorHelper.AutoSize();
-        }
-        public void Refresh()
-        {
-            OpenFlowBase64(FlowParam);
-        }
-
-        public void SaveToFile()
-        {
-            // 创建并配置 SaveFileDialog
-            using System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-            saveFileDialog.Filter = "CVFlow files (*.cvflow)|*.cvflow";
-            saveFileDialog.DefaultExt = "cvflow";
-            saveFileDialog.AddExtension = true;
-            saveFileDialog.Title = "Save As";
-            if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                SaveToFile(saveFileDialog.FileName);
-            }
-        }
-
-        public void SaveToFile(string filePath)
-        {
-            // 获取画布数据
-            byte[] data = STNodeEditorMain.GetCanvasData();
-
-            // 检查数据是否为空
-            if (data == null || data.Length == 0)
-            {
-                Console.WriteLine("No data to save.");
-                return;
-            }
-
-            try
-            {
-                // 将数据写入指定文件路径
-                File.WriteAllBytes(filePath, data);
-                Console.WriteLine("File saved successfully.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while saving the file: {ex.Message}");
-            }
-
-        }
-
-
-        private void Button_Click_New(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.SaveFileDialog ofd = new();
-            ofd.Filter = "*.stn|*.stn";
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            Save();
-            STNodeEditorMain.Nodes.Clear();
-        }
-
-        private void Button_Click_Save(object sender, RoutedEventArgs e)
-        {
-            Save();
-        }
-        private void Button_Click_Clear(object sender, RoutedEventArgs e)
-        {
-            if (MessageBox.Show(Properties.Resources.ClearCreatedProcess_ConfirmAutoSaveClosePrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                STNodeEditorMain.Nodes.Clear();
-        }
-
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.OpenFileDialog ofd = new();
-            ofd.Filter = "*.stn|*.stn";
-            ofd.RestoreDirectory = true;
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            ButtonSave.Visibility = Visibility.Visible;
-            OpenFlow(ofd.FileName);
-        }
-        string FileFlow;
-        public void OpenFlow(string flowName)
-        {
-            FileFlow = flowName;
-            STNodeEditorMain.Nodes.Clear();
-            STNodeEditorMain.LoadCanvas(flowName);
-            Title = ColorVision.Engine.Properties.Resources.FlowEditor+" - " + new FileInfo(flowName).Name;
+            View.OpenStandaloneFile(filePath);
         }
 
         public void OpenFlowBase64(FlowParam flowParam)
         {
-            STNodeEditorMain.Nodes.Clear();
-            if (!string.IsNullOrEmpty(flowParam.DataBase64))
-            {
-                try
-                {
-                    STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
-                }
-                catch(Exception ex)
-                {
-                    log.Error(ex);
-                    MessageBox.Show(ex.Message);
-                }
-
-            }
-            Title = ColorVision.Engine.Properties.Resources.FlowEditor+" - " + new FileInfo(flowParam.Name).Name;
+            View.OpenStandaloneFlowParam(flowParam, false);
         }
-
-
-
-        private bool AutoSave()
-        {
-            if (FlowParam == null) return false;
-            var data = STNodeEditorMain.GetCanvasData();
-
-            string base64 = Convert.ToBase64String(data);
-            return FlowParam.DataBase64.Length != base64.Length;
-        }
-
-        private void Save()
-        {
-            if (File.Exists(FileFlow))
-            {
-                MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveSucess);
-                SaveToFile(FileFlow);
-                return;
-            }
-            else if (FlowParam !=null)
-            {
-                if (!STNodeEditorHelper.CheckFlow()) return;
-                var data = STNodeEditorMain.GetCanvasData();
-                FlowParam.DataBase64 = Convert.ToBase64String(data);
-                TemplateFlow.Save2DB(FlowParam);
-                MessageBox.Show(ColorVision.Engine.Properties.Resources.SaveSucess);
-            }
-        }
-
-
-        private void AutoAlignment_Click(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorHelper.ApplyTreeLayout();
-            STNodeEditorHelper.AutoSize();
-        }
-
     }
 }

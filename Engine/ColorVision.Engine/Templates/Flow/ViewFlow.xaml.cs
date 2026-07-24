@@ -1,17 +1,20 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Batch;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
+using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
-using System.Drawing;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +37,8 @@ namespace ColorVision.Engine.Services.Flow
         public FlowEngineConfig Config { get; set; }
 
         public RelayCommand AutoSizeCommand { get; set; }
+        public RelayCommand OpenDocumentCommand { get; set; }
+        public RelayCommand NewDocumentCommand { get; set; }
 
         public event EventHandler RefreshFlow;
 
@@ -54,29 +59,56 @@ namespace ColorVision.Engine.Services.Flow
 
 
         public DisplayFlow DisplayFlow { get; set; }
+        public STNodeEditor STNodeEditorMain => EditorCanvas.NodeEditor;
+        public FlowControl FlowControl => _isStandalone ? _standaloneFlowControl! : FlowEngineManager.FlowControl;
+        public bool IsStandalone => _isStandalone;
+        public Visibility RuntimeVisibility => _isStandalone ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility StandaloneVisibility => _isStandalone ? Visibility.Visible : Visibility.Collapsed;
 
-        public ViewFlow(FlowEngineManager flowEngineManager)
+        private readonly bool _isStandalone;
+        private readonly FlowControl? _standaloneFlowControl;
+        private readonly FlowNodeManager? _standaloneNodeManager;
+        private readonly Stopwatch _standaloneStopwatch = new();
+        private FlowParam? _standaloneFlowParam;
+        private string? _standaloneFilePath;
+        private string _standaloneDocumentName = string.Empty;
+        private bool _saveStandaloneFlowParam;
+
+        public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
+        }
+
+        internal ViewFlow(FlowEngineManager flowEngineManager, bool isStandalone)
+        {
+            _isStandalone = isStandalone;
             FlowEngineManager = flowEngineManager;
-            FlowEngineControl = FlowEngineManager.FlowEngineControl;
+            if (isStandalone)
+            {
+                _standaloneNodeManager = new FlowNodeManager();
+                FlowEngineControl = new FlowEngineControl(false, _standaloneNodeManager);
+                _standaloneFlowControl = new FlowControl(MQTTControl.GetInstance(), FlowEngineControl);
+            }
+            else
+            {
+                FlowEngineControl = FlowEngineManager.FlowEngineControl;
+            }
             Config = FlowEngineManager.Config;
 
             InitializeComponent();
-            STNodeEditorMain.EnableBlankLeftDragCanvasChanged += STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
-            CanvasDragLockButton.SetCurrentValue(
-                System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
-                STNodeEditorMain.EnableBlankLeftDragCanvas);
+            EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
 
             AutoSizeCommand = new RelayCommand(a => STNodeEditorHelper.AutoSize());
+            OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
+            NewDocumentCommand = new RelayCommand(a => NewDocument(), a => _isStandalone);
             RefreshCommand = new RelayCommand(a => Refresh());
             ClearCommand = new RelayCommand(a => Clear());
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
             NewFlowCommand = new RelayCommand(a => NewFlow());
-            DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
-            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
-            ImportFlowCommand = new RelayCommand(a => ImportFlow());
+            DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SlectFlowParam != null);
+            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SlectFlowParam != null);
+            ImportFlowCommand = new RelayCommand(a => ImportFlow(), a => !_isStandalone);
             ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
@@ -88,30 +120,6 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
 
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
-            ThemeChanged(ThemeManager.Current.CurrentUITheme);
-
-        }
-
-        void ThemeChanged(Theme theme)
-        {
-            if (theme == Theme.Dark)
-            {
-                STNodeEditorMain.BackColor = Color.FromArgb(255, 34, 34, 34);
-                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.ForeColor = Color.FromArgb(255, 255, 255, 255);
-                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 50, 50, 50);
-
-
-
-            }
-            else
-            {
-                STNodeEditorMain.BackColor = Color.FromArgb(255, 150, 150, 150);
-                STNodeEditorMain.GridColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.ForeColor = Color.FromArgb(255, 0, 0, 0);
-                STNodeEditorMain.LocationBackColor = Color.FromArgb(255, 200, 200, 200);
-            }
         }
         #region ActionCommand
 
@@ -261,6 +269,12 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Save()
         {
+            if (_isStandalone)
+            {
+                SaveStandaloneDocument();
+                return;
+            }
+
             log.Info("Save: 开始保存流程");
 
             Keyboard.ClearFocus();
@@ -305,11 +319,220 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Refresh()
         {
+            if (_isStandalone)
+            {
+                ReloadStandaloneDocument();
+                return;
+            }
+
             RefreshFlow?.Invoke(this, new EventArgs());
         }
+
         public void Clear()
         {
-            STNodeEditorMain.Nodes.Clear();
+            if (_isStandalone)
+            {
+                StopStandaloneFlow();
+                FlowEngineControl.FlowClear();
+                _standaloneNodeManager!.ClearDevice();
+            }
+            else
+            {
+                STNodeEditorMain.Nodes.Clear();
+            }
+        }
+
+        public void OpenStandaloneFile(string filePath)
+        {
+            if (!_isStandalone)
+                throw new InvalidOperationException("Only a standalone ViewFlow can open a file document.");
+
+            _standaloneFlowParam = null;
+            _standaloneFilePath = filePath;
+            _standaloneDocumentName = Path.GetFileName(filePath);
+            _saveStandaloneFlowParam = false;
+
+            StopStandaloneFlow();
+            FlowEngineControl.FlowClear();
+            if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
+                    if (stnData != null && stnData.Length > 0)
+                    {
+                        _standaloneFlowParam = new FlowParam
+                        {
+                            Name = Path.GetFileNameWithoutExtension(filePath),
+                            DataBase64 = Convert.ToBase64String(stnData)
+                        };
+                        _standaloneFilePath = null;
+                        FlowEngineControl.LoadFromBase64(
+                            _standaloneFlowParam.DataBase64,
+                            MqttRCService.GetInstance().ServiceTokens);
+                        UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Debug("Open cvflow package as legacy canvas file.", ex);
+                }
+            }
+
+            FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
+            UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
+        }
+
+        public void OpenStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
+        {
+            if (!_isStandalone)
+                throw new InvalidOperationException("Only a standalone ViewFlow can open a template document.");
+
+            _standaloneFlowParam = flowParam;
+            _standaloneFilePath = null;
+            _standaloneDocumentName = flowParam.Name;
+            _saveStandaloneFlowParam = saveToTemplate;
+
+            StopStandaloneFlow();
+            FlowEngineControl.FlowClear();
+            try
+            {
+                FlowEngineControl.LoadFromBase64(
+                    flowParam.DataBase64,
+                    MqttRCService.GetInstance().ServiceTokens);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show(ex.Message);
+            }
+            UpdateStandaloneWindowTitle(flowParam.Name);
+        }
+
+        public bool HasStandaloneChanges()
+        {
+            if (!_isStandalone)
+                return false;
+
+            byte[] currentData = STNodeEditorMain.GetCanvasData();
+            if (_standaloneFlowParam != null)
+            {
+                try
+                {
+                    byte[] savedData = string.IsNullOrEmpty(_standaloneFlowParam.DataBase64)
+                        ? []
+                        : Convert.FromBase64String(_standaloneFlowParam.DataBase64);
+                    return !currentData.SequenceEqual(savedData);
+                }
+                catch (FormatException)
+                {
+                    return true;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(_standaloneFilePath) && File.Exists(_standaloneFilePath))
+                return !currentData.SequenceEqual(File.ReadAllBytes(_standaloneFilePath));
+
+            return STNodeEditorMain.Nodes.Count > 0;
+        }
+
+        private void OpenDocument()
+        {
+            using System.Windows.Forms.OpenFileDialog dialog = new()
+            {
+                Filter = "Flow files (*.stn;*.cvflow)|*.stn;*.cvflow|STN files (*.stn)|*.stn|CVFlow files (*.cvflow)|*.cvflow",
+                RestoreDirectory = true
+            };
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                OpenStandaloneFile(dialog.FileName);
+        }
+
+        private void NewDocument()
+        {
+            _standaloneFlowParam = null;
+            _standaloneFilePath = null;
+            _standaloneDocumentName = Properties.Resources.New;
+            _saveStandaloneFlowParam = false;
+            StopStandaloneFlow();
+            FlowEngineControl.FlowClear();
+            _standaloneNodeManager!.ClearDevice();
+            UpdateStandaloneWindowTitle(Properties.Resources.New);
+        }
+
+        private void ReloadStandaloneDocument()
+        {
+            if (_standaloneFlowParam != null)
+            {
+                OpenStandaloneFlowParam(_standaloneFlowParam, _saveStandaloneFlowParam);
+            }
+            else if (!string.IsNullOrEmpty(_standaloneFilePath))
+            {
+                OpenStandaloneFile(_standaloneFilePath);
+            }
+        }
+
+        private void SaveStandaloneDocument()
+        {
+            Keyboard.ClearFocus();
+            Focus();
+            if (!STNodeEditorHelper.CheckFlow())
+                return;
+
+            byte[] canvasData = STNodeEditorMain.GetCanvasData();
+            if (canvasData == null || canvasData.Length == 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_GetCanvasDataFailed);
+                return;
+            }
+
+            try
+            {
+                if (_saveStandaloneFlowParam && _standaloneFlowParam != null)
+                {
+                    _standaloneFlowParam.DataBase64 = Convert.ToBase64String(canvasData);
+                    TemplateFlow.Save2DB(_standaloneFlowParam);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(_standaloneFilePath))
+                    {
+                        using System.Windows.Forms.SaveFileDialog dialog = new()
+                        {
+                            Filter = "STN files (*.stn)|*.stn",
+                            DefaultExt = "stn",
+                            AddExtension = true,
+                            Title = Properties.Resources.Save
+                        };
+                        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                            return;
+                        _standaloneFilePath = dialog.FileName;
+                        _standaloneFlowParam = null;
+                        _standaloneDocumentName = Path.GetFileName(dialog.FileName);
+                    }
+
+                    File.WriteAllBytes(_standaloneFilePath, canvasData);
+                    UpdateStandaloneWindowTitle(Path.GetFileName(_standaloneFilePath));
+                }
+
+                MessageBox.Show(Properties.Resources.SaveSucess);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Save standalone flow failed.", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
+            }
+        }
+
+        private void UpdateStandaloneWindowTitle(string? documentName)
+        {
+            Window? window = Window.GetWindow(this);
+            if (window != null)
+            {
+                window.Title = string.IsNullOrWhiteSpace(documentName)
+                    ? Properties.Resources.FlowEditor
+                    : $"{Properties.Resources.FlowEditor} - {documentName}";
+            }
         }
 
         public STNodeEditorHelper STNodeEditorHelper { get; set; }
@@ -339,30 +562,46 @@ namespace ColorVision.Engine.Services.Flow
                 }
             };
 
-            FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
-
-
-            var manager = DockViewManager.GetInstance();
-            manager.AddView(0, this);
-            manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
-
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
 
             // Keep node properties in the ViewFlow right-side overlay instead of AvalonDock.
             STNodeEditorHelper.UseDockPanel = false;
-            STNodeEditorHelper.SignStackPanel = InlineNodePropertyPanel.SignStackPanel;
-            STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
+            STNodeEditorHelper.SignStackPanel = EditorCanvas.NodePropertyPanel.SignStackPanel;
+            STNodeEditorHelper.PropertyEditorPanel = EditorCanvas.NodePropertyPanelContainer;
 
-            this.Loaded += (s, e) =>
+            FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
+
+            if (!_isStandalone)
             {
-                DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
-                FlowEngineManager.PublishCopilotContext();
-            };
-            this.Unloaded += (s, e) =>
+                var manager = DockViewManager.GetInstance();
+                manager.AddView(0, this);
+                manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
+
+                this.Loaded += (s, e) =>
+                {
+                    DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
+                    FlowEngineManager.PublishCopilotContext();
+                };
+                this.Unloaded += (s, e) =>
+                {
+                    DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
+                    CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
+                };
+            }
+            else
             {
-                DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
-                CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
-            };
+                MqttRCService.GetInstance().ServiceTokensUpdated += MqttRCService_ServiceTokensUpdated;
+            }
+        }
+
+        private void MqttRCService_ServiceTokensUpdated(object? sender, EventArgs e)
+        {
+            void UpdateTokens() => _standaloneNodeManager?.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
+
+            if (Dispatcher.CheckAccess())
+                UpdateTokens();
+            else
+                Dispatcher.BeginInvoke(UpdateTokens);
         }
 
         private void OnActiveViewChanged(System.Windows.Controls.Control? activeView)
@@ -462,57 +701,125 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Dispose()
         {
-            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
-            STNodeEditorMain.EnableBlankLeftDragCanvasChanged -= STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
-            STNodeEditorMain?.Dispose();
+            if (_isStandalone)
+            {
+                StopStandaloneFlow();
+                if (_standaloneFlowControl != null)
+                    _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+                MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
+                _standaloneNodeManager?.ClearDevice();
+            }
+            EditorCanvas.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        private void CanvasDragLockButton_Checked(object sender, RoutedEventArgs e)
-        {
-            if (STNodeEditorMain != null)
-            {
-                STNodeEditorMain.EnableBlankLeftDragCanvas = true;
-            }
-        }
-
-        private void CanvasDragLockButton_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (STNodeEditorMain != null)
-            {
-                STNodeEditorMain.EnableBlankLeftDragCanvas = false;
-            }
-        }
-
-        private void STNodeEditorMain_EnableBlankLeftDragCanvasChanged(object? sender, EventArgs e)
-        {
-            void UpdateToggle()
-            {
-                CanvasDragLockButton.SetCurrentValue(
-                    System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
-                    STNodeEditorMain.EnableBlankLeftDragCanvas);
-            }
-
-            if (Dispatcher.CheckAccess())
-            {
-                UpdateToggle();
-            }
-            else
-            {
-                Dispatcher.BeginInvoke(UpdateToggle);
-            }
         }
 
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            FlowEngineManager.DisplayFlow.RunFlow();
+            if (_isStandalone)
+            {
+                RunStandaloneFlow();
+            }
+            else
+            {
+                FlowEngineManager.DisplayFlow.RunFlow();
+            }
 
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
-            FlowEngineManager.DisplayFlow.StopFlow();
+            if (_isStandalone)
+            {
+                StopStandaloneFlow(true);
+            }
+            else
+            {
+                FlowEngineManager.DisplayFlow.StopFlow();
+            }
 
+        }
+
+        private void RunStandaloneFlow()
+        {
+            if (!MqttRCService.GetInstance().IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.RegistryCenterNotConnected);
+                return;
+            }
+
+            if (FlowControl.IsFlowRun)
+                return;
+
+            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            {
+                MqttRCService.GetInstance().QueryServices();
+                logTextBox.Text = Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
+                return;
+            }
+
+            _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
+
+            string startNode = FlowEngineControl.GetStartNodeName();
+            if (string.IsNullOrWhiteSpace(startNode))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
+                return;
+            }
+
+            foreach (STNode node in STNodeEditorMain.Nodes)
+            {
+                foreach (STNodeOption option in node.GetAllInputOptions())
+                    option.Data = null;
+                foreach (STNodeOption option in node.GetAllOutputOptions())
+                    option.Data = null;
+
+                if (node is CVBaseServerNode serverNode)
+                    serverNode.TitleColor = System.Drawing.Color.Blue;
+            }
+
+            string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+            _standaloneFlowControl.FlowCompleted += StandaloneFlowControl_FlowCompleted;
+            _standaloneStopwatch.Restart();
+            logTextBox.Text = $"Run {_standaloneDocumentName}";
+
+            try
+            {
+                _standaloneFlowControl.Start(serialNumber);
+            }
+            catch (Exception ex)
+            {
+                _standaloneStopwatch.Stop();
+                _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+                _standaloneFlowControl.Stop();
+                log.Error("Run standalone flow failed.", ex);
+                logTextBox.Text = ex.Message;
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
+        }
+
+        private void StopStandaloneFlow(bool updateLog = false)
+        {
+            if (_standaloneFlowControl?.IsFlowRun != true)
+                return;
+
+            _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+            _standaloneFlowControl.Stop();
+            _standaloneStopwatch.Stop();
+            if (updateLog)
+                logTextBox.Text = Properties.Resources.ExecutionCancelled;
+        }
+
+        private void StandaloneFlowControl_FlowCompleted(object? sender, FlowControlData data)
+        {
+            _standaloneStopwatch.Stop();
+            _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+            string errorNode = string.IsNullOrWhiteSpace(data.ErrorNodeName)
+                ? string.Empty
+                : $"{Environment.NewLine}{Properties.Resources.Flow_NodeLabel}{data.ErrorNodeName}";
+            logTextBox.Text =
+                $"{_standaloneDocumentName} {data.EventName}{errorNode}{Environment.NewLine}{data.Params}{Environment.NewLine}{_standaloneStopwatch.ElapsedMilliseconds}ms";
         }
 
         private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)

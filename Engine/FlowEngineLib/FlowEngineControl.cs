@@ -26,6 +26,8 @@ public class FlowEngineControl : FlowEngineAPI
 
 	protected bool _IsRunning;
 
+	protected readonly FlowNodeManager NodeManager;
+
 	public bool IsReady => GetFlowReady();
 
 	public bool IsRunning => _IsRunning;
@@ -42,13 +44,24 @@ public class FlowEngineControl : FlowEngineAPI
 	}
 
 	public FlowEngineControl(STNodeEditor nodeEditor, bool isAutoStartName)
-		: this(isAutoStartName)
+		: this(nodeEditor, isAutoStartName, FlowNodeManager.Instance)
+	{
+	}
+
+	public FlowEngineControl(STNodeEditor nodeEditor, bool isAutoStartName, FlowNodeManager nodeManager)
+		: this(isAutoStartName, nodeManager)
 	{
 		AttachNodeEditor(nodeEditor);
 	}
 
 	public FlowEngineControl(bool isAutoStartName)
+		: this(isAutoStartName, FlowNodeManager.Instance)
 	{
+	}
+
+	public FlowEngineControl(bool isAutoStartName, FlowNodeManager nodeManager)
+	{
+		NodeManager = nodeManager ?? throw new ArgumentNullException(nameof(nodeManager));
 		startNodeNames = new Dictionary<string, BaseStartNode>();
 		IsAutoStartName = isAutoStartName;
 		services = new Dictionary<string, ServiceNode>();
@@ -100,15 +113,15 @@ public class FlowEngineControl : FlowEngineAPI
 	private void AddDevice(CVBaseServerNode node)
 	{
 		DeviceNode device = new DeviceNode(node);
-		FlowNodeManager.Instance.AddDevice(device);
+		NodeManager.AddDevice(device);
 	}
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)
 	{
 		clear();
-		FlowNodeManager.Instance.ClearDevice();
+		NodeManager.ClearDevice();
 		NodeEditor.LoadCanvas(strFileName);
-		FlowNodeManager.Instance.UpdateDevice(services);
+		NodeManager.UpdateDevice(services);
 	}
 
 	public void LoadFromBase64(string base64Data, bool waitReady = false)
@@ -123,9 +136,9 @@ public class FlowEngineControl : FlowEngineAPI
 
 	public void LoadFromBase64(string base64Data, List<MQTTServiceInfo> services, bool waitReady = false)
 	{
-		FlowNodeManager.Instance.ClearDevice();
+		NodeManager.ClearDevice();
 		LoadFromBase64(base64Data, waitReady);
-		FlowNodeManager.Instance.UpdateDevice(services);
+		NodeManager.UpdateDevice(services);
 	}
 
 	public void LoadFromBase64AndStart(string base64Data, string serialNumber, List<MQTTServiceInfo> services)
