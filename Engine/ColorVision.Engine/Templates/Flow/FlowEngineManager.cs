@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Templates.Flow
     public class IInitializerFlow : IInitializer
     {
         public string Name => "Flow";
-        public IEnumerable<string> Dependencies => Array.Empty<string>();
         public int Order => 10;
 
         public Task InitializeAsync()

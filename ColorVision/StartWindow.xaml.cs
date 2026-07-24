@@ -114,71 +114,19 @@ namespace ColorVision
 
         private List<IInitializer> CreateSortedInitializers()
         {
-            _IComponentInitializers = new List<IInitializer>();
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("skip", false, "skip");
             parser.Parse();
-            string skipValue = parser.GetValue("skip");
-            var skipNames = skipValue?.Split(',')
-                         .Select(name => name.Trim())
-                         .Where(name => !string.IsNullOrEmpty(name))
-                         .ToList();
+            HashSet<string> skipNames = (parser.GetValue("skip") ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToHashSet(StringComparer.Ordinal);
 
-            skipNames = skipNames ?? new List<string>();
-
-            foreach (IInitializer componentInitialize in AssemblyHandler.GetInstance().LoadImplementations<IInitializer>())
-            {
-                if (!skipNames.Contains(componentInitialize.Name))
-                {
-                    _IComponentInitializers.Add(componentInitialize);
-                }
-            }
-
-
-            // 构建依赖图和入度表
-            var dependencyGraph = new Dictionary<string, List<string>>();
-            var inDegree = new Dictionary<string, int>();
-            _IComponentInitializers.ForEach(init =>
-            {
-                dependencyGraph[init.Name] = init.Dependencies.ToList();
-                inDegree[init.Name] = 0;
-                foreach (var dep in init.Dependencies)
-                {
-                    if (!inDegree.TryGetValue(dep, out int value))
-                    {
-                        value = 0;
-                        inDegree[dep] = value;
-                    }
-                    inDegree[dep] = ++value;
-                }
-            });
-
-            // 拓扑排序
-            var sortedInitializers = new List<IInitializer>();
-            var queue = new Queue<string>(inDegree.Where(kvp => kvp.Value == 0).Select(kvp => kvp.Key).OrderBy(kvp => _IComponentInitializers.First(init => init.Name == kvp).Order));
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                sortedInitializers.Add(_IComponentInitializers.First(init => init.Name == current));
-                foreach (var neighbor in dependencyGraph[current])
-                {
-                    inDegree[neighbor]--;
-                    if (inDegree[neighbor] == 0)
-                    {
-                        queue.Enqueue(neighbor);
-                    }
-                }
-            }
-
-            // 检查是否有环
-            if (sortedInitializers.Count != _IComponentInitializers.Count)
-            {
-                throw new Exception("Dependency cycle detected");
-            }
-
-            // 使用排序后的初始化器列表
-            _IComponentInitializers = sortedInitializers;
-            return _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
+            return AssemblyHandler.GetInstance()
+                .LoadImplementations<IInitializer>()
+                .Where(initializer => !skipNames.Contains(initializer.Name))
+                .OrderBy(initializer => initializer.Order)
+                .ThenBy(initializer => initializer.Name, StringComparer.Ordinal)
+                .ToList();
         }
 
         private  List<IInitializer> _IComponentInitializers;
