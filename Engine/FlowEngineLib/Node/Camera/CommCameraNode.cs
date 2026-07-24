@@ -35,6 +35,8 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected string _POIReviseTempName;
 
+	private STNodeEditText<string> m_ctrl_camTemp;
+
 	[STNodeProperty("HDR", "HDR", true)]
 	public bool IsHDR
 	{
@@ -60,6 +62,10 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_CamTempName = value;
+			if (m_ctrl_camTemp != null)
+			{
+				m_ctrl_camTemp.Value = value;
+			}
 			OnPropertyChanged();
 		}
 	}
@@ -101,7 +107,7 @@ public class CommCameraNode : CVBaseServerNode
 		}
 		set
 		{
-			setTempName(value);
+			_TempName = value;
 			OnPropertyChanged();
 		}
 	}
@@ -205,7 +211,7 @@ public class CommCameraNode : CVBaseServerNode
 
 	private void initCtrl()
 	{
-		CreateTempControl(m_custom_item, "");
+		m_ctrl_camTemp = CreateStringControl(m_custom_item, "", _CamTempName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
