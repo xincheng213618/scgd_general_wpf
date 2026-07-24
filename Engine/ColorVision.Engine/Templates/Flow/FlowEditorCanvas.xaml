@@ -12,6 +12,7 @@
                          LimitCanvasToContentBounds="False"
                          ShowLocation="False"
                          ShowCanvasDragLockButton="False"
+                         HighlightGridOrigin="False"
                          ShowNodeShadow="False"
                          NodeCornerRadius="10"
                          HorizontalAlignment="Stretch"

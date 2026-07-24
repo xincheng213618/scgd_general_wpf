@@ -79,6 +79,8 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private bool _ShowGrid = true;
 
+	private bool _HighlightGridOrigin = true;
+
 	private bool _ShowLocation = true;
 
 	private bool _LimitCanvasToContentBounds = true;
@@ -420,6 +422,25 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		set
 		{
 			_ShowGrid = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置是否突出显示画布网格原点")]
+	[DefaultValue(true)]
+	public bool HighlightGridOrigin
+	{
+		get
+		{
+			return _HighlightGridOrigin;
+		}
+		set
+		{
+			if (_HighlightGridOrigin == value)
+			{
+				return;
+			}
+			_HighlightGridOrigin = value;
 			Invalidate();
 		}
 	}
@@ -1509,9 +1530,12 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			graphics.DrawLine((num2++ % 5 == 0) ? pen : pen2, 0f, num4, nWidth, num4);
 		}
-		pen2.Color = Color.FromArgb((_Nodes.Count == 0) ? 255 : 120, _GridColor);
-		graphics.DrawLine(pen2, _CanvasOffsetX, 0f, _CanvasOffsetX, nHeight);
-		graphics.DrawLine(pen2, 0f, _CanvasOffsetY, nWidth, _CanvasOffsetY);
+		if (_HighlightGridOrigin)
+		{
+			pen2.Color = Color.FromArgb((_Nodes.Count == 0) ? 255 : 120, _GridColor);
+			graphics.DrawLine(pen2, _CanvasOffsetX, 0f, _CanvasOffsetX, nHeight);
+			graphics.DrawLine(pen2, 0f, _CanvasOffsetY, nWidth, _CanvasOffsetY);
+		}
 	}
 
 	protected virtual void OnDrawNode(DrawingTools dt, Rectangle rect)

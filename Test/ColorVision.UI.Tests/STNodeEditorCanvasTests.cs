@@ -177,6 +177,30 @@ namespace ColorVision.UI.Tests
             });
         }
 
+        [Fact]
+        public void GridOriginHighlight_CanBeDisabledWithoutRemovingTheGridLine()
+        {
+            RunInSta(() =>
+            {
+                using var legacyEditor = new STNodeEditor();
+                Assert.True(legacyEditor.HighlightGridOrigin);
+
+                using var editor = new TestNodeEditor
+                {
+                    BackColor = System.Drawing.Color.White,
+                    GridColor = System.Drawing.Color.Black,
+                    HighlightGridOrigin = false
+                };
+
+                using var bitmap = editor.RenderGrid(new System.Drawing.Size(140, 40));
+
+                int originGridColor = bitmap.GetPixel(10, 15).ToArgb();
+                int nextMajorGridColor = bitmap.GetPixel(110, 15).ToArgb();
+                Assert.NotEqual(System.Drawing.Color.White.ToArgb(), originGridColor);
+                Assert.Equal(nextMajorGridColor, originGridColor);
+            });
+        }
+
         private static STNodeEditor CreateEditorWithNode()
         {
             var editor = new STNodeEditor
@@ -233,6 +257,22 @@ namespace ColorVision.UI.Tests
                     Pen = pen,
                     SolidBrush = brush
                 }, viewport);
+                return bitmap;
+            }
+
+            public System.Drawing.Bitmap RenderGrid(System.Drawing.Size size)
+            {
+                var bitmap = new System.Drawing.Bitmap(size.Width, size.Height);
+                using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+                using var pen = new System.Drawing.Pen(System.Drawing.Color.Black);
+                using var brush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
+                graphics.Clear(BackColor);
+                OnDrawGrid(new DrawingTools
+                {
+                    Graphics = graphics,
+                    Pen = pen,
+                    SolidBrush = brush
+                }, size.Width, size.Height);
                 return bitmap;
             }
         }
