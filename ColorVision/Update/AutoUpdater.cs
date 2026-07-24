@@ -825,6 +825,7 @@ namespace ColorVision.Update
                 scanProtectionId = ApplicationUpdateScanProtection.TryBegin(tempRoot);
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
+                ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
 
                 string stageDirectory = Path.Combine(tempRoot, "ColorVision");
                 Directory.CreateDirectory(stageDirectory);

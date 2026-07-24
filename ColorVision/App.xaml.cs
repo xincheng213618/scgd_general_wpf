@@ -99,24 +99,6 @@ namespace ColorVision
             string inputFile = parser.GetValue("input");
             if (Update.StartupUpdatePackageHandler.Classify(inputFile) != Update.StartupUpdatePackageKind.None)
             {
-                IntPtr existingWindow = CheckAppRunning.Check("ColorVision");
-                if (existingWindow != IntPtr.Zero)
-                {
-                    if (SingleInstanceCommandLineTransport.TrySend(existingWindow, parser.CommandLineArgs))
-                    {
-                        Environment.Exit(0);
-                        return;
-                    }
-
-                    MessageBox.Show(
-                        "无法将更新包发送到正在运行的 ColorVision，请关闭软件后重试。",
-                        "ColorVision",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    Environment.Exit(-1);
-                    return;
-                }
-
                 if (Update.StartupUpdatePackageHandler.HandleIfUpdatePackage(inputFile))
                 {
                     // A successful update handoff exits the process. Reaching here means preparation failed.
@@ -278,8 +260,11 @@ namespace ColorVision
             log.Info("Application exit cleanup started.");
             Rbac.ApplicationUsageTracker.StopSession();
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
-            if (!_isSessionEnding)
+            bool updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
+            if (!_isSessionEnding && !updateIsActive)
                 Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
+            else if (updateIsActive)
+                log.Info("Skipped exit-time prefetched update because an external update is already active.");
             ColorVision.Copilot.CopilotPluginSubagentRoleLoader.Shared.Dispose();
             CopilotMcpServer.Instance.Stop();
             LanRemoteControlService.Instance.Stop();
