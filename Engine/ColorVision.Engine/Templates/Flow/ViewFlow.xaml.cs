@@ -11,9 +11,7 @@ using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,7 +28,6 @@ namespace ColorVision.Engine.Services.Flow
     public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewFlow));
-        private const string NotepadPlusPlusPath = @"C:\Program Files\Notepad++\notepad++.exe";
 
         public FlowEngineManager FlowEngineManager { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
@@ -347,10 +344,12 @@ namespace ColorVision.Engine.Services.Flow
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
 
-            // Keep node properties in the ViewFlow overlay instead of AvalonDock.
+            // Keep node properties in the ViewFlow bottom pane instead of AvalonDock.
             STNodeEditorHelper.UseDockPanel = false;
             STNodeEditorHelper.SignStackPanel = InlineNodePropertyPanel.SignStackPanel;
             STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
+            STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChangedForBottomPanel;
+            STNodeEditorMain_ActiveChangedForBottomPanel(null, EventArgs.Empty);
 
             this.Loaded += (s, e) =>
             {
@@ -362,6 +361,20 @@ namespace ColorVision.Engine.Services.Flow
                 DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
                 CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
             };
+        }
+
+        private void STNodeEditorMain_ActiveChangedForBottomPanel(object? sender, EventArgs e)
+        {
+            bool hasActiveNode = STNodeEditorMain.ActiveNode != null;
+            NodePropertyTab.Visibility = hasActiveNode ? Visibility.Visible : Visibility.Collapsed;
+            if (hasActiveNode)
+            {
+                BottomDetailsTabControl.SelectedItem = NodePropertyTab;
+            }
+            else if (BottomDetailsTabControl.SelectedItem == NodePropertyTab)
+            {
+                BottomDetailsTabControl.SelectedIndex = 0;
+            }
         }
 
         private void OnActiveViewChanged(System.Windows.Controls.Control? activeView)
@@ -462,6 +475,7 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+            STNodeEditorMain.ActiveChanged -= STNodeEditorMain_ActiveChangedForBottomPanel;
             STNodeEditorMain?.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -490,41 +504,6 @@ namespace ColorVision.Engine.Services.Flow
                 var window = new FlowNodeAnalysisWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             }
-        }
-
-        private void Button_OpenServiceLog_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not FrameworkElement { Tag: string panelId }) return;
-
-            string? logPath = ServiceLogPanelProvider.GetServiceLogPath(panelId);
-            if (string.IsNullOrEmpty(logPath) || !File.Exists(logPath))
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_ServiceLogNotFound, "ColorVision");
-                return;
-            }
-
-            try
-            {
-                OpenLogFile(logPath);
-            }
-            catch (Exception ex)
-            {
-                log.Error($"打开服务日志失败: {logPath}", ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_OpenServiceLogFailed, ex.Message), "ColorVision");
-            }
-        }
-
-        private static void OpenLogFile(string logPath)
-        {
-            if (File.Exists(NotepadPlusPlusPath))
-            {
-                var startInfo = new ProcessStartInfo(NotepadPlusPlusPath) { UseShellExecute = false };
-                startInfo.ArgumentList.Add(logPath);
-                Process.Start(startInfo);
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo(logPath) { UseShellExecute = true });
         }
 
     }

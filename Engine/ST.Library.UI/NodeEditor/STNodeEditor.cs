@@ -14,7 +14,9 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DrawingContext = System.Windows.Media.DrawingContext;
+using WpfDpiScale = System.Windows.DpiScale;
 using WpfPixelFormats = System.Windows.Media.PixelFormats;
+using WpfVisualTreeHelper = System.Windows.Media.VisualTreeHelper;
 using WpfDragEventArgs = System.Windows.DragEventArgs;
 using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfMouseButtonEventArgs = System.Windows.Input.MouseButtonEventArgs;
@@ -873,18 +875,29 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 
-		EnsureRenderTarget(clientSize.Width, clientSize.Height);
-		RenderToGraphics(m_render_graphics, clientSize.Width, clientSize.Height);
+		double width = ActualWidth > 0 ? ActualWidth : clientSize.Width;
+		double height = ActualHeight > 0 ? ActualHeight : clientSize.Height;
+		WpfDpiScale dpi = WpfVisualTreeHelper.GetDpi(this);
+		int pixelWidth = Math.Max(1, (int)Math.Ceiling(width * dpi.DpiScaleX));
+		int pixelHeight = Math.Max(1, (int)Math.Ceiling(height * dpi.DpiScaleY));
+
+		EnsureRenderTarget(pixelWidth, pixelHeight, dpi.PixelsPerInchX, dpi.PixelsPerInchY);
+		RenderToGraphics(
+			m_render_graphics,
+			clientSize.Width,
+			clientSize.Height,
+			(float)dpi.DpiScaleX,
+			(float)dpi.DpiScaleY);
 		BitmapData bitmapData = m_render_bitmap.LockBits(
-			new Rectangle(0, 0, clientSize.Width, clientSize.Height),
+			new Rectangle(0, 0, pixelWidth, pixelHeight),
 			ImageLockMode.ReadOnly,
 			PixelFormat.Format32bppPArgb);
 		try
 		{
 			m_render_target.WritePixels(
-				new System.Windows.Int32Rect(0, 0, clientSize.Width, clientSize.Height),
+				new System.Windows.Int32Rect(0, 0, pixelWidth, pixelHeight),
 				bitmapData.Scan0,
-				Math.Abs(bitmapData.Stride) * clientSize.Height,
+				Math.Abs(bitmapData.Stride) * pixelHeight,
 				bitmapData.Stride);
 		}
 		finally
@@ -892,27 +905,29 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			m_render_bitmap.UnlockBits(bitmapData);
 		}
 
-		double width = ActualWidth > 0 ? ActualWidth : clientSize.Width;
-		double height = ActualHeight > 0 ? ActualHeight : clientSize.Height;
 		drawingContext.DrawImage(m_render_target, new WpfRect(0, 0, width, height));
 	}
 
-	private void EnsureRenderTarget(int width, int height)
+	private void EnsureRenderTarget(int pixelWidth, int pixelHeight, double dpiX, double dpiY)
 	{
-		if (m_render_bitmap != null && m_render_bitmap.Width == width && m_render_bitmap.Height == height)
+		if (m_render_bitmap != null &&
+			m_render_bitmap.Width == pixelWidth &&
+			m_render_bitmap.Height == pixelHeight &&
+			Math.Abs(m_render_target.DpiX - dpiX) < 0.01 &&
+			Math.Abs(m_render_target.DpiY - dpiY) < 0.01)
 		{
 			return;
 		}
 		m_render_graphics?.Dispose();
 		m_render_bitmap?.Dispose();
-		m_render_bitmap = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+		m_render_bitmap = new Bitmap(pixelWidth, pixelHeight, PixelFormat.Format32bppPArgb);
 		m_render_graphics = Graphics.FromImage(m_render_bitmap);
-		m_render_target = new WriteableBitmap(width, height, 96, 96, WpfPixelFormats.Pbgra32, null);
+		m_render_target = new WriteableBitmap(pixelWidth, pixelHeight, dpiX, dpiY, WpfPixelFormats.Pbgra32, null);
 	}
 
-	private void RenderToGraphics(Graphics graphics, int width, int height)
+	private void RenderToGraphics(Graphics graphics, int width, int height, float dpiScaleX, float dpiScaleY)
 	{
-		graphics.ResetTransform();
+		ResetRenderTransform(graphics, dpiScaleX, dpiScaleY);
 		graphics.Clear(BackColor);
 		graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 		graphics.SmoothingMode = SmoothingMode.HighQuality;
@@ -937,7 +952,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				DrawBezier(graphics, m_drawing_tools.Pen, m_pt_dot_down, m_pt_in_canvas, _Curvature);
 			}
 		}
-		graphics.ResetTransform();
+		ResetRenderTransform(graphics, dpiScaleX, dpiScaleY);
 		switch (m_ca)
 		{
 		case CanvasAction.MoveNode:
@@ -962,6 +977,12 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		OnDrawAlert(graphics);
 		OnDrawCanvasDragLockButton(m_drawing_tools);
+	}
+
+	private static void ResetRenderTransform(Graphics graphics, float dpiScaleX, float dpiScaleY)
+	{
+		graphics.ResetTransform();
+		graphics.ScaleTransform(dpiScaleX, dpiScaleY);
 	}
 
 	protected override void OnMouseDown(WpfMouseButtonEventArgs e)
@@ -1550,6 +1571,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		Graphics graphics = dt.Graphics;
+		GraphicsState state = graphics.Save();
 		Pen pen = m_drawing_tools.Pen;
 		SolidBrush solidBrush = dt.SolidBrush;
 		pen.Color = _MagnetColor;
@@ -1591,7 +1613,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				}
 			}
 		}
-		graphics.ResetTransform();
+		graphics.Restore(state);
 	}
 
 	protected virtual void OnDrawSelectedRectangle(DrawingTools dt, RectangleF rectf)
