@@ -34,11 +34,6 @@ namespace ColorVision
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; OnPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
 
-        [DisplayName("ConfigUseIntegratedMainWindowChrome")]
-        [Description("启用实验性一体化主窗口标题栏。切换后需要重新打开软件，下一次启动时生效。")]
-        public bool UseIntegratedMainWindowChrome { get => _UseIntegratedMainWindowChrome; set { _UseIntegratedMainWindowChrome = value; OnPropertyChanged(); } }
-        private bool _UseIntegratedMainWindowChrome;
-
         private void FloatingBall()
         {
             if (OpenFloatingBall)
@@ -87,11 +82,6 @@ namespace ColorVision
                 new ConfigSettingMetadata
                 {
                     BindingName =nameof(OpenFloatingBall),
-                    Source = Instance,
-                },
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(UseIntegratedMainWindowChrome),
                     Source = Instance,
                 },
                 new ConfigSettingMetadata

@@ -389,14 +389,14 @@ namespace ColorVision
                     }
                     else
                     {
-                        log.Info($"Feature '{feature}' not found, starting configured main window.");
-                        Window mainWindow = CreatePrimaryMainWindow();
+                        log.Info($"Feature '{feature}' not found, starting main window.");
+                        Window mainWindow = new MainWindow();
                         mainWindow.Show();
                     }
                 }
                 else
                 {
-                    Window mainWindow = CreatePrimaryMainWindow();
+                    Window mainWindow = new MainWindow();
                     mainWindow.Show();
                 }
                 ScheduleServiceHostStartupUpdate();
@@ -407,13 +407,6 @@ namespace ColorVision
                 MessageBox.Show("MainWindow Create Error:" + ex.Message);
                 Environment.Exit(-1);
             }
-        }
-
-        private static Window CreatePrimaryMainWindow()
-        {
-            return MainWindowConfig.Instance.UseIntegratedMainWindowChrome
-                ? new IntegratedMainWindow()
-                : new MainWindow();
         }
 
         private static void ScheduleServiceHostStartupUpdate()

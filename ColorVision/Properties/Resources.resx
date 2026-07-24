@@ -628,9 +628,6 @@
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>显示或隐藏桌面宠物组件。</value>
   </data>
-  <data name="ConfigUseIntegratedMainWindowChrome" xml:space="preserve">
-    <value>启用实验性一体化主窗口标题栏</value>
-  </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
   </data>
