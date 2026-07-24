@@ -38,6 +38,8 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 
 Do not put real credentials in docs or checked-in command examples.
 
+The backend HTTP upload endpoint is the only release distribution channel. A main release uploads the installer and `CHANGELOG.md` first, then updates `LATEST_RELEASE`; it does not copy artifacts to WeDrive or Baidu Cloud. The local `Desktop\History` directory remains an incremental-package build baseline, not a distribution channel.
+
 ## Current script map
 
 | Script | Purpose |

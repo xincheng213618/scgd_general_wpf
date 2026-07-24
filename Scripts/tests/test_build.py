@@ -1,9 +1,12 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from Scripts.build import (
+    RemoteUploadSettings,
     ensure_runtime_copy_integrity,
+    publish_primary_release,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
 )
@@ -108,6 +111,75 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self.root / "ColorVision.aip"
         aip_path.write_text(f"<DOCUMENT>{rows}</DOCUMENT>", encoding="utf-8")
         return aip_path
+
+
+class PrimaryReleasePublishTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_directory = tempfile.TemporaryDirectory(prefix="build-publish-tests-")
+        self.root = Path(self._temp_directory.name)
+        self.installer = self.root / "ColorVision-1.2.3.4.exe"
+        self.installer.write_bytes(b"installer")
+        self.changelog = self.root / "CHANGELOG.md"
+        self.changelog.write_text("## 1.2.3.4\n- release", encoding="utf-8")
+        self.settings = RemoteUploadSettings(
+            base_url="http://example.test:9998",
+            folder_name="ColorVision",
+            username="user",
+            password="password",
+        )
+
+    def tearDown(self) -> None:
+        self._temp_directory.cleanup()
+
+    def test_publishes_package_changelog_then_latest_release(self) -> None:
+        events: list[tuple[str, str]] = []
+
+        def upload_file(path, _settings):
+            events.append(("file", Path(path).name))
+            return True
+
+        def upload_content(content, remote_filename, _settings):
+            events.append(("content", f"{remote_filename}:{content}"))
+            return True
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer,
+                self.changelog,
+                self.settings,
+                upload_func=upload_file,
+                upload_content_func=upload_content,
+            )
+
+        self.assertTrue(result)
+        self.assertEqual(
+            [
+                ("file", "ColorVision-1.2.3.4.exe"),
+                ("file", "CHANGELOG.md"),
+                ("content", "LATEST_RELEASE:1.2.3.4"),
+            ],
+            events,
+        )
+
+    def test_changelog_failure_does_not_publish_latest_release(self) -> None:
+        uploaded_content = mock.Mock(return_value=True)
+
+        def upload_file(path, _settings):
+            return Path(path).name != "CHANGELOG.md"
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer,
+                self.changelog,
+                self.settings,
+                upload_func=upload_file,
+                upload_content_func=uploaded_content,
+            )
+
+        self.assertFalse(result)
+        uploaded_content.assert_not_called()
 
 
 if __name__ == "__main__":

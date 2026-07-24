@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>本地下載</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>百度雲端硬碟下載</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>軟體版本相同</value>

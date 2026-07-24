@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>로컬 다운로드</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>바이두 클라우드 다운로드</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>동일한 소프트웨어 버전</value>

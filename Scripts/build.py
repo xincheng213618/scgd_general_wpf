@@ -4,7 +4,6 @@ import os
 import re
 import shutil
 import subprocess
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -14,7 +13,6 @@ try:
     from .backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
         DEFAULT_READ_TIMEOUT,
-        DEFAULT_UPLOAD_CHUNK_SIZE,
         DEFAULT_UPLOAD_FOLDER,
         DEFAULT_UPLOAD_RETRIES,
         RemoteUploadSettings,
@@ -35,7 +33,6 @@ except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
         DEFAULT_READ_TIMEOUT,
-        DEFAULT_UPLOAD_CHUNK_SIZE,
         DEFAULT_UPLOAD_FOLDER,
         DEFAULT_UPLOAD_RETRIES,
         RemoteUploadSettings,
@@ -91,7 +88,6 @@ class ProjectConfig:
     aip_path: Path
     setup_files_dir: Path
     changelog_src: Path
-    wechat_target_directory: Path
 
 
 def sha256_file(path: Path) -> str:
@@ -277,78 +273,8 @@ def version_tuple(version_string: str) -> tuple[int, ...]:
     return tuple(map(int, version_string.split(".")))
 
 
-def copy_with_progress(src: str | Path, dst: str | Path) -> Path:
-    src_path = Path(src)
-    dst_path = Path(dst)
-    if dst_path.is_dir():
-        dst_path = dst_path / src_path.name
-
-    dst_path.parent.mkdir(parents=True, exist_ok=True)
-    file_size = src_path.stat().st_size
-    copied = 0
-    chunk_size = DEFAULT_UPLOAD_CHUNK_SIZE
-
-    with src_path.open("rb") as fsrc, dst_path.open("wb") as fdst:
-        start_time = time.time()
-        while True:
-            chunk = fsrc.read(chunk_size)
-            if not chunk:
-                break
-            fdst.write(chunk)
-            copied += len(chunk)
-
-            elapsed_time = max(time.time() - start_time, 0.001)
-            progress = copied / file_size * 100 if file_size else 100.0
-            speed = copied / elapsed_time
-
-            remaining_bytes = max(file_size - copied, 0)
-            remaining_time = remaining_bytes / speed if speed > 0 else 0
-            remaining_time_hms = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
-
-            print(
-                f"\rCopied {copied / (1024 * 1024):.2f} MB of {file_size / (1024 * 1024):.2f} MB "
-                f"({progress:.2f}%) at {speed / (1024 * 1024):.2f} MB/s, "
-                f"remaining time {remaining_time_hms}",
-                end="",
-            )
-
-        print()
-
-    shutil.copystat(src_path, dst_path, follow_symlinks=True)
-    return dst_path
-
-
-def read_version_file(path: str | Path) -> str:
-    file_path = Path(path)
-    try:
-        return file_path.read_text(encoding="utf-8").strip() or "0.0.0.0"
-    except FileNotFoundError:
-        return "0.0.0.0"
-
-
-def write_version_file(path: str | Path, version: str) -> None:
-    file_path = Path(path)
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(version, encoding="utf-8")
-
-
 def should_update_version(latest_version: str, current_version: str) -> bool:
     return version_tuple(latest_version) >= version_tuple(current_version)
-
-
-def copy_if_exists(src: str | Path, dst: str | Path) -> bool:
-    src_path = Path(src)
-    dst_path = Path(dst)
-    if not src_path.exists():
-        print(f"Could not copy file to {dst_path}: source does not exist")
-        return False
-    dst_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        shutil.copy2(src_path, dst_path)
-        return True
-    except OSError as exc:
-        print(f"Could not copy file to {dst_path}: {exc}")
-        return False
 
 
 def upload_file(
@@ -381,9 +307,14 @@ def publish_primary_release(
     remote_settings: RemoteUploadSettings,
     *,
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
+    upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
     latest_file = Path(latest_file)
     changelog_src = Path(changelog_src)
+
+    if not changelog_src.is_file():
+        print(f"Release changelog is missing: {changelog_src}")
+        return False
 
     current_version = backend_fetch_latest_version(remote_settings)
     if not should_update_version(latest_version, current_version):
@@ -395,88 +326,19 @@ def publish_primary_release(
         print("Primary release package upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
         return False
 
-    if changelog_src.exists():
-        print(f"Uploading release changelog: {changelog_src.name}")
-        if not backend_upload_file(changelog_src, remote_settings):
-            print("Warning: CHANGELOG.md upload failed.")
+    print(f"Uploading release changelog: {changelog_src.name}")
+    if not upload_func(changelog_src, remote_settings):
+        print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+        return False
 
     print("Uploading release marker: LATEST_RELEASE")
-    if not backend_upload_content(latest_version, "LATEST_RELEASE", remote_settings):
-        print("Warning: LATEST_RELEASE upload failed.")
+    if not upload_content_func(latest_version, "LATEST_RELEASE", remote_settings):
+        print("LATEST_RELEASE upload failed.")
         return False
 
     print(f"Updated the release version to {latest_version}")
     print(f"Upload {latest_file}")
     return True
-
-
-def sync_local_release_copy(
-    latest_version: str,
-    latest_release_path: str | Path,
-    latest_file: str | Path,
-    target_directory: str | Path,
-    changelog_src: str | Path,
-    changelog_dst: str | Path,
-) -> bool:
-    latest_release_path = Path(latest_release_path)
-    latest_file = Path(latest_file)
-    target_directory = Path(target_directory)
-    changelog_src = Path(changelog_src)
-    changelog_dst = Path(changelog_dst)
-
-    if not latest_release_path.exists():
-        print(f"{target_directory}不存在，跳过更新。")
-        return False
-
-    current_version = read_version_file(latest_release_path)
-    if not should_update_version(latest_version, current_version):
-        print(f"The current version ({current_version}) is up to date.")
-        return False
-
-    try:
-        copy_with_progress(latest_file, target_directory)
-    except OSError as exc:
-        print(f"Upload {latest_file}: {exc}")
-        return False
-
-    copy_if_exists(changelog_src, changelog_dst)
-    write_version_file(latest_release_path, latest_version)
-    print(f"Updated the release version to {latest_version}")
-    print(f"Upload {latest_file}")
-    return True
-
-
-def compare_and_write_version(
-    latest_version: str,
-    latest_file: str | Path,
-    changelog_src: str | Path,
-    *,
-    remote_settings: RemoteUploadSettings,
-) -> bool:
-    return publish_primary_release(
-        latest_version,
-        latest_file,
-        changelog_src,
-        remote_settings,
-    )
-
-
-def compare_and_write_version_weixin(
-    latest_version: str,
-    latest_release_path: str | Path,
-    latest_file: str | Path,
-    target_directory: str | Path,
-    changelog_src: str | Path,
-    changelog_dst: str | Path,
-) -> bool:
-    return sync_local_release_copy(
-        latest_version,
-        latest_release_path,
-        latest_file,
-        target_directory,
-        changelog_src,
-        changelog_dst,
-    )
 
 
 def resolve_msbuild_path() -> Path:
@@ -505,7 +367,6 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
             aip_path=ai_project_dir / "ColorVision.aip",
             setup_files_dir=ai_project_dir / "Setup Files",
             changelog_src=base_path / "CHANGELOG.md",
-            wechat_target_directory=Path(r"C:\Users\Xin\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision"),
         )
     }
 
@@ -588,19 +449,11 @@ def main() -> int:
         print("Could not extract the version from the filename.")
         return 1
 
-    compare_and_write_version_weixin(
-        latest_version,
-        project.wechat_target_directory / "LATEST_RELEASE",
-        latest_file,
-        project.wechat_target_directory,
-        project.changelog_src,
-        project.wechat_target_directory / "CHANGELOG.md",
-    )
-    if not compare_and_write_version(
+    if not publish_primary_release(
         latest_version,
         latest_file,
         project.changelog_src,
-        remote_settings=remote_settings,
+        remote_settings,
     ):
         return 1
     return 0

@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>Локальная загрузка</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Загрузка облака Baidu</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>Та же версия программного обеспечения</value>

@@ -1168,6 +1168,141 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 快速搜索本机文件和文件夹。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareEverythingDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareEverythingDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareInstalled {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareInstalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装包缺失 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwarePackageMissing {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwarePackageMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 将安装 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareSelected {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已跳过 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareSkipped {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareSkipped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看、解压和创建常用压缩文件。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWinRarDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWinRarDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认选择 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardConfirmAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardConfirmAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 建议安装 Everything 和 WinRAR。未安装的软件已默认勾选；单击“下一步”或“安装所选软件”会依次打开安装程序。取消勾选即可跳过，不影响继续使用 ColorVision。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 推荐软件 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardHeader {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装所选软件 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 安装程序启动失败：{1} 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallErrorFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallErrorFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 尚未安装完成。请重试，或取消勾选后继续。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallIncompleteFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallIncompleteFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未找到 {0} 安装包：{1} 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardPackageMissingFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardPackageMissingFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新检查 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardRecheckAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardRecheckAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在安装... 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardWorkingAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardWorkingAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -1476,15 +1611,6 @@ namespace ColorVision.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 百度云盘下载 的本地化字符串。
-        /// </summary>
-        public static string UpdateBaidu {
-            get {
-                return ResourceManager.GetString("UpdateBaidu", resourceCulture);
             }
         }
         

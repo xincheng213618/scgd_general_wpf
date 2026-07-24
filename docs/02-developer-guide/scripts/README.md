@@ -6,7 +6,7 @@
 
 | 场景 | 使用入口 | 说明 |
 | --- | --- | --- |
-| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会构建安装包、上传主包、更新 `LATEST_RELEASE`、上传增量包并生成全量 zip |
+| 主程序正式发布 | `Scripts\release.bat` | 唯一正常入口，会通过后端 HTTP 接口上传主包和 `CHANGELOG.md`，最后更新 `LATEST_RELEASE`，随后上传增量包并生成全量 zip |
 | 发布插件包 | `Scripts\package_plugin.bat <PluginName>` | 面向 `Plugins/<PluginName>/`，上传成功后删除本地 `.cvxp` |
 | 发布项目包 | `Scripts\package_project.bat <ProjectName>` | 面向 `Projects/<ProjectName>/`，上传成功后删除本地 `.cvxp` |
 | 发布外部编译产物 | `py Scripts\package_cvxp.py --src-dir <输出目录>` | 适合只拿到插件输出目录的场景 |
@@ -23,7 +23,7 @@
 Scripts\release.bat
 ```
 
-发布成功时，控制台应能看到主包上传、`LATEST_RELEASE` 更新和增量包上传成功。本地安装包、全量 zip、增量包是正常发布产物，不代表“本地-only 发布”。发布失败时先修复失败原因，再重新走 `release.bat`。
+发布成功时，控制台应依次看到主包上传、`CHANGELOG.md` 上传、`LATEST_RELEASE` 更新和增量包上传成功。后端 HTTP 接口是唯一发布通道，不再同步企业微信 WeDrive 或百度云；任一元数据上传失败都会阻止版本号更新。本地安装包、全量 zip、增量包是正常构建产物，不代表“本地-only 发布”。其中桌面 `History` 目录用于生成增量差分，不是额外分发渠道。发布失败时先修复失败原因，再重新走 `release.bat`。
 
 ## 插件和项目包
 

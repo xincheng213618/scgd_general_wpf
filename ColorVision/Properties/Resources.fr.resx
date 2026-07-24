@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>Téléchargement local</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Téléchargement de Baidu Cloud</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>Même version du logiciel</value>

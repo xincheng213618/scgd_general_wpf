@@ -64,5 +64,41 @@ class UploadFileToFolderTests(unittest.TestCase):
         upload.assert_not_called()
 
 
+class UploadContentTests(unittest.TestCase):
+    class RequestsStub:
+        RequestException = RuntimeError
+
+    def test_text_content_uses_http_put_and_retries_server_errors(self):
+        failed = mock.Mock(status_code=500, text="temporary")
+        succeeded = mock.Mock(status_code=201, text="")
+        session = mock.Mock()
+        session.put.side_effect = [failed, succeeded]
+        settings = backend_client.RemoteUploadSettings(
+            base_url="http://example.test:9998",
+            folder_name="ColorVision",
+            username="user",
+            password="password",
+            max_retries=2,
+        )
+
+        with (
+            mock.patch.object(backend_client, "get_requests_module", return_value=self.RequestsStub),
+            mock.patch.object(backend_client.time, "sleep"),
+        ):
+            result = backend_client.upload_content(
+                "1.2.3.4",
+                "LATEST_RELEASE",
+                settings,
+                session=session,
+            )
+
+        self.assertTrue(result)
+        self.assertEqual(2, session.put.call_count)
+        _, kwargs = session.put.call_args
+        self.assertEqual(b"1.2.3.4", kwargs["data"])
+        self.assertEqual("text/plain; charset=utf-8", kwargs["headers"]["Content-Type"])
+        self.assertEqual(("user", "password"), kwargs["auth"])
+
+
 if __name__ == "__main__":
     unittest.main()
