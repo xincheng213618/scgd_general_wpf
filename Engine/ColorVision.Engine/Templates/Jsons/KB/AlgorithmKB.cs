@@ -6,8 +6,9 @@ using ColorVision.UI;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
@@ -16,48 +17,50 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
     }
 
+    public class KBDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [CommandDisplay("编辑键盘点位")]
+        public ICommand EditFirstTemplateCommand { get; }
+
+        public KBDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "键盘检测模板",
+                new TemplateKB(),
+                "请先选择键盘检测模板"))
+        {
+            EditFirstTemplateCommand = new RelayCommand(_ => OpenFirstTemplate());
+        }
+
+        private void OpenFirstTemplate()
+        {
+            if (Template.TryGetValue(out TemplateJsonKBParam param))
+            {
+                new EditPoiParam1(param)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                }.Show();
+            }
+        }
+    }
+
     [DisplayAlgorithm(98, "键盘检测1", "数据提取算法")]
-    public class AlgorithmKB : DisplayAlgorithmBase
+    public class AlgorithmKB : JsonDisplayAlgorithmBase<KBDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
-        public RelayCommand OpenFirstTemplateCommand { get; set; }
-
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
+            : base(new KBDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());
-        }
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplateKB(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public void OpenFirstTemplate()
+        public override MsgRecord SendCommand(TemplateJsonParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
-            new EditPoiParam1(TemplateKB.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayKB(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
-        {
-            ParamBase paramBase = TemplateKB.Params[TemplateSelectedIndex].Value;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new Dictionary<string,object>() { { "ID", paramBase.Id },{ "Name", paramBase.Name } });
+            Params.Add("TemplateParam", new Dictionary<string,object>() { { "ID", param.Id },{ "Name", param.Name } });
             MsgSend msg = new()
             {
                 EventName = "KB",

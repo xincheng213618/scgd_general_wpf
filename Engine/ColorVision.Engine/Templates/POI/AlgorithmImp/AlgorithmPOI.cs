@@ -10,104 +10,111 @@ using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+    public class PoiDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [Display(Order = 10)]
+        public DisplayAlgorithmTemplateSelection FilterTemplate { get; set; }
+
+        [Display(Order = 20)]
+        public DisplayAlgorithmTemplateSelection ReviseTemplate { get; set; }
+
+        [Display(Order = 30)]
+        public DisplayAlgorithmTemplateSelection OutputTemplate { get; set; }
+
+        [DisplayName("存储类型")]
+        [Display(Order = 40)]
+        public POIStorageModel StorageModel
+        {
+            get => _storageModel;
+            set
+            {
+                _storageModel = value;
+                OnPropertyChanged();
+            }
+        }
+        private POIStorageModel _storageModel = POIStorageModel.Db;
+
+        [DisplayName("POI文件")]
+        [DisplayAlgorithmFile]
+        [PropertyVisibility(nameof(StorageModel), POIStorageModel.File)]
+        [Display(Order = 50)]
+        public string POIPointFileName { get; set; } = string.Empty;
+
+        [DisplayName("亚像素")]
+        [Display(Order = 60)]
+        public bool IsSubPixel { get; set; }
+
+        [DisplayName("计算色温波长")]
+        [Display(Order = 70)]
+        public bool IsCCTWave { get; set; } = true;
+
+        public PoiDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "POI模板",
+                new TemplatePoi(),
+                "请先选择关注点模板"))
+        {
+            FilterTemplate = new DisplayAlgorithmTemplateSelection(
+                "过滤模板",
+                new TemplatePoiFilterParam(),
+                "需要选择关注点过滤模板",
+                () => TemplatePoiFilterParam.Params.CreateEmpty(),
+                editorIndexOffset: -1);
+            ReviseTemplate = new DisplayAlgorithmTemplateSelection(
+                "修正模板",
+                new TemplatePoiReviseParam(),
+                "需要选择关注点修正模板",
+                () => TemplatePoiReviseParam.Params.CreateEmpty(),
+                editorIndexOffset: -1);
+            OutputTemplate = new DisplayAlgorithmTemplateSelection(
+                "输出模板",
+                new TemplatePoiOutputParam(),
+                "需要选择关注点输出模板",
+                () => TemplatePoiOutputParam.Params.CreateEmpty(),
+                editorIndexOffset: -1);
+        }
+    }
 
     [DisplayAlgorithm(1, "POI", "数据提取算法")]
-    public class AlgorithmPoi : DisplayAlgorithmBase
+    public class AlgorithmPoi : DisplayAlgorithmBase<PoiDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
-        public RelayCommand OpenTemplatePOIFilterCommand { get; set; }
-
-        public RelayCommand OpenTemplatePoiReviseCommand { get; set; }
-
-        public RelayCommand OpenTemplatePoiOutputCommand { get; set; }
-        public RelayCommand OpenPoiFileCommand { get; set; }
-
-
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
+            : base(new PoiDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());
-            OpenTemplatePoiReviseCommand = new RelayCommand(a => OpenTemplatePoiRevise());
-            OpenTemplatePoiOutputCommand = new RelayCommand(a => OpenTemplatePoiOutput());
-            OpenPoiFileCommand = new RelayCommand(a => OpenPoiFile());
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-
-        public int TemplatePOIFilterSelectedIndex { get => _TemplatePOIFilterSelectedIndex; set { _TemplatePOIFilterSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePOIFilterSelectedIndex;
-
-        public void OpenTemplatePOIFilter()
-        {
-            new TemplateEditorWindow(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiReviseSelectedIndex;
-
-        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsUSeFile)); } }
-        private POIStorageModel _POIStorageModel = POIStorageModel.Db;
-
-        public bool IsUSeFile => POIStorageModel == POIStorageModel.File;
-
-        public bool IsSubPixel { get => _IsSubPixel; set { _IsSubPixel = value; OnPropertyChanged(); } }
-        private bool _IsSubPixel;
-        public bool IsCCTWave { get => _IsCCTWave; set { _IsCCTWave = value; OnPropertyChanged(); } }
-        private bool _IsCCTWave = true;
-
-        public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; OnPropertyChanged(); } }
-        private string _POIPointFileName;
-
-        public void OpenPoiFile()
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = ServicesHelper.ImageFileDialogFilter;
-            openFileDialog.RestoreDirectory = true;
-            openFileDialog.FilterIndex = 1;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (!TryGetTemplate(Config.Template, out PoiParam poiParam) ||
+                !TryGetTemplate(Config.FilterTemplate, out PoiFilterParam filter) ||
+                !TryGetTemplate(Config.ReviseTemplate, out PoiReviseParam revise) ||
+                !TryGetTemplate(Config.OutputTemplate, out PoiOutputParam output) ||
+                !TryGetImageInput(out string imageFileName, out _))
             {
-                POIPointFileName = openFileDialog.FileName;
+                return null;
             }
+
+            return SendCommand(
+                string.Empty,
+                string.Empty,
+                imageFileName,
+                poiParam,
+                filter,
+                revise,
+                output);
         }
-
-
-        public void OpenTemplatePoiRevise()
-        {
-            new TemplateEditorWindow(new TemplatePoiReviseParam(), TemplatePoiReviseSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public int TemplatePoiOutputSelectedIndex { get => _TemplatePoiOutputSelectedIndex; set { _TemplatePoiOutputSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiOutputSelectedIndex;
-
-        public void OpenTemplatePoiOutput()
-        {
-            new TemplateEditorWindow(new TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayPoi(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output)
         {
@@ -140,14 +147,14 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (output.Id != -1)
                 Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
 
-            if (POIStorageModel == POIStorageModel.File)
+            if (Config.StorageModel == POIStorageModel.File)
             {
-                Params.Add("POIStorageType", POIStorageModel);
-                Params.Add("POIPointFileName", POIPointFileName);
+                Params.Add("POIStorageType", Config.StorageModel);
+                Params.Add("POIPointFileName", Config.POIPointFileName);
             }
 
-            Params.Add("IsSubPixel", IsSubPixel);
-            Params.Add("IsCCTWave", IsCCTWave);
+            Params.Add("IsSubPixel", Config.IsSubPixel);
+            Params.Add("IsCCTWave", Config.IsCCTWave);
 
             MsgSend msg = new()
             {

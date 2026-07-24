@@ -7,56 +7,61 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
+    public class ImageCroppingDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [System.ComponentModel.DisplayName("点1")]
+        public PointFloat Point1 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点2")]
+        public PointFloat Point2 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点3")]
+        public PointFloat Point3 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点4")]
+        public PointFloat Point4 { get; set; } = new();
+
+        public ImageCroppingDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "发光区裁剪模板",
+                new TemplateImageCropping(),
+                "请先选择发光区裁剪模板"))
+        {
+        }
+    }
 
     [DisplayAlgorithm(50, "发光区裁剪", "数据提取算法")]
-    public class AlgorithmImageCropping : DisplayAlgorithmBase
+    public class AlgorithmImageCropping : DisplayAlgorithmBase<ImageCroppingDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmImageCropping(DeviceAlgorithm deviceAlgorithm)
+            : base(new ImageCroppingDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateImageCropping(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out ImageCroppingParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayImageCropping(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-        public PointFloat Point1 { get => _Point1; set { _Point1 = value; OnPropertyChanged(); } }
-        private PointFloat _Point1 = new PointFloat();
-        public PointFloat Point2 { get => _Point2; set { _Point2 = value; OnPropertyChanged(); } }
-        private PointFloat _Point2 = new PointFloat();
-        public PointFloat Point3 { get => _Point3; set { _Point3 = value; OnPropertyChanged(); } }
-        private PointFloat _Point3 = new PointFloat();
-        public PointFloat Point4 { get => _Point4; set { _Point4 = value; OnPropertyChanged(); } }
-        private PointFloat _Point4 = new PointFloat();
-
 
         public MsgRecord SendCommand(ImageCroppingParam param,string deviceCode, string deviceType, string fileName, FileExtType fileExtType )
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            PointFloat[] ROI = new PointFloat[] { Config.Point1, Config.Point2, Config.Point3, Config.Point4 };
             Params.Add("ROI", ROI);
             MsgSend msg = new()
             {

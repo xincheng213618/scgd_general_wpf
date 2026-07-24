@@ -155,12 +155,6 @@
                             <TextBlock Style="{StaticResource ButtonText}" Text="{x:Static properties:Resources.Archive}"/>
                         </StackPanel>
                     </Button>
-                    <Button Style="{StaticResource NavButton}" Click="ButtonCacheSetting_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource IconText}" Text="&#xE9D5;"/>
-                            <TextBlock Style="{StaticResource ButtonText}" Text="{x:Static properties:Resources.CacheManagement}"/>
-                        </StackPanel>
-                    </Button>
                 </WrapPanel>
 
                 <Button Grid.Column="1"

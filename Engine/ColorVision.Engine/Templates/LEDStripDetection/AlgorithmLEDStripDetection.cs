@@ -7,51 +7,52 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
+    public class LEDStripDetectionDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [System.ComponentModel.DisplayName("反向")]
+        public bool IsInversion { get; set; }
+
+        public LEDStripDetectionDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "LEDStripDetection模板",
+                new TemplateLEDStripDetection(),
+                "请先选择LEDStripDetection模板"))
+        {
+        }
+    }
 
     [DisplayAlgorithm(10, "LightBandDetection", "定位算法")]
-    public class AlgorithmLEDStripDetection : DisplayAlgorithmBase
+    public class AlgorithmLEDStripDetection : DisplayAlgorithmBase<LEDStripDetectionDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmLEDStripDetection(DeviceAlgorithm deviceAlgorithm)
+            : base(new LEDStripDetectionDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateLEDStripDetection(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out LEDStripDetectionParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayLEDStripDetection(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-        public bool IsInversion { get => _IsInversion; set { _IsInversion = value; OnPropertyChanged(); } }
-        private bool _IsInversion;
-
 
         public MsgRecord SendCommand(LEDStripDetectionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("IsInversion", IsInversion);
+            Params.Add("IsInversion", Config.IsInversion);
 
             MsgSend msg = new()
             {

@@ -6,43 +6,28 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
     [DisplayAlgorithm(70, "EmittingAreaLocation,", "基础算法")]
-    public class AlgorithmAAFindPoints : DisplayAlgorithmBase
+    public class AlgorithmAAFindPoints : JsonDisplayAlgorithmBase<SingleTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmAAFindPoints(DeviceAlgorithm deviceAlgorithm)
+            : base(new SingleTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "AAFindPoints模板",
+                    new TemplateAAFindPoints(),
+                    "请先选择AAFindPoints模板")))
         {
             Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-        }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplateAAFindPoints(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayAAFindPoints(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-
-        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
+        public override MsgRecord SendCommand(TemplateJsonParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });

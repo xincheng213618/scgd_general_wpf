@@ -1027,4 +1027,13 @@
   <data name="ImageExportJpegQuality" xml:space="preserve">
     <value>JPEG 质量（0-100，默认 95）</value>
   </data>
+  <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
+    <value>重新执行服务算法</value>
+  </data>
+  <data name="NoAlgorithmServiceAvailable" xml:space="preserve">
+    <value>没有可用的算法服务</value>
+  </data>
+  <data name="SelectAlgorithmService" xml:space="preserve">
+    <value>请选择算法服务</value>
+  </data>
 </root>

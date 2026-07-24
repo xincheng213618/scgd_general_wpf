@@ -3358,4 +3358,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ImageExportJpegQuality" xml:space="preserve">
     <value>Qualité JPEG (0-100, 95 par défaut)</value>
   </data>
+  <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
+    <value>Réexécuter l’algorithme du service</value>
+  </data>
+  <data name="NoAlgorithmServiceAvailable" xml:space="preserve">
+    <value>Aucun service d’algorithme n’est disponible.</value>
+  </data>
+  <data name="SelectAlgorithmService" xml:space="preserve">
+    <value>Sélectionnez un service d’algorithme.</value>
+  </data>
 </root>

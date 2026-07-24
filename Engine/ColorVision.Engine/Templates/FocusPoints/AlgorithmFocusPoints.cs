@@ -7,41 +7,36 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FocusPoints
 {
 
     [DisplayAlgorithm(12, "发光区1", "数据提取算法")]
-    public class AlgorithmFocusPoints : DisplayAlgorithmBase
+    public class AlgorithmFocusPoints : DisplayAlgorithmBase<SingleTemplateDisplayAlgorithmConfig>
     {
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmFocusPoints(DeviceAlgorithm deviceAlgorithm)
+            : base(new SingleTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "FocusPoints模板",
+                    new TemplateFocusPoints(),
+                    "请先选择FocusPoints模板")))
         {
             Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateFocusPoints(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            if (!TryGetTemplate(Config.Template, out FocusPointsParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayFocusPoints(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
 
         public MsgRecord SendCommand(FocusPointsParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {

@@ -1,0 +1,69 @@
+<Window x:Class="ColorVision.Engine.Services.Devices.Algorithm.DisplayAlgorithmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        mc:Ignorable="d"
+        d:DesignHeight="240"
+        d:DesignWidth="420"
+        Width="420"
+        MinHeight="140"
+        MaxHeight="760"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlobalBackground}"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel x:Name="DevicePanel" Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Margin="0,0,8,0" Text="{x:Static properties:Resources.Device}" />
+            <ComboBox x:Name="DeviceSelector"
+                      MinWidth="220"
+                      SelectionChanged="DeviceSelector_SelectionChanged">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock>
+                            <Run Text="{Binding Config.Name}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding Code}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding DService.DeviceStatusString}" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </DockPanel>
+
+        <Border Grid.Row="1"
+                Padding="8"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <Grid>
+                <ScrollViewer MaxHeight="650"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ContentControl x:Name="AlgorithmContent" />
+                </ScrollViewer>
+
+                <Border x:Name="StatusOverlay"
+                        Background="{DynamicResource GlobalBackground}"
+                        Visibility="Collapsed">
+                    <ContentControl x:Name="StatusContent" />
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

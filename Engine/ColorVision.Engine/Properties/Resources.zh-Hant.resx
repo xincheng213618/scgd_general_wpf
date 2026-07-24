@@ -3148,4 +3148,13 @@
   <data name="ImageExportJpegQuality" xml:space="preserve">
     <value>JPEG 品質（0-100，預設 95）</value>
   </data>
+  <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
+    <value>重新執行服務演算法</value>
+  </data>
+  <data name="NoAlgorithmServiceAvailable" xml:space="preserve">
+    <value>沒有可用的演算法服務</value>
+  </data>
+  <data name="SelectAlgorithmService" xml:space="preserve">
+    <value>請選擇演算法服務</value>
+  </data>
 </root>

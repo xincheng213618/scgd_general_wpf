@@ -173,9 +173,5 @@ namespace ColorVision.Engine.Services
             window.ShowDialog();
         }
 
-        private void ButtonCacheSetting_Click(object sender, RoutedEventArgs e)
-        {
-            new CacheSettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
     }
 }

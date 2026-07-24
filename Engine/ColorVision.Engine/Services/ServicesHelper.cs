@@ -72,18 +72,74 @@ namespace ColorVision.Engine.Services
         {
             if (sender is Button button)
             {
-                var temp = button.Content;
-                button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
-
-                msgRecord.MsgRecordStateChanged += (s,e) => button.Content = temp; 
+                TrackCommandButton(button, msgRecord);
             }
         }
 
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
-            var temp = button.Content;
-            button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
-            msgRecord.MsgRecordStateChanged += (s,e) => button.Content = temp;
+            TrackCommandButton(button, msgRecord);
+        }
+
+        private static void TrackCommandButton(Button button, MsgRecord msgRecord)
+        {
+            WeakReference<Button> buttonReference = new(button);
+            object? originalContent = button.Content;
+            bool disabledByTracker = button.IsEnabled;
+            bool detached = false;
+            EventHandler<MsgRecordState>? stateChanged = null;
+
+            void RestoreButton()
+            {
+                if (buttonReference.TryGetTarget(out Button? target))
+                {
+                    target.Content = originalContent;
+                    if (disabledByTracker)
+                    {
+                        target.SetCurrentValue(UIElement.IsEnabledProperty, true);
+                    }
+                }
+            }
+
+            void Detach()
+            {
+                if (detached)
+                {
+                    return;
+                }
+
+                detached = true;
+                msgRecord.MsgRecordStateChanged -= stateChanged;
+            }
+
+            stateChanged = (_, state) =>
+            {
+                if (state == MsgRecordState.Success ||
+                    state == MsgRecordState.Fail ||
+                    state == MsgRecordState.Timeout)
+                {
+                    RestoreButton();
+                    Detach();
+                    return;
+                }
+
+                if (!buttonReference.TryGetTarget(out Button? target))
+                {
+                    Detach();
+                    return;
+                }
+
+                target.Content = Properties.Resources.ResourceManager.GetString(
+                    state.ToDescription(),
+                    CultureInfo.CurrentUICulture) ?? string.Empty;
+            };
+
+            if (disabledByTracker)
+            {
+                button.SetCurrentValue(UIElement.IsEnabledProperty, false);
+            }
+            msgRecord.MsgRecordStateChanged += stateChanged;
+            stateChanged(msgRecord, msgRecord.MsgRecordState);
         }
 
         public static TimedButtonOperationScope? SendTimedCommand(

@@ -3359,6 +3359,15 @@ Please close camera or other programs using this serial port, or check device co
     <value>Сжатие PNG (0=без сжатия, 1=максимальная скорость, 9=минимальный размер)</value>
   </data>
   <data name="ImageExportJpegQuality" xml:space="preserve">
-    <value>Качество JPEG (0-100, по умолчанию 95)</value>
+    <value>Качество JPEG (0–100, по умолчанию 95)</value>
+  </data>
+  <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
+    <value>Повторно запустить алгоритм сервиса</value>
+  </data>
+  <data name="NoAlgorithmServiceAvailable" xml:space="preserve">
+    <value>Нет доступной службы алгоритмов.</value>
+  </data>
+  <data name="SelectAlgorithmService" xml:space="preserve">
+    <value>Выберите службу алгоритмов.</value>
   </data>
 </root>

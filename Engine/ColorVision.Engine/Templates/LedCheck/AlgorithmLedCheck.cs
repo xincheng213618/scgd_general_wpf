@@ -8,50 +8,42 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
     [DisplayAlgorithm(20, "PixelLedDetect", "定位算法")]
-    public class AlgorithmLedCheck : DisplayAlgorithmBase
+    public class AlgorithmLedCheck : DisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-
         public AlgorithmLedCheck(DeviceAlgorithm deviceAlgorithm)
+            : base(new DualTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "灯珠检测模板",
+                    new TemplateLedCheck(),
+                    "请先选择灯珠检测模板"),
+                new DisplayAlgorithmTemplateSelection(
+                    "关注点模板",
+                    new TemplatePoi(),
+                    "请先选择关注点模板",
+                    () => TemplatePoi.Params.CreateEmpty())))
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateLedCheck(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out LedCheckParam param) ||
+                !TryGetTemplate(Config.SecondaryTemplate, out PoiParam poiParam) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, poiParam, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayLedCheck(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
 
         public MsgRecord SendCommand(LedCheckParam param, PoiParam poiParam ,string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {

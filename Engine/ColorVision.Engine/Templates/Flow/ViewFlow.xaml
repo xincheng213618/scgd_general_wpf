@@ -18,34 +18,9 @@
                          LimitCanvasToContentBounds="False" ShowLocation="False"
                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
-        <!-- Only the card backgrounds are translucent, so labels stay sharp. -->
-        <Grid Width="232" Margin="10,54,0,0"
-              HorizontalAlignment="Left" VerticalAlignment="Top"
-              Opacity="0.82" Panel.ZIndex="10">
-            <Border Background="{DynamicResource GlobalBackground}"
-                    BorderBrush="{DynamicResource GlobalBorderBrush}"
-                    BorderThickness="1" CornerRadius="7" Opacity="0.72"/>
-            <StackPanel Margin="8">
-                <TextBlock Text="{x:Static properties:Resources.Workflow}"
-                           Foreground="{DynamicResource GlobalTextBrush}"
-                           FontWeight="SemiBold" Margin="3,0,3,6"/>
 
-                <Button Content="{x:Static properties:Resources.FlowResultManagement}"
-                        Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"
-                        HorizontalContentAlignment="Left" Margin="0,0,0,4"/>
-                <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}"
-                        Click="Button_Click_NodeAnalysis"
-                        HorizontalContentAlignment="Left" Margin="0,0,0,4"/>
-                <Button Content="{x:Static properties:Resources.ParsingManagement}"
-                        Click="Button_Click_1"
-                        HorizontalContentAlignment="Left" Margin="0,0,0,4"/>
-                <Button Content="{x:Static properties:Resources.PreprocessManager}"
-                        Click="Button_Click_PreProcess"
-                        HorizontalContentAlignment="Left"/>
-            </StackPanel>
-        </Grid>
 
-        <!-- Primary editor commands float above the canvas. -->
+       <!-- Primary editor commands float above the canvas. -->
         <Grid Margin="0,10,0,0"
               HorizontalAlignment="Center" VerticalAlignment="Top"
               Panel.ZIndex="20">
@@ -147,7 +122,7 @@
         </Grid>
 
         <!-- Compact execution details float above the progress bar. -->
-        <Grid Height="88" Margin="10,0,10,10"
+        <Grid Height="70" Margin="10,0,10,10"
               HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
               Panel.ZIndex="25">
             <Border Background="{DynamicResource GlobalBackground}"
@@ -158,9 +133,6 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="{x:Static properties:Resources.ExecutionProcess}"
-                           Foreground="{DynamicResource GlobalTextBrush}"
-                           FontWeight="SemiBold" Margin="2,0,2,2"/>
                 <TextBox x:FieldModifier="public" x:Name="logTextBox" Grid.Row="1"
                          Padding="2" Background="Transparent"
                          Foreground="{DynamicResource GlobalTextBrush}"
@@ -168,6 +140,16 @@
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
                          VerticalContentAlignment="Top" IsReadOnly="True"/>
+
+                <StackPanel HorizontalAlignment="Right"  Grid.Row="1">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"  />
+                        <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}"  Click="Button_Click_NodeAnalysis"  />
+                    </StackPanel>
+
+                    <Button Content="{x:Static properties:Resources.ParsingManagement}"  Click="Button_Click_1"  />
+                    <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess" />
+                </StackPanel>
             </Grid>
         </Grid>
 

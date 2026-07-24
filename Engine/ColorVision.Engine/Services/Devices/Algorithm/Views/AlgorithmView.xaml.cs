@@ -174,7 +174,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
+                var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
                     ResultHandle?.Load(ViewResultContext, ViewResultAlg);
 
                 if (Config.InsertAtBeginning)
@@ -202,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
 
-            var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
+            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
 
             if (ResultHandle != null)
             {
@@ -293,7 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
-            var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
+            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
             if (ResultHandle != null)
             {
                 ResultHandle.SideSave(result,selectedPath);

@@ -3357,4 +3357,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ImageExportJpegQuality" xml:space="preserve">
     <value>JPEG 품질(0-100, 기본값 95)</value>
   </data>
+  <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
+    <value>서비스 알고리즘 다시 실행</value>
+  </data>
+  <data name="NoAlgorithmServiceAvailable" xml:space="preserve">
+    <value>사용 가능한 알고리즘 서비스가 없습니다.</value>
+  </data>
+  <data name="SelectAlgorithmService" xml:space="preserve">
+    <value>알고리즘 서비스를 선택하세요.</value>
+  </data>
 </root>

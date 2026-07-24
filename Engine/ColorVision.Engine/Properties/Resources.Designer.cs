@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-        
+
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -3560,6 +3560,15 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 重新执行服务算法 的本地化字符串。
+        /// </summary>
+        public static string DisplayAlgorithmRecalculate {
+            get {
+                return ResourceManager.GetString("DisplayAlgorithmRecalculate", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 显示设置 的本地化字符串。
         /// </summary>
@@ -8933,6 +8942,24 @@ namespace ColorVision.Engine.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 没有可用的算法服务 的本地化字符串。
+        /// </summary>
+        public static string NoAlgorithmServiceAvailable {
+            get {
+                return ResourceManager.GetString("NoAlgorithmServiceAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请选择算法服务 的本地化字符串。
+        /// </summary>
+        public static string SelectAlgorithmService {
+            get {
+                return ResourceManager.GetString("SelectAlgorithmService", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 三个全为False时执行会报错 的本地化字符串。
         /// </summary>
