@@ -8,7 +8,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.ToolPlugins.ThirdPartyApps
 {
     public class ExternalToolsConfig : IConfig
     {
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
-            string group = Properties.Resources.InstallTools;
+            string group = ColorVision.Engine.Properties.Resources.InstallTools;
             return new List<ThirdPartyAppInfo>
             {
                 new ThirdPartyAppInfo

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace ColorVision.Engine.ToolPlugins
+namespace ColorVision.ToolPlugins
 {
 
 
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.ToolPlugins
                 new ThirdPartyAppInfo
                 {
                     Name = "DAT File Reader",
-                    Group = Properties.Resources.InternalTools,
+                    Group = ColorVision.Engine.Properties.Resources.InternalTools,
                     Order = 7,
                     LaunchAction = Execute,
                 }

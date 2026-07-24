@@ -4,11 +4,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.ToolPlugins.ThirdPartyApps
 {
     internal static class ThirdPartyAppGroupNames
     {
-        public static string CommonTools => Properties.Resources.CommonTools;
+        public static string CommonTools => ColorVision.Engine.Properties.Resources.CommonTools;
 
         private static bool IsChineseUICulture()
         {
@@ -20,7 +20,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
     {
         public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
         {
-            string group = Properties.Resources.PortableTools;
+            string group = ColorVision.Engine.Properties.Resources.PortableTools;
             return new List<ThirdPartyAppInfo>
             {
                 new ThirdPartyAppInfo
@@ -110,7 +110,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             if (!Directory.Exists(installToolDir))
                 return Enumerable.Empty<ThirdPartyAppInfo>();
 
-            string group = Properties.Resources.InstallTools;
+            string group = ColorVision.Engine.Properties.Resources.InstallTools;
             var apps = new List<ThirdPartyAppInfo>();
             var knownProvider = new KnownAppProvider();
             var knownInstallers = new HashSet<string>(

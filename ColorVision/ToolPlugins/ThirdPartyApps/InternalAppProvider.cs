@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.ThirdPartyApps;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.ToolPlugins.ThirdPartyApps
 {
     public class InternalAppProvider : IThirdPartyAppProvider
     {

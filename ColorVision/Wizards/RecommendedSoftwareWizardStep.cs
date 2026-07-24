@@ -1,6 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.ThirdPartyApps;
-using ColorVision.Engine.ToolPlugins.ThirdPartyApps;
+using ColorVision.ToolPlugins.ThirdPartyApps;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;

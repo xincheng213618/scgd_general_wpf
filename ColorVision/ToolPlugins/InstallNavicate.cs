@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.ToolPlugins.ThirdPartyApps
 {
     public class InstallNavicateAppProvider : IThirdPartyAppProvider
     {

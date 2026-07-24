@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.ToolPlugins.ThirdPartyApps;
 using ColorVision.ImageEditor;
 using ColorVision.FileIO;
 using ColorVision.UI.Menus;
@@ -12,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
 
-namespace WindowsServicePlugin.Tools
+namespace ColorVision.ToolPlugins.ThirdPartyApps
 {
     public static class PathHelper
     {
