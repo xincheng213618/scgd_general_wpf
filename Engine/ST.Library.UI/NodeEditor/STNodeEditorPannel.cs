@@ -2,407 +2,174 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using DrawingColor = System.Drawing.Color;
+using DrawingSize = System.Drawing.Size;
+using MediaColor = System.Windows.Media.Color;
 
 namespace ST.Library.UI.NodeEditor;
 
-public class STNodeEditorPannel : Control
+/// <summary>
+/// WPF composite editor containing the node catalog, canvas and property editor.
+/// The historical type name is retained for source compatibility.
+/// </summary>
+public class STNodeEditorPannel : UserControl, IDisposable
 {
-	private bool _LeftLayout = true;
+	private readonly Grid m_root = new Grid();
+	private readonly STNodeEditor m_editor = new STNodeEditor();
+	private readonly STNodeTreeView m_tree = new STNodeTreeView();
+	private readonly STNodePropertyGrid m_grid = new STNodePropertyGrid();
+	private readonly Dictionary<ConnectionStatus, string> m_status_text = new Dictionary<ConnectionStatus, string>();
 
-	private Color _SplitLineColor = Color.Black;
+	private bool m_left_layout = true;
+	private DrawingColor m_split_line_color = DrawingColor.Black;
+	private DrawingColor m_handle_line_color = DrawingColor.Gray;
+	private DrawingColor m_back_color = DrawingColor.FromArgb(255, 34, 34, 34);
+	private bool m_show_scale = true;
+	private bool m_show_connection_status = true;
+	private int m_x = 201;
+	private int m_y = 250;
+	private bool m_disposed;
+	private GridSplitter m_vertical_splitter;
+	private GridSplitter m_horizontal_splitter;
+	private Grid m_side_grid;
 
-	private Color _HandleLineColor = Color.Gray;
-
-	private bool _ShowScale = true;
-
-	private bool _ShowConnectionStatus = true;
-
-	private int _X;
-
-	private int _Y;
-
-	private Point m_pt_down;
-
-	private bool m_is_mx;
-
-	private bool m_is_my;
-
-	private Pen m_pen;
-
-	private bool m_nInited;
-
-	private Dictionary<ConnectionStatus, string> m_dic_status_key = new Dictionary<ConnectionStatus, string>();
-
-	private STNodeEditor m_editor;
-
-	private STNodeTreeView m_tree;
-
-	private STNodePropertyGrid m_grid;
-
-	[Description("获取或设置是否是左边布局")]
 	[DefaultValue(true)]
 	public bool LeftLayout
 	{
-		get
-		{
-			return _LeftLayout;
-		}
+		get => m_left_layout;
 		set
 		{
-			if (value != _LeftLayout)
+			if (m_left_layout == value)
 			{
-				_LeftLayout = value;
-				SetLocation();
-				Invalidate();
+				return;
 			}
+			m_left_layout = value;
+			double width = GetViewportWidth();
+			m_x = value ? 201 : Math.Max(122, (int)width - 202);
+			BuildLayout();
 		}
 	}
 
-	[Description("获取或这是分割线颜色")]
-	[DefaultValue(typeof(Color), "Black")]
-	public Color SplitLineColor
+	[DefaultValue(typeof(DrawingColor), "Black")]
+	public DrawingColor SplitLineColor
 	{
-		get
-		{
-			return _SplitLineColor;
-		}
+		get => m_split_line_color;
 		set
 		{
-			_SplitLineColor = value;
+			m_split_line_color = value;
+			ApplySplitterColors();
 		}
 	}
 
-	[Description("获取或设置分割线手柄颜色")]
-	[DefaultValue(typeof(Color), "Gray")]
-	public Color HandleLineColor
+	[DefaultValue(typeof(DrawingColor), "Gray")]
+	public DrawingColor HandleLineColor
 	{
-		get
-		{
-			return _HandleLineColor;
-		}
+		get => m_handle_line_color;
 		set
 		{
-			_HandleLineColor = value;
+			m_handle_line_color = value;
+			ApplySplitterColors();
 		}
 	}
 
-	[Description("获取或设置编辑器缩放时候显示比例")]
 	[DefaultValue(true)]
 	public bool ShowScale
 	{
-		get
-		{
-			return _ShowScale;
-		}
-		set
-		{
-			_ShowScale = value;
-		}
+		get => m_show_scale;
+		set => m_show_scale = value;
 	}
 
-	[Description("获取或设置节点连线时候是否显示状态")]
 	[DefaultValue(true)]
 	public bool ShowConnectionStatus
 	{
-		get
-		{
-			return _ShowConnectionStatus;
-		}
-		set
-		{
-			_ShowConnectionStatus = value;
-		}
+		get => m_show_connection_status;
+		set => m_show_connection_status = value;
 	}
 
-	[Description("获取或设置分割线水平宽度")]
 	[DefaultValue(201)]
 	public int X
 	{
-		get
-		{
-			return _X;
-		}
+		get => m_x;
 		set
 		{
-			if (value < 122)
-			{
-				value = 122;
-			}
-			else if (value > base.Width - 122)
-			{
-				value = base.Width - 122;
-			}
-			if (_X != value)
-			{
-				_X = value;
-				SetLocation();
-			}
+			m_x = Clamp(value, 122, Math.Max(122, (int)GetViewportWidth() - 122));
+			BuildLayout();
 		}
 	}
 
-	[Description("获取或设置分割线垂直高度")]
 	public int Y
 	{
-		get
-		{
-			return _Y;
-		}
+		get => m_y;
 		set
 		{
-			if (value < 122)
-			{
-				value = 122;
-			}
-			else if (value > base.Height - 122)
-			{
-				value = base.Height - 122;
-			}
-			if (_Y != value)
-			{
-				_Y = value;
-				SetLocation();
-			}
+			m_y = Clamp(value, 122, Math.Max(122, (int)GetViewportHeight() - 122));
+			BuildLayout();
 		}
 	}
 
-	[Description("获取面板中的STNodeEditor")]
 	[Browsable(false)]
 	public STNodeEditor Editor => m_editor;
 
-	[Description("获取面板中的STNodeTreeView")]
 	[Browsable(false)]
 	public STNodeTreeView TreeView => m_tree;
 
-	[Description("获取面板中的STNodePropertyGrid")]
 	[Browsable(false)]
 	public STNodePropertyGrid PropertyGrid => m_grid;
 
-	public override Size MinimumSize
+	public DrawingColor BackColor
 	{
-		get
-		{
-			return base.MinimumSize;
-		}
+		get => m_back_color;
 		set
 		{
-			value = new Size(250, 250);
-			base.MinimumSize = value;
+			m_back_color = value;
+			Background = ToBrush(value);
 		}
 	}
 
-	[DllImport("user32.dll")]
-	private static extern bool MoveWindow(IntPtr hWnd, int x, int y, int w, int h, bool bRedraw);
+	public DrawingSize MinimumSize
+	{
+		get => new DrawingSize((int)MinWidth, (int)MinHeight);
+		set
+		{
+			MinWidth = Math.Max(250, value.Width);
+			MinHeight = Math.Max(250, value.Height);
+		}
+	}
 
 	public STNodeEditorPannel()
 	{
-		SetStyle(ControlStyles.UserPaint, value: true);
-		SetStyle(ControlStyles.ResizeRedraw, value: true);
-		SetStyle(ControlStyles.AllPaintingInWmPaint, value: true);
-		SetStyle(ControlStyles.OptimizedDoubleBuffer, value: true);
-		SetStyle(ControlStyles.SupportsTransparentBackColor, value: true);
-		m_editor = new STNodeEditor();
-		m_tree = new STNodeTreeView();
-		m_grid = new STNodePropertyGrid();
+		Width = 500;
+		Height = 500;
+		MinWidth = 250;
+		MinHeight = 250;
+		Content = m_root;
+		Background = ToBrush(m_back_color);
 		m_grid.Text = "NodeProperty";
-		base.Controls.Add(m_editor);
-		base.Controls.Add(m_tree);
-		base.Controls.Add(m_grid);
-		base.Size = new Size(500, 500);
-		MinimumSize = new Size(250, 250);
-		BackColor = Color.FromArgb(255, 34, 34, 34);
-		m_pen = new Pen(BackColor, 3f);
-		Type typeFromHandle = typeof(ConnectionStatus);
-		Array values = Enum.GetValues(typeFromHandle);
-		object value = values.GetValue(0);
-		FieldInfo[] fields = typeFromHandle.GetFields();
-		foreach (FieldInfo fieldInfo in fields)
+
+		foreach (ConnectionStatus status in Enum.GetValues(typeof(ConnectionStatus)))
 		{
-			if (!fieldInfo.FieldType.IsEnum)
-			{
-				continue;
-			}
-			object[] customAttributes = fieldInfo.GetCustomAttributes(inherit: true);
-			foreach (object obj in customAttributes)
-			{
-				if (obj is DescriptionAttribute)
-				{
-					m_dic_status_key.Add((ConnectionStatus)fieldInfo.GetValue(fieldInfo), ((DescriptionAttribute)obj).Description);
-				}
-			}
+			FieldInfo field = typeof(ConnectionStatus).GetField(status.ToString());
+			string text = field?.GetCustomAttributes(typeof(DescriptionAttribute), inherit: true)
+				.OfType<DescriptionAttribute>()
+				.FirstOrDefault()?.Description ?? status.ToString();
+			m_status_text[status] = text;
 		}
-		m_editor.ActiveChanged += delegate
-		{
-			m_grid.SetNode(m_editor.ActiveNode);
-		};
-		m_editor.CanvasScaled += delegate
-		{
-			if (_ShowScale)
-			{
-				m_editor.ShowAlert(m_editor.CanvasScale.ToString("F2"), Color.White, Color.FromArgb(127, 255, 255, 0));
-			}
-		};
-		m_editor.OptionConnected += delegate(object s, STNodeEditorOptionEventArgs e)
-		{
-			if (_ShowConnectionStatus)
-			{
-				m_editor.ShowAlert(m_dic_status_key[e.Status], Color.White, (e.Status == ConnectionStatus.Connected) ? Color.FromArgb(125, Color.Lime) : Color.FromArgb(125, Color.Red));
-			}
-		};
+
+		m_editor.ActiveChanged += OnEditorActiveChanged;
+		m_editor.CanvasScaled += OnEditorCanvasScaled;
+		m_editor.OptionConnected += OnEditorOptionConnected;
+		SizeChanged += OnPanelSizeChanged;
+		BuildLayout();
 	}
 
-	protected override void OnResize(EventArgs e)
+	public bool AddSTNode(Type nodeType)
 	{
-		base.OnResize(e);
-		if (!m_nInited)
-		{
-			_Y = base.Height / 2;
-			if (_LeftLayout)
-			{
-				_X = 201;
-			}
-			else
-			{
-				_X = base.Width - 202;
-			}
-			m_nInited = true;
-			SetLocation();
-		}
-		else
-		{
-			SetLocation();
-		}
-	}
-
-	protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
-	{
-		if (width < 250)
-		{
-			width = 250;
-		}
-		if (height < 250)
-		{
-			height = 250;
-		}
-		base.SetBoundsCore(x, y, width, height, specified);
-	}
-
-	protected override void OnPaint(PaintEventArgs e)
-	{
-		base.OnPaint(e);
-		Graphics graphics = e.Graphics;
-		m_pen.Width = 3f;
-		m_pen.Color = _SplitLineColor;
-		graphics.DrawLine(m_pen, _X, 0, _X, base.Height);
-		int num = 0;
-		if (_LeftLayout)
-		{
-			graphics.DrawLine(m_pen, 0, _Y, _X - 1, _Y);
-			num = _X / 2;
-		}
-		else
-		{
-			graphics.DrawLine(m_pen, _X + 2, _Y, base.Width, _Y);
-			num = _X + (base.Width - _X) / 2;
-		}
-		m_pen.Width = 1f;
-		_HandleLineColor = Color.Gray;
-		m_pen.Color = _HandleLineColor;
-		graphics.DrawLine(m_pen, _X, _Y - 10, _X, _Y + 10);
-		graphics.DrawLine(m_pen, num - 10, _Y, num + 10, _Y);
-	}
-
-	private void SetLocation()
-	{
-		if (_LeftLayout)
-		{
-			MoveWindow(m_tree.Handle, 0, 0, _X - 1, _Y - 1, bRedraw: false);
-			MoveWindow(m_grid.Handle, 0, _Y + 2, _X - 1, base.Height - _Y - 2, bRedraw: false);
-			MoveWindow(m_editor.Handle, _X + 2, 0, base.Width - _X - 2, base.Height, bRedraw: false);
-		}
-		else
-		{
-			MoveWindow(m_editor.Handle, 0, 0, _X - 1, base.Height, bRedraw: false);
-			MoveWindow(m_tree.Handle, _X + 2, 0, base.Width - _X - 2, _Y - 1, bRedraw: false);
-			MoveWindow(m_grid.Handle, _X + 2, _Y + 2, base.Width - _X - 2, base.Height - _Y - 2, bRedraw: false);
-		}
-	}
-
-	protected override void OnMouseDown(MouseEventArgs e)
-	{
-		base.OnMouseDown(e);
-		m_pt_down = e.Location;
-		m_is_mx = (m_is_my = false);
-		if (Cursor == Cursors.VSplit)
-		{
-			m_is_mx = true;
-		}
-		else if (Cursor == Cursors.HSplit)
-		{
-			m_is_my = true;
-		}
-	}
-
-	protected override void OnMouseMove(MouseEventArgs e)
-	{
-		base.OnMouseMove(e);
-		if (e.Button == MouseButtons.Left)
-		{
-			int num = 122;
-			int num2 = 122;
-			if (m_is_mx)
-			{
-				_X = e.X;
-				if (_X < num)
-				{
-					_X = num;
-				}
-				else if (_X + num > base.Width)
-				{
-					_X = base.Width - num;
-				}
-			}
-			else if (m_is_my)
-			{
-				_Y = e.Y;
-				if (_Y < num2)
-				{
-					_Y = num2;
-				}
-				else if (_Y + num2 > base.Height)
-				{
-					_Y = base.Height - num2;
-				}
-			}
-			SetLocation();
-			Invalidate();
-		}
-		else if (Math.Abs(e.X - _X) < 2)
-		{
-			Cursor = Cursors.VSplit;
-		}
-		else if (Math.Abs(e.Y - _Y) < 2)
-		{
-			Cursor = Cursors.HSplit;
-		}
-		else
-		{
-			Cursor = Cursors.Arrow;
-		}
-	}
-
-	protected override void OnMouseLeave(EventArgs e)
-	{
-		base.OnMouseLeave(e);
-		m_is_mx = (m_is_my = false);
-		Cursor = Cursors.Arrow;
-	}
-
-	public bool AddSTNode(Type stNodeType)
-	{
-		return m_tree.AddNode(stNodeType);
+		return m_tree.AddNode(nodeType);
 	}
 
 	public int LoadAssembly()
@@ -411,22 +178,219 @@ public class STNodeEditorPannel : Control
 		return m_tree.LoadAssembly();
 	}
 
-	public int LoadAssembly(string strFileName)
+	public int LoadAssembly(string fileName)
 	{
-		m_editor.LoadAssembly(strFileName);
-		return m_tree.LoadAssembly(strFileName);
+		m_editor.LoadAssembly(fileName);
+		return m_tree.LoadAssembly(fileName);
 	}
 
-	public string SetConnectionStatusText(ConnectionStatus status, string strText)
+	public string SetConnectionStatusText(ConnectionStatus status, string text)
 	{
-		string text = null;
-		if (m_dic_status_key.ContainsKey(status))
+		if (m_status_text.TryGetValue(status, out string previous))
 		{
-			text = m_dic_status_key[status];
-			m_dic_status_key[status] = strText;
-			return text;
+			m_status_text[status] = text;
+			return previous;
 		}
-		m_dic_status_key.Add(status, strText);
-		return strText;
+		m_status_text.Add(status, text);
+		return text;
+	}
+
+	private void BuildLayout()
+	{
+		if (m_root == null)
+		{
+			return;
+		}
+
+		m_root.Children.Clear();
+		m_root.ColumnDefinitions.Clear();
+		m_root.RowDefinitions.Clear();
+
+		double width = GetViewportWidth();
+		double sideWidth = m_left_layout
+			? Clamp(m_x, 122, Math.Max(122, (int)width - 122))
+			: Clamp((int)width - m_x, 122, Math.Max(122, (int)width - 122));
+
+		m_root.ColumnDefinitions.Add(new ColumnDefinition
+		{
+			Width = m_left_layout ? new GridLength(sideWidth) : new GridLength(1, GridUnitType.Star)
+		});
+		m_root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(5) });
+		m_root.ColumnDefinitions.Add(new ColumnDefinition
+		{
+			Width = m_left_layout ? new GridLength(1, GridUnitType.Star) : new GridLength(sideWidth)
+		});
+
+		m_side_grid = new Grid();
+		double height = GetViewportHeight();
+		double topHeight = Clamp(m_y, 122, Math.Max(122, (int)height - 122));
+		m_side_grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(topHeight) });
+		m_side_grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5) });
+		m_side_grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+		m_side_grid.Children.Add(m_tree);
+		Grid.SetRow(m_grid, 2);
+		m_side_grid.Children.Add(m_grid);
+		m_horizontal_splitter = new GridSplitter
+		{
+			HorizontalAlignment = HorizontalAlignment.Stretch,
+			VerticalAlignment = VerticalAlignment.Stretch,
+			ResizeDirection = GridResizeDirection.Rows,
+			ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+			Cursor = System.Windows.Input.Cursors.SizeNS
+		};
+		m_horizontal_splitter.DragCompleted += OnHorizontalSplitterDragCompleted;
+		Grid.SetRow(m_horizontal_splitter, 1);
+		m_side_grid.Children.Add(m_horizontal_splitter);
+
+		int sideColumn = m_left_layout ? 0 : 2;
+		Grid.SetColumn(m_side_grid, sideColumn);
+		m_root.Children.Add(m_side_grid);
+
+		int editorColumn = m_left_layout ? 2 : 0;
+		Grid.SetColumn(m_editor, editorColumn);
+		m_root.Children.Add(m_editor);
+
+		m_vertical_splitter = new GridSplitter
+		{
+			HorizontalAlignment = HorizontalAlignment.Stretch,
+			VerticalAlignment = VerticalAlignment.Stretch,
+			ResizeDirection = GridResizeDirection.Columns,
+			ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+			Cursor = System.Windows.Input.Cursors.SizeWE
+		};
+		m_vertical_splitter.DragCompleted += OnVerticalSplitterDragCompleted;
+		Grid.SetColumn(m_vertical_splitter, 1);
+		m_root.Children.Add(m_vertical_splitter);
+		ApplySplitterColors();
+	}
+
+	private void OnPanelSizeChanged(object sender, SizeChangedEventArgs e)
+	{
+		double width = GetViewportWidth();
+		m_x = Clamp(m_x, 122, Math.Max(122, (int)width - 122));
+		m_y = Clamp(m_y, 122, Math.Max(122, (int)GetViewportHeight() - 122));
+	}
+
+	private void OnVerticalSplitterDragCompleted(object sender, DragCompletedEventArgs e)
+	{
+		if (m_root.ColumnDefinitions.Count < 3)
+		{
+			return;
+		}
+		m_x = m_left_layout
+			? (int)Math.Round(m_root.ColumnDefinitions[0].ActualWidth)
+			: (int)Math.Round(GetViewportWidth() - m_root.ColumnDefinitions[2].ActualWidth);
+	}
+
+	private void OnHorizontalSplitterDragCompleted(object sender, DragCompletedEventArgs e)
+	{
+		if (m_side_grid?.RowDefinitions.Count >= 3)
+		{
+			m_y = (int)Math.Round(m_side_grid.RowDefinitions[0].ActualHeight);
+		}
+	}
+
+	private void OnEditorActiveChanged(object sender, EventArgs e)
+	{
+		m_grid.SetNode(m_editor.ActiveNode);
+	}
+
+	private void OnEditorCanvasScaled(object sender, EventArgs e)
+	{
+		if (m_show_scale)
+		{
+			m_editor.ShowAlert(
+				m_editor.CanvasScale.ToString("F2"),
+				DrawingColor.White,
+				DrawingColor.FromArgb(127, 255, 255, 0));
+		}
+	}
+
+	private void OnEditorOptionConnected(object sender, STNodeEditorOptionEventArgs e)
+	{
+		if (!m_show_connection_status)
+		{
+			return;
+		}
+		string text = m_status_text.TryGetValue(e.Status, out string value) ? value : e.Status.ToString();
+		m_editor.ShowAlert(
+			text,
+			DrawingColor.White,
+			e.Status == ConnectionStatus.Connected
+				? DrawingColor.FromArgb(125, DrawingColor.Lime)
+				: DrawingColor.FromArgb(125, DrawingColor.Red));
+	}
+
+	private void ApplySplitterColors()
+	{
+		if (m_vertical_splitter != null)
+		{
+			m_vertical_splitter.Background = ToBrush(m_split_line_color);
+			m_vertical_splitter.BorderBrush = ToBrush(m_handle_line_color);
+		}
+		if (m_horizontal_splitter != null)
+		{
+			m_horizontal_splitter.Background = ToBrush(m_split_line_color);
+			m_horizontal_splitter.BorderBrush = ToBrush(m_handle_line_color);
+		}
+	}
+
+	private double GetViewportWidth()
+	{
+		if (ActualWidth > 0)
+		{
+			return ActualWidth;
+		}
+		return double.IsNaN(Width) || Width <= 0 ? 500 : Width;
+	}
+
+	private double GetViewportHeight()
+	{
+		if (ActualHeight > 0)
+		{
+			return ActualHeight;
+		}
+		return double.IsNaN(Height) || Height <= 0 ? 500 : Height;
+	}
+
+	private static int Clamp(int value, int minimum, int maximum)
+	{
+		if (maximum < minimum)
+		{
+			maximum = minimum;
+		}
+		return Math.Max(minimum, Math.Min(value, maximum));
+	}
+
+	private static System.Windows.Media.SolidColorBrush ToBrush(DrawingColor color)
+	{
+		var brush = new System.Windows.Media.SolidColorBrush(MediaColor.FromArgb(color.A, color.R, color.G, color.B));
+		brush.Freeze();
+		return brush;
+	}
+
+	public void Dispose()
+	{
+		if (m_disposed)
+		{
+			return;
+		}
+		m_disposed = true;
+		SizeChanged -= OnPanelSizeChanged;
+		m_editor.ActiveChanged -= OnEditorActiveChanged;
+		m_editor.CanvasScaled -= OnEditorCanvasScaled;
+		m_editor.OptionConnected -= OnEditorOptionConnected;
+		if (m_vertical_splitter != null)
+		{
+			m_vertical_splitter.DragCompleted -= OnVerticalSplitterDragCompleted;
+		}
+		if (m_horizontal_splitter != null)
+		{
+			m_horizontal_splitter.DragCompleted -= OnHorizontalSplitterDragCompleted;
+		}
+		m_editor.Dispose();
+		m_tree.Dispose();
+		m_grid.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

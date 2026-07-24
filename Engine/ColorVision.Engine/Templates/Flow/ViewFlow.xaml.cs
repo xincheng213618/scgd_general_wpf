@@ -19,7 +19,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using WinForms = System.Windows.Forms;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -264,16 +263,8 @@ namespace ColorVision.Engine.Services.Flow
         {
             log.Info("Save: 开始保存流程");
 
-            // 强制将焦点从WinForms控件转移到WPF, 确保属性编辑器中的值已提交
-            var focusedElement = Keyboard.FocusedElement;
-            log.Debug($"Save: 当前焦点元素: {focusedElement?.GetType().Name ?? "null"}");
-            if (focusedElement == null || focusedElement is System.Windows.Forms.Integration.WindowsFormsHost)
-            {
-                log.Debug("Save: 焦点在WinForms控件上, 先转移焦点以提交待保存的属性修改");
-                this.Focus();
-                // 处理WinForms的Leave等事件
-                System.Windows.Forms.Application.DoEvents();
-            }
+            Keyboard.ClearFocus();
+            Focus();
 
             try
             {
@@ -329,7 +320,7 @@ namespace ColorVision.Engine.Services.Flow
             this.DataContext = this;            
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.KeyCode == WinForms.Keys.Delete)
+                if (e.Key == Key.Delete)
                 {
                     if (STNodeEditorMain.ActiveNode != null)
                     {
@@ -342,7 +333,7 @@ namespace ColorVision.Engine.Services.Flow
                         STNodeEditorMain.Nodes.Remove(item);
                     }
                 }
-                if (e.KeyCode == WinForms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     AutoAlignment();
                 }
@@ -359,9 +350,6 @@ namespace ColorVision.Engine.Services.Flow
 
             // Use AvalonDock panel for node property editing
             STNodeEditorHelper.UseDockPanel = true;
-
-            STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChangedForCanvasDragLock;
-            SetCanvasDragLock(true);
 
             // Hide the property panel when this view loses focus to another view
             this.Loaded += (s, e) =>
@@ -385,8 +373,7 @@ namespace ColorVision.Engine.Services.Flow
             }
 
             // Only hide when another registered view becomes active.
-            // If activeView is null it means focus moved to a non-view control
-            // (e.g. the embedded WinForms STNodeEditor) — don't hide in that case.
+            // If activeView is null it means focus moved to a non-view control.
             if (activeView != null && activeView != this)
             {
                 CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
@@ -477,91 +464,6 @@ namespace ColorVision.Engine.Services.Flow
         }
 
 
-        private bool IsMouseDown;
-        private System.Drawing.Point lastMousePosition;
-
-        private void SetCanvasDragLock(bool enabled)
-        {
-            if (STNodeEditorMain != null)
-            {
-                STNodeEditorMain.EnableBlankLeftDragCanvas = enabled;
-            }
-        }
-
-        private void STNodeEditorMain_ActiveChangedForCanvasDragLock(object? sender, EventArgs e)
-        {
-            if (STNodeEditorMain.ActiveNode != null && STNodeEditorMain.EnableBlankLeftDragCanvas)
-            {
-                SetCanvasDragLock(false);
-            }
-        }
-
-        private void STNodeEditorMain_MouseDown(object sender, WinForms.MouseEventArgs e)
-        {
-            lastMousePosition = e.Location;
-            System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
-            m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
-            m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
-            NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
-
-            if (e.Button == WinForms.MouseButtons.Left
-                && STNodeEditorMain.EnableBlankLeftDragCanvas
-                && (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.Node != null || nodeFindInfo.NodeOption != null))
-            {
-                SetCanvasDragLock(false);
-            }
-
-            if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
-            {
-
-            }
-            else if (nodeFindInfo.Node != null)
-            {
-
-            }
-            else if (nodeFindInfo.NodeOption != null)
-            {
-
-            }
-            else if (e.Button == WinForms.MouseButtons.Left)
-            {
-                IsMouseDown = true;
-            }
-        }
-
-        private void STNodeEditorMain_MouseUp(object sender, WinForms.MouseEventArgs e)
-        {
-            IsMouseDown = false;
-        }
-
-        private void STNodeEditorMain_MouseMove(object sender, WinForms.MouseEventArgs e)
-        {
-            if (!STNodeEditorMain.EnableBlankLeftDragCanvas && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
-            {        // 计算鼠标移动的距离
-                int deltaX = e.X - lastMousePosition.X;
-                int deltaY = e.Y - lastMousePosition.Y;
-
-                // 更新画布偏移
-                STNodeEditorMain.MoveCanvas(
-                    STNodeEditorMain.CanvasOffsetX + deltaX,
-                    STNodeEditorMain.CanvasOffsetY + deltaY,
-                    bAnimation: false,
-                    CanvasMoveArgs.All
-                );
-
-                // 更新最后的鼠标位置
-                lastMousePosition = e.Location;
-            }
-        }
-
-
-        private void STNodeEditorMain_MouseWheel(object sender, WinForms.MouseEventArgs e)
-        {
-            var mousePosition = e.Location; // e.Location 已是控件坐标
-            float delta = e.Delta > 0 ? 0.05f : -0.05f;
-            STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + delta, mousePosition.X, mousePosition.Y);
-        }
-
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             BatchManager.GetInstance().Edit();
@@ -576,10 +478,7 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
-            STNodeEditorMain.ActiveChanged -= STNodeEditorMain_ActiveChangedForCanvasDragLock;
-
             STNodeEditorMain?.Dispose();
-            winf1?.Dispose();
             GC.SuppressFinalize(this);
         }
 

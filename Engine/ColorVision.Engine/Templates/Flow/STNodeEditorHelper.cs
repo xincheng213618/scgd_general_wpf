@@ -56,7 +56,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             STNodeEditor = sTNodeEditor;
 
-            STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
             AddContentMenu();
@@ -199,11 +198,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             // Determine paste position: use mouse position in canvas if available, otherwise offset
             int offsetX, offsetY;
-            var cursorPos = System.Windows.Forms.Cursor.Position;
-            var editorScreenRect = STNodeEditor.RectangleToScreen(STNodeEditor.ClientRectangle);
-            if (editorScreenRect.Contains(cursorPos))
+            if (STNodeEditor.IsMouseOver)
             {
-                var clientPt = STNodeEditor.PointToClient(cursorPos);
+                var mousePosition = Mouse.GetPosition(STNodeEditor);
+                var clientPt = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
                 var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
                 offsetX = canvasPt.X - origMinLeft;
                 offsetY = canvasPt.Y - origMinTop;
@@ -373,11 +371,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             // Determine paste position
             int offsetX, offsetY;
-            var cursorPos = System.Windows.Forms.Cursor.Position;
-            var editorScreenRect = STNodeEditor.RectangleToScreen(STNodeEditor.ClientRectangle);
-            if (editorScreenRect.Contains(cursorPos))
+            if (STNodeEditor.IsMouseOver)
             {
-                var clientPt = STNodeEditor.PointToClient(cursorPos);
+                var mousePosition = Mouse.GetPosition(STNodeEditor);
+                var clientPt = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
                 var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
                 offsetX = canvasPt.X;
                 offsetY = canvasPt.Y;
@@ -386,7 +383,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 // Default: place near the center of the visible canvas area
                 var center = STNodeEditor.ControlToCanvas(new System.Drawing.Point(
-                    STNodeEditor.Width / 2, STNodeEditor.Height / 2));
+                    STNodeEditor.ClientSize.Width / 2, STNodeEditor.ClientSize.Height / 2));
                 offsetX = center.X;
                 offsetY = center.Y;
             }
@@ -621,28 +618,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void AddNodeContext()
         {
-            foreach (var item in STNodeEditor.Nodes)
-            {
-                if (item is STNode node)
-                {
-                    node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
-                    node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-                    node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
-                }
-            }
-        }
-
-
-        private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
-        {
-            STNode node = e.Node;
-            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            node.ContextMenuStrip.Items.Add(Properties.Resources.Delete, null, (s, e1) => STNodeEditor.Nodes.Remove(node));
-            node.ContextMenuStrip.Items.Add(Properties.Resources.Copy, null, (s, e1) => CopySTNode(node));
-            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockOption)), null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
-            node.ContextMenuStrip.Items.Add(LocalizeNodeMenuText(nameof(STNode.LockLocation)), null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+            STNodeEditor.Invalidate();
         }
 
         public void CopySTNode(STNode sTNode)
@@ -671,108 +647,154 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void AddContentMenu()
         {
-            STNodeEditor.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            Type STNodeTreeViewtype = STNodeTreeView.GetType();
-
-            // 获取私有字段信息
-            FieldInfo fieldInfo = STNodeTreeViewtype.GetField("m_dic_all_type", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (fieldInfo != null)
-            {
-                // 获取字段的值
-                var value = fieldInfo.GetValue(STNodeTreeView);
-                Dictionary<string, List<Type>> values = new Dictionary<string, List<Type>>();
-                if (value is Dictionary<Type, string> m_dic_all_type)
-                {
-                    foreach (var item in m_dic_all_type)
-                    {
-                        if (values.TryGetValue(item.Value, out List<Type>? value1))
-                        {
-                            value1.Add(item.Key);
-                        }
-                        else
-                        {
-                            values.Add(item.Value, new List<Type>() { item.Key });
-                        }
-                    }
-
-                    foreach (var nodetype in values.OrderBy(x => x.Key, Comparer<string>.Create((x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y))))
-                    {
-                        string header = LocalizeNodeMenuPath(nodetype.Key);
-                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
-
-
-                        foreach (var type in nodetype.Value)
-                        {
-                            if (type.IsSubclassOf(typeof(STNode)))
-                            {
-                                if (Activator.CreateInstance(type) is STNode sTNode)
-                                {
-                                    toolStripItem.DropDownItems.Add(LocalizeNodeMenuText(sTNode.Title), null, (s, e) =>
-                                    {
-                                        STNode sTNode1 = (STNode)Activator.CreateInstance(type);
-                                        if (sTNode1 != null)
-                                        {
-                                            sTNode1.Create();
-                                            var p = STNodeEditor.PointToClient(lastMousePosition);
-                                            p = STNodeEditor.ControlToCanvas(p);
-                                            sTNode1.Left = p.X;
-                                            sTNode1.Top = p.Y;
-
-                                            if (sTNode1 is CVBaseServerNode vBaseServerNode)
-                                            {
-                                                var matchedService = MqttRCService.GetInstance().ServiceTokens.FirstOrDefault(s => s.Devices.Any(d => d.Key == vBaseServerNode.DeviceCode));
-
-                                                if (matchedService != null)
-                                                {
-                                                    vBaseServerNode.Token = matchedService.Token;
-                                                }
-                                            }
-                                            else if (sTNode1 is MQTTStartNode startNode)
-                                            {
-                                                startNode.Server = MQTTControl.Config.Host;
-                                                startNode.Port = MQTTControl.Config.Port;
-                                            }
-
-                                            STNodeEditor.Nodes.Add(sTNode1);
-                                        }
-                                    });
-                                }
-                            }
-
-                        }
-                        STNodeEditor.ContextMenuStrip.Items.Add(toolStripItem);
-
-                    }
-
-                }
-            }
-
-            // Add "Import Template as Module" submenu
-            AddImportModuleContextMenu();
-
-            STNodeEditor.ContextMenuStrip.Opening += (s, e) =>
-            {
-                if (IsOptionDisConnected) e.Cancel = true;
-                if (IsHover())
-                    e.Cancel = true;
-                IsOptionDisConnected = false;
-            };
+            STNodeEditor.ContextMenu = new ContextMenu();
+            STNodeEditor.ContextMenuOpening += STNodeEditor_ContextMenuOpening;
             STNodeEditor.OptionDisConnected += (s, e) =>
             {
                 IsOptionDisConnected = true;
             };
         }
+
         bool IsOptionDisConnected;
+        private System.Drawing.Point contextCanvasPoint;
 
+        private void STNodeEditor_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (IsOptionDisConnected)
+            {
+                IsOptionDisConnected = false;
+                e.Handled = true;
+                return;
+            }
 
-        private System.Drawing.Point lastMousePosition;
+            var mousePosition = Mouse.GetPosition(STNodeEditor);
+            var clientPoint = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
+            contextCanvasPoint = STNodeEditor.ControlToCanvas(clientPoint);
+            NodeFindInfo findInfo = STNodeEditor.FindNodeFromPoint(contextCanvasPoint);
+            ContextMenu menu = STNodeEditor.ContextMenu;
+            menu.Items.Clear();
+
+            if (findInfo.NodeOption != null)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (findInfo.Node != null)
+            {
+                AddNodeMenuItems(menu.Items, findInfo.Node);
+            }
+            else
+            {
+                AddNodeCreationMenuItems(menu.Items);
+                AddImportModuleContextMenu(menu.Items);
+            }
+
+            if (menu.Items.Count == 0)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void AddNodeMenuItems(ItemCollection items, STNode node)
+        {
+            var copyItem = new MenuItem { Header = Properties.Resources.Copy };
+            copyItem.Click += (s, e) => CopySTNode(node);
+            items.Add(copyItem);
+
+            var deleteItem = new MenuItem { Header = Properties.Resources.Delete };
+            deleteItem.Click += (s, e) => STNodeEditor.Nodes.Remove(node);
+            items.Add(deleteItem);
+
+            items.Add(new Separator());
+
+            var lockOptionItem = new MenuItem
+            {
+                Header = LocalizeNodeMenuText(nameof(STNode.LockOption)),
+                IsCheckable = true,
+                IsChecked = node.LockOption
+            };
+            lockOptionItem.Click += (s, e) => node.LockOption = !node.LockOption;
+            items.Add(lockOptionItem);
+
+            var lockLocationItem = new MenuItem
+            {
+                Header = LocalizeNodeMenuText(nameof(STNode.LockLocation)),
+                IsCheckable = true,
+                IsChecked = node.LockLocation
+            };
+            lockLocationItem.Click += (s, e) => node.LockLocation = !node.LockLocation;
+            items.Add(lockLocationItem);
+        }
+
+        private void AddNodeCreationMenuItems(ItemCollection items)
+        {
+            STNodeTreeView.LoadAssembly();
+            var groups = STNodeTreeView.NodeTypes
+                .Where(item => item.Key.IsSubclassOf(typeof(STNode)) && !item.Key.IsAbstract && !item.Key.IsDefined(typeof(ObsoleteAttribute), inherit: false))
+                .GroupBy(item => item.Value)
+                .OrderBy(group => group.Key, Comparer<string>.Create((x, y) => Common.NativeMethods.Shlwapi.CompareLogical(x, y)));
+
+            foreach (var group in groups)
+            {
+                var categoryItem = new MenuItem { Header = LocalizeNodeMenuPath(group.Key) };
+                foreach (var entry in group.OrderBy(item => item.Key.Name, StringComparer.CurrentCulture))
+                {
+                    STNode previewNode;
+                    try
+                    {
+                        previewNode = Activator.CreateInstance(entry.Key) as STNode;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                    if (previewNode == null)
+                        continue;
+
+                    Type nodeType = entry.Key;
+                    var nodeItem = new MenuItem { Header = LocalizeNodeMenuText(previewNode.Title) };
+                    nodeItem.Click += (s, e) => CreateNode(nodeType);
+                    categoryItem.Items.Add(nodeItem);
+                }
+                if (categoryItem.Items.Count > 0)
+                {
+                    items.Add(categoryItem);
+                }
+            }
+        }
+
+        private void CreateNode(Type type)
+        {
+            if (Activator.CreateInstance(type) is not STNode node)
+                return;
+
+            node.Create();
+            node.Left = contextCanvasPoint.X;
+            node.Top = contextCanvasPoint.Y;
+
+            if (node is CVBaseServerNode serverNode)
+            {
+                var matchedService = MqttRCService.GetInstance().ServiceTokens.FirstOrDefault(s => s.Devices.Any(d => d.Key == serverNode.DeviceCode));
+                if (matchedService != null)
+                {
+                    serverNode.Token = matchedService.Token;
+                }
+            }
+            else if (node is MQTTStartNode startNode)
+            {
+                startNode.Server = MQTTControl.Config.Host;
+                startNode.Port = MQTTControl.Config.Port;
+            }
+
+            STNodeEditor.Nodes.Add(node);
+            STNodeEditor.SetActiveNode(node);
+        }
 
         public bool IsHover()
         {
-            lastMousePosition = System.Windows.Forms.Cursor.Position;
-            var p = STNodeEditor.PointToClient(System.Windows.Forms.Cursor.Position);
-            p = STNodeEditor.ControlToCanvas(p);
+            var mousePosition = Mouse.GetPosition(STNodeEditor);
+            var p = STNodeEditor.ControlToCanvas(new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y)));
 
             foreach (var item in STNodeEditor.Nodes)
             {
@@ -811,18 +833,19 @@ namespace ColorVision.Engine.Templates.Flow
 
         #endregion
 
-        private void AddImportModuleContextMenu()
+        private void AddImportModuleContextMenu(ItemCollection items)
         {
-            STNodeEditor.ContextMenuStrip.Items.Add(new System.Windows.Forms.ToolStripSeparator());
-            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_ImportTemplateAsModule);
-            importModuleItem.DropDownOpening += (s, e) =>
+            items.Add(new Separator());
+            var importModuleItem = new MenuItem { Header = Properties.Resources.Flow_ImportTemplateAsModule };
+            importModuleItem.SubmenuOpened += (s, e) =>
             {
-                importModuleItem.DropDownItems.Clear();
+                importModuleItem.Items.Clear();
                 foreach (var tp in TemplateFlow.Params)
                 {
                     string name = tp.Key;
                     var param = tp.Value;
-                    importModuleItem.DropDownItems.Add(name, null, (s2, e2) =>
+                    var templateItem = new MenuItem { Header = name };
+                    templateItem.Click += (s2, e2) =>
                     {
                         if (string.IsNullOrEmpty(param.DataBase64)) return;
                         try
@@ -834,15 +857,15 @@ namespace ColorVision.Engine.Templates.Flow
                         {
                             log.Error($"Import module '{name}' failed", ex);
                         }
-                    });
+                    };
+                    importModuleItem.Items.Add(templateItem);
                 }
-                if (importModuleItem.DropDownItems.Count == 0)
+                if (importModuleItem.Items.Count == 0)
                 {
-                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem(Properties.Resources.Flow_NoTemplateAvailable) { Enabled = false };
-                    importModuleItem.DropDownItems.Add(emptyItem);
+                    importModuleItem.Items.Add(new MenuItem { Header = Properties.Resources.Flow_NoTemplateAvailable, IsEnabled = false });
                 }
             };
-            STNodeEditor.ContextMenuStrip.Items.Add(importModuleItem);
+            items.Add(importModuleItem);
         }
 
         #region AutoLayout
@@ -864,7 +887,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (rootNode == null) return;
 
             var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, AutoLayoutHorizontalSpacing, AutoLayoutVerticalSpacing,
-                STNodeEditor.Width, STNodeEditor.Height);
+                STNodeEditor.ClientSize.Width, STNodeEditor.ClientSize.Height);
             layout.Execute(rootNode);
         }
 

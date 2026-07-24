@@ -3,958 +3,745 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Text;
+using System.Linq;
 using System.Reflection;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using DrawingColor = System.Drawing.Color;
+using DrawingFont = System.Drawing.Font;
+using MediaBrushes = System.Windows.Media.Brushes;
+using MediaColor = System.Windows.Media.Color;
+using MediaFontFamily = System.Windows.Media.FontFamily;
 
 namespace ST.Library.UI.NodeEditor;
 
-public class STNodePropertyGrid : Control
+/// <summary>
+/// WPF property editor for <see cref="STNodePropertyAttribute"/> values.
+/// </summary>
+public class STNodePropertyGrid : UserControl, IDisposable
 {
-	private STNode _STNode;
+	private readonly Border m_title_border;
+	private readonly TextBlock m_title_text;
+	private readonly Button m_switch_button;
+	private readonly Border m_error_border;
+	private readonly TextBlock m_error_text;
+	private readonly ScrollViewer m_scroll_viewer;
+	private readonly StackPanel m_content;
+	private readonly Border m_description_border;
+	private readonly TextBlock m_description_text;
+	private readonly List<STNodePropertyDescriptor> m_descriptors = new List<STNodePropertyDescriptor>();
+	private readonly string[] m_info_keys = new string[4] { "作者", "邮箱", "链接", "查看帮助" };
 
-	private Color _ItemHoverColor = Color.FromArgb(50, 125, 125, 125);
-
-	private Color _ItemSelectedColor = Color.DodgerBlue;
-
-	private Color _ItemValueBackColor = Color.FromArgb(255, 80, 80, 80);
-
-	private Color _TitleColor = Color.FromArgb(127, 0, 0, 0);
-
-	private Color _ErrorColor = Color.FromArgb(200, Color.Brown);
-
-	private Color _DescriptionColor = Color.FromArgb(200, Color.DarkGoldenrod);
-
-	private bool _ShowTitle = true;
-
-	private bool _AutoColor = true;
-
-	private bool _InfoFirstOnDraw;
-
-	private bool _ReadOnlyModel;
-
-	private bool _IsEditEnable = true;
-
-	protected Rectangle m_rect_link;
-
-	protected Rectangle m_rect_help;
-
-	protected Rectangle m_rect_title;
-
-	protected Rectangle m_rect_switch;
-
-	protected int m_nOffsetY;
-
-	protected int m_nInfoOffsetY;
-
-	protected int m_nPropertyOffsetY;
-
-	protected int m_nVHeight;
-
-	protected int m_nInfoVHeight;
-
-	protected int m_nPropertyVHeight;
-
-	protected int m_nInfoLeft;
-
-	private Type m_type;
-
-	private string[] m_KeysString = new string[4] { "作者", "邮箱", "链接", "查看帮助" };
-
-	private int m_nTitleHeight = 20;
-
-	private int m_item_height = 30;
-
-	private Color m_clr_item_1 = Color.FromArgb(10, 0, 0, 0);
-
-	private Color m_clr_item_2 = Color.FromArgb(10, 255, 255, 255);
-
-	private List<STNodePropertyDescriptor> m_lst_item = new List<STNodePropertyDescriptor>();
-
-	private STNodePropertyDescriptor m_item_hover;
-
-	private STNodePropertyDescriptor m_item_hover_value;
-
-	private STNodePropertyDescriptor m_item_down_value;
-
-	private STNodePropertyDescriptor m_item_selected;
-
+	private STNode _node;
 	private STNodeAttribute m_node_attribute;
+	private bool m_show_info;
+	private bool m_show_title = true;
+	private bool m_auto_color = true;
+	private bool m_info_first_on_draw = true;
+	private bool m_read_only_model;
+	private bool m_is_edit_enable = true;
+	private bool m_disposed;
+	private string m_error_message;
+	private DrawingFont m_font = new DrawingFont("Segoe UI", 9f);
 
-	private bool m_b_hover_switch;
+	private DrawingColor m_item_hover_color = DrawingColor.FromArgb(50, 125, 125, 125);
+	private DrawingColor m_item_selected_color = DrawingColor.DodgerBlue;
+	private DrawingColor m_item_value_back_color = DrawingColor.FromArgb(255, 50, 50, 50);
+	private DrawingColor m_title_color = DrawingColor.FromArgb(255, 60, 60, 60);
+	private DrawingColor m_error_color = DrawingColor.IndianRed;
+	private DrawingColor m_description_color = DrawingColor.Gray;
+	private DrawingColor m_back_color = DrawingColor.FromArgb(255, 35, 35, 35);
+	private DrawingColor m_fore_color = DrawingColor.FromArgb(255, 220, 220, 220);
 
-	private bool m_b_current_draw_info;
-
-	private Point m_pt_move;
-
-	private Point m_pt_down;
-
-	private string m_str_err;
-
-	private string m_str_desc;
-
-	private Pen m_pen;
-
-	private SolidBrush m_brush;
-
-	private StringFormat m_sf;
-
-	private DrawingTools m_dt;
-
-	[Description("当前显示的STNode")]
 	[Browsable(false)]
-	public STNode STNode => _STNode;
+	public STNode STNode => _node;
 
-	[Description("获取或设置属性选项被鼠标悬停时候背景色")]
-	public Color ItemHoverColor
+	public DrawingColor ItemHoverColor
 	{
-		get
-		{
-			return _ItemHoverColor;
-		}
+		get => m_item_hover_color;
+		set => m_item_hover_color = value;
+	}
+
+	public DrawingColor ItemSelectedColor
+	{
+		get => m_item_selected_color;
+		set => m_item_selected_color = value;
+	}
+
+	public DrawingColor ItemValueBackColor
+	{
+		get => m_item_value_back_color;
 		set
 		{
-			_ItemHoverColor = value;
+			m_item_value_back_color = value;
+			RebuildContent();
 		}
 	}
 
-	[Description("获取或设置属性选项被选中时候背景色 当AutoColor被设置时此属性不能被设置")]
-	[DefaultValue(typeof(Color), "DodgerBlue")]
-	public Color ItemSelectedColor
+	public DrawingColor TitleColor
 	{
-		get
-		{
-			return _ItemSelectedColor;
-		}
+		get => m_title_color;
 		set
 		{
-			if (!_AutoColor && !(value == _ItemSelectedColor))
+			m_title_color = value;
+			ApplyColors();
+		}
+	}
+
+	public DrawingColor ErrorColor
+	{
+		get => m_error_color;
+		set
+		{
+			m_error_color = value;
+			ApplyColors();
+		}
+	}
+
+	public DrawingColor DescriptionColor
+	{
+		get => m_description_color;
+		set
+		{
+			m_description_color = value;
+			ApplyColors();
+		}
+	}
+
+	public DrawingColor BackColor
+	{
+		get => m_back_color;
+		set
+		{
+			m_back_color = value;
+			ApplyColors();
+		}
+	}
+
+	public DrawingColor ForeColor
+	{
+		get => m_fore_color;
+		set
+		{
+			m_fore_color = value;
+			ApplyColors();
+		}
+	}
+
+	public DrawingFont Font
+	{
+		get => m_font;
+		set
+		{
+			if (value == null || ReferenceEquals(m_font, value))
 			{
-				_ItemSelectedColor = value;
-				Invalidate();
+				return;
 			}
+			m_font.Dispose();
+			m_font = value;
+			ApplyFont();
 		}
 	}
 
-	[Description("获取或设置属性选项值背景色")]
-	public Color ItemValueBackColor
-	{
-		get
-		{
-			return _ItemValueBackColor;
-		}
-		set
-		{
-			_ItemValueBackColor = value;
-			Invalidate();
-		}
-	}
+	public string Text { get; set; } = "NodeProperty";
 
-	[Description("获取或设置默认标题背景色")]
-	public Color TitleColor
-	{
-		get
-		{
-			return _TitleColor;
-		}
-		set
-		{
-			_TitleColor = value;
-			if (_ShowTitle)
-			{
-				Invalidate(m_rect_title);
-			}
-		}
-	}
-
-	[Description("获取或设置属性设置错误时候提示信息背景色")]
-	public Color ErrorColor
-	{
-		get
-		{
-			return _ErrorColor;
-		}
-		set
-		{
-			_ErrorColor = value;
-		}
-	}
-
-	[Description("获取或设置属性描述信息背景色")]
-	public Color DescriptionColor
-	{
-		get
-		{
-			return _DescriptionColor;
-		}
-		set
-		{
-			_DescriptionColor = value;
-		}
-	}
-
-	[Description("获取或设置是否显示节点标题")]
+	[DefaultValue(true)]
 	public bool ShowTitle
 	{
-		get
-		{
-			return _ShowTitle;
-		}
+		get => m_show_title;
 		set
 		{
-			_ShowTitle = value;
-			SetItemRectangle();
-			Invalidate();
+			m_show_title = value;
+			m_title_border.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
 		}
 	}
 
-	[Description("获取或设置是否根据STNode自动设置控件高亮颜色")]
 	[DefaultValue(true)]
 	public bool AutoColor
 	{
-		get
-		{
-			return _AutoColor;
-		}
+		get => m_auto_color;
 		set
 		{
-			_AutoColor = value;
+			m_auto_color = value;
+			ApplyColors();
 		}
 	}
 
-	[Description("获取或设置当节点被设置时候 是否优先绘制信息面板")]
-	[DefaultValue(false)]
+	[DefaultValue(true)]
 	public bool InfoFirstOnDraw
 	{
-		get
-		{
-			return _InfoFirstOnDraw;
-		}
-		set
-		{
-			_InfoFirstOnDraw = value;
-		}
+		get => m_info_first_on_draw;
+		set => m_info_first_on_draw = value;
 	}
 
-	[Description("获取或设置当前属性编辑器是否处于只读模式")]
 	[DefaultValue(false)]
 	public bool ReadOnlyModel
 	{
-		get
-		{
-			return _ReadOnlyModel;
-		}
+		get => m_read_only_model;
 		set
 		{
-			if (value != _ReadOnlyModel)
-			{
-				_ReadOnlyModel = value;
-				Invalidate(m_rect_title);
-			}
+			m_read_only_model = value;
+			RebuildContent();
 		}
 	}
 
-	[Description("获取当前滚动条高度")]
-	public int ScrollOffset => m_nOffsetY;
+	[Browsable(false)]
+	public int ScrollOffset => -(int)Math.Round(m_scroll_viewer.VerticalOffset);
 
-	[Description("获取或设置是否可编辑")]
 	[DefaultValue(true)]
 	public bool IsEditEnable
 	{
-		get
-		{
-			return _IsEditEnable;
-		}
+		get => m_is_edit_enable;
 		set
 		{
-			_IsEditEnable = value;
+			m_is_edit_enable = value;
+			if (_node != null)
+			{
+				BuildDescriptors();
+				RebuildContent();
+			}
 		}
 	}
 
 	public STNodePropertyGrid()
 	{
-		SetStyle(ControlStyles.UserPaint, value: true);
-		SetStyle(ControlStyles.ResizeRedraw, value: true);
-		SetStyle(ControlStyles.AllPaintingInWmPaint, value: true);
-		SetStyle(ControlStyles.OptimizedDoubleBuffer, value: true);
-		SetStyle(ControlStyles.SupportsTransparentBackColor, value: true);
-		m_pen = new Pen(Color.Black, 1f);
-		m_brush = new SolidBrush(Color.Black);
-		m_sf = new StringFormat();
-		m_sf.LineAlignment = StringAlignment.Center;
-		m_sf.FormatFlags = StringFormatFlags.NoWrap;
-		m_dt.Pen = m_pen;
-		m_dt.SolidBrush = m_brush;
-		ForeColor = Color.White;
-		BackColor = Color.FromArgb(255, 35, 35, 35);
-		MinimumSize = new Size(120, 50);
-		base.Size = new Size(200, 150);
-	}
+		Focusable = false;
+		MinWidth = 120;
+		MinHeight = 50;
+		Width = 200;
+		Height = 150;
 
-	private List<STNodePropertyDescriptor> GetProperties(STNode node)
-	{
-		List<STNodePropertyDescriptor> list = new List<STNodePropertyDescriptor>();
-		if (node == null)
-		{
-			return list;
-		}
-		Type type = node.GetType();
-		PropertyInfo[] properties = type.GetProperties();
-		foreach (PropertyInfo propertyInfo in properties)
-		{
-			object[] customAttributes = propertyInfo.GetCustomAttributes(inherit: true);
-			object[] array = customAttributes;
-			foreach (object obj in array)
-			{
-				if (obj is STNodePropertyAttribute)
-				{
-					STNodePropertyAttribute sTNodePropertyAttribute = obj as STNodePropertyAttribute;
-					object obj2 = Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-					if (!(obj2 is STNodePropertyDescriptor))
-					{
-						throw new ArgumentException("[STNodePropertyAttribute.DescriptorType]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
-					}
-					STNodePropertyDescriptor sTNodePropertyDescriptor = (STNodePropertyDescriptor)Activator.CreateInstance(sTNodePropertyAttribute.DescriptorType);
-					sTNodePropertyDescriptor.Node = node;
-					string name = Lang.Get(sTNodePropertyAttribute.Name);
-					sTNodePropertyDescriptor.Name = name;
-					sTNodePropertyDescriptor.Description = Lang.GetOrDefault(sTNodePropertyAttribute.Description);
-					sTNodePropertyDescriptor.PropertyInfo = propertyInfo;
-					sTNodePropertyDescriptor.IsEditEnable = IsEditEnable || sTNodePropertyAttribute.IsEditEnable;
-					sTNodePropertyDescriptor.IsReadOnly = sTNodePropertyAttribute.IsReadOnly;
-					sTNodePropertyDescriptor.Control = this;
-					if (IsEditEnable || !sTNodePropertyAttribute.IsHide)
-					{
-						list.Add(sTNodePropertyDescriptor);
-					}
-				}
-			}
-		}
-		return list;
-	}
+		var root = new DockPanel();
+		Content = root;
 
-	private STNodeAttribute GetNodeAttribute(STNode node)
-	{
-		if (node == null)
+		var title_grid = new Grid();
+		title_grid.ColumnDefinitions.Add(new ColumnDefinition());
+		title_grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+		m_title_text = new TextBlock
 		{
-			return null;
-		}
-		Type type = node.GetType();
-		object[] customAttributes = type.GetCustomAttributes(inherit: true);
-		foreach (object obj in customAttributes)
+			HorizontalAlignment = HorizontalAlignment.Center,
+			VerticalAlignment = VerticalAlignment.Center,
+			TextTrimming = TextTrimming.CharacterEllipsis,
+			Margin = new Thickness(8, 2, 4, 2)
+		};
+		title_grid.Children.Add(m_title_text);
+		m_switch_button = new Button
 		{
-			if (obj is STNodeAttribute)
-			{
-				return (STNodeAttribute)obj;
-			}
-		}
-		return null;
-	}
+			Content = "↔",
+			MinWidth = 24,
+			Padding = new Thickness(4, 0, 4, 0),
+			Margin = new Thickness(2),
+			Visibility = Visibility.Collapsed,
+			ToolTip = "切换节点信息与属性"
+		};
+		m_switch_button.Click += OnSwitchClick;
+		Grid.SetColumn(m_switch_button, 1);
+		title_grid.Children.Add(m_switch_button);
+		m_title_border = new Border
+		{
+			MinHeight = 24,
+			Child = title_grid
+		};
+		DockPanel.SetDock(m_title_border, Dock.Top);
+		root.Children.Add(m_title_border);
 
-	private void SetItemRectangle()
-	{
-		int num = 0;
-		int num2 = 0;
-		using Graphics graphics = CreateGraphics();
-		foreach (STNodePropertyDescriptor item in m_lst_item)
+		m_error_text = new TextBlock
 		{
-			SizeF sizeF = graphics.MeasureString(item.Name, Font);
-			if (sizeF.Width > (float)num)
-			{
-				num = (int)Math.Ceiling(sizeF.Width);
-			}
-		}
-		for (int i = 0; i < m_KeysString.Length - 1; i++)
+			TextWrapping = TextWrapping.Wrap,
+			Margin = new Thickness(6, 4, 6, 4)
+		};
+		m_error_border = new Border
 		{
-			SizeF sizeF2 = graphics.MeasureString(m_KeysString[i], Font);
-			if (sizeF2.Width > (float)num2)
-			{
-				num2 = (int)Math.Ceiling(sizeF2.Width);
-			}
-		}
-		num += 5;
-		num2 += 5;
-		num = Math.Min(num, base.Width >> 1);
-		m_nInfoLeft = Math.Min(num2, base.Width >> 1);
-		int num3 = (_ShowTitle ? m_nTitleHeight : 0);
-		for (int j = 0; j < m_lst_item.Count; j++)
-		{
-			STNodePropertyDescriptor sTNodePropertyDescriptor = m_lst_item[j];
-			Rectangle rectangle = (sTNodePropertyDescriptor.Rectangle = new Rectangle(0, j * m_item_height + num3, base.Width, m_item_height));
-			rectangle.Width = num;
-			sTNodePropertyDescriptor.RectangleL = rectangle;
-			rectangle.X = rectangle.Right;
-			rectangle.Width = base.Width - rectangle.Left - 1;
-			rectangle.Inflate(-4, -4);
-			sTNodePropertyDescriptor.RectangleR = rectangle;
-			sTNodePropertyDescriptor.OnSetItemLocation();
-		}
-		m_nPropertyVHeight = m_lst_item.Count * m_item_height;
-		if (_ShowTitle)
-		{
-			m_nPropertyVHeight += m_nTitleHeight;
-		}
-	}
+			Child = m_error_text,
+			Visibility = Visibility.Collapsed
+		};
+		DockPanel.SetDock(m_error_border, Dock.Top);
+		root.Children.Add(m_error_border);
 
-	protected override void OnPaint(PaintEventArgs e)
-	{
-		base.OnPaint(e);
-		Graphics graphics = e.Graphics;
-		graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-		m_dt.Graphics = graphics;
-		m_nOffsetY = (m_b_current_draw_info ? m_nInfoOffsetY : m_nPropertyOffsetY);
-		graphics.TranslateTransform(0f, m_nOffsetY);
-		if (m_b_current_draw_info)
+		m_description_text = new TextBlock
 		{
-			m_nVHeight = m_nInfoVHeight;
-			OnDrawInfo(m_dt);
-		}
-		else
+			TextWrapping = TextWrapping.Wrap,
+			Margin = new Thickness(6, 4, 6, 4)
+		};
+		m_description_border = new Border
 		{
-			m_nVHeight = m_nPropertyVHeight;
-			for (int i = 0; i < m_lst_item.Count; i++)
-			{
-				OnDrawPropertyItem(m_dt, m_lst_item[i], i);
-			}
-		}
-		graphics.ResetTransform();
-		if (_ShowTitle)
-		{
-			OnDrawTitle(m_dt);
-		}
-		m_sf.FormatFlags = (StringFormatFlags)0;
-		if (!string.IsNullOrEmpty(m_str_err))
-		{
-			OnDrawErrorInfo(m_dt);
-		}
-		if (!string.IsNullOrEmpty(m_str_desc))
-		{
-			OnDrawDescription(m_dt);
-		}
-	}
+			Child = m_description_text,
+			Visibility = Visibility.Collapsed
+		};
+		DockPanel.SetDock(m_description_border, Dock.Bottom);
+		root.Children.Add(m_description_border);
 
-	protected override void OnMouseMove(MouseEventArgs e)
-	{
-		base.OnMouseMove(e);
-		m_pt_move = e.Location;
-		bool flag = _ShowTitle && m_rect_switch.Contains(e.Location);
-		if (flag != m_b_hover_switch)
+		m_content = new StackPanel();
+		m_scroll_viewer = new ScrollViewer
 		{
-			m_b_hover_switch = flag;
-			Invalidate(m_rect_switch);
-		}
-		Point point = new Point(e.X, e.Y - m_nOffsetY);
-		MouseEventArgs e2 = new MouseEventArgs(e.Button, e.Clicks, point.X, point.Y, e.Delta);
-		if (m_b_current_draw_info)
-		{
-			OnProcessHelpMouseMove(e2);
-		}
-		else
-		{
-			OnProcessPropertyMouseMove(e2);
-		}
-	}
+			VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+			HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+			Content = m_content
+		};
+		root.Children.Add(m_scroll_viewer);
 
-	protected override void OnMouseDown(MouseEventArgs e)
-	{
-		base.OnMouseDown(e);
-		m_pt_down = e.Location;
-		Focus();
-		bool flag = false;
-		if (m_str_err != null)
-		{
-			flag = true;
-			m_str_err = null;
-		}
-		if (_ShowTitle)
-		{
-			if (m_rect_switch.Contains(e.Location))
-			{
-				if (m_node_attribute != null && m_lst_item.Count != 0)
-				{
-					m_b_current_draw_info = !m_b_current_draw_info;
-					Invalidate();
-				}
-				return;
-			}
-			if (m_rect_title.Contains(e.Location))
-			{
-				return;
-			}
-		}
-		if (_ShowTitle && m_rect_switch.Contains(e.Location))
-		{
-			if (m_node_attribute != null && m_lst_item.Count != 0)
-			{
-				m_b_current_draw_info = !m_b_current_draw_info;
-				Invalidate();
-			}
-			return;
-		}
-		Point point = new Point(e.X, e.Y - m_nOffsetY);
-		MouseEventArgs e2 = new MouseEventArgs(e.Button, e.Clicks, point.X, point.Y, e.Delta);
-		if (m_b_current_draw_info)
-		{
-			OnProcessInfoMouseDown(e2);
-		}
-		else
-		{
-			OnProcessPropertyMouseDown(e2);
-		}
-		if (flag)
-		{
-			Invalidate();
-		}
-	}
-
-	protected override void OnMouseUp(MouseEventArgs e)
-	{
-		base.OnMouseUp(e);
-		m_str_desc = null;
-		if (m_item_down_value != null && !_ReadOnlyModel)
-		{
-			Point point = new Point(e.X, e.Y - m_nOffsetY);
-			MouseEventArgs e2 = new MouseEventArgs(e.Button, e.Clicks, point.X, point.Y, e.Delta);
-			m_item_down_value.OnMouseUp(e2);
-			if (m_pt_down == e.Location && !_ReadOnlyModel)
-			{
-				m_item_down_value.OnMouseClick(e2);
-			}
-		}
-		m_item_down_value = null;
-		Invalidate();
-	}
-
-	protected override void OnMouseLeave(EventArgs e)
-	{
-		base.OnMouseLeave(e);
-		m_b_hover_switch = false;
-		if (m_item_hover_value != null && !_ReadOnlyModel)
-		{
-			m_item_hover_value.OnMouseLeave(e);
-		}
-		m_item_hover = null;
-		Invalidate();
-	}
-
-	protected override void OnMouseWheel(MouseEventArgs e)
-	{
-		base.OnMouseWheel(e);
-		if (e.Delta > 0)
-		{
-			if (m_nOffsetY == 0)
-			{
-				return;
-			}
-			m_nOffsetY += m_item_height;
-			if (m_nOffsetY > 0)
-			{
-				m_nOffsetY = 0;
-			}
-		}
-		else
-		{
-			if (base.Height - m_nOffsetY >= m_nVHeight)
-			{
-				return;
-			}
-			m_nOffsetY -= m_item_height;
-		}
-		if (m_b_current_draw_info)
-		{
-			m_nInfoOffsetY = m_nOffsetY;
-		}
-		else
-		{
-			m_nPropertyOffsetY = m_nOffsetY;
-		}
-		Invalidate();
-	}
-
-	protected override void OnResize(EventArgs e)
-	{
-		base.OnResize(e);
-		m_rect_title.Width = base.Width;
-		m_rect_title.Height = m_nTitleHeight;
-		if (_ShowTitle)
-		{
-			m_rect_switch = new Rectangle(base.Width - m_nTitleHeight + 2, 2, m_nTitleHeight - 4, m_nTitleHeight - 4);
-		}
-		if (_STNode != null)
-		{
-			SetItemRectangle();
-		}
-	}
-
-	protected virtual void OnDrawPropertyItem(DrawingTools dt, STNodePropertyDescriptor item, int nIndex)
-	{
-		Graphics graphics = dt.Graphics;
-		m_brush.Color = ((nIndex % 2 == 0) ? m_clr_item_1 : m_clr_item_2);
-		graphics.FillRectangle(m_brush, item.Rectangle);
-		if (item == m_item_hover || item == m_item_selected)
-		{
-			m_brush.Color = _ItemHoverColor;
-			graphics.FillRectangle(m_brush, item.Rectangle);
-		}
-		if (m_item_selected == item)
-		{
-			graphics.FillRectangle(m_brush, item.Rectangle.X, item.Rectangle.Y, 5, item.Rectangle.Height);
-			if (_AutoColor && _STNode != null)
-			{
-				m_brush.Color = _STNode.TitleColor;
-			}
-			else
-			{
-				m_brush.Color = _ItemSelectedColor;
-			}
-			graphics.FillRectangle(m_brush, item.Rectangle.X, item.Rectangle.Y + 4, 5, item.Rectangle.Height - 8);
-		}
-		m_sf.Alignment = StringAlignment.Far;
-		m_brush.Color = ForeColor;
-		graphics.DrawString(item.Name, Font, m_brush, item.RectangleL, m_sf);
-		item.OnDrawValueRectangle(m_dt);
-		if (_ReadOnlyModel)
-		{
-			m_brush.Color = Color.FromArgb(125, 125, 125, 125);
-			graphics.FillRectangle(m_brush, item.RectangleR);
-			m_pen.Color = ForeColor;
-		}
-	}
-
-	protected virtual void OnDrawTitle(DrawingTools dt)
-	{
-		Graphics graphics = dt.Graphics;
-		if (_AutoColor)
-		{
-			m_brush.Color = ((_STNode == null) ? _TitleColor : _STNode.TitleColor);
-		}
-		else
-		{
-			m_brush.Color = _TitleColor;
-		}
-		graphics.FillRectangle(m_brush, m_rect_title);
-		m_brush.Color = ((_STNode == null) ? ForeColor : _STNode.ForeColor);
-		m_sf.Alignment = StringAlignment.Center;
-		graphics.DrawString((_STNode == null) ? Text : _STNode.Title, Font, m_brush, m_rect_title, m_sf);
-		if (_ReadOnlyModel)
-		{
-			m_brush.Color = ForeColor;
-			graphics.FillRectangle(dt.SolidBrush, 4, 5, 2, 4);
-			graphics.FillRectangle(dt.SolidBrush, 6, 5, 2, 2);
-			graphics.FillRectangle(dt.SolidBrush, 8, 5, 2, 4);
-			graphics.FillRectangle(dt.SolidBrush, 3, 9, 8, 6);
-		}
-		if (m_node_attribute != null && m_lst_item.Count != 0)
-		{
-			if (m_b_hover_switch)
-			{
-				m_brush.Color = BackColor;
-				graphics.FillRectangle(m_brush, m_rect_switch);
-			}
-			m_pen.Color = ((_STNode == null) ? ForeColor : _STNode.ForeColor);
-			m_brush.Color = m_pen.Color;
-			int num = m_rect_switch.Top + m_rect_switch.Height / 2 - 2;
-			int num2 = m_rect_switch.Top + m_rect_switch.Height / 2 + 1;
-			graphics.DrawRectangle(m_pen, m_rect_switch.Left, m_rect_switch.Top, m_rect_switch.Width - 1, m_rect_switch.Height - 1);
-			graphics.DrawLines(m_pen, new Point[4]
-			{
-				new Point(m_rect_switch.Left + 2, num),
-				new Point(m_rect_switch.Right - 3, num),
-				new Point(m_rect_switch.Left + 3, num - 1),
-				new Point(m_rect_switch.Right - 3, num - 1)
-			});
-			graphics.DrawLines(m_pen, new Point[4]
-			{
-				new Point(m_rect_switch.Left + 2, num2),
-				new Point(m_rect_switch.Right - 3, num2),
-				new Point(m_rect_switch.Left + 2, num2 + 1),
-				new Point(m_rect_switch.Right - 4, num2 + 1)
-			});
-			graphics.FillPolygon(m_brush, new Point[3]
-			{
-				new Point(m_rect_switch.Left + 2, num),
-				new Point(m_rect_switch.Left + 7, num),
-				new Point(m_rect_switch.Left + 7, m_rect_switch.Top)
-			});
-			graphics.FillPolygon(m_brush, new Point[3]
-			{
-				new Point(m_rect_switch.Right - 2, num2),
-				new Point(m_rect_switch.Right - 7, num2),
-				new Point(m_rect_switch.Right - 7, m_rect_switch.Bottom - 2)
-			});
-		}
-	}
-
-	protected virtual void OnDrawDescription(DrawingTools dt)
-	{
-		if (!string.IsNullOrEmpty(m_str_desc))
-		{
-			Graphics graphics = dt.Graphics;
-			SizeF sizeF = graphics.MeasureString(m_str_desc, Font, base.Width - 4);
-			Rectangle rectangle = new Rectangle(0, base.Height - (int)sizeF.Height - 4, base.Width, (int)sizeF.Height + 4);
-			m_brush.Color = _DescriptionColor;
-			graphics.FillRectangle(m_brush, rectangle);
-			m_pen.Color = _DescriptionColor;
-			graphics.DrawRectangle(m_pen, 0, rectangle.Top, rectangle.Width - 1, rectangle.Height - 1);
-			rectangle.Inflate(-4, 0);
-			m_brush.Color = ForeColor;
-			m_sf.Alignment = StringAlignment.Near;
-			string s = Lang.Get(m_str_desc);
-			graphics.DrawString(s, Font, m_brush, rectangle, m_sf);
-		}
-	}
-
-	protected virtual void OnDrawErrorInfo(DrawingTools dt)
-	{
-		if (!string.IsNullOrEmpty(m_str_err))
-		{
-			Graphics graphics = dt.Graphics;
-			SizeF sizeF = graphics.MeasureString(m_str_err, Font, base.Width - 4);
-			Rectangle rectangle = new Rectangle(0, 0, base.Width, (int)sizeF.Height + 4);
-			m_brush.Color = _ErrorColor;
-			graphics.FillRectangle(m_brush, rectangle);
-			m_pen.Color = _ErrorColor;
-			graphics.DrawRectangle(m_pen, 0, rectangle.Top, rectangle.Width - 1, rectangle.Height - 1);
-			rectangle.Inflate(-4, 0);
-			m_brush.Color = ForeColor;
-			m_sf.Alignment = StringAlignment.Near;
-			graphics.DrawString(m_str_err, Font, m_brush, rectangle, m_sf);
-		}
-	}
-
-	protected virtual void OnDrawInfo(DrawingTools dt)
-	{
-		if (m_node_attribute != null)
-		{
-			STNodeAttribute node_attribute = m_node_attribute;
-			Graphics graphics = dt.Graphics;
-			Color color = Color.FromArgb(ForeColor.A / 2, ForeColor);
-			m_sf.Alignment = StringAlignment.Near;
-			Rectangle rectangle = new Rectangle(0, _ShowTitle ? m_nTitleHeight : 0, base.Width, m_item_height);
-			Rectangle rectangle2 = new Rectangle(2, rectangle.Top, m_nInfoLeft - 2, m_item_height);
-			Rectangle rectangle3 = new Rectangle(m_nInfoLeft, rectangle.Top, base.Width - m_nInfoLeft, m_item_height);
-			m_brush.Color = m_clr_item_2;
-			graphics.FillRectangle(m_brush, rectangle);
-			m_brush.Color = ForeColor;
-			m_sf.FormatFlags = StringFormatFlags.NoWrap;
-			m_sf.Alignment = StringAlignment.Near;
-			graphics.DrawString(m_KeysString[0], Font, m_brush, rectangle2, m_sf);
-			m_brush.Color = color;
-			graphics.DrawString(node_attribute.Author, Font, m_brush, rectangle3, m_sf);
-			rectangle.Y += m_item_height;
-			rectangle2.Y += m_item_height;
-			rectangle3.Y += m_item_height;
-			m_brush.Color = m_clr_item_1;
-			graphics.FillRectangle(m_brush, rectangle);
-			m_brush.Color = ForeColor;
-			graphics.DrawString(m_KeysString[1], Font, m_brush, rectangle2, m_sf);
-			m_brush.Color = color;
-			graphics.DrawString(node_attribute.Mail, Font, m_brush, rectangle3, m_sf);
-			rectangle.Y += m_item_height;
-			rectangle2.Y += m_item_height;
-			rectangle3.Y += m_item_height;
-			m_brush.Color = m_clr_item_2;
-			graphics.FillRectangle(m_brush, rectangle);
-			m_brush.Color = ForeColor;
-			graphics.DrawString(m_KeysString[2], Font, m_brush, rectangle2, m_sf);
-			m_brush.Color = color;
-			graphics.DrawString(node_attribute.Link, Font, Brushes.CornflowerBlue, rectangle3, m_sf);
-			if (!string.IsNullOrEmpty(node_attribute.Link))
-			{
-				m_rect_link = rectangle3;
-			}
-			m_brush.Color = Color.FromArgb(40, 125, 125, 125);
-			graphics.FillRectangle(m_brush, 0, _ShowTitle ? m_nTitleHeight : 0, m_nInfoLeft - 1, m_item_height * 3);
-			rectangle.X = 5;
-			rectangle.Y += m_item_height;
-			rectangle.Width = base.Width - 10;
-			if (!string.IsNullOrEmpty(m_node_attribute.DisplayDescription))
-			{
-				float num = graphics.MeasureString(m_node_attribute.DisplayDescription, Font, rectangle.Width).Height;
-				rectangle.Height = (int)Math.Ceiling(num / (float)m_item_height) * m_item_height;
-				m_brush.Color = color;
-				m_sf.FormatFlags = (StringFormatFlags)0;
-				graphics.DrawString(m_node_attribute.DisplayDescription, Font, m_brush, rectangle, m_sf);
-			}
-			m_nInfoVHeight = rectangle.Bottom;
-			bool flag = STNodeAttribute.GetHelpMethod(m_type) != null;
-			rectangle.X = 5;
-			rectangle.Y += rectangle.Height;
-			rectangle.Height = m_item_height;
-			m_sf.Alignment = StringAlignment.Center;
-			m_brush.Color = Color.FromArgb(125, 125, 125, 125);
-			graphics.FillRectangle(m_brush, rectangle);
-			if (flag)
-			{
-				m_brush.Color = Color.CornflowerBlue;
-			}
-			graphics.DrawString(m_KeysString[3], Font, m_brush, rectangle, m_sf);
-			if (flag)
-			{
-				m_rect_help = rectangle;
-			}
-			else
-			{
-				int num2 = (int)graphics.MeasureString(m_KeysString[3], Font).Width + 1;
-				int num3 = rectangle.X + (rectangle.Width - num2) / 2;
-				int num4 = rectangle.Y + rectangle.Height / 2;
-				m_pen.Color = m_brush.Color;
-				graphics.DrawLine(m_pen, num3, num4, num3 + num2, num4);
-			}
-			m_nInfoVHeight = rectangle.Bottom;
-		}
-	}
-
-	protected virtual void OnProcessPropertyMouseDown(MouseEventArgs e)
-	{
-		bool flag = false;
-		if (m_item_selected != m_item_hover)
-		{
-			m_item_selected = m_item_hover;
-			flag = true;
-		}
-		m_item_down_value = null;
-		if (m_item_selected == null)
-		{
-			if (flag)
-			{
-				Invalidate();
-			}
-			return;
-		}
-		if (m_item_selected.RectangleR.Contains(e.Location))
-		{
-			m_item_down_value = m_item_selected;
-			if (_ReadOnlyModel)
-			{
-				return;
-			}
-			m_item_selected.OnMouseDown(e);
-		}
-		else if (m_item_selected.RectangleL.Contains(e.Location))
-		{
-			m_str_desc = m_item_selected.Description;
-			flag = true;
-		}
-		if (flag)
-		{
-			Invalidate();
-		}
-	}
-
-	protected virtual void OnProcessInfoMouseDown(MouseEventArgs e)
-	{
-		try
-		{
-			if (m_rect_link.Contains(e.Location))
-			{
-				Process.Start(m_node_attribute.Link);
-			}
-			else if (m_rect_help.Contains(e.Location))
-			{
-				STNodeAttribute.ShowHelp(m_type);
-			}
-		}
-		catch (Exception ex)
-		{
-			SetErrorMessage(ex.Message);
-		}
-	}
-
-	protected virtual void OnProcessPropertyMouseMove(MouseEventArgs e)
-	{
-		if (m_item_down_value != null)
-		{
-			m_item_down_value.OnMouseMove(e);
-			return;
-		}
-		STNodePropertyDescriptor sTNodePropertyDescriptor = null;
-		foreach (STNodePropertyDescriptor item in m_lst_item)
-		{
-			if (item.Rectangle.Contains(e.Location))
-			{
-				sTNodePropertyDescriptor = item;
-				break;
-			}
-		}
-		if (sTNodePropertyDescriptor != null)
-		{
-			if (sTNodePropertyDescriptor.RectangleR.Contains(e.Location))
-			{
-				if (m_item_hover_value != sTNodePropertyDescriptor)
-				{
-					if (m_item_hover_value != null)
-					{
-						m_item_hover_value.OnMouseLeave(e);
-					}
-					m_item_hover_value = sTNodePropertyDescriptor;
-					m_item_hover_value.OnMouseEnter(e);
-				}
-				m_item_hover_value.OnMouseMove(e);
-			}
-			else if (m_item_hover_value != null)
-			{
-				m_item_hover_value.OnMouseLeave(e);
-			}
-		}
-		if (m_item_hover != sTNodePropertyDescriptor)
-		{
-			m_item_hover = sTNodePropertyDescriptor;
-			Invalidate();
-		}
-	}
-
-	protected virtual void OnProcessHelpMouseMove(MouseEventArgs e)
-	{
-		if (m_rect_link.Contains(e.Location) || m_rect_help.Contains(e.Location))
-		{
-			Cursor = Cursors.Hand;
-		}
-		else
-		{
-			Cursor = Cursors.Arrow;
-		}
+		ApplyColors();
+		ApplyFont();
+		UpdateTitle();
 	}
 
 	public void SetNode(STNode node)
 	{
-		if (node == _STNode)
+		_node = node;
+		m_node_attribute = node?.GetType()
+			.GetCustomAttributes(typeof(STNodeAttribute), inherit: true)
+			.OfType<STNodeAttribute>()
+			.FirstOrDefault();
+		m_error_message = null;
+		m_show_info = node != null && (m_info_first_on_draw || !HasVisibleProperties(node));
+		m_scroll_viewer.ScrollToTop();
+		BuildDescriptors();
+		UpdateTitle();
+		UpdateError();
+		RebuildContent();
+		ApplyColors();
+	}
+
+	public void SetInfoKey(string author, string mail, string link, string help)
+	{
+		m_info_keys[0] = author;
+		m_info_keys[1] = mail;
+		m_info_keys[2] = link;
+		m_info_keys[3] = help;
+		if (m_show_info)
+		{
+			RebuildContent();
+		}
+	}
+
+	public void SetErrorMessage(string text)
+	{
+		m_error_message = text;
+		UpdateError();
+	}
+
+	public void Invalidate(Rectangle rectangle)
+	{
+		InvalidateVisual();
+	}
+
+	private void OnSwitchClick(object sender, RoutedEventArgs e)
+	{
+		m_show_info = !m_show_info;
+		m_scroll_viewer.ScrollToTop();
+		RebuildContent();
+	}
+
+	private bool HasVisibleProperties(STNode node)
+	{
+		return node.GetType().GetProperties().Any(property =>
+		{
+			var attribute = property.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true)
+				.OfType<STNodePropertyAttribute>()
+				.FirstOrDefault();
+			return attribute != null && (m_is_edit_enable || !attribute.IsHide);
+		});
+	}
+
+	private void BuildDescriptors()
+	{
+		m_descriptors.Clear();
+		if (_node == null)
 		{
 			return;
 		}
-		m_nInfoOffsetY = (m_nPropertyOffsetY = 0);
-		m_nInfoVHeight = (m_nPropertyVHeight = 0);
-		m_rect_link = (m_rect_help = Rectangle.Empty);
-		m_str_desc = (m_str_err = null);
-		_STNode = node;
-		if (node != null)
+
+		foreach (PropertyInfo property in _node.GetType().GetProperties())
 		{
-			m_type = node.GetType();
-			m_lst_item = GetProperties(node);
-			SetItemRectangle();
-			m_b_current_draw_info = m_lst_item.Count == 0 || _InfoFirstOnDraw;
-			if (_AutoColor)
+			var attribute = property.GetCustomAttributes(typeof(STNodePropertyAttribute), inherit: true)
+				.OfType<STNodePropertyAttribute>()
+				.FirstOrDefault();
+			if (attribute == null || (!m_is_edit_enable && attribute.IsHide))
 			{
-				_ItemSelectedColor = _STNode.TitleColor;
+				continue;
 			}
+
+			if (Activator.CreateInstance(attribute.DescriptorType) is not STNodePropertyDescriptor descriptor)
+			{
+				throw new ArgumentException("[STNodePropertyAttribute.DescriptorType]参数值必须为[STNodePropertyDescriptor]或者其子类的类型");
+			}
+
+			descriptor.Node = _node;
+			descriptor.Name = Lang.Get(attribute.Name);
+			descriptor.Description = Lang.GetOrDefault(attribute.Description);
+			descriptor.PropertyInfo = property;
+			descriptor.IsEditEnable = m_is_edit_enable || attribute.IsEditEnable;
+			descriptor.IsReadOnly = attribute.IsReadOnly;
+			descriptor.Control = this;
+			m_descriptors.Add(descriptor);
+		}
+	}
+
+	private void RebuildContent()
+	{
+		if (m_content == null)
+		{
+			return;
+		}
+
+		m_content.Children.Clear();
+		if (_node == null)
+		{
+			m_switch_button.Visibility = Visibility.Collapsed;
+			return;
+		}
+
+		m_switch_button.Visibility = m_node_attribute != null && m_descriptors.Count > 0
+			? Visibility.Visible
+			: Visibility.Collapsed;
+		if (m_show_info)
+		{
+			BuildInfoPanel();
+			return;
+		}
+
+		for (int index = 0; index < m_descriptors.Count; index++)
+		{
+			m_content.Children.Add(CreatePropertyRow(m_descriptors[index], index));
+		}
+	}
+
+	private Grid CreatePropertyRow(STNodePropertyDescriptor descriptor, int index)
+	{
+		var row = new Grid
+		{
+			MinHeight = 32,
+			Background = index % 2 == 0
+				? ToBrush(DrawingColor.FromArgb(20, 0, 0, 0))
+				: ToBrush(DrawingColor.FromArgb(20, 255, 255, 255))
+		};
+		row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+		row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+
+		var name = new TextBlock
+		{
+			Text = descriptor.Name,
+			VerticalAlignment = VerticalAlignment.Center,
+			TextAlignment = TextAlignment.Right,
+			TextTrimming = TextTrimming.CharacterEllipsis,
+			Margin = new Thickness(4)
+		};
+		name.MouseEnter += (s, e) => ShowDescription(descriptor.Description);
+		name.MouseLeave += (s, e) => HideDescription();
+		row.Children.Add(name);
+
+		descriptor.Rectangle = new Rectangle(0, index * 32, 200, 32);
+		descriptor.RectangleL = new Rectangle(0, index * 32, 80, 32);
+		descriptor.RectangleR = new Rectangle(80, index * 32 + 3, 116, 26);
+		descriptor.OnSetItemLocation();
+
+		FrameworkElement editor = CreateValueEditor(descriptor);
+		Grid.SetColumn(editor, 1);
+		row.Children.Add(editor);
+		ApplyFont(row);
+		return row;
+	}
+
+	private FrameworkElement CreateValueEditor(STNodePropertyDescriptor descriptor)
+	{
+		bool readOnly = m_read_only_model || descriptor.IsReadOnly || !descriptor.IsEditEnable;
+		Type propertyType = descriptor.PropertyInfo.PropertyType;
+		if (propertyType == typeof(bool))
+		{
+			var checkBox = new CheckBox
+			{
+				IsChecked = descriptor.GetValue(null) is bool value && value,
+				IsEnabled = !readOnly,
+				VerticalAlignment = VerticalAlignment.Center,
+				Margin = new Thickness(8, 2, 4, 2)
+			};
+			checkBox.Click += (s, e) => CommitValue(descriptor, checkBox.IsChecked == true);
+			return checkBox;
+		}
+
+		if (propertyType.IsEnum)
+		{
+			var comboBox = new ComboBox
+			{
+				ItemsSource = Enum.GetNames(propertyType),
+				SelectedItem = descriptor.GetValue(null)?.ToString(),
+				IsEnabled = !readOnly,
+				Margin = new Thickness(4, 3, 4, 3)
+			};
+			comboBox.SelectionChanged += (s, e) =>
+			{
+				if (comboBox.SelectedItem is string text)
+				{
+					CommitText(descriptor, text);
+				}
+			};
+			return comboBox;
+		}
+
+		var textBox = new TextBox
+		{
+			Text = descriptor.GetStringFromValue() ?? string.Empty,
+			IsReadOnly = readOnly,
+			VerticalContentAlignment = VerticalAlignment.Center,
+			Background = ToBrush(m_item_value_back_color),
+			Foreground = ToBrush(m_fore_color),
+			BorderThickness = new Thickness(0),
+			Margin = new Thickness(4, 3, 4, 3),
+			Padding = new Thickness(4, 1, 4, 1)
+		};
+		textBox.KeyDown += (s, e) =>
+		{
+			if (e.Key == Key.Enter)
+			{
+				CommitText(descriptor, textBox.Text);
+				e.Handled = true;
+			}
+		};
+		textBox.LostKeyboardFocus += (s, e) => CommitText(descriptor, textBox.Text);
+
+		if (descriptor.GetType() == typeof(STNodePropertyDescriptor) || readOnly)
+		{
+			return textBox;
+		}
+
+		var panel = new Grid();
+		panel.ColumnDefinitions.Add(new ColumnDefinition());
+		panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+		panel.Children.Add(textBox);
+		var customButton = new Button
+		{
+			Content = "…",
+			MinWidth = 24,
+			Margin = new Thickness(0, 3, 4, 3),
+			Padding = new Thickness(3, 0, 3, 0)
+		};
+		customButton.Click += (s, e) =>
+		{
+			try
+			{
+				var location = new System.Drawing.Point(descriptor.RectangleR.Right - 12, descriptor.RectangleR.Top + descriptor.RectangleR.Height / 2);
+				descriptor.OnMouseClick(new STNodeMouseEventArgs(STMouseButtons.Left, 1, location.X, location.Y, 0));
+				textBox.Text = descriptor.GetStringFromValue() ?? string.Empty;
+				_node?.Owner?.Invalidate();
+				SetErrorMessage(null);
+			}
+			catch (Exception ex)
+			{
+				descriptor.OnSetValueError(ex);
+			}
+		};
+		Grid.SetColumn(customButton, 1);
+		panel.Children.Add(customButton);
+		return panel;
+	}
+
+	private void CommitText(STNodePropertyDescriptor descriptor, string text)
+	{
+		try
+		{
+			descriptor.SetValue(text);
+			_node?.Owner?.Invalidate();
+			SetErrorMessage(null);
+		}
+		catch (Exception ex)
+		{
+			descriptor.OnSetValueError(ex);
+		}
+	}
+
+	private void CommitValue(STNodePropertyDescriptor descriptor, object value)
+	{
+		try
+		{
+			descriptor.SetValue(value);
+			_node?.Owner?.Invalidate();
+			SetErrorMessage(null);
+		}
+		catch (Exception ex)
+		{
+			descriptor.OnSetValueError(ex);
+		}
+	}
+
+	private void BuildInfoPanel()
+	{
+		if (m_node_attribute == null)
+		{
+			return;
+		}
+
+		AddInfoRow(m_info_keys[0], m_node_attribute.Author);
+		AddInfoRow(m_info_keys[1], m_node_attribute.Mail);
+		AddInfoRow(m_info_keys[2], m_node_attribute.Link, isLink: true);
+
+		if (!string.IsNullOrWhiteSpace(m_node_attribute.DisplayDescription))
+		{
+			m_content.Children.Add(new TextBlock
+			{
+				Text = m_node_attribute.DisplayDescription,
+				TextWrapping = TextWrapping.Wrap,
+				Margin = new Thickness(8)
+			});
+		}
+
+		var helpButton = new Button
+		{
+			Content = m_info_keys[3],
+			Margin = new Thickness(8),
+			IsEnabled = STNodeAttribute.GetHelpMethod(_node.GetType()) != null
+		};
+		helpButton.Click += (s, e) =>
+		{
+			try
+			{
+				STNodeAttribute.ShowHelp(_node.GetType());
+			}
+			catch (Exception ex)
+			{
+				SetErrorMessage(ex.Message);
+			}
+		};
+		m_content.Children.Add(helpButton);
+		ApplyFont(m_content);
+	}
+
+	private void AddInfoRow(string key, string value, bool isLink = false)
+	{
+		var row = new Grid { MinHeight = 30 };
+		row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+		row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
+		row.Children.Add(new TextBlock
+		{
+			Text = key,
+			VerticalAlignment = VerticalAlignment.Center,
+			Margin = new Thickness(6)
+		});
+		FrameworkElement valueElement;
+		if (isLink && !string.IsNullOrWhiteSpace(value))
+		{
+			var button = new Button
+			{
+				Content = value,
+				HorizontalContentAlignment = HorizontalAlignment.Left,
+				BorderThickness = new Thickness(0),
+				Background = MediaBrushes.Transparent,
+				Foreground = MediaBrushes.CornflowerBlue,
+				Padding = new Thickness(4),
+				Cursor = Cursors.Hand
+			};
+			button.Click += (s, e) =>
+			{
+				try
+				{
+					Process.Start(new ProcessStartInfo(value) { UseShellExecute = true });
+				}
+				catch (Exception ex)
+				{
+					SetErrorMessage(ex.Message);
+				}
+			};
+			valueElement = button;
 		}
 		else
 		{
-			m_type = null;
-			m_lst_item.Clear();
-			m_node_attribute = null;
+			valueElement = new TextBlock
+			{
+				Text = value ?? string.Empty,
+				VerticalAlignment = VerticalAlignment.Center,
+				TextWrapping = TextWrapping.Wrap,
+				Margin = new Thickness(6),
+				Opacity = 0.75
+			};
 		}
-		Invalidate();
+		Grid.SetColumn(valueElement, 1);
+		row.Children.Add(valueElement);
+		m_content.Children.Add(row);
 	}
 
-	public void SetInfoKey(string strAuthor, string strMail, string strLink, string strHelp)
+	private void UpdateTitle()
 	{
-		m_KeysString = new string[4] { strAuthor, strMail, strLink, strHelp };
+		m_title_text.Text = _node?.Title ?? Text;
 	}
 
-	public void SetErrorMessage(string strText)
+	private void UpdateError()
 	{
-		m_str_err = strText;
-		Invalidate();
+		m_error_text.Text = m_error_message ?? string.Empty;
+		m_error_border.Visibility = string.IsNullOrWhiteSpace(m_error_message)
+			? Visibility.Collapsed
+			: Visibility.Visible;
+	}
+
+	private void ShowDescription(string description)
+	{
+		if (string.IsNullOrWhiteSpace(description))
+		{
+			return;
+		}
+		m_description_text.Text = description;
+		m_description_border.Visibility = Visibility.Visible;
+	}
+
+	private void HideDescription()
+	{
+		m_description_border.Visibility = Visibility.Collapsed;
+	}
+
+	private void ApplyColors()
+	{
+		Background = ToBrush(m_back_color);
+		Foreground = ToBrush(m_fore_color);
+		DrawingColor title = m_auto_color && _node != null ? _node.TitleColor : m_title_color;
+		m_title_border.Background = ToBrush(title);
+		m_error_border.Background = ToBrush(DrawingColor.FromArgb(210, m_error_color));
+		m_description_border.Background = ToBrush(DrawingColor.FromArgb(210, m_description_color));
+	}
+
+	private void ApplyFont()
+	{
+		ApplyFont(this);
+	}
+
+	private void ApplyFont(DependencyObject root)
+	{
+		if (root is Control control)
+		{
+			control.FontFamily = new MediaFontFamily(m_font.Name);
+			control.FontSize = Math.Max(1d, m_font.SizeInPoints * 96d / 72d);
+		}
+		else if (root is TextBlock text)
+		{
+			text.FontFamily = new MediaFontFamily(m_font.Name);
+			text.FontSize = Math.Max(1d, m_font.SizeInPoints * 96d / 72d);
+		}
+
+		int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+		for (int i = 0; i < count; i++)
+		{
+			ApplyFont(System.Windows.Media.VisualTreeHelper.GetChild(root, i));
+		}
+	}
+
+	private static SolidColorBrush ToBrush(DrawingColor color)
+	{
+		var brush = new SolidColorBrush(MediaColor.FromArgb(color.A, color.R, color.G, color.B));
+		brush.Freeze();
+		return brush;
+	}
+
+	public void Dispose()
+	{
+		if (m_disposed)
+		{
+			return;
+		}
+		m_disposed = true;
+		m_switch_button.Click -= OnSwitchClick;
+		m_content.Children.Clear();
+		m_descriptors.Clear();
+		m_font?.Dispose();
+		m_font = null;
+		GC.SuppressFinalize(this);
 	}
 }

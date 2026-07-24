@@ -196,15 +196,15 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.KeyCode == System.Windows.Forms.Keys.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.Key == Key.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Save();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Refresh();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     AutoAlignment();
                 }
@@ -373,76 +373,6 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodeEditorHelper.ApplyTreeLayout();
             STNodeEditorHelper.AutoSize();
-        }
-
-        private bool IsMouseDown;
-        private System.Drawing.Point lastMousePosition;
-        private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            lastMousePosition = e.Location;
-            System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
-            m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
-            m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
-            NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
-
-            if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
-            {
-
-            }
-            else if (nodeFindInfo.Node != null)
-            {
-
-            }
-            else if (nodeFindInfo.NodeOption != null)
-            {
-
-            }
-            else if (e.Button == System.Windows.Forms.MouseButtons.Left)
-            {
-                IsMouseDown = true;
-            }
-        }
-
-        private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            IsMouseDown = false;
-        }
-
-        private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            if (!STNodeEditorMain.EnableBlankLeftDragCanvas && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
-            {        // 计算鼠标移动的距离
-                int deltaX = e.X - lastMousePosition.X;
-                int deltaY = e.Y - lastMousePosition.Y;
-
-                // 更新画布偏移
-                STNodeEditorMain.MoveCanvas(
-                    STNodeEditorMain.CanvasOffsetX + deltaX,
-                    STNodeEditorMain.CanvasOffsetY + deltaY,
-                    bAnimation: false,
-                    CanvasMoveArgs.All
-                );
-
-                // 更新最后的鼠标位置
-                lastMousePosition = e.Location;
-            }
-        }
-        
-
-        private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            var mousePosition = STNodeEditorMain.PointToClient(e.Location);
-
-            if (e.Delta < 0)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
-                NotifyPropertyChanged(nameof(CanvasScale));
-            }
-            else
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
-                NotifyPropertyChanged(nameof(CanvasScale));
-            }
         }
 
     }

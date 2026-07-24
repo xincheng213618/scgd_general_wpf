@@ -47,7 +47,7 @@ public class STNodeSelectEnumBox : STNodeControl
 		});
 	}
 
-	protected override void OnMouseClick(MouseEventArgs e)
+	protected override void OnMouseClick(STNodeMouseEventArgs e)
 	{
 		base.OnMouseClick(e);
 		Point pt = new Point(base.Left + base.Owner.Left, base.Top + base.Owner.Top + base.Owner.TitleHeight);

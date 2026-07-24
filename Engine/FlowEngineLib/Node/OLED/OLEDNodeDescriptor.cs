@@ -40,7 +40,7 @@ public class OLEDNodeDescriptor : STNodePropertyDescriptor
 		dt.Graphics.DrawRectangle(Pens.Black, m_rect);
 	}
 
-	protected override void OnMouseClick(MouseEventArgs e)
+	protected override void OnMouseClick(STNodeMouseEventArgs e)
 	{
 		if (m_rect.Contains(e.Location))
 		{

@@ -4,6 +4,7 @@ using ST.Library.UI.NodeEditor;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -25,25 +26,28 @@ public class DeprecatedFlowNodeCompatibilityTests
     [InlineData("FlowEngineLib.Node.Camera.CameraROINode")]
     public void DeprecatedNode_IsExcludedFromCatalogAndSavedCanvasStillLoads(string typeName)
     {
-        var nodeType = typeof(FlowEngineLib.Base.CVCommonNode).Assembly.GetType(typeName, throwOnError: true)!;
-        Assert.NotNull(nodeType.GetCustomAttribute<ObsoleteAttribute>(inherit: false));
+        RunInSta(() =>
+        {
+            var nodeType = typeof(FlowEngineLib.Base.CVCommonNode).Assembly.GetType(typeName, throwOnError: true)!;
+            Assert.NotNull(nodeType.GetCustomAttribute<ObsoleteAttribute>(inherit: false));
 
-        using var nodeTree = new STNodeTreeView();
-        Assert.False(nodeTree.AddNode(nodeType));
+            using var nodeTree = new STNodeTreeView();
+            Assert.False(nodeTree.AddNode(nodeType));
 
-        var visibilityCheck = typeof(ColorVision.Engine.Templates.Flow.FlowEngineManager).GetMethod("IsVisibleFlowNodeType", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(visibilityCheck);
-        Assert.False(Assert.IsType<bool>(visibilityCheck.Invoke(null, [nodeType])));
+            var visibilityCheck = typeof(ColorVision.Engine.Templates.Flow.FlowEngineManager).GetMethod("IsVisibleFlowNodeType", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(visibilityCheck);
+            Assert.False(Assert.IsType<bool>(visibilityCheck.Invoke(null, [nodeType])));
 
-        var original = Assert.IsAssignableFrom<STNode>(Activator.CreateInstance(nodeType));
-        original.Create();
+            var original = Assert.IsAssignableFrom<STNode>(Activator.CreateInstance(nodeType));
+            original.Create();
 
-        var container = new CVNodeContainer();
-        Assert.True(container.LoadAssembly(nodeType.Assembly));
-        container.LoadCanvas(CreateCanvasData(original.GetSaveData()));
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(nodeType.Assembly));
+            container.LoadCanvas(CreateCanvasData(original.GetSaveData()));
 
-        var restored = Assert.Single(container.Nodes.Cast<STNode>());
-        Assert.Equal(nodeType, restored.GetType());
+            var restored = Assert.Single(container.Nodes.Cast<STNode>());
+            Assert.Equal(nodeType, restored.GetType());
+        });
     }
 
     private static byte[] CreateCanvasData(byte[] nodeData)
@@ -64,6 +68,29 @@ public class DeprecatedFlowNodeCompatibilityTests
         }
 
         return stream.ToArray();
+    }
+
+    private static void RunInSta(Action action)
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (exception != null)
+        {
+            ExceptionDispatchInfo.Capture(exception).Throw();
+        }
     }
 }
 

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -64,8 +64,6 @@ public abstract class STNode : INotifyPropertyChanged
 	private bool _LockOption;
 
 	private bool _LockLocation;
-
-	private ContextMenuStrip _ContextMenuStrip;
 
 	private object _Tag;
 
@@ -581,18 +579,6 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			_LockLocation = value;
 			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
-		}
-	}
-
-	public ContextMenuStrip ContextMenuStrip
-	{
-		get
-		{
-			return _ContextMenuStrip;
-		}
-		set
-		{
-			_ContextMenuStrip = value;
 		}
 	}
 
@@ -1137,7 +1123,7 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 	}
 
-	protected internal virtual void OnMouseDown(MouseEventArgs e)
+	protected internal virtual void OnMouseDown(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1161,7 +1147,7 @@ public abstract class STNode : INotifyPropertyChanged
 				}
 				if (sTNodeControl.Visable)
 				{
-					sTNodeControl.OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top, e.Delta));
+					sTNodeControl.OnMouseDown(e.WithLocation(e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top));
 					m_ctrl_down = sTNodeControl;
 					if (m_ctrl_active != sTNodeControl)
 					{
@@ -1183,7 +1169,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_active = null;
 	}
 
-	protected internal virtual void OnMouseMove(MouseEventArgs e)
+	protected internal virtual void OnMouseMove(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1201,7 +1187,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (m_ctrl_down.Enabled && m_ctrl_down.Visable)
 			{
-				m_ctrl_down.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top, e.Delta));
+				m_ctrl_down.OnMouseMove(e.WithLocation(e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top));
 			}
 			return;
 		}
@@ -1219,7 +1205,7 @@ public abstract class STNode : INotifyPropertyChanged
 					}
 					m_ctrl_hover = sTNodeControl;
 				}
-				m_ctrl_hover.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top, e.Delta));
+				m_ctrl_hover.OnMouseMove(e.WithLocation(e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top));
 				return;
 			}
 		}
@@ -1230,7 +1216,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_hover = null;
 	}
 
-	protected internal virtual void OnMouseUp(MouseEventArgs e)
+	protected internal virtual void OnMouseUp(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1241,7 +1227,7 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_down != null && m_ctrl_down.Enabled && m_ctrl_down.Visable)
 		{
-			m_ctrl_down.OnMouseUp(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top, e.Delta));
+			m_ctrl_down.OnMouseUp(e.WithLocation(e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top));
 		}
 		m_ctrl_down = null;
 	}
@@ -1255,7 +1241,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_hover = null;
 	}
 
-	protected internal virtual void OnMouseClick(MouseEventArgs e)
+	protected internal virtual void OnMouseClick(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1265,11 +1251,11 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_active.Visable)
 		{
-			m_ctrl_active.OnMouseClick(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_active.Left, location.Y - m_ctrl_active.Top, e.Delta));
+			m_ctrl_active.OnMouseClick(e.WithLocation(e.X - m_ctrl_active.Left, location.Y - m_ctrl_active.Top));
 		}
 	}
 
-	protected internal virtual void OnMouseWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseWheel(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1279,11 +1265,11 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_hover != null && m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_hover.Visable)
 		{
-			m_ctrl_hover.OnMouseWheel(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_hover.Left, location.Y - m_ctrl_hover.Top, e.Delta));
+			m_ctrl_hover.OnMouseWheel(e.WithLocation(e.X - m_ctrl_hover.Left, location.Y - m_ctrl_hover.Top));
 		}
 	}
 
-	protected internal virtual void OnMouseHWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseHWheel(STNodeMouseEventArgs e)
 	{
 		if (m_ctrl_hover != null && m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_hover.Visable)
 		{
@@ -1307,7 +1293,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 	}
 
-	protected internal virtual void OnKeyPress(KeyPressEventArgs e)
+	protected internal virtual void OnKeyPress(STNodeKeyPressEventArgs e)
 	{
 		if (m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_active.Visable)
 		{

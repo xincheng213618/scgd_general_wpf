@@ -48,9 +48,8 @@
                 <ColumnDefinition x:Name="PropertyEditorColumn" Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <local:STNodeEditorHost Grid.Column="0" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel"/>
-            </local:STNodeEditorHost>
+            <st:STNodeEditor Grid.Column="0" x:Name="STNodeEditorMain"
+                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
