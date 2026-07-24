@@ -36,13 +36,9 @@
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
 		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<None Remove="Assets\Image\pictureBox1.Image.png" />
-		<None Remove="Assets\Image\归档查询.png" />
-		<None Remove="Assets\Image\综合查询.png" />
 		<None Remove="Assets\png\PowerToy.png" />
 		<None Remove="Templates\Jsons\**\*.schema.json" />
 		<None Remove="Templates\Jsons\Schemas\schema-index.json" />
-		<None Remove="ToolPlugins\UsbTreeView.exe" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -91,9 +87,6 @@
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />
 		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<Resource Include="Assets\Image\pictureBox1.Image.png" />
-		<Resource Include="Assets\Image\归档查询.png" />
-		<Resource Include="Assets\Image\综合查询.png" />
 		<Resource Include="Assets\png\PowerToy.png" />
 	</ItemGroup>
 
@@ -157,18 +150,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="Assets\InstallTool\Everything-1.4.1.1032.x64-Setup.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\InstallTool\winrar-x64-720sc.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\sscom5.13.1.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\UsbTreeView.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<EmbeddedResource Include="Templates\Jsons\**\*.schema.json">
 		  <LogicalName>Templates/Jsons/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>

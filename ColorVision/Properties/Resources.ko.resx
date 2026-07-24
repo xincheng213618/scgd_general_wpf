@@ -918,4 +918,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>업데이트 전에 프로그램 스냅샷 만들기</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>권장 소프트웨어</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Everything과 WinRAR 설치를 권장합니다. 설치되지 않은 항목은 기본으로 선택됩니다. 다음 또는 선택한 소프트웨어 설치를 누르면 설치 프로그램이 순서대로 열립니다. 선택을 해제하면 ColorVision 사용에 영향을 주지 않고 건너뛸 수 있습니다.</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>이 컴퓨터의 파일과 폴더를 빠르게 검색합니다.</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>일반 압축 파일을 열고, 풀고, 만듭니다.</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>설치 중...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>선택한 소프트웨어 설치</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>다시 확인</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>선택 확인</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>{0} 설치 프로그램을 찾을 수 없습니다: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>{0} 설치 프로그램을 시작할 수 없습니다: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0}이(가) 설치되지 않았습니다. 다시 시도하거나 선택을 해제하고 계속하세요.</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>설치됨</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>설치 프로그램 없음</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>설치 예정</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>건너뜀</value></data>
 </root>

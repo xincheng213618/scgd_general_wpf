@@ -959,4 +959,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>更新前创建程序快照</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>推荐软件</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>建议安装 Everything 和 WinRAR。未安装的软件已默认勾选；单击“下一步”或“安装所选软件”会依次打开安装程序。取消勾选即可跳过，不影响继续使用 ColorVision。</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>快速搜索本机文件和文件夹。</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>查看、解压和创建常用压缩文件。</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>正在安装...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>安装所选软件</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>重新检查</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>确认选择</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>未找到 {0} 安装包：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>{0} 安装程序启动失败：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} 尚未安装完成。请重试，或取消勾选后继续。</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>已安装</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>安装包缺失</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>将安装</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>已跳过</value></data>
 </root>

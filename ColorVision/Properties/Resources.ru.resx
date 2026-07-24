@@ -918,4 +918,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>Создать снимок программы перед обновлением</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>Рекомендуемые программы</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Рекомендуется установить Everything и WinRAR. Отсутствующие программы выбраны по умолчанию. Кнопка «Далее» или «Установить выбранное» запускает установщики по очереди. Снимите флажок, чтобы пропустить программу без блокировки ColorVision.</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>Быстрый поиск файлов и папок на этом компьютере.</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>Открытие, распаковка и создание распространённых архивов.</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>Установка...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>Установить выбранное</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>Проверить снова</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>Подтвердить выбор</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>Установщик {0} не найден: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>Не удалось запустить установщик {0}: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} не установлена. Повторите попытку или снимите флажок, чтобы продолжить.</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>Установлено</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>Нет установщика</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>Будет установлено</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>Пропущено</value></data>
 </root>

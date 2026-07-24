@@ -76,7 +76,7 @@ namespace ColorVision.UI.Desktop.Wizards
             {
                 try
                 {
-                    if (!_wizardSteps.Any(step => step.IsRequired))
+                    if (!_wizardSteps.Any(step => step.RunsBeforeInitializers))
                     {
                         _initializersRun = true;
                         if (RunInitializers())
@@ -193,6 +193,30 @@ namespace ColorVision.UI.Desktop.Wizards
             BtnFinish.Visibility = isLastStep ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private async Task<bool> ApplyCurrentStepAsync()
+        {
+            if (_wizardSteps.Count == 0)
+                return true;
+
+            _isTransitioning = true;
+            UpdateNavigationState();
+            try
+            {
+                return await _wizardSteps[_currentStepIndex].ApplyAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Wizard step apply failed: {_wizardSteps[_currentStepIndex].GetType().FullName}", ex);
+                MessageBox.Show(this, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            finally
+            {
+                _isTransitioning = false;
+                UpdateNavigationState();
+            }
+        }
+
         private async void Previous_Click(object sender, RoutedEventArgs e)
         {
             if (_isTransitioning || _currentStepIndex <= 0)
@@ -213,6 +237,8 @@ namespace ColorVision.UI.Desktop.Wizards
                 UpdateNavigationState();
                 return;
             }
+            if (!await ApplyCurrentStepAsync().ConfigureAwait(true))
+                return;
 
             int nextStepIndex = _currentStepIndex + 1;
             if (!_initializersRun && ShouldRunInitializersBefore(nextStepIndex))
@@ -228,12 +254,12 @@ namespace ColorVision.UI.Desktop.Wizards
 
         private bool ShouldRunInitializersBefore(int nextStepIndex)
         {
-            if (nextStepIndex >= _wizardSteps.Count || _wizardSteps[nextStepIndex].IsRequired)
+            if (nextStepIndex >= _wizardSteps.Count || _wizardSteps[nextStepIndex].RunsBeforeInitializers)
                 return false;
 
             return _wizardSteps
                 .Take(nextStepIndex)
-                .Where(step => step.IsRequired)
+                .Where(step => step.RunsBeforeInitializers)
                 .All(step => step.ConfigurationStatus);
         }
 
@@ -246,6 +272,13 @@ namespace ColorVision.UI.Desktop.Wizards
                 await ShowCurrentStepAsync().ConfigureAwait(true);
                 return;
             }
+            if (!_wizardSteps[_currentStepIndex].CanContinue)
+            {
+                UpdateNavigationState();
+                return;
+            }
+            if (!await ApplyCurrentStepAsync().ConfigureAwait(true))
+                return;
 
             if (!_initializersRun)
             {

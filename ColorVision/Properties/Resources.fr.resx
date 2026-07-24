@@ -918,4 +918,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>Créer un instantané du programme avant la mise à jour</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>Logiciels recommandés</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Everything et WinRAR sont recommandés. Les applications absentes sont sélectionnées par défaut. Suivant ou Installer les logiciels sélectionnés lance les programmes d’installation l’un après l’autre. Décochez une application pour l’ignorer sans bloquer ColorVision.</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>Rechercher rapidement les fichiers et dossiers de cet ordinateur.</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>Ouvrir, extraire et créer les archives courantes.</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>Installation...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>Installer la sélection</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>Vérifier à nouveau</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>Confirmer la sélection</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>Le programme d’installation de {0} est introuvable : {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>Impossible de lancer le programme d’installation de {0} : {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} n’a pas été installé. Réessayez ou décochez-le pour continuer.</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>Installé</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>Programme absent</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>Sera installé</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>Ignoré</value></data>
 </root>

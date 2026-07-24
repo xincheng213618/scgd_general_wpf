@@ -304,12 +304,64 @@
                                   Margin="0,24,0,20"
                                   VerticalScrollBarVisibility="Auto"
                                   Focusable="False">
-                        <TextBlock Text="{Binding Description, Mode=OneWay}"
-                                   FontSize="15"
-                                   LineHeight="23"
-                                   TextWrapping="Wrap"
-                                   TextTrimming="None"
-                                   VerticalAlignment="Top"/>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Description, Mode=OneWay}"
+                                       FontSize="15"
+                                       LineHeight="23"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="None"
+                                       VerticalAlignment="Top"/>
+                            <ItemsControl ItemsSource="{Binding Choices}" Margin="0,20,0,0">
+                                <ItemsControl.Style>
+                                    <Style TargetType="{x:Type ItemsControl}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="HasItems" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ItemsControl.Style>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,10"
+                                                Padding="14,12"
+                                                CornerRadius="7"
+                                                Background="{DynamicResource GlobalBackground}"
+                                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                                BorderThickness="1">
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEnabled="{Binding IsEnabled}"
+                                                      HorizontalContentAlignment="Stretch"
+                                                      VerticalContentAlignment="Top">
+                                                <Grid Margin="8,0,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Header}"
+                                                                   FontSize="14"
+                                                                   FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Margin="0,4,12,0"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding StatusText}"
+                                                               Margin="16,1,0,0"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                </Grid>
+                                            </CheckBox>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </ScrollViewer>
 
                     <Border Grid.Row="2"
