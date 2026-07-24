@@ -3426,4 +3426,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CreateToPOI" xml:space="preserve">
     <value>Создать как POI</value>
   </data>
+  <data name="ImageExportTiffCompression" xml:space="preserve">
+    <value>Сжатие TIFF (LZW по умолчанию, быстрое без потерь)</value>
+  </data>
+  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
+    <value>Сжатие PNG (0=без сжатия, 1=максимальная скорость, 9=минимальный размер)</value>
+  </data>
+  <data name="ImageExportJpegQuality" xml:space="preserve">
+    <value>Качество JPEG (0-100, по умолчанию 95)</value>
+  </data>
 </root>

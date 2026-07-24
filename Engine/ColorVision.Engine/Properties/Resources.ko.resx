@@ -3422,4 +3422,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CreateToPOI" xml:space="preserve">
     <value>POI로 생성</value>
   </data>
+  <data name="ImageExportTiffCompression" xml:space="preserve">
+    <value>TIFF 압축 방식(기본 LZW, 빠른 무손실)</value>
+  </data>
+  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
+    <value>PNG 압축 수준(0=압축 안 함, 1=속도 우선, 9=크기 우선)</value>
+  </data>
+  <data name="ImageExportJpegQuality" xml:space="preserve">
+    <value>JPEG 품질(0-100, 기본값 95)</value>
+  </data>
 </root>

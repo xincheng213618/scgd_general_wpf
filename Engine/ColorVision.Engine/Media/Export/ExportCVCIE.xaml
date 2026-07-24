@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resources.Export}" Background="{StaticResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Export}" Background="{StaticResource GlobalBackground}" Height="470" Width="460" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -25,20 +25,39 @@
         </Grid.RowDefinitions>
         <StackPanel >
             <DockPanel  Margin="0,3">
-                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resources.Name}"
+                <hc:ComboBox  Margin="0,0,0,0" IsEditable="True" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.Title="{x:Static properties:Resources.Name}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               />
             </DockPanel>
             <DockPanel  Margin="0,3">
                 <Button Content="..." Height="30" DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="2,0,0,0" Click="Save_Click"/>
-                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding SavePath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
+                <hc:ComboBox  Margin="0,0,0,0" IsEditable="True" Text="{Binding SavePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentImageSaveList}"/>
             </DockPanel>
             <DockPanel  Margin="0,3">
-                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="True" SelectedIndex="0"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat}"  hc:InfoElement.Title="{x:Static properties:Resources.Type}"
+                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="False" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat, Mode=TwoWay}" hc:InfoElement.Title="{x:Static properties:Resources.Type}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               />
+            </DockPanel>
+            <DockPanel Margin="0,3" Visibility="{Binding IsTiff, Converter={StaticResource bool2VisibilityConverter}}">
+                <hc:ComboBox ItemsSource="{Binding TiffCompressionOptions}"
+                             DisplayMemberPath="Key"
+                             SelectedValuePath="Value"
+                             SelectedValue="{Binding TiffCompression, Mode=TwoWay}"
+                             hc:InfoElement.Title="{x:Static properties:Resources.ImageExportTiffCompression}"/>
+            </DockPanel>
+            <DockPanel Margin="0,3" Visibility="{Binding IsPng, Converter={StaticResource bool2VisibilityConverter}}">
+                <hc:NumericUpDown Minimum="0"
+                                  Maximum="9"
+                                  Value="{Binding PngCompressionLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  hc:InfoElement.Title="{x:Static properties:Resources.ImageExportPngCompressionLevel}"/>
+            </DockPanel>
+            <DockPanel Margin="0,3" Visibility="{Binding IsJpeg, Converter={StaticResource bool2VisibilityConverter}}">
+                <hc:NumericUpDown Minimum="0"
+                                  Maximum="100"
+                                  Value="{Binding JpegQuality, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  hc:InfoElement.Title="{x:Static properties:Resources.ImageExportJpegQuality}"/>
             </DockPanel>
             <DockPanel>
                 <TextBlock Width="80"><Run Text="{x:Static properties:Resources.ImageInfo}"/><Run Text="："/></TextBlock>
@@ -67,7 +86,7 @@
 
         </StackPanel>
         <Border Grid.Row="2" Height="30">
-            <Button  Content="{x:Static properties:Resources.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
+            <Button x:Name="ExportButton" Content="{x:Static properties:Resources.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

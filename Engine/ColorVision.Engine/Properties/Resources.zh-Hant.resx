@@ -3421,4 +3421,13 @@
   <data name="CreateToPOI" xml:space="preserve">
     <value>建立為POI</value>
   </data>
+  <data name="ImageExportTiffCompression" xml:space="preserve">
+    <value>TIFF 壓縮方式（預設 LZW，快速無損）</value>
+  </data>
+  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
+    <value>PNG 壓縮等級（0=不壓縮，1=效能優先，9=體積優先）</value>
+  </data>
+  <data name="ImageExportJpegQuality" xml:space="preserve">
+    <value>JPEG 品質（0-100，預設 95）</value>
+  </data>
 </root>

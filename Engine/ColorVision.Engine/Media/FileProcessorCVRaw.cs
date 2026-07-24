@@ -63,12 +63,6 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 
             var vie = new VExportCIE(filePath);
 
-            string mxs = parser.GetValue("mx");
-            if (int.TryParse(mxs, out int mx))
-            {
-                vie.Compression = mx;
-            }
-
             string type = parser.GetValue("type");
             if (type != null)
             {
@@ -80,21 +74,26 @@ namespace ColorVision.Engine.Impl.SolutionImpl
                     _ => ImageFormat.Tiff,
                 };
             }
+            string mxs = parser.GetValue("mx");
+            if (int.TryParse(mxs, out int mx))
+            {
+                vie.Compression = mx;
+            }
             string output = parser.GetValue("output");
-            if (output != null && Directory.Exists(output))
+            if (!string.IsNullOrWhiteSpace(output))
             {
                 vie.SavePath = output;
             }
             else
             {
-                vie.SavePath = Directory.GetParent(filePath)?.FullName ?? string.Empty;
+                vie.SavePath = Path.GetDirectoryName(filePath) ?? string.Empty;
             }
 
             if (parser.GetFlag("quiet"))
             {
-                VExportCIE.SaveToTif(vie);
-                Environment.Exit(0);
-                return new FileExportResult(true, true);
+                int result = VExportCIE.SaveToTif(vie);
+                Environment.Exit(result == 0 ? 0 : 1);
+                return new FileExportResult(true, result == 0);
             }
             new ExportCVCIE(vie).Show();
             return new FileExportResult(true, true);

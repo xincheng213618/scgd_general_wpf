@@ -4618,4 +4618,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CreateToPOI" xml:space="preserve">
     <value>Create as POI</value>
   </data>
+  <data name="ImageExportTiffCompression" xml:space="preserve">
+    <value>TIFF compression (LZW default, fast and lossless)</value>
+  </data>
+  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
+    <value>PNG compression (0=none, 1=fastest, 9=smallest)</value>
+  </data>
+  <data name="ImageExportJpegQuality" xml:space="preserve">
+    <value>JPEG quality (0-100, default 95)</value>
+  </data>
 </root>

@@ -3425,4 +3425,13 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CreateToPOI" xml:space="preserve">
     <value>Créer comme POI</value>
   </data>
+  <data name="ImageExportTiffCompression" xml:space="preserve">
+    <value>Compression TIFF (LZW par défaut, rapide et sans perte)</value>
+  </data>
+  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
+    <value>Compression PNG (0=aucune, 1=la plus rapide, 9=taille minimale)</value>
+  </data>
+  <data name="ImageExportJpegQuality" xml:space="preserve">
+    <value>Qualité JPEG (0-100, 95 par défaut)</value>
+  </data>
 </root>
