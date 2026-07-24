@@ -2,11 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="创建宠物"
-        Width="620"
-        Height="620"
-        MinWidth="560"
-        MinHeight="540"
+        Width="660"
+        Height="650"
+        MinWidth="580"
+        MinHeight="560"
         Background="{DynamicResource GlobalBackground}"
+        Loaded="Window_Loaded"
         ResizeMode="CanResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner">
@@ -24,107 +25,174 @@
                        Text="创建桌面宠物" />
             <TextBlock Margin="0,6,0,0"
                        Foreground="{DynamicResource SecondaryTextBrush}"
-                       Text="导入一张 Codex 格式的 PNG 或 WebP 精灵表。创建后会复制到 ColorVision 的宠物素材目录。"
+                       Text="让 Codex 生成完整动画素材，或导入已有的兼容精灵表。"
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <Border Grid.Row="1"
-                Margin="0,20,0,18"
-                Padding="18"
-                Background="{DynamicResource LayoutBackground}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="9">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+        <TabControl x:Name="CreationModeTabControl"
+                    Grid.Row="1"
+                    Margin="0,18,0,18"
+                    SelectionChanged="CreationModeTabControl_SelectionChanged">
+            <TabItem Header="用 Codex 创建">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="14,16,14,14">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Text="交给 Codex 生成" />
+                        <TextBlock Margin="0,6,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="使用 Codex 的 Hatch Pet 流程生成 8 × 11 动画精灵表，完成后会自动出现在本页的宠物列表。"
+                                   TextWrapping="Wrap" />
 
-                <StackPanel>
-                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                               FontWeight="SemiBold"
-                               Text="宠物名称" />
-                    <TextBox x:Name="PetNameTextBox"
-                             Margin="0,7,0,0"
-                             MaxLength="80"
-                             MinHeight="32"
-                             Padding="8,5" />
-                </StackPanel>
+                        <Border Margin="0,16,0,0"
+                                Padding="12,10"
+                                Background="{DynamicResource LayoutBackground}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Text="Codex 状态" />
+                                <TextBlock x:Name="CodexStatusText"
+                                           Margin="0,4,0,0"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="正在检测本机 Codex 与 Hatch Pet…"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
 
-                <StackPanel Grid.Row="1"
-                            Margin="0,15,0,0">
-                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                               FontWeight="SemiBold"
-                               Text="描述（可选）" />
-                    <TextBox x:Name="DescriptionTextBox"
-                             Margin="0,7,0,0"
-                             MaxLength="240"
-                             MinHeight="56"
-                             Padding="8,5"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" />
-                </StackPanel>
+                        <TextBlock Margin="0,16,0,0"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                   Text="宠物想法（可选）" />
+                        <TextBox x:Name="CodexConceptTextBox"
+                                 Margin="0,7,0,0"
+                                 MinHeight="104"
+                                 MaxLength="600"
+                                 Padding="9,7"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" />
+                        <TextBlock Margin="0,6,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="留空时，Codex 会根据它对你的了解来设计；也可以描述动物、配色、性格或工作场景。"
+                                   TextWrapping="Wrap" />
 
-                <StackPanel Grid.Row="2"
-                            Margin="0,15,0,0">
-                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                               FontWeight="SemiBold"
-                               Text="精灵表文件" />
-                    <Grid Margin="0,7,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="SpriteSheetPathTextBox"
-                                 MinHeight="32"
-                                 Padding="8,5"
-                                 VerticalContentAlignment="Center" />
-                        <Button Grid.Column="1"
-                                MinWidth="82"
-                                Height="32"
-                                Margin="8,0,0,0"
-                                Click="BrowseButton_Click"
-                                Content="浏览…" />
+                        <Border Margin="0,16,0,0"
+                                Padding="12,10"
+                                Background="{DynamicResource LayoutBackground}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                           Text="接下来会发生什么" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="ColorVision 会安全安装本机 Codex 随附的 Hatch Pet 技能，并打开一个已预填的新任务。你在 Codex 中确认发送后，本页会监听生成结果并自动选中新宠物。"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="导入精灵表">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="14,16,14,14">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                       FontWeight="SemiBold"
+                                       Text="宠物名称" />
+                            <TextBox x:Name="PetNameTextBox"
+                                     Margin="0,7,0,0"
+                                     MaxLength="80"
+                                     MinHeight="32"
+                                     Padding="8,5" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1"
+                                    Margin="0,15,0,0">
+                            <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                       FontWeight="SemiBold"
+                                       Text="描述（可选）" />
+                            <TextBox x:Name="DescriptionTextBox"
+                                     Margin="0,7,0,0"
+                                     MaxLength="240"
+                                     MinHeight="56"
+                                     Padding="8,5"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2"
+                                    Margin="0,15,0,0">
+                            <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                       FontWeight="SemiBold"
+                                       Text="精灵表文件" />
+                            <Grid Margin="0,7,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="SpriteSheetPathTextBox"
+                                         MinHeight="32"
+                                         Padding="8,5"
+                                         VerticalContentAlignment="Center" />
+                                <Button Grid.Column="1"
+                                        MinWidth="82"
+                                        Height="32"
+                                        Margin="8,0,0,0"
+                                        Click="BrowseButton_Click"
+                                        Content="浏览…" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3"
+                                    Margin="0,15,0,0">
+                            <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                       FontWeight="SemiBold"
+                                       Text="精灵表格式" />
+                            <ComboBox x:Name="SpriteVersionComboBox"
+                                      Margin="0,7,0,0"
+                                      MinHeight="32"
+                                      Padding="7,4"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Tag="2"
+                                              Content="Codex v2 · 8 列 × 11 行（推荐）" />
+                                <ComboBoxItem Tag="1"
+                                              Content="Codex v1 · 8 列 × 9 行" />
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4"
+                                    Margin="0,15,0,0">
+                            <TextBlock Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Text="支持 PNG 或 WebP。图片宽度必须能被 8 整除，高度必须能被所选行数整除；最大 4096 × 4096、20 MB。"
+                                       TextWrapping="Wrap" />
+                            <TextBlock x:Name="ImportStatusText"
+                                       Margin="0,8,0,0"
+                                       Foreground="#D43B3B"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
                     </Grid>
-                </StackPanel>
-
-                <StackPanel Grid.Row="3"
-                            Margin="0,15,0,0">
-                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
-                               FontWeight="SemiBold"
-                               Text="精灵表格式" />
-                    <ComboBox x:Name="SpriteVersionComboBox"
-                              Margin="0,7,0,0"
-                              MinHeight="32"
-                              Padding="7,4"
-                              SelectedIndex="0">
-                        <ComboBoxItem Tag="2"
-                                      Content="Codex v2 · 8 列 × 11 行（推荐）" />
-                        <ComboBoxItem Tag="1"
-                                      Content="Codex v1 · 8 列 × 9 行" />
-                    </ComboBox>
-                </StackPanel>
-
-                <StackPanel Grid.Row="4"
-                            Margin="0,15,0,0">
-                    <TextBlock Foreground="{DynamicResource SecondaryTextBrush}"
-                               Text="图片宽度必须能被 8 整除，高度必须能被所选行数整除；最大 4096 × 4096、20 MB。"
-                               TextWrapping="Wrap" />
-                    <TextBlock x:Name="StatusText"
-                               Margin="0,8,0,0"
-                               Foreground="#D43B3B"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-                </Grid>
-            </ScrollViewer>
-        </Border>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
         <StackPanel Grid.Row="2"
                     HorizontalAlignment="Right"
@@ -133,13 +201,14 @@
                     Height="34"
                     IsCancel="True"
                     Content="取消" />
-            <Button x:Name="CreateButton"
-                    MinWidth="96"
+            <Button x:Name="PrimaryButton"
+                    MinWidth="118"
                     Height="34"
                     Margin="10,0,0,0"
-                    Click="CreateButton_Click"
+                    Click="PrimaryButton_Click"
                     IsDefault="True"
-                    Content="创建并选择" />
+                    IsEnabled="False"
+                    Content="正在检测…" />
         </StackPanel>
     </Grid>
 </Window>

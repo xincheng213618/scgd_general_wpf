@@ -169,3 +169,67 @@ The final full-view comparison is high enough resolution to read the list typogr
 - P3: capture the same page under ColorVision's dark theme for a closer palette-only comparison.
 
 final result: passed
+
+---
+
+# Desktop pet Codex creation-flow design QA
+
+## Comparison target
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-d9a3d5f5-e950-482e-bcca-c82b1f87d72d.png`
+- Rendered Codex-creation state: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\create.png`
+- Rendered import-fallback state: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\create-import.png`
+- Side-by-side product-direction evidence: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\design-qa-create-comparison.png`
+- Generated-package result state: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\settings-codex-created.png`
+- State: Codex Desktop detected, Hatch Pet available for first-run installation, Codex creation selected by default, and manual sprite import available as the second tab.
+
+## Viewport and normalization
+
+- Source pixels: 1938 x 1572.
+- Source normalized for the creation comparison: 801 x 650.
+- Creation and import implementation pixels and WPF logical viewport: 660 x 650 at 96 DPI.
+- Combined evidence: 1485 x 650, using a proportional source downsample and a 24-pixel separator. The implementation was not rescaled.
+- The supplied source shows the Codex pet-selection settings page rather than its create-task dialog. The comparison therefore checks product hierarchy, density, copy direction, and real Codex asset/workflow use; it does not claim pixel-identical state fidelity.
+
+## Findings
+
+- No actionable P0, P1, or P2 difference remains.
+- Fonts and typography: the window uses ColorVision's existing WPF font family and hierarchy. The 24-DIP title, 18-DIP section title, semibold field labels, explanatory text, status copy, and primary action remain readable without truncation or unintended wrapping.
+- Spacing and layout rhythm: the two tabs keep one clear task per state. The creation tab groups readiness, optional concept, handoff explanation, and primary action in reading order; the import tab preserves the existing name, description, file, version, constraint, and action flow. Both 660 x 650 captures have consistent margins and no clipped persistent controls.
+- Colors and visual tokens: the implementation deliberately uses the active ColorVision light-theme resources, with blue reserved for selection and the primary tab state. Status and bordered information groups remain subordinate to the main action.
+- Image quality and asset fidelity: the creation dialog introduces no fake pet art, emoji, handcrafted SVG, or placeholder. The resulting settings capture uses the actual decoded Codex sprite sheet and shows the new package alongside the nine real installed Codex pets and the packaged ColorVision default.
+- Copy and content: the UI states honestly that ColorVision opens a prefilled Codex task and the user confirms sending it there. It does not imply that ColorVision's text Copilot can generate image assets internally. The fallback tab explicitly supports PNG/WebP and the v1/v2 grid constraints.
+- Icons and surfaces: no new icon approximation is used. Standard WPF tabs, text boxes, combo box, and buttons match existing ColorVision controls; the restrained bordered status and explanation groups clarify readiness and handoff without creating a competing card stack.
+- States and interactions: the primary button is disabled during availability detection, Codex creation is the default, tab switching updates the primary action, and manual import remains reachable. A real WPF harness also exercised package discovery and automatic selection after a completed `pet.json` appeared.
+- Accessibility and viewport resilience: the flow uses native keyboard-focusable WPF controls, visible labels, conventional tab order, wrapped explanatory copy, and a scrollable content region. The minimum window is 580 x 560; the captured default size has no overlap.
+
+## Full-view comparison evidence
+
+The combined image shows that the new dialog keeps the reference's clear pet-management hierarchy and compact desktop density while extending it with an explicit creation handoff. The visual language intentionally remains ColorVision-native instead of copying Codex's dark application shell. No source pet imagery was replaced or approximated.
+
+## Focused region comparison evidence
+
+The native 660 x 650 captures are readable focused views of both core states. `create.png` verifies readiness, concept entry, explanatory handoff, and the Codex primary action. `create-import.png` verifies every import field, the PNG/WebP and grid-size constraint copy, and the changed `导入并选择` primary action. A separate result-state capture verifies that a newly completed Codex package is labeled `Codex 自定义`, selected, and announced.
+
+## Comparison history
+
+1. First post-implementation comparison: no actionable P0/P1/P2 finding was visible, so no visual fix was required.
+2. Interaction verification: the harness switched to the import tab, created a complete Codex-compatible package under an isolated `CODEX_HOME`, waited for the real four-second watcher, and confirmed automatic selection as `codex-custom:pets:qa-generated`.
+3. Post-verification evidence: `create.png`, `create-import.png`, and `settings-codex-created.png` were recaptured from the final build; the harness completed with `result.txt = ok`.
+
+## Implementation checklist
+
+- [x] Make Codex generation the default creation path.
+- [x] Explain the prefilled-task handoff accurately.
+- [x] Keep a complete manual import fallback.
+- [x] Detect and preserve an existing user Hatch Pet installation.
+- [x] Discover a completed package and select it automatically.
+- [x] Use actual Codex and packaged ColorVision assets.
+- [x] Verify both tab states and the result state in rendered WPF.
+
+## Follow-up polish
+
+- P3: capture the creation dialog under ColorVision's dark theme and at 150% display scaling if those variants become release-gating visual targets.
+- P3: if Codex exposes a stable completion callback in a future installed version, replace the bounded directory watcher with that callback while keeping the same visible flow.
+
+final result: passed
