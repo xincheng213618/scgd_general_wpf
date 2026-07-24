@@ -1,4 +1,3 @@
-using System.Drawing;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -30,10 +29,6 @@ public class BaseCameraNode : CVBaseServerNode
 	protected string _POIReviseTempName;
 
 	private STNodeEditText<float> m_ctrl_exp;
-
-	private STNodeEditText<string> m_ctrl_caliTemp;
-
-	private STNodeEditText<string> m_ctrl_poitemplate;
 
 	[STNodeProperty("平均次数", "平均次数", true)]
 	public int AvgCount
@@ -89,7 +84,6 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_CaliTempName = value;
-			m_ctrl_caliTemp.Value = value;
 			OnPropertyChanged();
 		}
 	}
@@ -119,7 +113,6 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_POITempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -135,7 +128,6 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_POIFilterTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -151,7 +143,6 @@ public class BaseCameraNode : CVBaseServerNode
 		set
 		{
 			_POIReviseTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -171,32 +162,18 @@ public class BaseCameraNode : CVBaseServerNode
 		_Aperture = 0f;
 		_EnableFocus = false;
 		_Focus = 0;
-		base.Height += 50;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
 		m_ctrl_exp = CreateControl(typeof(STNodeEditText<float>), m_custom_item, "曝光:", _ExpTime);
-		Rectangle custom_item = m_custom_item;
-		custom_item.Y += 25;
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正模板:", _CaliTempName);
-		custom_item.Y += 25;
-		m_ctrl_poitemplate = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", GetPOITempDisplay());
 	}
 
-	private string GetPOITempDisplay()
+	public override void ApplyCompactNodeDisplay()
 	{
-		if (string.IsNullOrEmpty(_POITempName))
-		{
-			return string.Empty;
-		}
-		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
-	}
-
-	private void setPOITemp()
-	{
-		m_ctrl_poitemplate.Value = GetPOITempDisplay();
+		ShowControls = true;
+		SetAutoSize(true);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

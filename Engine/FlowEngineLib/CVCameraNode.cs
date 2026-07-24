@@ -1,7 +1,5 @@
-using System.Drawing;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.Camera;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
@@ -41,17 +39,7 @@ public class CVCameraNode : CVBaseServerNode
 
 	protected string _POIReviseTempName;
 
-	private STNodeEditText<float>[] m_ctrl_expTime;
-
-	private STNodeEditText<string> m_ctrl_caliTemp;
-
-	private STNodeEditText<string> m_ctrl_poitemplate;
-
-	private STNodeEditText<CV2LVChannelMode> m_ctrl_CV2LVChannel;
-
-	private Channel _Channel;
-
-	private string[] szTypeCode = new string[3] { "R", "G", "B" };
+	private STNodeEditText<string> m_ctrl_expTime;
 
 	[STNodeProperty("平均次数", "平均次数", true)]
 	public int AvgCount
@@ -91,7 +79,7 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_TempR = value;
-			m_ctrl_expTime[0].Value = value;
+			setExposureDisplay();
 			OnPropertyChanged();
 		}
 	}
@@ -106,7 +94,7 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_TempG = value;
-			m_ctrl_expTime[1].Value = value;
+			setExposureDisplay();
 			OnPropertyChanged();
 		}
 	}
@@ -121,7 +109,7 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_TempB = value;
-			m_ctrl_expTime[2].Value = value;
+			setExposureDisplay();
 			OnPropertyChanged();
 		}
 	}
@@ -136,7 +124,6 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_CV2LVChannel = value;
-			m_ctrl_CV2LVChannel.Value = value;
 			OnPropertyChanged();
 		}
 	}
@@ -151,7 +138,6 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_CalibTempName = value;
-			m_ctrl_caliTemp.Value = value;
 			OnPropertyChanged();
 		}
 	}
@@ -180,7 +166,6 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_POITempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -195,7 +180,6 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_POIFilterTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -210,7 +194,6 @@ public class CVCameraNode : CVBaseServerNode
 		set
 		{
 			_POIReviseTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -234,33 +217,28 @@ public class CVCameraNode : CVBaseServerNode
 		_Aperture = 0f;
 		_EnableFocus = false;
 		_Focus = 0;
-		base.Height += 125;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		float[] array = new float[3] { _TempR, _TempG, _TempB };
-		_Channel = new Channel();
-		for (int i = 0; i < szTypeCode.Length; i++)
-		{
-			_Channel.Add(szTypeCode[i], i, array[i]);
-		}
 		initCtrl();
 	}
 
-	private string GetPOITempDisplay()
+	public override void ApplyCompactNodeDisplay()
 	{
-		if (string.IsNullOrEmpty(_POITempName))
-		{
-			return string.Empty;
-		}
-		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
+		ShowControls = true;
+		SetAutoSize(true);
 	}
 
-	private void setPOITemp()
+	private string GetExposureDisplay()
 	{
-		m_ctrl_poitemplate.Value = GetPOITempDisplay();
+		return $"{_TempR}/{_TempG}/{_TempB}";
+	}
+
+	private void setExposureDisplay()
+	{
+		m_ctrl_expTime.Value = GetExposureDisplay();
 	}
 
 	protected override int GetMaxDelay()
@@ -270,30 +248,12 @@ public class CVCameraNode : CVBaseServerNode
 
 	private void initCtrl()
 	{
-		int channelCount = _Channel.GetChannelCount();
-		m_ctrl_expTime = new STNodeEditText<float>[channelCount];
-		Rectangle custom_item = m_custom_item;
-		for (int i = 0; i < channelCount; i++)
-		{
-			ChannelData channel = _Channel.GetChannel(i);
-			m_ctrl_expTime[i] = CreateControl(typeof(STNodeEditText<float>), custom_item, szTypeCode[i] + "曝光:", channel.Temp);
-			custom_item.Y += 25;
-		}
-		m_ctrl_CV2LVChannel = CreateControl(typeof(STNodeEditText<CV2LVChannelMode>), custom_item, "CV2LVChannel:", _CV2LVChannel);
-		custom_item.Y += 25;
-		m_ctrl_caliTemp = CreateStringControl(custom_item, "校正模板:", _CalibTempName);
-		custom_item.Y += 25;
-		m_ctrl_poitemplate = CreateStringControl(custom_item, "POI:", GetPOITempDisplay());
+		m_ctrl_expTime = CreateStringControl(m_custom_item, "", GetExposureDisplay());
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		float[] expTime = new float[3]
-		{
-			m_ctrl_expTime[0].Value,
-			m_ctrl_expTime[1].Value,
-			m_ctrl_expTime[2].Value
-		};
+		float[] expTime = new float[3] { _TempR, _TempG, _TempB };
 		return new CVCameraData(_FlipMode, _CV2LVChannel, _EnableFocus, _Focus, _Aperture, _AvgCount, _Gain, expTime, _CalibTempName, _POITempName, _POIFilterTempName, _POIReviseTempName);
 	}
 }

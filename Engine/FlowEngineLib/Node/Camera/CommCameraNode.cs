@@ -1,4 +1,3 @@
-using System.Drawing;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
@@ -36,14 +35,6 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected string _POIReviseTempName;
 
-	private STNodeEditText<string> m_ctrl_caliTemp;
-
-	private STNodeEditText<string> m_ctrl_camTemp;
-
-	private STNodeEditText<string> m_ctrl_poiTemp;
-
-	private STNodeEditText<string> m_ctrl_expAutoTemp;
-
 	[STNodeProperty("HDR", "HDR", true)]
 	public bool IsHDR
 	{
@@ -55,7 +46,6 @@ public class CommCameraNode : CVBaseServerNode
 		{
 			_IsHDR = value;
 			CamTempName = string.Empty;
-			setTempValue();
 			OnPropertyChanged();
 		}
 	}
@@ -70,7 +60,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_CamTempName = value;
-			setTempValue();
 			OnPropertyChanged();
 		}
 	}
@@ -99,7 +88,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_IsAutoExp = value;
-			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
 			OnPropertyChanged();
 		}
 	}
@@ -113,7 +101,7 @@ public class CommCameraNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
+			setTempName(value);
 			OnPropertyChanged();
 		}
 	}
@@ -128,7 +116,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_IsWithND = value;
-			m_ctrl_expAutoTemp.Value = GetAutoExpDis();
 			OnPropertyChanged();
 		}
 	}
@@ -143,7 +130,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_CalibTempName = value;
-			m_ctrl_caliTemp.Value = value;
 			OnPropertyChanged();
 		}
 	}
@@ -158,7 +144,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_POITempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -173,7 +158,6 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_POIFilterTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
 	}
@@ -188,14 +172,8 @@ public class CommCameraNode : CVBaseServerNode
 		set
 		{
 			_POIReviseTempName = value;
-			setPOITemp();
 			OnPropertyChanged();
 		}
-	}
-
-	private void setTempValue()
-	{
-		m_ctrl_camTemp.Value = GetCameraTempDis();
 	}
 
 	public CommCameraNode()
@@ -211,7 +189,6 @@ public class CommCameraNode : CVBaseServerNode
 		_FlipMode = CVImageFlipMode.None;
 		_IsAutoFocus = false;
 		_FocusTempName = string.Empty;
-		base.Height += 75;
 	}
 
 	protected override void OnCreate()
@@ -220,40 +197,15 @@ public class CommCameraNode : CVBaseServerNode
 		initCtrl();
 	}
 
-	private string GetCameraTempDis()
+	public override void ApplyCompactNodeDisplay()
 	{
-		return string.Format("{0}:{1}", _IsHDR ? "HDR" : "Nor", _CamTempName);
+		ShowControls = true;
+		SetAutoSize(true);
 	}
 
 	private void initCtrl()
 	{
-		Rectangle custom_item = m_custom_item;
-		m_ctrl_expAutoTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动曝光/ND:", GetAutoExpDis());
-		custom_item.Y += 25;
-		m_ctrl_camTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "相机:", GetCameraTempDis());
-		custom_item.Y += 25;
-		m_ctrl_caliTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "校正:", _CalibTempName);
-		custom_item.Y += 25;
-		m_ctrl_poiTemp = CreateControl(typeof(STNodeEditText<string>), custom_item, "POI:", _POITempName);
-	}
-
-	private string GetAutoExpDis()
-	{
-		return string.Format("{0}/{1}", _IsAutoExp ? "T" : "F", _IsWithND ? "T" : "F");
-	}
-
-	private string GetPOITempDisplay()
-	{
-		if (string.IsNullOrEmpty(_POITempName))
-		{
-			return string.Empty;
-		}
-		return $"{_POITempName}/{_POIFilterTempName}/{_POIReviseTempName}";
-	}
-
-	private void setPOITemp()
-	{
-		m_ctrl_poiTemp.Value = GetPOITempDisplay();
+		CreateTempControl(m_custom_item, "");
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
