@@ -15,6 +15,7 @@ using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -328,6 +329,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
                 }
+                ResetNodeTitleProgress();
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
@@ -452,6 +454,7 @@ namespace ColorVision.Engine.Templates.Flow
                 ? (_runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values))
                 : FlowControlData.ErrorNodeName;
             _runningNodeNames.Clear();
+            ResetNodeTitleProgress();
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             FlowEngineManager.BatchProgress = 100;
@@ -550,6 +553,7 @@ namespace ColorVision.Engine.Templates.Flow
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     Interlocked.Exchange(ref _pendingUiUpdate, 0);
+                    UpdateRunningNodeTitleProgress();
                     if (LastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
@@ -565,11 +569,59 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly ConcurrentDictionary<string, FlowNodeRecord> _nodeRecords = new ConcurrentDictionary<string, FlowNodeRecord>();
         private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
         private readonly ConcurrentDictionary<string, FlowNodeMessage> _nodeMessages = new ConcurrentDictionary<string, FlowNodeMessage>();
+        private readonly ConcurrentDictionary<string, long> _nodeExpectedDurations = new ConcurrentDictionary<string, long>();
+        private readonly ConcurrentDictionary<string, long> _nodeStartedAt = new ConcurrentDictionary<string, long>();
+        private readonly ConcurrentDictionary<string, CVCommonNode> _runningNodes = new ConcurrentDictionary<string, CVCommonNode>();
+
+        private async Task LoadNodeExpectedDurationsAsync()
+        {
+            string[] nodeIds = View.STNodeEditorMain.Nodes
+                .OfType<CVBaseServerNode>()
+                .Select(node => node.NodeID)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            Dictionary<string, long> durations = await Task.Run(
+                () => FlowNodeRecordDataBaseHelper.GetLastElapsedByNodeIds(nodeIds));
+
+            _nodeExpectedDurations.Clear();
+            foreach (KeyValuePair<string, long> item in durations)
+                _nodeExpectedDurations[item.Key] = item.Value;
+        }
+
+        private void UpdateRunningNodeTitleProgress()
+        {
+            long now = Environment.TickCount64;
+            foreach (KeyValuePair<string, CVCommonNode> item in _runningNodes)
+            {
+                if (!_nodeExpectedDurations.TryGetValue(item.Key, out long expectedDuration) || expectedDuration <= 0)
+                    continue;
+                if (!_nodeStartedAt.TryGetValue(item.Key, out long startedAt))
+                    continue;
+
+                long elapsed = Math.Max(0, now - startedAt);
+                item.Value.TitleProgress = (float)Math.Min(0.99d, (double)elapsed / expectedDuration);
+            }
+        }
+
+        private void ResetNodeTitleProgress()
+        {
+            foreach (CVCommonNode node in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                node.TitleProgress = -1f;
+
+            _runningNodes.Clear();
+            _nodeStartedAt.Clear();
+        }
 
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
             {
+                algorithmNode.TitleProgress = -1f;
+                _runningNodes.TryRemove(algorithmNode.NodeID, out _);
+                long elapsedFromClock = 0;
+                if (_nodeStartedAt.TryRemove(algorithmNode.NodeID, out long startedAt))
+                    elapsedFromClock = Math.Max(0, Environment.TickCount64 - startedAt);
+
                 if (e != null)
                 {
                     algorithmNode.IsSelected = false;
@@ -591,7 +643,13 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     record.EndTime = DateTime.Now;
                     record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
+                    if (record.ElapsedMs > 0)
+                        _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
                     Task.Run(() => FlowNodeRecordDataBaseHelper.Update(record));
+                }
+                else if (elapsedFromClock > 0)
+                {
+                    _nodeExpectedDurations[algorithmNode.NodeID] = elapsedFromClock;
                 }
 
                 // Update the existing message with received MQTT response
@@ -625,6 +683,11 @@ namespace ColorVision.Engine.Templates.Flow
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
                 _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
+                _runningNodes[algorithmNode.NodeID] = algorithmNode;
+                _nodeStartedAt[algorithmNode.NodeID] = Environment.TickCount64;
+                algorithmNode.TitleProgressColor = System.Drawing.Color.DeepSkyBlue;
+                algorithmNode.TitleProgress = _nodeExpectedDurations.TryGetValue(algorithmNode.NodeID, out long expectedDuration)
+                    && expectedDuration > 0 ? 0f : -1f;
                 UpdateMsg(sender);
 
                 int batchId = FlowEngineManager.Batch?.Id ?? 0;
@@ -709,6 +772,8 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
 
+            ResetNodeTitleProgress();
+            await LoadNodeExpectedDurationsAsync();
 
             foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
             {
@@ -783,6 +848,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowControl?.Stop();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
+            ResetNodeTitleProgress();
 
             FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
@@ -804,6 +870,7 @@ namespace ColorVision.Engine.Templates.Flow
             _refreshCts?.Dispose();
             ServiceConfig.Instance.PropertyChanged -= ServiceConfig_PropertyChanged;
             this.DisposeTimedButtonOperations();
+            ResetNodeTitleProgress();
             timer.Dispose();
             GC.SuppressFinalize(this);
         }

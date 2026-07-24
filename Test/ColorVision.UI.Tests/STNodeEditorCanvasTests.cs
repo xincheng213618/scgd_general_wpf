@@ -168,6 +168,40 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void NodeTitleProgress_FillsOnlyTheRequestedWidth()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new TestNodeEditor
+                {
+                    ShowNodeShadow = false
+                };
+                var node = new TrackingNode
+                {
+                    Title = string.Empty,
+                    TitleColor = System.Drawing.Color.Blue,
+                    TitleProgressColor = System.Drawing.Color.Red,
+                    TitleProgress = 0.5f
+                };
+                node.Create();
+                node.Left = 20;
+                node.Top = 20;
+                editor.Nodes.Add(node);
+
+                using var bitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+                int sampleY = node.Top + node.TitleHeight / 2;
+
+                Assert.Equal(System.Drawing.Color.Red.ToArgb(), bitmap.GetPixel(node.Left + node.Width / 4, sampleY).ToArgb());
+                Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(node.Left + node.Width * 3 / 4, sampleY).ToArgb());
+
+                node.TitleProgress = 2f;
+                Assert.Equal(1f, node.TitleProgress);
+                node.TitleProgress = -0.5f;
+                Assert.Equal(-1f, node.TitleProgress);
+            });
+        }
+
+        [Fact]
         public void ShadowlessNodes_DrawNoNormalOuterGlowButKeepSelectionOutline()
         {
             RunInSta(() =>

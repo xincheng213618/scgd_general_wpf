@@ -23,6 +23,10 @@ public abstract class STNode : INotifyPropertyChanged
 
 	private Color _TitleColor;
 
+	private Color _TitleProgressColor;
+
+	private float _TitleProgress = -1f;
+
 	private Color _MarkColor;
 
 	private Color _ForeColor = Color.White;
@@ -163,6 +167,39 @@ public abstract class STNode : INotifyPropertyChanged
 	    set
 		{
 			_TitleColor = value;
+			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
+		}
+	}
+
+	[Browsable(false)]
+	public Color TitleProgressColor
+	{
+		get
+		{
+			return _TitleProgressColor;
+		}
+		set
+		{
+			_TitleProgressColor = value;
+			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
+		}
+	}
+
+	[Browsable(false)]
+	public float TitleProgress
+	{
+		get
+		{
+			return _TitleProgress;
+		}
+		set
+		{
+			float progress = float.IsNaN(value) || value < 0f ? -1f : (value > 1f ? 1f : value);
+			if (Math.Abs(_TitleProgress - progress) < 0.0001f)
+			{
+				return;
+			}
+			_TitleProgress = progress;
 			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
 		}
 	}
@@ -620,6 +657,7 @@ public abstract class STNode : INotifyPropertyChanged
 		_Controls = new STNodeControlCollection(this);
 		_BackColor = Color.FromArgb(200, 64, 64, 64);
 		_TitleColor = Color.FromArgb(200, Color.DodgerBlue);
+		_TitleProgressColor = Color.FromArgb(230, Color.DeepSkyBlue);
 		_MarkColor = Color.FromArgb(200, Color.Brown);
 		_Font = new Font("courier new", 8.25f);
 		m_sf = new StringFormat();
@@ -794,6 +832,29 @@ public abstract class STNode : INotifyPropertyChanged
 			else
 			{
 				graphics.FillRectangle(solidBrush, TitleRectangle);
+			}
+		}
+		if (_TitleProgress > 0f && _TitleProgressColor.A != 0)
+		{
+			Rectangle progressRectangle = TitleRectangle;
+			progressRectangle.Width = (int)Math.Round(progressRectangle.Width * _TitleProgress);
+			if (progressRectangle.Width > 0)
+			{
+				solidBrush.Color = _TitleProgressColor;
+				int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
+				if (cornerRadius > 0)
+				{
+					graphics.SmoothingMode = SmoothingMode.AntiAlias;
+					using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+					GraphicsState graphicsState = graphics.Save();
+					graphics.SetClip(nodePath, CombineMode.Intersect);
+					graphics.FillRectangle(solidBrush, progressRectangle);
+					graphics.Restore(graphicsState);
+				}
+				else
+				{
+					graphics.FillRectangle(solidBrush, progressRectangle);
+				}
 			}
 		}
 		if (_LockOption)

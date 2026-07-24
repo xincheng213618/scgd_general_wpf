@@ -4,6 +4,7 @@ using SqlSugar;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ColorVision.Database;
@@ -175,6 +176,37 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Error("查询FlowNodeRecord失败", ex);
                 return new List<FlowNodeRecord>();
             }
+        }
+
+        public static Dictionary<string, long> GetLastElapsedByNodeIds(IEnumerable<string> nodeIds)
+        {
+            EnsureInitialized();
+            var result = new Dictionary<string, long>(StringComparer.Ordinal);
+            try
+            {
+                string[] ids = nodeIds?
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray() ?? Array.Empty<string>();
+                if (ids.Length == 0)
+                    return result;
+
+                using var db = CreateReadDb();
+                foreach (string nodeId in ids)
+                {
+                    FlowNodeRecord record = db.Queryable<FlowNodeRecord>()
+                        .Where(item => item.NodeId == nodeId && item.EndTime != null && item.ElapsedMs > 0)
+                        .OrderByDescending(item => item.EndTime)
+                        .First();
+                    if (record != null)
+                        result[nodeId] = record.ElapsedMs;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询节点上次执行耗时失败", ex);
+            }
+            return result;
         }
 
         public static List<int> GetDistinctBatchIds(int limit = 100)
