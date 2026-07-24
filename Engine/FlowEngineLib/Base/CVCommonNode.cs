@@ -80,6 +80,7 @@ public class CVCommonNode : STNode
         }
     }
 
+	[STNodeProperty("z-index", "z-index", true, false, false)]
 	public int ZIndex
 	{
 		get

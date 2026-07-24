@@ -32,6 +32,7 @@ public class MQTTHelper
         Port = port;
         UserName = userName;
         Password = password;
+        MQTTClientPool.SetActiveEndpoint(Server, Port, UserName);
     }
 
     public static void GetDefaultCfg(ref string server, ref int port, ref string userName, ref string password)
@@ -200,8 +201,8 @@ public class MQTTHelper
                 _MqttClient.DisconnectedAsync -= DisconnectedHandle;
                 _MqttClient.ApplicationMessageReceivedAsync -= ApplicationMessageReceivedHandle;
 
-                // Release to pool – actual disconnect happens after grace period
-                // if no one else re-acquires the connection
+                // Release this helper's callbacks and lease. The active configured
+                // connection stays alive in the pool for the next flow.
                 MQTTClientPool.Release(_MqttClient);
                 _MqttClient = null;
 

@@ -248,12 +248,12 @@ public class CVBaseServerNode : CVCommonNode
 		int maxDelay = GetMaxDelay();
 
         // 使用异步等待，避免线程池阻塞
-        logger.InfoFormat("[{0}] WaitForMessageAsync", ToShortString());
+        logger.DebugFormat("[{0}] WaitForMessageAsync", ToShortString());
         bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
             if (result)
-                logger.InfoFormat("[{0}]Task.Completed successfully", ToShortString());
+                logger.DebugFormat("[{0}]Task.Completed successfully", ToShortString());
             else
                 logger.InfoFormat("[{0}]Task.Timed out after {1}ms", ToShortString(), maxDelay);
 		}
@@ -469,7 +469,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else
 		{
-			logger.WarnFormat("[{0}] not find request => {1}", ToShortString(), JsonConvert.SerializeObject(statusEvent));
+			logger.WarnFormat("[{0}] => {1}", ToShortString(), JsonConvert.SerializeObject(statusEvent));
 		}
 		return false;
 	}
@@ -659,7 +659,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void DoTransCompleted(CVTransAction trans, CVStartCFC action)
 	{
-		logger.InfoFormat("[{0}]DoTransCompleted => {1}", ToShortString(), action.SerialNumber);
+		logger.DebugFormat("[{0}]DoTransCompleted => {1}", ToShortString(), action.SerialNumber);
 		release(action.SerialNumber);
 		m_op_end.TransferData(action);
 	}

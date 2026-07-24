@@ -365,7 +365,7 @@ public abstract class BaseStartNode : CVCommonNode
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", m_nodeName, start.SerialNumber);
+			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}

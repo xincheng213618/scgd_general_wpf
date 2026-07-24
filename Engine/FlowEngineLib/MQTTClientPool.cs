@@ -1,7 +1,6 @@
 #pragma warning disable CA2016
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using log4net;
 using MQTTnet;
@@ -9,31 +8,54 @@ using MQTTnet;
 namespace FlowEngineLib;
 
 /// <summary>
-/// Pools MQTT client connections so that rapid disconnect/reconnect cycles
-/// (e.g. switching flow templates) reuse the existing TCP connection instead
-/// of tearing it down and re-establishing it every time.
-/// 
-/// When the last reference is released, the connection stays alive for a
-/// grace period (default 5 s). If a new Acquire arrives within that window
-/// the same client is handed back; otherwise it is disconnected and disposed.
+/// Shares the configured MQTT connection across flow nodes and keeps it alive
+/// while the application continues using the same endpoint. Releasing the last
+/// flow-node reference only makes the connection idle; changing the configured
+/// endpoint retires the old connection after its final reference is released.
 /// </summary>
 internal static class MQTTClientPool
 {
     private static readonly ILog logger = LogManager.GetLogger(typeof(MQTTClientPool));
     private static readonly object _lock = new object();
     private static readonly Dictionary<string, PoolEntry> _pool = new Dictionary<string, PoolEntry>();
-    private static readonly TimeSpan GracePeriod = TimeSpan.FromSeconds(5);
+    private static string _activeKey;
 
     private class PoolEntry
     {
         public string Key;
         public IMqttClient Client;
         public int RefCount;
-        public CancellationTokenSource GraceCts;
     }
 
     private static string GetKey(string server, int port, string userName)
         => $"{server}:{port}:{userName}";
+
+    public static void SetActiveEndpoint(string server, int port, string userName)
+    {
+        string activeKey = GetKey(server, port, userName);
+        List<PoolEntry> retiredEntries = new List<PoolEntry>();
+        lock (_lock)
+        {
+            _activeKey = activeKey;
+            List<string> retiredKeys = new List<string>();
+            foreach (var item in _pool)
+            {
+                if (!string.Equals(item.Key, activeKey, StringComparison.Ordinal) && item.Value.RefCount <= 0)
+                {
+                    retiredKeys.Add(item.Key);
+                    retiredEntries.Add(item.Value);
+                }
+            }
+            foreach (string retiredKey in retiredKeys)
+            {
+                _pool.Remove(retiredKey);
+            }
+        }
+        foreach (PoolEntry retiredEntry in retiredEntries)
+        {
+            _ = DisconnectAndDisposeAsync(retiredEntry);
+        }
+    }
 
     /// <summary>
     /// Try to acquire an existing, connected client from the pool.
@@ -49,9 +71,6 @@ internal static class MQTTClientPool
                 if (entry.Client != null && entry.Client.IsConnected)
                 {
                     entry.RefCount++;
-                    // Cancel any pending grace-period disposal
-                    entry.GraceCts?.Cancel();
-                    entry.GraceCts = null;
                     logger.DebugFormat("MQTTClientPool: reusing connection [{0}], refCount={1}", key, entry.RefCount);
                     return entry.Client;
                 }
@@ -74,9 +93,9 @@ internal static class MQTTClientPool
         {
             if (_pool.TryGetValue(key, out var old))
             {
-                old.GraceCts?.Cancel();
                 try { old.Client?.Dispose(); } catch { /* best-effort */ }
             }
+            _activeKey ??= key;
             _pool[key] = new PoolEntry { Key = key, Client = client, RefCount = 1 };
             logger.DebugFormat("MQTTClientPool: registered new connection [{0}]", key);
         }
@@ -84,12 +103,14 @@ internal static class MQTTClientPool
 
     /// <summary>
     /// Release one reference to the pooled client.
-    /// When refCount reaches 0 the grace-period countdown starts.
+    /// The active configured connection remains alive at refCount 0 so a later
+    /// flow can reuse it. Connections for retired endpoints are disconnected.
     /// </summary>
     public static void Release(IMqttClient client)
     {
         if (client == null) return;
 
+        PoolEntry retiredEntry = null;
         lock (_lock)
         {
             PoolEntry entry = null;
@@ -104,57 +125,44 @@ internal static class MQTTClientPool
 
             if (entry == null) return;
 
-            entry.RefCount--;
+            if (entry.RefCount > 0)
+            {
+                entry.RefCount--;
+            }
             logger.DebugFormat("MQTTClientPool: released connection [{0}], refCount={1}", entry.Key, entry.RefCount);
 
-            if (entry.RefCount <= 0)
+            if (entry.RefCount <= 0 && !string.Equals(entry.Key, _activeKey, StringComparison.Ordinal))
             {
-                var cts = new CancellationTokenSource();
-                entry.GraceCts = cts;
-                _ = GraceDisconnectAsync(entry, cts.Token);
+                _pool.Remove(entry.Key);
+                retiredEntry = entry;
             }
+        }
+        if (retiredEntry != null)
+        {
+            _ = DisconnectAndDisposeAsync(retiredEntry);
         }
     }
 
-    private static async Task GraceDisconnectAsync(PoolEntry entry, CancellationToken token)
+    private static async Task DisconnectAndDisposeAsync(PoolEntry entry)
     {
-        try
-        {
-            await Task.Delay(GracePeriod, token);
-        }
-        catch (TaskCanceledException)
-        {
-            return; // Re-acquired during grace period – keep alive
-        }
-
-        IMqttClient clientToDispose = null;
-        lock (_lock)
-        {
-            if (entry.RefCount <= 0)
-            {
-                _pool.Remove(entry.Key);
-                clientToDispose = entry.Client;
-                entry.Client = null;
-                logger.DebugFormat("MQTTClientPool: grace period expired, disconnecting [{0}]", entry.Key);
-            }
-        }
-
-        if (clientToDispose != null)
+        if (entry.Client != null)
         {
             try
             {
-                if (clientToDispose.IsConnected)
+                logger.DebugFormat("MQTTClientPool: disconnecting retired connection [{0}]", entry.Key);
+                if (entry.Client.IsConnected)
                 {
-                    await clientToDispose.DisconnectAsync(
+                    await entry.Client.DisconnectAsync(
                         new MqttClientDisconnectOptionsBuilder()
                             .WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection)
                             .Build());
                 }
-                clientToDispose.Dispose();
+                entry.Client.Dispose();
+                entry.Client = null;
             }
             catch (Exception ex)
             {
-                logger.Warn("MQTTClientPool: error during grace disconnect", ex);
+                logger.Warn("MQTTClientPool: error while disconnecting retired connection", ex);
             }
         }
     }

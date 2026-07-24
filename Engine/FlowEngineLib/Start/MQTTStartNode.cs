@@ -82,22 +82,20 @@ public class MQTTStartNode : BaseStartNode
 			string password = "";
 			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
 			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
-			logger.Info("Begin Connect MQTT");
 		}
 	}
 
 	protected override void DoStartDisConnected(STNodeOption sender, STNodeOptionEventArgs e)
 	{
-		MQTTDisConnected();
+		ReleaseMQTTClient();
 	}
 
-	private void MQTTDisConnected()
+	private void ReleaseMQTTClient()
 	{
 		if (_MQTTHelper != null)
 		{
 			_MQTTHelper.DisconnectAsync_Client();
 			_MQTTHelper = null;
-			logger.Info("Begin Disconnect MQTT");
 		}
 	}
 
@@ -217,6 +215,6 @@ public class MQTTStartNode : BaseStartNode
 	public override void Dispose()
 	{
 		base.Dispose();
-		MQTTDisConnected();
+		ReleaseMQTTClient();
 	}
 }
