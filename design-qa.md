@@ -55,6 +55,61 @@ final result: passed
 
 ---
 
+# Desktop pet Copilot approval-card design QA
+
+## Comparison target
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-d9a3d5f5-e950-482e-bcca-c82b1f87d72d.png`
+- Rendered implementation: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\copilot-approval-card.png`
+- Combined comparison evidence: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\design-qa-action-card-comparison.png`
+- State: a real pending `confirmation-required` Copilot action is surfaced above the ColorVision default desktop pet.
+
+## Viewport and normalization
+
+- Source pixels: 1938 x 1572.
+- Implementation pixels: 522 x 915, captured from the monitor around a 300 x 360 DIP transparent WPF window and its separate approval popup at the monitor's device scale.
+- Combined evidence: both artifacts were proportionally normalized to 900 pixels high, producing a 1623 x 900 side-by-side image.
+- The source does not expose Codex's actionable approval overlay, so this is a reference-direction comparison rather than a pixel-identical state comparison. It evaluates pet visual language, compact hierarchy, and attention affordance without claiming exact overlay fidelity.
+
+## Findings
+
+- No actionable P0, P1, or P2 issue remains.
+- Fonts and typography: the card uses the application's desktop UI font, a semibold 12.5-DIP action title, compact 11.5-DIP description, and a monospace tool identifier. The captured title, two-line description, tool, deadline, and button labels are readable without clipping.
+- Spacing and layout rhythm: the 278-DIP popup keeps a compact five-row hierarchy, 13-DIP card padding, a clear 10-DIP action gap, and a centered pointer aligned to the pet. It extends outside the transparent pet window instead of enlarging the pet's desktop hit area.
+- Colors and visual tokens: amber identifies a confirmation-required state, blue remains the sole primary action, and neutral secondary buttons preserve the approve/reject hierarchy. The light card intentionally follows ColorVision's existing notification bubble rather than copying the reference's dark settings surface.
+- Image quality and asset fidelity: the visible pet is the real packaged `xiaocai.png` default asset with nearest-neighbor presentation and no placeholder, emoji, or synthesized icon.
+- Copy and content: the card exposes the requested action, description, tool name, risk state, localized relative deadline, exact expiry time, and `查看 / 拒绝 / 批准` actions. The first capture mixed Chinese copy with `5m left · expires`; this was corrected to `5 分钟后到期 · HH:mm:ss`.
+- Affordances and interaction states: approval keeps the existing warning confirmation dialog before any state change. Rejection is a deliberate direct action. Pending actions are refreshed every 15 seconds so an expired request cannot remain indefinitely actionable.
+
+## Full-view comparison evidence
+
+The combined image shows that ColorVision retains the Codex direction of a recognizable pixel pet that surfaces work needing attention, while adapting the interaction to a compact desktop overlay. The card does not obscure its own controls, the pet remains visually connected through the pointer, and the waiting badge remains visible.
+
+## Focused region comparison evidence
+
+The implementation screenshot is already a focused capture of the complete card and pet at native monitor density. Its text, border, state badge, pointer, and all three actions are legible, so an additional crop would not reveal more actionable detail.
+
+## Comparison history
+
+1. Initial rendered card: P2 copy inconsistency from mixed Chinese and English deadline text.
+2. Fix: render a localized relative deadline and exact local time, while adding a periodic pending-action refresh.
+3. Post-fix evidence: `copilot-approval-card.png` and the combined comparison show the corrected copy and unchanged compact layout. No P0/P1/P2 finding remains.
+
+## Runtime interaction verification
+
+- The WPF harness created a real action through `CopilotMcpConfirmationStore`; the initialized desktop-pet bridge surfaced it automatically.
+- The rendered `拒绝` button's WPF click event was raised through the real control. The action transitioned from `Pending` to `Rejected`, and the harness completed with `result.txt = ok`.
+- Shared approval-decision tests separately verify the three safety paths: client-confirmed approval without execution, immediate in-app execution after approval, and Agent Framework approval that resumes the same session without direct execution.
+
+## Follow-up polish
+
+- P3: add a dark-theme card variant if the product later standardizes theme-aware notification bubbles.
+- P3: capture a source Codex approval overlay if that state becomes directly available; the supplied reference only shows pet selection.
+
+final result: passed
+
+---
+
 # Desktop pet settings design QA
 
 ## Comparison target

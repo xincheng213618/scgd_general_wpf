@@ -148,11 +148,11 @@ namespace ColorVision.FloatingBall
             ConfirmationToolText.Text = string.IsNullOrWhiteSpace(action.ToolName)
                 ? "工具 · 未知"
                 : $"工具 · {action.ToolName}";
-            ConfirmationExpiryText.Text = $"到期 · {action.ReviewDeadlineLabel}";
+            ConfirmationExpiryText.Text = BuildConfirmationExpiryText(action);
             ConfirmationCountText.Text = totalPending > 1
                 ? $"需确认 · {totalPending}"
                 : "需确认";
-            SetConfirmationBusy(false);
+            SetConfirmationBusy(_confirmationOperationCts != null, _confirmationOperationCts != null ? "正在处理…" : "");
             CopilotApprovalPopup.IsOpen = true;
         }
 
@@ -591,6 +591,19 @@ namespace ColorVision.FloatingBall
             return result.ExecutedImmediately
                 ? $"已批准并执行“{action.Title}”。"
                 : $"已批准“{action.Title}”，等待请求方继续。";
+        }
+
+        private static string BuildConfirmationExpiryText(ConfirmableAction action)
+        {
+            var remaining = action.ExpiresAt - DateTimeOffset.UtcNow;
+            var remainingText = remaining <= TimeSpan.Zero
+                ? "已到期"
+                : remaining.TotalSeconds < 60
+                    ? $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalSeconds))} 秒后到期"
+                    : remaining.TotalMinutes < 60
+                        ? $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes))} 分钟后到期"
+                        : $"{Math.Max(1, (int)Math.Ceiling(remaining.TotalHours))} 小时后到期";
+            return $"{remainingText} · {action.ExpiresAt.ToLocalTime():HH:mm:ss}";
         }
 
         private void ResetIdleTipTimer()

@@ -4,12 +4,14 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.FloatingBall
 {
     internal sealed class DesktopPetCopilotBridge
     {
         private readonly DesktopPetService _desktopPetService;
+        private DispatcherTimer? _pendingActionRefreshTimer;
         private bool _isInitialized;
         private int _lastPendingActionCount;
 
@@ -26,6 +28,16 @@ namespace ColorVision.FloatingBall
             _isInitialized = true;
             CopilotAgentTaskHost.Shared.Changed += TaskHost_Changed;
             CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                _pendingActionRefreshTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
+                {
+                    Interval = TimeSpan.FromSeconds(15),
+                };
+                _pendingActionRefreshTimer.Tick += (_, _) => RefreshState();
+                _pendingActionRefreshTimer.Start();
+            }
             RefreshState();
         }
 
