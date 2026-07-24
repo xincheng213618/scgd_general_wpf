@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Templates.Flow
             var snapshot = CaptureCopilotFlowSnapshot();
             var contextItem = CopilotBusinessContextBuilder.BuildFlowContextItem(snapshot);
             var bundle = CopilotBusinessContextBundle.FromItem(snapshot.SourceId, contextItem);
-            var prompt = CopilotBusinessContextCoordinator.BuildFlowDiagnosisPrompt(snapshot, Properties.Resources.Flow_AiAnalyzeCurrentFlowPrompt);
+            var prompt = CopilotBusinessContextCoordinator.BuildFlowDiagnosisPrompt(snapshot);
             var result = CopilotBusinessContextCoordinator.DispatchDiagnosis(bundle, prompt);
 
             if (!result.WasSent)

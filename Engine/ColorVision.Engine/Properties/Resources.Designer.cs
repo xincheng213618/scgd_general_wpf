@@ -421,7 +421,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 App密钥 的本地化字符串。
+        ///   查找类似 App Secret 的本地化字符串。
         /// </summary>
         public static string AppSecretTooltip {
             get {
@@ -547,7 +547,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 自动识别图像中的发光按键区域并创建POI 的本地化字符串。
+        ///   查找类似 Auto-detect glowing key areas in image and create POI 的本地化字符串。
         /// </summary>
         public static string AutoDetectKeyRegionsToolTip {
             get {
@@ -1237,265 +1237,6 @@ namespace ColorVision.Engine.Properties {
         public static string CalibrationViewSettings {
             get {
                 return ResourceManager.GetString("CalibrationViewSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 色差校正（AngleShift）：ColorDiff 的变种，用于角度相关的色差校正 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipAngleShift {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipAngleShift", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 角度校正 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipAngleShiftShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipAngleShiftShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 色差校正（ColorDiff）：校正不同色彩通道间的色差偏移 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipColorDiff {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipColorDiff", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 消除不同色彩通道间的色差偏移 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipColorDiffShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipColorDiffShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 色偏校正（ColorShift）：通道间空间偏移补偿
-        ///算法：通过 OpenCV 仿射变换进行亚像素级通道平移
-        ///配置文件：JSON 格式（含 fillOffset 和 offset/offsets 参数） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipColorShift {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipColorShift", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 补偿多通道光学系统中不同色彩通道的空间偏移 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipColorShiftShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipColorShiftShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 暗电流校正（DarkNoise）：消除传感器在无光照条件下产生的暗电流噪声
-        ///算法：pixel_out = pixel_in × DarkNoiseRatio
-        ///配置文件：JSON 格式（含 bpp 和 DarkNoiseRatio） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDarkNoise {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDarkNoise", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 消除传感器固有暗电流信号，通过预标定比率逐像素补偿 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDarkNoiseShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDarkNoiseShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 坏点校正（DefectPoint）：检测并修复缺陷像素
-        ///算法：对预标定坏点坐标使用 7×7 邻域中值滤波替代
-        ///配置文件：二进制格式（4字节坏点数量 + 坐标列表） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDefectPoint {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDefectPoint", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 检测并插值修复缺陷像素，7×7 邻域中值滤波 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDefectPointShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDefectPointShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 畸变校正（Distortion）：镜头径向/切向畸变矫正
-        ///算法：支持标准针孔模型(k1,k2,p1,p2,k3)和鱼眼模型
-        ///配置文件：JSON 格式（含相机内参矩阵 fx,fy,cx,cy 和畸变系数） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDistortion {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDistortion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 使用 OpenCV 相机标定模型矫正镜头畸变，支持标准针孔与鱼眼模型 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDistortionShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDistortionShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿
-        ///算法：pixel_out = max(pixel_in - DSNU_ref, 0)
-        ///配置文件：二进制格式（V0/V1 头 + ushort 暗帧基准数据） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDSNU {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDSNU", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 暗信号非均匀性补偿，通过预采集暗帧逐像素减法消除像素级暗电流差异 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipDSNUShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipDSNUShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 四色校正（LumFourColor）：3×3 矩阵（9 系数 a-i）
-        ///算法：[X,Y,Z] = 3×3矩阵 × [R,G,B]（每通道经 Texp/Gain 归一化）
-        ///配置文件：JSON 格式（含 a-i 共 9 个系数）
-        ///精度高于单色校正 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipFourColor {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipFourColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 3×3 矩阵完整通道混合，精度高于单色 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipFourColorShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipFourColorShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 线性度校正（LineArity）：校正传感器的非线性响应特性
-        ///确保输出灰度值与实际光照强度成线性关系 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipLineArity {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipLineArity", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 校正传感器输出灰度值与实际光照强度之间的非线性关系 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipLineArityShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipLineArityShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换
-        ///算法：Lv = (a / Texp) × pixel
-        ///配置文件：JSON 格式（含 bpp、曝光时间和系数 a,b,c,d）
-        ///输出：单通道 32 位浮点亮度图 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipLuminance {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipLuminance", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Lv = (a / Texp) × pixel，仅输出单通道亮度值 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipLuminanceShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipLuminanceShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 多色校正（LumMultiColor）：动态 N/3×3 系数矩阵
-        ///算法：支持高阶色彩转换拟合，系数数组长度动态
-        ///配置文件：JSON 格式（含动态系数和增益数组）
-        ///适用于需要更高精度的场景 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipMultiColor {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipMultiColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 动态大小系数矩阵，支持高阶色彩拟合 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipMultiColorShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipMultiColorShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 单色校正（LumOneColor）：4 系数线性模型
-        ///算法：X = aR+dB, Y = bG, Z = cB（经曝光/增益归一化）
-        ///配置文件：JSON 格式（含 a,b,c,d 系数和 Texp/Gain）
-        ///支持多线程加速 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipOneColor {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipOneColor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 4 系数模型：X=aR+dB, Y=bG, Z=cB 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipOneColorShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipOneColorShort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 均匀性校正（Uniformity）：补偿镜头渐晕和传感器灵敏度空间差异
-        ///算法：pixel_out = pixel_in × Uniformity_factor
-        ///配置文件：二进制格式（V0/V1 头 + float 因子矩阵） 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipUniformity {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipUniformity", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 使用预标定乘法因子矩阵补偿镜头渐晕和传感器响应不均 的本地化字符串。
-        /// </summary>
-        public static string CaliEditToolTipUniformityShort {
-            get {
-                return ResourceManager.GetString("CaliEditToolTipUniformityShort", resourceCulture);
             }
         }
         
@@ -2270,15 +2011,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 色差校正 的本地化字符串。
-        /// </summary>
-        public static string ColorCorrection {
-            get {
-                return ResourceManager.GetString("ColorCorrection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 ColorDiff 的本地化字符串。
         /// </summary>
         public static string ColorDiff {
@@ -2617,42 +2349,6 @@ namespace ColorVision.Engine.Properties {
         public static string Copilot_ContextNotReady {
             get {
                 return ResourceManager.GetString("Copilot_ContextNotReady", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请基于已附加的模板快照继续分析当前内容。 的本地化字符串。
-        /// </summary>
-        public static string Copilot_ContinueAnalysisPrompt {
-            get {
-                return ResourceManager.GetString("Copilot_ContinueAnalysisPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请结合已附加的模板快照，检查当前配置里是否存在明显异常、矛盾阈值或高风险参数，并给出判断理由与调整建议。 的本地化字符串。
-        /// </summary>
-        public static string Copilot_DiagnoseTemplatePrompt {
-            get {
-                return ResourceManager.GetString("Copilot_DiagnoseTemplatePrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请结合已附加的模板快照，逐项解释当前 JSON 参数的含义、典型影响范围，以及哪些参数组合需要一起看。 的本地化字符串。
-        /// </summary>
-        public static string Copilot_ExplainParametersPrompt {
-            get {
-                return ResourceManager.GetString("Copilot_ExplainParametersPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 请结合已附加的模板快照，先说明这个模板大致用于什么检测逻辑，再按字段解释主要参数的作用和彼此关系。 的本地化字符串。
-        /// </summary>
-        public static string Copilot_ExplainTemplatePrompt {
-            get {
-                return ResourceManager.GetString("Copilot_ExplainTemplatePrompt", resourceCulture);
             }
         }
         
@@ -4522,15 +4218,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 解析错误 的本地化字符串。
-        /// </summary>
-        public static string Engine_Msg_ParseError {
-            get {
-                return ResourceManager.GetString("Engine_Msg_ParseError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 提示 的本地化字符串。
         /// </summary>
         public static string Engine_Msg_Prompt {
@@ -5863,15 +5550,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 请基于已附加的流程上下文，解释当前流程结构、关键节点参数、最近运行/失败信息，并给出优先排查建议。不要假设流程已经重新运行，只能使用快照中已有的信息。 的本地化字符串。
-        /// </summary>
-        public static string Flow_AiAnalyzeCurrentFlowPrompt {
-            get {
-                return ResourceManager.GetString("Flow_AiAnalyzeCurrentFlowPrompt", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 问 AI 分析当前流程 的本地化字符串。
         /// </summary>
         public static string Flow_AskAiAnalyzeCurrentFlow {
@@ -7024,7 +6702,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 显示高级属性，如节点 ID、Token、服务名称等 的本地化字符串。
+        ///   查找类似 Show advanced properties such as node ID, token, and service name 的本地化字符串。
         /// </summary>
         public static string Flow_ShowAdvancedPropertiesTooltip {
             get {
@@ -7222,7 +6900,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 在图像上框选设置布点区域 的本地化字符串。
+        ///   查找类似 Frame-select layout area on image 的本地化字符串。
         /// </summary>
         public static string FrameSelectAreaToolTip {
             get {
@@ -7726,24 +7404,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 图像拼接 的本地化字符串。
-        /// </summary>
-        public static string ImageStitching {
-            get {
-                return ResourceManager.GetString("ImageStitching", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 图像拼接模板管理 的本地化字符串。
-        /// </summary>
-        public static string ImageStitchingTemplateManagement {
-            get {
-                return ResourceManager.GetString("ImageStitchingTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 导入 的本地化字符串。
         /// </summary>
         public static string Import {
@@ -8091,15 +7751,6 @@ namespace ColorVision.Engine.Properties {
         public static string LabelFilterWheelCount {
             get {
                 return ResourceManager.GetString("LabelFilterWheelCount", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启动成功 的本地化字符串。
-        /// </summary>
-        public static string LaunchSuccess {
-            get {
-                return ResourceManager.GetString("LaunchSuccess", resourceCulture);
             }
         }
         
@@ -8568,15 +8219,6 @@ namespace ColorVision.Engine.Properties {
         public static string Loading {
             get {
                 return ResourceManager.GetString("Loading", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 正在加载模板 的本地化字符串。
-        /// </summary>
-        public static string LoadingTempate {
-            get {
-                return ResourceManager.GetString("LoadingTempate", resourceCulture);
             }
         }
         
@@ -9544,15 +9186,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开输出文件位置 的本地化字符串。
-        /// </summary>
-        public static string OpenOutputFileLocation {
-            get {
-                return ResourceManager.GetString("OpenOutputFileLocation", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开 {0} 结果集 的本地化字符串。
         /// </summary>
         public static string OpenResultSetFormat {
@@ -9679,7 +9312,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 指定图片编号 的本地化字符串。
+        ///   查找类似 Specify an image number 的本地化字符串。
         /// </summary>
         public static string PG_ImageNumberTooltip {
             get {
@@ -9697,7 +9330,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 下一张图 的本地化字符串。
+        ///   查找类似 Next image 的本地化字符串。
         /// </summary>
         public static string PG_NextImageTooltip {
             get {
@@ -9715,7 +9348,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 上一张图 的本地化字符串。
+        ///   查找类似 Previous image 的本地化字符串。
         /// </summary>
         public static string PG_PreviousImageTooltip {
             get {
@@ -9724,7 +9357,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 切换指定图 的本地化字符串。
+        ///   查找类似 Switch to the specified image 的本地化字符串。
         /// </summary>
         public static string PG_SwitchImageTooltip {
             get {
@@ -10057,7 +9690,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 批量调整 POI 点的位置和尺寸 的本地化字符串。
+        ///   查找类似 Batch-adjust POI positions and sizes 的本地化字符串。
         /// </summary>
         public static string POITransformTooltip {
             get {
@@ -10278,15 +9911,6 @@ namespace ColorVision.Engine.Properties {
         public static string PreProcess_ExecutionGroup {
             get {
                 return ResourceManager.GetString("PreProcess_ExecutionGroup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 {0}。已配置为失败不中止流程。 的本地化字符串。
-        /// </summary>
-        public static string PreProcess_FailureIgnored {
-            get {
-                return ResourceManager.GetString("PreProcess_FailureIgnored", resourceCulture);
             }
         }
         
@@ -11614,15 +11238,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 请先选择{0}模板 的本地化字符串。
-        /// </summary>
-        public static string SelectTemplateFirstFormat {
-            get {
-                return ResourceManager.GetString("SelectTemplateFirstFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 选择一个模板查看详情 的本地化字符串。
         /// </summary>
         public static string SelectTemplateToViewDetails {
@@ -12305,7 +11920,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 在 CIE 色度图中显示当前结果点 的本地化字符串。
+        ///   查找类似 Show current result point on CIE chromaticity diagram 的本地化字符串。
         /// </summary>
         public static string ShowOnCieDiagramToolTip {
             get {
@@ -13412,7 +13027,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 色差校正（AngleShift）：ColorDiff 的变种，角度相关色差校正 的本地化字符串。
+        ///   查找类似 Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction 的本地化字符串。
         /// </summary>
         public static string ToolTipAngleShift {
             get {
@@ -13421,7 +13036,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 色差校正（ColorDiff）：校正不同色彩通道间的色差 的本地化字符串。
+        ///   查找类似 Color correction (ColorDiff): corrects color difference between channels 的本地化字符串。
         /// </summary>
         public static string ToolTipColorDiff {
             get {
@@ -13430,7 +13045,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 色偏校正（ColorShift）：通道间空间偏移补偿。配置文件格式：JSON（含 fillOffset 和 offset 参数） 的本地化字符串。
+        ///   查找类似 Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters) 的本地化字符串。
         /// </summary>
         public static string ToolTipColorShift {
             get {
@@ -13439,7 +13054,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 暗电流校正（DarkNoise）：消除传感器暗电流噪声。配置文件格式：JSON（含 bpp 和 DarkNoiseRatio） 的本地化字符串。
+        ///   查找类似 Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio) 的本地化字符串。
         /// </summary>
         public static string ToolTipDarkNoise {
             get {
@@ -13448,7 +13063,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 坏点校正（DefectPoint）：检测并插值修复缺陷像素。配置文件格式：二进制（坏点数量 + 坐标列表） 的本地化字符串。
+        ///   查找类似 Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list) 的本地化字符串。
         /// </summary>
         public static string ToolTipDefectPoint {
             get {
@@ -13457,7 +13072,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 畸变校正（Distortion）：镜头径向/切向畸变矫正。配置文件格式：JSON（含相机内参矩阵和畸变系数） 的本地化字符串。
+        ///   查找类似 Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients) 的本地化字符串。
         /// </summary>
         public static string ToolTipDistortion {
             get {
@@ -13466,7 +13081,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿。配置文件格式：二进制（V0/V1 头 + ushort 数据） 的本地化字符串。
+        ///   查找类似 DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data) 的本地化字符串。
         /// </summary>
         public static string ToolTipDSNU {
             get {
@@ -13475,7 +13090,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 四色校正（LumFourColor）：3×3 矩阵实现完整的通道混合色彩转换。 的本地化字符串。
+        ///   查找类似 Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion. 的本地化字符串。
         /// </summary>
         public static string ToolTipFourColor {
             get {
@@ -13484,7 +13099,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 线性度校正（LineArity）：校正传感器的非线性响应特性 的本地化字符串。
+        ///   查找类似 Linearity correction (LineArity): corrects non-linear sensor response characteristics 的本地化字符串。
         /// </summary>
         public static string ToolTipLineArity {
             get {
@@ -13493,7 +13108,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换。配置文件格式：JSON（含 bpp、曝光时间和系数 a） 的本地化字符串。
+        ///   查找类似 Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a) 的本地化字符串。
         /// </summary>
         public static string ToolTipLuminance {
             get {
@@ -13502,7 +13117,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 多色校正（LumMultiColor）：动态大小系数矩阵，支持更高阶的色彩转换模型。 的本地化字符串。
+        ///   查找类似 Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion. 的本地化字符串。
         /// </summary>
         public static string ToolTipMultiColor {
             get {
@@ -13511,7 +13126,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 单色校正（LumOneColor）：4 系数模型将 3 通道灰度转换为 CIE XYZ 三刺激值。 的本地化字符串。
+        ///   查找类似 Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus. 的本地化字符串。
         /// </summary>
         public static string ToolTipOneColor {
             get {
@@ -13520,7 +13135,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 均匀性校正（Uniformity）：补偿镜头渐晕及传感器响应不均。配置文件格式：二进制（V0/V1 头 + float 因子矩阵） 的本地化字符串。
+        ///   查找类似 Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix) 的本地化字符串。
         /// </summary>
         public static string ToolTipUniformity {
             get {
@@ -13615,15 +13230,6 @@ namespace ColorVision.Engine.Properties {
         public static string Type {
             get {
                 return ResourceManager.GetString("Type", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 无法实例化进程类型 的本地化字符串。
-        /// </summary>
-        public static string UnableToInstantiateProcessType {
-            get {
-                return ResourceManager.GetString("UnableToInstantiateProcessType", resourceCulture);
             }
         }
         
@@ -14029,15 +13635,6 @@ namespace ColorVision.Engine.Properties {
         public static string Video {
             get {
                 return ResourceManager.GetString("Video", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视频模式打开超时，请检查日志 的本地化字符串。
-        /// </summary>
-        public static string VideoCaptureTimeoutCheckLog {
-            get {
-                return ResourceManager.GetString("VideoCaptureTimeoutCheckLog", resourceCulture);
             }
         }
         

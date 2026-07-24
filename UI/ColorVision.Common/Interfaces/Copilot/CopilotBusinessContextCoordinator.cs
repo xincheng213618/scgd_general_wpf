@@ -87,14 +87,11 @@ namespace ColorVision.UI
             return CopilotPromptRequestHelper.Dispatch(request, service);
         }
 
-        public static string BuildFlowDiagnosisPrompt(CopilotFlowContextSnapshot snapshot, string? localizedIntroduction = null)
+        public static string BuildFlowDiagnosisPrompt(CopilotFlowContextSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
 
             var builder = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(localizedIntroduction))
-                builder.AppendLine(localizedIntroduction.Trim()).AppendLine();
-
             builder.AppendLine("Return a structured ColorVision flow diagnosis with these sections:");
             builder.AppendLine("1. Current state and focused node");
             builder.AppendLine("2. Evidence from the attached snapshot and recent failure lines");

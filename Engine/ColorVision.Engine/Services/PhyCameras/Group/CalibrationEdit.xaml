@@ -146,93 +146,93 @@
                         <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="{x:Static properties:Resources.HeaderBasicCalibrationPipeline}">
                             <StackPanel Margin="5">
                                 <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="{x:Static properties:Resources.DescriptionBasicPipeline}" TextWrapping="Wrap" />
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDarkNoise}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipDarkNoise}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DarkNoise.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DarkNoise" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDarkNoiseShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipDarkNoise}">
                                         <Run Text="{x:Static properties:Resources.DarkNoise}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDarkNoiseShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDarkNoise" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DarkNoise}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDSNU}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipDSNU}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DSNU.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DSNU" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDSNUShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipDSNU}">
                                         <Run Text="{x:Static properties:Resources.DSNU}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDSNUShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDSNU" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DSNU}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDefectPoint}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipDefectPoint}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding DefectPoint.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="DefectPoint" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDefectPointShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipDefectPoint}">
                                         <Run Text="{x:Static properties:Resources.DefectPoint}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDefectPointShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDefectPoint" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding DefectPoint}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorShift}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipColorShift}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding ColorShift.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorShift" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorShiftShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipColorShift}">
                                         <Run Text="{x:Static properties:Resources.ColorShift}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionColorShiftShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxColorShift" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding ColorShift}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipDistortion}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipDistortion}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Distortion.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Distortion" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipDistortionShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipDistortion}">
                                         <Run Text="{x:Static properties:Resources.Distortion}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionDistortionShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxDistortion" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Distortion}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipUniformity}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipUniformity}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Uniformity.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Uniformity" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipUniformityShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipUniformity}">
                                         <Run Text="{x:Static properties:Resources.Uniformity}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionUniformityShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxUniformity" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Uniformity}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipLineArity}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipLineArity}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LineArity.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LineArity" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipLineArityShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipLineArity}">
                                         <Run Text="{x:Static properties:Resources.LineArity}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionLineArityShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLineArity" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LineArity}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorDiff}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipColorDiff}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding ColorDiff.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="ColorDiff" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipColorDiffShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipColorDiff}">
                                         <Run Text="{x:Static properties:Resources.ColorDiff}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionColorDiffShort}" />
@@ -240,12 +240,12 @@
                                     <hc:ComboBox x:Name="ComboBoxColorDiff" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding ColorDiff}" />
                                 </DockPanel>
                                 <!--  色差校正变种（AngleShift）：与 ColorDiff 一致，ServiceTypes=43  -->
-                                <DockPanel ToolTip="{x:Static properties:Resources.CaliEditToolTipAngleShift}">
+                                <DockPanel ToolTip="{x:Static properties:Resources.ToolTipAngleShift}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding AngleShift.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="AngleShift" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding AngleShift.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipAngleShiftShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipAngleShift}">
                                         <Run Text="{x:Static properties:Resources.AngleShift}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionAngleShiftShort}" />
@@ -259,48 +259,48 @@
                         <GroupBox Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}" Header="{x:Static properties:Resources.HeaderColorCalibrationMutual}">
                             <StackPanel Margin="5">
                                 <TextBlock Margin="0,0,0,8" FontSize="11" Opacity="0.7" Text="{x:Static properties:Resources.DescriptionColorCalibration}" TextWrapping="Wrap" />
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipLuminance}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipLuminance}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding Luminance.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="Luminance" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipLuminanceShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipLuminance}">
                                         <Run Text="{x:Static properties:Resources.Brightness}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionLuminanceShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLuminance" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding Luminance}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipOneColor}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipOneColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumOneColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumOneColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipOneColorShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipOneColor}">
                                         <Run Text="{x:Static properties:Resources.OneColor}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionOneColorShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLumOneColor" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LumOneColor}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.CaliEditToolTipFourColor}">
+                                <DockPanel Margin="0,0,0,5" ToolTip="{x:Static properties:Resources.ToolTipFourColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumFourColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumFourColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipFourColorShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipFourColor}">
                                         <Run Text="{x:Static properties:Resources.FourColor}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionFourColorShort}" />
                                     </TextBlock>
                                     <hc:ComboBox x:Name="ComboBoxLumFourColor" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Name" SelectedValue="{Binding LumFourColor}" />
                                 </DockPanel>
-                                <DockPanel ToolTip="{x:Static properties:Resources.CaliEditToolTipMultiColor}">
+                                <DockPanel ToolTip="{x:Static properties:Resources.ToolTipMultiColor}">
                                     <ToggleButton Width="20" Margin="5,0,0,0" DockPanel.Dock="Right" IsChecked="{Binding LumMultiColor.IsValid, Mode=OneWay}" IsEnabled="False" Style="{StaticResource ButtonMQTTConnect}" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding UploadCalibrationItemCommand}" CommandParameter="LumMultiColor" Content="{x:Static properties:Resources.Upload}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}" Content="{x:Static properties:Resources.Edit}" DockPanel.Dock="Right" />
                                     <Button Width="80" Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}" Content="{x:Static properties:Resources.Selected}" DockPanel.Dock="Right" />
-                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.CaliEditToolTipMultiColorShort}">
+                                    <TextBlock Width="120" DockPanel.Dock="Left" ToolTip="{x:Static properties:Resources.ToolTipMultiColor}">
                                         <Run Text="{x:Static properties:Resources.MultiColor}" />
                                         <LineBreak />
                                         <Run FontSize="10" Foreground="Gray" Text="{x:Static properties:Resources.DescriptionMultiColorShort}" />

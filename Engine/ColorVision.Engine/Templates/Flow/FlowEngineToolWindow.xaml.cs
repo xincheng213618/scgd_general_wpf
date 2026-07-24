@@ -297,7 +297,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("ColorVision.Engine.Properties.Resources.ClearCreatedProcess_ConfirmAutoSaveClosePrompt", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show(Properties.Resources.ClearCreatedProcess_ConfirmAutoSaveClosePrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 STNodeEditorMain.Nodes.Clear();
         }
 

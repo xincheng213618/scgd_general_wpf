@@ -296,7 +296,7 @@ namespace ColorVision.Engine.Batch.PreProcess
                 return false;
             }
 
-            log.Warn(string.Format(Properties.Resources.PreProcess_FailureIgnored, message));
+            log.Warn($"{message}. The flow is configured to continue after a failure.");
             return true;
         }
 

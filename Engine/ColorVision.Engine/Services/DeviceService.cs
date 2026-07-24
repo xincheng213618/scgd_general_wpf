@@ -168,7 +168,7 @@ namespace ColorVision.Engine.Services
                     Save();
                 }
                 else
-                    MessageBox.Show("ColorVision.Engine.Properties.Resources.ImportException", "ColorVision");
+                    MessageBox.Show(Properties.Resources.ImportException, "ColorVision");
             });
 
             PropertyCommand = new RelayCommand((e) =>

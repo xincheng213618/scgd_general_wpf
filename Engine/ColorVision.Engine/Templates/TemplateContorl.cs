@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates
 
         public override async Task InitializeAsync()
         {
-            log.Info(ColorVision.Engine.Properties.Resources.LoadingTempate);
+            log.Info("Loading template");
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

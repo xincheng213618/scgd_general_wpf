@@ -285,9 +285,7 @@
     <value>Loading</value>
   </data>
 
-  <data name="LaunchSuccess" xml:space="preserve">
-    <value>Started successfully</value>
-  </data>
+
 
   <data name="Inquire" xml:space="preserve">
     <value>Inquire</value>
@@ -370,9 +368,7 @@
     <value>Delete</value>
   </data>
 
-  <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>default</value>
-  </data>
+
 
   <data name="CreateTime" xml:space="preserve">
     <value>Create Time</value>
@@ -663,9 +659,6 @@
     <value>Cross Calculation</value>
   </data>
 
-  <data name="ImageStitching" xml:space="preserve">
-    <value>Image Stitching</value>
-  </data>
 
 
   <data name="EditDefaultSensorDictionary" xml:space="preserve">
@@ -1591,9 +1584,7 @@
   <data name="UseSystemDefaultTemplate" xml:space="preserve">
     <value>Use the system default template</value>
   </data>
-  <data name="LoadingTempate" xml:space="preserve">
-    <value>Loading template</value>
-  </data>
+
   <data name="EditDefaultComplianceTemplate" xml:space="preserve">
     <value>Edit Default Compliance Template</value>
   </data>
@@ -1638,9 +1629,6 @@
   </data>
   <data name="Distortion20TemplateManagement" xml:space="preserve">
     <value>Distortion 2.0 Template Management</value>
-  </data>
-  <data name="ImageStitchingTemplateManagement" xml:space="preserve">
-    <value>Image stitching template management</value>
   </data>
   <data name="FindAaRegionTemplateManagement" xml:space="preserve">
     <value>AA Region Detection Template Management</value>
@@ -1770,9 +1758,7 @@
   <data name="DuplicateName" xml:space="preserve">
     <value>Duplicate Names</value>
   </data>
-  <data name="UnableToInstantiateProcessType" xml:space="preserve">
-    <value>Unable to instantiate process type</value>
-  </data>
+
   <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
     <value>No service requires configuring a cache path.</value>
   </data>
@@ -2049,9 +2035,6 @@
   </data>
   <data name="FindCross" xml:space="preserve">
     <value>Cross positioning</value>
-  </data>
-  <data name="ColorCorrection" xml:space="preserve">
-    <value>Color difference correction</value>
   </data>
   <data name="EmittingAreaLocation" xml:space="preserve">
     <value>Positioning of the light-emitting area</value>
@@ -2534,9 +2517,7 @@
   <data name="AllowSave" xml:space="preserve">
     <value>Allow Saving</value>
   </data>
-  <data name="AppSecretTooltip" xml:space="preserve">
-    <value>App Secret</value>
-  </data>
+
   <data name="AutoExposureFailedCheckLog" xml:space="preserve">
     <value>Auto exposure failed, check log {0}{1}</value>
   </data>
@@ -2598,109 +2579,32 @@
   <data name="CalculateEQE" xml:space="preserve">
     <value>Calculate EQE</value>
   </data>
-  <data name="CaliEditToolTipAngleShift" xml:space="preserve">
-    <value>Color difference correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value>
-  </data>
-  <data name="CaliEditToolTipAngleShiftShort" xml:space="preserve">
-    <value>Angle Correction</value>
-  </data>
-  <data name="CaliEditToolTipColorDiff" xml:space="preserve">
-    <value>Color difference correction (ColorDiff): corrects color difference shift between channels</value>
-  </data>
-  <data name="CaliEditToolTipColorDiffShort" xml:space="preserve">
-    <value>Eliminates color difference shift between channels</value>
-  </data>
-  <data name="CaliEditToolTipColorShift" xml:space="preserve">
-    <value>Color Shift correction (ColorShift): inter-channel spatial shift compensation
-Algorithm: Sub-pixel channel shift via OpenCV affine transform
-Configuration: JSON format (fillOffset and offset/offsets parameters)</value>
-  </data>
-  <data name="CaliEditToolTipColorShiftShort" xml:space="preserve">
-    <value>Compensates spatial shift between color channels in multi-channel optical systems</value>
-  </data>
-  <data name="CaliEditToolTipDSNU" xml:space="preserve">
-    <value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation
-Algorithm: pixel_out = max(pixel_in - DSNU_ref, 0)
-Configuration: Binary format (V0/V1 header + ushort dark frame reference data)</value>
-  </data>
-  <data name="CaliEditToolTipDSNUShort" xml:space="preserve">
-    <value>Dark signal non-uniformity compensation, eliminates pixel-level dark current differences via pre-acquired dark frame subtraction</value>
-  </data>
-  <data name="CaliEditToolTipDarkNoise" xml:space="preserve">
-    <value>Dark current correction (DarkNoise): eliminate sensor dark current noise under no-illumination conditions
-Algorithm: pixel_out = pixel_in × DarkNoiseRatio
-Configuration: JSON format (bpp and DarkNoiseRatio)</value>
-  </data>
-  <data name="CaliEditToolTipDarkNoiseShort" xml:space="preserve">
-    <value>Eliminates inherent sensor dark current signal via pre-calibrated ratio per-pixel compensation</value>
-  </data>
-  <data name="CaliEditToolTipDefectPoint" xml:space="preserve">
-    <value>Defect point correction (DefectPoint): detect and repair defective pixels
-Algorithm: Replace pre-calibrated defect coordinates using 7×7 neighborhood median filter
-Configuration: Binary format (4-byte defect count + coordinate list)</value>
-  </data>
-  <data name="CaliEditToolTipDefectPointShort" xml:space="preserve">
-    <value>Detects and interpolates defective pixels, 7x7 neighborhood median filter</value>
-  </data>
-  <data name="CaliEditToolTipDistortion" xml:space="preserve">
-    <value>Distortion correction (Distortion): lens radial/tangential distortion correction
-Algorithm: Supports standard pinhole model (k1,k2,p1,p2,k3) and fisheye model
-Configuration: JSON format (camera intrinsic matrix fx,fy,cx,cy and distortion coefficients)</value>
-  </data>
-  <data name="CaliEditToolTipDistortionShort" xml:space="preserve">
-    <value>Corrects lens distortion using OpenCV camera calibration model, supports standard pinhole and fisheye models</value>
-  </data>
-  <data name="CaliEditToolTipFourColor" xml:space="preserve">
-    <value>Four-color correction (LumFourColor): 3×3 matrix (9 coefficients a-i)
-Algorithm: [X,Y,Z] = 3×3 matrix × [R,G,B] (each channel normalized by Texp/Gain)
-Configuration: JSON format (9 coefficients a-i)
-Higher accuracy than single-color correction</value>
-  </data>
-  <data name="CaliEditToolTipFourColorShort" xml:space="preserve">
-    <value>3x3 matrix full channel mixing, higher accuracy than single color</value>
-  </data>
-  <data name="CaliEditToolTipLineArity" xml:space="preserve">
-    <value>Linearity correction (LineArity): correct non-linear response characteristics of sensor
-Ensures output grayscale values are linear with actual light intensity</value>
-  </data>
-  <data name="CaliEditToolTipLineArityShort" xml:space="preserve">
-    <value>Corrects non-linear relationship between sensor output grayscale and actual light intensity</value>
-  </data>
-  <data name="CaliEditToolTipLuminance" xml:space="preserve">
-    <value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²)
-Algorithm: Lv = (a / Texp) × pixel
-Configuration: JSON format (bpp, exposure time, and coefficients a,b,c,d)
-Output: Single-channel 32-bit floating point luminance map</value>
-  </data>
-  <data name="CaliEditToolTipLuminanceShort" xml:space="preserve">
-    <value>Lv = (a / Texp) x pixel, outputs single-channel luminance value only</value>
-  </data>
-  <data name="CaliEditToolTipMultiColor" xml:space="preserve">
-    <value>Multi-color correction (LumMultiColor): dynamic N/3×3 coefficient matrix
-Algorithm: Supports higher-order color conversion fitting, dynamic coefficient array length
-Configuration: JSON format (dynamic coefficients and gain array)
-Suitable for scenarios requiring higher accuracy</value>
-  </data>
-  <data name="CaliEditToolTipMultiColorShort" xml:space="preserve">
-    <value>Dynamic size coefficient matrix, supports higher-order color fitting</value>
-  </data>
-  <data name="CaliEditToolTipOneColor" xml:space="preserve">
-    <value>Single-color correction (LumOneColor): 4-coefficient linear model
-Algorithm: X = aR+dB, Y = bG, Z = cB (normalized by exposure/gain)
-Configuration: JSON format (a,b,c,d coefficients and Texp/Gain)
-Supports multi-threaded acceleration</value>
-  </data>
-  <data name="CaliEditToolTipOneColorShort" xml:space="preserve">
-    <value>4-coefficient model: X=aR+dB, Y=bG, Z=cB</value>
-  </data>
-  <data name="CaliEditToolTipUniformity" xml:space="preserve">
-    <value>Uniformity correction (Uniformity): compensate for lens vignetting and sensor sensitivity spatial variation
-Algorithm: pixel_out = pixel_in × Uniformity_factor
-Configuration: Binary format (V0/V1 header + float factor matrix)</value>
-  </data>
-  <data name="CaliEditToolTipUniformityShort" xml:space="preserve">
-    <value>Compensates lens vignetting and sensor response non-uniformity using pre-calibrated multiplication factor matrix</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="CalibrationFileNotConfiguredWithTemplate" xml:space="preserve">
     <value>Using {0} template, confirm calibration file configured</value>
   </data>
@@ -3226,50 +3130,21 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ToggleSpectrum" xml:space="preserve">
     <value>ToggleSpectrum</value>
   </data>
-  <data name="ToolTipAngleShift" xml:space="preserve">
-    <value>Color correction (AngleShift): variant of ColorDiff, for angle-dependent color difference correction</value>
-  </data>
-  <data name="ToolTipColorDiff" xml:space="preserve">
-    <value>Color correction (ColorDiff): corrects color difference between channels</value>
-  </data>
-  <data name="ToolTipColorShift" xml:space="preserve">
-    <value>Color shift correction (ColorShift): inter-channel spatial shift compensation. Configuration: JSON format (fillOffset and offset parameters)</value>
-  </data>
-  <data name="ToolTipDSNU" xml:space="preserve">
-    <value>DSNU correction (Dark Signal Non-Uniformity): dark signal non-uniformity compensation. Configuration: Binary format (V0/V1 header + ushort data)</value>
-  </data>
-  <data name="ToolTipDarkNoise" xml:space="preserve">
-    <value>Dark current correction (DarkNoise): eliminate sensor dark current noise. Configuration: JSON format (bpp and DarkNoiseRatio)</value>
-  </data>
-  <data name="ToolTipDefectPoint" xml:space="preserve">
-    <value>Defect point correction (DefectPoint): detect and repair defective pixels. Configuration: Binary format (defect count + coordinate list)</value>
-  </data>
-  <data name="ToolTipDistortion" xml:space="preserve">
-    <value>Distortion correction (Distortion): lens radial/tangential distortion correction. Configuration: JSON format (camera intrinsic matrix and distortion coefficients)</value>
-  </data>
-  <data name="ToolTipFourColor" xml:space="preserve">
-    <value>Four-color correction (LumFourColor): 3×3 matrix full channel mixing color conversion.</value>
-  </data>
-  <data name="ToolTipLineArity" xml:space="preserve">
-    <value>Linearity correction (LineArity): corrects non-linear sensor response characteristics</value>
-  </data>
-  <data name="ToolTipLuminance" xml:space="preserve">
-    <value>Luminance correction (Luminance): linear conversion from grayscale to absolute luminance Lv(cd/m²). Configuration: JSON format (bpp, exposure time, coefficient a)</value>
-  </data>
-  <data name="ToolTipMultiColor" xml:space="preserve">
-    <value>Multi-color correction (LumMultiColor): dynamic size coefficient matrix, supports higher-order color conversion.</value>
-  </data>
-  <data name="ToolTipOneColor" xml:space="preserve">
-    <value>Single-color correction (LumOneColor): 4-coefficient model converts 3-channel grayscale to CIE XYZ tristimulus.</value>
-  </data>
-  <data name="ToolTipUniformity" xml:space="preserve">
-    <value>Uniformity correction (Uniformity): compensates lens vignetting and sensor response non-uniformity. Configuration: Binary format (V0/V1 header + float factor matrix)</value>
-  </data>
+
+
+
+
+
+
+
+
+
+
+
+
+
   <data name="TryRestartService" xml:space="preserve">
     <value>Try restarting service</value>
-  </data>
-  <data name="VideoCaptureTimeoutCheckLog" xml:space="preserve">
-    <value>VideoCaptureTimeoutCheckLog</value>
   </data>
   <data name="VoltageSource" xml:space="preserve">
     <value>Voltage Source</value>
@@ -3649,9 +3524,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_Msg_ConfigFileFormatError" xml:space="preserve">
     <value>Config file format error: {0}</value>
   </data>
-  <data name="Engine_Msg_ParseError" xml:space="preserve">
-    <value>Parse error</value>
-  </data>
   <data name="Engine_Msg_FileProcessError" xml:space="preserve">
     <value>Error processing file: {0}</value>
   </data>
@@ -4026,9 +3898,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="AutoDetectKeyRegions" xml:space="preserve">
     <value>Auto Detect Key Regions</value>
   </data>
-  <data name="AutoDetectKeyRegionsToolTip" xml:space="preserve">
-    <value>Auto-detect glowing key areas in image and create POI</value>
-  </data>
+
   <data name="Background" xml:space="preserve">
     <value>Background</value>
   </data>
@@ -4104,9 +3974,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="FrameSelectArea" xml:space="preserve">
     <value>Frame Select Area</value>
   </data>
-  <data name="FrameSelectAreaToolTip" xml:space="preserve">
-    <value>Frame-select layout area on image</value>
-  </data>
+
   <data name="FreqAtMtfQuery" xml:space="preserve">
     <value>Freq@MTF Query</value>
   </data>
@@ -4149,9 +4017,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="PoiParamHeader" xml:space="preserve">
     <value>   Point Description                    Coordinates</value>
   </data>
-  <data name="PointDescCoordinates" xml:space="preserve">
-    <value>HaloOutMOVE  HaloThreadV HaloScale...</value>
-  </data>
+
   <data name="ProcessOrderHint" xml:space="preserve">
     <value>(Multiple processes can be configured per flow template...)</value>
   </data>
@@ -4194,9 +4060,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SelectProcessToViewConfig" xml:space="preserve">
     <value>Select a process item to view config</value>
   </data>
-  <data name="ShowOnCieDiagramToolTip" xml:space="preserve">
-    <value>Show current result point on CIE chromaticity diagram</value>
-  </data>
+
   <data name="Size_Column" xml:space="preserve">
     <value>Size</value>
   </data>
@@ -4254,9 +4118,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="LabelCameraCode" xml:space="preserve">
     <value>Camera Code</value>
   </data>
-  <data name="DSNU" xml:space="preserve">
-    <value>DSNU</value>
-  </data>
+
   <data name="LineArity" xml:space="preserve">
     <value>LineArity</value>
   </data>
@@ -4290,25 +4152,15 @@ Please close camera or other programs using this serial port, or check device co
   <data name="LicenseCountFormat" xml:space="preserve">
     <value>{0} licenses</value>
   </data>
-  <data name="Id" xml:space="preserve">
-    <value>ID</value>
-  </data>
-  <data name="MacOrSn" xml:space="preserve">
-    <value>MAC/SN</value>
-  </data>
 
 
 
 
-  <data name="Roi" xml:space="preserve">
-    <value>ROI</value>
-  </data>
-  <data name="RoiX" xml:space="preserve">
-    <value>ROI X</value>
-  </data>
-  <data name="RoiY" xml:space="preserve">
-    <value>ROI Y</value>
-  </data>
+
+
+
+
+
   <data name="RoiWidth" xml:space="preserve">
     <value>ROI width</value>
   </data>
@@ -4384,10 +4236,10 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Channel" xml:space="preserve"><value>Channel</value></data>
   <data name="Copilot_Ask" xml:space="preserve"><value>Ask Copilot</value></data>
   <data name="Copilot_ContextNotReady" xml:space="preserve"><value>The current template context is not ready and cannot be sent to Copilot.</value></data>
-  <data name="Copilot_ContinueAnalysisPrompt" xml:space="preserve"><value>Continue analyzing the current content using the attached template snapshot.</value></data>
-  <data name="Copilot_DiagnoseTemplatePrompt" xml:space="preserve"><value>Using the attached template snapshot, check the current configuration for obvious anomalies, conflicting thresholds, or high-risk parameters. Explain your reasoning and suggest adjustments.</value></data>
-  <data name="Copilot_ExplainParametersPrompt" xml:space="preserve"><value>Using the attached template snapshot, explain each current JSON parameter, its typical impact range, and which parameter combinations should be considered together.</value></data>
-  <data name="Copilot_ExplainTemplatePrompt" xml:space="preserve"><value>Using the attached template snapshot, first explain the detection logic this template is intended for, then explain the main parameters and their relationships field by field.</value></data>
+
+
+
+
   <data name="Copilot_PropertyEditorSwitchFailed" xml:space="preserve"><value>Failed to switch to the property editor: {0}&#13;&#10;&#13;&#10;Check that the JSON format is valid.</value></data>
   <data name="Copilot_SendWithEllipsis" xml:space="preserve"><value>Send to Copilot...</value></data>
   <data name="Copilot_TextEditorSwitchFailed" xml:space="preserve"><value>Failed to switch to the text editor: {0}</value></data>
@@ -4418,20 +4270,20 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_PreProcess_SelectAction" xml:space="preserve"><value>Select a pre-process action</value></data>
   <data name="Flow_PreProcess_TypeFormat" xml:space="preserve"><value>Type: {0}</value></data>
   <data name="Flow_RestartServiceVersionFormat" xml:space="preserve"><value>Restart {0}</value></data>
-  <data name="Flow_ShowAdvancedPropertiesTooltip" xml:space="preserve"><value>Show advanced properties such as node ID, token, and service name</value></data>
+
   <data name="Flow_StartServiceFailed" xml:space="preserve"><value>Failed to start {0}: {1}</value></data>
   <data name="Flow_StopServiceFailed" xml:space="preserve"><value>Failed to stop {0}: {1}</value></data>
   <data name="FullFrame" xml:space="preserve"><value>Full frame</value></data>
   <data name="Interval" xml:space="preserve"><value>Interval</value></data>
   <data name="OutputFile" xml:space="preserve"><value>Output file</value></data>
-  <data name="PG_ImageNumberTooltip" xml:space="preserve"><value>Specify an image number</value></data>
+
   <data name="PG_NextImage" xml:space="preserve"><value>Next</value></data>
-  <data name="PG_NextImageTooltip" xml:space="preserve"><value>Next image</value></data>
+
   <data name="PG_PreviousImage" xml:space="preserve"><value>Previous</value></data>
-  <data name="PG_PreviousImageTooltip" xml:space="preserve"><value>Previous image</value></data>
-  <data name="PG_SwitchImageTooltip" xml:space="preserve"><value>Switch to the specified image</value></data>
+
+
   <data name="POI_SaveAsRequiresSavedData" xml:space="preserve"><value>Save the data before using Save As; unsaved data cannot be copied yet</value></data>
-  <data name="POITransformTooltip" xml:space="preserve"><value>Batch-adjust POI positions and sizes</value></data>
+
   <data name="PreProcess_Arguments" xml:space="preserve"><value>Arguments</value></data>
   <data name="PreProcess_ArgumentsDesc" xml:space="preserve"><value>Arguments passed to the script or executable. Supports {FlowName}, {SerialNumber}, and {SN} placeholders.</value></data>
   <data name="PreProcess_CacheCleanupDesc" xml:space="preserve"><value>Delete the oldest cache files by time when the cache exceeds its limit</value></data>
@@ -4553,12 +4405,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandLineScript_MaxOutputCharsDesc" xml:space="preserve"><value>Maximum stdout/stderr characters saved in the node result, preventing oversized flow data.</value></data>
   <data name="CommandLineScript_NodeName" xml:space="preserve"><value>Command-line script</value></data>
   <data name="Coordinates" xml:space="preserve"><value>Coordinates</value></data>
-  <data name="Flow_AiAnalyzeCurrentFlowPrompt" xml:space="preserve"><value>Using the attached flow context, explain the current flow structure, key node parameters, and recent run or failure information, then provide prioritized troubleshooting advice. Do not assume the flow has been rerun; use only information available in the snapshot.</value></data>
+
   <data name="Flow_AskAiAnalyzeCurrentFlow" xml:space="preserve"><value>Ask AI to analyze this flow</value></data>
   <data name="Flow_OpenServiceLogFailed" xml:space="preserve"><value>Failed to open the service log: {0}</value></data>
   <data name="Flow_ServiceLogNotFound" xml:space="preserve"><value>No matching service log was found. Confirm that the service is installed and has generated logs.</value></data>
   <data name="GhostGrayscale" xml:space="preserve"><value>Ghost grayscale</value></data>
-  <data name="OpenOutputFileLocation" xml:space="preserve"><value>Open output file location</value></data>
   <data name="OpenResultSetFormat" xml:space="preserve"><value>Open {0} result set</value></data>
   <data name="Score" xml:space="preserve"><value>Score</value></data>
   <data name="ScreenDefect_RestoreDatabase" xml:space="preserve"><value>Restore screen-defect detection</value></data>
@@ -4594,7 +4445,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CommandLineScript_FileNotFound" xml:space="preserve"><value>Script file not found: {0}</value></data>
   <data name="CommandLineScript_ExecutionFailed" xml:space="preserve"><value>Command-line script failed with exit code {0}</value></data>
   <data name="CommandLineScript_ExecutionFailedWithDetail" xml:space="preserve"><value>Command-line script failed with exit code {0}: {1}</value></data>
-  <data name="PreProcess_FailureIgnored" xml:space="preserve"><value>{0}. The flow is configured to continue after a failure.</value></data>
+
   <data name="Mysql_DictionaryDependenciesAdded" xml:space="preserve"><value>Added dictionary dependencies referenced by the template</value></data>
   <data name="Mysql_DictionaryDependenciesAddFailed" xml:space="preserve"><value>Failed to add template dictionary dependencies: {0}</value></data>
   <data name="Camera_DatabaseFailureRecord" xml:space="preserve"><value>Database failure record Id:{0}, ResultCode:{1}, Message:{2}</value></data>
@@ -4605,7 +4456,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Statistics" xml:space="preserve"><value>Statistics</value></data>
   <data name="MtfStatisticsCsvHeader" xml:space="preserve"><value>Property,Maximum,Maximum Name,Minimum,Minimum Name,Average,Variance,Uniformity</value></data>
   <data name="CommonTools" xml:space="preserve"><value>Common Tools</value></data>
-  <data name="SelectTemplateFirstFormat" xml:space="preserve"><value>Please select the {0} template first</value></data>
   <data name="CreateToPOI" xml:space="preserve">
     <value>Create as POI</value>
   </data>

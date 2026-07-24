@@ -295,7 +295,7 @@ namespace ColorVision.Engine.Batch
                         }
                         catch (Exception ex)
                         {
-                            log.Warn(ColorVision.Engine.Properties.Resources.UnableToInstantiateProcessType+$" {item.ProcessTypeFullName}: {ex.Message}");
+                            log.Warn($"Unable to instantiate process type {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
                     
