@@ -344,12 +344,10 @@ namespace ColorVision.Engine.Services.Flow
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
 
-            // Keep node properties in the ViewFlow bottom pane instead of AvalonDock.
+            // Keep node properties in the ViewFlow right-side overlay instead of AvalonDock.
             STNodeEditorHelper.UseDockPanel = false;
             STNodeEditorHelper.SignStackPanel = InlineNodePropertyPanel.SignStackPanel;
             STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
-            STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChangedForBottomPanel;
-            STNodeEditorMain_ActiveChangedForBottomPanel(null, EventArgs.Empty);
 
             this.Loaded += (s, e) =>
             {
@@ -361,20 +359,6 @@ namespace ColorVision.Engine.Services.Flow
                 DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
                 CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
             };
-        }
-
-        private void STNodeEditorMain_ActiveChangedForBottomPanel(object? sender, EventArgs e)
-        {
-            bool hasActiveNode = STNodeEditorMain.ActiveNode != null;
-            NodePropertyTab.Visibility = hasActiveNode ? Visibility.Visible : Visibility.Collapsed;
-            if (hasActiveNode)
-            {
-                BottomDetailsTabControl.SelectedItem = NodePropertyTab;
-            }
-            else if (BottomDetailsTabControl.SelectedItem == NodePropertyTab)
-            {
-                BottomDetailsTabControl.SelectedIndex = 0;
-            }
         }
 
         private void OnActiveViewChanged(System.Windows.Controls.Control? activeView)
@@ -475,7 +459,6 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
-            STNodeEditorMain.ActiveChanged -= STNodeEditorMain_ActiveChangedForBottomPanel;
             STNodeEditorMain?.Dispose();
             GC.SuppressFinalize(this);
         }
