@@ -5,16 +5,121 @@ using ColorVision.UI.CUDA;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace ColorVision
 {
+    internal sealed class AboutTextShape : Shape
+    {
+        private double _height;
+        private Geometry _textGeometry = Geometry.Empty;
+        private double _width;
+
+        protected sealed override Geometry DefiningGeometry => _textGeometry;
+
+        protected override Size MeasureOverride(Size constraint)
+        {
+            RealizeGeometry();
+            return new Size(Math.Min(constraint.Width, _width), Math.Min(constraint.Height, _height));
+        }
+
+        private void RealizeGeometry()
+        {
+            var formattedText = CreateFormattedText(Text);
+            _height = formattedText.Height;
+            _width = formattedText.Width;
+            _textGeometry = formattedText.BuildGeometry(new Point());
+
+            if (Text == " ")
+                _width = CreateFormattedText("_").Width;
+        }
+
+        private FormattedText CreateFormattedText(string text)
+        {
+            return new FormattedText(
+                text,
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(FontFamily, FontStyle, FontWeight, FontStretch),
+                FontSize,
+                Brushes.Black,
+                100);
+        }
+
+        public static readonly DependencyProperty FontFamilyProperty =
+            TextElement.FontFamilyProperty.AddOwner(typeof(AboutTextShape));
+
+        public static readonly DependencyProperty FontSizeProperty =
+            TextElement.FontSizeProperty.AddOwner(typeof(AboutTextShape));
+
+        public static readonly DependencyProperty FontStretchProperty =
+            TextElement.FontStretchProperty.AddOwner(typeof(AboutTextShape));
+
+        public static readonly DependencyProperty FontStyleProperty =
+            TextElement.FontStyleProperty.AddOwner(typeof(AboutTextShape));
+
+        public static readonly DependencyProperty FontWeightProperty =
+            TextElement.FontWeightProperty.AddOwner(typeof(AboutTextShape));
+
+        public static readonly DependencyProperty TextProperty = DependencyProperty.Register(
+            nameof(Text),
+            typeof(string),
+            typeof(AboutTextShape),
+            new FrameworkPropertyMetadata(
+                string.Empty,
+                FrameworkPropertyMetadataOptions.AffectsMeasure |
+                FrameworkPropertyMetadataOptions.AffectsRender));
+
+        [Localizability(LocalizationCategory.Font)]
+        public FontFamily FontFamily
+        {
+            get => (FontFamily)GetValue(FontFamilyProperty);
+            set => SetValue(FontFamilyProperty, value);
+        }
+
+        [TypeConverter(typeof(FontSizeConverter))]
+        [Localizability(LocalizationCategory.None)]
+        public double FontSize
+        {
+            get => (double)GetValue(FontSizeProperty);
+            set => SetValue(FontSizeProperty, value);
+        }
+
+        public FontStretch FontStretch
+        {
+            get => (FontStretch)GetValue(FontStretchProperty);
+            set => SetValue(FontStretchProperty, value);
+        }
+
+        public FontStyle FontStyle
+        {
+            get => (FontStyle)GetValue(FontStyleProperty);
+            set => SetValue(FontStyleProperty, value);
+        }
+
+        public FontWeight FontWeight
+        {
+            get => (FontWeight)GetValue(FontWeightProperty);
+            set => SetValue(FontWeightProperty, value);
+        }
+
+        [Localizability(LocalizationCategory.Text)]
+        public string Text
+        {
+            get => (string)GetValue(TextProperty);
+            set => SetValue(TextProperty, value);
+        }
+    }
 
     public class AboutMsgExport : MenuItemBase,IMenuItem
     {
@@ -73,7 +178,7 @@ namespace ColorVision
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? $" ({Properties.Resources.Debugging}) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}{Properties.Resources.Bit} -  {version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
             Icon = null;
-            TextSharp1.Text = version?.ToString() ?? string.Empty;
+            VersionTextShape.Text = version?.ToString() ?? string.Empty;
             TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo.TrimEnd() + " " + SystemHelper.GetTotalPhysicalMemory();
             TextBoxHardwareId.Text = SystemHelper.GetHardwareId();
 

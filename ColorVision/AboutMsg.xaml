@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                 xmlns:graphics="clr-namespace:ColorVision.UI.Graphics;assembly=ColorVision.UI"
+                 xmlns:local="clr-namespace:ColorVision"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:properties="clr-namespace:ColorVision.Properties"
                  mc:Ignorable="d" Width="550" Height="410" Background="Transparent" Initialized="Window_Initialized"
@@ -54,8 +54,8 @@
                                     </EventTrigger>
                                 </Border.Triggers>
                                 <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <graphics:TextShape x:Name="TextSharp1" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="{x:Static properties:Resources.OK}">
-                                        <graphics:TextShape.Stroke>
+                                    <local:AboutTextShape x:Name="VersionTextShape" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" FontSize="50" StrokeThickness="2" Text="{x:Static properties:Resources.OK}">
+                                        <local:AboutTextShape.Stroke>
                                             <LinearGradientBrush Opacity="0.8" StartPoint="1,1" EndPoint="0.0,0">
                                                 <LinearGradientBrush.RelativeTransform>
                                                     <RotateTransform x:Name="GradientRotateTransform2" Angle="0" CenterX="0.5" CenterY="0.5" />
@@ -68,8 +68,8 @@
                                                 <GradientStop Offset="0.714" Color="Indigo" />
                                                 <GradientStop Offset="0.857" Color="Violet" />
                                             </LinearGradientBrush>
-                                        </graphics:TextShape.Stroke>
-                                    </graphics:TextShape>
+                                        </local:AboutTextShape.Stroke>
+                                    </local:AboutTextShape>
 
                                 </StackPanel>
                             </Border>
