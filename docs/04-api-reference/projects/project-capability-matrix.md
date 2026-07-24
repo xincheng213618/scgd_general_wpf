@@ -11,7 +11,7 @@
 | `ProjectARVRPro` | 当前主力 AR/VR 专业流程组项目 | Socket JSON、`RunAll`、`SwitchGroup`、雷鸟串口切图、AOI Relay | SQLite、CSV、Legacy CSV、客户 XLSX、Socket 结果 | `ARVRWindow.xaml.cs`、`Process/`、`Recipe/`、`Services/SocketControl.cs`、`SocketRelay/` |
 | `ProjectARVRPro.IntegrationDemo` | 给客户/上位机验证 ARVRPro TCP JSON 的示例 | 客户端主动连 `6666`，发送 JSON 事件 | 原始 JSON、解析后的结果表、CSV | `Program.cs`、`MainWindow.xaml.cs`、`Contracts/` |
 | `ProjectKB` | 键盘背光亮度、均匀性和自动修正 | Modbus TCP、MES DLL、可选 TCP Socket | SQLite、文本、summary、CSV、MES 上传 | `ProjectKBWindow.xaml.cs`、`Modbus/`、`MesDll.cs`、`BacklightAutotuneService.cs` |
-| `ProjectLUX` | LUX 亮度、色彩、MTF、畸变等自动化测试 | 文本 Socket：`T00XX,SN;` | `ProjectLUX.db`、`C_*.csv`、`B_*.csv`、`D_*.csv`、PDF/CSV | `LUXWindow.xaml.cs`、`Process/`、`Recipe/`、`Fix/`、`Services/SocketControl.cs` |
+| `ProjectLUX` | LUX 亮度、色彩、MTF、畸变等自动化测试 | 文本 Socket：`T00XX,SN;` | `ProjectLUX.db`、`C_*.csv`、`B_*.csv`、`D_*.csv` | `LUXWindow.xaml.cs`、`Process/`、`Recipe/`、`Fix/`、`Services/SocketControl.cs` |
 
 ## 按协议和触发方式分类
 

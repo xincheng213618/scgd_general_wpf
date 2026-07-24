@@ -19,7 +19,7 @@
 - 主程序中的入口窗口或菜单。
 - 外部触发方式，例如 Socket、MES、串口、Modbus 或本地按钮。
 - 流程组、Recipe/Fix、模板绑定和结果判定。
-- 导出结果，例如 CSV、XLSX、PDF、SQLite 或 Socket 返回字段。
+- 导出结果，例如 CSV、XLSX、SQLite 或 Socket 返回字段。
 - manifest、README、CHANGELOG、配置、资源和依赖 DLL。
 
 ## 构建和打包

@@ -19,7 +19,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 using ColorVision.Solution.Editor.AvalonEditor;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross

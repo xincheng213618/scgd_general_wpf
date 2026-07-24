@@ -69,7 +69,7 @@ ProjectLUX
 ├── ProjectLUXReuslt.cs         # 测试结果实体 (SQLite 持久化)
 ├── ViewResultManager.cs        # 结果查询与管理
 ├── Summary.cs                  # 生产摘要 (产线 / 工人 / 产能 / 良率)
-└── TestResultViewWindow.xaml   # 测试结果查看器 (CSV/PDF 导出)
+└── TestResultViewWindow.xaml   # 测试结果查看器 (CSV 导出)
 ```
 
 ## 核心设计模式
@@ -131,7 +131,7 @@ ProjectLUX
 | `CVCommCore.dll` | 通信核心库 |
 
 ### 主要 NuGet 包
-SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、iText (PDF 导出)、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)
+SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)
 
 ## 配置文件说明
 

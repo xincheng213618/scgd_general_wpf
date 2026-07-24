@@ -26,7 +26,7 @@
 | Socket | `Services/SocketControl.cs` |
 | 结果 | `ObjectiveTestResult.cs`、`ViewResultManager.cs` |
 
-用户输入 SN，或外部发送 `T00XX,SN;` 后，项目初始化结果目录和 `ObjectiveTestResult`，选择当前 `ProcessGroup` 和启用步骤，按 `FlowTemplate` 运行 Engine Flow。Flow 完成后读取批次和算法结果，`IProcess.Execute()` 应用 Fix 修正和 Recipe 限值，写入 `ObjectiveTestResult` / `ProjectLUX.db`，再导出 CSV/PDF 并按 Socket 命令返回客户响应。
+用户输入 SN，或外部发送 `T00XX,SN;` 后，项目初始化结果目录和 `ObjectiveTestResult`，选择当前 `ProcessGroup` 和启用步骤，按 `FlowTemplate` 运行 Engine Flow。Flow 完成后读取批次和算法结果，`IProcess.Execute()` 应用 Fix 修正和 Recipe 限值，写入 `ObjectiveTestResult` / `ProjectLUX.db`，再导出 CSV 并按 Socket 命令返回客户响应。
 
 ## 流程组和 Socket
 

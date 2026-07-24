@@ -77,7 +77,7 @@ ProjectARVRPro
 ├── ObjectiveTestResult.cs          # 测试结果聚合模型 + CSV 导出
 ├── ProjectARVRReuslt.cs            # 测试结果实体 (SQLite 持久化)
 ├── ViewResultManager.cs            # 结果查询与管理
-├── TestResultViewWindow.xaml       # 测试结果查看器 (CSV/PDF 导出)
+├── TestResultViewWindow.xaml       # 测试结果查看器 (CSV 导出)
 ├── ThunderbirdSerialDebugWindow.xaml # 串口调试 UI
 └── LegacyARVR/                     # 向后兼容：旧版扁平输出格式
 ```
@@ -175,7 +175,7 @@ ARVRPro 作为 **TCP 服务器**（默认端口 6666），外部系统（产线 
 | `CVCommCore.dll` | 通信核心库 |
 
 ### 主要 NuGet 包
-SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、iText (PDF 导出)、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)、Quartz.NET (调度)、GLWpfControl (OpenGL)
+SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)、Quartz.NET (调度)、GLWpfControl (OpenGL)
 
 ## 配置文件说明
 
