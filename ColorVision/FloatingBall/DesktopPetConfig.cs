@@ -56,30 +56,25 @@ namespace ColorVision.FloatingBall
         public double PetOpacity { get => _petOpacity; set { _petOpacity = value; OnPropertyChanged(); } }
         private double _petOpacity = 1.0;
 
-        [DisplayName("ConfigLive2DEnable")]
-        [Category("Live2D")]
-        public bool EnableLive2DRenderer { get => _enableLive2DRenderer; set { _enableLive2DRenderer = value; OnPropertyChanged(); } }
-        private bool _enableLive2DRenderer = true;
+        [DisplayName("宠物素材")]
+        [Description("使用 ColorVision 默认素材、Codex 内置素材或兼容 Codex pet.json 的自定义素材。")]
+        [Category("宠物素材")]
+        [Browsable(false)]
+        public string SelectedPetId { get => _selectedPetId; set { _selectedPetId = value; OnPropertyChanged(); } }
+        private string _selectedPetId = DesktopPetAssetCatalog.DefaultAssetId;
 
-        [DisplayName("ConfigLive2DPath")]
-        [Category("Live2D")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
-        public string Live2DPath { get => _live2DPath; set { _live2DPath = value; OnPropertyChanged(); } }
-        private string _live2DPath = string.Empty;
+        [DisplayName("关联 Copilot")]
+        [Description("让宠物跟随 Copilot 的运行、等待确认、完成和失败状态。")]
+        [Category("Copilot")]
+        public bool EnableCopilotIntegration { get => _enableCopilotIntegration; set { _enableCopilotIntegration = value; OnPropertyChanged(); } }
+        private bool _enableCopilotIntegration = true;
 
-        [DisplayName("ConfigLive2DMaxFps")]
-        [Category("Live2D")]
-        public int Live2DMaxFps { get => _live2DMaxFps; set { _live2DMaxFps = value; OnPropertyChanged(); } }
-        private int _live2DMaxFps = 30;
+        [DisplayName("显示 Copilot 提醒")]
+        [Description("在 Copilot 需要确认、完成或失败时显示宠物气泡。")]
+        [Category("Copilot")]
+        [PropertyVisibility(nameof(EnableCopilotIntegration))]
+        public bool ShowCopilotNotifications { get => _showCopilotNotifications; set { _showCopilotNotifications = value; OnPropertyChanged(); } }
+        private bool _showCopilotNotifications = true;
 
-        [DisplayName("ConfigLive2DRenderScale")]
-        [Category("Live2D")]
-        public double Live2DRenderScale { get => _live2DRenderScale; set { _live2DRenderScale = value; OnPropertyChanged(); } }
-        private double _live2DRenderScale = 0.75;
-
-        [DisplayName("ConfigLive2DMotionEffects")]
-        [Category("Live2D")]
-        public bool EnableLive2DMotionEffects { get => _enableLive2DMotionEffects; set { _enableLive2DMotionEffects = value; OnPropertyChanged(); } }
-        private bool _enableLive2DMotionEffects = true;
     }
 }

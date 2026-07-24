@@ -551,16 +551,10 @@
     <value>静かにしてほしい場合は、右クリックで通知をオフにしてください。</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>ローカルLive2Dモデルがある場合は、設定で接続できます。</value>
+    <value>設定から PNG または WebP のスプライトシートを使ってペットを作成できます。</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVisionが起動しました。ここで通知します。</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>モデル読み込み失敗、内蔵形象に切り替えました。</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>モデル読み込み失敗: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>デスクトップペット設定</value>
@@ -600,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>ペット透明度</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Live2Dレンダリングを有効にする</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2DモデルまたはHTMLパス</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>デスクトップペットを有効にする</value>

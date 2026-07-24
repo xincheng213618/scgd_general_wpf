@@ -52,3 +52,65 @@ Each source crop and its matching live implementation state were emitted togethe
 - P3: the revised fixed-size and recovery states were not recaptured under the dark theme; all changed colors remain dynamic theme resources.
 
 final result: passed
+
+---
+
+# Desktop pet settings design QA
+
+## Comparison target
+
+- Source visual truth: `C:\Users\17917\AppData\Local\Temp\codex-clipboard-d9a3d5f5-e950-482e-bcca-c82b1f87d72d.png`
+- Rendered implementation: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\settings.png`
+- Side-by-side evidence: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\design-qa-comparison-final.png`
+- Narrow-width evidence: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\settings-min-width.png`
+- Open-pet state evidence: `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\settings-pet-open.png`
+- State: pet settings loaded, ColorVision default pet selected, nine local Codex pets discovered.
+
+## Viewport and normalization
+
+- Source pixels: 1938 x 1572.
+- Source normalized for comparison: 888 x 720.
+- Implementation pixels and WPF logical viewport: 820 x 720 at 96 DPI.
+- Responsive check: 700 x 720 at 96 DPI.
+- The source includes Codex application chrome and a settings sidebar; the implementation capture is the ColorVision settings content window. The source was proportionally downsampled to the same height, with no crop or density interpolation applied to the implementation.
+
+## Findings
+
+- No actionable P0, P1, or P2 differences remain.
+- The first comparison found a P2 density mismatch: ColorVision showed only four complete pets while the reference showed almost the entire built-in catalog. The list also used separate oversized cards and fixed appearance/Copilot panels.
+- Fixed by switching to one compact bordered list with divider rows, moving custom-pet, appearance, and Copilot controls into the same page scroll, and moving the folder action out of the header.
+- The revised comparison shows the same hierarchy and scan pattern as Codex: title and actions, explanatory text, one continuous pet list, thumbnail/name/description, and a right-aligned selection action. Eight complete rows plus the next row are visible at 820 x 720, and the 700-pixel-width capture has no overlap or clipped persistent controls.
+
+## Required fidelity surfaces
+
+- Fonts and typography: ColorVision keeps its existing WPF font family and weights. Title, pet names, descriptions, badges, and action hierarchy match the reference closely; no truncation or unintended wrapping is visible.
+- Spacing and layout rhythm: compact list rows, dividers, thumbnail scale, right-aligned actions, and page scrolling now follow the reference. The narrow-width header subtitle wraps without colliding with actions.
+- Colors and visual tokens: the implementation intentionally uses the active ColorVision theme resources rather than hard-coding the reference's dark Codex palette. Contrast is clear in the captured light theme.
+- Image quality and asset fidelity: the ColorVision default asset is crisp, and all nine Codex thumbnails are decoded directly from the installed Codex sprite sheets with nearest-neighbor scaling. No placeholder imagery is present.
+- Copy and content: ColorVision-specific source labels, local-asset discovery status, and the required default pet are intentional additions. Create, refresh, select, wake/tuck-away, custom folder, appearance, and Copilot controls are represented.
+
+## Focused evidence
+
+The final full-view comparison is high enough resolution to read the list typography, source badges, thumbnails, buttons, and row spacing, so a separate focused crop was not needed. Directional sprite evidence is captured separately in:
+
+- `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\codex-running-left.png`
+- `C:\Users\17917\AppData\Local\Temp\ColorVisionDesktopPetCaptureOutput\codex-running-right.png`
+
+## Comparison history
+
+1. Initial implementation capture: P2 list density and fixed-footer mismatch.
+2. Fix: compact continuous list, page-level scrolling, folder management section below the list.
+3. Revised capture: the earlier mismatch is resolved; no actionable P0/P1/P2 findings remain.
+
+## Runtime interaction verification
+
+- A real WPF preview window was controlled with Windows input. Dragging the floating pet horizontally from `(150, 220)` to `(235, 220)` moved the transparent window and returned cleanly to its resting state.
+- The settings action was clicked through the rendered UI and verified through two complete transitions: `收起宠物` to `唤醒宠物`, then `唤醒宠物` to `收起宠物`.
+- The directional Codex frames decoded and rendered distinctly for both left and right movement, as shown by the focused sprite evidence paths above.
+
+## Follow-up polish
+
+- P3: replace the text refresh action with the repository's standard refresh icon if a matching shared icon style becomes available.
+- P3: capture the same page under ColorVision's dark theme for a closer palette-only comparison.
+
+final result: passed

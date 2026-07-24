@@ -49,6 +49,39 @@ namespace ColorVision.UI.Tests
             Assert.False(processB.HasExited);
         }
 
+        [Fact]
+        public void KeepsCurrentProcessAndClosesEarlierProcessFromTheSameInstallation()
+        {
+            string installationA = Path.Combine(_rootDirectory, "InstallationA");
+            string installationB = Path.Combine(_rootDirectory, "InstallationB");
+            Directory.CreateDirectory(installationA);
+            Directory.CreateDirectory(installationB);
+
+            const string executableName = "ColorVisionProcessProbe.exe";
+            string executableA = Path.Combine(installationA, executableName);
+            string executableB = Path.Combine(installationB, executableName);
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executableA);
+            File.Copy(Path.Combine(Environment.SystemDirectory, "ping.exe"), executableB);
+
+            Process earlierProcess = StartProbe(executableA);
+            Process currentProcess = StartProbe(executableA);
+            Process otherInstallationProcess = StartProbe(executableB);
+            Assert.True(SpinWait.SpinUntil(
+                () => !earlierProcess.HasExited && !currentProcess.HasExited && !otherInstallationProcess.HasExited,
+                TimeSpan.FromSeconds(2)));
+
+            int closedCount = ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses(
+                executableA,
+                currentProcess.Id,
+                gracefulShutdownTimeout: TimeSpan.FromMilliseconds(100),
+                forcedShutdownTimeout: TimeSpan.FromSeconds(5));
+
+            Assert.Equal(1, closedCount);
+            Assert.True(earlierProcess.WaitForExit(5000));
+            Assert.False(currentProcess.HasExited);
+            Assert.False(otherInstallationProcess.HasExited);
+        }
+
         private Process StartProbe(string executablePath)
         {
             Process process = Process.Start(new ProcessStartInfo

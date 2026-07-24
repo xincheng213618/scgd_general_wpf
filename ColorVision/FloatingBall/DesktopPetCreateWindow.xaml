@@ -1,0 +1,145 @@
+<Window x:Class="ColorVision.FloatingBall.DesktopPetCreateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="创建宠物"
+        Width="620"
+        Height="620"
+        MinWidth="560"
+        MinHeight="540"
+        Background="{DynamicResource GlobalBackground}"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock FontSize="24"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource GlobalTextBrush}"
+                       Text="创建桌面宠物" />
+            <TextBlock Margin="0,6,0,0"
+                       Foreground="{DynamicResource SecondaryTextBrush}"
+                       Text="导入一张 Codex 格式的 PNG 或 WebP 精灵表。创建后会复制到 ColorVision 的宠物素材目录。"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,20,0,18"
+                Padding="18"
+                Background="{DynamicResource LayoutBackground}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="9">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                               FontWeight="SemiBold"
+                               Text="宠物名称" />
+                    <TextBox x:Name="PetNameTextBox"
+                             Margin="0,7,0,0"
+                             MaxLength="80"
+                             MinHeight="32"
+                             Padding="8,5" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Margin="0,15,0,0">
+                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                               FontWeight="SemiBold"
+                               Text="描述（可选）" />
+                    <TextBox x:Name="DescriptionTextBox"
+                             Margin="0,7,0,0"
+                             MaxLength="240"
+                             MinHeight="56"
+                             Padding="8,5"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2"
+                            Margin="0,15,0,0">
+                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                               FontWeight="SemiBold"
+                               Text="精灵表文件" />
+                    <Grid Margin="0,7,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="SpriteSheetPathTextBox"
+                                 MinHeight="32"
+                                 Padding="8,5"
+                                 VerticalContentAlignment="Center" />
+                        <Button Grid.Column="1"
+                                MinWidth="82"
+                                Height="32"
+                                Margin="8,0,0,0"
+                                Click="BrowseButton_Click"
+                                Content="浏览…" />
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3"
+                            Margin="0,15,0,0">
+                    <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                               FontWeight="SemiBold"
+                               Text="精灵表格式" />
+                    <ComboBox x:Name="SpriteVersionComboBox"
+                              Margin="0,7,0,0"
+                              MinHeight="32"
+                              Padding="7,4"
+                              SelectedIndex="0">
+                        <ComboBoxItem Tag="2"
+                                      Content="Codex v2 · 8 列 × 11 行（推荐）" />
+                        <ComboBoxItem Tag="1"
+                                      Content="Codex v1 · 8 列 × 9 行" />
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Row="4"
+                            Margin="0,15,0,0">
+                    <TextBlock Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="图片宽度必须能被 8 整除，高度必须能被所选行数整除；最大 4096 × 4096、20 MB。"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="StatusText"
+                               Margin="0,8,0,0"
+                               Foreground="#D43B3B"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="2"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button MinWidth="88"
+                    Height="34"
+                    IsCancel="True"
+                    Content="取消" />
+            <Button x:Name="CreateButton"
+                    MinWidth="96"
+                    Height="34"
+                    Margin="10,0,0,0"
+                    Click="CreateButton_Click"
+                    IsDefault="True"
+                    Content="创建并选择" />
+        </StackPanel>
+    </Grid>
+</Window>

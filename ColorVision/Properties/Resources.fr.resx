@@ -551,16 +551,10 @@
     <value>Si vous avez besoin que je sois silencieux, faites un clic droit pour désactiver les notifications.</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>Si vous avez un modèle Live2D local, vous pouvez le connecter dans les paramètres.</value>
+    <value>Vous pouvez créer un compagnon à partir d'une planche de sprites PNG ou WebP dans les paramètres.</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision a démarré, je serai là pour vous rappeler.</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>Échec du chargement du modèle, basculé vers l'apparence intégrée.</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>Échec du chargement du modèle : {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>Paramètres de l'animal de compagnie du bureau</value>
@@ -600,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>Opacité de l'animal de compagnie</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Activer le rendu Live2D</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Chemin du modèle Live2D ou HTML</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Activer l'animal de compagnie du bureau</value>

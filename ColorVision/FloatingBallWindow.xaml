@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:ColorVision.FloatingBall"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:DesktopPetConfig}"
         Title="ColorVision Desktop Pet"
@@ -14,6 +13,7 @@
         Background="Transparent"
         Initialized="Window_Initialized"
         Loaded="Window_Loaded"
+        LocationChanged="Window_LocationChanged"
         Closed="Window_Closed"
         ShowActivated="False"
         ShowInTaskbar="False"
@@ -27,11 +27,147 @@
             <ScaleTransform ScaleX="{Binding PetScale}" ScaleY="{Binding PetScale}" />
         </Grid.RenderTransform>
 
+        <Popup x:Name="CopilotApprovalPopup"
+               AllowsTransparency="True"
+               Focusable="False"
+               HorizontalOffset="0"
+               Placement="Top"
+               PlacementTarget="{Binding ElementName=PetHost}"
+               PopupAnimation="Fade"
+               StaysOpen="True"
+               VerticalOffset="-8">
+            <Grid Width="278">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="9" />
+                </Grid.RowDefinitions>
+                <Border x:Name="CopilotApprovalBorder"
+                        Padding="13,11"
+                        Background="#FAFFFFFF"
+                        BorderBrush="#5CD99000"
+                        BorderThickness="1"
+                        CornerRadius="13">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="22"
+                                          Opacity="0.22"
+                                          ShadowDepth="4"
+                                          Color="#000000" />
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="ConfirmationTitle"
+                                       Margin="0,1,8,0"
+                                       Foreground="#202A3A"
+                                       FontSize="12.5"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                            <Border Grid.Column="1"
+                                    Padding="7,2"
+                                    Background="#18D99000"
+                                    CornerRadius="8">
+                                <TextBlock x:Name="ConfirmationCountText"
+                                           Foreground="#8B5D00"
+                                           FontSize="10.5"
+                                           FontWeight="SemiBold"
+                                           Text="需确认" />
+                            </Border>
+                        </Grid>
+
+                        <TextBlock x:Name="ConfirmationDescription"
+                                   Grid.Row="1"
+                                   MaxHeight="38"
+                                   Margin="0,7,0,0"
+                                   Foreground="#344154"
+                                   FontSize="11.5"
+                                   LineHeight="16"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock x:Name="ConfirmationToolText"
+                                   Grid.Row="2"
+                                   Margin="0,7,0,0"
+                                   Foreground="#5D6878"
+                                   FontFamily="Consolas"
+                                   FontSize="10.5"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock x:Name="ConfirmationExpiryText"
+                                   Grid.Row="3"
+                                   Margin="0,3,0,0"
+                                   Foreground="#7A8492"
+                                   FontSize="10.5"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <Grid Grid.Row="4"
+                              Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="ConfirmationStatusText"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7A8492"
+                                       FontSize="10.5"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="Collapsed" />
+                            <Button Grid.Column="1"
+                                    MinWidth="52"
+                                    Height="29"
+                                    Padding="9,3"
+                                    Click="OpenConfirmationButton_Click"
+                                    Content="查看" />
+                            <Button x:Name="RejectConfirmationButton"
+                                    Grid.Column="2"
+                                    MinWidth="52"
+                                    Height="29"
+                                    Margin="7,0,0,0"
+                                    Padding="9,3"
+                                    Click="RejectConfirmationButton_Click"
+                                    Content="拒绝" />
+                            <Button x:Name="ApproveConfirmationButton"
+                                    Grid.Column="3"
+                                    MinWidth="58"
+                                    Height="29"
+                                    Margin="7,0,0,0"
+                                    Padding="9,3"
+                                    Background="#2F5BFF"
+                                    BorderBrush="#2F5BFF"
+                                    Foreground="White"
+                                    Click="ApproveConfirmationButton_Click"
+                                    Content="批准" />
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Path Grid.Row="1"
+                      Width="18"
+                      Height="9"
+                      HorizontalAlignment="Center"
+                      Data="M 0 0 L 18 0 L 9 9 Z"
+                      Fill="#FAFFFFFF"
+                      Stroke="#5CD99000"
+                      StrokeThickness="1" />
+            </Grid>
+        </Popup>
+
         <Grid x:Name="MessageBubble"
               Width="246"
               HorizontalAlignment="Center"
               VerticalAlignment="Top"
-              Margin="0,0,0,0"
               Opacity="0"
               Visibility="Collapsed"
               RenderTransformOrigin="0.5,1">
@@ -80,136 +216,69 @@
         </Grid>
 
         <Grid x:Name="PetHost"
-              Width="250"
-              Height="268"
+              Width="240"
+              Height="260"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
-              Margin="0,0,0,10"
+              Margin="0,0,0,6"
               Cursor="Hand">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="PetFloatTransform" />
             </Grid.RenderTransform>
 
-            <wv2:WebView2 x:Name="Live2DView"
-                          Visibility="Collapsed" />
-
-            <Canvas x:Name="FallbackPet"
-                    Width="250"
-                    Height="268"
-                    Visibility="Visible"
-                    RenderTransformOrigin="0.5,0.7">
-                <Canvas.RenderTransform>
+            <Grid x:Name="NativePet"
+                  RenderTransformOrigin="0.5,0.72">
+                <Grid.RenderTransform>
                     <TransformGroup>
                         <RotateTransform x:Name="PetTiltTransform" Angle="0" />
                         <ScaleTransform x:Name="PetTapScaleTransform" ScaleX="1" ScaleY="1" />
                     </TransformGroup>
-                </Canvas.RenderTransform>
+                </Grid.RenderTransform>
 
-                <Ellipse Canvas.Left="54"
-                         Canvas.Top="232"
-                         Width="142"
-                         Height="22"
-                         Fill="#26000000" />
-
-                <Path Fill="#3C6DF0"
-                      Stroke="#254AB5"
-                      StrokeThickness="2"
-                      Data="M 80 147 C 74 174 78 211 101 226 C 116 236 145 236 161 225 C 184 209 188 174 179 147 C 165 129 96 129 80 147 Z" />
-                <Path Fill="#A8D7FF"
-                      Opacity="0.85"
-                      Data="M 105 157 C 116 166 143 166 154 157 C 158 177 154 203 139 211 C 129 216 114 213 106 202 C 97 190 98 171 105 157 Z" />
-                <Path Fill="#2446AA"
-                      Opacity="0.5"
-                      Data="M 84 174 C 67 183 59 199 65 210 C 73 222 89 213 96 199 C 101 188 98 178 84 174 Z" />
-                <Path Fill="#2446AA"
-                      Opacity="0.5"
-                      Data="M 176 174 C 193 183 201 199 195 210 C 187 222 171 213 164 199 C 159 188 162 178 176 174 Z" />
-
-                <Ellipse Canvas.Left="72"
-                         Canvas.Top="36"
-                         Width="112"
-                         Height="116"
-                         Fill="#FFEAD9"
-                         Stroke="#D7A58E"
-                         StrokeThickness="2" />
-                <Path Fill="#28375F"
-                      Data="M 78 70 C 77 38 103 19 131 24 C 164 30 184 54 180 91 C 169 69 149 57 126 56 C 105 55 91 60 78 70 Z" />
-                <Path Fill="#334778"
-                      Data="M 83 65 C 101 52 124 46 150 53 C 140 39 112 34 92 48 C 87 52 84 58 83 65 Z" />
-
-                <Ellipse Canvas.Left="92"
-                         Canvas.Top="87"
-                         Width="16"
-                         Height="20"
-                         Fill="#263047">
-                    <Ellipse.RenderTransform>
-                        <ScaleTransform x:Name="LeftEyeScale" CenterX="8" CenterY="10" ScaleY="1" />
-                    </Ellipse.RenderTransform>
+                <Ellipse x:Name="ActivityGlow"
+                         Width="184"
+                         Height="184"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Fill="#443C6DF0"
+                         Opacity="0.18">
+                    <Ellipse.Effect>
+                        <BlurEffect Radius="24" />
+                    </Ellipse.Effect>
                 </Ellipse>
-                <Ellipse Canvas.Left="148"
-                         Canvas.Top="87"
-                         Width="16"
-                         Height="20"
-                         Fill="#263047">
-                    <Ellipse.RenderTransform>
-                        <ScaleTransform x:Name="RightEyeScale" CenterX="8" CenterY="10" ScaleY="1" />
-                    </Ellipse.RenderTransform>
-                </Ellipse>
-                <Ellipse Canvas.Left="97"
-                         Canvas.Top="91"
-                         Width="5"
-                         Height="6"
-                         Fill="#F8FFFFFF" />
-                <Ellipse Canvas.Left="153"
-                         Canvas.Top="91"
-                         Width="5"
-                         Height="6"
-                         Fill="#F8FFFFFF" />
-                <Path Stroke="#D96E7A"
-                      StrokeThickness="3"
-                      StrokeStartLineCap="Round"
-                      StrokeEndLineCap="Round"
-                      Data="M 111 119 C 122 129 139 129 150 119" />
-                <Ellipse Canvas.Left="83"
-                         Canvas.Top="107"
-                         Width="18"
-                         Height="10"
-                         Fill="#40F48B9C" />
-                <Ellipse Canvas.Left="155"
-                         Canvas.Top="107"
-                         Width="18"
-                         Height="10"
-                         Fill="#40F48B9C" />
 
-                <Path Fill="#FFEAD9"
-                      Stroke="#D7A58E"
-                      StrokeThickness="1.6"
-                      Data="M 79 96 C 68 96 62 106 66 116 C 70 126 80 124 84 116 Z" />
-                <Path Fill="#FFEAD9"
-                      Stroke="#D7A58E"
-                      StrokeThickness="1.6"
-                      Data="M 177 96 C 188 96 194 106 190 116 C 186 126 176 124 172 116 Z" />
+                <Image x:Name="DefaultPetImage"
+                       Margin="6"
+                       Source="/ColorVision;component/Assets/Pets/xiaocai.png"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
 
-                <Path Fill="#FFD166"
-                      Stroke="#E4A92F"
-                      StrokeThickness="1.5"
-                      Data="M 117 143 L 139 143 L 147 161 L 128 174 L 109 161 Z" />
-                <Ellipse Canvas.Left="119"
-                         Canvas.Top="150"
-                         Width="18"
-                         Height="18"
-                         Fill="#FFFFFF"
-                         Opacity="0.8" />
-                <Path Stroke="#3C6DF0"
-                      StrokeThickness="2"
-                      StrokeStartLineCap="Round"
-                      Data="M 126 153 L 131 158 L 124 164" />
+                <Image x:Name="SpritePetImage"
+                       Margin="6"
+                       Stretch="Uniform"
+                       Visibility="Collapsed"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor" />
 
-                <Path Fill="#263A74"
-                      Data="M 97 226 C 101 241 116 246 126 236 C 119 229 109 225 97 226 Z" />
-                <Path Fill="#263A74"
-                      Data="M 160 226 C 156 241 141 246 131 236 C 138 229 148 225 160 226 Z" />
-            </Canvas>
+                <Border x:Name="ActivityBadge"
+                        Width="34"
+                        Height="24"
+                        Margin="0,0,22,16"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Background="#E62F5BFF"
+                        BorderBrush="#E6FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="ActivityBadgeText"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Text="AI" />
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

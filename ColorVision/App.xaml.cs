@@ -28,7 +28,18 @@ namespace ColorVision
         [ConfigSetting]
         [DisplayName("AllowMultipleInstances")]
         [Description("AllowMultipleInstancesDescription")]
-        public bool IsMute { get => _IsMute; set { _IsMute = value; OnPropertyChanged(); } }
+        public bool IsMute
+        {
+            get => _IsMute;
+            set
+            {
+                if (_IsMute == value)
+                    return;
+
+                _IsMute = value;
+                OnPropertyChanged();
+            }
+        }
         private bool _IsMute = true;
     }
 
@@ -39,6 +50,8 @@ namespace ColorVision
     {
         private bool _isSessionEnding;
         private ModuleCatalog? _moduleCatalog;
+        private bool _ownsSingleInstanceMutex;
+        private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
 
         public App()
         {
@@ -163,7 +176,9 @@ namespace ColorVision
             ConfigHandler.GetInstance().IsAutoSave = true;
 
             mutex = new Mutex(true, "ColorVision", out bool ownsMutex);
-            bool allowMultipleInstances = ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute;
+            _ownsSingleInstanceMutex = ownsMutex;
+            APPConfig appConfig = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
+            bool allowMultipleInstances = appConfig.IsMute;
             if (SingleInstanceStartupPolicy.Decide(
                 ownsMutex,
                 Debugger.IsAttached,
@@ -186,6 +201,12 @@ namespace ColorVision
                     return;
                 }
             }
+
+            _singleInstanceRuntimeCoordinator = new SingleInstanceRuntimeCoordinator(
+                () => Task.Run(Update.ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses),
+                TryAcquireSingleInstanceMutex,
+                () => ConfigHandler.GetInstance().Save<APPConfig>());
+            appConfig.PropertyChanged += AppConfig_PropertyChanged;
 
             Rbac.ApplicationUsageTracker.StartSession();
 
@@ -249,6 +270,54 @@ namespace ColorVision
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }
+        }
+
+        private async void AppConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(APPConfig.IsMute)
+                || sender is not APPConfig appConfig
+                || appConfig.IsMute
+                || _singleInstanceRuntimeCoordinator == null)
+            {
+                return;
+            }
+
+            try
+            {
+                int? closedInstanceCount = await _singleInstanceRuntimeCoordinator.EnforceSingleInstanceAsync();
+                if (closedInstanceCount.HasValue)
+                {
+                    log.Info(
+                        $"Multiple-instance mode disabled. Closed {closedInstanceCount.Value} other " +
+                        "ColorVision instance(s) from the current installation.");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Unable to disable multiple-instance mode. Restoring the previous setting.", ex);
+                if (!appConfig.IsMute)
+                {
+                    appConfig.IsMute = true;
+                    ConfigHandler.GetInstance().Save<APPConfig>();
+                }
+            }
+        }
+
+        private bool TryAcquireSingleInstanceMutex()
+        {
+            if (_ownsSingleInstanceMutex)
+                return true;
+
+            try
+            {
+                _ownsSingleInstanceMutex = mutex?.WaitOne(0) == true;
+            }
+            catch (AbandonedMutexException)
+            {
+                _ownsSingleInstanceMutex = true;
+            }
+
+            return _ownsSingleInstanceMutex;
         }
 
         /// <summary>

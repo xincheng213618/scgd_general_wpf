@@ -551,16 +551,10 @@
     <value>需要我安靜一點，可以右鍵把通知關掉。</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>有本地 Live2D 模型的話，可以在設置裏接進來。</value>
+    <value>有 PNG 或 WebP 精靈表的話，可以在設定裏建立自己的寵物。</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision 已啓動，我會在這裏提醒你。</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>模型加載失敗，已切換爲內置形象。</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>模型加載失敗：{0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>桌面寵物設置</value>
@@ -600,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>寵物透明度</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>啓用 Live2D 渲染</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2D 模型或 HTML 路徑</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D 最大幀率</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D 渲染分辨率</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D 輕量動效</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>啓用桌面寵物</value>

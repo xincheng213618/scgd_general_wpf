@@ -551,16 +551,10 @@
     <value>If you need me to be quiet, right-click to turn off notifications.</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>If you have a local Live2D model, you can connect it in settings.</value>
+    <value>В настройках можно создать питомца из спрайт-листа PNG или WebP.</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision has started, I'll be here to remind you.</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>Model loading failed, switched to built-in appearance.</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>Model loading failed: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>Настройки рабочего питомца</value>
@@ -600,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>Прозрачность питомца</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Включить рендеринг Live2D</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Путь к модели Live2D или HTML</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Включить рабочего питомца</value>

@@ -38,8 +38,8 @@
     <PackageReference Include="Microsoft.Agents.AI.Harness" Version="1.13.0-preview.260703.1" />
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.13.0" />
     <PackageReference Include="ModelContextProtocol.Core" Version="1.4.1" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="SkiaSharp" Version="3.119.2" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.8" />
     <PackageReference Include="WpfMath" Version="2.1.0" />
 	</ItemGroup>
@@ -79,6 +79,7 @@
     <None Remove="Assets\Image\ComfyUI_00080_.png" />
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <None Remove="Assets\Pets\xiaocai.png" />
     <None Remove="Assets\png\background0.png" />
     <None Remove="Assets\png\PowerToy.png" />
   </ItemGroup>
@@ -168,6 +169,7 @@
     <Resource Include="Assets\Image\ComfyUI_00080_.png" />
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <Resource Include="Assets\Pets\xiaocai.png" />
     <Resource Include="Assets\png\background0.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

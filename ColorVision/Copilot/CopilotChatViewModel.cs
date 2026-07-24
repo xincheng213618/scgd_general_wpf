@@ -1929,7 +1929,7 @@ namespace ColorVision.Copilot
 
             var result = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                BuildPendingActionApprovalPrompt(action),
+                CopilotMcpConfirmationDecision.BuildApprovalPrompt(action),
                 "Approve Copilot action",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
@@ -1940,22 +1940,16 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (action.ResumesAgentOnApproval)
-            {
-                var approved = CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
-                SetPendingActionFeedback(approved
-                    ? $"{action.ActionId}: {message} The agent will resume in the same session."
-                    : $"{action.ActionId}: {message}");
-            }
-            else if (action.ExecuteOnApproval)
+            if (action.ExecuteOnApproval)
             {
                 var cancellation = BeginAuxiliaryOperation();
                 try
                 {
-                    var executionResult = await CopilotMcpConfirmationStore.Instance.ApproveAndExecuteAsync(action.ActionId, cancellation.Token);
-                    SetPendingActionFeedback(executionResult.Success
-                        ? $"{action.ActionId}: approved and executed."
-                        : $"{action.ActionId}: {executionResult.Text}");
+                    var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
+                        CopilotMcpConfirmationStore.Instance,
+                        action,
+                        cancellation.Token);
+                    SetPendingActionFeedback(approvalResult.Message);
                 }
                 finally
                 {
@@ -1964,8 +1958,11 @@ namespace ColorVision.Copilot
             }
             else
             {
-                CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out var message);
-                SetPendingActionFeedback($"{action.ActionId}: {message}");
+                var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
+                    CopilotMcpConfirmationStore.Instance,
+                    action,
+                    CancellationToken.None);
+                SetPendingActionFeedback(approvalResult.Message);
             }
             RefreshPendingActions();
         }
@@ -2051,27 +2048,6 @@ namespace ColorVision.Copilot
 
             if (changed)
                 PersistState();
-        }
-
-        private static string BuildPendingActionApprovalPrompt(ConfirmableAction action)
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine("Approve this Copilot action?");
-            builder.AppendLine();
-            builder.AppendLine(action.Title);
-            builder.AppendLine($"Tool: {action.ToolName}");
-            builder.AppendLine($"Risk: {action.RiskLevel}");
-            builder.AppendLine($"Expires: {action.ExpiresAtLabel}");
-
-            if (!string.IsNullOrWhiteSpace(action.ArgumentsSummary))
-                builder.AppendLine($"Params: {action.ArgumentsSummary}");
-
-            builder.AppendLine();
-            builder.AppendLine("Only approve if the requested operation matches your intent.");
-            builder.Append(action.ExecuteOnApproval
-                ? "This in-app action will execute immediately after approval."
-                : "The requesting MCP client must still call confirm_action after approval.");
-            return builder.ToString();
         }
 
         private void RejectPendingAction(ConfirmableAction? action)

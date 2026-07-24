@@ -87,8 +87,9 @@ namespace ColorVision
                 new ConfigSettingMetadata
                 {
                     Name = Properties.Resources.ConfigDesktopPet,
-                    Type = ConfigSettingType.Class,
+                    Type = ConfigSettingType.TabItem,
                     Source = DesktopPetConfig.Instance,
+                    ViewType = typeof(DesktopPetSettingsControl),
                     Order = 20,
                 },
                 new ConfigSettingMetadata

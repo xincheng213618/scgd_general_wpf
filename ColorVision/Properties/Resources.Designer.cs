@@ -304,51 +304,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用 Live2D 渲染 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DEnable {
-            get {
-                return ResourceManager.GetString("ConfigLive2DEnable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 最大帧率 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DMaxFps {
-            get {
-                return ResourceManager.GetString("ConfigLive2DMaxFps", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 轻量动效 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DMotionEffects {
-            get {
-                return ResourceManager.GetString("ConfigLive2DMotionEffects", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 模型或 HTML 路径 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DPath {
-            get {
-                return ResourceManager.GetString("ConfigLive2DPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 渲染分辨率 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DRenderScale {
-            get {
-                return ResourceManager.GetString("ConfigLive2DRenderScale", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
         public static string ConfirmUpdate {
@@ -862,7 +817,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 有本地 Live2D 模型的话，可以在设置里接进来。 的本地化字符串。
+        ///   查找类似 有 PNG 或 WebP 精灵表的话，可以在设置里创建自己的宠物。 的本地化字符串。
         /// </summary>
         public static string DesktopPetIdleTip4 {
             get {
@@ -876,24 +831,6 @@ namespace ColorVision.Properties {
         public static string DesktopPetInitializerName {
             get {
                 return ResourceManager.GetString("DesktopPetInitializerName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模型加载失败，已切换为内置形象。 的本地化字符串。
-        /// </summary>
-        public static string DesktopPetLive2DError {
-            get {
-                return ResourceManager.GetString("DesktopPetLive2DError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模型加载失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string DesktopPetLive2DErrorDetail {
-            get {
-                return ResourceManager.GetString("DesktopPetLive2DErrorDetail", resourceCulture);
             }
         }
         
