@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -348,10 +347,11 @@ namespace ColorVision.Engine.Services.Flow
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
 
-            // Use AvalonDock panel for node property editing
-            STNodeEditorHelper.UseDockPanel = true;
+            // Keep node properties in the ViewFlow overlay instead of AvalonDock.
+            STNodeEditorHelper.UseDockPanel = false;
+            STNodeEditorHelper.SignStackPanel = InlineNodePropertyPanel.SignStackPanel;
+            STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
 
-            // Hide the property panel when this view loses focus to another view
             this.Loaded += (s, e) =>
             {
                 DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
@@ -369,6 +369,7 @@ namespace ColorVision.Engine.Services.Flow
             if (activeView == this)
             {
                 FlowEngineManager.PublishCopilotContext();
+                STNodeEditorHelper?.RefreshActiveNodePropertyPanel();
                 return;
             }
 
@@ -377,24 +378,7 @@ namespace ColorVision.Engine.Services.Flow
             if (activeView != null && activeView != this)
             {
                 CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
-                // Hide the property panel when another view becomes active
-                if (WorkspaceManager.LayoutManager?.IsPanelVisible(FlowNodePropertyPanel.PanelId) == true)
-                    WorkspaceManager.LayoutManager?.TogglePanel(FlowNodePropertyPanel.PanelId);
-            }
-        }
-
-
-        private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (ActualHeight > 250) 
-            {
-                ProgressBar1.Visibility = Visibility.Collapsed;
-                GridControl.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                ProgressBar1.Visibility = Visibility.Visible;
-                GridControl.Visibility = Visibility.Collapsed;
+                STNodeEditorHelper?.HidePropertyEditor();
             }
         }
 
