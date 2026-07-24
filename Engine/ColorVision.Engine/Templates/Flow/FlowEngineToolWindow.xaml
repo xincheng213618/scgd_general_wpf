@@ -48,9 +48,9 @@
                 <ColumnDefinition x:Name="PropertyEditorColumn" Width="300"/>
             </Grid.ColumnDefinitions>
 
-            <WindowsFormsHost Grid.Column="0" >
+            <local:STNodeEditorHost Grid.Column="0" >
                 <st:STNodeEditor  x:Name="STNodeEditorMain"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel"/>
-            </WindowsFormsHost>
+            </local:STNodeEditorHost>
 
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
 
