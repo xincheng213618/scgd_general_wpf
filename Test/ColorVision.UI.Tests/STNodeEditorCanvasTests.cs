@@ -158,7 +158,7 @@ namespace ColorVision.UI.Tests
                 using var editor = new TestNodeEditor
                 {
                     ShowNodeShadow = false,
-                    NodeCornerRadius = 7
+                    NodeCornerRadius = 10
                 };
                 var node = new TrackingNode();
                 node.Create();
@@ -168,10 +168,12 @@ namespace ColorVision.UI.Tests
 
                 using var normalBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
                 Assert.Equal(0, normalBitmap.GetPixel(node.Left - 2, node.Top + node.Height / 2).A);
+                int normalEdgeColor = normalBitmap.GetPixel(node.Left, node.Top + node.Height / 2).ToArgb();
 
                 node.IsSelected = true;
                 using var selectedBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
-                Assert.True(selectedBitmap.GetPixel(node.Left, node.Top + node.Height / 2).A > 0);
+                int selectedEdgeColor = selectedBitmap.GetPixel(node.Left, node.Top + node.Height / 2).ToArgb();
+                Assert.NotEqual(normalEdgeColor, selectedEdgeColor);
             });
         }
 
