@@ -743,11 +743,25 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected internal virtual void OnDrawNode(DrawingTools dt)
 	{
-		dt.Graphics.SmoothingMode = SmoothingMode.None;
+		Graphics graphics = dt.Graphics;
+		int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 		if (_BackColor.A != 0)
 		{
 			dt.SolidBrush.Color = _BackColor;
-			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+			if (cornerRadius > 0)
+			{
+				graphics.SmoothingMode = SmoothingMode.AntiAlias;
+				using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+				GraphicsState graphicsState = graphics.Save();
+				graphics.SetClip(nodePath, CombineMode.Intersect);
+				graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+				graphics.Restore(graphicsState);
+			}
+			else
+			{
+				graphics.SmoothingMode = SmoothingMode.None;
+				graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+			}
 		}
 		OnDrawTitle(dt);
 		OnDrawBody(dt);
@@ -767,7 +781,20 @@ public abstract class STNode : INotifyPropertyChanged
 		if (_TitleColor.A != 0)
 		{
 			solidBrush.Color = _TitleColor;
-			graphics.FillRectangle(solidBrush, TitleRectangle);
+			int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
+			if (cornerRadius > 0)
+			{
+				graphics.SmoothingMode = SmoothingMode.AntiAlias;
+				using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+				GraphicsState graphicsState = graphics.Save();
+				graphics.SetClip(nodePath, CombineMode.Intersect);
+				graphics.FillRectangle(solidBrush, TitleRectangle);
+				graphics.Restore(graphicsState);
+			}
+			else
+			{
+				graphics.FillRectangle(solidBrush, TitleRectangle);
+			}
 		}
 		if (_LockOption)
 		{
@@ -793,6 +820,26 @@ public abstract class STNode : INotifyPropertyChanged
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			graphics.DrawString(text, _Font, solidBrush, TitleRectangle, m_sf);
 		}
+	}
+
+	private static GraphicsPath CreateRoundedRectanglePath(Rectangle rectangle, int radius)
+	{
+		GraphicsPath path = new GraphicsPath();
+		int maxRadius = Math.Min(rectangle.Width, rectangle.Height) / 2;
+		radius = Math.Min(radius, maxRadius);
+		if (radius <= 0)
+		{
+			path.AddRectangle(rectangle);
+			return path;
+		}
+
+		int diameter = radius * 2;
+		path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
+		path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
+		path.CloseFigure();
+		return path;
 	}
 
 	protected virtual void OnDrawBody(DrawingTools dt)

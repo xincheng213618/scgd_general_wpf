@@ -122,6 +122,59 @@ namespace ColorVision.UI.Tests
             });
         }
 
+        [Fact]
+        public void RoundedNodes_KeepLegacyDefaultAndClipTheVisualCorners()
+        {
+            RunInSta(() =>
+            {
+                using var legacyEditor = new STNodeEditor();
+                Assert.Equal(0, legacyEditor.NodeCornerRadius);
+                Assert.True(legacyEditor.ShowNodeShadow);
+
+                using var editor = new TestNodeEditor
+                {
+                    ShowBorder = false,
+                    NodeCornerRadius = 8
+                };
+                var node = new TrackingNode();
+                node.Create();
+                node.Left = 20;
+                node.Top = 20;
+                editor.Nodes.Add(node);
+
+                using var bitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+
+                Assert.Equal(0, bitmap.GetPixel(node.Left, node.Top).A);
+                Assert.True(bitmap.GetPixel(node.Left + node.Width / 2, node.Top + 1).A > 0);
+                Assert.True(bitmap.GetPixel(node.Left + node.Width / 2, node.Bottom - 1).A > 0);
+            });
+        }
+
+        [Fact]
+        public void ShadowlessNodes_DrawNoNormalOuterGlowButKeepSelectionOutline()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new TestNodeEditor
+                {
+                    ShowNodeShadow = false,
+                    NodeCornerRadius = 7
+                };
+                var node = new TrackingNode();
+                node.Create();
+                node.Left = 20;
+                node.Top = 20;
+                editor.Nodes.Add(node);
+
+                using var normalBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+                Assert.Equal(0, normalBitmap.GetPixel(node.Left - 2, node.Top + node.Height / 2).A);
+
+                node.IsSelected = true;
+                using var selectedBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+                Assert.True(selectedBitmap.GetPixel(node.Left, node.Top + node.Height / 2).A > 0);
+            });
+        }
+
         private static STNodeEditor CreateEditorWithNode()
         {
             var editor = new STNodeEditor
@@ -163,7 +216,12 @@ namespace ColorVision.UI.Tests
         {
             public void DrawNodes(System.Drawing.Rectangle viewport)
             {
-                using var bitmap = new System.Drawing.Bitmap(viewport.Width, viewport.Height);
+                using var bitmap = RenderNodes(viewport);
+            }
+
+            public System.Drawing.Bitmap RenderNodes(System.Drawing.Rectangle viewport)
+            {
+                var bitmap = new System.Drawing.Bitmap(viewport.Width, viewport.Height);
                 using var graphics = System.Drawing.Graphics.FromImage(bitmap);
                 using var pen = new System.Drawing.Pen(System.Drawing.Color.Black);
                 using var brush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
@@ -173,6 +231,7 @@ namespace ColorVision.UI.Tests
                     Pen = pen,
                     SolidBrush = brush
                 }, viewport);
+                return bitmap;
             }
         }
 

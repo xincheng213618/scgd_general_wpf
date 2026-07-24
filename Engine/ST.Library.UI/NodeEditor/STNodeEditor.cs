@@ -73,6 +73,10 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private bool _ShowBorder = true;
 
+	private bool _ShowNodeShadow = true;
+
+	private int _NodeCornerRadius;
+
 	private bool _ShowGrid = true;
 
 	private bool _ShowLocation = true;
@@ -359,6 +363,48 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		set
 		{
 			_ShowBorder = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置是否绘制 Node 的阴影")]
+	[DefaultValue(true)]
+	public bool ShowNodeShadow
+	{
+		get
+		{
+			return _ShowNodeShadow;
+		}
+		set
+		{
+			if (_ShowNodeShadow == value)
+			{
+				return;
+			}
+			_ShowNodeShadow = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置画布中 Node 的圆角半径")]
+	[DefaultValue(0)]
+	public int NodeCornerRadius
+	{
+		get
+		{
+			return _NodeCornerRadius;
+		}
+		set
+		{
+			if (value < 0)
+			{
+				value = 0;
+			}
+			if (_NodeCornerRadius == value)
+			{
+				return;
+			}
+			_NodeCornerRadius = value;
 			Invalidate();
 		}
 	}
@@ -1492,13 +1538,62 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected virtual void OnDrawNodeBorder(DrawingTools dt, STNode node)
 	{
-		Image image = null;
-		image = ((_ActiveNode == node) ? m_img_border_active : (node.IsSelected ? m_img_border_selected : ((_HoverNode != node) ? m_img_border : m_img_border_hover)));
+		bool isActive = _ActiveNode == node;
+		bool isSelected = node.IsSelected;
+		bool isHovered = _HoverNode == node;
+		if (!_ShowNodeShadow)
+		{
+			if (!isActive && !isSelected && !isHovered)
+			{
+				return;
+			}
+			Color outlineColor = isActive ? _BorderActiveColor : (isSelected ? _BorderSelectedColor : _BorderHoverColor);
+			DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, isActive || isSelected ? 2f : 1f);
+			return;
+		}
+
+		Image image = isActive ? m_img_border_active : (isSelected ? m_img_border_selected : (isHovered ? m_img_border_hover : m_img_border));
 		RenderBorder(dt.Graphics, node.Rectangle, image);
 		if (!string.IsNullOrEmpty(node.Mark))
 		{
 			RenderBorder(dt.Graphics, node.MarkRectangle, image);
 		}
+	}
+
+	private void DrawNodeOutline(Graphics graphics, Rectangle rectangle, Color color, float width)
+	{
+		GraphicsState graphicsState = graphics.Save();
+		graphics.SmoothingMode = SmoothingMode.AntiAlias;
+		float inset = width / 2f;
+		RectangleF outlineRectangle = new RectangleF(
+			rectangle.Left + inset,
+			rectangle.Top + inset,
+			Math.Max(0f, rectangle.Width - width),
+			Math.Max(0f, rectangle.Height - width));
+		using GraphicsPath outlinePath = CreateRoundedRectanglePath(outlineRectangle, _NodeCornerRadius);
+		using Pen outlinePen = new Pen(color, width);
+		graphics.DrawPath(outlinePen, outlinePath);
+		graphics.Restore(graphicsState);
+	}
+
+	private static GraphicsPath CreateRoundedRectanglePath(RectangleF rectangle, float radius)
+	{
+		GraphicsPath path = new GraphicsPath();
+		float maxRadius = Math.Min(rectangle.Width, rectangle.Height) / 2f;
+		radius = Math.Min(radius, maxRadius);
+		if (radius <= 0f)
+		{
+			path.AddRectangle(rectangle);
+			return path;
+		}
+
+		float diameter = radius * 2f;
+		path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
+		path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
+		path.CloseFigure();
+		return path;
 	}
 
 	protected virtual void OnDrawConnectedLine(DrawingTools dt)

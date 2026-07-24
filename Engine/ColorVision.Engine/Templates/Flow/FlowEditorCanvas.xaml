@@ -12,6 +12,8 @@
                          LimitCanvasToContentBounds="False"
                          ShowLocation="False"
                          ShowCanvasDragLockButton="False"
+                         ShowNodeShadow="False"
+                         NodeCornerRadius="10"
                          HorizontalAlignment="Stretch"
                          VerticalAlignment="Stretch"/>
 
