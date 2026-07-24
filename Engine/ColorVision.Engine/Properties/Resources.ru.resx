@@ -771,15 +771,6 @@
   <data name="Connect" xml:space="preserve">
     <value>соединять</value>
   </data>
-  <data name="StartExecition" xml:space="preserve">
-    <value>Начать выполнение</value>
-  </data>
-  <data name="StopExecution" xml:space="preserve">
-    <value>Остановить казнь</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>Фотография</value>
-  </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>Служба была закрыта.</value>
   </data>

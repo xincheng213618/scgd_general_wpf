@@ -770,15 +770,6 @@
   <data name="Connect" xml:space="preserve">
     <value>connecter</value>
   </data>
-  <data name="StartExecition" xml:space="preserve">
-    <value>Début de l'exécution</value>
-  </data>
-  <data name="StopExecution" xml:space="preserve">
-    <value>Arrêter l'exécution</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>Photographier</value>
-  </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>Le service a été interrompu.</value>
   </data>

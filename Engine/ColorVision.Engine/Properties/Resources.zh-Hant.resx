@@ -770,15 +770,6 @@
   <data name="Connect" xml:space="preserve">
     <value>連接</value>
   </data>
-  <data name="StartExecition" xml:space="preserve">
-    <value>開始執行</value>
-  </data>
-  <data name="StopExecution" xml:space="preserve">
-    <value>停止執行</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>拍照</value>
-  </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>服務已關閉</value>
   </data>

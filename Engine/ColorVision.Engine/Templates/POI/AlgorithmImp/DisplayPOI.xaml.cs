@@ -10,7 +10,6 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -24,7 +23,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
-            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, RunTemplate_Click, (s, e) => e.CanExecute = true));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

@@ -253,7 +253,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _crossGuideProcessor = new VideoCrossGuideProcessor(HandleCrossGuideResult);
             _crossGuideOverlayVisual = new CrossGuideOverlayVisual();
             InitializeComponent();
-            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

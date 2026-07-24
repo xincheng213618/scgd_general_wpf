@@ -1883,15 +1883,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 拍照 的本地化字符串。
-        /// </summary>
-        public static string CaptureImage {
-            get {
-                return ResourceManager.GetString("CaptureImage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 取图模式 的本地化字符串。
         /// </summary>
         public static string CaptureMode {
@@ -12692,15 +12683,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 开始执行 的本地化字符串。
-        /// </summary>
-        public static string StartExecition {
-            get {
-                return ResourceManager.GetString("StartExecition", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 起始积分时间(ms) 的本地化字符串。
         /// </summary>
         public static string StartIntegrationTime_Ms {
@@ -12805,15 +12787,6 @@ namespace ColorVision.Engine.Properties {
         public static string StereoFusionTemplateManagement {
             get {
                 return ResourceManager.GetString("StereoFusionTemplateManagement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 停止执行 的本地化字符串。
-        /// </summary>
-        public static string StopExecution {
-            get {
-                return ResourceManager.GetString("StopExecution", resourceCulture);
             }
         }
         

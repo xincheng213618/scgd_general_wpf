@@ -88,16 +88,6 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
-            CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
-            {
-                if (DisplayFlow.FlowControl != null)
-                    e.CanExecute = !DisplayFlow.FlowControl.IsFlowRun;
-            }));
-            CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => DisplayFlow.StopFlow(), (s, e) =>
-            {
-                if (DisplayFlow.FlowControl != null)
-                    e.CanExecute = DisplayFlow.FlowControl.IsFlowRun;
-            }));
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
             ThemeChanged(ThemeManager.Current.CurrentUITheme);

@@ -767,15 +767,6 @@
   <data name="Connect" xml:space="preserve">
     <value>연결하다</value>
   </data>
-  <data name="StartExecition" xml:space="preserve">
-    <value>실행 시작</value>
-  </data>
-  <data name="StopExecution" xml:space="preserve">
-    <value>실행 중지</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>사진</value>
-  </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>서비스가 중단되었습니다.</value>
   </data>

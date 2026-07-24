@@ -771,15 +771,6 @@
   <data name="Connect" xml:space="preserve">
     <value>Connect</value>
   </data>
-  <data name="StartExecition" xml:space="preserve">
-    <value>実行開始</value>
-  </data>
-  <data name="StopExecution" xml:space="preserve">
-    <value>Stop</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>Take Photo</value>
-  </data>
   <data name="SeviceClosed" xml:space="preserve">
     <value>The service has been shut down.</value>
   </data>

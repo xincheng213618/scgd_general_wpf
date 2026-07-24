@@ -23,7 +23,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 
@@ -74,19 +73,6 @@ namespace ColorVision.Engine.Templates.Flow
         {
             FlowEngineManager = flowEngineManager;
             InitializeComponent();
-            CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => RunFlow(), (s, e) =>
-            {
-               
-                if (FlowControl != null)
-                    e.CanExecute = !FlowControl.IsFlowRun;
-            }));
-            CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => StopFlow(), (s, e) =>
-            {
-               
-                if (FlowControl != null)
-                    e.CanExecute = FlowControl.IsFlowRun;
-                
-            })); 
         }
 
 
