@@ -818,8 +818,15 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			solidBrush.Color = _ForeColor;
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
-			graphics.DrawString(text, _Font, solidBrush, TitleRectangle, m_sf);
+			graphics.DrawString(text, _Font, solidBrush, GetTitleTextRectangle(), m_sf);
 		}
+	}
+
+	protected virtual Rectangle GetTitleTextRectangle()
+	{
+		Rectangle rectangle = TitleRectangle;
+		rectangle.Offset(0, 2);
+		return rectangle;
 	}
 
 	private static GraphicsPath CreateRoundedRectanglePath(Rectangle rectangle, int radius)

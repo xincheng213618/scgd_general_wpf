@@ -18,22 +18,6 @@
     </UserControl.Resources>
     <StackPanel>
         <DockPanel>
-            <Button DockPanel.Dock="Right"  Command="{Binding Config.EditCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20"  Margin="0,0,5,0">
-                <Button.Triggers>
-                    <EventTrigger RoutedEvent="Button.Click">
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </EventTrigger>
-                </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                    <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform21" CenterX="8" CenterY="8"/>
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-            </Button>
             <Grid  Margin="0,0">
                 <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Workflow}"  FontSize="15"  IsChecked="True" />
             </Grid>
@@ -74,7 +58,7 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <ComboBox  x:Name="ComboBoxFlow" SelectedIndex="{Binding TemplateFlowParamsIndex}"  Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    <ComboBox  x:Name="ComboBoxFlow" Margin="0,0,5,0" SelectedIndex="{Binding TemplateFlowParamsIndex}"  Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <Grid  >
                     <Grid.ColumnDefinitions>

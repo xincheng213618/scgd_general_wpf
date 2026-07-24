@@ -1,6 +1,7 @@
 using System.Drawing;
 using FlowEngineLib.Base;
 using log4net;
+using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Spectrum;
@@ -199,6 +200,16 @@ public class SpectrumNode : CVBaseServerNode
 		m_ctrl_AveNum = CreateControl(typeof(STNodeEditText<int>), custom_item, "平均次数:", _AveNum);
 		custom_item.Y += 25;
 		m_ctrl_Dark = CreateControl(typeof(STNodeEditText<string>), custom_item, "自动/自适应:", GetDarkDis());
+	}
+
+	protected override string GetCompactSummaryLabel()
+	{
+		return Lang.Get("积分时间") + ":";
+	}
+
+	protected override string GetCompactSummaryValue()
+	{
+		return _Temp.ToString();
 	}
 
 	private string GetDarkDis()

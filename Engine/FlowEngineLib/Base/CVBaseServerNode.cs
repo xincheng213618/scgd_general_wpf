@@ -152,6 +152,11 @@ public class CVBaseServerNode : CVCommonNode
         return $"{base.Title}";
 	}
 
+	protected override string GetCompactSummaryValue()
+	{
+		return TempDisName;
+	}
+
 	protected override void OnCreate()
 	{
 		base.OnCreate();

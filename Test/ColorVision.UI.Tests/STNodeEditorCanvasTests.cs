@@ -151,6 +151,23 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void NodeTitleText_IsOffsetDownByTwoPixels()
+        {
+            RunInSta(() =>
+            {
+                var node = new TrackingNode();
+                node.Create();
+
+                System.Drawing.Rectangle titleRectangle = node.TitleRectangle;
+                System.Drawing.Rectangle textRectangle = node.TitleTextRectangle;
+
+                Assert.Equal(titleRectangle.X, textRectangle.X);
+                Assert.Equal(titleRectangle.Y + 2, textRectangle.Y);
+                Assert.Equal(titleRectangle.Size, textRectangle.Size);
+            });
+        }
+
+        [Fact]
         public void ShadowlessNodes_DrawNoNormalOuterGlowButKeepSelectionOutline()
         {
             RunInSta(() =>
@@ -280,6 +297,7 @@ namespace ColorVision.UI.Tests
         private sealed class TrackingNode : STNode
         {
             public int DrawCount { get; private set; }
+            public System.Drawing.Rectangle TitleTextRectangle => GetTitleTextRectangle();
 
             protected override void OnDrawNode(DrawingTools dt)
             {
