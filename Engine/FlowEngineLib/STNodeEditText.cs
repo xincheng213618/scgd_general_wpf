@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Drawing.Text;
 using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 
@@ -45,9 +46,8 @@ public class STNodeEditText<T> : STNodeControl
 
 	protected override void OnPaint(DrawingTools dt)
 	{
-		base.OnPaint(dt);
 		Graphics graphics = dt.Graphics;
-		graphics.FillRectangle(Brushes.Gray, base.ClientRectangle);
+		graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 		m_sf.Alignment = StringAlignment.Near;
 		graphics.DrawString(base.Text, base.Font, Brushes.White, base.ClientRectangle, m_sf);
 		m_sf.Alignment = StringAlignment.Far;

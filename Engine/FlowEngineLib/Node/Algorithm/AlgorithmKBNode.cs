@@ -49,7 +49,13 @@ public class AlgorithmKBNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateTempControl(m_custom_item);
+		m_ctrl_temp = CreateTempControl(m_custom_item, "");
+	}
+
+	public override void ApplyCompactNodeDisplay()
+	{
+		ShowControls = true;
+		SetAutoSize(true);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
