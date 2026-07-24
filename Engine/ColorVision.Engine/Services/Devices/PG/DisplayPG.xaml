@@ -33,20 +33,20 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
-                <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Center" Text="{x:Static properties:Resources.offline}" />
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.Unregistered}" />
+                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}" />
+                <TextBlock x:Name="TextBlockOffLine" HorizontalAlignment="Left" Text="{x:Static properties:Resources.offline}" />
+                <Button x:Name="ButtonUnauthorized"  HorizontalAlignment="Left"  Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.Unregistered}" />
                 <StackPanel x:Name="StackPanelContent">
-                    <DockPanel x:Name="ButtonOpen" Margin="0,0,0,3">
-                        <Grid>
-                            <Button x:Name="OpenButton" Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
-                        </Grid>
-                    </DockPanel>
-                    <DockPanel x:Name="ButtonClose" Margin="0,0,0,3">
-                        <Grid>
-                            <Button x:Name="CloseButton" Background="Red" Click="PGClose" Content="{x:Static properties:Resources.Close}" Foreground="White" />
-                        </Grid>
-                    </DockPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <DockPanel x:Name="ButtonOpen" HorizontalAlignment="Left"  Margin="0,0,0,3">
+                            <Button x:Name="OpenButton"   Click="PGOpen" Content="{x:Static properties:Resources.Open}" />
+
+                        </DockPanel>
+                        <DockPanel x:Name="ButtonClose" HorizontalAlignment="Left"   Margin="0,0,0,3">
+                            <Button x:Name="CloseButton"  Background="Red" Click="PGClose" Content="{x:Static properties:Resources.Close}" Foreground="White" />
+                        </DockPanel>
+                    </StackPanel>
+
                     <Grid x:Name="PGOperationPanel">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
