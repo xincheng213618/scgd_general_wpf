@@ -16,6 +16,7 @@
     <Grid x:Name="Grid1">
         <st:STNodeEditor x:Name="STNodeEditorMain" x:FieldModifier="public"
                          LimitCanvasToContentBounds="False" ShowLocation="False"
+                         ShowCanvasDragLockButton="False"
                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
 
@@ -98,6 +99,28 @@
                     <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
+                <ToggleButton x:Name="CanvasDragLockButton"
+                              Width="34" Height="32"
+                              Margin="2,0" Padding="3"
+                              IsChecked="True"
+                              ToolTip="切换画布拖动"
+                              Checked="CanvasDragLockButton_Checked"
+                              Unchecked="CanvasDragLockButton_Unchecked">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               FontSize="16"
+                               Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="&#xE785;"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsChecked, ElementName=CanvasDragLockButton}" Value="True">
+                                        <Setter Property="Text" Value="&#xE72E;"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </ToggleButton>
             </StackPanel>
         </Grid>
 
@@ -108,14 +131,7 @@
             <Border Background="{DynamicResource GlobalBackground}"
                     BorderBrush="{DynamicResource GlobalBorderBrush}"
                     BorderThickness="1" CornerRadius="7" Opacity="0.78"/>
-            <Grid Margin="6">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="{x:Static properties:Resources.NodeProperty}"
-                           Foreground="{DynamicResource GlobalTextBrush}"
-                           FontWeight="SemiBold" Margin="5,2,5,7"/>
+            <Grid >
                 <flow:FlowNodePropertyPanel x:Name="InlineNodePropertyPanel"
                                             Grid.Row="1" Background="Transparent"/>
             </Grid>
@@ -133,23 +149,54 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBox x:FieldModifier="public" x:Name="logTextBox" Grid.Row="1"
-                         Padding="2" Background="Transparent"
-                         Foreground="{DynamicResource GlobalTextBrush}"
-                         BorderThickness="0" TextWrapping="WrapWithOverflow"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                         VerticalContentAlignment="Top" IsReadOnly="True"/>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <StackPanel HorizontalAlignment="Right"  Grid.Row="1">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"  />
-                        <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}"  Click="Button_Click_NodeAnalysis"  />
+                    <Grid Margin="0,0,6,0" VerticalAlignment="Center">
+                        <Button Width="50" Height="50"
+                                Padding="3"
+                                ToolTip="{x:Static properties:Resources.ExecutionProcess}"
+                                Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter1}}"
+                                Click="Button_FlowRun_Click">
+                            <TextBlock Text="&#xE768;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="30"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </Button>
+                        <Button Width="50" Height="50"
+                                Padding="3"
+                                ToolTip="{x:Static properties:Resources.StopProcess}"
+                                Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
+                                Click="Button_FlowStop_Click">
+                            <TextBlock Text="&#xE71A;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="30"
+                                       Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </Button>
+                    </Grid>
+
+                    <TextBox x:FieldModifier="public" x:Name="logTextBox" Grid.Column="1"
+                             Padding="2" Background="Transparent"
+                             Foreground="{DynamicResource GlobalTextBrush}"
+                             BorderThickness="0" TextWrapping="WrapWithOverflow"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top" IsReadOnly="True"/>
+
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"  />
+                            <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}"  Click="Button_Click_NodeAnalysis"  />
+                        </StackPanel>
+
+                        <Button Content="{x:Static properties:Resources.ParsingManagement}"  Click="Button_Click_1"  />
+                        <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess" />
                     </StackPanel>
-
-                    <Button Content="{x:Static properties:Resources.ParsingManagement}"  Click="Button_Click_1"  />
-                    <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess" />
-                </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
 
@@ -157,6 +204,7 @@
                      HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                      Panel.ZIndex="40"
                      Maximum="100" Style="{StaticResource ProgressBarFlat}"
+                     Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
                      Value="{Binding FlowEngineManager.BatchProgress}"/>
     </Grid>
 </UserControl>

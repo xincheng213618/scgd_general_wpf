@@ -62,6 +62,10 @@ namespace ColorVision.Engine.Services.Flow
             Config = FlowEngineManager.Config;
 
             InitializeComponent();
+            STNodeEditorMain.EnableBlankLeftDragCanvasChanged += STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
+            CanvasDragLockButton.SetCurrentValue(
+                System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
+                STNodeEditorMain.EnableBlankLeftDragCanvas);
 
             AutoSizeCommand = new RelayCommand(a => STNodeEditorHelper.AutoSize());
             RefreshCommand = new RelayCommand(a => Refresh());
@@ -459,8 +463,44 @@ namespace ColorVision.Engine.Services.Flow
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+            STNodeEditorMain.EnableBlankLeftDragCanvasChanged -= STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
             STNodeEditorMain?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void CanvasDragLockButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (STNodeEditorMain != null)
+            {
+                STNodeEditorMain.EnableBlankLeftDragCanvas = true;
+            }
+        }
+
+        private void CanvasDragLockButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (STNodeEditorMain != null)
+            {
+                STNodeEditorMain.EnableBlankLeftDragCanvas = false;
+            }
+        }
+
+        private void STNodeEditorMain_EnableBlankLeftDragCanvasChanged(object? sender, EventArgs e)
+        {
+            void UpdateToggle()
+            {
+                CanvasDragLockButton.SetCurrentValue(
+                    System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
+                    STNodeEditorMain.EnableBlankLeftDragCanvas);
+            }
+
+            if (Dispatcher.CheckAccess())
+            {
+                UpdateToggle();
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(UpdateToggle);
+            }
         }
 
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)

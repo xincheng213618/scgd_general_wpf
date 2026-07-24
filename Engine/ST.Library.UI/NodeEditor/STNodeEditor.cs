@@ -81,6 +81,8 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private bool _EnableBlankLeftDragCanvas = true;
 
+	private bool _ShowCanvasDragLockButton = true;
+
 	private STNodeCollection _Nodes;
 
 	private STNode _ActiveNode;
@@ -654,8 +656,33 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 			_EnableBlankLeftDragCanvas = value;
 			Invalidate();
+			EnableBlankLeftDragCanvasChanged?.Invoke(this, EventArgs.Empty);
 		}
 	}
+
+	[DefaultValue(true)]
+	public bool ShowCanvasDragLockButton
+	{
+		get
+		{
+			return _ShowCanvasDragLockButton;
+		}
+		set
+		{
+			if (_ShowCanvasDragLockButton == value)
+			{
+				return;
+			}
+			_ShowCanvasDragLockButton = value;
+			if (!value)
+			{
+				m_rect_canvas_drag_lock = Rectangle.Empty;
+			}
+			Invalidate();
+		}
+	}
+
+	public event EventHandler EnableBlankLeftDragCanvasChanged;
 
 	[Description("活动的节点发生变化时候发生")]
 	public event EventHandler ActiveChanged;
@@ -976,7 +1003,10 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			OnDrawNodeOutLocation(m_drawing_tools, new Size(width, height), m_lst_node_out);
 		}
 		OnDrawAlert(graphics);
-		OnDrawCanvasDragLockButton(m_drawing_tools);
+		if (_ShowCanvasDragLockButton)
+		{
+			OnDrawCanvasDragLockButton(m_drawing_tools);
+		}
 	}
 
 	private static void ResetRenderTransform(Graphics graphics, float dpiScaleX, float dpiScaleY)
@@ -991,7 +1021,9 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		STNodeMouseEventArgs nodeEvent = CreateMouseEventArgs(e);
 		Focus();
 		CaptureMouse();
-		if (nodeEvent.Button == STMouseButtons.Left && m_rect_canvas_drag_lock.Contains(nodeEvent.Location))
+		if (_ShowCanvasDragLockButton
+			&& nodeEvent.Button == STMouseButtons.Left
+			&& m_rect_canvas_drag_lock.Contains(nodeEvent.Location))
 		{
 			EnableBlankLeftDragCanvas = !EnableBlankLeftDragCanvas;
 			m_ca = CanvasAction.None;
