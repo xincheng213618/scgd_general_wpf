@@ -73,6 +73,45 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Theory]
+    [InlineData("", 0, 0, "@", 1)]
+    [InlineData("请检查", 3, 0, "请检查 @", 5)]
+    [InlineData("请检查目标", 3, 2, "请检查 @", 5)]
+    [InlineData("前后", 1, 0, "前 @ 后", 3)]
+    [InlineData("前 后", 2, 0, "前 @ 后", 3)]
+    public void InsertsMentionAtComposerSelection(
+        string input,
+        int selectionStart,
+        int selectionLength,
+        string expected,
+        int expectedCaretIndex)
+    {
+        var result = CopilotComposerReferenceCatalog.InsertMention(
+            input,
+            selectionStart,
+            selectionLength,
+            out var caretIndex);
+
+        Assert.Equal(expected, result);
+        Assert.Equal(expectedCaretIndex, caretIndex);
+        Assert.Equal('@', result[caretIndex - 1]);
+    }
+
+    [Fact]
+    public void InsertMentionKeepsExistingActiveMention()
+    {
+        const string input = "请检查 @SFR";
+
+        var result = CopilotComposerReferenceCatalog.InsertMention(
+            input,
+            selectionStart: 0,
+            selectionLength: 0,
+            out var caretIndex);
+
+        Assert.Equal(input, result);
+        Assert.Equal(input.Length, caretIndex);
+    }
+
+    [Theory]
     [InlineData(false, false, true, true)]
     [InlineData(true, false, false, true)]
     [InlineData(false, true, false, true)]

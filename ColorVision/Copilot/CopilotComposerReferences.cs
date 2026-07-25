@@ -110,6 +110,34 @@ namespace ColorVision.Copilot
             return text[..mention.StartIndex] + $"@[{safeTitle}] ";
         }
 
+        internal static string InsertMention(
+            string? input,
+            int selectionStart,
+            int selectionLength,
+            out int caretIndex)
+        {
+            var text = input ?? string.Empty;
+            if (TryParseMention(text, out _))
+            {
+                caretIndex = text.Length;
+                return text;
+            }
+
+            var start = Math.Clamp(selectionStart, 0, text.Length);
+            var length = Math.Clamp(selectionLength, 0, text.Length - start);
+            var prefix = text[..start];
+            var suffix = text[(start + length)..];
+            var leadingSpace = prefix.Length > 0 && !char.IsWhiteSpace(prefix[^1])
+                ? " "
+                : string.Empty;
+            var trailingSpace = suffix.Length > 0 && !char.IsWhiteSpace(suffix[0])
+                ? " "
+                : string.Empty;
+
+            caretIndex = prefix.Length + leadingSpace.Length + 1;
+            return prefix + leadingSpace + "@" + trailingSpace + suffix;
+        }
+
         internal static bool ShouldConsumeReferenceCompletionKey(
             bool isTabKey,
             bool hasSuggestions,

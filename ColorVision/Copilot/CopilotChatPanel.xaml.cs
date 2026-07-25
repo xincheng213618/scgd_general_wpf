@@ -330,6 +330,23 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private void ComposerReferenceMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+                return;
+
+            var updated = CopilotComposerReferenceCatalog.InsertMention(
+                viewModel.InputText,
+                PromptTextBox.SelectionStart,
+                PromptTextBox.SelectionLength,
+                out var caretIndex);
+            viewModel.InputText = updated;
+            PromptTextBox.Focus();
+            Keyboard.Focus(PromptTextBox);
+            PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            PromptTextBox.CaretIndex = Math.Clamp(caretIndex, 0, PromptTextBox.Text.Length);
+        }
+
         private void AccessModeButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not FrameworkElement element || element.ContextMenu == null)

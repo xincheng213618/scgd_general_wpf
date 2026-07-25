@@ -2021,6 +2021,10 @@
                                               Command="{Binding AttachCurrentLiveContextCommand}"
                                               Visibility="{Binding HasCurrentLiveContext, Converter={StaticResource bool2VisibilityConverter}}" />
                                     <Separator />
+                                    <MenuItem Header="关联模板、菜单或文件（@）"
+                                              Click="ComposerReferenceMenuItem_Click"
+                                              ToolTip="在当前光标位置插入 @ 并打开关联候选。" />
+                                    <Separator />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotPasteImage}" Command="{Binding PasteImageAttachmentCommand}" />
                                     <MenuItem Header="{x:Static properties:Resources.CopilotSpecifyWebPage}" Command="{Binding AddWebPageAttachmentCommand}" />
                                     <Separator />
