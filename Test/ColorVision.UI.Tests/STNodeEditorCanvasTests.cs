@@ -66,6 +66,31 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void AutoCanvasDragMode_PreservesRectangleSelectionDecisionAfterClearingSelection()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor
+                {
+                    AutoSwitchCanvasDragBySelection = true
+                };
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+                node.SetSelected(bSelected: true, bRedraw: false);
+                bool enableBlankLeftDragCanvasAtMouseDown = editor.EnableBlankLeftDragCanvas;
+
+                node.SetSelected(bSelected: false, bRedraw: false);
+
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+                Assert.False(TestNodeEditor.ShouldPanBlankCanvasForTest(
+                    STMouseButtons.Left,
+                    enableBlankLeftDragCanvasAtMouseDown,
+                    System.Windows.Input.ModifierKeys.None));
+            });
+        }
+
+        [Fact]
         public void ManualCanvasDragMode_RemainsTheCompatibleDefault()
         {
             RunInSta(() =>
@@ -388,6 +413,14 @@ namespace ColorVision.UI.Tests
 
         private sealed class TestNodeEditor : STNodeEditor
         {
+            public static bool ShouldPanBlankCanvasForTest(
+                STMouseButtons button,
+                bool enableBlankLeftDragCanvasAtMouseDown,
+                System.Windows.Input.ModifierKeys modifiers)
+            {
+                return ShouldPanBlankCanvas(button, enableBlankLeftDragCanvasAtMouseDown, modifiers);
+            }
+
             public void DrawNodes(System.Drawing.Rectangle viewport)
             {
                 using var bitmap = RenderNodes(viewport);

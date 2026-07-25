@@ -1260,14 +1260,14 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		else
 		{
+			bool enableBlankLeftDragCanvasAtMouseDown = EnableBlankLeftDragCanvas;
 			SetActiveNode(null);
 			STNode[] array2 = m_hs_node_selected.ToArray();
 			foreach (STNode sTNode2 in array2)
 			{
 				sTNode2.SetSelected(bSelected: false, bRedraw: false);
 			}
-			bool panCanvas = nodeEvent.Button == STMouseButtons.Middle
-				|| nodeEvent.Button == STMouseButtons.Left && (EnableBlankLeftDragCanvas || (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control);
+			bool panCanvas = ShouldPanBlankCanvas(nodeEvent.Button, enableBlankLeftDragCanvasAtMouseDown, Keyboard.Modifiers);
 			m_ca = panCanvas ? CanvasAction.MoveCanvas : CanvasAction.SelectRectangle;
 			ref RectangleF rect_select = ref m_rect_select;
 			float num = (m_rect_select.Height = 0f);
@@ -1275,6 +1275,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			m_node_down = null;
 		}
 		e.Handled = nodeEvent.Button != STMouseButtons.Right;
+	}
+
+	protected internal static bool ShouldPanBlankCanvas(STMouseButtons button, bool enableBlankLeftDragCanvasAtMouseDown, ModifierKeys modifiers)
+	{
+		return button == STMouseButtons.Middle
+			|| button == STMouseButtons.Left
+			&& (enableBlankLeftDragCanvasAtMouseDown || (modifiers & ModifierKeys.Control) == ModifierKeys.Control);
 	}
 
 	protected override void OnMouseMove(WpfMouseEventArgs e)
