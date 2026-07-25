@@ -267,7 +267,7 @@ namespace ColorVision.Engine.Templates.Flow
             _refreshCts = null;
         }
 
-        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate)
+        private async Task SelectFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate, bool allowEmptyFlow = false)
         {
             CancelPendingRefresh();
 
@@ -284,11 +284,19 @@ namespace ColorVision.Engine.Templates.Flow
                 _suppressSelectionRefresh = false;
             }
 
-            await Refresh();
+            while (IsRefresh)
+                await Task.Delay(20);
+
+            await Refresh(allowEmptyFlow);
         }
 
         bool IsRefresh;
-        public async Task Refresh()
+        public Task Refresh()
+        {
+            return Refresh(false);
+        }
+
+        private async Task Refresh(bool allowEmptyFlow)
         {
             if (IsRefresh) return;
             IsRefresh = true;
@@ -311,8 +319,13 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (string.IsNullOrEmpty(flowParam.DataBase64))
                 {
-                    MessageBox.Show(ColorVision.Engine.Properties.Resources.Flow_CreateTemplateBeforeSelection);
+                    if (!allowEmptyFlow)
+                        MessageBox.Show(ColorVision.Engine.Properties.Resources.Flow_CreateTemplateBeforeSelection);
                     View.FlowEngineControl.LoadFromBase64(string.Empty);
+                    FlowEngineManager.CVBaseServerNodes.Clear();
+                    FlowEngineManager.SlectFlowParam = flowParam;
+                    View.STNodeEditorHelper.AddNodeContext();
+                    FlowEngineManager.PublishCopilotContext();
                     return;
                 }
 
@@ -450,7 +463,7 @@ namespace ColorVision.Engine.Templates.Flow
             _runningNodeNames.Clear();
             ResetNodeTitleProgress();
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
-            View.logTextBox.Text = msg;
+            View.ShowExecutionSummary(msg, FlowControlData.ErrorNodeName, LastNode);
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
@@ -594,6 +607,11 @@ namespace ColorVision.Engine.Templates.Flow
                 long elapsed = Math.Max(0, now - startedAt);
                 item.Value.TitleProgress = (float)Math.Min(0.99d, (double)elapsed / expectedDuration);
             }
+        }
+
+        internal Task SelectCreatedFlowTemplateAsync(TemplateModel<FlowParam> flowTemplate)
+        {
+            return SelectFlowTemplateAsync(flowTemplate, true);
         }
 
         private void ResetNodeTitleProgress()
@@ -751,7 +769,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
-                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 return;
             }
@@ -774,7 +792,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
             ClearFlowRuntimeData();
 
-            View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
+            LastNode = null;
+            View.ShowExecutionSummary("Run " + ComboBoxFlow.Text);
             FlowEngineManager.BatchProgress = 0;
 
             _nodeRecords.Clear();
@@ -794,7 +813,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected;
+                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.Flow_NoValidFlowTemplateSelected);
                 log.Warn("未选择有效的流程模板");
                 return;
             }
@@ -811,7 +830,7 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
-                View.logTextBox.Text = ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled;
+                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.Flow_PreprocessFailedCancelled);
                 log.Warn("预处理失败，流程取消执行");
                 return;
             }
@@ -847,7 +866,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             Db.Updateable(FlowEngineManager.Batch).ExecuteCommand();
-            View.logTextBox.Text = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
+            View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.ExecutionCancelled);
 
         }
 

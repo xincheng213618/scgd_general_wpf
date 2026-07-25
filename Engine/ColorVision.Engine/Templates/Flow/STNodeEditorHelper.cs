@@ -339,14 +339,80 @@ namespace ColorVision.Engine.Templates.Flow
             items.Add(lockLocationItem);
         }
 
-        private static void OpenNodeExecutionDetails(CVCommonNode node)
+        internal static CVCommonNode? ResolveExecutionNode(
+            STNodeEditor nodeEditor,
+            string? executionNodeName,
+            CVCommonNode? preferredNode = null)
         {
+            return ResolveExecutionNode(
+                nodeEditor.Nodes.OfType<CVCommonNode>(),
+                executionNodeName,
+                preferredNode);
+        }
+
+        internal static CVCommonNode? ResolveExecutionNode(
+            IEnumerable<CVCommonNode> nodes,
+            string? executionNodeName,
+            CVCommonNode? preferredNode = null)
+        {
+            if (string.IsNullOrWhiteSpace(executionNodeName))
+                return null;
+
+            List<CVCommonNode> candidates = nodes.ToList();
+            if (preferredNode != null
+                && candidates.Contains(preferredNode)
+                && IsExecutionNodeNameMatch(preferredNode, executionNodeName))
+            {
+                return preferredNode;
+            }
+
+            var matches = candidates
+                .Where(node => IsExecutionNodeNameMatch(node, executionNodeName))
+                .Take(2)
+                .ToList();
+            return matches.Count == 1 ? matches[0] : null;
+        }
+
+        internal static bool IsExecutionNodeNameMatch(CVCommonNode node, string? executionNodeName)
+        {
+            if (string.IsNullOrWhiteSpace(executionNodeName))
+                return false;
+
+            string candidate = executionNodeName.Trim();
+            string fullName = string.IsNullOrWhiteSpace(node.NodeName)
+                ? node.Title
+                : $"{node.Title}.{node.NodeName}";
+            return string.Equals(node.NodeID, candidate, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(node.NodeName, candidate, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fullName, candidate, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public void OpenNodeExecutionDetails(CVCommonNode node, bool focusNode = false)
+        {
+            if (focusNode)
+                FocusNode(node);
+
             var window = new FlowMessageListWindow(node.NodeID, node.OnGetDrawTitle())
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             window.Show();
+        }
+
+        private void FocusNode(STNode node)
+        {
+            foreach (STNode selectedNode in STNodeEditor.GetSelectedNode())
+            {
+                if (!ReferenceEquals(selectedNode, node))
+                    selectedNode.SetSelected(bSelected: false, bRedraw: false);
+            }
+
+            STNodeEditor.SetActiveNode(node);
+            float scale = STNodeEditor.CanvasScale;
+            float offsetX = STNodeEditor.ClientSize.Width / 2f - (node.Left + node.Width / 2f) * scale;
+            float offsetY = STNodeEditor.ClientSize.Height / 2f - (node.Top + node.Height / 2f) * scale;
+            STNodeEditor.MoveCanvas(offsetX, offsetY, bAnimation: false, CanvasMoveArgs.All);
         }
 
         private void AddNodeCreationMenuItems(ItemCollection items)

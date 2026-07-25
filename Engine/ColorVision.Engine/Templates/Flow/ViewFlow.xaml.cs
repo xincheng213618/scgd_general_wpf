@@ -72,6 +72,9 @@ namespace ColorVision.Engine.Services.Flow
         private string? _standaloneFilePath;
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
+        private CVCommonNode? _executionDetailsNode;
+        private CVCommonNode? _standaloneLastNode;
+        private CVCommonNode? _standaloneLastFailedNode;
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
@@ -151,13 +154,35 @@ namespace ColorVision.Engine.Services.Flow
             Refresh();
         }
 
-        public void NewFlow()
+        public async void NewFlow()
         {
-            var templateFlow = new TemplateFlow();
-            templateFlow.Load();
-            string name = $"Flow_{DateTime.Now:yyyyMMdd_HHmmss}";
-            templateFlow.Create(name);
-            Refresh();
+            try
+            {
+                var templateFlow = new TemplateFlow();
+                templateFlow.Load();
+                string baseName = $"Flow_{DateTime.Now:yyyyMMdd_HHmmss}";
+                string name = baseName;
+                int suffix = 2;
+                while (templateFlow.ExitsTemplateName(name))
+                    name = $"{baseName}_{suffix++}";
+
+                var existingIds = templateFlow.TemplateParams.Select(item => item.Id).ToHashSet();
+                templateFlow.Create(name);
+                TemplateModel<FlowParam>? createdFlow = templateFlow.TemplateParams
+                    .LastOrDefault(item => !existingIds.Contains(item.Id));
+                if (createdFlow == null)
+                    return;
+
+                if (DisplayFlow != null)
+                    await DisplayFlow.SelectCreatedFlowTemplateAsync(createdFlow);
+                else
+                    Refresh();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Create flow failed.", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+            }
         }
 
         public void DeleteFlow()
@@ -677,6 +702,7 @@ namespace ColorVision.Engine.Services.Flow
             if (_isStandalone)
             {
                 StopStandaloneFlow();
+                DetachStandaloneExecutionNodeTracking();
                 if (_standaloneFlowControl != null)
                     _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
@@ -734,7 +760,7 @@ namespace ColorVision.Engine.Services.Flow
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
-                logTextBox.Text = Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry;
+                ShowExecutionSummary(Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 return;
             }
@@ -759,11 +785,20 @@ namespace ColorVision.Engine.Services.Flow
                     serverNode.TitleColor = System.Drawing.Color.Blue;
             }
 
+            ResetStandaloneExecutionNodeTracking();
+            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            {
+                node.nodeRunEvent -= StandaloneNodeRunEvent;
+                node.nodeRunEvent += StandaloneNodeRunEvent;
+                node.nodeEndEvent -= StandaloneNodeEndEvent;
+                node.nodeEndEvent += StandaloneNodeEndEvent;
+            }
+
             string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
             _standaloneFlowControl.FlowCompleted += StandaloneFlowControl_FlowCompleted;
             _standaloneStopwatch.Restart();
-            logTextBox.Text = $"Run {_standaloneDocumentName}";
+            ShowExecutionSummary($"Run {_standaloneDocumentName}");
 
             try
             {
@@ -774,8 +809,9 @@ namespace ColorVision.Engine.Services.Flow
                 _standaloneStopwatch.Stop();
                 _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 _standaloneFlowControl.Stop();
+                DetachStandaloneExecutionNodeTracking();
                 log.Error("Run standalone flow failed.", ex);
-                logTextBox.Text = ex.Message;
+                ShowExecutionSummary(ex.Message);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
             }
         }
@@ -788,19 +824,71 @@ namespace ColorVision.Engine.Services.Flow
             _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
             _standaloneFlowControl.Stop();
             _standaloneStopwatch.Stop();
+            DetachStandaloneExecutionNodeTracking();
             if (updateLog)
-                logTextBox.Text = Properties.Resources.ExecutionCancelled;
+                ShowExecutionSummary(Properties.Resources.ExecutionCancelled);
         }
 
         private void StandaloneFlowControl_FlowCompleted(object? sender, FlowControlData data)
         {
             _standaloneStopwatch.Stop();
             _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+            DetachStandaloneExecutionNodeTracking();
             string errorNode = string.IsNullOrWhiteSpace(data.ErrorNodeName)
                 ? string.Empty
                 : $"{Environment.NewLine}{Properties.Resources.Flow_NodeLabel}{data.ErrorNodeName}";
-            logTextBox.Text =
+            string message =
                 $"{_standaloneDocumentName} {data.EventName}{errorNode}{Environment.NewLine}{data.Params}{Environment.NewLine}{_standaloneStopwatch.ElapsedMilliseconds}ms";
+            ShowExecutionSummary(message, data.ErrorNodeName, _standaloneLastFailedNode ?? _standaloneLastNode);
+        }
+
+        private void StandaloneNodeRunEvent(object sender, FlowEngineNodeRunEventArgs e)
+        {
+            _standaloneLastNode = sender as CVCommonNode;
+        }
+
+        private void StandaloneNodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
+        {
+            if (sender is CVCommonNode node && e?.RecvStatusCode != 0)
+                _standaloneLastFailedNode = node;
+        }
+
+        private void ResetStandaloneExecutionNodeTracking()
+        {
+            DetachStandaloneExecutionNodeTracking();
+            _standaloneLastNode = null;
+            _standaloneLastFailedNode = null;
+            ShowExecutionSummary(string.Empty);
+        }
+
+        private void DetachStandaloneExecutionNodeTracking()
+        {
+            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+            {
+                node.nodeRunEvent -= StandaloneNodeRunEvent;
+                node.nodeEndEvent -= StandaloneNodeEndEvent;
+            }
+        }
+
+        public void ShowExecutionSummary(string message, string? executionNodeName = null, CVCommonNode? preferredNode = null)
+        {
+            logTextBox.Text = message;
+            _executionDetailsNode = STNodeEditorHelper.ResolveExecutionNode(
+                STNodeEditorMain,
+                executionNodeName,
+                preferredNode);
+            ErrorNodeDetailsButton.Visibility = _executionDetailsNode == null
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            ErrorNodeDetailsButton.ToolTip = _executionDetailsNode == null
+                ? null
+                : $"{Properties.Resources.Flow_NodeLabel}{_executionDetailsNode.OnGetDrawTitle()}";
+        }
+
+        private void ErrorNodeDetailsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_executionDetailsNode != null)
+                STNodeEditorHelper.OpenNodeExecutionDetails(_executionDetailsNode, focusNode: true);
         }
 
         private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)

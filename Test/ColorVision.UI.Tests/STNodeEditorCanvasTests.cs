@@ -91,6 +91,41 @@ namespace ColorVision.UI.Tests
             });
         }
 
+        [Theory]
+        [InlineData(true, System.Windows.Input.ModifierKeys.None, true)]
+        [InlineData(true, System.Windows.Input.ModifierKeys.Control, false)]
+        [InlineData(false, System.Windows.Input.ModifierKeys.None, false)]
+        [InlineData(false, System.Windows.Input.ModifierKeys.Control, false)]
+        public void ControlForcesBlankLeftDragIntoRectangleSelection(
+            bool enableBlankLeftDragCanvas,
+            System.Windows.Input.ModifierKeys modifiers,
+            bool expectedPan)
+        {
+            Assert.Equal(
+                expectedPan,
+                TestNodeEditor.ShouldPanBlankCanvasForTest(
+                    STMouseButtons.Left,
+                    enableBlankLeftDragCanvas,
+                    modifiers));
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, true, true)]
+        public void ControlRectangleSelectionAddsNodesToTheExistingSelection(
+            bool intersectsSelectionRectangle,
+            bool wasSelectedBeforeDrag,
+            bool expectedSelected)
+        {
+            Assert.Equal(
+                expectedSelected,
+                TestNodeEditor.ShouldSelectNodeFromRectangleForTest(
+                    intersectsSelectionRectangle,
+                    wasSelectedBeforeDrag));
+        }
+
         [Fact]
         public void NodeActivation_RequiresLeftMouseButton()
         {
@@ -460,6 +495,13 @@ namespace ColorVision.UI.Tests
                 System.Windows.Input.ModifierKeys modifiers)
             {
                 return ShouldPanBlankCanvas(button, enableBlankLeftDragCanvasAtMouseDown, modifiers);
+            }
+
+            public static bool ShouldSelectNodeFromRectangleForTest(
+                bool intersectsSelectionRectangle,
+                bool wasSelectedBeforeDrag)
+            {
+                return ShouldSelectNodeFromRectangle(intersectsSelectionRectangle, wasSelectedBeforeDrag);
             }
 
             public void DrawNodes(System.Drawing.Rectangle viewport)

@@ -154,6 +154,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private RectangleF m_rect_select;
 
+	private readonly HashSet<STNode> m_rectangle_selection_baseline = new HashSet<STNode>();
+
 	private Image m_img_border;
 
 	private Image m_img_border_hover;
@@ -1223,6 +1225,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 					{
 						SetActiveNode(null);
 					}
+					nodeFindInfo.Node.SetSelected(bSelected: false, bRedraw: true);
 				}
 				else
 				{
@@ -1265,13 +1268,29 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		else
 		{
 			bool enableBlankLeftDragCanvasAtMouseDown = EnableBlankLeftDragCanvas;
+			ModifierKeys modifiers = Keyboard.Modifiers;
 			SetActiveNode(null);
-			STNode[] array2 = m_hs_node_selected.ToArray();
-			foreach (STNode sTNode2 in array2)
+			bool panCanvas = ShouldPanBlankCanvas(nodeEvent.Button, enableBlankLeftDragCanvasAtMouseDown, modifiers);
+			m_rectangle_selection_baseline.Clear();
+			if (!panCanvas)
 			{
-				sTNode2.SetSelected(bSelected: false, bRedraw: false);
+				bool appendSelection = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+				if (appendSelection)
+				{
+					foreach (STNode selectedNode in m_hs_node_selected)
+					{
+						m_rectangle_selection_baseline.Add(selectedNode);
+					}
+				}
+				else
+				{
+					STNode[] array2 = m_hs_node_selected.ToArray();
+					foreach (STNode sTNode2 in array2)
+					{
+						sTNode2.SetSelected(bSelected: false, bRedraw: false);
+					}
+				}
 			}
-			bool panCanvas = ShouldPanBlankCanvas(nodeEvent.Button, enableBlankLeftDragCanvasAtMouseDown, Keyboard.Modifiers);
 			m_ca = panCanvas ? CanvasAction.MoveCanvas : CanvasAction.SelectRectangle;
 			ref RectangleF rect_select = ref m_rect_select;
 			float num = (m_rect_select.Height = 0f);
@@ -1290,7 +1309,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	{
 		return button == STMouseButtons.Middle
 			|| button == STMouseButtons.Left
-			&& (enableBlankLeftDragCanvasAtMouseDown || (modifiers & ModifierKeys.Control) == ModifierKeys.Control);
+			&& enableBlankLeftDragCanvasAtMouseDown
+			&& (modifiers & ModifierKeys.Control) != ModifierKeys.Control;
+	}
+
+	protected internal static bool ShouldSelectNodeFromRectangle(bool intersectsSelectionRectangle, bool wasSelectedBeforeDrag)
+	{
+		return intersectsSelectionRectangle || wasSelectedBeforeDrag;
 	}
 
 	protected override void OnMouseMove(WpfMouseEventArgs e)
@@ -1338,7 +1363,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				m_rect_select.Height = Math.Abs(m_pt_in_canvas.Y - m_pt_down_in_canvas.Y);
 				foreach (STNode node in _Nodes)
 				{
-					node.SetSelected(m_rect_select.IntersectsWith(node.Rectangle), bRedraw: false);
+					node.SetSelected(
+						ShouldSelectNodeFromRectangle(
+							m_rect_select.IntersectsWith(node.Rectangle),
+							m_rectangle_selection_baseline.Contains(node)),
+						bRedraw: false);
 				}
 				Invalidate();
 				return;
@@ -1428,6 +1457,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		m_is_process_mouse_event = true;
 		m_ca = CanvasAction.None;
+		m_rectangle_selection_baseline.Clear();
 		ReleaseMouseCapture();
 		Invalidate();
 	}
@@ -1447,6 +1477,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected override void OnLostMouseCapture(WpfMouseEventArgs e)
 	{
 		EndPointerEdit();
+		m_rectangle_selection_baseline.Clear();
 		base.OnLostMouseCapture(e);
 	}
 

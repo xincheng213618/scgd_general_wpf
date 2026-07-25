@@ -639,7 +639,8 @@ namespace ColorVision.Engine.Templates.Flow
             if (mergeNode == null || !_layerMap.TryGetValue(mergeNode, out int mergeLayer) || mergeLayer < 6)
                 return false;
 
-            var serialLaneRows = BuildSerialLaneRows(_rootNode, mergeNode);
+            var serialLaneRows = SplitLongSerialLaneForViewport(
+                BuildSerialLaneRows(_rootNode, mergeNode));
             if (serialLaneRows.Count >= 2)
             {
                 ApplySerialLaneFold(serialLaneRows, mergeNode);
@@ -654,6 +655,36 @@ namespace ColorVision.Engine.Templates.Flow
             ApplyLaneFold(laneSegments, mergeLayer, mergeNode);
             NormalizeLayoutOrigin();
             return true;
+        }
+
+        private List<List<STNode>> SplitLongSerialLaneForViewport(List<List<STNode>> rows)
+        {
+            if (rows.Count != 1)
+                return rows;
+
+            List<STNode> serialLane = rows[0];
+            int maxColumns = _viewportWidth > 0
+                ? Math.Max(4, Math.Min(8, _viewportWidth / Math.Max(1, _horizontalSpacing) - 2))
+                : 6;
+            return SplitSerialLaneRows(serialLane, maxColumns);
+        }
+
+        internal static List<List<STNode>> SplitSerialLaneRows(List<STNode> serialLane, int maxColumns)
+        {
+            maxColumns = Math.Max(1, maxColumns);
+            if (serialLane.Count <= maxColumns + 2)
+                return new List<List<STNode>> { serialLane };
+
+            var splitRows = new List<List<STNode>>();
+            for (int index = 0; index < serialLane.Count; index += maxColumns)
+            {
+                splitRows.Add(serialLane
+                    .Skip(index)
+                    .Take(maxColumns)
+                    .ToList());
+            }
+
+            return splitRows;
         }
 
         private List<List<STNode>> BuildSerialLaneRows(STNode rootNode, STNode mergeNode)
