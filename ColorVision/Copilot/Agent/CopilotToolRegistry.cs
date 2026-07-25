@@ -121,6 +121,7 @@ namespace ColorVision.Copilot
                 new CopilotExecuteMenuTool(applicationCapabilities),
                 new CopilotSetThemeTool(),
                 new CopilotSetLanguageTool(applicationCapabilities),
+                new CopilotInspectSavedTemplateTool(applicationCapabilities),
                 new CopilotTemplatePatchTool(applicationCapabilities),
                 new CopilotApplyTemplatePatchTool(applicationCapabilities),
                 new CopilotSearchDocsTool(),

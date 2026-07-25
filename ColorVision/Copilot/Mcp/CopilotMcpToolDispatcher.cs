@@ -168,6 +168,11 @@ namespace ColorVision.Copilot.Mcp
                     ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it."),
                 }), "file", "read-only", "Call list_allowed_directory with { \"path\": \"Engine\" }; pass its next_cursor unchanged to request another page."),
                 Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."),
+                Tool("get_saved_template_context", "Return a bounded redacted read-only snapshot of one already loaded saved ColorVision template. Required arguments: template_code, template_name.", Schema(new Dictionary<string, object>
+                {
+                    ["template_code"] = StringProperty("Exact template code from a saved-template reference."),
+                    ["template_name"] = StringProperty("Exact saved template name from a saved-template reference."),
+                }, "template_code", "template_name"), "context", "read-only", "Call get_saved_template_context with { \"template_code\": \"SFR\", \"template_name\": \"Default\" } after the user references a saved template."),
                 Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."),
                 Tool("get_flow_graph", "Return the active ColorVision flow as a bounded structured graph with a revision, stable node ids, runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema(new Dictionary<string, object>
                 {
@@ -487,6 +492,7 @@ namespace ColorVision.Copilot.Mcp
                 .Register("read_allowed_file", (arguments, _, token) => ReadAllowedFileAsync(arguments, token))
                 .Register("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
                 .Register("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
+                .Register("get_saved_template_context", (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)))
                 .Register("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
                 .Register("get_flow_graph", (arguments, _, token) => GetFlowGraphAsync(arguments, token))
                 .Register("get_flow_node_catalog", (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token))
@@ -959,6 +965,20 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Ok("The current live context is not a template editor context.");
 
             return CopilotMcpToolCallResult.Ok(FormatTemplateLiveContext(liveContext));
+        }
+
+        private static CopilotMcpToolCallResult GetSavedTemplateContext(IReadOnlyDictionary<string, JsonElement>? arguments)
+        {
+            var templateCode = GetString(arguments, "template_code", "code");
+            var templateName = GetString(arguments, "template_name", "name");
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                return dispatcher.Invoke(() =>
+                    CopilotSavedTemplateContextSupport.Read(templateCode, templateName));
+            }
+
+            return CopilotSavedTemplateContextSupport.Read(templateCode, templateName);
         }
 
         private async Task<CopilotMcpToolCallResult> GetFlowSummaryAsync(CancellationToken cancellationToken)

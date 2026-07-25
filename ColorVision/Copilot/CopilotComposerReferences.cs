@@ -304,7 +304,8 @@ namespace ColorVision.Copilot
                                 $"Template type: {title}",
                                 $"Template code: {code}",
                                 $"Template dictionary id: {template.TemplateDicId}",
-                                "The user referenced this exact saved template. Treat the identity as context only; inspect the template through an available trusted context or tool before describing values or applying changes.",
+                                $"Read tool arguments: template_code={code}; template_name={savedTemplateName}",
+                                "The user referenced this exact saved template. Call the read-only InspectSavedTemplate tool with template_code and template_name before describing values or proposing changes.",
                             }),
                         });
                     }

@@ -152,6 +152,11 @@ namespace ColorVision.Copilot
             "flow graph", "flow editor", "workflow", "flow node", "camera node", "algorithm node",
         };
 
+        private static readonly string[] SavedTemplateContextMarkers =
+        {
+            "[ColorVision saved template reference]", "已保存模板", "保存模板", "saved template", "template code:",
+        };
+
         private static readonly string[] FlowMutationMarkers =
         {
             "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动",
@@ -395,6 +400,16 @@ namespace ColorVision.Copilot
                 && (HasFlowContext(request!)
                     || MatchesCurrentOrContinuation(request!, FlowGraphMarkers,
                         "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"));
+        }
+
+        public static bool NeedsSavedTemplateContext(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (HasSavedTemplateContext(request!)
+                    || MatchesCurrentOrContinuation(
+                        request!,
+                        SavedTemplateContextMarkers,
+                        "InspectSavedTemplate"));
         }
 
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
@@ -652,6 +667,15 @@ namespace ColorVision.Copilot
             return request.ContextItems.Any(item =>
                 (item.Id ?? string.Empty).EndsWith(":flow", StringComparison.OrdinalIgnoreCase)
                 || (item.Title ?? string.Empty).StartsWith("Flow context", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool HasSavedTemplateContext(CopilotAgentRequest request)
+        {
+            return request.ContextItems.Any(item =>
+                (item.Id ?? string.Empty).StartsWith("composer-template:", StringComparison.OrdinalIgnoreCase)
+                || (item.Content ?? string.Empty).Contains(
+                    "[ColorVision saved template reference]",
+                    StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool IsAgentRequest(CopilotAgentRequest? request)
