@@ -1425,10 +1425,12 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Border x:Name="FileDropOverlay"
-                            Grid.RowSpan="5"
+                            Grid.RowSpan="7"
                             Panel.ZIndex="20"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource PrimaryBrush}"
@@ -1528,7 +1530,200 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="1" Margin="0,0,0,6"
+                    <Border Grid.Row="1"
+                            MaxHeight="300"
+                            Margin="0,0,0,8"
+                            Padding="11,9"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Visibility="{Binding HasSideQuestion, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right"
+                                            Margin="10,0,0,0"
+                                            Orientation="Horizontal">
+                                    <Button Width="24"
+                                            Height="24"
+                                            Padding="0"
+                                            Command="{Binding CancelSideQuestionCommand}"
+                                            Content="■"
+                                            FontSize="9"
+                                            Style="{StaticResource AttachmentCloseButtonStyle}"
+                                            Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}"
+                                            ToolTip="取消旁路提问；主 Agent 任务不会停止" />
+                                    <Button Width="24"
+                                            Height="24"
+                                            Padding="0"
+                                            Command="{Binding DismissSideQuestionCommand}"
+                                            Content="×"
+                                            Style="{StaticResource AttachmentCloseButtonStyle}"
+                                            Visibility="{Binding CanDismissSideQuestion, Converter={StaticResource bool2VisibilityConverter}}"
+                                            ToolTip="关闭旁路回答" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource PrimaryBrush}"
+                                               Text="/btw · 旁路提问" />
+                                    <TextBlock Margin="0,2,0,0"
+                                               FontSize="9"
+                                               Opacity="0.58"
+                                               Text="{Binding SideQuestionStatusText}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+                            <Border Grid.Row="1"
+                                    Margin="0,7,0,0"
+                                    Padding="8,5"
+                                    Background="{DynamicResource GlobalBorderBrush1}"
+                                    CornerRadius="6">
+                                <TextBlock FontSize="11"
+                                           FontStyle="Italic"
+                                           Opacity="0.76"
+                                           Text="{Binding SideQuestionPrompt}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding SideQuestionPrompt}" />
+                            </Border>
+                            <ProgressBar Grid.Row="2"
+                                         Height="2"
+                                         Margin="0,7,0,0"
+                                         IsIndeterminate="True"
+                                         Visibility="{Binding IsSideQuestionRunning, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <ScrollViewer Grid.Row="3"
+                                          MaxHeight="190"
+                                          Margin="0,8,0,0"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Visibility="{Binding HasSideQuestionAnswer, Converter={StaticResource bool2VisibilityConverter}}">
+                                <local:CopilotMarkdownView Markdown="{Binding SideQuestionAnswer, Mode=OneWay}" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2"
+                            MaxHeight="150"
+                            Margin="0,0,0,6"
+                            Padding="9,7"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            Visibility="{Binding HasQueuedFollowUps, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <DockPanel Margin="2,0,2,5">
+                                <TextBlock DockPanel.Dock="Right"
+                                           Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="10"
+                                           Opacity="0.54"
+                                           Text="Enter 调整当前任务 · Tab 排到下一轮" />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Text="后续队列" />
+                                    <Border Margin="6,0,0,0"
+                                            Padding="5,1"
+                                            Background="{DynamicResource GlobalBorderBrush1}"
+                                            CornerRadius="6">
+                                        <TextBlock FontSize="9"
+                                                   Opacity="0.72"
+                                                   Text="{Binding QueuedFollowUpCountLabel}" />
+                                    </Border>
+                                </StackPanel>
+                            </DockPanel>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding QueuedFollowUps}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,4"
+                                                    Padding="7,5"
+                                                    Background="{DynamicResource GlobalBorderBrush1}"
+                                                    CornerRadius="6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Margin="0,0,7,0"
+                                                               VerticalAlignment="Center"
+                                                               FontFamily="Consolas"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Opacity="0.58"
+                                                               Text="{Binding PositionLabel}" />
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock FontSize="9"
+                                                                   FontWeight="SemiBold"
+                                                                   Opacity="0.54"
+                                                                   Text="{Binding ConversationTitle}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Margin="0,2,0,0"
+                                                                   FontSize="11"
+                                                                   Text="{Binding PromptPreview}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2"
+                                                                Margin="8,0,0,0"
+                                                                Orientation="Horizontal">
+                                                        <Button Width="22"
+                                                                Height="22"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.MoveQueuedFollowUpUpCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="↑"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="提前一位" />
+                                                        <Button Width="22"
+                                                                Height="22"
+                                                                Margin="2,0,0,0"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.MoveQueuedFollowUpDownCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="↓"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="后移一位" />
+                                                        <Button Width="28"
+                                                                Height="22"
+                                                                Margin="4,0,0,0"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.EditQueuedFollowUpCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="编辑"
+                                                                FontSize="9"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="取消排队并移回输入框" />
+                                                        <Button Width="22"
+                                                                Height="22"
+                                                                Margin="2,0,0,0"
+                                                                Padding="0"
+                                                                Command="{Binding DataContext.DeleteQueuedFollowUpCommand, Source={x:Reference Root}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="×"
+                                                                Style="{StaticResource AttachmentCloseButtonStyle}"
+                                                                ToolTip="删除这条后续消息" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="3" Margin="0,0,0,6"
                                 Visibility="{Binding HasComposerAttachmentItems, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       HorizontalScrollBarVisibility="Auto"
@@ -1632,7 +1827,7 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border Grid.Row="2"
+                    <Border Grid.Row="4"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -1674,7 +1869,7 @@
                         </ScrollViewer>
                     </Border>
 
-                    <Grid Grid.Row="3"
+                    <Grid Grid.Row="5"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -1716,7 +1911,7 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="4" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="6" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -2091,6 +2286,15 @@
                                     Style="{StaticResource CopilotIconButtonStyle}"
                                     Visibility="{Binding CanSteerCurrentRun, Converter={StaticResource bool2VisibilityConverter}}"
                                     ToolTip="把输入作为新指令加入当前 Agent 运行（Enter）" />
+                            <Button Width="28"
+                                    Height="28"
+                                    Margin="0,0,6,0"
+                                    Command="{Binding QueueFollowUpCommand}"
+                                    Content="⇥"
+                                    FontSize="15"
+                                    Style="{StaticResource CopilotIconButtonStyle}"
+                                    Visibility="{Binding CanQueueCurrentRunFollowUp, Converter={StaticResource bool2VisibilityConverter}}"
+                                    ToolTip="排到当前 Agent 任务结束后再执行（Tab）" />
 
                             <Button x:Name="VoiceInputButton"
                                     Width="28"

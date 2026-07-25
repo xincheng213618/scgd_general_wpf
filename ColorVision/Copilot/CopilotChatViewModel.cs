@@ -42,6 +42,7 @@ namespace ColorVision.Copilot
 
         private readonly CopilotChatService _chatService;
         private readonly ICopilotTurnRuntime _turnRuntime;
+        private readonly CopilotSideQuestionService _sideQuestionService;
         private readonly CopilotAgentTaskHost _taskHost;
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
@@ -51,6 +52,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
+        private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly HashSet<CancellationTokenSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
@@ -59,6 +61,7 @@ namespace ColorVision.Copilot
         private CancellationTokenSource? _compactConversationCts;
         private CancellationTokenSource? _fileAttachmentCts;
         private CancellationTokenSource? _webPageAttachmentCts;
+        private CancellationTokenSource? _sideQuestionCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -73,6 +76,9 @@ namespace ColorVision.Copilot
         private string _statePersistenceNoticeToolTip = string.Empty;
         private string _localCommandResultTitle = string.Empty;
         private string _localCommandResultText = string.Empty;
+        private string _sideQuestionPrompt = string.Empty;
+        private string _sideQuestionAnswer = string.Empty;
+        private string _sideQuestionStatusText = string.Empty;
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
@@ -83,7 +89,9 @@ namespace ColorVision.Copilot
         private bool _isExportingConversation;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
+        private bool _isSideQuestionRunning;
         private bool _isRetryingStatePersistence;
+        private long _sideQuestionVersion;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -100,6 +108,7 @@ namespace ColorVision.Copilot
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _turnRuntime = new CopilotTurnRuntime(_chatService);
+            _sideQuestionService = new CopilotSideQuestionService(_chatService);
             _taskHost = CopilotAgentTaskHost.Shared;
             _localGitDiffService = new CopilotLocalGitDiffService();
             _config = CopilotConfig.Instance;
@@ -186,6 +195,15 @@ namespace ColorVision.Copilot
             DismissAgentTaskCommand = new RelayCommand<CopilotAgentTaskSummary>(DismissAgentTask, task => task != null && !IsBusy);
             OpenAgentRunNoticeCommand = new RelayCommand(_ => OpenAgentRunNotice(), _ => HasAgentRunNotice);
             SteerCommand = new RelayCommand(_ => TrySteerCurrentRun(), _ => CanSteerCurrentRun);
+            QueueFollowUpCommand = new RelayCommand(_ => TryQueueCurrentRunFollowUp(), _ => CanQueueCurrentRunFollowUp);
+            EditQueuedFollowUpCommand = new RelayCommand<CopilotQueuedFollowUp>(EditQueuedFollowUp, CanEditQueuedFollowUp);
+            MoveQueuedFollowUpUpCommand = new RelayCommand<CopilotQueuedFollowUp>(
+                item => MoveQueuedFollowUp(item, -1),
+                item => item?.CanMoveUp == true);
+            MoveQueuedFollowUpDownCommand = new RelayCommand<CopilotQueuedFollowUp>(
+                item => MoveQueuedFollowUp(item, 1),
+                item => item?.CanMoveDown == true);
+            DeleteQueuedFollowUpCommand = new RelayCommand<CopilotQueuedFollowUp>(DeleteQueuedFollowUp, item => item != null);
             OpenAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(OpenAttachment, attachment => attachment != null);
             RemoveAttachmentCommand = new RelayCommand<CopilotAttachmentItem>(RemoveAttachment, attachment => !IsBusy && attachment != null);
             RenameConversationCommand = new RelayCommand<CopilotConversationRecord>(RenameConversation, conversation => !IsBusy && conversation != null);
@@ -203,6 +221,8 @@ namespace ColorVision.Copilot
                 message => SetPendingActionFeedback("执行失败：" + message)), action => action?.IsPending == true);
             RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
             DismissLocalCommandResultCommand = new RelayCommand(_ => DismissLocalCommandResult(), _ => HasLocalCommandResult);
+            CancelSideQuestionCommand = new RelayCommand(_ => CancelSideQuestion(), _ => IsSideQuestionRunning);
+            DismissSideQuestionCommand = new RelayCommand(_ => DismissSideQuestion(), _ => CanDismissSideQuestion);
             CompleteLocalCommandCommand = new RelayCommand(command => TryCompleteLocalCommand(command as CopilotLocalCommand), _ => HasLocalCommandSuggestions);
 
             _pendingActionExpiryTimer = new DispatcherTimer
@@ -232,6 +252,12 @@ namespace ColorVision.Copilot
         public bool HasAgentTasks => AgentTasks.Count > 0;
 
         public string AgentTaskCountLabel => AgentTasks.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+        public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
+
+        public bool HasQueuedFollowUps => QueuedFollowUps.Count > 0;
+
+        public string QueuedFollowUpCountLabel => QueuedFollowUps.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
         public string AgentRunNoticeText
         {
@@ -420,6 +446,16 @@ namespace ColorVision.Copilot
 
         public ICommand SteerCommand { get; }
 
+        public ICommand QueueFollowUpCommand { get; }
+
+        public ICommand EditQueuedFollowUpCommand { get; }
+
+        public ICommand MoveQueuedFollowUpUpCommand { get; }
+
+        public ICommand MoveQueuedFollowUpDownCommand { get; }
+
+        public ICommand DeleteQueuedFollowUpCommand { get; }
+
         public ICommand OpenAttachmentCommand { get; }
 
         public ICommand RemoveAttachmentCommand { get; }
@@ -443,6 +479,10 @@ namespace ColorVision.Copilot
         public ICommand RejectPendingActionCommand { get; }
 
         public ICommand DismissLocalCommandResultCommand { get; }
+
+        public ICommand CancelSideQuestionCommand { get; }
+
+        public ICommand DismissSideQuestionCommand { get; }
 
         public ICommand CompleteLocalCommandCommand { get; }
 
@@ -516,6 +556,55 @@ namespace ColorVision.Copilot
         }
 
         public bool HasLocalCommandResult => !string.IsNullOrWhiteSpace(LocalCommandResultText);
+
+        public string SideQuestionPrompt
+        {
+            get => _sideQuestionPrompt;
+            private set
+            {
+                if (!SetProperty(ref _sideQuestionPrompt, value ?? string.Empty))
+                    return;
+
+                OnPropertyChanged(nameof(HasSideQuestion));
+                OnPropertyChanged(nameof(CanDismissSideQuestion));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public string SideQuestionAnswer
+        {
+            get => _sideQuestionAnswer;
+            private set
+            {
+                if (SetProperty(ref _sideQuestionAnswer, value ?? string.Empty))
+                    OnPropertyChanged(nameof(HasSideQuestionAnswer));
+            }
+        }
+
+        public string SideQuestionStatusText
+        {
+            get => _sideQuestionStatusText;
+            private set => SetProperty(ref _sideQuestionStatusText, value ?? string.Empty);
+        }
+
+        public bool HasSideQuestion => !string.IsNullOrWhiteSpace(SideQuestionPrompt);
+
+        public bool HasSideQuestionAnswer => !string.IsNullOrWhiteSpace(SideQuestionAnswer);
+
+        public bool CanDismissSideQuestion => HasSideQuestion && !IsSideQuestionRunning;
+
+        public bool IsSideQuestionRunning
+        {
+            get => _isSideQuestionRunning;
+            private set
+            {
+                if (!SetProperty(ref _isSideQuestionRunning, value))
+                    return;
+
+                OnPropertyChanged(nameof(CanDismissSideQuestion));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         public bool HasCurrentLiveContext => _currentLiveContext != null;
 
@@ -666,6 +755,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(LocalCommandSuggestions));
                     OnPropertyChanged(nameof(HasLocalCommandSuggestions));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
+                    OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                     RefreshComposerTokenEstimate();
                     CommandManager.InvalidateRequerySuggested();
                 }
@@ -737,7 +827,9 @@ namespace ColorVision.Copilot
 
         public string InputPlaceholder => IsEditingMessage
             ? "修改后按 Enter 重新发送"
-            : IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
+            : IsViewingActiveRun
+                ? "Enter 调整 · Tab 排队 · /btw 旁路提问"
+                : IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
@@ -795,6 +887,10 @@ namespace ColorVision.Copilot
 
         public bool CanSteerCurrentRun => IsBusy && IsAgentRequestActive && IsViewingActiveRun && !IsInputEmpty;
 
+        public bool CanQueueCurrentRunFollowUp => CanSteerCurrentRun
+            && ResolveComposerRequestMode() != CopilotAgentMode.Chat
+            && _taskHost.QueuedCount < _taskHost.MaxQueuedRuns;
+
         public bool CanCancelAgentRun => IsViewingActiveRun
             && IsAgentRequestActive
             && SelectedHostedRun?.CanRequestCancel == true;
@@ -818,8 +914,10 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(AttachmentMenuToolTip));
                 OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
                 OnPropertyChanged(nameof(CanSteerCurrentRun));
+                OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
                 OnPropertyChanged(nameof(CanCancelAgentRun));
                 OnPropertyChanged(nameof(CanPauseAgentRun));
+                OnPropertyChanged(nameof(InputPlaceholder));
                 RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -926,6 +1024,15 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.NewConversation:
                     DismissLocalCommandResult();
                     StartNewChat();
+                    break;
+                case CopilotLocalCommandKind.ForkConversation:
+                    ForkCurrentConversation(command, invocation.Arguments);
+                    break;
+                case CopilotLocalCommandKind.SideQuestion:
+                    RunUiOperation(
+                        () => AskSideQuestionAsync(command, invocation.Arguments),
+                        "旁路提问",
+                        ReportSideQuestionFailure);
                     break;
                 default:
                     return false;
@@ -1313,6 +1420,108 @@ namespace ColorVision.Copilot
         {
             LocalCommandResultTitle = string.Empty;
             LocalCommandResultText = string.Empty;
+        }
+
+        private async Task AskSideQuestionAsync(CopilotLocalCommand command, string question)
+        {
+            var normalizedQuestion = (question ?? string.Empty).Trim();
+            if (normalizedQuestion.Length == 0)
+            {
+                ShowLocalCommandResult(command, "用法：/btw <问题>。侧问只读取当前会话上下文，不使用工具，也不会写入主会话。");
+                return;
+            }
+            if (IsSideQuestionRunning)
+            {
+                ShowLocalCommandResult(command, "已有一个旁路问题正在回答。请先等待或取消它。");
+                return;
+            }
+            if (!TryValidateComposerCharacterLimit(normalizedQuestion))
+                return;
+
+            var conversation = SelectedConversation;
+            var profile = SelectedProfile;
+            if (conversation == null || profile?.IsConfigured != true)
+            {
+                ShowLocalCommandResult(command, "当前会话没有可用的模型配置，无法回答旁路问题。");
+                return;
+            }
+
+            DismissLocalCommandResult();
+            if (HasSideQuestion)
+                DismissSideQuestion();
+
+            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(profile);
+            var conversationHistory = CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation);
+            var historyLimits = ResolveConversationHistoryLimits(requestProfile);
+            var cancellation = BeginAuxiliaryOperation();
+            _sideQuestionCts = cancellation;
+            var version = ++_sideQuestionVersion;
+            SideQuestionPrompt = normalizedQuestion;
+            SideQuestionAnswer = string.Empty;
+            SideQuestionStatusText = "正在从当前会话上下文回答 · 无工具 · 不影响主任务";
+            IsSideQuestionRunning = true;
+
+            try
+            {
+                var result = await _sideQuestionService.AskAsync(
+                    requestProfile,
+                    conversationHistory,
+                    historyLimits,
+                    normalizedQuestion,
+                    cancellation.Token);
+                if (version != _sideQuestionVersion)
+                    return;
+
+                SideQuestionAnswer = result.Answer;
+                var completion = result.IsIncomplete ? "回答不完整" : "已完成";
+                SideQuestionStatusText = result.Usage.HasAny
+                    ? $"{completion} · 未写入主会话 · 输入 {CopilotTokenUsage.FormatCount(result.Usage.InputTokens)} / 输出 {CopilotTokenUsage.FormatCount(result.Usage.OutputTokens)}"
+                    : $"{completion} · 未写入主会话";
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                if (version == _sideQuestionVersion)
+                    SideQuestionStatusText = "已取消 · 未写入主会话";
+            }
+            finally
+            {
+                if (ReferenceEquals(_sideQuestionCts, cancellation))
+                    _sideQuestionCts = null;
+                if (version == _sideQuestionVersion)
+                    IsSideQuestionRunning = false;
+                CompleteAuxiliaryOperation(cancellation);
+            }
+        }
+
+        private void CancelSideQuestion()
+        {
+            var cancellation = _sideQuestionCts;
+            if (!IsSideQuestionRunning || cancellation == null)
+                return;
+
+            SideQuestionStatusText = "正在取消旁路提问…";
+            TryCancelCancellationSource(cancellation);
+        }
+
+        private void DismissSideQuestion()
+        {
+            if (IsSideQuestionRunning)
+                return;
+
+            _sideQuestionVersion++;
+            SideQuestionPrompt = string.Empty;
+            SideQuestionAnswer = string.Empty;
+            SideQuestionStatusText = string.Empty;
+        }
+
+        private void ReportSideQuestionFailure(string message)
+        {
+            if (!HasSideQuestion)
+                return;
+
+            SideQuestionAnswer = CopilotUserFacingErrorFormatter.Sanitize(message);
+            SideQuestionStatusText = "回答失败 · 未写入主会话";
+            IsSideQuestionRunning = false;
         }
 
         private void RunUiOperation(Func<Task> operation, string operationName, Action<string>? onError = null)
@@ -1772,6 +1981,9 @@ namespace ColorVision.Copilot
             }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
                 RefreshAgentTasks();
+            if (e.Kind is CopilotAgentTaskHostChangeKind.Started or CopilotAgentTaskHostChangeKind.Completed)
+                RemoveQueuedFollowUp(e.Run.Id);
+            RefreshQueuedFollowUpPositions();
             NotifyHostedRunStateChanged();
             CommandManager.InvalidateRequerySuggested();
         }
@@ -1781,10 +1993,12 @@ namespace ColorVision.Copilot
             RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(CanSwitchConversation));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
+            OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
             OnPropertyChanged(nameof(CanCancelAgentRun));
             OnPropertyChanged(nameof(CanPauseAgentRun));
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
+            OnPropertyChanged(nameof(InputPlaceholder));
             RefreshAgentRunNotice();
         }
 
@@ -2343,8 +2557,14 @@ namespace ColorVision.Copilot
             if (IsViewingActiveRun)
             {
                 var invocation = CopilotLocalCommandCatalog.Parse(InputText);
-                if (invocation?.Command.AvailableWhileAgentRuns == true && TryExecuteLocalCommand(InputText))
+                if (invocation != null)
+                {
+                    if (invocation.Command.AvailableWhileAgentRuns)
+                        TryExecuteLocalCommand(InputText);
+                    else
+                        ReportUnavailableLocalCommandDuringRun(invocation.Command);
                     return;
+                }
 
                 TrySteerCurrentRun();
                 return;
@@ -2377,6 +2597,199 @@ namespace ColorVision.Copilot
 
             InputText = string.Empty;
             PersistState();
+        }
+
+        public bool TryQueueCurrentRunFollowUp()
+        {
+            var prompt = (InputText ?? string.Empty).Trim();
+            var activeRun = ActiveHostedRun;
+            var conversation = SelectedConversation;
+            var profile = SelectedProfile;
+            if (!CanQueueCurrentRunFollowUp
+                || activeRun == null
+                || conversation == null
+                || profile == null
+                || string.IsNullOrWhiteSpace(prompt))
+            {
+                return false;
+            }
+            var localCommand = CopilotLocalCommandCatalog.Parse(prompt);
+            if (localCommand != null)
+            {
+                if (localCommand.Command.AvailableWhileAgentRuns)
+                    return TryExecuteLocalCommand(prompt);
+                ReportUnavailableLocalCommandDuringRun(localCommand.Command);
+                return false;
+            }
+            if (!TryValidateComposerCharacterLimit(prompt)
+                || !TryValidatePromptBudget(prompt, activeRun.Mode, profile))
+            {
+                return false;
+            }
+
+            var requestProfile = CopilotResponsePresentationGuidance.CreateRequestProfile(profile);
+            var submissionContext = CaptureHostedTurnSnapshot(conversation, attachmentOverride: conversation.Attachments);
+            if (!TryValidateComposerAttachments(submissionContext.Attachments))
+                return false;
+
+            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_taskHost.TryScheduleFollowUp(
+                conversation.Id,
+                activeRun.Mode,
+                async run =>
+                {
+                    var queuedItem = await itemReady.Task.ConfigureAwait(false);
+                    await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
+                },
+                out var queuedRun,
+                out var admission)
+                || queuedRun == null)
+            {
+                ReportRequestAdmissionFailure(admission);
+                return false;
+            }
+
+            var queuedFollowUp = new CopilotQueuedFollowUp(
+                queuedRun.Id,
+                conversation.Id,
+                conversation.Title,
+                prompt,
+                activeRun.Mode,
+                requestProfile,
+                submissionContext);
+            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
+            QueuedFollowUps.Add(queuedFollowUp);
+            itemReady.SetResult(queuedFollowUp);
+            RefreshQueuedFollowUpPositions();
+
+            DismissLocalCommandResult();
+            InputText = string.Empty;
+            PersistState();
+            return true;
+        }
+
+        private void ReportUnavailableLocalCommandDuringRun(CopilotLocalCommand command)
+        {
+            LocalCommandResultTitle = command.Name + " · 当前任务运行中";
+            LocalCommandResultText = "本地命令不会作为普通 Agent 提示词注入或排队；请等待当前任务结束后再执行该命令。";
+        }
+
+        private async Task ExecuteQueuedFollowUpAsync(CopilotHostedAgentRun hostedRun, CopilotQueuedFollowUp queuedFollowUp)
+        {
+            var preparedTurn = CopilotUiDispatcher.Invoke(
+                () => PrepareQueuedFollowUpTurn(queuedFollowUp),
+                fallback: null as CopilotPreparedQueuedFollowUpTurn);
+            if (preparedTurn == null)
+                throw new InvalidOperationException("The queued Copilot follow-up could not be prepared on the UI thread.");
+
+            await ExecuteHostedPreparedTurnAsync(
+                hostedRun,
+                preparedTurn.Conversation,
+                queuedFollowUp.Profile,
+                preparedTurn.UserMessage,
+                preparedTurn.AssistantMessage,
+                preparedTurn.TurnSnapshot,
+                refreshExternalContext: true).ConfigureAwait(false);
+        }
+
+        private CopilotPreparedQueuedFollowUpTurn PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
+        {
+            RemoveQueuedFollowUp(queuedFollowUp.RunId);
+            var conversation = Conversations.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
+                ?? throw new InvalidOperationException("The conversation for the queued Copilot follow-up no longer exists.");
+            var submittedContext = queuedFollowUp.SubmissionContext;
+            var turnSnapshot = new CopilotAgentHostContextSnapshot(
+                submittedContext.ActiveDocumentPath,
+                submittedContext.SolutionDirectoryPath,
+                submittedContext.Attachments,
+                submittedContext.LiveContext,
+                CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
+            var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
+            {
+                RequestMode = queuedFollowUp.Mode,
+                Attachments = new ObservableCollection<CopilotAttachmentItem>(turnSnapshot.Attachments),
+                AttachmentSnapshotCaptured = true,
+            };
+            var assistantMessage = CreatePendingAssistantMessage(queuedFollowUp.Profile, queuedFollowUp.Mode);
+
+            conversation.ProfileId = queuedFollowUp.Profile.Id;
+            conversation.ProfileDisplayName = queuedFollowUp.Profile.DisplayLabel;
+            conversation.Messages.Add(userMessage);
+            conversation.Messages.Add(assistantMessage);
+            UpdateConversationMetadata(conversation, touch: true);
+            PersistState();
+            return new CopilotPreparedQueuedFollowUpTurn(conversation, userMessage, assistantMessage, turnSnapshot);
+        }
+
+        private bool CanEditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
+        {
+            return queuedFollowUp != null && !IsEditingMessage && IsInputEmpty;
+        }
+
+        private void EditQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
+        {
+            if (!CanEditQueuedFollowUp(queuedFollowUp) || queuedFollowUp == null)
+                return;
+            if (!_taskHost.RequestCancel(queuedFollowUp.RunId))
+                return;
+
+            var conversation = Conversations.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal));
+            if (conversation != null && CanSwitchConversation)
+                SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
+            InputText = queuedFollowUp.Prompt;
+        }
+
+        private void MoveQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp, int offset)
+        {
+            if (queuedFollowUp == null || !_taskHost.MoveQueuedRun(queuedFollowUp.RunId, offset))
+                return;
+            RefreshQueuedFollowUpPositions();
+        }
+
+        private void DeleteQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
+        {
+            if (queuedFollowUp != null)
+                _taskHost.RequestCancel(queuedFollowUp.RunId);
+        }
+
+        private void RemoveQueuedFollowUp(string runId)
+        {
+            if (!_queuedFollowUpsByRunId.Remove(runId, out var queuedFollowUp))
+                return;
+            QueuedFollowUps.Remove(queuedFollowUp);
+            OnQueuedFollowUpsChanged();
+        }
+
+        private void RefreshQueuedFollowUpPositions()
+        {
+            var queuedRuns = _taskHost.QueuedRuns;
+            var positions = queuedRuns
+                .Select((run, index) => new { run.Id, Position = index + 1 })
+                .ToDictionary(item => item.Id, item => item.Position, StringComparer.Ordinal);
+            var ordered = QueuedFollowUps
+                .Where(item => positions.ContainsKey(item.RunId))
+                .OrderBy(item => positions[item.RunId])
+                .ToArray();
+
+            for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
+            {
+                var currentIndex = QueuedFollowUps.IndexOf(ordered[targetIndex]);
+                if (currentIndex != targetIndex)
+                    QueuedFollowUps.Move(currentIndex, targetIndex);
+            }
+            foreach (var item in ordered)
+                item.UpdateQueuePosition(positions[item.RunId], queuedRuns.Count);
+            OnQueuedFollowUpsChanged();
+        }
+
+        private void OnQueuedFollowUpsChanged()
+        {
+            OnPropertyChanged(nameof(HasQueuedFollowUps));
+            OnPropertyChanged(nameof(QueuedFollowUpCountLabel));
+            OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private bool CanContinueAgentTasks(CopilotChatMessage? message)
@@ -2556,6 +2969,8 @@ namespace ColorVision.Copilot
             CopilotRequestAdmissionReason.ConversationAlreadyScheduled => "此会话已有任务正在运行或排队",
             CopilotRequestAdmissionReason.HostShutdown => "Copilot 正在关闭，不能再发送请求",
             CopilotRequestAdmissionReason.QueueFull => $"Agent 队列已满（{_taskHost.QueuedCount}/{_taskHost.MaxQueuedRuns}）",
+            CopilotRequestAdmissionReason.NoActiveRun => "当前 Agent 已经结束；请直接发送这条请求",
+            CopilotRequestAdmissionReason.FollowUpConversationMismatch => "后续消息只能排在当前正在运行的会话中",
             _ => "当前没有可接收请求的会话",
         };
 
@@ -3977,6 +4392,49 @@ namespace ColorVision.Copilot
                 && SelectedConversation?.Messages.Contains(message) == true;
         }
 
+        private void ForkCurrentConversation(CopilotLocalCommand command, string requestedTitle)
+        {
+            var source = SelectedConversation;
+            var normalizedTitle = (requestedTitle ?? string.Empty).Trim();
+            if (source == null || IsEditingMessage || !CanSwitchConversation)
+            {
+                ShowLocalCommandResult(command, "当前状态不能创建会话分支；请先结束消息编辑或等待当前普通对话完成。");
+                return;
+            }
+            if (normalizedTitle.Length > CopilotConversationRecord.MaximumTitleCharacters)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    $"会话分支名称不能超过 {CopilotConversationRecord.MaximumTitleCharacters:N0} 个字符。");
+                return;
+            }
+
+            var branchPoint = CopilotConversationBranchService.FindLatestBranchPoint(source);
+            if (branchPoint == null)
+            {
+                ShowLocalCommandResult(command, "当前会话还没有可分叉的完整回答。请先完成至少一轮对话。");
+                return;
+            }
+
+            try
+            {
+                var branch = CreateAndSelectConversationBranch(source, branchPoint, normalizedTitle);
+                ShowLocalCommandResult(
+                    command,
+                    $"已从“{source.Title}”复制 {branch.Messages.Count:N0} 条消息到“{branch.Title}”。"
+                    + Environment.NewLine
+                    + "原会话保持不变；这里只分叉聊天历史，不会创建 Git 分支或回滚当前工作区。"
+                    + Environment.NewLine
+                    + "未发送草稿、编辑区附件、Agent checkpoint 与会话级授权不会继承。");
+            }
+            catch (Exception ex)
+            {
+                ShowLocalCommandResult(
+                    command,
+                    "无法创建会话分支：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message));
+            }
+        }
+
         private void BranchConversation(CopilotChatMessage? message)
         {
             if (!CanBranchConversation(message) || SelectedConversation == null)
@@ -3984,10 +4442,7 @@ namespace ColorVision.Copilot
 
             try
             {
-                var branch = CopilotConversationBranchService.CreateBranch(SelectedConversation, message!);
-                CopilotConversationService.Insert(Conversations, branch);
-                SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
-                PersistState(immediate: true);
+                CreateAndSelectConversationBranch(SelectedConversation, message!, requestedTitle: null);
             }
             catch (Exception ex)
             {
@@ -3996,8 +4451,20 @@ namespace ColorVision.Copilot
                     $"无法创建会话分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
                     "ColorVision",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                MessageBoxImage.Warning);
             }
+        }
+
+        private CopilotConversationRecord CreateAndSelectConversationBranch(
+            CopilotConversationRecord source,
+            CopilotChatMessage throughAssistantMessage,
+            string? requestedTitle)
+        {
+            var branch = CopilotConversationBranchService.CreateBranch(source, throughAssistantMessage, requestedTitle);
+            CopilotConversationService.Insert(Conversations, branch);
+            SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
+            PersistState(immediate: true);
+            return branch;
         }
 
         private void BeginEditMessage(CopilotChatMessage? message)
@@ -4763,6 +5230,9 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            if (_sideQuestionCts != null)
+                TryCancelCancellationSource(_sideQuestionCts);
+            RestoreQueuedFollowUpsToDrafts();
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
@@ -4779,6 +5249,30 @@ namespace ColorVision.Copilot
             finally
             {
                 Dispose();
+            }
+        }
+
+        private void RestoreQueuedFollowUpsToDrafts()
+        {
+            foreach (var group in QueuedFollowUps.GroupBy(item => item.ConversationId, StringComparer.Ordinal))
+            {
+                var conversation = Conversations.FirstOrDefault(candidate =>
+                    string.Equals(candidate.Id, group.Key, StringComparison.Ordinal));
+                if (conversation == null)
+                    continue;
+
+                var prompts = group.OrderBy(item => item.QueuePosition).Select(item => item.Prompt).ToArray();
+                if (prompts.Length == 0)
+                    continue;
+                var restoredDraft = prompts.Length == 1
+                    ? prompts[0]
+                    : "以下排队后续尚未执行，请检查后重新发送：" + Environment.NewLine + Environment.NewLine
+                        + string.Join(
+                            Environment.NewLine + Environment.NewLine,
+                            prompts.Select((prompt, index) => $"{index + 1}. {prompt}"));
+                conversation.DraftText = string.IsNullOrWhiteSpace(conversation.DraftText)
+                    ? restoredDraft
+                    : conversation.DraftText.TrimEnd() + Environment.NewLine + Environment.NewLine + restoredDraft;
             }
         }
 
@@ -5037,6 +5531,12 @@ namespace ColorVision.Copilot
             string ConversationId,
             string Text,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
+
+        private sealed record CopilotPreparedQueuedFollowUpTurn(
+            CopilotConversationRecord Conversation,
+            CopilotChatMessage UserMessage,
+            CopilotChatMessage AssistantMessage,
+            CopilotAgentHostContextSnapshot TurnSnapshot);
 
     }
 }

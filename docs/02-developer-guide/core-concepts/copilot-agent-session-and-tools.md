@@ -1,6 +1,6 @@
 # Copilot 任务、恢复与内置工具
 
-## 任务 UI、停止原因与运行中 steering
+## 任务 UI、停止原因、运行中 steering 与后续队列
 
 成功的 Agent 轮次会把任务快照和结构化 `CopilotAgentStopReason` 写入对应的 Assistant 消息。聊天面板直接显示模式、完成数、任务标题/说明和停止原因。停止原因包括正常完成、等待用户、审批未通过、请求预算耗尽和本轮任务 pass 上限；这些字段随聊天状态持久化，状态 Schema 当前为 6。
 
@@ -14,6 +14,15 @@
 - steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和审批边界。
 
 具体注入语义见官方 [MessageInjectingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.messageinjectingchatclient?view=agent-framework-dotnet-latest)。
+
+`CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列，对应 [Codex 的交互快捷键语义](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-interactive-shortcuts)：运行中按 Enter 注入当前轮，按 Tab/点击 `⇥` 才排到下一轮。它有以下边界：
+
+- follow-up 只能绑定当前活动的 Agent conversation；Chat 模式、其他 conversation、关闭中的 Host 和满队列全部 fail closed。普通调度入口仍拒绝同一 conversation 重复入队，只有专用 follow-up 入口允许。
+- `CopilotQueuedFollowUp` 保留提交时的 Profile、附件、活动文档、解决方案根和 Live Context，但不提前创建用户/助手消息。任务真正取得执行权时，才从刚完成的 conversation 重新捕获可见历史并写入本轮消息，避免把上一轮的未完成快照固化进下一轮。
+- 输入区上方显示全局队列位置，并允许相邻上移、下移、删除或取消后移回输入框编辑；所有操作都复用 Host 的锁、run state 和变更事件，桌面宠物也在排序变化后重新聚合任务状态。
+- 可在运行中安全执行的本地命令会立即执行；其他本地命令明确拒绝排队，不会失去 `/` 语义后变成模型提示词。正常退出时，尚未启动的 follow-up 按顺序恢复到所属 conversation 的草稿，避免静默丢失。
+
+`/btw <问题>` 提供与 [Claude Code `/btw`](https://code.claude.com/docs/en/interactive-mode#ask-a-quick-side-question-with-btw) 和 [Codex 长任务 side chat](https://learn.chatgpt.com/docs/long-running-work) 相同方向的旁路提问，但采用更窄的执行边界：`CopilotSideQuestionService` 在调用瞬间复制 Profile 和有界 conversation history，直接经 `CopilotChatService` 发起一次最多 1024 输出 token 的请求，不进入 `ICopilotTurnRuntime`、Agent Harness 或 `CopilotAgentTaskHost`。除历史消息里已经存在的内容外，请求不额外携带工具定义、附件、活动文档、解决方案根、Live Context、MCP 或文件内容；返回值只更新临时 UI 卡片，不追加 conversation 消息、不覆盖主轮 token 统计，也不生成 checkpoint。每个面板同一时间只允许一个旁路请求；取消令牌只终止该请求，不 steering、不取消或排队当前 Agent。应用退出或面板释放时统一取消，回答关闭后不持久化。`/fork [名称]` 和别名 `/branch [名称]` 对齐 [Codex 会话 fork](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-fork) 与 [Claude Code session branch](https://code.claude.com/docs/en/sessions#branch-a-session)：复制当前会话到新的 conversation ID 并立即切换，原会话和原 transcript 保持不变。实现复用消息菜单已有的 `CopilotConversationBranchService`，从最后一条完整 Assistant 消息创建分支；所有消息 ID 和历史附件记录 ID 都重新生成，合法的 compaction boundary 会映射到克隆后的消息。新分支保留可见消息、模型内容、工具 trace 和消息当时捕获的附件快照，但不复制编辑区 `DraftText`、待发送 `Attachments`、最后 token 用量、`AgentSessionCheckpoint` 或 `RecoveryRequest`，因此旧 Session、待执行任务与会话授权不会成为新分支的执行许可。分叉不创建 Git branch、不复制工作目录也不回滚文件；两个会话继续观察同一个 ColorVision 工作区。当前会话有活动 Agent 时该命令不可执行；输入提交层会先识别本地命令并明确拒绝，不能把 `/fork`、`/diff` 等暂不可用命令降级成 steering 或 follow-up 模型文本。
 
 ## AgentSession 会话检查点
 

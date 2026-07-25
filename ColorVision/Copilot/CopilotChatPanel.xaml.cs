@@ -450,6 +450,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (DataContext is CopilotChatViewModel queueViewModel
+                && e.Key == Key.Tab
+                && Keyboard.Modifiers == ModifierKeys.None
+                && queueViewModel.TryQueueCurrentRunFollowUp())
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 return;
 

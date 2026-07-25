@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -11,7 +12,8 @@ namespace ColorVision.Copilot
 
         public static CopilotConversationRecord CreateBranch(
             CopilotConversationRecord source,
-            CopilotChatMessage throughAssistantMessage)
+            CopilotChatMessage throughAssistantMessage,
+            string? requestedTitle = null)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(throughAssistantMessage);
@@ -30,7 +32,7 @@ namespace ColorVision.Copilot
                 IsPinned = false,
                 ProfileDisplayName = source.ProfileDisplayName,
                 ProfileId = source.ProfileId,
-                Title = BuildBranchTitle(source.Title),
+                Title = BuildBranchTitle(source.Title, requestedTitle),
                 UpdatedAt = DateTime.Now,
             };
             var messageIdMap = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -65,6 +67,16 @@ namespace ColorVision.Copilot
             return branch;
         }
 
+        public static CopilotChatMessage? FindLatestBranchPoint(CopilotConversationRecord source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return source.Messages.LastOrDefault(message =>
+                message != null
+                && !message.IsUser
+                && !message.IsThinkingInProgress
+                && !string.IsNullOrWhiteSpace(message.Content));
+        }
+
         private static CopilotChatMessage CloneMessage(CopilotChatMessage source, CopilotAgentMode lastUserMode)
         {
             var serializedMessage = JsonConvert.SerializeObject(source, Formatting.None);
@@ -83,8 +95,14 @@ namespace ColorVision.Copilot
         private static CopilotAgentMode NormalizeRequestMode(CopilotAgentMode mode) =>
             Enum.IsDefined(mode) ? mode : CopilotAgentMode.Chat;
 
-        private static string BuildBranchTitle(string? sourceTitle)
+        private static string BuildBranchTitle(string? sourceTitle, string? requestedTitle)
         {
+            var explicitTitle = requestedTitle?.Trim() ?? string.Empty;
+            if (explicitTitle.Length > 0)
+                return explicitTitle.Length <= CopilotConversationRecord.MaximumTitleCharacters
+                    ? explicitTitle
+                    : explicitTitle[..CopilotConversationRecord.MaximumTitleCharacters].TrimEnd();
+
             var title = string.IsNullOrWhiteSpace(sourceTitle) ? CopilotUiText.NewConversationTitle : sourceTitle.Trim();
             if (title.Length > MaximumBaseTitleLength)
                 title = title[..MaximumBaseTitleLength].TrimEnd();

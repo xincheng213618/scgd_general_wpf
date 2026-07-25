@@ -81,6 +81,7 @@ namespace ColorVision.FloatingBall
                 switch (e.Kind)
                 {
                     case CopilotAgentTaskHostChangeKind.Queued:
+                    case CopilotAgentTaskHostChangeKind.QueueChanged:
                     case CopilotAgentTaskHostChangeKind.Started:
                     case CopilotAgentTaskHostChangeKind.CheckpointReady:
                     case CopilotAgentTaskHostChangeKind.ControlRequested:
