@@ -4477,4 +4477,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SelectAlgorithmService" xml:space="preserve">
     <value>Select an algorithm service.</value>
   </data>
+  <data name="Flow_NodeExecutionDetails" xml:space="preserve">
+    <value>Node Execution Details</value>
+  </data>
 </root>

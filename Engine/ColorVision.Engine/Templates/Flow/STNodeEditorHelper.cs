@@ -287,6 +287,13 @@ namespace ColorVision.Engine.Templates.Flow
             deleteItem.Click += (s, e) => STNodeEditor.Nodes.Remove(node);
             items.Add(deleteItem);
 
+            if (node is CVCommonNode commonNode)
+            {
+                var historyItem = new MenuItem { Header = Properties.Resources.Flow_NodeExecutionDetails };
+                historyItem.Click += (s, e) => OpenNodeExecutionDetails(commonNode);
+                items.Add(historyItem);
+            }
+
             items.Add(new Separator());
 
             var lockOptionItem = new MenuItem
@@ -310,6 +317,16 @@ namespace ColorVision.Engine.Templates.Flow
                 LocalizeNodeMenuText(nameof(STNode.LockLocation)),
                 () => node.LockLocation = !node.LockLocation);
             items.Add(lockLocationItem);
+        }
+
+        private static void OpenNodeExecutionDetails(CVCommonNode node)
+        {
+            var window = new FlowMessageListWindow(node.NodeID, node.OnGetDrawTitle())
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.Show();
         }
 
         private void AddNodeCreationMenuItems(ItemCollection items)

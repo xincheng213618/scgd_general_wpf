@@ -3370,4 +3370,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SelectAlgorithmService" xml:space="preserve">
     <value>Выберите службу алгоритмов.</value>
   </data>
+  <data name="Flow_NodeExecutionDetails" xml:space="preserve">
+    <value>Сведения о выполнении узла</value>
+  </data>
 </root>

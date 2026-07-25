@@ -12,10 +12,33 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public ObservableCollection<FlowNodeMessage> Messages { get; set; } = new ObservableCollection<FlowNodeMessage>();
         private List<FlowNodeMessage> _allMessages = new List<FlowNodeMessage>();
+        private readonly string? _nodeId;
+        private readonly string? _nodeName;
+        private bool IsNodeScoped => !string.IsNullOrWhiteSpace(_nodeId);
 
         public FlowMessageListWindow()
+            : this(null, null)
         {
+        }
+
+        public FlowMessageListWindow(string? nodeId, string? nodeName)
+        {
+            _nodeId = nodeId;
+            _nodeName = nodeName;
             InitializeComponent();
+
+            if (IsNodeScoped)
+            {
+                string displayName = !string.IsNullOrWhiteSpace(_nodeName) ? _nodeName : NodeTitleText.Text;
+                Title = $"{Properties.Resources.Flow_NodeExecutionDetails} - {displayName}";
+                FilterNodeName.Text = displayName;
+                FilterNodeName.IsReadOnly = true;
+                DeleteAllSeparator.Visibility = Visibility.Collapsed;
+                DeleteAllButton.Visibility = Visibility.Collapsed;
+                NodeExecutionSummaryPanel.Visibility = Visibility.Visible;
+                NodeTitleText.Text = displayName;
+                NodeIdText.Text = _nodeId;
+            }
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -30,8 +53,21 @@ namespace ColorVision.Engine.Templates.Flow
             if (int.TryParse(LoadCount.Text, out int val) && val > 0)
                 limit = val;
 
-            _allMessages = FlowNodeRecordDataBaseHelper.GetAllMessages(limit);
+            FlowNodeRecord? record = null;
+            if (IsNodeScoped)
+            {
+                _allMessages = FlowNodeRecordDataBaseHelper.GetMessagesByNodeId(_nodeId!, limit);
+                record = FlowNodeRecordDataBaseHelper.GetLastByNodeId(_nodeId!);
+                UpdateNodeExecutionSummary(record);
+            }
+            else
+            {
+                _allMessages = FlowNodeRecordDataBaseHelper.GetAllMessages(limit);
+            }
+
             ApplyFilter();
+            if (IsNodeScoped && Messages.Count > 0)
+                ListView1.SelectedIndex = 0;
         }
 
         private void ApplyFilter()
@@ -40,7 +76,7 @@ namespace ColorVision.Engine.Templates.Flow
             var filtered = _allMessages.AsEnumerable();
 
             string nodeName = FilterNodeName.Text?.Trim();
-            if (!string.IsNullOrEmpty(nodeName))
+            if (!IsNodeScoped && !string.IsNullOrEmpty(nodeName))
                 filtered = filtered.Where(m => m.NodeName != null && m.NodeName.Contains(nodeName, StringComparison.OrdinalIgnoreCase));
 
             string eventName = FilterEventName.Text?.Trim();
@@ -58,6 +94,22 @@ namespace ColorVision.Engine.Templates.Flow
 
             TotalCountText.Text = _allMessages.Count.ToString();
             DisplayCountText.Text = Messages.Count.ToString();
+        }
+
+        private void UpdateNodeExecutionSummary(FlowNodeRecord? record)
+        {
+            FlowNodeExecutionPresentation presentation = FlowNodeExecutionPresentation.FromRecord(record, DateTime.Now);
+            string state = presentation.State == FlowNodeExecutionState.NotStarted
+                ? Properties.Resources.Flow_NotStarted
+                : presentation.State.ToString();
+            string batch = record == null ? string.Empty : $" · Batch {record.BatchId}";
+            string elapsed = presentation.ElapsedMs.HasValue
+                ? $" · {Properties.Resources.Flow_Elapsed} {presentation.ElapsedMs.Value:N0} ms"
+                : string.Empty;
+            NodeExecutionSummaryText.Text = $"{state}{elapsed}{batch} · MQTT {_allMessages.Count}";
+
+            if (record != null && string.IsNullOrWhiteSpace(_nodeName))
+                NodeTitleText.Text = record.NodeName;
         }
 
         private void QueryButton_Click(object sender, RoutedEventArgs e)

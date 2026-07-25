@@ -3367,4 +3367,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SelectAlgorithmService" xml:space="preserve">
     <value>Sélectionnez un service d’algorithme.</value>
   </data>
+  <data name="Flow_NodeExecutionDetails" xml:space="preserve">
+    <value>Détails d’exécution du nœud</value>
+  </data>
 </root>

@@ -3157,4 +3157,7 @@
   <data name="SelectAlgorithmService" xml:space="preserve">
     <value>請選擇演算法服務</value>
   </data>
+  <data name="Flow_NodeExecutionDetails" xml:space="preserve">
+    <value>節點執行詳情</value>
+  </data>
 </root>

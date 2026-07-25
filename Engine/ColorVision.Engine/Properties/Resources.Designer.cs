@@ -6369,6 +6369,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 节点执行详情 的本地化字符串。
+        /// </summary>
+        public static string Flow_NodeExecutionDetails {
+            get {
+                return ResourceManager.GetString("Flow_NodeExecutionDetails", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 节点: 的本地化字符串。
         /// </summary>
         public static string Flow_NodeLabel {

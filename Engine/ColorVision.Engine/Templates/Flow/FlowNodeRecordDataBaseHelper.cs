@@ -209,6 +209,27 @@ namespace ColorVision.Engine.Templates.Flow
             return result;
         }
 
+        public static FlowNodeRecord? GetLastByNodeId(string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+                return null;
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeRecord>()
+                    .Where(item => item.NodeId == nodeId)
+                    .OrderByDescending(item => item.StartTime)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询节点最近执行记录失败", ex);
+                return null;
+            }
+        }
+
         public static List<int> GetDistinctBatchIds(int limit = 100)
         {
             EnsureInitialized();
@@ -291,6 +312,28 @@ namespace ColorVision.Engine.Templates.Flow
             catch (Exception ex)
             {
                 log.Error("查询FlowNodeMessage失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
+        public static List<FlowNodeMessage> GetMessagesByNodeId(string nodeId, int limit = 500)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+                return new List<FlowNodeMessage>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeMessage>()
+                    .Where(item => item.NodeId == nodeId)
+                    .OrderByDescending(item => item.SendTime)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询节点历史消息失败", ex);
                 return new List<FlowNodeMessage>();
             }
         }

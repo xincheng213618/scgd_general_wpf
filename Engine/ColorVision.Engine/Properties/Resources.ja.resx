@@ -3346,4 +3346,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SelectAlgorithmService" xml:space="preserve">
     <value>アルゴリズムサービスを選択してください。</value>
   </data>
+  <data name="Flow_NodeExecutionDetails" xml:space="preserve">
+    <value>ノード実行の詳細</value>
+  </data>
 </root>
