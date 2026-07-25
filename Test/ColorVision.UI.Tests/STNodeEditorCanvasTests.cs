@@ -245,18 +245,19 @@ namespace ColorVision.UI.Tests
                     node.Top + 10,
                     6,
                     node.Height - 20);
-                Assert.True(selectedOutsideAlpha > 0);
+                Assert.Equal(0, selectedOutsideAlpha);
 
                 editor.SetActiveNode(node);
                 using var activeBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+                int activeEdgeColor = activeBitmap.GetPixel(node.Left, node.Top + node.Height / 2).ToArgb();
                 long activeOutsideAlpha = SumAlpha(
                     activeBitmap,
                     node.Left - 6,
                     node.Top + 10,
                     6,
                     node.Height - 20);
-                Assert.True(activeOutsideAlpha > selectedOutsideAlpha);
-                Assert.Equal(0, activeBitmap.GetPixel(node.Left - 4, node.Top + node.Height / 2).A);
+                Assert.NotEqual(selectedEdgeColor, activeEdgeColor);
+                Assert.Equal(0, activeOutsideAlpha);
             });
         }
 

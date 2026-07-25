@@ -1597,11 +1597,8 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 		float canvasScale = Math.Max(_CanvasScale, 0.2f);
 		Color outlineColor = isActive ? _BorderActiveColor : _BorderSelectedColor;
-		float glowWidth = (isActive ? 6f : 5f) / canvasScale;
-		float outlineWidth = (isActive ? 2.5f : 2f) / canvasScale;
-		int glowAlpha = isActive ? 105 : 75;
-		DrawNodeOutline(dt.Graphics, node.Rectangle, Color.FromArgb(glowAlpha, outlineColor), glowWidth, inset: false);
-		DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, outlineWidth, inset: false);
+		float outlineWidth = (isActive ? 2f : 1.5f) / canvasScale;
+		DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, outlineWidth, inset: true);
 	}
 
 	private void DrawNodeOutline(Graphics graphics, Rectangle rectangle, Color color, float width, bool inset)
