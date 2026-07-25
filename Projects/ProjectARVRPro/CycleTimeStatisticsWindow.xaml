@@ -1,0 +1,99 @@
+<Window x:Class="ProjectARVRPro.CycleTimeStatisticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectARVRPro"
+        mc:Ignorable="d"
+        Title="CT 时间统计"
+        Width="1500"
+        Height="820"
+        MinWidth="1100"
+        MinHeight="620"
+        Background="{DynamicResource GlobalBackground}"
+        Loaded="Window_Loaded">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,0,8">
+            <Button x:Name="RefreshButton"
+                    DockPanel.Dock="Left"
+                    Content="刷新"
+                    Width="72"
+                    Click="Refresh_Click"/>
+            <TextBlock x:Name="SummaryText"
+                       Margin="12,0,0,0"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="560" MinWidth="360"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="*" MinWidth="420"/>
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Header="按 SN 汇总" Padding="4">
+                <ListView x:Name="GroupList"
+                          BorderThickness="0"
+                          SelectionMode="Single"
+                          SelectionChanged="GroupList_SelectionChanged">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="SN" Width="165">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:CycleTimeGroup}">
+                                        <TextBlock Text="{Binding SN}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="批次" Width="70" DisplayMemberBinding="{Binding ExecutionText}"/>
+                            <GridViewColumn Header="流程数" Width="60" DisplayMemberBinding="{Binding ResultCount}"/>
+                            <GridViewColumn Header="CT 时间" Width="95" DisplayMemberBinding="{Binding TotalRunTimeText}"/>
+                            <GridViewColumn Header="完成时间" Width="155" DisplayMemberBinding="{Binding LastTime, StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </GroupBox>
+
+            <GridSplitter Grid.Column="1"
+                          Width="6"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"/>
+
+            <GroupBox Grid.Column="2" Padding="4">
+                <GroupBox.Header>
+                    <TextBlock x:Name="DetailHeader" Text="组内明细"/>
+                </GroupBox.Header>
+                <ListView x:Name="DetailList"
+                          BorderThickness="0"
+                          Padding="0"
+                          SelectionMode="Extended">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Id" Width="55" DisplayMemberBinding="{Binding Id}"/>
+                            <GridViewColumn Header="FlowStatus" Width="85" DisplayMemberBinding="{Binding FlowStatus}"/>
+                            <GridViewColumn Header="PASS" Width="50" DisplayMemberBinding="{Binding Result}"/>
+                            <GridViewColumn Header="Model" Width="150" DisplayMemberBinding="{Binding Model}"/>
+                            <GridViewColumn Header="Time" Width="145" DisplayMemberBinding="{Binding CreateTime, StringFormat=yyyy/MM/dd HH:mm:ss}"/>
+                            <GridViewColumn Header="RunTime(ms)" Width="90" DisplayMemberBinding="{Binding RunTime}"/>
+                            <GridViewColumn Header="RunMsg" Width="160" DisplayMemberBinding="{Binding Msg}"/>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </GroupBox>
+        </Grid>
+    </Grid>
+</Window>

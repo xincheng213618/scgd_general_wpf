@@ -49,6 +49,7 @@
                             </Button>
                             <Button Content="SlectSqlLiteDb" Command="{Binding ViewResultManager.SlectSqlLiteDbCommand}" Margin="2,0,0,0"/>
                             <Button Content="数据清理" Click="OpenDatabaseCleanup_Click" Margin="2,0,0,0"/>
+                            <Button Content="CT统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
@@ -208,7 +209,7 @@
                             </Button.ContextMenu>
                         </Button>
                         <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
-                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
+                            <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="230" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>
                         <Button Content="测试" DockPanel.Dock="Right" Click="TestClick" Margin="5,0,0,0" />
                     </DockPanel>
