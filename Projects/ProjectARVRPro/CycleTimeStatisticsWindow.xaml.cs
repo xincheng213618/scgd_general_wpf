@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Batch;
 using ColorVision.UI;
 using SqlSugar;
 using System.Collections.ObjectModel;

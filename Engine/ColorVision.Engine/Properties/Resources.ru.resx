@@ -1748,7 +1748,7 @@
     <value>Дата создания</value>
   </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
-    <value>Конфигурация обработки</value>
+    <value>Конфигурация постобработки</value>
   </data>
   <data name="UpdateProcessMeta" xml:space="preserve">
     <value>Обновление ProcessMeta</value>

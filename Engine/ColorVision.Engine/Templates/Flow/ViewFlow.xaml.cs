@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1720,CA1822,CA1863,CS4014,CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Batch;
+using ColorVision.Engine.FlowProcessing.PostProcess;
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
@@ -73,8 +74,6 @@ namespace ColorVision.Engine.Services.Flow
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
-        private CVCommonNode? _standaloneLastNode;
-        private CVCommonNode? _standaloneLastFailedNode;
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
@@ -351,6 +350,7 @@ namespace ColorVision.Engine.Services.Flow
                 if (!ConfirmStandaloneDocumentReplacement())
                     return;
                 StopStandaloneFlow();
+                ShowExecutionSummary(string.Empty);
                 FlowEngineControl.FlowClear();
                 _standaloneNodeManager!.ClearDevice();
                 STNodeEditorMain.ClearHistory();
@@ -379,6 +379,7 @@ namespace ColorVision.Engine.Services.Flow
             _saveStandaloneFlowParam = false;
 
             StopStandaloneFlow();
+            ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
             if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
             {
@@ -431,6 +432,7 @@ namespace ColorVision.Engine.Services.Flow
             _saveStandaloneFlowParam = saveToTemplate;
 
             StopStandaloneFlow();
+            ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
             try
             {
@@ -477,6 +479,7 @@ namespace ColorVision.Engine.Services.Flow
             _standaloneDocumentName = Properties.Resources.New;
             _saveStandaloneFlowParam = false;
             StopStandaloneFlow();
+            ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
             _standaloneNodeManager!.ClearDevice();
             STNodeEditorMain.ClearHistory();
@@ -688,7 +691,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            BatchManager.GetInstance().Edit();
+            PostProcessManager.GetInstance().Edit();
         }
 
         private void Button_Click_PreProcess(object sender, RoutedEventArgs e)
@@ -702,7 +705,6 @@ namespace ColorVision.Engine.Services.Flow
             if (_isStandalone)
             {
                 StopStandaloneFlow();
-                DetachStandaloneExecutionNodeTracking();
                 if (_standaloneFlowControl != null)
                     _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
@@ -785,14 +787,7 @@ namespace ColorVision.Engine.Services.Flow
                     serverNode.TitleColor = System.Drawing.Color.Blue;
             }
 
-            ResetStandaloneExecutionNodeTracking();
-            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-            {
-                node.nodeRunEvent -= StandaloneNodeRunEvent;
-                node.nodeRunEvent += StandaloneNodeRunEvent;
-                node.nodeEndEvent -= StandaloneNodeEndEvent;
-                node.nodeEndEvent += StandaloneNodeEndEvent;
-            }
+            ShowExecutionSummary(string.Empty);
 
             string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
@@ -809,7 +804,6 @@ namespace ColorVision.Engine.Services.Flow
                 _standaloneStopwatch.Stop();
                 _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 _standaloneFlowControl.Stop();
-                DetachStandaloneExecutionNodeTracking();
                 log.Error("Run standalone flow failed.", ex);
                 ShowExecutionSummary(ex.Message);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
@@ -818,13 +812,15 @@ namespace ColorVision.Engine.Services.Flow
 
         private void StopStandaloneFlow(bool updateLog = false)
         {
-            if (_standaloneFlowControl?.IsFlowRun != true)
+            if (_standaloneFlowControl == null)
                 return;
 
             _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+            if (!_standaloneFlowControl.IsFlowRun)
+                return;
+
             _standaloneFlowControl.Stop();
             _standaloneStopwatch.Stop();
-            DetachStandaloneExecutionNodeTracking();
             if (updateLog)
                 ShowExecutionSummary(Properties.Resources.ExecutionCancelled);
         }
@@ -833,50 +829,23 @@ namespace ColorVision.Engine.Services.Flow
         {
             _standaloneStopwatch.Stop();
             _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-            DetachStandaloneExecutionNodeTracking();
             string errorNode = string.IsNullOrWhiteSpace(data.ErrorNodeName)
                 ? string.Empty
                 : $"{Environment.NewLine}{Properties.Resources.Flow_NodeLabel}{data.ErrorNodeName}";
             string message =
                 $"{_standaloneDocumentName} {data.EventName}{errorNode}{Environment.NewLine}{data.Params}{Environment.NewLine}{_standaloneStopwatch.ElapsedMilliseconds}ms";
-            ShowExecutionSummary(message, data.ErrorNodeName, _standaloneLastFailedNode ?? _standaloneLastNode);
-        }
-
-        private void StandaloneNodeRunEvent(object sender, FlowEngineNodeRunEventArgs e)
-        {
-            _standaloneLastNode = sender as CVCommonNode;
-        }
-
-        private void StandaloneNodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
-        {
-            if (sender is CVCommonNode node && e?.RecvStatusCode != 0)
-                _standaloneLastFailedNode = node;
-        }
-
-        private void ResetStandaloneExecutionNodeTracking()
-        {
-            DetachStandaloneExecutionNodeTracking();
-            _standaloneLastNode = null;
-            _standaloneLastFailedNode = null;
-            ShowExecutionSummary(string.Empty);
-        }
-
-        private void DetachStandaloneExecutionNodeTracking()
-        {
-            foreach (CVCommonNode node in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-            {
-                node.nodeRunEvent -= StandaloneNodeRunEvent;
-                node.nodeEndEvent -= StandaloneNodeEndEvent;
-            }
+            ShowExecutionSummary(message);
         }
 
         public void ShowExecutionSummary(string message, string? executionNodeName = null, CVCommonNode? preferredNode = null)
         {
             logTextBox.Text = message;
-            _executionDetailsNode = STNodeEditorHelper.ResolveExecutionNode(
-                STNodeEditorMain,
-                executionNodeName,
-                preferredNode);
+            _executionDetailsNode = _isStandalone
+                ? null
+                : STNodeEditorHelper.ResolveExecutionNode(
+                    STNodeEditorMain,
+                    executionNodeName,
+                    preferredNode);
             ErrorNodeDetailsButton.Visibility = _executionDetailsNode == null
                 ? Visibility.Collapsed
                 : Visibility.Visible;

@@ -1587,7 +1587,7 @@
     <value>建立日期</value>
   </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
-    <value>處理配置</value>
+    <value>後處理設定</value>
   </data>
 
 

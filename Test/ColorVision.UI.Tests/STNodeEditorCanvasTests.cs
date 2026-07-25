@@ -8,6 +8,16 @@ namespace ColorVision.UI.Tests
     public class STNodeEditorCanvasTests
     {
         [Fact]
+        public void CreateBezierPath_RoutesBackwardConnectionThroughOutsideGutter()
+        {
+            using System.Drawing.Drawing2D.GraphicsPath path =
+                TestNodeEditor.CreateBezierPathForTest(300, 100, 100, 100, 0.3f);
+
+            Assert.True(path.PointCount > 4);
+            Assert.True(path.PathPoints.Max(point => point.Y) >= 170);
+        }
+
+        [Fact]
         public void CanvasBounds_AreLimitedByDefault()
         {
             RunInSta(() =>
@@ -484,6 +494,16 @@ namespace ColorVision.UI.Tests
 
         private sealed class TestNodeEditor : STNodeEditor
         {
+            public static System.Drawing.Drawing2D.GraphicsPath CreateBezierPathForTest(
+                float x1,
+                float y1,
+                float x2,
+                float y2,
+                float curvature)
+            {
+                return CreateBezierPath(x1, y1, x2, y2, curvature);
+            }
+
             public static bool ShouldActivateNodeFromMouseForTest(STMouseButtons button)
             {
                 return ShouldActivateNodeFromMouse(button);

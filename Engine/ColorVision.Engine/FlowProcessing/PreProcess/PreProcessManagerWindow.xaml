@@ -1,0 +1,221 @@
+<Window x:Class="ColorVision.Engine.FlowProcessing.PreProcess.PreProcessManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.FlowProcessing.PreProcess"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        Title="{x:Static properties:Resources.Flow_PreProcess_Title}"
+        Width="1120"
+        Height="680"
+        MinWidth="940"
+        MinHeight="540"
+        Background="{DynamicResource GlobalBackground}"
+        d:DataContext="{d:DesignInstance local:PreProcessManager}"
+        mc:Ignorable="d">
+    <Window.Resources>
+        <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
+        <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
+
+        <Style x:Key="PreProcessTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource ControlCornerRadius}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="410" MinWidth="340"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*" MinWidth="420"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_Actions}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                        <Button x:Name="AddProcessButton"
+                                Content="{x:Static properties:Resources.Add}"
+                                DockPanel.Dock="Right"
+                                MinWidth="76"
+                                Padding="14,5"
+                                Background="{DynamicResource PrimaryBrush}"
+                                BorderBrush="{DynamicResource PrimaryBrush}"
+                                Foreground="White"
+                                Click="AddProcessButton_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu ItemsSource="{Binding PlacementTarget.DataContext.AvailableProcessTypes, RelativeSource={RelativeSource Self}}">
+                                    <ContextMenu.ItemContainerStyle>
+                                        <Style TargetType="{x:Type MenuItem}">
+                                            <Setter Property="Header" Value="{Binding DisplayName}"/>
+                                            <Setter Property="ToolTip" Value="{Binding Description}"/>
+                                            <Setter Property="Command" Value="{Binding PlacementTarget.DataContext.AddProcessCommand, RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"/>
+                                            <Setter Property="CommandParameter" Value="{Binding}"/>
+                                        </Style>
+                                    </ContextMenu.ItemContainerStyle>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                    </DockPanel>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,12">
+                        <Button Content="{x:Static properties:Resources.MoveUp}" MinWidth="70" Padding="12,5" Command="{Binding MoveUpCommand}"/>
+                        <Button Content="{x:Static properties:Resources.MoveDown}" MinWidth="70" Padding="12,5" Margin="8,0,0,0" Command="{Binding MoveDownCommand}"/>
+                        <Button Content="{x:Static properties:Resources.Delete}" MinWidth="70" Padding="12,5" Margin="8,0,0,0" Command="{Binding RemoveProcessCommand}"/>
+                    </StackPanel>
+
+                    <ListBox Grid.Row="2"
+                             x:Name="lvProcesses"
+                             ItemsSource="{Binding Processes}"
+                             SelectedItem="{Binding SelectedProcess}"
+                             AlternationCount="10000"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             SelectionChanged="ListView_SelectionChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListBoxItem}">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,8"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                            <ContentPresenter/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="12" ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource TypeNameConverter}, ConverterParameter=Index}"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.58"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Top"/>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}"
+                                                       Margin="0,5,0,0"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.62"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxHeight="36"/>
+                                            <TextBlock Text="{Binding TemplateSummary}"
+                                                       Margin="0,7,0,0"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       Opacity="0.58"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <CheckBox Grid.Column="2"
+                                                  Content="{x:Static properties:Resources.Flow_PreProcess_EnabledStatus}"
+                                                  IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  VerticalAlignment="Top"
+                                                  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="14,10">
+                        <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_ActionConfig}" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12">
+                        <StackPanel x:Name="PropertyPanel">
+                            <TextBlock Text="{x:Static properties:Resources.Flow_PreProcess_SelectAction}" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" HorizontalAlignment="Center" Margin="0,32,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="{Binding LastSaveStatus}" VerticalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.58" ToolTip="{Binding PersistPath}"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{x:Static properties:Resources.Flow_PreProcess_SaveNow}" MinWidth="86" Padding="14,5" Command="{Binding SaveCommand}"/>
+                <Button Content="{x:Static properties:Resources.Close}" MinWidth="90" Padding="18,5" Margin="8,0,0,0" Click="CloseButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

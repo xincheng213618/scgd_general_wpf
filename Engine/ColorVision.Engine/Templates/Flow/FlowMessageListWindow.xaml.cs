@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -41,28 +42,38 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = Messages;
-            LoadMessages();
+            await LoadMessagesAsync();
         }
 
-        private void LoadMessages()
+        private async Task LoadMessagesAsync()
         {
             int limit = 500;
             if (int.TryParse(LoadCount.Text, out int val) && val > 0)
                 limit = val;
 
-            FlowNodeRecord? record = null;
+            var result = await Task.Run(() =>
+            {
+                FlowNodeRecordDataBaseHelper.FlushPendingWrites();
+                if (IsNodeScoped)
+                {
+                    return (
+                        Messages: FlowNodeRecordDataBaseHelper.GetMessagesByNodeId(_nodeId!, limit),
+                        Record: FlowNodeRecordDataBaseHelper.GetLastByNodeId(_nodeId!));
+                }
+
+                return (
+                    Messages: FlowNodeRecordDataBaseHelper.GetAllMessages(limit),
+                    Record: (FlowNodeRecord?)null);
+            });
+
+            _allMessages = result.Messages;
             if (IsNodeScoped)
             {
-                _allMessages = FlowNodeRecordDataBaseHelper.GetMessagesByNodeId(_nodeId!, limit);
-                record = FlowNodeRecordDataBaseHelper.GetLastByNodeId(_nodeId!);
+                FlowNodeRecord? record = result.Record;
                 UpdateNodeExecutionSummary(record);
-            }
-            else
-            {
-                _allMessages = FlowNodeRecordDataBaseHelper.GetAllMessages(limit);
             }
 
             ApplyFilter();
@@ -117,9 +128,9 @@ namespace ColorVision.Engine.Templates.Flow
             ApplyFilter();
         }
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            LoadMessages();
+            await LoadMessagesAsync();
         }
 
         private void DeleteAllButton_Click(object sender, RoutedEventArgs e)

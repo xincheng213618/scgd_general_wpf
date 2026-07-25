@@ -88,6 +88,17 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        public static bool FlushPendingWrites(TimeSpan? timeout = null)
+        {
+            EnsureInitialized();
+            if (!_initialized)
+                return false;
+
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeQueue.Add(_ => completion.TrySetResult(true));
+            return completion.Task.Wait(timeout ?? TimeSpan.FromSeconds(2));
+        }
+
         public static int Insert(FlowNodeRecord item)
         {
             EnsureInitialized();

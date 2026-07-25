@@ -1216,7 +1216,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		else if (nodeFindInfo.Node != null)
 		{
-			nodeFindInfo.Node.OnMouseDown(nodeEvent.WithLocation((int)m_pt_down_in_canvas.X - nodeFindInfo.Node.Left, (int)m_pt_down_in_canvas.Y - nodeFindInfo.Node.Top));
 			if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
 			{
 				if (nodeFindInfo.Node.IsSelected)
@@ -1231,8 +1230,12 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				{
 					nodeFindInfo.Node.SetSelected(bSelected: true, bRedraw: true);
 				}
+				m_node_down = null;
+				m_is_process_mouse_event = false;
+				e.Handled = true;
 				return;
 			}
+			nodeFindInfo.Node.OnMouseDown(nodeEvent.WithLocation((int)m_pt_down_in_canvas.X - nodeFindInfo.Node.Left, (int)m_pt_down_in_canvas.Y - nodeFindInfo.Node.Top));
 			if (!nodeFindInfo.Node.IsSelected)
 			{
 				STNode[] array = m_hs_node_selected.ToArray();
@@ -1477,7 +1480,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected override void OnLostMouseCapture(WpfMouseEventArgs e)
 	{
 		EndPointerEdit();
+		_ActiveNode?.CancelMouseInteraction();
+		m_node_down?.CancelMouseInteraction();
 		m_rectangle_selection_baseline.Clear();
+		m_node_down = null;
+		m_option_down = null;
+		m_rect_select = RectangleF.Empty;
+		m_ca = CanvasAction.None;
+		m_is_process_mouse_event = true;
+		Invalidate();
 		base.OnLostMouseCapture(e);
 	}
 
@@ -2469,19 +2480,26 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private void DrawBezier(Graphics g, Pen p, float x1, float y1, float x2, float y2, float f)
 	{
-		float num = Math.Abs(x1 - x2) * f;
-		if (_Curvature != 0f && num < 30f)
-		{
-			num = 30f;
-		}
-		g.DrawBezier(p, x1, y1, x1 + num, y1, x2 - num, y2, x2, y2);
+		using GraphicsPath connectionPath = CreateBezierPath(x1, y1, x2, y2, f);
+		g.DrawPath(p, connectionPath);
 	}
 
-	private GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
+	protected internal static GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
 	{
 		GraphicsPath graphicsPath = new GraphicsPath();
+		if (x2 < x1 && Math.Abs(y2 - y1) < 60f)
+		{
+			float routeY = Math.Max(y1, y2) + 70f;
+			float startGutterX = x1 + 30f;
+			float endGutterX = x2 - 30f;
+			graphicsPath.AddBezier(x1, y1, startGutterX, y1, startGutterX, routeY, startGutterX, routeY);
+			graphicsPath.AddLine(startGutterX, routeY, endGutterX, routeY);
+			graphicsPath.AddBezier(endGutterX, routeY, endGutterX, y2, endGutterX, y2, x2, y2);
+			return graphicsPath;
+		}
+
 		float num = Math.Abs(x1 - x2) * f;
-		if (_Curvature != 0f && num < 30f)
+		if (f != 0f && num < 30f)
 		{
 			num = 30f;
 		}

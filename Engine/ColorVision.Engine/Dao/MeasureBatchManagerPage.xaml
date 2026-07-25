@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:batch="clr-namespace:ColorVision.Engine.Batch"
+             xmlns:postProcess="clr-namespace:ColorVision.Engine.FlowProcessing.PostProcess"
              d:DataContext="{d:DesignInstance local:MeasureBatchManager}"
              mc:Ignorable="d" 
              Title="{x:Static properties:Resources.IntegratedQuery}"  d:DesignHeight="450" Background="{DynamicResource SecondaryRegionBrush}" d:DesignWidth="1000" Loaded="Page_Loaded" Unloaded="Page_Unloaded" Initialized="UserControl_Initialized">
@@ -13,9 +13,9 @@
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
-        <batch:TypeNameConverter x:Key="TypeNameConverter"/>
-        <batch:ProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
-        <batch:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <postProcess:TypeNameConverter x:Key="TypeNameConverter"/>
+        <postProcess:ProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
+        <postProcess:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Page.Resources>
     <Grid>
         <Grid.ColumnDefinitions>

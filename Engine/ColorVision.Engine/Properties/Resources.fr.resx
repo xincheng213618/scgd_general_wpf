@@ -1745,7 +1745,7 @@
     <value>Date de création</value>
   </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
-    <value>Configuration de traitement</value>
+    <value>Configuration du post-traitement</value>
   </data>
   <data name="UpdateProcessMeta" xml:space="preserve">
     <value>Mise à jour des métadonnées du processus</value>

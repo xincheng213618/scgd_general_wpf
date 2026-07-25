@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS4014,CS8601,CS8602,CS8603,CS8625
 using ColorVision.Database;
-using ColorVision.Engine.Batch;
+using ColorVision.Engine.FlowProcessing.PostProcess;
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.SocketProtocol;
@@ -68,6 +69,7 @@ namespace ColorVision.Engine.Templates.Flow
         private int _pendingUiUpdate;
         private CancellationTokenSource _refreshCts;
         private bool _suppressSelectionRefresh;
+        private volatile bool _flowCompletionPending;
         private static readonly string[] RestartServiceNames = ["RegistrationCenterService", "CVMainService_x64", "CVMainService_dev"];
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
@@ -308,10 +310,12 @@ namespace ColorVision.Engine.Templates.Flow
                 if (View == null)
                     return;
 
+                InvalidateExecutionPresentation();
+                View.ShowExecutionSummary(string.Empty);
                 var selectedTemplate = GetSelectedFlowTemplate();
                 if (selectedTemplate == null)
                 {
-                    View.FlowEngineControl.LoadFromBase64(string.Empty);
+                    ClearDisplayedFlow(null);
                     return;
                 }
 
@@ -321,11 +325,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     if (!allowEmptyFlow)
                         MessageBox.Show(ColorVision.Engine.Properties.Resources.Flow_CreateTemplateBeforeSelection);
-                    View.FlowEngineControl.LoadFromBase64(string.Empty);
-                    FlowEngineManager.CVBaseServerNodes.Clear();
-                    FlowEngineManager.SlectFlowParam = flowParam;
-                    View.STNodeEditorHelper.AddNodeContext();
-                    FlowEngineManager.PublishCopilotContext();
+                    ClearDisplayedFlow(flowParam);
                     return;
                 }
 
@@ -366,14 +366,35 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        private void ClearDisplayedFlow(FlowParam? flowParam)
+        {
+            foreach (CVBaseServerNode node in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                node.nodeRunEvent -= UpdateMsg;
+                node.nodeEndEvent -= nodeEndEvent;
+            }
+
+            ResetNodeTitleProgress();
+            View.FlowEngineControl.LoadFromBase64(string.Empty);
+            FlowEngineManager.CVBaseServerNodes.Clear();
+            FlowEngineManager.SlectFlowParam = flowParam;
+            if (flowParam == null)
+                FlowEngineManager.TemplateFlowParamsIndex = -1;
+            View.STNodeEditorHelper.AddNodeContext();
+            FlowEngineManager.PublishCopilotContext();
+        }
+
         private async Task CloseRunningFlowBeforeRefreshAsync()
         {
-            if (FlowControl?.IsFlowRun != true)
-                return;
+            if (FlowControl?.IsFlowRun == true)
+            {
+                log.Info("流程运行中触发刷新，先关闭当前流程。");
+                StopFlow();
+                await Task.Delay(100);
+            }
 
-            log.Info("流程运行中触发刷新，先关闭当前流程。");
-            StopFlow();
-            await Task.Delay(100);
+            while (_flowCompletionPending)
+                await Task.Delay(20);
         }
 
         private TemplateModel<FlowParam> GetSelectedFlowTemplate()
@@ -442,19 +463,28 @@ namespace ColorVision.Engine.Templates.Flow
             return await RunFlowAndWaitAsync();
         }
 
-        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
+        private async void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
+            MeasureBatchModel completedBatch = FlowEngineManager.Batch;
+            string completedFlowName = FlowName;
+            long completedGeneration = Volatile.Read(ref _executionGeneration);
 
-            FlowEngineManager.Batch.FlowStatus = FlowControlData.FlowStatus;
-            FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
-            FlowEngineManager.Batch.Result = FlowControlData.Params;
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            completedBatch.FlowStatus = FlowControlData.FlowStatus;
+            completedBatch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+            completedBatch.Result = FlowControlData.Params;
+            try
+            {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                Db.Updateable(completedBatch).ExecuteReturnEntity();
+            }
+            catch (Exception ex)
+            {
+                log.Error("更新流程批次完成状态失败。", ex);
+            }
 
-            Db.Updateable(FlowEngineManager.Batch).ExecuteReturnEntity();
-
-            FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
+            FlowEngineConfig.Instance.FlowRunTime[completedFlowName] = stopwatch.ElapsedMilliseconds;
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
             string lastNodes = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeName)
@@ -462,16 +492,34 @@ namespace ColorVision.Engine.Templates.Flow
                 : FlowControlData.ErrorNodeName;
             _runningNodeNames.Clear();
             ResetNodeTitleProgress();
-            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
-            View.ShowExecutionSummary(msg, FlowControlData.ErrorNodeName, LastNode);
+            string msg = $"{completedFlowName} {FlowControlData.EventName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_NodeLabel}{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
+            CVCommonNode? failedNode;
+            lock (_executionStateSync)
+            {
+                _completedErrorNodeName = FlowControlData.ErrorNodeName;
+                _completedSummaryMessage = msg;
+                failedNode = _lastFailedNode;
+            }
+            View.ShowExecutionSummary(msg);
+            if (failedNode != null
+                && STNodeEditorHelper.IsExecutionNodeNameMatch(failedNode, FlowControlData.ErrorNodeName))
+            {
+                _ = ShowExecutionSummaryAfterNodeWritesAsync(
+                    failedNode,
+                    FlowControlData.ErrorNodeName,
+                    msg,
+                    completedGeneration);
+            }
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
+            await WaitForTerminalNodeEndAsync(FlowControlData.ErrorNodeName, completedGeneration);
+            _flowCompletionPending = false;
             FlowExecutionCompleted?.Invoke(this, FlowControlData);
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                Processing(FlowEngineManager.Batch);
+                Processing(completedBatch, completedFlowName);
             });
         }
         
@@ -480,24 +528,24 @@ namespace ColorVision.Engine.Templates.Flow
             return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, FlowEngineManager.CVBaseServerNodes);
         }
         
-        private void Processing(MeasureBatchModel batch)
+        private void Processing(MeasureBatchModel batch, string flowName)
         {
             try
             {
-                // Find all matching BatchProcessMeta entries for this flow template name
-                var matchingMetas = BatchManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase) && m.BatchProcess != null)
+                // Find all matching post-process entries for this flow template name
+                var matchingMetas = PostProcessManager.GetInstance().ProcessMetas
+                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PostProcessor != null)
                     .ToList();
 
 
                 if (matchingMetas.Count > 0)
                 {
-                    log.Info($"匹配到 {matchingMetas.Count} 个自定义流程处理 {FlowName}");
+                    log.Info($"匹配到 {matchingMetas.Count} 个自定义流程处理 {flowName}");
                     
-                    var ctx = new IBatchContext
+                    var ctx = new PostProcessContext
                     {
                         Batch = batch,
-                        FlowName = FlowName,
+                        FlowName = flowName,
                     };
 
                     // Execute all matching processes sequentially
@@ -506,7 +554,7 @@ namespace ColorVision.Engine.Templates.Flow
                         log.Info($"执行自定义流程 {meta.Name} -> {meta.ProcessTypeName}");
                         try
                         {
-                            bool executed = meta.BatchProcess.Process(ctx);
+                            bool executed = meta.PostProcessor.Process(ctx);
                             if (!executed)
                             {
                                 log.Warn($"自定义 IProcess {meta.Name} 执行返回失败");
@@ -578,6 +626,116 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly ConcurrentDictionary<string, long> _nodeExpectedDurations = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, long> _nodeStartedAt = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, CVCommonNode> _runningNodes = new ConcurrentDictionary<string, CVCommonNode>();
+        private readonly ConcurrentDictionary<string, Task> _nodeWriteTasks = new ConcurrentDictionary<string, Task>();
+        private readonly ConcurrentDictionary<string, long> _nodeExecutionGenerations = new ConcurrentDictionary<string, long>();
+        private readonly object _nodeWriteSync = new object();
+        private readonly object _executionStateSync = new object();
+        private CVCommonNode? _lastFailedNode;
+        private string? _completedErrorNodeName;
+        private string? _completedSummaryMessage;
+        private TaskCompletionSource<bool>? _terminalNodeEndCompletion;
+        private long _executionGeneration;
+
+        private void QueueNodeWrite(string nodeId, Action write)
+        {
+            lock (_nodeWriteSync)
+            {
+                Task nextWrite = _nodeWriteTasks.TryGetValue(nodeId, out Task? previous)
+                    ? previous.ContinueWith(
+                    _ => write(),
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default)
+                    : Task.Run(write);
+                _nodeWriteTasks[nodeId] = nextWrite;
+            }
+        }
+
+        private async Task ShowExecutionSummaryAfterNodeWritesAsync(
+            CVCommonNode node,
+            string? completedErrorNodeName,
+            string? completedSummaryMessage,
+            long generation)
+        {
+            if (_nodeWriteTasks.TryGetValue(node.NodeID, out Task? pendingWrite))
+            {
+                try
+                {
+                    await pendingWrite;
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("等待流程节点记录写入失败。", ex);
+                }
+            }
+
+            bool flushed = await Task.Run(() => FlowNodeRecordDataBaseHelper.FlushPendingWrites());
+            if (!flushed)
+                log.Warn("等待流程节点记录落库超时，详情窗口可手动刷新。");
+
+            await View.Dispatcher.InvokeAsync(() =>
+            {
+                bool isCurrent;
+                lock (_executionStateSync)
+                {
+                    isCurrent = generation == Volatile.Read(ref _executionGeneration)
+                        && string.Equals(_completedSummaryMessage, completedSummaryMessage, StringComparison.Ordinal)
+                        && STNodeEditorHelper.IsExecutionNodeNameMatch(node, _completedErrorNodeName)
+                        && STNodeEditorHelper.IsExecutionNodeNameMatch(node, completedErrorNodeName);
+                }
+                if (isCurrent)
+                {
+                    View.ShowExecutionSummary(
+                        completedSummaryMessage ?? View.logTextBox.Text,
+                        completedErrorNodeName,
+                        node);
+                }
+            });
+        }
+
+        private async Task WaitForTerminalNodeEndAsync(string? errorNodeName, long generation)
+        {
+            if (string.IsNullOrWhiteSpace(errorNodeName))
+            {
+                await Task.Delay(100);
+                return;
+            }
+
+            TaskCompletionSource<bool>? completion = null;
+            lock (_executionStateSync)
+            {
+                if (generation != Volatile.Read(ref _executionGeneration)
+                    || (_lastFailedNode != null
+                        && STNodeEditorHelper.IsExecutionNodeNameMatch(_lastFailedNode, errorNodeName)))
+                {
+                    return;
+                }
+
+                completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _terminalNodeEndCompletion = completion;
+            }
+
+            await Task.WhenAny(completion.Task, Task.Delay(1000));
+            lock (_executionStateSync)
+            {
+                if (ReferenceEquals(_terminalNodeEndCompletion, completion))
+                    _terminalNodeEndCompletion = null;
+            }
+        }
+
+        private void InvalidateExecutionPresentation()
+        {
+            Interlocked.Increment(ref _executionGeneration);
+            _nodeExecutionGenerations.Clear();
+            lock (_executionStateSync)
+            {
+                _lastFailedNode = null;
+                _completedErrorNodeName = null;
+                _completedSummaryMessage = null;
+                _terminalNodeEndCompletion?.TrySetResult(true);
+                _terminalNodeEndCompletion = null;
+            }
+        }
 
         private async Task LoadNodeExpectedDurationsAsync()
         {
@@ -627,6 +785,12 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
+                if (!_nodeExecutionGenerations.TryRemove(algorithmNode.NodeID, out long generation)
+                    || generation != Volatile.Read(ref _executionGeneration))
+                {
+                    return;
+                }
+
                 algorithmNode.TitleProgress = -1f;
                 _runningNodes.TryRemove(algorithmNode.NodeID, out _);
                 long elapsedFromClock = 0;
@@ -656,7 +820,7 @@ namespace ColorVision.Engine.Templates.Flow
                     record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
                     if (record.ElapsedMs > 0)
                         _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
-                    Task.Run(() => FlowNodeRecordDataBaseHelper.Update(record));
+                    QueueNodeWrite(algorithmNode.NodeID, () => FlowNodeRecordDataBaseHelper.Update(record));
                 }
                 else if (elapsedFromClock > 0)
                 {
@@ -680,7 +844,34 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         nodeMsg.State = FlowMessageState.Timeout;
                     }
-                    Task.Run(() => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
+                    QueueNodeWrite(algorithmNode.NodeID, () => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
+                }
+
+                if (e?.RecvStatusCode != 0)
+                {
+                    string? completedErrorNodeName;
+                    string? completedSummaryMessage;
+                    bool matchesCompletedFailure;
+                    lock (_executionStateSync)
+                    {
+                        _lastFailedNode = algorithmNode;
+                        completedErrorNodeName = _completedErrorNodeName;
+                        completedSummaryMessage = _completedSummaryMessage;
+                        matchesCompletedFailure = STNodeEditorHelper.IsExecutionNodeNameMatch(
+                            algorithmNode,
+                            completedErrorNodeName);
+                        if (matchesCompletedFailure)
+                            _terminalNodeEndCompletion?.TrySetResult(true);
+                    }
+
+                    if (matchesCompletedFailure)
+                    {
+                        _ = ShowExecutionSummaryAfterNodeWritesAsync(
+                            algorithmNode,
+                            completedErrorNodeName,
+                            completedSummaryMessage,
+                            generation);
+                    }
                 }
             }
         }
@@ -691,6 +882,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
  
                 LastNode = algorithmNode;
+                _nodeExecutionGenerations[algorithmNode.NodeID] = Volatile.Read(ref _executionGeneration);
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
                 _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
@@ -712,7 +904,8 @@ namespace ColorVision.Engine.Templates.Flow
                     StartTime = DateTime.Now,
                 };
                 _nodeRecords[algorithmNode.NodeID] = record;
-                Task.Run(() => {
+                QueueNodeWrite(algorithmNode.NodeID, () =>
+                {
                     int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
                     if (insertId <= 0)
                         _nodeRecords.TryRemove(algorithmNode.NodeID, out _);
@@ -734,11 +927,12 @@ namespace ColorVision.Engine.Templates.Flow
                         SendTime = DateTime.Now,
                         State = FlowMessageState.Sended
                     };
-                    Task.Run(() =>
+                    _nodeMessages[algorithmNode.NodeID] = msg;
+                    QueueNodeWrite(algorithmNode.NodeID, () =>
                     {
                         int id = FlowNodeRecordDataBaseHelper.InsertMessage(msg);
-                        if (id > 0)
-                            _nodeMessages[algorithmNode.NodeID] = msg;
+                        if (id <= 0)
+                            _nodeMessages.TryRemove(algorithmNode.NodeID, out _);
                     });
                 }
             }
@@ -754,6 +948,8 @@ namespace ColorVision.Engine.Templates.Flow
         string FlowName;
         public async Task RunFlow()
         {
+            while (_flowCompletionPending)
+                await Task.Delay(20);
 
             if (!MqttRCService.GetInstance().IsConnect)
             {
@@ -793,12 +989,15 @@ namespace ColorVision.Engine.Templates.Flow
             ClearFlowRuntimeData();
 
             LastNode = null;
+            InvalidateExecutionPresentation();
             View.ShowExecutionSummary("Run " + ComboBoxFlow.Text);
             FlowEngineManager.BatchProgress = 0;
 
             _nodeRecords.Clear();
             _runningNodeNames.Clear();
             _nodeMessages.Clear();
+            lock (_nodeWriteSync)
+                _nodeWriteTasks.Clear();
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -835,7 +1034,19 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
 
-            FlowControl.Start(sn);
+            _flowCompletionPending = true;
+            try
+            {
+                FlowControl.Start(sn);
+            }
+            catch
+            {
+                _flowCompletionPending = false;
+                FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500);
+                throw;
+            }
         }
 
         private void ClearFlowRuntimeData()
@@ -857,6 +1068,8 @@ namespace ColorVision.Engine.Templates.Flow
         public void StopFlow()
         {
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            _flowCompletionPending = false;
+            InvalidateExecutionPresentation();
             FlowControl?.Stop();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器

@@ -1743,7 +1743,7 @@
     <value>Creation Date</value>
   </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
-    <value>Processing configuration</value>
+    <value>Post-Process Configuration</value>
   </data>
   <data name="UpdateProcessMeta" xml:space="preserve">
     <value>Update ProcessMeta</value>

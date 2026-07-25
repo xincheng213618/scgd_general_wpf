@@ -663,10 +663,16 @@ namespace ColorVision.Engine.Templates.Flow
                 return rows;
 
             List<STNode> serialLane = rows[0];
-            int maxColumns = _viewportWidth > 0
-                ? Math.Max(4, Math.Min(8, _viewportWidth / Math.Max(1, _horizontalSpacing) - 2))
-                : 6;
-            return SplitSerialLaneRows(serialLane, maxColumns);
+            if (_viewportWidth <= 0 || _viewportHeight <= 0)
+                return SplitSerialLaneRows(serialLane, 6);
+
+            int rowCount = CalculateSerialLaneRowCount(
+                serialLane.Count,
+                _viewportWidth,
+                _viewportHeight,
+                Math.Max(120, _horizontalSpacing),
+                Math.Max(80, _layoutSlotHeight + GetVerticalLaneGap()));
+            return SplitSerialLaneIntoRows(serialLane, rowCount);
         }
 
         internal static List<List<STNode>> SplitSerialLaneRows(List<STNode> serialLane, int maxColumns)
@@ -685,6 +691,55 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             return splitRows;
+        }
+
+        internal static int CalculateSerialLaneRowCount(
+            int nodeCount,
+            int viewportWidth,
+            int viewportHeight,
+            int columnPitch,
+            int rowPitch)
+        {
+            if (nodeCount <= 0 || viewportWidth <= 0 || viewportHeight <= 0)
+                return 1;
+
+            int bestRowCount = 1;
+            double bestScale = 0;
+            int maxRows = Math.Min(nodeCount, 31);
+            for (int rowCount = 1; rowCount <= maxRows; rowCount += 2)
+            {
+                int columnCount = (int)Math.Ceiling(nodeCount / (double)rowCount);
+                double widthScale = viewportWidth / (double)Math.Max(1, columnCount * columnPitch);
+                double heightScale = viewportHeight / (double)Math.Max(1, rowCount * rowPitch);
+                double fitScale = Math.Min(widthScale, heightScale);
+                if (fitScale > bestScale)
+                {
+                    bestScale = fitScale;
+                    bestRowCount = rowCount;
+                }
+            }
+
+            return bestRowCount;
+        }
+
+        internal static List<List<STNode>> SplitSerialLaneIntoRows(List<STNode> serialLane, int rowCount)
+        {
+            rowCount = Math.Max(1, Math.Min(rowCount, serialLane.Count));
+            if (rowCount == 1)
+                return new List<List<STNode>> { serialLane };
+
+            var rows = new List<List<STNode>>(rowCount);
+            int baseRowSize = serialLane.Count / rowCount;
+            int largerRowCount = serialLane.Count % rowCount;
+            int index = 0;
+            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+            {
+                int rowSize = baseRowSize + (rowIndex < largerRowCount ? 1 : 0);
+                rows.Add(serialLane.GetRange(index, rowSize));
+                index += rowSize;
+            }
+
+            return rows;
         }
 
         private List<List<STNode>> BuildSerialLaneRows(STNode rootNode, STNode mergeNode)
@@ -831,23 +886,28 @@ namespace ColorVision.Engine.Templates.Flow
                     layoutRows.RemoveAt(0);
             }
 
+            var visualRows = layoutRows
+                .Select((row, rowIndex) => rowIndex % 2 == 0
+                    ? row
+                    : row.AsEnumerable().Reverse().ToList())
+                .ToList();
             int columnGap = GetHorizontalNodeGap();
             int rowGap = GetVerticalLaneGap();
             int rowY = _startY;
-            int maxColumns = Math.Max(1, layoutRows.Max(row => row.Count));
-            int rowHeight = layoutRows
+            int maxColumns = Math.Max(1, visualRows.Max(row => row.Count));
+            int rowHeight = visualRows
                 .SelectMany(row => row)
                 .DefaultIfEmpty()
                 .Max(node => node == null ? _layoutSlotHeight : GetLayoutHeight(node));
-            int[] columnWidths = BuildColumnWidths(layoutRows, maxColumns);
-            var mainRowNodes = new HashSet<STNode>(layoutRows.SelectMany(row => row));
-            var sharedFanOuts = FindSharedFanOutPlacements(layoutRows, mainRowNodes, mergeNode);
+            int[] columnWidths = BuildColumnWidths(visualRows, maxColumns);
+            var mainRowNodes = new HashSet<STNode>(visualRows.SelectMany(row => row));
+            var sharedFanOuts = FindSharedFanOutPlacements(visualRows, mainRowNodes, mergeNode);
             int[] extraBeforeColumns = BuildExtraBeforeColumns(maxColumns, sharedFanOuts, columnGap);
             int[] columnXs = BuildColumnXs(columnWidths, placeRootSeparately ? _rootNode.Width + columnGap : 0, columnGap, extraBeforeColumns);
             var rowCenters = new List<int>();
             var placed = new HashSet<STNode>();
 
-            foreach (var row in layoutRows)
+            foreach (var row in visualRows)
             {
                 for (int column = 0; column < row.Count; column++)
                 {
@@ -883,7 +943,7 @@ namespace ColorVision.Engine.Templates.Flow
             placed.Add(mergeNode);
 
             PlacePrimaryDownstreamChain(mergeNode, foldedCenterY, placed);
-            PlaceSharedFanOuts(sharedFanOuts, layoutRows, columnXs, columnGap, placed);
+            PlaceSharedFanOuts(sharedFanOuts, visualRows, columnXs, columnGap, placed);
             PlaceSerialSatellites(mergeNode, mergeX, placed);
             SeparateColocatedSharedTargets(sharedFanOuts, mergeNode, placed);
         }

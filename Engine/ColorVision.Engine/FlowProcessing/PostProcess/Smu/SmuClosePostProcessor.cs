@@ -1,0 +1,36 @@
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.SMU;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace ColorVision.Engine.FlowProcessing.PostProcess.Smu
+{
+    [PostProcess("源表关闭", "关闭源表")]
+    public class SmuClosePostProcessor : IPostProcessor
+    {
+        public bool Process(PostProcessContext ctx)
+        {
+            if (ctx?.Batch == null) return false;
+
+            foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>())
+            {
+                Task.Run(async () => 
+                {
+                    item.DService.CloseOutput();
+                    //关闭显示
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        item.DisplayConfig.V = null;
+                        item.DisplayConfig.I = null;
+                    });
+                    await Task.Delay(500);
+                    item.DService.CloseOutput();
+                });
+
+            }
+            return true;
+
+        }
+    }
+}

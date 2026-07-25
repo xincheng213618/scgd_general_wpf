@@ -38,4 +38,32 @@ public class SugiyamaLayoutTests
         Assert.Single(rows);
         Assert.Same(nodes, rows[0]);
     }
+
+    [Fact]
+    public void CalculateSerialLaneRowCount_UsesOddRowsForReadableSerpentineLayout()
+    {
+        int rowCount = SugiyamaLayout.CalculateSerialLaneRowCount(
+            nodeCount: 100,
+            viewportWidth: 1000,
+            viewportHeight: 600,
+            columnPitch: 220,
+            rowPitch: 120);
+
+        Assert.Equal(11, rowCount);
+        Assert.True(rowCount % 2 == 1);
+    }
+
+    [Fact]
+    public void SplitSerialLaneIntoRows_BalancesNodesWithoutChangingFlowOrder()
+    {
+        List<STNode> nodes = Enumerable
+            .Range(0, 21)
+            .Select(_ => (STNode)new STNodeHub())
+            .ToList();
+
+        List<List<STNode>> rows = SugiyamaLayout.SplitSerialLaneIntoRows(nodes, 5);
+
+        Assert.Equal(new[] { 5, 4, 4, 4, 4 }, rows.Select(row => row.Count));
+        Assert.Equal(nodes, rows.SelectMany(row => row));
+    }
 }

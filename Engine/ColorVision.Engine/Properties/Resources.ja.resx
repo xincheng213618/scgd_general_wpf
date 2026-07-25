@@ -1726,7 +1726,7 @@
     <value>作成日</value>
   </data>
   <data name="ProcessHandlingConfig" xml:space="preserve">
-    <value>Processing configuration</value>
+    <value>後処理設定</value>
   </data>
   <data name="UpdateProcessMeta" xml:space="preserve">
     <value>Update ProcessMeta</value>

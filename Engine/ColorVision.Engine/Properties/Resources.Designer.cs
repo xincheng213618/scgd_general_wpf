@@ -10158,7 +10158,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 流程处理配置 的本地化字符串。
+        ///   查找类似 后处理配置 的本地化字符串。
         /// </summary>
         public static string ProcessHandlingConfig {
             get {

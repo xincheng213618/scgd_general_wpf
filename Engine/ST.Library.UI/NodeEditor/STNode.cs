@@ -1362,6 +1362,11 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_down = null;
 	}
 
+	protected internal virtual void CancelMouseInteraction()
+	{
+		m_ctrl_down = null;
+	}
+
 	protected internal virtual void OnMouseLeave(EventArgs e)
 	{
 		if (m_ctrl_hover != null && m_ctrl_hover.Enabled && m_ctrl_hover.Visable)
