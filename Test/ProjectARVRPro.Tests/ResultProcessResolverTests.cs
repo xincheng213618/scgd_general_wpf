@@ -59,6 +59,50 @@ namespace ProjectARVRPro.Tests
             Assert.Same(legacyProcess, restored);
         }
 
+        [Fact]
+        public void FindMappingUsesIndependentMappingWhenCurrentGroupDoesNotContainTemplate()
+        {
+            var groupMeta = new ProcessMeta
+            {
+                FlowTemplate = "group-template",
+                Process = new OtherProcess()
+            };
+            var independentMeta = new ProcessMeta
+            {
+                FlowTemplate = "manual-template",
+                Process = new SnapshotProcess()
+            };
+
+            ProcessMeta? mapping = ResultProcessResolver.FindMapping(
+                "manual-template",
+                [groupMeta],
+                [independentMeta]);
+
+            Assert.Same(independentMeta, mapping);
+        }
+
+        [Fact]
+        public void FindMappingPrefersCurrentGroupOverIndependentMapping()
+        {
+            var groupMeta = new ProcessMeta
+            {
+                FlowTemplate = "shared-template",
+                Process = new OtherProcess()
+            };
+            var independentMeta = new ProcessMeta
+            {
+                FlowTemplate = "shared-template",
+                Process = new SnapshotProcess()
+            };
+
+            ProcessMeta? mapping = ResultProcessResolver.FindMapping(
+                "shared-template",
+                [groupMeta],
+                [independentMeta]);
+
+            Assert.Same(groupMeta, mapping);
+        }
+
         public sealed class SnapshotProcessConfig : ViewModelBase
         {
             public string Label { get; set; } = string.Empty;

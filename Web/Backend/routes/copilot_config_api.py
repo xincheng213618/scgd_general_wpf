@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 from db_cache import CacheManager
 from services.api_key_service import verify_api_key
 from services.copilot_config_service import CopilotConfigService
+from services.copilot_device_auth import verify_copilot_device
 
 
 @dataclass(frozen=True)
@@ -143,20 +144,55 @@ def _require_sync_key():
     return None, (jsonify({"error": "Invalid or expired API key", "status": 401}), 401)
 
 
+def _authorize_sync_request():
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        key_info, error = _require_sync_key()
+        if error is not None:
+            return None, error
+        return {
+            "actor_type": "api_key",
+            "actor_id": f"key:{key_info['key_prefix']}",
+        }, None
+
+    if _ctx is None:
+        raise RuntimeError("Copilot configuration API not initialized")
+    device = verify_copilot_device(_ctx.config_getter(), request.headers)
+    if not device.authorized:
+        return None, (
+            jsonify({"error": device.error, "status": device.status}),
+            device.status,
+        )
+    return {
+        "actor_type": "device",
+        "actor_id": f"device:{device.identity.device_id[:16]}",
+        "app_version": device.identity.app_version,
+        "architecture": device.identity.architecture,
+    }, None
+
+
 @copilot_client_api.route("/config", methods=["GET"])
 def get_synced_config():
-    key_info, error = _require_sync_key()
+    actor, error = _authorize_sync_request()
     if error is not None:
         return error
 
     result = _service().list_client_profiles()
     if _ctx is not None:
+        actor_detail = ""
+        if actor["actor_type"] == "device":
+            actor_detail = (
+                f", app {actor['app_version']} ({actor['architecture']})"
+            )
         _ctx.cache.write_audit(
-            actor_type="api_key",
-            actor_id=f"key:{key_info['key_prefix']}",
+            actor_type=actor["actor_type"],
+            actor_id=actor["actor_id"],
             action="copilot_config_sync",
             target_type="copilot_profile",
-            detail=f"Returned {len(result['profiles'])} enabled profile(s), revision {result['revision']}",
+            detail=(
+                f"Returned {len(result['profiles'])} enabled profile(s), "
+                f"revision {result['revision']}{actor_detail}"
+            ),
             ip=request.remote_addr or "",
             user_agent=request.headers.get("User-Agent", "")[:200],
         )

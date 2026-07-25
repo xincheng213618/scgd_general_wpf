@@ -25,7 +25,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHVDynamic
         [DisplayName("显示格式")]
         [Description("MTF HV值显示格式")]
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
-        private string _ShowConfig = "F1";
+        private string _ShowConfig = "F3";
 
         [Category("导出配置")]
         [DisplayName("导出名称")]

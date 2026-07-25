@@ -1,6 +1,9 @@
 import base64
 import copy
+import hashlib
+import hmac
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -28,6 +31,9 @@ class CopilotConfigApiTests(unittest.TestCase):
             "password": "secret",
         }
         marketplace_app.CONFIG["secret_key"] = "copilot-test-secret"
+        marketplace_app.CONFIG["copilot_sync"] = {
+            "version_keys": ["copilot-version-key"],
+        }
         marketplace_app.app.config["TESTING"] = True
         marketplace_app.init_db()
         self.client = marketplace_app.app.test_client()
@@ -77,6 +83,35 @@ class CopilotConfigApiTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 201)
         return response.get_json()["key"]
+
+    @staticmethod
+    def device_headers(
+        *,
+        version_key="copilot-version-key",
+        timestamp=None,
+        signature_override="",
+    ):
+        values = {
+            "X-ColorVision-Product": "ColorVision",
+            "X-ColorVision-Version": "1.4.10.130",
+            "X-ColorVision-Device-Id": "A" * 64,
+            "X-ColorVision-OS-Version": "10.0.26100.0",
+            "X-ColorVision-Architecture": "X64",
+            "X-ColorVision-Timestamp": str(
+                int(time.time()) if timestamp is None else timestamp
+            ),
+            "X-ColorVision-Nonce": "0123456789abcdef0123456789abcdef",
+        }
+        canonical = "\n".join(values.values()).encode("utf-8")
+        values["X-ColorVision-Signature"] = (
+            signature_override
+            or hmac.new(
+                version_key.encode("utf-8"),
+                canonical,
+                hashlib.sha256,
+            ).hexdigest()
+        )
+        return values
 
     def test_admin_crud_requires_auth_and_never_echoes_provider_key(self):
         unauthorized = self.client.get("/api/admin/copilot/profiles")
@@ -144,10 +179,56 @@ class CopilotConfigApiTests(unittest.TestCase):
         self.assertNotIn("provider-secret-value", encrypted)
         self.assertTrue(encrypted.startswith("aesgcm:v1:"))
 
-    def test_sync_rejects_missing_or_insufficient_api_key(self):
+    def test_signed_colorvision_device_can_sync_without_api_key(self):
+        created = self.create_profile()
+        self.assertEqual(created.status_code, 201)
+
+        response = self.client.get(
+            "/api/copilot/config",
+            headers=self.device_headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["defaultProfileId"], created.get_json()["id"])
+        self.assertEqual(payload["profiles"][0]["apiKey"], "provider-secret-value")
+        audit = marketplace_app._cache.get_audit_log(
+            action="copilot_config_sync",
+        )
+        self.assertEqual(audit[0]["actor_type"], "device")
+        self.assertTrue(audit[0]["actor_id"].startswith("device:"))
+
+    def test_sync_rejects_missing_device_proof_or_invalid_signature(self):
         missing = self.client.get("/api/copilot/config")
         self.assertEqual(missing.status_code, 401)
+        self.assertIn("device proof", missing.get_json()["error"])
 
+        invalid = self.client.get(
+            "/api/copilot/config",
+            headers=self.device_headers(signature_override="0" * 64),
+        )
+        self.assertEqual(invalid.status_code, 401)
+        self.assertIn("signature", invalid.get_json()["error"])
+
+        expired = self.client.get(
+            "/api/copilot/config",
+            headers=self.device_headers(timestamp=int(time.time()) - 301),
+        )
+        self.assertEqual(expired.status_code, 401)
+        self.assertIn("Expired", expired.get_json()["error"])
+
+    def test_device_sync_fails_closed_when_version_keys_are_not_configured(self):
+        marketplace_app.CONFIG["copilot_sync"] = {"version_keys": []}
+
+        response = self.client.get(
+            "/api/copilot/config",
+            headers=self.device_headers(),
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("not configured", response.get_json()["error"])
+
+    def test_sync_rejects_insufficient_api_key(self):
         stats_key = self.create_sync_key("stats:read")
         forbidden = self.client.get(
             "/api/copilot/config",

@@ -48,6 +48,35 @@ namespace ColorVision.Update
 
     internal sealed record AutoUpdatePlanCheckResult(AutoUpdatePlan? Plan, UpdateServerCheckStatus Status);
 
+    internal sealed class LatestVersionCheckRequestCache
+    {
+        private readonly object _lock = new();
+        private string? _url;
+        private Task<LatestVersionCheckResult>? _task;
+
+        public Task<LatestVersionCheckResult> GetOrCreate(
+            string url,
+            Func<Task<LatestVersionCheckResult>> requestFactory,
+            out bool reused)
+        {
+            lock (_lock)
+            {
+                if (_task != null
+                    && !_task.IsCompleted
+                    && string.Equals(_url, url, StringComparison.OrdinalIgnoreCase))
+                {
+                    reused = true;
+                    return _task;
+                }
+
+                _url = url;
+                _task = requestFactory();
+                reused = false;
+                return _task;
+            }
+        }
+    }
+
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
@@ -66,7 +95,7 @@ namespace ColorVision.Update
     public static class AutoUpdater
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
-        private static readonly SemaphoreSlim _latestVersionSemaphore = new(1, 1);
+        private static readonly LatestVersionCheckRequestCache _latestVersionRequests = new();
         private static readonly object _latestVersionCacheLock = new();
         private static readonly TimeSpan MetadataRequestTimeout = TimeSpan.FromSeconds(4);
         private static readonly TimeSpan LatestVersionClientCacheDuration = TimeSpan.FromMinutes(5);
@@ -198,6 +227,23 @@ namespace ColorVision.Update
             if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
                 return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
 
+            Task<LatestVersionCheckResult> request = _latestVersionRequests.GetOrCreate(
+                url,
+                () => FetchLatestVersionCheckResultAsync(url, forceRefresh),
+                out bool reused);
+            if (reused)
+                log.Info($"Reusing the update metadata request already in progress for {url}.");
+
+            return await request.WaitAsync(cancellationToken);
+        }
+
+        private static async Task<LatestVersionCheckResult> FetchLatestVersionCheckResultAsync(
+            string url,
+            bool forceRefresh)
+        {
+            if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
+                return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
+
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
                 if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
@@ -210,7 +256,6 @@ namespace ColorVision.Update
                 return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.NoInternetConnection);
             }
 
-            await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
                 if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
@@ -227,7 +272,7 @@ namespace ColorVision.Update
                         return request;
                     },
                     MetadataRequestTimeout,
-                    cancellationToken);
+                    CancellationToken.None);
                 if (response.StatusCode == HttpStatusCode.NotModified
                     && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
                 {
@@ -236,7 +281,7 @@ namespace ColorVision.Update
                 }
 
                 response.EnsureSuccessStatusCode();
-                string payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                string payload = await response.Content.ReadAsStringAsync();
                 string versionString = ExtractVersionString(payload);
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
@@ -249,10 +294,6 @@ namespace ColorVision.Update
 
                 SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
                 return new LatestVersionCheckResult(latestVersion, UpdateServerCheckStatus.Success);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
             }
             catch (HttpRequestException ex)
             {
@@ -267,10 +308,6 @@ namespace ColorVision.Update
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
                 Version fallbackVersion = TryGetAnyCachedLatestVersion(url, out Version cachedVersion) ? cachedVersion : new Version();
                 return new LatestVersionCheckResult(fallbackVersion, UpdateServerCheckStatus.ServerUnavailable);
-            }
-            finally
-            {
-                _latestVersionSemaphore.Release();
             }
         }
 

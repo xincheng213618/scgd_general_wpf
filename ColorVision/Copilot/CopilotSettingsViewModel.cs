@@ -354,7 +354,6 @@ namespace ColorVision.Copilot
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
             ToggleNewProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsNewProfileApiKeyVisible = !IsNewProfileApiKeyVisible);
             ToggleSelectedProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsSelectedProfileApiKeyVisible = !IsSelectedProfileApiKeyVisible);
-            ToggleBackendSyncTokenVisibilityCommand = new RelayCommand(_ => IsBackendSyncTokenVisible = !IsBackendSyncTokenVisible);
             SyncBackendConfigCommand = new RelayCommand(
                 _ => RunUiOperation(SyncBackendConfigAsync, "同步后台 Copilot 配置"),
                 _ => CanSyncBackendConfig);
@@ -378,7 +377,6 @@ namespace ColorVision.Copilot
             McpBearerToken = config.McpBearerToken;
             ExternalMcpServersText = CopilotMcpClientConfigurationText.Format(config.ExternalMcpServers);
             BackendSyncUrl = config.BackendSyncUrl;
-            BackendSyncToken = config.BackendSyncToken;
             AllowInsecureBackendSync = config.AllowInsecureBackendSync;
             RefreshMcpStatusText();
             RefreshMcpDiagnostics();
@@ -424,21 +422,6 @@ namespace ColorVision.Copilot
         }
         private string _backendSyncUrl = CopilotConfig.DefaultBackendSyncUrl;
 
-        public string BackendSyncToken
-        {
-            get => _backendSyncToken;
-            set
-            {
-                if (SetProperty(ref _backendSyncToken, value ?? string.Empty))
-                {
-                    OnPropertyChanged(nameof(CanSyncBackendConfig));
-                    CommandManager.InvalidateRequerySuggested();
-                    MarkSettingsPending("Backend sync API Key changed. Click Apply or Save to keep it.");
-                }
-            }
-        }
-        private string _backendSyncToken = string.Empty;
-
         public bool AllowInsecureBackendSync
         {
             get => _allowInsecureBackendSync;
@@ -449,24 +432,6 @@ namespace ColorVision.Copilot
             }
         }
         private bool _allowInsecureBackendSync;
-
-        public bool IsBackendSyncTokenVisible
-        {
-            get => _isBackendSyncTokenVisible;
-            set
-            {
-                if (SetProperty(ref _isBackendSyncTokenVisible, value))
-                {
-                    OnPropertyChanged(nameof(IsBackendSyncTokenHidden));
-                    OnPropertyChanged(nameof(BackendSyncTokenVisibilityText));
-                }
-            }
-        }
-        private bool _isBackendSyncTokenVisible;
-
-        public bool IsBackendSyncTokenHidden => !IsBackendSyncTokenVisible;
-
-        public string BackendSyncTokenVisibilityText => IsBackendSyncTokenVisible ? "Hide" : "Show";
 
         public bool IsSyncingBackendConfig
         {
@@ -484,15 +449,14 @@ namespace ColorVision.Copilot
 
         public bool CanSyncBackendConfig => !_disposed
             && !IsSyncingBackendConfig
-            && !string.IsNullOrWhiteSpace(BackendSyncUrl)
-            && !string.IsNullOrWhiteSpace(BackendSyncToken);
+            && !string.IsNullOrWhiteSpace(BackendSyncUrl);
 
         public string BackendSyncStatusText
         {
             get => _backendSyncStatusText;
             private set => SetProperty(ref _backendSyncStatusText, value ?? string.Empty);
         }
-        private string _backendSyncStatusText = "Enter a scoped API Key, then sync model profiles from the ColorVision backend.";
+        private string _backendSyncStatusText = "Click Download and sync to verify this device and update managed model profiles.";
 
         public CopilotShellKind PreferredShell
         {
@@ -626,8 +590,6 @@ namespace ColorVision.Copilot
         public RelayCommand ToggleNewProfileApiKeyVisibilityCommand { get; }
 
         public RelayCommand ToggleSelectedProfileApiKeyVisibilityCommand { get; }
-
-        public RelayCommand ToggleBackendSyncTokenVisibilityCommand { get; }
 
         public RelayCommand SyncBackendConfigCommand { get; }
 
@@ -1324,7 +1286,6 @@ namespace ColorVision.Copilot
                 foreach (var server in externalMcpServers)
                     config.ExternalMcpServers.Add(server.Clone());
                 config.BackendSyncUrl = BackendSyncUrl.Trim();
-                config.BackendSyncToken = BackendSyncToken.Trim();
                 config.AllowInsecureBackendSync = AllowInsecureBackendSync;
 
                 var visibleRoleKeys = PluginSubagentRoles.Select(role => role.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -1814,7 +1775,6 @@ namespace ColorVision.Copilot
             {
                 var response = await _backendSyncClient.FetchAsync(
                     BackendSyncUrl,
-                    BackendSyncToken,
                     AllowInsecureBackendSync,
                     _lifetimeCancellation.Token);
 
@@ -1848,9 +1808,11 @@ namespace ColorVision.Copilot
                 OnSelectedProfileUsageChanged();
                 var revision = string.IsNullOrWhiteSpace(response.Revision) ? "unknown" : response.Revision;
                 BackendSyncStatusText =
-                    $"Revision {revision}: {mergeResult.Added} added, {mergeResult.Updated} updated, {mergeResult.Removed} removed.";
-                MarkSettingsPending(
-                    $"Backend profiles synchronized ({mergeResult.Added} added, {mergeResult.Updated} updated, {mergeResult.Removed} removed). Click Apply or Save to use them.");
+                    $"Revision {revision}: {mergeResult.Added} added, {mergeResult.Updated} updated, {mergeResult.Removed} removed and saved.";
+                SaveSynchronizedProfiles();
+                SetSettingsNotice(HasUnsavedSettings
+                    ? BackendSyncStatusText + " Other settings still have unsaved changes."
+                    : BackendSyncStatusText);
             }
             catch (OperationCanceledException) when (_disposed)
             {
@@ -1864,6 +1826,22 @@ namespace ColorVision.Copilot
             {
                 IsSyncingBackendConfig = false;
             }
+        }
+
+        private void SaveSynchronizedProfiles()
+        {
+            var config = CopilotConfig.Instance;
+            config.Profiles.Clear();
+            foreach (var profile in Profiles.Select(profile => profile.Clone()))
+            {
+                profile.EnsureValid();
+                config.Profiles.Add(profile);
+            }
+
+            config.EnsureInitialized();
+            ConfigHandler.GetInstance().Save<CopilotConfig>();
+            _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
+            HasAppliedChanges = true;
         }
 
         private void RunUiOperation(Func<Task> operation, string operationName)

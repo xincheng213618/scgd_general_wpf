@@ -36,6 +36,44 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void LatestVersionChecksReuseOnlyTheSameInFlightRequest()
+        {
+            LatestVersionCheckRequestCache requests = new();
+            TaskCompletionSource<LatestVersionCheckResult> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            LatestVersionCheckResult result = new(new Version(1, 4, 10, 130), UpdateServerCheckStatus.Success);
+            int requestCount = 0;
+            Func<Task<LatestVersionCheckResult>> requestFactory = () =>
+            {
+                requestCount++;
+                return requestCount == 1 ? completion.Task : Task.FromResult(result);
+            };
+
+            Task<LatestVersionCheckResult> first = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool firstReused);
+            Task<LatestVersionCheckResult> second = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool secondReused);
+
+            Assert.False(firstReused);
+            Assert.True(secondReused);
+            Assert.Same(first, second);
+            Assert.Equal(1, requestCount);
+
+            completion.SetResult(result);
+            Task<LatestVersionCheckResult> third = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool thirdReused);
+
+            Assert.False(thirdReused);
+            Assert.NotSame(first, third);
+            Assert.Equal(2, requestCount);
+        }
+
+        [Fact]
         public void OfflineInstallerCommandDownloadsTheLatestFullInstallerToTheDesktop()
         {
             string command = AutoUpdater.BuildOfflineInstallerDownloadPowerShellCommand(

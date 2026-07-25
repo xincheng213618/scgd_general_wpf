@@ -89,9 +89,16 @@ public sealed class CopilotBackendSyncTests
     }
 
     [Fact]
-    public async Task FetchAsync_SendsScopedBearerTokenAndParsesResponse()
+    public async Task FetchAsync_SendsSignedDeviceIdentityAndParsesResponse()
     {
         HttpRequestMessage? capturedRequest = null;
+        var identity = new CopilotBackendDeviceIdentity(
+            "ColorVision",
+            "1.4.10.130",
+            new string('A', 64),
+            "10.0.26100.0",
+            "X64",
+            "test-version-key");
         var handler = new StubHandler(request =>
         {
             capturedRequest = request;
@@ -123,20 +130,60 @@ public sealed class CopilotBackendSyncTests
             };
         });
         using var httpClient = new HttpClient(handler);
-        var client = new CopilotBackendSyncClient(httpClient);
+        var client = new CopilotBackendSyncClient(httpClient, () => identity);
 
         var result = await client.FetchAsync(
             "https://config.example/",
-            "cvmp_sync_token",
             allowInsecureHttp: false,
             CancellationToken.None);
 
         Assert.NotNull(capturedRequest);
-        Assert.Equal("Bearer", capturedRequest!.Headers.Authorization?.Scheme);
-        Assert.Equal("cvmp_sync_token", capturedRequest.Headers.Authorization?.Parameter);
+        Assert.Null(capturedRequest!.Headers.Authorization);
+        Assert.Equal(identity.Product, Header("X-ColorVision-Product"));
+        Assert.Equal(identity.AppVersion, Header("X-ColorVision-Version"));
+        Assert.Equal(identity.DeviceId, Header("X-ColorVision-Device-Id"));
+        Assert.Equal(identity.OsVersion, Header("X-ColorVision-OS-Version"));
+        Assert.Equal(identity.Architecture, Header("X-ColorVision-Architecture"));
+        var timestamp = Header("X-ColorVision-Timestamp");
+        var nonce = Header("X-ColorVision-Nonce");
+        Assert.Equal(
+            CopilotBackendSyncClient.CreateDeviceSignature(identity, timestamp, nonce),
+            Header("X-ColorVision-Signature"));
         Assert.Equal("https://config.example/api/copilot/config", capturedRequest.RequestUri?.AbsoluteUri);
         Assert.Equal("rev-1", result.Revision);
         Assert.Equal("provider-key", Assert.Single(result.Profiles).ApiKey);
+
+        string Header(string name) => Assert.Single(capturedRequest.Headers.GetValues(name));
+    }
+
+    [Fact]
+    public async Task FetchAsync_RejectsMissingInstalledVersionKeyBeforeSending()
+    {
+        var sendCount = 0;
+        var handler = new StubHandler(_ =>
+        {
+            sendCount++;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        using var httpClient = new HttpClient(handler);
+        var client = new CopilotBackendSyncClient(
+            httpClient,
+            () => new CopilotBackendDeviceIdentity(
+                "ColorVision",
+                "1.4.10.130",
+                new string('A', 64),
+                "10.0.26100.0",
+                "X64",
+                string.Empty));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.FetchAsync(
+                "https://config.example/",
+                allowInsecureHttp: false,
+                CancellationToken.None));
+
+        Assert.Contains("version key is missing", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, sendCount);
     }
 
     private static CopilotBackendProfile BackendProfile(string id, string name, string model)

@@ -1,11 +1,17 @@
+using ColorVision.UI;
+using ColorVision.UI.CUDA;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -14,6 +20,29 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
+    internal sealed record CopilotBackendDeviceIdentity(
+        string Product,
+        string AppVersion,
+        string DeviceId,
+        string OsVersion,
+        string Architecture,
+        string VersionKey)
+    {
+        public static CopilotBackendDeviceIdentity CreateCurrent()
+        {
+            var appVersion = Assembly.GetEntryAssembly()?.GetName().Version?.ToString()
+                ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+                ?? string.Empty;
+            return new CopilotBackendDeviceIdentity(
+                "ColorVision",
+                appVersion,
+                SystemHelper.GetHardwareId(),
+                Environment.OSVersion.Version.ToString(),
+                RuntimeInformation.ProcessArchitecture.ToString(),
+                DownloadFileConfig.Instance.Authorization);
+        }
+    }
+
     internal sealed class CopilotBackendConfigResponse
     {
         public int SchemaVersion { get; set; }
@@ -71,35 +100,43 @@ namespace ColorVision.Copilot
         };
 
         private readonly HttpClient _httpClient;
+        private readonly Func<CopilotBackendDeviceIdentity> _deviceIdentityProvider;
 
         public CopilotBackendSyncClient()
             : this(new HttpClient(SharedHandler, disposeHandler: false)
             {
                 Timeout = TimeSpan.FromSeconds(30),
-            })
+            }, CopilotBackendDeviceIdentity.CreateCurrent)
         {
         }
 
         internal CopilotBackendSyncClient(HttpClient httpClient)
+            : this(httpClient, CopilotBackendDeviceIdentity.CreateCurrent)
+        {
+        }
+
+        internal CopilotBackendSyncClient(
+            HttpClient httpClient,
+            Func<CopilotBackendDeviceIdentity> deviceIdentityProvider)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _deviceIdentityProvider = deviceIdentityProvider ?? throw new ArgumentNullException(nameof(deviceIdentityProvider));
         }
 
         public async Task<CopilotBackendConfigResponse> FetchAsync(
             string baseUrl,
-            string accessToken,
             bool allowInsecureHttp,
             CancellationToken cancellationToken)
         {
             var endpoint = BuildEndpoint(baseUrl, allowInsecureHttp);
-            var token = (accessToken ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(token))
-                throw new InvalidOperationException("Enter the backend sync API Key before syncing.");
+            var identity = NormalizeIdentity(_deviceIdentityProvider());
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+            var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
 
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             request.Headers.UserAgent.ParseAdd("ColorVision-Copilot/1.0");
+            AddDeviceProofHeaders(request, identity, timestamp, nonce);
 
             using var response = await _httpClient.SendAsync(
                 request,
@@ -126,6 +163,77 @@ namespace ColorVision.Copilot
             return result;
         }
 
+        internal static string CreateDeviceSignature(
+            CopilotBackendDeviceIdentity identity,
+            string timestamp,
+            string nonce)
+        {
+            identity = NormalizeIdentity(identity);
+            var canonical = string.Join('\n',
+                identity.Product,
+                identity.AppVersion,
+                identity.DeviceId,
+                identity.OsVersion,
+                identity.Architecture,
+                NormalizeHeaderValue(timestamp, "timestamp"),
+                NormalizeHeaderValue(nonce, "nonce"));
+            var signature = HMACSHA256.HashData(
+                Encoding.UTF8.GetBytes(identity.VersionKey),
+                Encoding.UTF8.GetBytes(canonical));
+            return Convert.ToHexString(signature).ToLowerInvariant();
+        }
+
+        private static void AddDeviceProofHeaders(
+            HttpRequestMessage request,
+            CopilotBackendDeviceIdentity identity,
+            string timestamp,
+            string nonce)
+        {
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Product", identity.Product);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Version", identity.AppVersion);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Device-Id", identity.DeviceId);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-OS-Version", identity.OsVersion);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Architecture", identity.Architecture);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Timestamp", timestamp);
+            request.Headers.TryAddWithoutValidation("X-ColorVision-Nonce", nonce);
+            request.Headers.TryAddWithoutValidation(
+                "X-ColorVision-Signature",
+                CreateDeviceSignature(identity, timestamp, nonce));
+        }
+
+        private static CopilotBackendDeviceIdentity NormalizeIdentity(CopilotBackendDeviceIdentity? identity)
+        {
+            if (identity == null)
+                throw new InvalidOperationException("ColorVision could not read the local device identity.");
+
+            var normalized = new CopilotBackendDeviceIdentity(
+                NormalizeHeaderValue(identity.Product, "product"),
+                NormalizeHeaderValue(identity.AppVersion, "application version"),
+                NormalizeHeaderValue(identity.DeviceId, "device id"),
+                NormalizeHeaderValue(identity.OsVersion, "OS version"),
+                NormalizeHeaderValue(identity.Architecture, "architecture"),
+                (identity.VersionKey ?? string.Empty).Trim());
+            if (string.IsNullOrWhiteSpace(normalized.VersionKey))
+                throw new InvalidOperationException("The installed ColorVision version key is missing.");
+            if (string.Equals(normalized.DeviceId, "Unavailable", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("ColorVision could not identify this device.");
+            return normalized;
+        }
+
+        private static string NormalizeHeaderValue(string? value, string name)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                throw new InvalidOperationException($"The local ColorVision {name} is missing.");
+            if (normalized.Length > 256
+                || normalized.Contains('\r')
+                || normalized.Contains('\n'))
+            {
+                throw new InvalidOperationException($"The local ColorVision {name} is invalid.");
+            }
+            return normalized;
+        }
+
         internal static Uri BuildEndpoint(string baseUrl, bool allowInsecureHttp)
         {
             var normalized = (baseUrl ?? string.Empty).Trim();
@@ -147,7 +255,7 @@ namespace ColorVision.Copilot
             if (baseUri.Scheme == Uri.UriSchemeHttp && !isLoopback && !allowInsecureHttp)
             {
                 throw new InvalidOperationException(
-                    "Remote HTTP sync is blocked because the sync API Key and model API keys would be sent without transport encryption. Use HTTPS, or explicitly allow insecure HTTP for a trusted network.");
+                    "Remote HTTP sync is blocked because model API keys would be sent without transport encryption. Use HTTPS or a trusted configured network.");
             }
 
             var builder = new UriBuilder(baseUri)

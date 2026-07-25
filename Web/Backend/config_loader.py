@@ -27,10 +27,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "access_analytics_flush_interval_seconds": 0.5,
     "access_analytics_retention_days": 90,
     "upload_auth": {"username": "admin", "password": "admin"},
+    "copilot_sync": {"version_keys": []},
 }
 
 DEFAULT_SECRET_KEY: str = DEFAULT_CONFIG["secret_key"]
 DEFAULT_UPLOAD_AUTH: dict[str, str] = dict(DEFAULT_CONFIG["upload_auth"])
+DEFAULT_COPILOT_SYNC: dict[str, Any] = dict(DEFAULT_CONFIG["copilot_sync"])
 
 MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
 MAX_FEEDBACK_FILES = 10
@@ -41,14 +43,17 @@ def load_config() -> dict[str, Any]:
     """Load configuration by merging config.json over DEFAULT_CONFIG."""
     config = dict(DEFAULT_CONFIG)
     config["upload_auth"] = dict(DEFAULT_UPLOAD_AUTH)
+    config["copilot_sync"] = dict(DEFAULT_COPILOT_SYNC)
     config_file = BASE_DIR / "config.json"
     if config_file.exists():
         with open(config_file, encoding="utf-8") as f:
             loaded = json.load(f)
         if isinstance(loaded.get("upload_auth"), dict):
             config["upload_auth"].update(loaded["upload_auth"])
+        if isinstance(loaded.get("copilot_sync"), dict):
+            config["copilot_sync"].update(loaded["copilot_sync"])
         for key, value in loaded.items():
-            if key == "upload_auth":
+            if key in {"upload_auth", "copilot_sync"}:
                 continue
             config[key] = value
     return config

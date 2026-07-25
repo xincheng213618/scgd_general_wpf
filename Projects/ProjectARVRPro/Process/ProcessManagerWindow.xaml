@@ -6,145 +6,343 @@
         xmlns:local="clr-namespace:ProjectARVRPro.Process"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProcessManager}"
-        Title="流程处理配置" Height="720" Width="1280" MinHeight="640" MinWidth="1040" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="流程处理配置" Height="760" Width="1320" MinHeight="660" MinWidth="1080"
+        Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
     <Window.Resources>
-        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
+
+        <Style x:Key="SideEditButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="Height" Value="23"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Margin" Value="4 0 0 0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
     </Window.Resources>
-    <Grid Margin="8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*" MinHeight="520"/>
-        </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0 0 0 8" Padding="8">
-            <WrapPanel>
-                <TextBlock Text="流程组管理" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
-                <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="0 0 5 0"/>
-                <ComboBox ItemsSource="{Binding ProcessGroups}" DisplayMemberPath="Name"
-                          SelectedIndex="{Binding ActiveGroupIndex}" Width="150" VerticalAlignment="Center" Margin="0 0 12 0"
-                          x:Name="GroupComboBox" SelectionChanged="GroupComboBox_SelectionChanged"/>
-                <TextBox Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}" Width="120" VerticalAlignment="Center" Margin="0 0 5 0"/>
-                <Button Content="添加组" Padding="8 3" Margin="0 0 5 0" Command="{Binding AddGroupCommand}"/>
-                <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
-                <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
-                <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
-                <Button Content="导入配置" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
-                <Button Content="导出配置" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
-            </WrapPanel>
-        </Border>
+    <TabControl x:Name="MainTabControl" Margin="8" SelectionChanged="MainTabControl_SelectionChanged">
+        <TabItem Header="一键执行流程组">
+            <Grid Margin="4 8 4 4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*" MinHeight="520"/>
+                </Grid.RowDefinitions>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="500" MinWidth="400"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*" MinWidth="520"/>
-            </Grid.ColumnDefinitions>
+                <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="4" Margin="0 0 0 8" Padding="8">
+                    <WrapPanel>
+                        <TextBlock Text="流程组管理" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
+                        <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                        <ComboBox ItemsSource="{Binding ProcessGroups}" DisplayMemberPath="Name"
+                                  SelectedIndex="{Binding ActiveGroupIndex}" Width="150" VerticalAlignment="Center" Margin="0 0 12 0"
+                                  x:Name="GroupComboBox" SelectionChanged="GroupComboBox_SelectionChanged"/>
+                        <TextBox Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}" Width="120"
+                                 VerticalAlignment="Center" Margin="0 0 5 0"/>
+                        <Button Content="添加组" Padding="8 3" Margin="0 0 5 0" Command="{Binding AddGroupCommand}"/>
+                        <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
+                        <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
+                        <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
+                        <Button Content="导入配置" Padding="8 3" Margin="12 0 5 0" Command="{Binding ImportConfigCommand}"/>
+                        <Button Content="导出配置" Padding="8 3" Margin="0 0 5 0" Command="{Binding ExportConfigCommand}"/>
+                    </WrapPanel>
+                </Border>
 
-            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
-                <Grid>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="660" MinWidth="560"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*" MinWidth="400"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" Margin="0 0 0 8">
+                                <TextBlock Text="一键执行顺序" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddMetaCommand}"/>
+                                    <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveMetaCommand}"/>
+                                    <Button Content="上移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveUpCommand}"/>
+                                    <Button Content="下移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveDownCommand}"/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}"
+                                      SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas"
+                                      SelectionChanged="ListView_SelectionChanged">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridView.ColumnHeaderContainerStyle>
+                                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Setter Property="Background" Value="Transparent"/>
+                                            </Style>
+                                        </GridView.ColumnHeaderContainerStyle>
+                                        <GridViewColumn Header="启用" Width="50">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="名称" Width="175" DisplayMemberBinding="{Binding Name}"/>
+                                        <GridViewColumn Header="流程模板" Width="205" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                        <GridViewColumn Header="处理类型" Width="215"
+                                                        DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch" Background="Transparent"/>
+
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                CornerRadius="4" Padding="10" Margin="0 0 0 8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid>
+                                    <Grid>
+                                        <Grid.Style>
+                                            <Style TargetType="{x:Type Grid}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditingMetaName}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding SelectedProcessMeta.Name, TargetNullValue=未选择流程}"
+                                                   FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改名称"
+                                                Command="{Binding EditMetaNameCommand}"
+                                                CommandParameter="{Binding SelectedProcessMeta}">
+                                            <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                        </Button>
+                                    </Grid>
+
+                                    <Grid>
+                                        <Grid.Style>
+                                            <Style TargetType="{x:Type Grid}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditingMetaName}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" MinWidth="160"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="MetaNameEditTextBox"
+                                                 Text="{Binding SelectedMetaNameDraft, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsVisibleChanged="MetaNameEditTextBox_IsVisibleChanged"
+                                                 VerticalContentAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="保存" Padding="11 3" Margin="8 0 0 0"
+                                                Command="{Binding SaveMetaNameCommand}"/>
+                                        <Button Grid.Column="2" Content="取消" Padding="11 3" Margin="6 0 0 0"
+                                                Command="{Binding CancelMetaNameCommand}"/>
+                                    </Grid>
+                                </Grid>
+
+                                <Grid Grid.Row="1" Margin="0 5 0 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="流程模板：" Foreground="{DynamicResource SecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SelectedProcessMeta.FlowTemplate, TargetNullValue=—}"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改流程模板"
+                                            Command="{Binding EditMetaTemplateCommand}"
+                                            CommandParameter="{Binding SelectedProcessMeta}">
+                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                    </Button>
+                                </Grid>
+
+                                <Grid Grid.Row="2" Margin="0 3 0 0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="处理类型：" Foreground="{DynamicResource SecondaryTextBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
+                                            Command="{Binding EditMetaProcessCommand}"
+                                            CommandParameter="{Binding SelectedProcessMeta}">
+                                        <Image Source="{StaticResource DrawingImageEdit}" Width="13"/>
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <TabControl Grid.Row="1">
+                            <TabItem Header="Process">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                                    <StackPanel x:Name="ProcessPanel">
+                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                                   HorizontalAlignment="Center" Margin="0 20 0 0"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                            <TabItem Header="Recipe">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                                    <StackPanel x:Name="RecipePanel">
+                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                                   HorizontalAlignment="Center" Margin="0 20 0 0"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                            <TabItem Header="切图">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                                    <StackPanel x:Name="PictureSwitchPanel">
+                                        <TextBlock Text="请选择一个处理项" Foreground="Gray"
+                                                   HorizontalAlignment="Center" Margin="0 20 0 0"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </TabItem>
+
+        <TabItem Header="流程解析映射">
+            <Grid Margin="4 8 4 4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="520" MinWidth="420"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*" MinWidth="520"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0 0 0 6">
+                            <TextBlock Text="独立解析映射" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddResultParserCommand}"/>
+                                <Button Content="编辑" Padding="10 4" Margin="4 0 0 0" Command="{Binding UpdateResultParserCommand}"/>
+                                <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveResultParserCommand}"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBlock Grid.Row="1" Text="用于手动切换测试和历史结果解析，不参与一键执行顺序。"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 0 0 8"/>
+
+                        <ListView Grid.Row="2" ItemsSource="{Binding ResultParserMetas}"
+                                  SelectedItem="{Binding SelectedResultParserMeta}" x:Name="lvResultParsers"
+                                  SelectionChanged="ResultParserListView_SelectionChanged"
+                                  MouseDoubleClick="ResultParserListView_MouseDoubleClick">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn Header="流程模板" Width="240" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                                    <GridViewColumn Header="处理模板" Width="240" DisplayMemberBinding="{Binding ProcessTypeName, Mode=OneWay}"/>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Grid>
+                </Border>
+
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch" Background="Transparent"/>
+
+                <Grid Grid.Column="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel Grid.Row="0" Margin="0 0 0 8">
-                        <TextBlock Text="流程列表" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddMetaCommand}"/>
-                            <Button Content="编辑" Padding="10 4" Margin="4 0 0 0" Command="{Binding UpdateMetaCommand}"/>
-                            <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveMetaCommand}"/>
-                            <Button Content="上移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveUpCommand}"/>
-                            <Button Content="下移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveDownCommand}"/>
-                        </StackPanel>
-                    </DockPanel>
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="4" Padding="10" Margin="0 0 0 8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedResultParserMeta.FlowTemplate, TargetNullValue=未选择解析映射}"
+                                           FontWeight="Bold" FontSize="16"/>
+                                <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 4 0 0">
+                                    <Run Text="处理类: "/><Run Text="{Binding SelectedResultParserMeta.ProcessTypeName, Mode=OneWay}"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="编辑映射" Padding="12 4"
+                                    VerticalAlignment="Center" Command="{Binding UpdateResultParserCommand}"/>
+                        </Grid>
+                    </Border>
 
-                    <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged" MouseDoubleClick="ListView_MouseDoubleClick">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="启用" Width="50">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="名称" Width="120" DisplayMemberBinding="{Binding Name}"/>
-                                <GridViewColumn Header="流程模板" Width="140" DisplayMemberBinding="{Binding FlowTemplate}"/>
-                                <GridViewColumn Header="处理类" Width="150" DisplayMemberBinding="{Binding ProcessTypeName,Mode=OneWay}"/>
-
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <TabControl Grid.Row="1">
+                        <TabItem Header="Process">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                                <StackPanel x:Name="ResultProcessPanel">
+                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                               HorizontalAlignment="Center" Margin="0 20 0 0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                        <TabItem Header="Recipe">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                                <StackPanel x:Name="ResultRecipePanel">
+                                    <TextBlock Text="请选择一个解析映射" Foreground="Gray"
+                                               HorizontalAlignment="Center" Margin="0 20 0 0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabItem>
+                    </TabControl>
                 </Grid>
-            </Border>
-
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
-
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0 0 0 8">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="{Binding SelectedProcessMeta.Name, TargetNullValue=未选择流程}" FontWeight="Bold" FontSize="16"/>
-                            <TextBlock Foreground="Gray" Margin="0 4 0 0">
-                                <Run Text="模板: "/><Run Text="{Binding SelectedProcessMeta.FlowTemplate}"/>
-                                <Run Text="    处理类: "/><Run Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay}"/>
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <CheckBox Content="启用" IsChecked="{Binding SelectedProcessMeta.IsEnabled}" VerticalAlignment="Center" Margin="0 0 12 0"/>
-                            <Button Content="编辑流程" Padding="12 4" Command="{Binding UpdateMetaCommand}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <TabControl Grid.Row="1">
-                    <TabItem Header="Recipe">
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                            <StackPanel x:Name="RecipePanel">
-                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="Process">
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                            <StackPanel x:Name="ProcessPanel">
-                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="切图">
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
-                            <StackPanel x:Name="PictureSwitchPanel">
-                                <TextBlock Text="请选择一个处理项" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-                </TabControl>
             </Grid>
-        </Grid>
-    </Grid>
+        </TabItem>
+    </TabControl>
 </Window>

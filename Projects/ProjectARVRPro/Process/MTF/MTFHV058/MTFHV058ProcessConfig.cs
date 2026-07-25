@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.MTF.MTFHV058
     public class MTFHV058ProcessConfig : ProcessConfigBase
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
-        private string _ShowConfig = "F1";
+        private string _ShowConfig = "F3";
 
         [Category("输出配置")]
         [DisplayName("导出名称")]

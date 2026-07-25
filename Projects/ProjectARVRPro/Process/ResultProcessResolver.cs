@@ -47,9 +47,25 @@ namespace ProjectARVRPro.Process
                 log.Warn($"历史结果解析器不可用: {result.ProcessTypeFullName}; 尝试按模板 {result.Model} 兼容解析");
             }
 
-            return legacyProcessMetas
-                .FirstOrDefault(meta => string.Equals(meta.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase))
-                ?.Process;
+            return FindMapping(result.Model, legacyProcessMetas)?.Process;
+        }
+
+        public static ProcessMeta? FindMapping(
+            string flowTemplate,
+            IEnumerable<ProcessMeta> primaryMappings,
+            IEnumerable<ProcessMeta>? fallbackMappings = null)
+        {
+            ArgumentNullException.ThrowIfNull(primaryMappings);
+
+            ProcessMeta? mapping = primaryMappings.FirstOrDefault(meta =>
+                meta.Process != null
+                && string.Equals(meta.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase));
+            if (mapping != null || fallbackMappings == null)
+                return mapping;
+
+            return fallbackMappings.FirstOrDefault(meta =>
+                meta.Process != null
+                && string.Equals(meta.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase));
         }
 
         private static IProcess? CreateProcess(

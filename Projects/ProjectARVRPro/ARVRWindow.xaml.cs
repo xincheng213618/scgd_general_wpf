@@ -499,7 +499,7 @@ namespace ProjectARVRPro
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
                 return Task.CompletedTask;
 
-            ProcessMeta? processMeta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, template.Key, StringComparison.OrdinalIgnoreCase));
+            ProcessMeta? processMeta = ProcessManager.FindProcessMetaForTemplate(template.Key);
             return RunTemplate(template.Key, processMeta);
         }
 
@@ -512,7 +512,7 @@ namespace ProjectARVRPro
             }
 
             TryCount++;
-            _currentFlowProcess = runProcessMeta?.Process;
+            _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
@@ -522,9 +522,10 @@ namespace ProjectARVRPro
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (runProcessMeta != null)
+                int groupIndex = runProcessMeta == null ? -1 : ProcessMetas.IndexOf(runProcessMeta);
+                if (groupIndex >= 0)
                 {
-                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(runProcessMeta);
+                    CurrentFlowResult.TestType = groupIndex;
                     ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
                 }
                 else
@@ -869,7 +870,7 @@ namespace ProjectARVRPro
             {
                 log.Info($"{result.Model}");
 
-                IProcess? process = _currentFlowProcess ?? ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
+                IProcess? process = _currentFlowProcess ?? ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
                 if (process != null)
                 {
                     if (string.IsNullOrWhiteSpace(result.ProcessTypeFullName))
@@ -1249,7 +1250,7 @@ namespace ProjectARVRPro
             if (result.FlowStatus != FlowStatus.Completed)
                 return;
 
-            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
+            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
             if (process == null) return;
 
             try
@@ -1360,7 +1361,7 @@ namespace ProjectARVRPro
             paragraph.Inlines.Add(run);
             outputText.Document.Blocks.Add(paragraph);
 
-            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessMetas);
+            IProcess? process = ResultProcessResolver.Resolve(result, ProcessManager.Processes, ProcessManager.GetResultProcessMappings());
             Brush foreground = result.Result ? Brushes.Black : Brushes.White;
             paragraph = new Paragraph();
             if (process != null)

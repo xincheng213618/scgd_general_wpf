@@ -13,7 +13,7 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 4;
+        public const int CurrentSchemaVersion = 5;
         public const string DefaultBackendSyncUrl = "http://xc213618.ddns.me:9998";
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
@@ -35,20 +35,12 @@ namespace ColorVision.Copilot
         private string _backendSyncUrl = DefaultBackendSyncUrl;
 
         [Browsable(false)]
-        public string BackendSyncToken
-        {
-            get => _backendSyncToken;
-            set => SetProperty(ref _backendSyncToken, value?.Trim() ?? string.Empty);
-        }
-        private string _backendSyncToken = string.Empty;
-
-        [Browsable(false)]
         public bool AllowInsecureBackendSync
         {
             get => _allowInsecureBackendSync;
             set => SetProperty(ref _allowInsecureBackendSync, value);
         }
-        private bool _allowInsecureBackendSync;
+        private bool _allowInsecureBackendSync = true;
 
         [Browsable(false)]
         public int SchemaVersion { get; set; }
@@ -151,6 +143,14 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            if (SchemaVersion < 5
+                && string.Equals(BackendSyncUrl.TrimEnd('/'), DefaultBackendSyncUrl, StringComparison.OrdinalIgnoreCase)
+                && !AllowInsecureBackendSync)
+            {
+                AllowInsecureBackendSync = true;
+                changed = true;
+            }
+
             if (SchemaVersion < CurrentSchemaVersion)
             {
                 SchemaVersion = CurrentSchemaVersion;
@@ -210,12 +210,10 @@ namespace ColorVision.Copilot
                 .Select(profile => CopilotCredentialProtector.Protect(profile.ApiKey))
                 .ToArray();
             var protectedMcpBearerToken = CopilotCredentialProtector.Protect(McpBearerToken);
-            var protectedBackendSyncToken = CopilotCredentialProtector.Protect(BackendSyncToken);
 
             for (var index = 0; index < profiles.Length; index++)
                 profiles[index].ApiKey = protectedProfileKeys[index];
             McpBearerToken = protectedMcpBearerToken;
-            BackendSyncToken = protectedBackendSyncToken;
         }
 
         public void Decrypt()
@@ -237,9 +235,6 @@ namespace ColorVision.Copilot
 
             McpBearerToken = CopilotCredentialProtector.TryUnprotect(McpBearerToken, out var bearerToken, out _)
                 ? bearerToken
-                : string.Empty;
-            BackendSyncToken = CopilotCredentialProtector.TryUnprotect(BackendSyncToken, out var backendSyncToken, out _)
-                ? backendSyncToken
                 : string.Empty;
         }
     }

@@ -79,10 +79,10 @@
             <!-- Compact execution details float above the progress bar. -->
             <Grid Height="75" Margin="10,0,10,10"
                   HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
-                  Panel.ZIndex="25">
+                  Panel.ZIndex="25" Opacity="0.8">
                 <Border Background="{DynamicResource GlobalBackground}"
                         BorderBrush="{DynamicResource GlobalBorderBrush}"
-                        BorderThickness="1" CornerRadius="6" Opacity="0.74"/>
+                        BorderThickness="1" CornerRadius="6" Opacity="0.3"/>
                 <Grid Margin="6,4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -98,7 +98,7 @@
                         <Grid Margin="0,0,6,0" VerticalAlignment="Center">
                             <Button Width="50" Height="50"
                                     Padding="3"
-                                    ToolTip="{x:Static properties:Resources.ExecutionProcess}"
+                                    ToolTip="{x:Static properties:Resources.ExecutionProcess}" Margin="6,0,0,0"
                                     Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter1}}"
                                     Click="Button_FlowRun_Click">
                                 <TextBlock Text="&#xE768;"
@@ -108,7 +108,7 @@
                             </Button>
                             <Button Width="50" Height="50"
                                     Padding="3"
-                                    ToolTip="{x:Static properties:Resources.StopProcess}"
+                                    ToolTip="{x:Static properties:Resources.StopProcess}" Margin="6,0,0,0"
                                     Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
                                     Click="Button_FlowStop_Click">
                                 <TextBlock Text="&#xE71A;"

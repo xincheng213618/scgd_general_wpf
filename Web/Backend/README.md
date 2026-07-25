@@ -144,6 +144,29 @@ no inbound port or arbitrary command channel is opened.
 | POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
 | GET | `/api/admin/api-keys/<id>/usage` | Get key usage info |
 
+### Copilot Desktop Sync
+
+`GET /api/copilot/config` accepts the existing Bearer key with
+`copilot:config:read` for compatibility. The desktop settings UI uses signed
+device proof instead: application version, hardware fingerprint, OS version,
+architecture, timestamp, and nonce are authenticated with the installed
+ColorVision version key. The version key itself is not sent.
+
+Configure the server with the same release keys used by supported desktop
+installations:
+
+```json
+{
+  "copilot_sync": {
+    "version_keys": ["replace-with-the-desktop-version-key"]
+  }
+}
+```
+
+Up to 16 keys may be active during version-key rotation. Missing configuration,
+invalid signatures, unsupported device metadata, and proofs older than five
+minutes are rejected before model provider credentials are returned.
+
 ### Audit Log
 
 | Method | Endpoint | Description |

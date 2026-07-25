@@ -24,6 +24,7 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("port", DEFAULT_CONFIG)
         self.assertIn("secret_key", DEFAULT_CONFIG)
         self.assertIn("upload_auth", DEFAULT_CONFIG)
+        self.assertIn("copilot_sync", DEFAULT_CONFIG)
 
     def test_max_upload_size_is_500mb(self):
         self.assertEqual(MAX_UPLOAD_SIZE_BYTES, 500 * 1024 * 1024)
@@ -64,6 +65,19 @@ class ConfigLoaderTests(unittest.TestCase):
                 config = load_config()
         self.assertEqual(config["upload_auth"]["username"], "u1")
         self.assertEqual(config["upload_auth"]["password"], "admin")  # default preserved
+
+    def test_load_config_merges_copilot_sync_version_keys(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg_path = Path(td) / "config.json"
+            cfg_path.write_text(json.dumps({
+                "copilot_sync": {"version_keys": ["version-key"]},
+            }))
+            with patch("config_loader.BASE_DIR", Path(td)):
+                config = load_config()
+        self.assertEqual(
+            config["copilot_sync"]["version_keys"],
+            ["version-key"],
+        )
 
     def test_get_upload_auth_extracts_credentials(self):
         config = {"upload_auth": {"username": "testuser", "password": "testpass"}}
