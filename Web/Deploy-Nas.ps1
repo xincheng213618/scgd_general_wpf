@@ -145,7 +145,7 @@ function Get-GitBundleTargetCommit {
     if (-not (Test-Path -LiteralPath $BundlePath -PathType Leaf)) {
         throw "Git deployment bundle does not exist: $BundlePath"
     }
-    Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'bundle', 'verify', $BundlePath)
+    Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'bundle', 'verify', $BundlePath) | Out-Null
     $bundleHeads = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'bundle', 'list-heads', $BundlePath)
     $headLine = @($bundleHeads -split "`n" | Where-Object { $_ -match '\sHEAD$' } | Select-Object -First 1)
     if ($headLine.Count -ne 1) {
