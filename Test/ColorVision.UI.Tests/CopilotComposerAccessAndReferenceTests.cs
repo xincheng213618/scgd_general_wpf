@@ -97,6 +97,50 @@ public sealed class CopilotComposerAccessAndReferenceTests
         }
     }
 
+    [Fact]
+    public async Task NewComposerMentionRefreshesWorkspaceFileIndex()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "copilot-reference-refresh-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var firstPath = Path.Combine(root, "FirstReference.cs");
+        var addedPath = Path.Combine(root, "AddedAfterIndex.cs");
+        File.WriteAllText(firstPath, "class FirstReference {}");
+
+        try
+        {
+            var initial = await CopilotComposerReferenceCatalog.SearchWorkspaceReferencesAsync(
+                root,
+                "FirstReference",
+                refreshIndex: true,
+                CancellationToken.None);
+            Assert.Contains(initial, item =>
+                item.Kind == CopilotComposerReferenceKind.File
+                && string.Equals(item.Value, firstPath, StringComparison.OrdinalIgnoreCase));
+
+            File.WriteAllText(addedPath, "class AddedAfterIndex {}");
+            var cached = await CopilotComposerReferenceCatalog.SearchWorkspaceReferencesAsync(
+                root,
+                "AddedAfterIndex",
+                refreshIndex: false,
+                CancellationToken.None);
+            Assert.DoesNotContain(cached, item =>
+                string.Equals(item.Value, addedPath, StringComparison.OrdinalIgnoreCase));
+
+            var refreshed = await CopilotComposerReferenceCatalog.SearchWorkspaceReferencesAsync(
+                root,
+                "AddedAfterIndex",
+                refreshIndex: true,
+                CancellationToken.None);
+            Assert.Contains(refreshed, item =>
+                item.Kind == CopilotComposerReferenceKind.File
+                && string.Equals(item.Value, addedPath, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private sealed class TestTool(
         CopilotToolAccess access,
         CopilotToolApprovalMode approvalMode) : ICopilotTool

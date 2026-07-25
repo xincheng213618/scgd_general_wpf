@@ -63,6 +63,7 @@ namespace ColorVision.Copilot
         private CancellationTokenSource? _fileAttachmentCts;
         private CancellationTokenSource? _webPageAttachmentCts;
         private CancellationTokenSource? _sideQuestionCts;
+        private CancellationTokenSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -85,6 +86,7 @@ namespace ColorVision.Copilot
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
         private CopilotComposerReferenceItem? _selectedComposerReference;
         private string _conversationSearchText = string.Empty;
+        private string _composerReferenceSessionKey = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
         private bool _isApplyingPromptHistory;
@@ -94,6 +96,7 @@ namespace ColorVision.Copilot
         private bool _isSideQuestionRunning;
         private bool _isRetryingStatePersistence;
         private long _sideQuestionVersion;
+        private long _composerReferenceRefreshVersion;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -860,8 +863,8 @@ namespace ColorVision.Copilot
         public string InputPlaceholder => IsEditingMessage
             ? "修改后按 Enter 重新发送"
             : IsViewingActiveRun
-                ? "Enter 调整 · Tab 排队 · /btw 旁路提问"
-                : IsConversationEmpty ? "随心输入 · 输入 / 或 $ 查看命令与 Skill" : "要求后续变更 · 输入 / 或 $ 查看命令与 Skill";
+                ? "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问"
+                : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
             && !string.IsNullOrWhiteSpace(_editingUserMessageId);
@@ -954,6 +957,12 @@ namespace ColorVision.Copilot
 
         public void DismissComposerReferenceSuggestions()
         {
+            CancelComposerReferenceRefresh(resetSession: true);
+            ClearComposerReferenceSuggestions();
+        }
+
+        private void ClearComposerReferenceSuggestions()
+        {
             ComposerReferenceSuggestions.Clear();
             SelectedComposerReference = null;
             OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
@@ -961,23 +970,111 @@ namespace ColorVision.Copilot
 
         private void RefreshComposerReferenceSuggestions()
         {
-            if (!CopilotComposerReferenceCatalog.TryParseMention(InputText, out var mention))
+            var input = InputText;
+            if (!CopilotComposerReferenceCatalog.TryParseMention(input, out var mention))
             {
                 DismissComposerReferenceSuggestions();
                 return;
             }
 
             var workspaceRoot = SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
-            var suggestions = CopilotComposerReferenceCatalog.Search(mention.Query, _activeDocumentPath, workspaceRoot);
             var previousValue = SelectedComposerReference?.Value;
+            var sessionKey = string.Join('\n',
+                SelectedConversation?.Id ?? string.Empty,
+                workspaceRoot,
+                mention.StartIndex,
+                input[..mention.StartIndex]);
+            var refreshIndex = !string.Equals(
+                sessionKey,
+                _composerReferenceSessionKey,
+                StringComparison.Ordinal);
+            _composerReferenceSessionKey = sessionKey;
+
+            CancelComposerReferenceRefresh(resetSession: false);
+            var version = Interlocked.Increment(ref _composerReferenceRefreshVersion);
+            var cancellation = new CancellationTokenSource();
+            _composerReferenceRefreshCts = cancellation;
+            var immediateSuggestions = CopilotComposerReferenceCatalog.SearchImmediate(
+                mention.Query,
+                _activeDocumentPath);
+            ApplyComposerReferenceSuggestions(immediateSuggestions, previousValue);
+
+            if (!string.IsNullOrWhiteSpace(workspaceRoot))
+            {
+                _ = RefreshWorkspaceComposerReferencesAsync(
+                    mention.Query,
+                    workspaceRoot,
+                    refreshIndex,
+                    immediateSuggestions,
+                    previousValue,
+                    version,
+                    cancellation.Token);
+            }
+        }
+
+        private async Task RefreshWorkspaceComposerReferencesAsync(
+            string query,
+            string workspaceRoot,
+            bool refreshIndex,
+            IReadOnlyList<CopilotComposerReferenceItem> immediateSuggestions,
+            string? preferredValue,
+            long version,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var workspaceSuggestions = await CopilotComposerReferenceCatalog.SearchWorkspaceReferencesAsync(
+                    workspaceRoot,
+                    query,
+                    refreshIndex,
+                    cancellationToken);
+                if (cancellationToken.IsCancellationRequested
+                    || version != Volatile.Read(ref _composerReferenceRefreshVersion)
+                    || Volatile.Read(ref _disposeState) == 1)
+                {
+                    return;
+                }
+
+                var merged = CopilotComposerReferenceCatalog.MergeSearchResults(
+                    query,
+                    immediateSuggestions,
+                    workspaceSuggestions);
+                ApplyComposerReferenceSuggestions(merged, preferredValue);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch
+            {
+                // Template and menu references remain available if file indexing fails.
+            }
+        }
+
+        private void ApplyComposerReferenceSuggestions(
+            IReadOnlyList<CopilotComposerReferenceItem> suggestions,
+            string? preferredValue)
+        {
             ComposerReferenceSuggestions.Clear();
             foreach (var suggestion in suggestions)
                 ComposerReferenceSuggestions.Add(suggestion);
 
             SelectedComposerReference = ComposerReferenceSuggestions.FirstOrDefault(item =>
-                string.Equals(item.Value, previousValue, StringComparison.OrdinalIgnoreCase))
+                string.Equals(item.Value, preferredValue, StringComparison.OrdinalIgnoreCase))
                 ?? ComposerReferenceSuggestions.FirstOrDefault();
             OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
+        }
+
+        private void CancelComposerReferenceRefresh(bool resetSession)
+        {
+            Interlocked.Increment(ref _composerReferenceRefreshVersion);
+            var cancellation = Interlocked.Exchange(ref _composerReferenceRefreshCts, null);
+            if (cancellation != null)
+            {
+                cancellation.Cancel();
+                cancellation.Dispose();
+            }
+            if (resetSession)
+                _composerReferenceSessionKey = string.Empty;
         }
 
         public bool TryCompleteLocalCommand(CopilotLocalCommand? command = null)
@@ -5510,6 +5607,7 @@ namespace ColorVision.Copilot
             _pendingActionFeedbackCts?.Cancel();
             _pendingActionFeedbackCts = null;
             _compactConversationCts?.Cancel();
+            CancelComposerReferenceRefresh(resetSession: true);
             _stateSaveScheduler.Dispose();
             GC.SuppressFinalize(this);
         }

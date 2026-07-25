@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -49,6 +51,7 @@ namespace ColorVision.Copilot
     internal static class CopilotComposerReferenceCatalog
     {
         private const int MaximumIndexedWorkspaceFiles = 5000;
+        private const int MaximumTemplateReferences = 2048;
         private const int MaximumSuggestions = 12;
         private static readonly object FileIndexLock = new();
         private static readonly HashSet<string> SkippedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
@@ -64,6 +67,9 @@ namespace ColorVision.Copilot
         };
         private static string _cachedWorkspaceRoot = string.Empty;
         private static IReadOnlyList<WorkspaceFileReference> _cachedWorkspaceFiles = Array.Empty<WorkspaceFileReference>();
+        private static Task<IReadOnlyList<WorkspaceFileReference>>? _workspaceFileIndexTask;
+        private static bool _hasCachedWorkspaceFileIndex;
+        private static long _workspaceFileIndexGeneration;
 
         public static bool TryParseMention(string? input, out CopilotComposerMention mention)
         {
@@ -104,18 +110,53 @@ namespace ColorVision.Copilot
             return text[..mention.StartIndex] + $"@[{safeTitle}] ";
         }
 
-        public static IReadOnlyList<CopilotComposerReferenceItem> Search(
+        internal static IReadOnlyList<CopilotComposerReferenceItem> SearchImmediate(
             string? query,
-            string? activeDocumentPath,
-            string? workspaceRoot)
+            string? activeDocumentPath)
         {
             var normalizedQuery = (query ?? string.Empty).Trim();
             var candidates = new List<CopilotComposerReferenceItem>();
             AddActiveDocument(candidates, activeDocumentPath);
-            AddTemplates(candidates);
+            AddTemplates(candidates, normalizedQuery);
             AddMenus(candidates, normalizedQuery);
-            AddWorkspaceFiles(candidates, workspaceRoot, normalizedQuery);
+            return RankCandidates(normalizedQuery, candidates);
+        }
 
+        internal static async Task<IReadOnlyList<CopilotComposerReferenceItem>> SearchWorkspaceReferencesAsync(
+            string? workspaceRoot,
+            string? query,
+            bool refreshIndex,
+            CancellationToken cancellationToken)
+        {
+            if (!TryNormalizeWorkspaceRoot(workspaceRoot, out var normalizedRoot))
+                return Array.Empty<CopilotComposerReferenceItem>();
+
+            var files = await GetWorkspaceFilesAsync(
+                normalizedRoot,
+                refreshIndex,
+                cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return CreateWorkspaceFileReferences(
+                files,
+                (query ?? string.Empty).Trim(),
+                MaximumSuggestions);
+        }
+
+        internal static IReadOnlyList<CopilotComposerReferenceItem> MergeSearchResults(
+            string? query,
+            IEnumerable<CopilotComposerReferenceItem>? immediateReferences,
+            IEnumerable<CopilotComposerReferenceItem>? workspaceReferences)
+        {
+            return RankCandidates(
+                (query ?? string.Empty).Trim(),
+                (immediateReferences ?? Array.Empty<CopilotComposerReferenceItem>())
+                    .Concat(workspaceReferences ?? Array.Empty<CopilotComposerReferenceItem>()));
+        }
+
+        private static IReadOnlyList<CopilotComposerReferenceItem> RankCandidates(
+            string normalizedQuery,
+            IEnumerable<CopilotComposerReferenceItem> candidates)
+        {
             var unique = candidates
                 .Where(candidate => !string.IsNullOrWhiteSpace(candidate.Title))
                 .GroupBy(candidate => $"{candidate.Kind}:{candidate.Value}", StringComparer.OrdinalIgnoreCase)
@@ -148,17 +189,23 @@ namespace ColorVision.Copilot
 
         internal static IReadOnlyList<string> SearchWorkspaceFiles(string workspaceRoot, string query, int maximumResults = 8)
         {
-            return SearchWorkspaceFileReferences(workspaceRoot, query, maximumResults)
+            if (!TryNormalizeWorkspaceRoot(workspaceRoot, out var normalizedRoot))
+                return Array.Empty<string>();
+
+            return SearchWorkspaceFileReferences(
+                    BuildWorkspaceFileIndex(normalizedRoot),
+                    query,
+                    maximumResults)
                 .Select(file => file.FullPath)
                 .ToArray();
         }
 
-        private static IReadOnlyList<WorkspaceFileReference> SearchWorkspaceFileReferences(
-            string workspaceRoot,
+        private static WorkspaceFileReference[] SearchWorkspaceFileReferences(
+            IReadOnlyList<WorkspaceFileReference> workspaceFiles,
             string query,
             int maximumResults)
         {
-            return GetWorkspaceFiles(workspaceRoot)
+            return workspaceFiles
                 .Select(file => (File: file, Score: Score(query, file.RelativePath)))
                 .Where(item => string.IsNullOrWhiteSpace(query) || item.Score > 0)
                 .OrderByDescending(item => item.Score)
@@ -178,7 +225,7 @@ namespace ColorVision.Copilot
             candidates.Add(CreateFileReference(fullPath, "当前编辑文件"));
         }
 
-        private static void AddTemplates(List<CopilotComposerReferenceItem> candidates)
+        private static void AddTemplates(List<CopilotComposerReferenceItem> candidates, string query)
         {
             try
             {
@@ -189,22 +236,70 @@ namespace ColorVision.Copilot
                 {
                     var title = FirstNonEmpty(template.Title, template.Name, template.Code, template.GetType().Name);
                     var code = FirstNonEmpty(template.Code, template.Name, template.GetType().Name);
-                    candidates.Add(new CopilotComposerReferenceItem
+                    var typeSearchText = string.Join(' ', title, code, template.TemplateDicId);
+                    if (query.Length == 0 || Score(query, typeSearchText) > 0)
                     {
-                        Kind = CopilotComposerReferenceKind.Template,
-                        Title = title,
-                        Subtitle = $"模板代码 {code} · 字典 {template.TemplateDicId}",
-                        Value = code,
-                        SourceId = "composer-template:" + NormalizeSourceId(code),
-                        ContextContent = string.Join(Environment.NewLine, new[]
+                        candidates.Add(new CopilotComposerReferenceItem
                         {
-                            "[ColorVision template reference]",
-                            $"Title: {title}",
-                            $"Code: {code}",
-                            $"Template dictionary id: {template.TemplateDicId}",
-                            "Use this as the template explicitly referenced by the user. Inspect it before proposing or applying changes.",
-                        }),
-                    });
+                            Kind = CopilotComposerReferenceKind.Template,
+                            Title = title,
+                            Subtitle = $"模板类型 · 代码 {code} · 字典 {template.TemplateDicId}",
+                            Value = "type:" + code,
+                            SourceId = "composer-template-type:" + NormalizeSourceId(code),
+                            ContextContent = string.Join(Environment.NewLine, new[]
+                            {
+                                "[ColorVision template type reference]",
+                                $"Template type: {title}",
+                                $"Code: {code}",
+                                $"Template dictionary id: {template.TemplateDicId}",
+                                "The user referenced this template type, not a specific saved template. Inspect current evidence before proposing or applying changes.",
+                            }),
+                        });
+                    }
+
+                    IReadOnlyList<string> savedTemplateNames;
+                    try
+                    {
+                        savedTemplateNames = template.GetTemplateNames()
+                            .Where(name => !string.IsNullOrWhiteSpace(name))
+                            .Select(name => name.Trim())
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToArray();
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    foreach (var savedTemplateName in savedTemplateNames)
+                    {
+                        if (candidates.Count >= MaximumTemplateReferences)
+                            return;
+                        if (query.Length > 0
+                            && Score(query, string.Join(' ', savedTemplateName, title, code)) == 0)
+                        {
+                            continue;
+                        }
+
+                        var value = $"saved:{code}:{savedTemplateName}";
+                        candidates.Add(new CopilotComposerReferenceItem
+                        {
+                            Kind = CopilotComposerReferenceKind.Template,
+                            Title = savedTemplateName,
+                            Subtitle = $"{title} · {code} · 已保存模板",
+                            Value = value,
+                            SourceId = "composer-template:" + NormalizeSourceId(value),
+                            ContextContent = string.Join(Environment.NewLine, new[]
+                            {
+                                "[ColorVision saved template reference]",
+                                $"Saved template name: {savedTemplateName}",
+                                $"Template type: {title}",
+                                $"Template code: {code}",
+                                $"Template dictionary id: {template.TemplateDicId}",
+                                "The user referenced this exact saved template. Treat the identity as context only; inspect the template through an available trusted context or tool before describing values or applying changes.",
+                            }),
+                        });
+                    }
                 }
             }
             catch
@@ -245,17 +340,14 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static void AddWorkspaceFiles(List<CopilotComposerReferenceItem> candidates, string? workspaceRoot, string query)
+        private static CopilotComposerReferenceItem[] CreateWorkspaceFileReferences(
+            IReadOnlyList<WorkspaceFileReference> workspaceFiles,
+            string query,
+            int maximumResults)
         {
-            if (string.IsNullOrWhiteSpace(workspaceRoot))
-                return;
-
-            foreach (var file in SearchWorkspaceFileReferences(workspaceRoot, query, maximumResults: 10))
-            {
-                candidates.Add(CreateFileReference(
-                    file.FullPath,
-                    file.RelativePath));
-            }
+            return SearchWorkspaceFileReferences(workspaceFiles, query, maximumResults)
+                .Select(file => CreateFileReference(file.FullPath, file.RelativePath))
+                .ToArray();
         }
 
         private static CopilotComposerReferenceItem CreateFileReference(string fullPath, string subtitle)
@@ -270,29 +362,89 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static IReadOnlyList<WorkspaceFileReference> GetWorkspaceFiles(string? workspaceRoot)
+        private static Task<IReadOnlyList<WorkspaceFileReference>> GetWorkspaceFilesAsync(
+            string normalizedRoot,
+            bool refreshIndex,
+            CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(workspaceRoot) || !Directory.Exists(workspaceRoot))
-                return Array.Empty<WorkspaceFileReference>();
+            Task<IReadOnlyList<WorkspaceFileReference>> indexTask;
+            lock (FileIndexLock)
+            {
+                if (!string.Equals(_cachedWorkspaceRoot, normalizedRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    _cachedWorkspaceRoot = normalizedRoot;
+                    _cachedWorkspaceFiles = Array.Empty<WorkspaceFileReference>();
+                    _workspaceFileIndexTask = null;
+                    _hasCachedWorkspaceFileIndex = false;
+                    _workspaceFileIndexGeneration++;
+                }
 
-            string normalizedRoot;
+                if (!refreshIndex && _workspaceFileIndexTask != null)
+                {
+                    indexTask = _workspaceFileIndexTask;
+                }
+                else if (!refreshIndex && _hasCachedWorkspaceFileIndex)
+                {
+                    indexTask = Task.FromResult(_cachedWorkspaceFiles);
+                }
+                else
+                {
+                    var generation = ++_workspaceFileIndexGeneration;
+                    indexTask = BuildAndCacheWorkspaceFileIndexAsync(normalizedRoot, generation);
+                    _workspaceFileIndexTask = indexTask;
+                }
+            }
+
+            return cancellationToken.CanBeCanceled
+                ? indexTask.WaitAsync(cancellationToken)
+                : indexTask;
+        }
+
+        private static async Task<IReadOnlyList<WorkspaceFileReference>> BuildAndCacheWorkspaceFileIndexAsync(
+            string workspaceRoot,
+            long generation)
+        {
             try
             {
-                normalizedRoot = Path.GetFullPath(workspaceRoot);
+                IReadOnlyList<WorkspaceFileReference> files = await Task.Run(
+                    () => BuildWorkspaceFileIndex(workspaceRoot)).ConfigureAwait(false);
+                lock (FileIndexLock)
+                {
+                    if (generation == _workspaceFileIndexGeneration
+                        && string.Equals(_cachedWorkspaceRoot, workspaceRoot, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _cachedWorkspaceFiles = files;
+                        _workspaceFileIndexTask = null;
+                        _hasCachedWorkspaceFileIndex = true;
+                    }
+                }
+                return files;
             }
             catch
             {
-                return Array.Empty<WorkspaceFileReference>();
+                lock (FileIndexLock)
+                {
+                    if (generation == _workspaceFileIndexGeneration)
+                        _workspaceFileIndexTask = null;
+                }
+                throw;
             }
+        }
 
-            lock (FileIndexLock)
+        private static bool TryNormalizeWorkspaceRoot(string? workspaceRoot, out string normalizedRoot)
+        {
+            normalizedRoot = string.Empty;
+            if (string.IsNullOrWhiteSpace(workspaceRoot) || !Directory.Exists(workspaceRoot))
+                return false;
+
+            try
             {
-                if (string.Equals(_cachedWorkspaceRoot, normalizedRoot, StringComparison.OrdinalIgnoreCase))
-                    return _cachedWorkspaceFiles;
-
-                _cachedWorkspaceRoot = normalizedRoot;
-                _cachedWorkspaceFiles = BuildWorkspaceFileIndex(normalizedRoot);
-                return _cachedWorkspaceFiles;
+                normalizedRoot = Path.GetFullPath(workspaceRoot);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
