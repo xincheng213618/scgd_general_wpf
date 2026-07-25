@@ -218,7 +218,7 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
 	{
-		if (m_op_start.ConnectionCount <= 0)
+		if (m_op_start.ConnectionCount <= 0 && (action == null || !action.IsStop))
 		{
 			return;
 		}
@@ -378,10 +378,9 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void StopAll()
 	{
-		foreach (KeyValuePair<string, CVStartCFC> startAction in startActions)
+		foreach (string serialNumber in startActions.Keys.ToArray())
 		{
-			CVStartCFC action = new CVStartCFC(ActionTypeEnum.Stop, startAction.Key);
-			DoStartTransferData(action);
+			Stop(serialNumber);
 		}
 	}
 

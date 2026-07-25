@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowEditorCanvas()
         {
             InitializeComponent();
+            STNodeEditorMain.EnableHistory = true;
             STNodeEditorMain.EnableBlankLeftDragCanvasChanged += STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
             CanvasDragLockButton.SetCurrentValue(
                 System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,

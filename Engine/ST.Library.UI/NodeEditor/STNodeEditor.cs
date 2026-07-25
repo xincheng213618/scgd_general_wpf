@@ -28,7 +28,7 @@ using WpfTextCompositionEventArgs = System.Windows.Input.TextCompositionEventArg
 
 namespace ST.Library.UI.NodeEditor;
 
-public class STNodeEditor : System.Windows.Controls.Control, IDisposable
+public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 {
 	protected enum CanvasAction
 	{
@@ -798,6 +798,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_real_canvas_x = (_CanvasOffsetX = 10f);
 		m_real_canvas_y = (_CanvasOffsetY = 10f);
 		STNodeTypeRegistry.Initialize();
+		InitializeEditing();
 		InitializeDrawingResources();
 		m_animation_timer = new DispatcherTimer(DispatcherPriority.Render)
 		{
@@ -834,6 +835,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnNodeAdded(STNodeEditorEventArgs e)
 	{
+		TrackNode(e.Node);
 		if (this.NodeAdded != null)
 		{
 			this.NodeAdded(this, e);
@@ -842,6 +844,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnNodeRemoved(STNodeEditorEventArgs e)
 	{
+		UntrackNode(e.Node);
 		if (this.NodeRemoved != null)
 		{
 			this.NodeRemoved(this, e);
@@ -866,6 +869,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnOptionConnected(STNodeEditorOptionEventArgs e)
 	{
+		CompleteConnectionChange(e.CurrentOption, e.TargetOption, e.Status == ConnectionStatus.Connected ? true : (bool?)null);
 		if (this.OptionConnected != null)
 		{
 			this.OptionConnected(this, e);
@@ -874,6 +878,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnOptionDisConnected(STNodeEditorOptionEventArgs e)
 	{
+		CompleteConnectionChange(e.CurrentOption, e.TargetOption, e.Status == ConnectionStatus.DisConnected ? false : (bool?)null);
 		if (this.OptionDisConnected != null)
 		{
 			this.OptionDisConnected(this, e);
@@ -882,6 +887,11 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnOptionConnecting(STNodeEditorOptionEventArgs e)
 	{
+		PrepareConnectionChange(e.CurrentOption, e.TargetOption);
+		if (IsReplayingHistory)
+		{
+			return;
+		}
 		if (this.OptionConnecting != null)
 		{
 			this.OptionConnecting(this, e);
@@ -890,6 +900,11 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnOptionDisConnecting(STNodeEditorOptionEventArgs e)
 	{
+		PrepareConnectionChange(e.CurrentOption, e.TargetOption);
+		if (IsReplayingHistory)
+		{
+			return;
+		}
 		if (this.OptionDisConnecting != null)
 		{
 			this.OptionDisConnecting(this, e);
@@ -1115,7 +1130,10 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			{
 				if (m_enableEdit)
 				{
-					DisConnectionHover();
+					using (BeginEditTransaction("断开连接"))
+					{
+						DisConnectionHover();
+					}
 					m_is_process_mouse_event = false;
 				}
 				return;
@@ -1183,6 +1201,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 					}
 				}
 				m_ca = CanvasAction.MoveNode;
+				BeginPointerEdit("移动节点");
 				if (_ShowMagnet && _ActiveNode != null)
 				{
 					BuildMagnetLocation();
@@ -1319,10 +1338,6 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		switch (m_ca)
 		{
 		case CanvasAction.MoveNode:
-			foreach (STNode item in m_dic_pt_selected.Keys.ToList())
-			{
-				m_dic_pt_selected[item] = item.Location;
-			}
 			break;
 		case CanvasAction.ConnectOption:
 			if (!(nodeEvent.Location == m_pt_down_in_control) && nodeFindInfo.NodeOption != null)
@@ -1338,6 +1353,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			}
 			break;
 		}
+		EndPointerEdit();
 		if (m_is_process_mouse_event && _ActiveNode != null)
 		{
 			STNodeMouseEventArgs e2 = nodeEvent.WithLocation((int)m_pt_in_canvas.X - _ActiveNode.Left, (int)m_pt_in_canvas.Y - _ActiveNode.Top);
@@ -1352,6 +1368,12 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_ca = CanvasAction.None;
 		ReleaseMouseCapture();
 		Invalidate();
+	}
+
+	protected override void OnLostMouseCapture(WpfMouseEventArgs e)
+	{
+		EndPointerEdit();
+		base.OnLostMouseCapture(e);
 	}
 
 	protected override void OnMouseEnter(WpfMouseEventArgs e)
@@ -1403,6 +1425,31 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	protected override void OnKeyDown(WpfKeyEventArgs e)
 	{
 		base.OnKeyDown(e);
+		if (m_enableEdit && Keyboard.Modifiers == ModifierKeys.None)
+		{
+			int offsetX = 0;
+			int offsetY = 0;
+			switch (e.Key)
+			{
+			case Key.Left:
+				offsetX = -10;
+				break;
+			case Key.Right:
+				offsetX = 10;
+				break;
+			case Key.Up:
+				offsetY = -10;
+				break;
+			case Key.Down:
+				offsetY = 10;
+				break;
+			}
+			if ((offsetX != 0 || offsetY != 0) && MoveSelectedNodes(offsetX, offsetY))
+			{
+				e.Handled = true;
+				return;
+			}
+		}
 		if (_ActiveNode != null)
 		{
 			_ActiveNode.OnKeyDown(e);
@@ -2009,6 +2056,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		m_ca = CanvasAction.ConnectOption;
 		m_option_down = op;
+		BeginPointerEdit("连接节点");
 	}
 
 	public void AlignTop()
@@ -2017,6 +2065,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("顶部对齐");
 		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
@@ -2036,6 +2085,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("左对齐");
 		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
@@ -2055,6 +2105,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("垂直居中");
 		STNode sTNode = m_hs_node_selected.First();
 		int num = sTNode.Left + sTNode.Width / 2;
 		lock (m_hs_node_selected)
@@ -2075,6 +2126,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("水平居中");
 		STNode sTNode = m_hs_node_selected.First();
 		int num = sTNode.Top + sTNode.Height / 2;
 		lock (m_hs_node_selected)
@@ -2095,6 +2147,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("水平等距");
 		List<STNode> source = m_hs_node_selected.ToList();
 		int num = source.Sum((STNode x) => x.Width);
 		List<STNode> list = source.OrderBy((STNode p) => p.Left).ToList();
@@ -2121,6 +2174,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("垂直等距");
 		List<STNode> source = m_hs_node_selected.ToList();
 		int num = source.Sum((STNode x) => x.Height);
 		List<STNode> list = source.OrderBy((STNode p) => p.Top).ToList();
@@ -2654,7 +2708,31 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	public ConnectionInfo[] GetConnectionInfo()
 	{
-		return m_dic_gp_info.Values.ToArray();
+		return GetConnections();
+	}
+
+	public ConnectionInfo[] GetConnections()
+	{
+		List<ConnectionInfo> connections = new List<ConnectionInfo>();
+		foreach (STNode node in _Nodes)
+		{
+			foreach (STNodeOption output in node.GetAllOutputOptions())
+			{
+				foreach (STNodeOption input in output.ConnectedOption)
+				{
+					if (input != null && input.IsInput && input.Owner != null && input.Owner.Owner == this)
+					{
+						connections.Add(new ConnectionInfo { Output = output, Input = input });
+					}
+				}
+			}
+		}
+		return connections
+			.OrderBy(connection => _Nodes.IndexOf(connection.Output.Owner))
+			.ThenBy(connection => Array.IndexOf(connection.Output.Owner.GetAllOutputOptions(), connection.Output))
+			.ThenBy(connection => _Nodes.IndexOf(connection.Input.Owner))
+			.ThenBy(connection => Array.IndexOf(connection.Input.Owner.GetAllInputOptions(), connection.Input))
+			.ToArray();
 	}
 
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
@@ -2732,6 +2810,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	public void SaveCanvas(Stream s)
 	{
 		Dictionary<STNodeOption, long> dictionary = new Dictionary<STNodeOption, long>();
+		List<ConnectionInfo> connections = GetConnections().ToList();
 		s.Write(STNodeConstant.NodeFlag, 0, 4);
 		s.WriteByte(1);
 		using GZipStream gZipStream = new GZipStream(s, CompressionMode.Compress);
@@ -2746,14 +2825,14 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				byte[] saveData = node.GetSaveData();
 				gZipStream.Write(BitConverter.GetBytes(saveData.Length), 0, 4);
 				gZipStream.Write(saveData, 0, saveData.Length);
-				foreach (STNodeOption inputOption in node.InputOptions)
+				foreach (STNodeOption inputOption in node.GetAllInputOptions())
 				{
 					if (!dictionary.ContainsKey(inputOption))
 					{
 						dictionary.Add(inputOption, dictionary.Count);
 					}
 				}
-				foreach (STNodeOption outputOption in node.OutputOptions)
+				foreach (STNodeOption outputOption in node.GetAllOutputOptions())
 				{
 					if (!dictionary.ContainsKey(outputOption))
 					{
@@ -2766,8 +2845,8 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				throw new Exception("获取节点数据出错-" + node.Title, innerException);
 			}
 		}
-		gZipStream.Write(BitConverter.GetBytes(m_dic_gp_info.Count), 0, 4);
-		foreach (ConnectionInfo value in m_dic_gp_info.Values)
+		gZipStream.Write(BitConverter.GetBytes(connections.Count), 0, 4);
+		foreach (ConnectionInfo value in connections)
 		{
 			gZipStream.Write(BitConverter.GetBytes((dictionary[value.Output] << 32) | dictionary[value.Input]), 0, 8);
 		}
@@ -2838,6 +2917,14 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	}
 
 	public void LoadCanvas(Stream s)
+	{
+		using (SuspendHistoryRecording())
+		{
+			LoadCanvasCore(s);
+		}
+	}
+
+	private void LoadCanvasCore(Stream s)
 	{
 		int num = 0;
 		byte[] array = new byte[32];
@@ -2935,38 +3022,66 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		return true;
 	}
 
-	private STNode GetNodeFromData(byte[] byData)
+	internal STNode GetNodeFromData(byte[] byData)
 	{
-		int num = 0;
-		string text = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		string key = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		int num2 = 0;
-		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
-		while (num < byData.Length)
+		if (byData == null)
 		{
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			string key2 = Encoding.UTF8.GetString(byData, num, num2);
-			num += num2;
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			byte[] array = new byte[num2];
-			Array.Copy(byData, num, array, 0, num2);
-			num += num2;
-			dictionary.Add(key2, array);
+			throw new ArgumentNullException(nameof(byData));
+		}
+		int offset = 0;
+		string modelKey = ReadNodeByteLengthString(byData, ref offset, "节点类型");
+		string typeKey = ReadNodeByteLengthString(byData, ref offset, "节点类型标识");
+		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
+		while (offset < byData.Length)
+		{
+			int keyLength = ReadNodeInt32(byData, ref offset, "属性名称长度");
+			string propertyName = Encoding.UTF8.GetString(ReadNodeBytes(byData, ref offset, keyLength, "属性名称"));
+			int valueLength = ReadNodeInt32(byData, ref offset, "属性值长度");
+			byte[] propertyValue = ReadNodeBytes(byData, ref offset, valueLength, "属性值");
+			if (dictionary.ContainsKey(propertyName))
+			{
+				throw new InvalidDataException($"节点数据包含重复属性：{propertyName}");
+			}
+			dictionary.Add(propertyName, propertyValue);
 		}
 		Type type = null;
-		STNodeTypeRegistry.TryGetNodeType(key, text, out type);
+		STNodeTypeRegistry.TryGetNodeType(typeKey, modelKey, out type);
 		if (type == null)
 		{
-			throw new TypeLoadException("无法找到类型 {" + text.Split('|')[1] + "} 所在程序集 确保程序集 {" + text.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");
+			throw new TypeLoadException($"无法找到节点类型 {{{modelKey}}}，请确认对应程序集已由编辑器加载");
 		}
 		STNode sTNode = (STNode)Activator.CreateInstance(type);
 		sTNode.Create();
 		sTNode.OnLoadNode(dictionary);
 		return sTNode;
+	}
+
+	private static string ReadNodeByteLengthString(byte[] data, ref int offset, string valueName)
+	{
+		if (offset >= data.Length)
+		{
+			throw new InvalidDataException($"{valueName}缺失");
+		}
+		int length = data[offset++];
+		return Encoding.UTF8.GetString(ReadNodeBytes(data, ref offset, length, valueName));
+	}
+
+	private static int ReadNodeInt32(byte[] data, ref int offset, string valueName)
+	{
+		byte[] value = ReadNodeBytes(data, ref offset, sizeof(int), valueName);
+		return BitConverter.ToInt32(value, 0);
+	}
+
+	private static byte[] ReadNodeBytes(byte[] data, ref int offset, int length, string valueName)
+	{
+		if (length < 0 || offset < 0 || offset > data.Length - length)
+		{
+			throw new InvalidDataException($"{valueName}长度无效：{length}");
+		}
+		byte[] value = new byte[length];
+		Buffer.BlockCopy(data, offset, value, 0, length);
+		offset += length;
+		return value;
 	}
 
 	public void ShowAlert(string strText, Color foreColor, Color backColor)
@@ -3078,6 +3193,7 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		m_disposed = true;
+		DisposeEditing();
 		m_animation_timer.Stop();
 		m_animation_timer.Tick -= AnimationTimer_Tick;
 		ReleaseMouseCapture();

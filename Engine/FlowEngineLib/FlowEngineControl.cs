@@ -10,7 +10,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-public class FlowEngineControl : FlowEngineAPI
+public class FlowEngineControl : FlowEngineAPI, IDisposable
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(FlowEngineControl));
 
@@ -27,6 +27,12 @@ public class FlowEngineControl : FlowEngineAPI
 	protected bool _IsRunning;
 
 	protected readonly FlowNodeManager NodeManager;
+
+	private readonly List<BaseStartNode> attachedStartNodes;
+
+	private readonly Dictionary<CVBaseServerNode, DeviceNode> attachedDeviceNodes;
+
+	private bool isDisposed;
 
 	public bool IsReady => GetFlowReady();
 
@@ -66,61 +72,221 @@ public class FlowEngineControl : FlowEngineAPI
 		IsAutoStartName = isAutoStartName;
 		services = new Dictionary<string, ServiceNode>();
 		loadedCanvas = new Dictionary<string, byte[]>();
+		attachedStartNodes = new List<BaseStartNode>();
+		attachedDeviceNodes = new Dictionary<CVBaseServerNode, DeviceNode>();
 		_IsRunning = false;
 	}
 
 	public FlowEngineControl AttachNodeEditor(STNodeEditor nodeEditor)
 	{
+		ThrowIfDisposed();
+		if (nodeEditor == null)
+		{
+			throw new ArgumentNullException(nameof(nodeEditor));
+		}
+		if (ReferenceEquals(NodeEditor, nodeEditor))
+		{
+			return this;
+		}
+		DetachNodeEditorCore();
 		NodeEditor = nodeEditor;
 		NodeEditor.NodeAdded += NodeEditor_NodeAdded;
+		NodeEditor.NodeRemoved += NodeEditor_NodeRemoved;
+		NodeEditor.HistoryChanged += NodeEditor_HistoryChanged;
+		foreach (STNode node in NodeEditor.Nodes)
+		{
+			RegisterNode(node);
+		}
+		return this;
+	}
+
+	public FlowEngineControl DetachNodeEditor()
+	{
+		DetachNodeEditorCore();
+		return this;
+	}
+
+	public FlowEngineControl DetachNodeEditor(STNodeEditor nodeEditor)
+	{
+		if (nodeEditor != null && ReferenceEquals(NodeEditor, nodeEditor))
+		{
+			DetachNodeEditorCore();
+		}
 		return this;
 	}
 
 	private void NodeEditor_NodeAdded(object sender, STNodeEditorEventArgs e)
 	{
-		if (e.Node is BaseStartNode)
+		loadedCanvas.Clear();
+		RegisterNode(e.Node);
+	}
+
+	private void NodeEditor_NodeRemoved(object sender, STNodeEditorEventArgs e)
+	{
+		UnregisterNode(e.Node);
+		loadedCanvas.Clear();
+	}
+
+	private void NodeEditor_HistoryChanged(object sender, EventArgs e)
+	{
+		loadedCanvas.Clear();
+	}
+
+	private void RegisterNode(STNode node)
+	{
+		if (node is BaseStartNode baseStartNode)
 		{
-			BaseStartNode baseStartNode = e.Node as BaseStartNode;
-			if (IsAutoStartName)
+			if (attachedStartNodes.Contains(baseStartNode))
 			{
-				baseStartNode.NodeName = DateTime.Now.Ticks.ToString();
+				return;
 			}
-			if (!startNodeNames.ContainsKey(baseStartNode.NodeName))
+			if (IsAutoStartName && !NodeEditor.IsReplayingHistory)
 			{
-				startNodeNames.Add(baseStartNode.NodeName, baseStartNode);
+				long ticks = DateTime.Now.Ticks;
+				do
+				{
+					baseStartNode.NodeName = ticks++.ToString();
+				}
+				while (attachedStartNodes.Any(node => node.NodeName == baseStartNode.NodeName));
 			}
-			baseStartNode.Finished += Start_Finished;
+			attachedStartNodes.Add(baseStartNode);
+			RebuildStartNodeRegistry();
 		}
-		else if (e.Node is CVBaseServerNode)
+		else if (node is CVBaseServerNode cVBaseServerNode)
 		{
-			CVBaseServerNode cVBaseServerNode = e.Node as CVBaseServerNode;
-			if (!services.ContainsKey(cVBaseServerNode.NodeType))
+			if (!attachedDeviceNodes.ContainsKey(cVBaseServerNode))
 			{
-				services[cVBaseServerNode.NodeType] = new ServiceNode(cVBaseServerNode.NodeType);
+				DeviceNode device = new DeviceNode(cVBaseServerNode);
+				attachedDeviceNodes.Add(cVBaseServerNode, device);
+				NodeManager.AddDevice(device);
 			}
-			services[cVBaseServerNode.NodeType].AddMQTTService(cVBaseServerNode);
-			AddDevice(cVBaseServerNode);
+			RebuildServices();
+		}
+	}
+
+	private void UnregisterNode(STNode node)
+	{
+		if (node is BaseStartNode baseStartNode)
+		{
+			StopStartNode(baseStartNode);
+			baseStartNode.Finished -= Start_Finished;
+			if (attachedStartNodes.Remove(baseStartNode))
+			{
+				RebuildStartNodeRegistry();
+			}
+		}
+		else if (node is CVBaseServerNode cVBaseServerNode && attachedDeviceNodes.Remove(cVBaseServerNode, out DeviceNode device))
+		{
+			NodeManager.RemoveDevice(device);
+			RebuildServices();
+		}
+	}
+
+	private static void StopStartNode(BaseStartNode startNode)
+	{
+		if (!startNode.Running)
+		{
+			return;
+		}
+		try
+		{
+			startNode.StopAll();
+		}
+		catch (Exception ex)
+		{
+			logger.Error($"Failed to stop removed start node => {startNode.NodeName}", ex);
+		}
+		finally
+		{
+			startNode.Running = false;
+		}
+	}
+
+	private void RebuildStartNodeRegistry()
+	{
+		foreach (BaseStartNode startNode in attachedStartNodes)
+		{
+			startNode.Finished -= Start_Finished;
+		}
+		startNodeNames.Clear();
+		foreach (BaseStartNode startNode in attachedStartNodes)
+		{
+			if (string.IsNullOrEmpty(startNode.NodeName) || startNodeNames.ContainsKey(startNode.NodeName))
+			{
+				logger.WarnFormat("Ignoring duplicate or empty start node name => {0}", startNode.NodeName);
+			}
+			else
+			{
+				startNodeNames.Add(startNode.NodeName, startNode);
+			}
+			startNode.Finished += Start_Finished;
+		}
+		_IsRunning = attachedStartNodes.Any(startNode => startNode.Running);
+	}
+
+	private void RebuildServices()
+	{
+		services.Clear();
+		foreach (CVBaseServerNode serverNode in attachedDeviceNodes.Keys)
+		{
+			if (!services.ContainsKey(serverNode.NodeType))
+			{
+				services[serverNode.NodeType] = new ServiceNode(serverNode.NodeType);
+			}
+			services[serverNode.NodeType].AddMQTTService(serverNode);
 		}
 	}
 
 	private void Start_Finished(object sender, FlowStartEventArgs e)
 	{
 		BaseStartNode baseStartNode = sender as BaseStartNode;
-		_IsRunning = false;
+		_IsRunning = attachedStartNodes.Any(startNode => startNode.Running);
 		this.Finished?.Invoke(sender, new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName));
 	}
 
-	private void AddDevice(CVBaseServerNode node)
+	private void DetachNodeEditorCore()
 	{
-		DeviceNode device = new DeviceNode(node);
-		NodeManager.AddDevice(device);
+		if (NodeEditor != null)
+		{
+			NodeEditor.NodeAdded -= NodeEditor_NodeAdded;
+			NodeEditor.NodeRemoved -= NodeEditor_NodeRemoved;
+			NodeEditor.HistoryChanged -= NodeEditor_HistoryChanged;
+			NodeEditor = null;
+		}
+		ClearRegistrations();
+	}
+
+	private void ClearRegistrations()
+	{
+		foreach (BaseStartNode startNode in attachedStartNodes)
+		{
+			startNode.Finished -= Start_Finished;
+			StopStartNode(startNode);
+		}
+		foreach (DeviceNode device in attachedDeviceNodes.Values)
+		{
+			NodeManager.RemoveDevice(device);
+		}
+		attachedStartNodes.Clear();
+		attachedDeviceNodes.Clear();
+		startNodeNames.Clear();
+		services.Clear();
+		loadedCanvas.Clear();
+		_IsRunning = false;
 	}
 
 	public void LoadFromFile(string strFileName, List<MQTTServiceInfo> services)
 	{
+		STNodeEditor nodeEditor = GetNodeEditor();
 		clear();
-		NodeManager.ClearDevice();
-		NodeEditor.LoadCanvas(strFileName);
+		try
+		{
+			nodeEditor.LoadCanvas(strFileName);
+		}
+		finally
+		{
+			nodeEditor.ClearHistory();
+		}
 		NodeManager.UpdateDevice(services);
 	}
 
@@ -136,7 +302,6 @@ public class FlowEngineControl : FlowEngineAPI
 
 	public void LoadFromBase64(string base64Data, List<MQTTServiceInfo> services, bool waitReady = false)
 	{
-		NodeManager.ClearDevice();
 		LoadFromBase64(base64Data, waitReady);
 		NodeManager.UpdateDevice(services);
 	}
@@ -150,24 +315,33 @@ public class FlowEngineControl : FlowEngineAPI
 	public void FlowClear()
 	{
 		clear();
+		NodeEditor?.ClearHistory();
 	}
 
 	private void clear()
 	{
-		NodeEditor.Nodes.Clear();
-		foreach (KeyValuePair<string, BaseStartNode> startNodeName in startNodeNames)
+		BaseStartNode[] startNodes = attachedStartNodes.ToArray();
+		try
 		{
-			startNodeName.Value.Finished -= Start_Finished;
-			startNodeName.Value.Dispose();
+			foreach (BaseStartNode startNode in startNodes)
+			{
+				StopStartNode(startNode);
+			}
+			NodeEditor?.Nodes.Clear();
 		}
-		startNodeNames.Clear();
-		services.Clear();
-		loadedCanvas.Clear();
-		_IsRunning = false;
+		finally
+		{
+			ClearRegistrations();
+			foreach (BaseStartNode startNode in startNodes)
+			{
+				startNode.Dispose();
+			}
+		}
 	}
 
 	public void Load(byte[] rawData, bool waitReady)
 	{
+		STNodeEditor nodeEditor = GetNodeEditor();
 		if (rawData != null)
 		{
 			string text = BitConverter.ToString(MD5.Create().ComputeHash(rawData));
@@ -177,7 +351,14 @@ public class FlowEngineControl : FlowEngineAPI
 				return;
 			}
 			clear();
-			NodeEditor.LoadCanvas(rawData);
+			try
+			{
+				nodeEditor.LoadCanvas(rawData);
+			}
+			finally
+			{
+				nodeEditor.ClearHistory();
+			}
 			loadedCanvas.Add(text, rawData);
 			if (!waitReady)
 			{
@@ -195,6 +376,7 @@ public class FlowEngineControl : FlowEngineAPI
 		else
 		{
 			clear();
+			nodeEditor.ClearHistory();
 		}
 	}
 
@@ -257,5 +439,27 @@ public class FlowEngineControl : FlowEngineAPI
 	public void LoadFromFile(string strFileName)
 	{
 		throw new NotImplementedException();
+	}
+
+	public void Dispose()
+	{
+		if (isDisposed)
+		{
+			return;
+		}
+		DetachNodeEditorCore();
+		isDisposed = true;
+		GC.SuppressFinalize(this);
+	}
+
+	private STNodeEditor GetNodeEditor()
+	{
+		ThrowIfDisposed();
+		return NodeEditor ?? throw new InvalidOperationException("Attach an STNodeEditor before loading a flow.");
+	}
+
+	private void ThrowIfDisposed()
+	{
+		ObjectDisposedException.ThrowIf(isDisposed, this);
 	}
 }

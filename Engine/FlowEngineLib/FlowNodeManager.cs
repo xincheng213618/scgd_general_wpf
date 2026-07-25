@@ -54,6 +54,34 @@ public class FlowNodeManager
 		}
 	}
 
+	public bool RemoveDevice(DeviceNode device)
+	{
+		if (device == null)
+		{
+			return false;
+		}
+		bool removed = RemoveDevice(NodeDevices, device);
+		return RemoveDevice(AnonymousNodeDevices, device) || removed;
+	}
+
+	private static bool RemoveDevice(Dictionary<string, List<DeviceNode>> devices, DeviceNode device)
+	{
+		bool removed = false;
+		foreach (string key in devices.Keys.ToArray())
+		{
+			List<DeviceNode> registeredDevices = devices[key];
+			while (registeredDevices.Remove(device))
+			{
+				removed = true;
+			}
+			if (registeredDevices.Count == 0)
+			{
+				devices.Remove(key);
+			}
+		}
+		return removed;
+	}
+
 	public void UpdateDevice(Dictionary<string, Dictionary<string, DeviceNode>> devices)
 	{
 		foreach (KeyValuePair<string, List<DeviceNode>> anonymousNodeDevice in AnonymousNodeDevices)

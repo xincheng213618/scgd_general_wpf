@@ -12,11 +12,7 @@ using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,7 +20,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Templates.Flow
 {
 
-    public class STNodeEditorHelper:ViewModelBase
+    public class STNodeEditorHelper:ViewModelBase, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(STNodeEditorHelper));
 
@@ -50,131 +46,28 @@ namespace ColorVision.Engine.Templates.Flow
         }
         private static STNodeTreeView _STNodeTreeView;
 
-        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor)
+        public STNodeEditorHelper(STNodeEditor sTNodeEditor)
         {
-
-
             STNodeEditor = sTNodeEditor;
-
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
-
             AddContentMenu();
-
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
-            {
-                foreach (var item in STNodeEditor.GetSelectedNode())
-                    STNodeEditor.Nodes.Remove(item);
-            } , (s, e) => { e.CanExecute = sTNodeEditor.GetSelectedNode().Length > 0; }));
-
-
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
-
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = sTNodeEditor.GetSelectedNode().Length > 0; }));
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = Clipboard.ContainsData(ClipboardFormat); }));
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => SelectAll(), (s, e) => { e.CanExecute = true; }));
-
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
         }
-
-        private List<STNode> CopyNodes = new List<STNode>();
-        private const string ClipboardFormat = "STNodeEditor_Nodes_V1";
 
         public void SelectAll()
         {
-            foreach (var item in STNodeEditor.Nodes.OfType<STNode>())
-            {
-                STNodeEditor.AddSelectedNode(item);
-            }
+            STNodeEditor.SelectAllNodes();
         }
 
         public void Copy()
         {
-            var selectedNodes = STNodeEditor.GetSelectedNode();
-            if (selectedNodes.Length == 0) return;
-
-            try
-            {
-                byte[] data = SerializeNodes(selectedNodes);
-                string base64 = Convert.ToBase64String(data);
-                Clipboard.SetData(ClipboardFormat, base64);
-            }
-            catch (Exception ex)
-            {
-                log.Error("Copy failed", ex);
-            }
-        }
-
-        private byte[] SerializeNodes(STNode[] nodes)
-        {
-            var nodeSet = new HashSet<STNode>(nodes);
-            var optionIndex = new Dictionary<STNodeOption, long>();
-
-            using var ms = new MemoryStream();
-            using (var gz = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
-            {
-                // Write node count
-                gz.Write(BitConverter.GetBytes(nodes.Length), 0, 4);
-
-                // Compute bounding box for relative positioning
-                int minLeft = nodes.Min(n => n.Left);
-                int minTop = nodes.Min(n => n.Top);
-                gz.Write(BitConverter.GetBytes(minLeft), 0, 4);
-                gz.Write(BitConverter.GetBytes(minTop), 0, 4);
-
-                foreach (var node in nodes)
-                {
-                    byte[] saveData = node.GetSaveData();
-                    gz.Write(BitConverter.GetBytes(saveData.Length), 0, 4);
-                    gz.Write(saveData, 0, saveData.Length);
-
-                    var inputOpts = node.GetAllInputOptions();
-                    if (inputOpts != null)
-                    {
-                        foreach (var opt in inputOpts)
-                        {
-                            if (opt != null && !optionIndex.ContainsKey(opt))
-                                optionIndex.Add(opt, optionIndex.Count);
-                        }
-                    }
-                    var outputOpts = node.GetAllOutputOptions();
-                    if (outputOpts != null)
-                    {
-                        foreach (var opt in outputOpts)
-                        {
-                            if (opt != null && !optionIndex.ContainsKey(opt))
-                                optionIndex.Add(opt, optionIndex.Count);
-                        }
-                    }
-                }
-
-                // Collect connections that are between selected nodes only
-                // and where both options were successfully indexed
-                var connections = STNodeEditor.GetConnectionInfo()
-                    .Where(c => nodeSet.Contains(c.Output.Owner) && nodeSet.Contains(c.Input.Owner))
-                    .Where(c => optionIndex.ContainsKey(c.Output) && optionIndex.ContainsKey(c.Input))
-                    .ToList();
-
-                gz.Write(BitConverter.GetBytes(connections.Count), 0, 4);
-                foreach (var conn in connections)
-                {
-                    long packed = (optionIndex[conn.Output] << 32) | (optionIndex[conn.Input] & 0xFFFFFFFFL);
-                    gz.Write(BitConverter.GetBytes(packed), 0, 8);
-                }
-            }
-            return ms.ToArray();
+            STNodeEditor.CopySelectionToClipboard();
         }
 
         public void Paste()
         {
-            if (!Clipboard.ContainsData(ClipboardFormat)) return;
-
             try
             {
-                string base64 = Clipboard.GetData(ClipboardFormat) as string;
-                if (string.IsNullOrEmpty(base64)) return;
-
-                byte[] data = Convert.FromBase64String(base64);
-                DeserializeAndAddNodes(data);
+                STNodeEditor.PasteFromClipboard();
             }
             catch (Exception ex)
             {
@@ -182,306 +75,24 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private void DeserializeAndAddNodes(byte[] data)
-        {
-            using var ms = new MemoryStream(data);
-            using var gz = new GZipStream(ms, CompressionMode.Decompress);
-            byte[] buf = new byte[32];
-
-            gz.ReadExactly(buf, 0, 4);
-            int nodeCount = BitConverter.ToInt32(buf, 0);
-
-            gz.ReadExactly(buf, 0, 4);
-            int origMinLeft = BitConverter.ToInt32(buf, 0);
-            gz.ReadExactly(buf, 0, 4);
-            int origMinTop = BitConverter.ToInt32(buf, 0);
-
-            // Determine paste position: use mouse position in canvas if available, otherwise offset
-            int offsetX, offsetY;
-            if (STNodeEditor.IsMouseOver)
-            {
-                var mousePosition = Mouse.GetPosition(STNodeEditor);
-                var clientPt = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
-                var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
-                offsetX = canvasPt.X - origMinLeft;
-                offsetY = canvasPt.Y - origMinTop;
-            }
-            else
-            {
-                offsetX = 30;
-                offsetY = 30;
-            }
-
-            var optionMap = new Dictionary<long, STNodeOption>();
-            var newNodes = new List<STNode>();
-
-            // Deselect current selection
-            foreach (var n in STNodeEditor.GetSelectedNode())
-            {
-                n.SetSelected(false, false);
-                STNodeEditor.RemoveSelectedNode(n);
-            }
-
-            for (int i = 0; i < nodeCount; i++)
-            {
-                gz.ReadExactly(buf, 0, 4);
-                int len = BitConverter.ToInt32(buf, 0);
-                byte[] nodeData = new byte[len];
-                gz.ReadExactly(nodeData, 0, len);
-
-                STNode node = CreateNodeFromSaveData(nodeData);
-                if (node == null) continue;
-
-                node.Left += offsetX;
-                node.Top += offsetY;
-
-                STNodeEditor.Nodes.Add(node);
-                newNodes.Add(node);
-
-                var inputOpts = node.GetAllInputOptions();
-                if (inputOpts != null)
-                {
-                    foreach (var opt in inputOpts)
-                    {
-                        if (opt != null)
-                            optionMap[optionMap.Count] = opt;
-                    }
-                }
-                var outputOpts = node.GetAllOutputOptions();
-                if (outputOpts != null)
-                {
-                    foreach (var opt in outputOpts)
-                    {
-                        if (opt != null)
-                            optionMap[optionMap.Count] = opt;
-                    }
-                }
-            }
-
-            // Restore connections
-            gz.ReadExactly(buf, 0, 4);
-            int connCount = BitConverter.ToInt32(buf, 0);
-            byte[] connBuf = new byte[8];
-            for (int i = 0; i < connCount; i++)
-            {
-                gz.ReadExactly(connBuf, 0, 8);
-                long packed = BitConverter.ToInt64(connBuf, 0);
-                long outIdx = packed >> 32;
-                long inIdx = (int)packed;
-                if (optionMap.ContainsKey(outIdx) && optionMap.ContainsKey(inIdx))
-                {
-                    optionMap[outIdx].ConnectOption(optionMap[inIdx]);
-                }
-            }
-
-            // Select pasted nodes
-            foreach (var node in newNodes)
-            {
-                node.SetSelected(true, false);
-                STNodeEditor.AddSelectedNode(node);
-            }
-            if (newNodes.Count > 0)
-            {
-                STNodeEditor.SetActiveNode(newNodes[0]);
-            }
-
-            STNodeEditor.Invalidate();
-        }
-
-        private STNode CreateNodeFromSaveData(byte[] byData)
-        {
-            int pos = 0;
-            string modelKey = Encoding.UTF8.GetString(byData, pos + 1, byData[pos]);
-            pos += byData[pos] + 1;
-            string guidKey = Encoding.UTF8.GetString(byData, pos + 1, byData[pos]);
-            pos += byData[pos] + 1;
-
-            var dic = new Dictionary<string, byte[]>();
-            while (pos < byData.Length)
-            {
-                int keyLen = BitConverter.ToInt32(byData, pos); pos += 4;
-                string key = Encoding.UTF8.GetString(byData, pos, keyLen); pos += keyLen;
-                int valLen = BitConverter.ToInt32(byData, pos); pos += 4;
-                byte[] val = new byte[valLen];
-                Array.Copy(byData, pos, val, 0, valLen); pos += valLen;
-                dic[key] = val;
-            }
-
-            // Find type from the tree view's loaded assemblies
-            Type type = null;
-            var treeView = STNodeTreeView;
-            // Try to find from the editor's loaded types or use reflection
-            string typeName = modelKey.Contains('|') ? modelKey.Split('|')[1] : modelKey;
-            string assemblyName = modelKey.Contains('|') ? modelKey.Split('|')[0] : null;
-
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assemblyName != null && !asm.ManifestModule.Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                type = asm.GetType(typeName);
-                if (type != null) break;
-            }
-
-            if (type == null || !type.IsSubclassOf(typeof(STNode)))
-            {
-                log.Warn($"Cannot find node type: {modelKey}");
-                return null;
-            }
-
-            var node = (STNode)Activator.CreateInstance(type);
-            node.Create();
-            node.OnLoadNode(dic);
-            return node;
-        }
-
-        /// <summary>
-        /// Import nodes from a canvas data byte array (STN format with header) 
-        /// into the current editor without clearing existing nodes.
-        /// This is used to import a saved template as a module/sub-block.
-        /// </summary>
         public void ImportCanvasAsModule(byte[] canvasData)
         {
-            if (canvasData == null || canvasData.Length < 5)
-            {
-                log.Warn("ImportCanvasAsModule: invalid canvas data");
-                return;
-            }
-
-            using var ms = new MemoryStream(canvasData);
-            byte[] header = new byte[5];
-            ms.Read(header, 0, 5);
-
-            // Validate STN header
-            if (BitConverter.ToInt32(header, 0) != STNodeConstant.NodeFlagInt || header[4] != 1)
-            {
-                log.Warn("ImportCanvasAsModule: invalid STN header");
-                return;
-            }
-
-            using var gz = new GZipStream(ms, CompressionMode.Decompress);
-            byte[] buf = new byte[32];
-
-            // Skip canvas offset and scale (3 floats = 12 bytes)
-            gz.ReadExactly(buf, 0, 12);
-
-            // Read node count
-            gz.ReadExactly(buf, 0, 4);
-            int nodeCount = BitConverter.ToInt32(buf, 0);
-            if (nodeCount == 0) return;
-
-            // Determine paste position
-            int offsetX, offsetY;
+            System.Drawing.Point target;
             if (STNodeEditor.IsMouseOver)
             {
                 var mousePosition = Mouse.GetPosition(STNodeEditor);
-                var clientPt = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
-                var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
-                offsetX = canvasPt.X;
-                offsetY = canvasPt.Y;
+                target = STNodeEditor.ControlToCanvas(new System.Drawing.Point(
+                    (int)Math.Round(mousePosition.X),
+                    (int)Math.Round(mousePosition.Y)));
             }
             else
             {
-                // Default: place near the center of the visible canvas area
-                var center = STNodeEditor.ControlToCanvas(new System.Drawing.Point(
-                    STNodeEditor.ClientSize.Width / 2, STNodeEditor.ClientSize.Height / 2));
-                offsetX = center.X;
-                offsetY = center.Y;
+                target = STNodeEditor.ControlToCanvas(new System.Drawing.Point(
+                    STNodeEditor.ClientSize.Width / 2,
+                    STNodeEditor.ClientSize.Height / 2));
             }
-
-            var optionMap = new Dictionary<long, STNodeOption>();
-            var newNodes = new List<STNode>();
-            int origMinLeft = int.MaxValue, origMinTop = int.MaxValue;
-
-            // First pass: create all nodes to find bounding box
-            var nodeDataList = new List<byte[]>();
-            for (int i = 0; i < nodeCount; i++)
-            {
-                gz.ReadExactly(buf, 0, 4);
-                int len = BitConverter.ToInt32(buf, 0);
-                byte[] nodeData = new byte[len];
-                gz.ReadExactly(nodeData, 0, len);
-                nodeDataList.Add(nodeData);
-            }
-
-            // Create nodes and compute bounding box origin
-            var createdNodes = new List<STNode>();
-            foreach (var nodeData in nodeDataList)
-            {
-                STNode node = CreateNodeFromSaveData(nodeData);
-                if (node == null) continue;
-                createdNodes.Add(node);
-                if (node.Left < origMinLeft) origMinLeft = node.Left;
-                if (node.Top < origMinTop) origMinTop = node.Top;
-            }
-
-            if (createdNodes.Count == 0) return;
-
-            // Deselect current selection
-            foreach (var n in STNodeEditor.GetSelectedNode())
-            {
-                n.SetSelected(false, false);
-                STNodeEditor.RemoveSelectedNode(n);
-            }
-
-            // Add nodes with offset so the module's top-left aligns with the target position
-            foreach (var node in createdNodes)
-            {
-                node.Left = node.Left - origMinLeft + offsetX;
-                node.Top = node.Top - origMinTop + offsetY;
-
-                STNodeEditor.Nodes.Add(node);
-                newNodes.Add(node);
-
-                var inputOpts = node.GetAllInputOptions();
-                if (inputOpts != null)
-                {
-                    foreach (var opt in inputOpts)
-                    {
-                        if (opt != null)
-                            optionMap[optionMap.Count] = opt;
-                    }
-                }
-                var outputOpts = node.GetAllOutputOptions();
-                if (outputOpts != null)
-                {
-                    foreach (var opt in outputOpts)
-                    {
-                        if (opt != null)
-                            optionMap[optionMap.Count] = opt;
-                    }
-                }
-            }
-
-            // Read and restore connections
-            gz.ReadExactly(buf, 0, 4);
-            int connCount = BitConverter.ToInt32(buf, 0);
-            byte[] connBuf = new byte[8];
-            for (int i = 0; i < connCount; i++)
-            {
-                gz.ReadExactly(connBuf, 0, 8);
-                long packed = BitConverter.ToInt64(connBuf, 0);
-                long outIdx = packed >> 32;
-                long inIdx = (int)packed;
-                if (optionMap.ContainsKey(outIdx) && optionMap.ContainsKey(inIdx))
-                {
-                    optionMap[outIdx].ConnectOption(optionMap[inIdx]);
-                }
-            }
-
-            // Select imported nodes
-            foreach (var node in newNodes)
-            {
-                node.SetSelected(true, false);
-                STNodeEditor.AddSelectedNode(node);
-            }
-            if (newNodes.Count > 0)
-            {
-                STNodeEditor.SetActiveNode(newNodes[0]);
-            }
-
-            STNodeEditor.Invalidate();
+            STNodeEditor.ImportCanvasAsModule(canvasData, target);
         }
-
 
 
         #region Activate
@@ -623,26 +234,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void CopySTNode(STNode sTNode)
         {
-            Type type = sTNode.GetType();
-
-            STNode sTNode1 = (STNode)Activator.CreateInstance(type);
-            if (sTNode1 != null)
-            {
-                sTNode1.Create();
-                PropertyInfo[] properties = type.GetProperties();
-                foreach (PropertyInfo property in properties)
-                {
-                    if (property.CanRead && property.CanWrite)
-                    {
-                        object value = property.GetValue(sTNode);
-                        property.SetValue(sTNode1, value);
-                    }
-                }
-                sTNode1.Left = sTNode.Left;
-                sTNode1.Top = sTNode.Top;
-
-                STNodeEditor.Nodes.Add(sTNode1);
-            }
+            byte[] data = STNodeEditor.GetNodesData(new[] { sTNode });
+            STNodeEditor.ImportSelectionData(data, new System.Drawing.Point(sTNode.Left + 30, sTNode.Top + 30));
         }
 
         public void AddContentMenu()
@@ -714,7 +307,9 @@ namespace ColorVision.Engine.Templates.Flow
                 IsCheckable = true,
                 IsChecked = node.LockOption
             };
-            lockOptionItem.Click += (s, e) => node.LockOption = !node.LockOption;
+            lockOptionItem.Click += (s, e) => STNodeEditor.ExecuteEditTransaction(
+                LocalizeNodeMenuText(nameof(STNode.LockOption)),
+                () => node.LockOption = !node.LockOption);
             items.Add(lockOptionItem);
 
             var lockLocationItem = new MenuItem
@@ -723,7 +318,9 @@ namespace ColorVision.Engine.Templates.Flow
                 IsCheckable = true,
                 IsChecked = node.LockLocation
             };
-            lockLocationItem.Click += (s, e) => node.LockLocation = !node.LockLocation;
+            lockLocationItem.Click += (s, e) => STNodeEditor.ExecuteEditTransaction(
+                LocalizeNodeMenuText(nameof(STNode.LockLocation)),
+                () => node.LockLocation = !node.LockLocation);
             items.Add(lockLocationItem);
         }
 
@@ -882,6 +479,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void ApplyTreeLayout(int startX = 0, int startY = 0)
         {
+            using var transaction = STNodeEditor.BeginEditTransaction("自动布局");
             ConnectionInfo = GetLiveConnectionInfo();
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
@@ -893,33 +491,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private ConnectionInfo[] GetLiveConnectionInfo()
         {
-            var connections = new List<ConnectionInfo>();
-            foreach (var item in STNodeEditor.Nodes)
-            {
-                if (item is not STNode node)
-                    continue;
-
-                var outputOptions = node.GetAllOutputOptions();
-                foreach (var output in outputOptions)
-                {
-                    if (output == null || output == STNodeOption.Empty || output.ConnectedOption == null)
-                        continue;
-
-                    foreach (var input in output.ConnectedOption)
-                    {
-                        if (input == null || input == STNodeOption.Empty)
-                            continue;
-
-                        connections.Add(new ConnectionInfo
-                        {
-                            Output = output,
-                            Input = input
-                        });
-                    }
-                }
-            }
-
-            return connections.ToArray();
+            return STNodeEditor.GetConnections();
         }
 
         List<STNode> GetChildren(STNode node)
@@ -991,6 +563,12 @@ namespace ColorVision.Engine.Templates.Flow
             }
             log.Debug("CheckFlow: 流程验证通过");
             return true;
+        }
+
+        public void Dispose()
+        {
+            STNodeEditor.ActiveChanged -= STNodeEditorMain_ActiveChanged;
+            GC.SuppressFinalize(this);
         }
 
         private bool IsPathExists(STNode startNode, STNode endNode)

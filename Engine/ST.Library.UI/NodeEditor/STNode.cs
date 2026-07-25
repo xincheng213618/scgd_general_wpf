@@ -301,6 +301,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (!_LockLocation && value != _Left)
 			{
+				Point oldLocation = new Point(_Left, _Top);
 				_Left = value;
 				SetOptionsLocation();
 				BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
@@ -309,6 +310,7 @@ public abstract class STNode : INotifyPropertyChanged
 				{
 					_Owner.BuildLinePath();
 					_Owner.BuildBounds();
+					_Owner.OnNodeLocationChanged(this, oldLocation, new Point(_Left, _Top));
 				}
 			}
 		}
@@ -324,6 +326,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (!_LockLocation && value != _Top)
 			{
+				Point oldLocation = new Point(_Left, _Top);
 				_Top = value;
 				SetOptionsLocation();
 				BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
@@ -332,6 +335,7 @@ public abstract class STNode : INotifyPropertyChanged
 				{
 					_Owner.BuildLinePath();
 					_Owner.BuildBounds();
+					_Owner.OnNodeLocationChanged(this, oldLocation, new Point(_Left, _Top));
 				}
 			}
 		}
@@ -633,6 +637,17 @@ public abstract class STNode : INotifyPropertyChanged
 
 	public Guid Guid => _Guid;
 
+	internal void RegenerateGuid()
+	{
+		Guid oldGuid = _Guid;
+		_Guid = Guid.NewGuid();
+		OnGuidRegenerated(oldGuid, _Guid);
+	}
+
+	protected virtual void OnGuidRegenerated(Guid oldGuid, Guid newGuid)
+	{
+	}
+
 	public bool LetGetOptions
 	{
 		get
@@ -713,7 +728,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			dictionary.Add("Mark", Encoding.UTF8.GetBytes(_Mark));
 		}
-		dictionary.Add("LockOption", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
+		dictionary.Add("LockOption", new byte[1] { _LockOption ? ((byte)1) : ((byte)0) });
 		dictionary.Add("LockLocation", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
 		Type type = GetType();
 		PropertyInfo[] properties = type.GetProperties();

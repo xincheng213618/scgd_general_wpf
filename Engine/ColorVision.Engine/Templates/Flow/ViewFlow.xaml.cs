@@ -12,7 +12,6 @@ using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -113,53 +112,23 @@ namespace ColorVision.Engine.Services.Flow
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
 
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) =>
+            {
+                if (_isStandalone)
+                    NewDocument();
+                else
+                    Clear();
+            }, (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
-
-        }
-        #region ActionCommand
-
-        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
-        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
-
-        public void ClearActionCommand()
-        {
-            UndoStack.Clear();
-            RedoStack.Clear();
-        }
-
-        public void AddActionCommand(ActionCommand actionCommand)
-        {
-            UndoStack.Add(actionCommand);
-            RedoStack.Clear();
-        }
-
-        public void Undo()
-        {
-            if (UndoStack.Count > 0)
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>
             {
-                var undoAction = UndoStack[^1]; // Access the last element
-                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
-                undoAction.UndoAction();
-                RedoStack.Add(undoAction);
-            }
-        }
+                e.CanExecute = STNodeEditorMain.CanUndo;
+                if (e.Parameter is MenuItem menuItem && menuItem.ItemsSource != STNodeEditorMain.UndoHistory)
+                    menuItem.ItemsSource = STNodeEditorMain.UndoHistory;
+            }));
 
-        public void Redo()
-        {
-            if (RedoStack.Count > 0)
-            {
-                var redoAction = RedoStack[^1]; // Access the last element
-                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
-                redoAction.RedoAction();
-                UndoStack.Add(redoAction);
-            }
         }
-        #endregion
 
         public void OpenFlowTemplate()
         {
@@ -307,6 +276,7 @@ namespace ColorVision.Engine.Services.Flow
                 log.Info($"Save: 画布数据大小={canvasData.Length} bytes, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}");
                 flowParam.DataBase64 = Convert.ToBase64String(canvasData);
                 TemplateFlow.Save2DB(flowParam);
+                STNodeEditorMain.MarkSaved();
                 log.Info("Save: 流程保存成功");
             }
             catch (Exception ex)
@@ -335,6 +305,7 @@ namespace ColorVision.Engine.Services.Flow
                 StopStandaloneFlow();
                 FlowEngineControl.FlowClear();
                 _standaloneNodeManager!.ClearDevice();
+                STNodeEditorMain.ClearHistory();
             }
             else
             {
@@ -370,6 +341,7 @@ namespace ColorVision.Engine.Services.Flow
                         FlowEngineControl.LoadFromBase64(
                             _standaloneFlowParam.DataBase64,
                             MqttRCService.GetInstance().ServiceTokens);
+                        STNodeEditorMain.ClearHistory();
                         UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
                         return;
                     }
@@ -381,6 +353,7 @@ namespace ColorVision.Engine.Services.Flow
             }
 
             FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
+            STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
         }
 
@@ -401,6 +374,7 @@ namespace ColorVision.Engine.Services.Flow
                 FlowEngineControl.LoadFromBase64(
                     flowParam.DataBase64,
                     MqttRCService.GetInstance().ServiceTokens);
+                STNodeEditorMain.ClearHistory();
             }
             catch (Exception ex)
             {
@@ -415,26 +389,7 @@ namespace ColorVision.Engine.Services.Flow
             if (!_isStandalone)
                 return false;
 
-            byte[] currentData = STNodeEditorMain.GetCanvasData();
-            if (_standaloneFlowParam != null)
-            {
-                try
-                {
-                    byte[] savedData = string.IsNullOrEmpty(_standaloneFlowParam.DataBase64)
-                        ? []
-                        : Convert.FromBase64String(_standaloneFlowParam.DataBase64);
-                    return !currentData.SequenceEqual(savedData);
-                }
-                catch (FormatException)
-                {
-                    return true;
-                }
-            }
-
-            if (!string.IsNullOrEmpty(_standaloneFilePath) && File.Exists(_standaloneFilePath))
-                return !currentData.SequenceEqual(File.ReadAllBytes(_standaloneFilePath));
-
-            return STNodeEditorMain.Nodes.Count > 0;
+            return STNodeEditorMain.IsModified;
         }
 
         private void OpenDocument()
@@ -457,6 +412,7 @@ namespace ColorVision.Engine.Services.Flow
             StopStandaloneFlow();
             FlowEngineControl.FlowClear();
             _standaloneNodeManager!.ClearDevice();
+            STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Properties.Resources.New);
         }
 
@@ -515,6 +471,7 @@ namespace ColorVision.Engine.Services.Flow
                     UpdateStandaloneWindowTitle(Path.GetFileName(_standaloneFilePath));
                 }
 
+                STNodeEditorMain.MarkSaved();
                 MessageBox.Show(Properties.Resources.SaveSucess);
             }
             catch (Exception ex)
@@ -543,26 +500,14 @@ namespace ColorVision.Engine.Services.Flow
             this.DataContext = this;            
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.Delete)
-                {
-                    if (STNodeEditorMain.ActiveNode != null)
-                    {
-                        var node = STNodeEditorMain.ActiveNode;
-                        STNodeEditorMain.Nodes.Remove(node);
-                    }
-
-                    foreach (var item in STNodeEditorMain.GetSelectedNode())
-                    {
-                        STNodeEditorMain.Nodes.Remove(item);
-                    }
-                }
                 if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     AutoAlignment();
+                    e.Handled = true;
                 }
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
+            STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain);
 
             // Keep node properties in the ViewFlow right-side overlay instead of AvalonDock.
             STNodeEditorHelper.UseDockPanel = false;
@@ -637,54 +582,6 @@ namespace ColorVision.Engine.Services.Flow
                     e.Handled = true;
                 }
             }
-            else
-            {
-
-                foreach (var item in STNodeEditorMain.GetSelectedNode())
-                {
-                    if (e.Key == Key.Left)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
-                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
-                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
-
-                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
-                        AddActionCommand(actionCommand);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Right)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
-                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
-                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
-
-                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
-                        AddActionCommand(actionCommand);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Up)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
-                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
-                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
-
-                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
-                        AddActionCommand(actionCommand);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Down)
-                    {
-                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
-                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
-                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
-
-                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
-                        AddActionCommand(actionCommand);
-
-                        e.Handled = true;
-                    }
-                }
-            }
         }
 
 
@@ -708,7 +605,15 @@ namespace ColorVision.Engine.Services.Flow
                     _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
                 _standaloneNodeManager?.ClearDevice();
+                FlowEngineControl.Dispose();
             }
+            else
+            {
+                if (FlowEngineManager.FlowControl?.IsFlowRun == true)
+                    FlowEngineManager.FlowControl.Stop();
+                FlowEngineControl.DetachNodeEditor(STNodeEditorMain);
+            }
+            STNodeEditorHelper?.Dispose();
             EditorCanvas.Dispose();
             GC.SuppressFinalize(this);
         }
