@@ -43,11 +43,28 @@ namespace ColorVision.UI.Tests
                 "user:password");
 
             Assert.Contains("https://updates.example.test/api/app/latest-version", command);
-            Assert.Contains("https://updates.example.test/api/app/releases/$latest/download", command);
+            Assert.Contains("$downloadUrl = 'https://updates.example.test/api/app/releases/{0}/download' -f $latest", command);
+            Assert.Contains("Invoke-WebRequest -Uri $downloadUrl", command);
+            Assert.DoesNotContain("-Uri 'https://updates.example.test/api/app/releases/$latest/download'", command);
             Assert.Contains("[Environment]::GetFolderPath('Desktop')", command);
             Assert.Contains("ColorVision-{0}.exe", command);
             Assert.Contains("Basic dXNlcjpwYXNzd29yZA==", command);
             Assert.DoesNotContain(".cvx", command, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void OfflineInstallerCommandFileBypassesScriptPolicyAndPreservesTheCommand()
+        {
+            const string command = "$value = 'ColorVision'; Write-Host $value";
+
+            string commandFile = AutoUpdater.BuildOfflineInstallerDownloadCommandFileContent(command);
+            string encodedCommand = commandFile
+                .Split("-EncodedCommand ", StringSplitOptions.None)[1]
+                .Split('\r', '\n')[0]
+                .Trim();
+
+            Assert.Contains("-ExecutionPolicy Bypass", commandFile);
+            Assert.Equal(command, System.Text.Encoding.Unicode.GetString(Convert.FromBase64String(encodedCommand)));
         }
 
         [Fact]

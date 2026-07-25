@@ -89,11 +89,17 @@ namespace ColorVision.Update
                 DownloadFileConfig.Instance.Authorization);
         }
 
+        public static string GetOfflineInstallerDownloadCommandFileContent()
+        {
+            return BuildOfflineInstallerDownloadCommandFileContent(
+                GetOfflineInstallerDownloadPowerShellCommand());
+        }
+
         internal static string BuildOfflineInstallerDownloadPowerShellCommand(string serviceBaseUrl, string? authorization)
         {
             string baseUrl = serviceBaseUrl.TrimEnd('/');
             string latestVersionUrl = $"{baseUrl}/api/app/latest-version";
-            string releaseDownloadUrl = $"{baseUrl}/api/app/releases/$latest/download";
+            string releaseDownloadUrlFormat = $"{baseUrl}/api/app/releases/{{0}}/download";
             string encodedAuthorization = string.IsNullOrWhiteSpace(authorization)
                 ? string.Empty
                 : Convert.ToBase64String(Encoding.ASCII.GetBytes(authorization));
@@ -106,8 +112,17 @@ namespace ColorVision.Update
                 + "$latest = if ($metadata -is [string]) { $metadata.Trim() } else { [string]$metadata.version }; "
                 + "if ([string]::IsNullOrWhiteSpace($latest)) { throw 'The update server did not return a version.' }; "
                 + "$output = Join-Path ([Environment]::GetFolderPath('Desktop')) (\"ColorVision-{0}.exe\" -f $latest); "
-                + $"Invoke-WebRequest -Uri '{EscapePowerShellSingleQuotedString(releaseDownloadUrl)}' -Headers $headers -OutFile $output -UseBasicParsing; "
+                + $"$downloadUrl = '{EscapePowerShellSingleQuotedString(releaseDownloadUrlFormat)}' -f $latest; "
+                + "Invoke-WebRequest -Uri $downloadUrl -Headers $headers -OutFile $output -UseBasicParsing; "
                 + "Write-Host (\"Downloaded: {0}\" -f $output)";
+        }
+
+        internal static string BuildOfflineInstallerDownloadCommandFileContent(string powershellCommand)
+        {
+            string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(powershellCommand));
+            return "@echo off\r\n"
+                + $"powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}\r\n"
+                + "if errorlevel 1 pause\r\n";
         }
 
         public static string GetApplicationPackageCacheDirectory(bool isIncremental)

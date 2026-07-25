@@ -117,9 +117,9 @@ namespace ColorVision.Update
             SaveFileDialog dialog = new()
             {
                 AddExtension = true,
-                DefaultExt = ".ps1",
-                FileName = "Download-ColorVision.ps1",
-                Filter = "PowerShell 脚本 (*.ps1)|*.ps1|所有文件 (*.*)|*.*",
+                DefaultExt = ".cmd",
+                FileName = "Download-ColorVision.cmd",
+                Filter = "可直接运行的命令脚本 (*.cmd)|*.cmd|PowerShell 脚本 (*.ps1)|*.ps1",
                 OverwritePrompt = true,
                 Title = Properties.Resources.UpdatePreviewSaveOfflineDownloadCommand,
             };
@@ -128,14 +128,24 @@ namespace ColorVision.Update
 
             try
             {
+                string runnablePath = dialog.FileName;
+                if (string.Equals(Path.GetExtension(dialog.FileName), ".ps1", StringComparison.OrdinalIgnoreCase))
+                {
+                    File.WriteAllText(
+                        dialog.FileName,
+                        AutoUpdater.GetOfflineInstallerDownloadPowerShellCommand(),
+                        new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                    runnablePath = Path.ChangeExtension(dialog.FileName, ".cmd");
+                }
+
                 File.WriteAllText(
-                    dialog.FileName,
-                    AutoUpdater.GetOfflineInstallerDownloadPowerShellCommand(),
-                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                    runnablePath,
+                    AutoUpdater.GetOfflineInstallerDownloadCommandFileContent(),
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 CopyOfflineDownloadCommandButton.Content = Properties.Resources.UpdatePreviewOfflineDownloadCommandSaved;
                 CopyOfflineDownloadCommandButton.ToolTip = string.Format(
                     Properties.Resources.UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat,
-                    dialog.FileName);
+                    runnablePath);
             }
             catch (Exception ex)
             {

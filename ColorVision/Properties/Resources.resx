@@ -312,7 +312,7 @@
     <value>复制离线下载命令</value>
   </data>
   <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
-    <value>左键复制 PowerShell 命令；右键选择保存路径并导出 .ps1 脚本。</value>
+    <value>左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
     <value>离线下载命令已复制</value>
@@ -321,13 +321,13 @@
     <value>请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。</value>
   </data>
   <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
-    <value>保存离线下载脚本</value>
+    <value>保存离线下载文件</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
-    <value>离线脚本已保存</value>
+    <value>离线下载启动器已保存</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
-    <value>已保存到：{0}</value>
+    <value>已保存到：{0}。请直接运行此 .cmd 文件。</value>
   </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>

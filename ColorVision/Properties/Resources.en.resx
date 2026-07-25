@@ -339,7 +339,7 @@
     <value>Copy offline command</value>
   </data>
   <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
-    <value>Left-click to copy the PowerShell command; right-click to choose a path and save a .ps1 script.</value>
+    <value>Left-click to copy the PowerShell command; right-click to choose a path and export a directly runnable .cmd file.</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
     <value>Offline command copied</value>
@@ -348,13 +348,13 @@
     <value>Run the PowerShell command on a connected jump host, then copy the downloaded installer back and run it.</value>
   </data>
   <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
-    <value>Save offline download script</value>
+    <value>Save offline download file</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
-    <value>Offline script saved</value>
+    <value>Offline download launcher saved</value>
   </data>
   <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
-    <value>Saved to: {0}</value>
+    <value>Saved to: {0}. Run this .cmd file directly.</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>

@@ -1705,7 +1705,7 @@ namespace ColorVision.Properties {
         }
 
         /// <summary>
-        ///   查找类似 左键复制 PowerShell 命令；右键选择保存路径并导出 .ps1 脚本。 的本地化字符串。
+        ///   查找类似 左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewCopyOfflineDownloadCommandDescription {
             get {
@@ -1867,7 +1867,7 @@ namespace ColorVision.Properties {
         }
 
         /// <summary>
-        ///   查找类似 离线脚本已保存 的本地化字符串。
+        ///   查找类似 离线下载启动器已保存 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewOfflineDownloadCommandSaved {
             get {
@@ -1876,7 +1876,7 @@ namespace ColorVision.Properties {
         }
 
         /// <summary>
-        ///   查找类似 已保存到：{0} 的本地化字符串。
+        ///   查找类似 已保存到：{0}。请直接运行此 .cmd 文件。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat {
             get {
@@ -1930,7 +1930,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 保存离线下载脚本 的本地化字符串。
+        ///   查找类似 保存离线下载文件 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewSaveOfflineDownloadCommand {
             get {
