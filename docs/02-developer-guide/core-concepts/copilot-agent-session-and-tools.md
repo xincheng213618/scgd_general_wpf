@@ -11,7 +11,7 @@
 - Runtime 在活动 `AgentSession` 上注册短生命周期 steering context，结束或异常时自动移除。
 - 用户在生成过程中输入内容并按 Enter/点击 `↳` 后，只以 `ChatRole.User` 入队，不允许客户端构造 system、assistant 或工具消息。
 - 注入队列按 Session 隔离，并在线程安全的 `EnqueueMessages` 中等待下一个模型调用机会；立即停止仍使用原有取消令牌和方形停止按钮。
-- steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和审批边界。
+- steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和访问策略边界；完全访问只改变逐次确认，不扩大工具权限。
 
 具体注入语义见官方 [MessageInjectingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.messageinjectingchatclient?view=agent-framework-dotnet-latest)。
 
@@ -22,7 +22,7 @@
 - 输入区上方显示全局队列位置，并允许相邻上移、下移、删除或取消后移回输入框编辑；所有操作都复用 Host 的锁、run state 和变更事件，桌面宠物也在排序变化后重新聚合任务状态。
 - 可在运行中安全执行的本地命令会立即执行；其他本地命令明确拒绝排队，不会失去 `/` 语义后变成模型提示词。正常退出时，尚未启动的 follow-up 按顺序恢复到所属 conversation 的草稿，避免静默丢失。
 
-`/btw <问题>` 提供与 [Claude Code `/btw`](https://code.claude.com/docs/en/interactive-mode#ask-a-quick-side-question-with-btw) 和 [Codex 长任务 side chat](https://learn.chatgpt.com/docs/long-running-work) 相同方向的旁路提问，但采用更窄的执行边界：`CopilotSideQuestionService` 在调用瞬间复制 Profile 和有界 conversation history，直接经 `CopilotChatService` 发起一次最多 1024 输出 token 的请求，不进入 `ICopilotTurnRuntime`、Agent Harness 或 `CopilotAgentTaskHost`。除历史消息里已经存在的内容外，请求不额外携带工具定义、附件、活动文档、解决方案根、Live Context、MCP 或文件内容；返回值只更新临时 UI 卡片，不追加 conversation 消息、不覆盖主轮 token 统计，也不生成 checkpoint。每个面板同一时间只允许一个旁路请求；取消令牌只终止该请求，不 steering、不取消或排队当前 Agent。应用退出或面板释放时统一取消，回答关闭后不持久化。`/fork [名称]` 和别名 `/branch [名称]` 对齐 [Codex 会话 fork](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-fork) 与 [Claude Code session branch](https://code.claude.com/docs/en/sessions#branch-a-session)：复制当前会话到新的 conversation ID 并立即切换，原会话和原 transcript 保持不变。实现复用消息菜单已有的 `CopilotConversationBranchService`，从最后一条完整 Assistant 消息创建分支；所有消息 ID 和历史附件记录 ID 都重新生成，合法的 compaction boundary 会映射到克隆后的消息。新分支保留可见消息、模型内容、工具 trace 和消息当时捕获的附件快照，但不复制编辑区 `DraftText`、待发送 `Attachments`、最后 token 用量、`AgentSessionCheckpoint` 或 `RecoveryRequest`，因此旧 Session、待执行任务与会话授权不会成为新分支的执行许可。分叉不创建 Git branch、不复制工作目录也不回滚文件；两个会话继续观察同一个 ColorVision 工作区。当前会话有活动 Agent 时该命令不可执行；输入提交层会先识别本地命令并明确拒绝，不能把 `/fork`、`/diff` 等暂不可用命令降级成 steering 或 follow-up 模型文本。
+`/btw <问题>` 提供与 [Claude Code `/btw`](https://code.claude.com/docs/en/interactive-mode#ask-a-quick-side-question-with-btw) 和 [Codex 长任务 side chat](https://learn.chatgpt.com/docs/long-running-work) 相同方向的旁路提问，但采用更窄的执行边界：`CopilotSideQuestionService` 在调用瞬间复制 Profile 和有界 conversation history，直接经 `CopilotChatService` 发起一次最多 1024 输出 token 的请求，不进入 `ICopilotTurnRuntime`、Agent Harness 或 `CopilotAgentTaskHost`。除历史消息里已经存在的内容外，请求不额外携带工具定义、附件、活动文档、解决方案根、Live Context、MCP 或文件内容；返回值只更新临时 UI 卡片，不追加 conversation 消息、不覆盖主轮 token 统计，也不生成 checkpoint。每个面板同一时间只允许一个旁路请求；取消令牌只终止该请求，不 steering、不取消或排队当前 Agent。应用退出或面板释放时统一取消，回答关闭后不持久化。`/fork [名称]` 和别名 `/branch [名称]` 对齐 [Codex 会话 fork](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-fork) 与 [Claude Code session branch](https://code.claude.com/docs/en/sessions#branch-a-session)：复制当前会话到新的 conversation ID 并立即切换，原会话和原 transcript 保持不变。实现复用消息菜单已有的 `CopilotConversationBranchService`，从最后一条完整 Assistant 消息创建分支；所有消息 ID 和历史附件记录 ID 都重新生成，合法的 compaction boundary 会映射到克隆后的消息。新分支保留可见消息、模型内容、工具 trace 和消息当时捕获的附件快照，但不复制编辑区 `DraftText`、待发送 `Attachments`、最后 token 用量、`AgentSessionCheckpoint`、`RecoveryRequest` 或 `AccessMode`，因此旧 Session、待执行任务与完全访问都不会成为新分支的执行许可。分叉不创建 Git branch、不复制工作目录也不回滚文件；两个会话继续观察同一个 ColorVision 工作区。当前会话有活动 Agent 时该命令不可执行；输入提交层会先识别本地命令并明确拒绝，不能把 `/fork`、`/diff` 等暂不可用命令降级成 steering 或 follow-up 模型文本。
 
 ## AgentSession 会话检查点
 
@@ -35,7 +35,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 - 发起新请求时保留上一安全点，只有新的安全点成功保存后才替换；如果应用中途退出，启动归一化会把开放 run 标记为 `Interrupted`，由用户显式继续，不自动执行。
 - Chat 模式和重新生成回答不会复用 Framework 检查点。
 - 最新回复存在可用结构化恢复时，消息卡的通用“重试”和 `/compact` 都不会从头执行或清空检查点；用户必须选择“继续任务”“重试只读检查”“重试最终回答”或“重新规划”。真正需要从头开始时，先在任务列表中明确放弃旧任务。
-- 工具 trace、幂等限制和写操作审批仍是独立安全边界；恢复 Session 不代表恢复任何旧批准。即使恢复清单要求重复同一个写调用，也会产生新的 CallId 和 Pending Action。
+- 工具 trace、幂等限制和访问策略仍是独立安全边界；恢复 Session 不代表恢复任何旧批准。即使恢复清单要求重复同一个写调用，也会产生新的 CallId；按需确认时创建新的 Pending Action，完全访问时按当前会话模式记录新的自动批准决定。
 
 ## 显式有界重试
 
@@ -46,7 +46,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 - 工具声明 `Idempotent`。
 - 上次结果是 `Transient` 且状态为 `Failed` 或 `TimedOut`。
 - 同参数最多执行两次，并且未超过本请求工具轮次上限。
-- 受保护写工具每次重试都生成新的审批动作；上一次批准不会被复用。
+- 受保护写工具每次重试都生成新的精确调用决定；按需确认时创建新的审批动作，完全访问时重新记录自动批准，上一次批准不会被复用。
 
 `NonIdempotent`、`Unknown`、校验错误、权限拒绝、用户取消和业务失败都不可重试。这使失败恢复是可见、可审计的 Agent 决策，而不是无法观测的执行器副作用。
 
