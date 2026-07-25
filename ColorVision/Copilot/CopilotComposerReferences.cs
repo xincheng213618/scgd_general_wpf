@@ -325,22 +325,11 @@ namespace ColorVision.Copilot
                 var menus = query.Length == 0 ? result.Suggestions : result.Candidates;
                 foreach (var menu in menus.Take(6))
                 {
-                    candidates.Add(new CopilotComposerReferenceItem
-                    {
-                        Kind = CopilotComposerReferenceKind.Menu,
-                        Title = menu.DisplayHeader,
-                        Subtitle = menu.DisplayPath,
-                        Value = menu.DisplayPath,
-                        SourceId = "composer-menu:" + NormalizeSourceId(menu.DisplayPath),
-                        ContextContent = string.Join(Environment.NewLine, new[]
-                        {
-                            "[ColorVision menu reference]",
-                            $"Menu path: {menu.DisplayPath}",
-                            $"Menu title: {menu.DisplayHeader}",
-                            $"Risk classification: {menu.RiskLevel}",
-                            "The user referenced this menu. Do not execute it unless the request explicitly asks for that action.",
-                        }),
-                    });
+                    candidates.Add(CreateMenuReference(
+                        menu.DisplayHeader,
+                        menu.DisplayPath,
+                        menu.MenuItem.GuidId,
+                        menu.RiskLevel));
                 }
             }
             catch
@@ -357,6 +346,33 @@ namespace ColorVision.Copilot
             return SearchWorkspaceFileReferences(workspaceFiles, query, maximumResults)
                 .Select(file => CreateFileReference(file.FullPath, file.RelativePath))
                 .ToArray();
+        }
+
+        internal static CopilotComposerReferenceItem CreateMenuReference(
+            string title,
+            string displayPath,
+            string? menuId,
+            string riskLevel)
+        {
+            var selector = FirstNonEmpty(menuId, displayPath);
+            return new CopilotComposerReferenceItem
+            {
+                Kind = CopilotComposerReferenceKind.Menu,
+                Title = title,
+                Subtitle = displayPath,
+                Value = selector,
+                SourceId = "composer-menu:" + NormalizeSourceId(selector),
+                ContextContent = string.Join(Environment.NewLine, new[]
+                {
+                    "[ColorVision menu reference]",
+                    $"Menu path: {displayPath}",
+                    $"Menu title: {title}",
+                    $"Menu selector: {selector}",
+                    $"Risk classification: {riskLevel}",
+                    $"ExecuteMenu query: {selector}",
+                    "The user referenced this exact menu. Do not execute it unless the request explicitly asks for that action; execution still follows the current approval policy.",
+                }),
+            };
         }
 
         private static CopilotComposerReferenceItem CreateFileReference(string fullPath, string subtitle)

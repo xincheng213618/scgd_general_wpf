@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotExecuteMenuTool : ICopilotFrameworkApprovedTool
     {
+        private static readonly string[] ContextLineSeparators = { "\r\n", "\n" };
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
         public CopilotExecuteMenuTool()
@@ -23,7 +25,7 @@ namespace ColorVision.Copilot
 
         public string Name => "ExecuteMenu";
 
-        public string Description => "Execute a generic main-menu command by exact menu name or path after explicit approval, such as Options, VAM, or Check for Updates. Put the target menu directly in input.query. Prefer dedicated lower-risk tools such as SetTheme when available.";
+        public string Description => "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated lower-risk tools such as SetTheme when available.";
 
         public CopilotToolAccess Access => CopilotToolAccess.Write;
 
@@ -46,7 +48,8 @@ namespace ColorVision.Copilot
             if (!CopilotApplicationCapability.HasMenuIntent(request.UserText))
                 return false;
 
-            return CopilotApplicationCapability.HasMenuCandidates(request.UserText);
+            return HasReferencedMenu(request)
+                || CopilotApplicationCapability.HasMenuCandidates(request.UserText);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(
@@ -73,9 +76,14 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var sourceText = string.IsNullOrWhiteSpace(toolInput?.Query)
-                ? request.UserText
-                : toolInput.Query;
+            var sourceText = toolInput?.Query?.Trim();
+            if (string.IsNullOrWhiteSpace(sourceText)
+                && TryGetReferencedMenuSelector(request, out var referencedSelector))
+            {
+                sourceText = referencedSelector;
+            }
+            if (string.IsNullOrWhiteSpace(sourceText))
+                sourceText = request.UserText;
 
             var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
             {
@@ -97,6 +105,41 @@ namespace ColorVision.Copilot
                 FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
                 Approval = result.Approval,
             };
+        }
+
+        internal static bool HasReferencedMenu(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return request.ContextItems.Any(IsMenuReference);
+        }
+
+        internal static bool TryGetReferencedMenuSelector(
+            CopilotAgentRequest request,
+            out string selector)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            const string Prefix = "ExecuteMenu query:";
+            var selectors = request.ContextItems
+                .Where(IsMenuReference)
+                .SelectMany(item => (item.Content ?? string.Empty)
+                    .Split(ContextLineSeparators, StringSplitOptions.RemoveEmptyEntries))
+                .Where(line => line.TrimStart().StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+                .Select(line => line.TrimStart()[Prefix.Length..].Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(2)
+                .ToArray();
+            selector = selectors.Length == 1 ? selectors[0] : string.Empty;
+            return selector.Length > 0;
+        }
+
+        private static bool IsMenuReference(ColorVision.UI.CopilotContextItem item)
+        {
+            return item != null
+                && ((item.Id ?? string.Empty).StartsWith("composer-menu:", StringComparison.OrdinalIgnoreCase)
+                    || (item.Content ?? string.Empty).Contains(
+                        "[ColorVision menu reference]",
+                        StringComparison.OrdinalIgnoreCase));
         }
     }
 }
