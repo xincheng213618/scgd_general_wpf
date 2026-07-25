@@ -80,7 +80,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = FlowEngineManager;
-            this.SetIconResource("DrawingImageFlow");
+
 
             this.AddViewConfig(View, ColorVision.Engine.Properties.Resources.Workflow);
             View.DisplayFlow = this;
@@ -218,7 +218,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private static async Task RefreshServiceConnectionAsync()
         {
-            RefreshSavedServiceInfo();
+            ServiceConfig.Instance.RefreshInstalledServices();
             MqttRCService rcService = MqttRCService.GetInstance();
             rcService.Regist();
             for (int i = 0; i < 20 && !rcService.IsConnect; i++)
@@ -229,12 +229,6 @@ namespace ColorVision.Engine.Templates.Flow
             else
                 log.Warn("服务重启完成，但注册中心重新连接未确认。");
         }
-
-        private static void RefreshSavedServiceInfo()
-        {
-            ServiceConfig.Instance.RefreshInstalledServices();
-        }
-
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
@@ -520,7 +514,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
-
 
         private long LastFlowTime;
 
