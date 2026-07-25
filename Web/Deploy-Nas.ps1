@@ -17,7 +17,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 function ConvertTo-PowerShellLiteral {
-    param([Parameter(Mandatory)][string]$Value)
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
 
     return "'" + $Value.Replace("'", "''") + "'"
 }
