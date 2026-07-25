@@ -66,4 +66,35 @@ public class SugiyamaLayoutTests
         Assert.Equal(new[] { 5, 4, 4, 4, 4 }, rows.Select(row => row.Count));
         Assert.Equal(nodes, rows.SelectMany(row => row));
     }
+
+    [Theory]
+    [InlineData("CommonSensorNode", "通用传感器")]
+    [InlineData("ManualConfirmNode", "手动确认")]
+    [InlineData("PGGECSNode", "PG.GECS")]
+    public void IsLaneStartCandidate_RecognizesRepeatedFlowStages(string typeName, string title)
+    {
+        Assert.True(SugiyamaLayout.IsLaneStartCandidate(typeName, title));
+    }
+
+    [Fact]
+    public void PrepareForwardLaneRows_KeepsEveryLaneLeftToRight()
+    {
+        List<STNode> firstRow =
+        [
+            new STNodeHub(),
+            new STNodeHub(),
+            new STNodeHub()
+        ];
+        List<STNode> secondRow =
+        [
+            new STNodeHub(),
+            new STNodeHub()
+        ];
+
+        List<List<STNode>> visualRows = SugiyamaLayout.PrepareForwardLaneRows(
+            new[] { firstRow, secondRow });
+
+        Assert.Equal(firstRow, visualRows[0]);
+        Assert.Equal(secondRow, visualRows[1]);
+    }
 }

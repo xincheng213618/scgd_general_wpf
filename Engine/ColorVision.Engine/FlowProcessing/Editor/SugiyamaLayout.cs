@@ -886,11 +886,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                     layoutRows.RemoveAt(0);
             }
 
-            var visualRows = layoutRows
-                .Select((row, rowIndex) => rowIndex % 2 == 0
-                    ? row
-                    : row.AsEnumerable().Reverse().ToList())
-                .ToList();
+            var visualRows = PrepareForwardLaneRows(layoutRows);
             int columnGap = GetHorizontalNodeGap();
             int rowGap = GetVerticalLaneGap();
             int rowY = _startY;
@@ -1472,15 +1468,36 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (parents.Any(parent => _layerMap.TryGetValue(parent, out int parentLayer) && parentLayer <= 0))
                 return false;
 
-            string typeName = node.GetType().Name;
-            string title = node.OnGetDrawTitle() ?? string.Empty;
-            if (!typeName.Contains("Sensor", StringComparison.OrdinalIgnoreCase)
-                && !title.Contains("传感器", StringComparison.Ordinal))
-            {
+            if (!IsLaneStartCandidate(node.GetType().Name, node.OnGetDrawTitle()))
                 return false;
-            }
+
+            // Consecutive setup nodes of the same stage (for example PG OFF -> PG ON)
+            // belong to the same row. A repeated stage only starts a new lane after a
+            // different kind of operation has completed.
+            if (parents.Any(parent => IsLaneStartCandidate(parent.GetType().Name, parent.OnGetDrawTitle())))
+                return false;
 
             return !parents.Any(parent => parent.InputOptionsCount >= 5);
+        }
+
+        internal static bool IsLaneStartCandidate(string? typeName, string? title)
+        {
+            typeName ??= string.Empty;
+            title ??= string.Empty;
+            return typeName.Contains("Sensor", StringComparison.OrdinalIgnoreCase)
+                || typeName.Contains("ManualConfirm", StringComparison.OrdinalIgnoreCase)
+                || typeName.Contains("PGGECS", StringComparison.OrdinalIgnoreCase)
+                || title.Contains("传感器", StringComparison.Ordinal)
+                || title.Contains("手动确认", StringComparison.Ordinal)
+                || title.Contains("PG.GECS", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static List<List<STNode>> PrepareForwardLaneRows(IEnumerable<IEnumerable<STNode>> rows)
+        {
+            return rows
+                .Select(row => row.ToList())
+                .Where(row => row.Count > 0)
+                .ToList();
         }
 
         private void ApplyLaneFold(List<(int Start, int End)> laneSegments, int mergeLayer, STNode mergeNode)
