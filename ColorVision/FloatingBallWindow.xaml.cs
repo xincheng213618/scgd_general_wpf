@@ -5,6 +5,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -41,6 +42,8 @@ namespace ColorVision.FloatingBall
         private int _assetLoadVersion;
         private ConfirmableAction? _currentConfirmationAction;
         private CancellationTokenSource? _confirmationOperationCts;
+        private MenuItem? _copilotActivityMenuItem;
+        private int _copilotActivityCount;
 
         public static FloatingBallWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<FloatingBallWindowConfig>();
         public static DesktopPetConfig PetConfig => DesktopPetConfig.Instance;
@@ -156,6 +159,18 @@ namespace ColorVision.FloatingBall
             CopilotApprovalPopup.IsOpen = true;
         }
 
+        public void SetCopilotActivityCount(int count)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => SetCopilotActivityCount(count));
+                return;
+            }
+
+            _copilotActivityCount = Math.Max(0, count);
+            ApplyActivityVisual(_visualActivityState);
+        }
+
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonDown(e);
@@ -194,15 +209,11 @@ namespace ColorVision.FloatingBall
                 return;
 
             TapPet();
-            if (e.ClickCount >= 2)
+            if (_copilotActivityCount > 0 || e.ClickCount >= 2)
             {
                 DesktopPetService.GetInstance().OpenCopilot();
                 e.Handled = true;
-                return;
             }
-
-            if (wasClick && _activityState == DesktopPetActivityState.Waiting)
-                DesktopPetService.GetInstance().OpenCopilot();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -391,6 +402,10 @@ namespace ColorVision.FloatingBall
             openCopilot.Click += (_, _) => DesktopPetService.GetInstance().OpenCopilot();
             contextMenu.Items.Add(openCopilot);
 
+            _copilotActivityMenuItem = new MenuItem { Header = "Copilot 活动", IsEnabled = false };
+            contextMenu.Items.Add(_copilotActivityMenuItem);
+            contextMenu.Opened += (_, _) => RefreshCopilotActivityMenu();
+
             var testMessage = new MenuItem { Header = Properties.Resources.DesktopPetSendTestReminder };
             testMessage.Click += (_, _) => DesktopPetService.GetInstance().Notify(
                 Properties.Resources.DesktopPetReminder,
@@ -437,6 +452,38 @@ namespace ColorVision.FloatingBall
             contextMenu.Items.Add(exit);
 
             ContextMenu = contextMenu;
+        }
+
+        private void RefreshCopilotActivityMenu()
+        {
+            if (_copilotActivityMenuItem == null)
+                return;
+
+            var activities = DesktopPetService.GetInstance().GetCopilotActivities();
+            _copilotActivityMenuItem.Header = activities.Count == 0
+                ? "Copilot 活动"
+                : $"Copilot 活动 · {activities.Count}";
+            _copilotActivityMenuItem.Items.Clear();
+            _copilotActivityMenuItem.IsEnabled = activities.Count > 0;
+            foreach (var activity in activities.Take(8))
+            {
+                var conversationId = activity.ConversationId;
+                var item = new MenuItem
+                {
+                    Header = $"{activity.StatusLabel} · 会话 {activity.ConversationLabel}",
+                };
+                item.Click += (_, _) => DesktopPetService.GetInstance().OpenCopilotActivity(conversationId);
+                _copilotActivityMenuItem.Items.Add(item);
+            }
+
+            if (activities.Count > 8)
+            {
+                _copilotActivityMenuItem.Items.Add(new MenuItem
+                {
+                    Header = $"另有 {activities.Count - 8} 项，打开 Copilot 查看",
+                    IsEnabled = false,
+                });
+            }
         }
 
         private void TapPet()
@@ -687,6 +734,7 @@ namespace ColorVision.FloatingBall
             });
             ActivityBadgeText.Text = state switch
             {
+                _ when _copilotActivityCount > 1 => Math.Min(_copilotActivityCount, 99).ToString(),
                 DesktopPetActivityState.Waiting => "!",
                 DesktopPetActivityState.Review => "✓",
                 DesktopPetActivityState.Waving => "Hi",

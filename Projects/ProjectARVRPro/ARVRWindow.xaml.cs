@@ -184,6 +184,7 @@ namespace ProjectARVRPro
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
+
             flowControl = new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             timer = new Timer(TimeRun, null, 0, 100);
@@ -313,15 +314,6 @@ namespace ProjectARVRPro
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             }.Show();
-        }
-
-        private void ViewOptions_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.ContextMenu != null)
-            {
-                button.ContextMenu.PlacementTarget = button;
-                button.ContextMenu.IsOpen = true;
-            }
         }
 
         public void Delete()
@@ -462,7 +454,7 @@ namespace ProjectARVRPro
                     string msg;
                     if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                     {
-                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+                        msg = $"正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                     }
                     else
                     {
@@ -470,7 +462,7 @@ namespace ProjectARVRPro
                         TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                         string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        msg = $"{FlowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                        msg = $"{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                     }
                     logTextBox.Text = msg;
                 }

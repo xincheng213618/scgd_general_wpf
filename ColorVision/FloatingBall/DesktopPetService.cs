@@ -3,6 +3,8 @@ using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using ColorVision.UI;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,6 +21,7 @@ namespace ColorVision.FloatingBall
         private ConfirmableAction? _pendingCopilotAction;
         private int _pendingCopilotActionCount;
         private string _copilotConversationId = string.Empty;
+        private DesktopPetCopilotActivity[] _copilotActivities = Array.Empty<DesktopPetCopilotActivity>();
 
         private DesktopPetService()
         {
@@ -43,6 +46,7 @@ namespace ColorVision.FloatingBall
             _window.Show();
             _window.SetActivityState(_activityState);
             _window.ShowCopilotConfirmation(_pendingCopilotAction, _pendingCopilotActionCount);
+            _window.SetCopilotActivityCount(_copilotActivities.Length);
             return _window;
         }
 
@@ -144,6 +148,14 @@ namespace ColorVision.FloatingBall
                 _copilotConversationId = conversationId.Trim();
         }
 
+        internal void SetCopilotActivities(IReadOnlyList<DesktopPetCopilotActivity> activities)
+        {
+            _copilotActivities = (activities ?? Array.Empty<DesktopPetCopilotActivity>()).ToArray();
+            _window?.SetCopilotActivityCount(_copilotActivities.Length);
+        }
+
+        internal IReadOnlyList<DesktopPetCopilotActivity> GetCopilotActivities() => _copilotActivities;
+
         public void Notify(string title, string message, DesktopPetNotificationKind kind = DesktopPetNotificationKind.Info)
         {
             if (!DesktopPetConfig.Instance.ShowNotifications || !MainWindowConfig.Instance.OpenFloatingBall)
@@ -243,16 +255,27 @@ namespace ColorVision.FloatingBall
 
         public void OpenCopilot()
         {
+            OpenCopilotActivity(null);
+        }
+
+        internal void OpenCopilotActivity(string? conversationId)
+        {
             if (!Application.Current.Dispatcher.CheckAccess())
             {
-                Application.Current.Dispatcher.BeginInvoke(OpenCopilot);
+                Application.Current.Dispatcher.BeginInvoke(() => OpenCopilotActivity(conversationId));
                 return;
             }
 
+            var targetConversationId = string.IsNullOrWhiteSpace(conversationId)
+                ? _copilotActivities.Length > 0
+                    ? _copilotActivities[0].ConversationId
+                    : _copilotConversationId
+                : conversationId.Trim();
             ShowMainWindow();
             var copilot = CopilotPanelService.GetInstance();
-            if (!copilot.ShowConversation(_copilotConversationId))
+            if (!copilot.ShowConversation(targetConversationId))
                 copilot.ShowPanel();
+            _copilotBridge.MarkActivityViewed(targetConversationId);
         }
     }
 
@@ -263,6 +286,7 @@ namespace ColorVision.FloatingBall
 
         public override System.Threading.Tasks.Task Initialize()
         {
+            DesktopPetService.GetInstance().RefreshCopilotIntegration();
             if (MainWindowConfig.Instance.OpenFloatingBall && DesktopPetConfig.Instance.ShowStartupGreeting)
                 DesktopPetService.GetInstance().ShowStartupGreeting();
 

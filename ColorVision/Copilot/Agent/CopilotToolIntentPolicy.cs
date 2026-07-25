@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ColorVision.UI;
 
@@ -247,8 +248,27 @@ namespace ColorVision.Copilot
 
         private static readonly string[] BatchImageMarkers =
         {
-            "CVRAW", "CVCIE", "批量图像", "批量图片", "批量转换图像", "批量转换图片", "批量执行算法",
-            "cvraw", "cvcie", "batch image", "batch convert images", "batch image processing",
+            "CVRAW", "CVCIE", "图像", "图片", "批量执行算法",
+            "cvraw", "cvcie", "image", "images", "batch image processing",
+        };
+
+        private static readonly string[] BatchImageActionMarkers =
+        {
+            "批量图像", "批量图片", "批量转换", "批量处理", "批量执行算法", "打开批量",
+            "转换", "转成", "转为", "转换为", "导出为",
+            "转TIFF", "转TIF", "转PNG", "转JPG", "转JPEG", "转BMP", "转WEBP",
+            "batch image", "batch convert", "batch process", "convert images", "convert to", "export to",
+        };
+
+        private static readonly string[] BatchImageConversionMarkers =
+        {
+            "批量转换", "转换", "转成", "转为", "转换为", "导出为",
+            "batch convert", "convert", "export",
+        };
+
+        private static readonly HashSet<string> BatchImageFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".cvraw", ".cvcie", ".bmp", ".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff",
         };
 
         private static readonly string[] ShellExplanationMarkers =
@@ -457,7 +477,14 @@ namespace ColorVision.Copilot
         {
             return IsAgentRequest(request)
                 && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
-                && ContainsAny(request.UserText, BatchImageMarkers);
+                && ContainsAny(request.UserText, BatchImageMarkers)
+                && ContainsAny(request.UserText, BatchImageActionMarkers);
+        }
+
+        public static bool NeedsBatchImageConversionExecution(CopilotAgentRequest? request)
+        {
+            return NeedsBatchImageProcessing(request)
+                && ContainsAny(request!.UserText, BatchImageConversionMarkers);
         }
 
         internal static bool ExplicitlyRequiresPublicWebSearch(CopilotAgentRequest? request)
@@ -519,6 +546,17 @@ namespace ColorVision.Copilot
         internal static bool IsBatchImageProcessingTool(ICopilotTool? tool)
         {
             return string.Equals(tool?.Name, "OpenBatchImageProcessing", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsBatchImageConversionTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "ConvertBatchImages", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsBatchImageFilePath(string? path)
+        {
+            return !string.IsNullOrWhiteSpace(path)
+                && BatchImageFileExtensions.Contains(Path.GetExtension(path));
         }
 
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)

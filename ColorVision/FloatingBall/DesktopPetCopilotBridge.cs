@@ -1,6 +1,7 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,6 +12,7 @@ namespace ColorVision.FloatingBall
     internal sealed class DesktopPetCopilotBridge
     {
         private readonly DesktopPetService _desktopPetService;
+        private readonly DesktopPetCopilotActivityTracker _activityTracker = new();
         private DispatcherTimer? _pendingActionRefreshTimer;
         private bool _isInitialized;
         private int _lastPendingActionCount;
@@ -47,30 +49,25 @@ namespace ColorVision.FloatingBall
             {
                 if (!DesktopPetConfig.Instance.EnableCopilotIntegration)
                 {
+                    _activityTracker.Clear();
                     _desktopPetService.SetPendingCopilotAction(null, 0);
+                    _desktopPetService.SetCopilotActivities(Array.Empty<DesktopPetCopilotActivity>());
                     _desktopPetService.SetActivityState(DesktopPetActivityState.Idle);
                     return;
                 }
 
-                var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
-                if (activeRun != null)
-                    _desktopPetService.SetCopilotConversation(activeRun.ConversationId);
-
                 var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
-                var pendingCount = pendingActions.Count;
-                _lastPendingActionCount = pendingCount;
-                if (pendingCount > 0)
-                {
-                    PublishPendingAction(pendingActions);
-                    _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
-                    return;
-                }
+                _lastPendingActionCount = pendingActions.Count;
+                ReconcileAndApply(pendingActions);
+            });
+        }
 
-                _desktopPetService.SetPendingCopilotAction(null, 0);
-                _desktopPetService.SetActivityState(
-                    CopilotAgentTaskHost.Shared.IsActive
-                        ? DesktopPetActivityState.Running
-                        : DesktopPetActivityState.Idle);
+        public void MarkActivityViewed(string? conversationId)
+        {
+            RunOnUiThread(() =>
+            {
+                if (_activityTracker.MarkViewed(conversationId))
+                    ReconcileAndApply();
             });
         }
 
@@ -86,17 +83,11 @@ namespace ColorVision.FloatingBall
                     case CopilotAgentTaskHostChangeKind.Queued:
                     case CopilotAgentTaskHostChangeKind.Started:
                     case CopilotAgentTaskHostChangeKind.CheckpointReady:
-                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
-                        ApplyCurrentActiveState();
-                        break;
-
                     case CopilotAgentTaskHostChangeKind.ControlRequested:
-                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
-                        _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
+                        ReconcileAndApply();
                         break;
 
                     case CopilotAgentTaskHostChangeKind.Completed:
-                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
                         HandleCompletedRun(e.Run);
                         break;
                 }
@@ -112,79 +103,80 @@ namespace ColorVision.FloatingBall
 
                 var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
                 var pendingCount = pendingActions.Count;
-                if (pendingCount > 0)
-                {
-                    PublishPendingAction(pendingActions);
-                    _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
-                    if (pendingCount > _lastPendingActionCount && DesktopPetConfig.Instance.ShowCopilotNotifications)
-                    {
-                        _desktopPetService.PlayTransientActivity(
-                            DesktopPetActivityState.Waiting,
-                            DesktopPetActivityState.Waiting);
-                    }
-                }
-                else
-                {
-                    _desktopPetService.SetPendingCopilotAction(null, 0);
-                    ApplyCurrentActiveState();
-                }
-
+                ReconcileAndApply(pendingActions);
+                if (pendingCount > _lastPendingActionCount && DesktopPetConfig.Instance.ShowCopilotNotifications)
+                    _desktopPetService.PlayTransientActivity(DesktopPetActivityState.Waiting, DesktopPetActivityState.Waiting);
                 _lastPendingActionCount = pendingCount;
             });
         }
 
         private void HandleCompletedRun(CopilotHostedAgentRun run)
         {
-            if (CopilotMcpConfirmationStore.Instance.PendingCount > 0)
+            var completionKind = ResolveCompletionKind(run);
+            _activityTracker.RecordCompletion(run.ConversationId, completionKind);
+            ReconcileAndApply();
+
+            if (completionKind is DesktopPetCopilotCompletionKind.Cancelled or DesktopPetCopilotCompletionKind.Paused
+                || !DesktopPetConfig.Instance.ShowCopilotNotifications)
             {
-                _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
                 return;
             }
-
-            if (CopilotAgentTaskHost.Shared.IsActive)
-            {
-                _desktopPetService.SetActivityState(DesktopPetActivityState.Running);
-                return;
-            }
-
-            if (run.Completion.IsCanceled)
-            {
-                _desktopPetService.SetActivityState(DesktopPetActivityState.Idle);
-                return;
-            }
-
-            var failed = run.Completion.IsFaulted;
-            _desktopPetService.PlayTransientActivity(
-                failed ? DesktopPetActivityState.Failed : DesktopPetActivityState.Review,
-                DesktopPetActivityState.Idle);
-
-            if (!DesktopPetConfig.Instance.ShowCopilotNotifications)
-                return;
 
             _desktopPetService.Notify(
                 "Copilot",
-                failed
+                completionKind == DesktopPetCopilotCompletionKind.Blocked
                     ? "任务执行失败，点击宠物打开 Copilot 查看详情。"
                     : "任务已经完成，点击宠物打开 Copilot 查看结果。",
-                failed ? DesktopPetNotificationKind.Error : DesktopPetNotificationKind.Success);
+                completionKind == DesktopPetCopilotCompletionKind.Blocked
+                    ? DesktopPetNotificationKind.Error
+                    : DesktopPetNotificationKind.Success);
         }
 
-        private void ApplyCurrentActiveState()
+        internal static DesktopPetCopilotCompletionKind ResolveCompletionKind(CopilotHostedAgentRun run)
+        {
+            ArgumentNullException.ThrowIfNull(run);
+            if (!run.Completion.IsCompleted)
+                throw new InvalidOperationException("The desktop pet can classify a Copilot run only after it completes.");
+
+            if (run.Completion.IsCanceled)
+            {
+                return run.RunControl?.Intent == CopilotAgentControlIntent.Pause
+                    ? DesktopPetCopilotCompletionKind.Paused
+                    : DesktopPetCopilotCompletionKind.Cancelled;
+            }
+
+            return run.Completion.IsFaulted
+                ? DesktopPetCopilotCompletionKind.Blocked
+                : DesktopPetCopilotCompletionKind.Ready;
+        }
+
+        private void ReconcileAndApply(IReadOnlyList<ConfirmableAction>? pendingActions = null)
         {
             var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
-            if (activeRun != null)
+            var actions = pendingActions ?? CopilotMcpConfirmationStore.Instance.GetPendingActions();
+            var activeNeedsInput = activeRun != null && actions.Count > 0;
+            _activityTracker.ReconcileActive(activeRun?.ConversationId, activeNeedsInput);
+
+            var activities = _activityTracker.Snapshot();
+            var primaryActivity = activities.Count > 0 ? activities[0] : null;
+            if (primaryActivity != null)
+                _desktopPetService.SetCopilotConversation(primaryActivity.ConversationId);
+            else if (activeRun != null)
                 _desktopPetService.SetCopilotConversation(activeRun.ConversationId);
 
-            if (CopilotMcpConfirmationStore.Instance.PendingCount > 0)
+            _desktopPetService.SetCopilotActivities(activities);
+            if (actions.Count > 0)
+                PublishPendingAction(actions);
+            else
+                _desktopPetService.SetPendingCopilotAction(null, 0);
+
+            if (actions.Count > 0 && activeRun == null)
             {
                 _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
                 return;
             }
 
-            _desktopPetService.SetActivityState(
-                CopilotAgentTaskHost.Shared.IsActive
-                    ? DesktopPetActivityState.Running
-                    : DesktopPetActivityState.Idle);
+            _desktopPetService.SetActivityState(primaryActivity?.PetState ?? DesktopPetActivityState.Idle);
         }
 
         public static Task<CopilotConfirmationApprovalResult> ApproveAsync(

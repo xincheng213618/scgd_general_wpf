@@ -160,6 +160,11 @@ namespace ColorVision.Copilot
                 Attachments = Array.Empty<CopilotAttachmentItem>(),
                 ContextItems = Array.Empty<CopilotContextItem>(),
                 SearchRootPaths = roots,
+                TrustedProjectRootPaths = usesWorkspaceContext
+                    ? (parentRequest.TrustedProjectRootPaths ?? Array.Empty<string>())
+                        .Where(path => CopilotWorkspaceSearchSupport.IsPathWithinRoots(path, roots))
+                        .ToArray()
+                    : Array.Empty<string>(),
                 ActiveDocumentPath = activeDocumentPath,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = Array.Empty<string>(),

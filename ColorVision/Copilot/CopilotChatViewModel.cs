@@ -762,9 +762,9 @@ namespace ColorVision.Copilot
                     return CopilotLocalCommandCatalog.Suggest(input);
 
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-                var searchRoots = CopilotAgentRequestFactory.BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
+                var trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot);
                 var skills = CopilotAgentSkillCatalog.DiscoverCached(
-                    searchRoots,
+                    trustedProjectRoots,
                     _config.AgentDefaults.CreateSkillOverrideSnapshot());
                 return CopilotLocalCommandCatalog.Suggest(input, skills);
             }
@@ -904,6 +904,9 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotLocalCommandKind.Context:
                     ShowLocalCommandResult(command, BuildContextDiagnosticsReport());
+                    break;
+                case CopilotLocalCommandKind.Permissions:
+                    ShowLocalCommandResult(command, BuildPermissionDiagnosticsReport());
                     break;
                 case CopilotLocalCommandKind.Skills:
                     ShowLocalCommandResult(command, BuildAgentSkillDiagnosticsReport());
@@ -1204,6 +1207,26 @@ namespace ColorVision.Copilot
                 agentDefaults.CreateSkillOverrideSnapshot());
         }
 
+        private string BuildPermissionDiagnosticsReport()
+        {
+            var mode = ResolveComposerRequestMode();
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            var requestPlan = CopilotAgentRequestFactory.Prepare(string.Empty, mode, turnSnapshot);
+            var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+            return CopilotPermissionDiagnostics.Format(new CopilotPermissionDiagnosticSnapshot
+            {
+                Mode = mode,
+                SearchRootPaths = requestPlan.SearchRootPaths,
+                TrustedProjectRootPaths = requestPlan.TrustedProjectRootPaths,
+                WritableRootPaths = requestPlan.WritableLocalRootPaths,
+                WritableFilePaths = requestPlan.WritableLocalFilePaths,
+                CapabilityCatalogRevision = capabilitySnapshot.Revision,
+                Capabilities = capabilitySnapshot.Capabilities,
+                ExternalMcpServers = _config.ExternalMcpServers,
+                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+            });
+        }
+
         private void ShowLocalCommandResult(CopilotLocalCommand command, string report)
         {
             LocalCommandResultTitle = $"{command.Name} · 本地快照";
@@ -1216,12 +1239,19 @@ namespace ColorVision.Copilot
             var agentContextEnabled = mode != CopilotAgentMode.Chat;
             var history = CopilotConversationRequestBuilder.CaptureHistorySelection(SelectedConversation, ResolveConversationHistoryLimits(SelectedProfile));
             var projectInstructions = Array.Empty<CopilotProjectInstructionDocument>();
+            var trustedProjectRoots = Array.Empty<string>();
             CopilotAgentSkillUsageSnapshot? skillUsage = null;
             if (agentContextEnabled)
             {
                 var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
-                var searchRoots = CopilotAgentRequestFactory.BuildSearchRootPaths(turnSnapshot, Array.Empty<string>());
-                projectInstructions = CopilotAgentProjectInstructions.Discover(searchRoots, turnSnapshot.ActiveDocumentPath).ToArray();
+                trustedProjectRoots = CopilotAgentRequestFactory.BuildTrustedProjectRootPaths(turnSnapshot).ToArray();
+                projectInstructions = CopilotAgentProjectInstructions.Discover(
+                    trustedProjectRoots,
+                    turnSnapshot.ActiveDocumentPath,
+                    turnSnapshot.Attachments
+                        .Where(attachment => attachment.Type == CopilotAttachmentType.File)
+                        .Select(attachment => attachment.Value))
+                    .ToArray();
                 skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             }
 
@@ -1259,6 +1289,7 @@ namespace ColorVision.Copilot
                 AgentContextEnabled = agentContextEnabled,
                 ProjectInstructionDocuments = projectInstructions.Length,
                 ProjectInstructionPromptCharacters = CopilotAgentProjectInstructions.BuildPromptBlock(projectInstructions).Length,
+                TrustedProjectRootPaths = trustedProjectRoots,
                 ProjectInstructions = projectInstructions,
                 RecordedSkillRuns = skillUsage?.RecordedRuns ?? 0,
                 TrackedSkills = skillUsage?.Entries.Count ?? 0,

@@ -28,6 +28,7 @@ namespace ColorVision.Copilot
         WorkspaceValidation,
         WorkspaceRollback,
         ShellExecution,
+        BatchImageConversion,
         BatchImageProcessing,
     }
 
@@ -125,6 +126,7 @@ namespace ColorVision.Copilot
                     CopilotAgentExecutionRequirement.WorkspaceValidation => "approved workspace validation",
                     CopilotAgentExecutionRequirement.WorkspaceRollback => "approved workspace rollback",
                     CopilotAgentExecutionRequirement.ShellExecution => "approved command or script execution",
+                    CopilotAgentExecutionRequirement.BatchImageConversion => "approved native batch image conversion",
                     CopilotAgentExecutionRequirement.BatchImageProcessing => "native batch image processor",
                     _ => "no mandatory tool evidence",
                 };
@@ -145,10 +147,12 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             availableTools ??= Array.Empty<ICopilotTool>();
 
+            var needsBatchImageConversion = CopilotToolIntentPolicy.NeedsBatchImageConversionExecution(request);
             var attachedFilePaths = request.Attachments
                 .Where(item => item?.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value))
                 .Select(item => NormalizePath(item.Value))
                 .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Where(path => !needsBatchImageConversion || !CopilotToolIntentPolicy.IsBatchImageFilePath(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var attachedFileReadTools = attachedFilePaths.Length > 0
@@ -160,6 +164,7 @@ namespace ColorVision.Copilot
             var requiredLocalFilePaths = request.ReadableLocalFilePaths
                 .Select(NormalizeExistingFilePath)
                 .Where(path => !string.IsNullOrWhiteSpace(path) && !attachedFilePaths.Contains(path, StringComparer.OrdinalIgnoreCase))
+                .Where(path => !needsBatchImageConversion || !CopilotToolIntentPolicy.IsBatchImageFilePath(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var localFileReadTools = requiredLocalFilePaths.Length > 0
@@ -180,6 +185,7 @@ namespace ColorVision.Copilot
             var workspaceRollbackTools = availableTools.Where(CopilotToolIntentPolicy.IsWorkspaceRollbackTool).Select(tool => tool.Name);
             var shellExecutionTools = availableTools.Where(CopilotToolIntentPolicy.IsShellExecutionTool).Select(tool => tool.Name);
             var batchImageProcessingTools = availableTools.Where(CopilotToolIntentPolicy.IsBatchImageProcessingTool).Select(tool => tool.Name);
+            var batchImageConversionTools = availableTools.Where(CopilotToolIntentPolicy.IsBatchImageConversionTool).Select(tool => tool.Name);
             var needsValidation = CopilotToolIntentPolicy.NeedsWorkspaceValidation(request);
             var needsShellExecution = CopilotToolIntentPolicy.NeedsShellExecution(request);
             if (CopilotToolIntentPolicy.NeedsWorkspaceRollback(request))
@@ -247,6 +253,15 @@ namespace ColorVision.Copilot
                 return Required(
                     CopilotAgentExecutionRequirement.ShellExecution,
                     [shellExecutionTools],
+                    prerequisiteToolGroups,
+                    attachedFilePaths,
+                    requiredLocalFilePaths);
+            }
+            if (CopilotToolIntentPolicy.NeedsBatchImageConversionExecution(request))
+            {
+                return Required(
+                    CopilotAgentExecutionRequirement.BatchImageConversion,
+                    [batchImageConversionTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);
@@ -457,6 +472,10 @@ namespace ColorVision.Copilot
             {
                 return "Execution contract: the user explicitly requested real command or script execution, but no successful process result was collected. Call RunShellCommand now after any required workspace write, use the exact working directory, and base the answer on its exit code, stdout, and stderr. Do not substitute a command suggestion or code block for execution.";
             }
+            if (missingGroup.Contains("ConvertBatchImages", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: the user requested real native batch image conversion, but no successful conversion result was collected. Call ConvertBatchImages with the exact approved sources, output format, and destination. Base the answer on its succeeded/failed counts and output paths; do not substitute opening the batch window or merely describe how to convert.";
+            }
             if (missingGroup.Contains("OpenBatchImageProcessing", StringComparer.OrdinalIgnoreCase))
             {
                 return "Execution contract: the user requested native batch image conversion or processing, but the ColorVision batch processor was not opened. Call OpenBatchImageProcessing now, then explain the remaining review-and-start step without claiming that any files were converted yet.";
@@ -496,6 +515,8 @@ namespace ColorVision.Copilot
                         : $"Execution contract: the user explicitly requested a workspace rollback, but no approved rollback has completed. Call the available {preferred} tool and do not claim the rollback completed before it returns success.",
                 CopilotAgentExecutionRequirement.ShellExecution =>
                     $"Execution contract: the user explicitly requested command or script execution, but no successful process result was collected. Call {preferred} and report its actual exit code and output; do not replace execution with instructions.",
+                CopilotAgentExecutionRequirement.BatchImageConversion =>
+                    $"Execution contract: the user explicitly requested native batch image conversion. Call {preferred} after approval and report its actual per-file output evidence; do not claim conversion completed from a preview or an opened window.",
                 CopilotAgentExecutionRequirement.BatchImageProcessing =>
                     $"Execution contract: the user explicitly requested native batch image conversion or processing. Call {preferred}, then tell the user to review inputs and output settings before starting; do not claim conversion completed merely because the window opened.",
                 _ => string.Empty,
@@ -652,6 +673,7 @@ namespace ColorVision.Copilot
                 CopilotAgentExecutionRequirement.WorkspaceValidation => "required_workspace_validation_missing",
                 CopilotAgentExecutionRequirement.WorkspaceRollback => "required_workspace_rollback_missing",
                 CopilotAgentExecutionRequirement.ShellExecution => "required_shell_execution_missing",
+                CopilotAgentExecutionRequirement.BatchImageConversion => "required_batch_image_conversion_missing",
                 CopilotAgentExecutionRequirement.BatchImageProcessing => "required_batch_image_processing_missing",
                 _ => "required_tool_evidence_missing",
             };

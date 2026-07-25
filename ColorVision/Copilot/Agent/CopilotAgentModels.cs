@@ -71,6 +71,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
+
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();

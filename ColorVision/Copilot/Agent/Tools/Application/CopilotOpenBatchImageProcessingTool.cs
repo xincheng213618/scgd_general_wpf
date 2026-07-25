@@ -31,7 +31,8 @@ namespace ColorVision.Copilot
             return request != null
                 && request.Mode != CopilotAgentMode.Chat
                 && Application.Current != null
-                && CopilotToolIntentPolicy.NeedsBatchImageProcessing(request);
+                && CopilotToolIntentPolicy.NeedsBatchImageProcessing(request)
+                && !CopilotToolIntentPolicy.NeedsBatchImageConversionExecution(request);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(

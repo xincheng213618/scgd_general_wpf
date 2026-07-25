@@ -540,7 +540,7 @@ namespace ColorVision.Engine.Templates.Flow
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = $"{FlowName}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}";
+                    msg = $"{ColorVision.Engine.Properties.Resources.Flow_ExecutingNodeLabel}{runningNodes}{Environment.NewLine}{ColorVision.Engine.Properties.Resources.Flow_ElapsedTimeLabel}{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {

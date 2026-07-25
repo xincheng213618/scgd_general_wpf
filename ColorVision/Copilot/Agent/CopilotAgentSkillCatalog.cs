@@ -22,11 +22,11 @@ namespace ColorVision.Copilot
         private static IReadOnlyList<CopilotAgentSkillCatalogItem> _cachedItems = Array.Empty<CopilotAgentSkillCatalogItem>();
 
         public static IReadOnlyList<CopilotAgentSkillCatalogItem> DiscoverCached(
-            IEnumerable<string>? searchRootPaths,
+            IEnumerable<string>? trustedProjectRootPaths,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory = null)
         {
-            var skillRoots = ResolveSkillRoots(searchRootPaths, applicationBaseDirectory);
+            var skillRoots = ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory);
             var cacheKey = BuildCacheKey(skillRoots, overrides);
             var now = DateTimeOffset.UtcNow;
             lock (CacheSync)
@@ -49,11 +49,11 @@ namespace ColorVision.Copilot
         }
 
         public static IReadOnlyList<CopilotAgentSkillCatalogItem> Discover(
-            IEnumerable<string>? searchRootPaths,
+            IEnumerable<string>? trustedProjectRootPaths,
             IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides,
             string? applicationBaseDirectory = null)
         {
-            return DiscoverFromSkillRoots(ResolveSkillRoots(searchRootPaths, applicationBaseDirectory), overrides);
+            return DiscoverFromSkillRoots(ResolveSkillRoots(trustedProjectRootPaths, applicationBaseDirectory), overrides);
         }
 
         private static CopilotAgentSkillCatalogItem[] DiscoverFromSkillRoots(
@@ -87,10 +87,13 @@ namespace ColorVision.Copilot
                 .ToArray();
         }
 
-        private static IReadOnlyList<string> ResolveSkillRoots(IEnumerable<string>? searchRootPaths, string? applicationBaseDirectory)
+        private static IReadOnlyList<string> ResolveSkillRoots(IEnumerable<string>? trustedProjectRootPaths, string? applicationBaseDirectory)
         {
             return CopilotAgentSkills.ResolveSearchPaths(
-                new CopilotAgentRequest { SearchRootPaths = (searchRootPaths ?? Array.Empty<string>()).ToArray() },
+                new CopilotAgentRequest
+                {
+                    TrustedProjectRootPaths = (trustedProjectRootPaths ?? Array.Empty<string>()).ToArray(),
+                },
                 applicationBaseDirectory);
         }
 

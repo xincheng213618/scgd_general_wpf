@@ -197,17 +197,6 @@
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                             <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                         </Grid>
-                        <Button Style="{StaticResource PanelIconButtonStyle}" ToolTip="显示或隐藏栏位" Click="ViewOptions_Click">
-                            <Path Style="{StaticResource PanelActionIconPathStyle}" Data="M3,3.5 H15 V14.5 H3 Z M3,8.8 H15 M9,3.5 V14.5"/>
-                            <Button.ContextMenu>
-                                <ContextMenu Placement="Bottom" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                    <MenuItem Header="日志栏" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding LogControlVisibility, Mode=TwoWay}"/>
-                                    <MenuItem Header="结果栏" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding ResultControlVisibility, Mode=TwoWay}"/>
-                                    <MenuItem Header="进度栏" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding ProgressControlVisibility, Mode=TwoWay}"/>
-                                    <MenuItem Header="状态栏" IsCheckable="True" StaysOpenOnClick="True" IsChecked="{Binding StatusControlVisibility, Mode=TwoWay}"/>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
                         <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                             <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="230" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                         </DockPanel>

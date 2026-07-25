@@ -98,6 +98,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
+
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
@@ -152,6 +154,7 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
+            var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
             var writableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
             var writableLocalFilePaths = BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
             var intentProbe = new CopilotAgentRequest
@@ -164,7 +167,12 @@ namespace ColorVision.Copilot
             var projectInstructions = mode == CopilotAgentMode.Chat
                 || !CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe)
                 ? Array.Empty<CopilotProjectInstructionDocument>()
-                : CopilotAgentProjectInstructions.Discover(searchRootPaths, hostContext.ActiveDocumentPath);
+                : CopilotAgentProjectInstructions.Discover(
+                    trustedProjectRootPaths,
+                    hostContext.ActiveDocumentPath,
+                    explicitLocalFilePaths.Concat(hostContext.Attachments
+                        .Where(attachment => attachment.Type == CopilotAttachmentType.File)
+                        .Select(attachment => attachment.Value)));
 
             return new CopilotAgentRequestPlan
             {
@@ -180,6 +188,7 @@ namespace ColorVision.Copilot
                 },
                 Attachments = hostContext.Attachments,
                 SearchRootPaths = searchRootPaths,
+                TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ProjectInstructions = projectInstructions,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
@@ -206,6 +215,7 @@ namespace ColorVision.Copilot
                 Attachments = plan.Attachments,
                 ContextItems = input.ContextItems.ToArray(),
                 SearchRootPaths = plan.SearchRootPaths,
+                TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
                 ProjectInstructions = plan.ProjectInstructions,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
@@ -244,6 +254,17 @@ namespace ColorVision.Copilot
             foreach (var attachment in hostContext.Attachments.Where(item => item.Type == CopilotAttachmentType.File && !string.IsNullOrWhiteSpace(item.Value)))
                 AddSearchCandidate(roots, attachment.Value);
 
+            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+        }
+
+        public static IReadOnlyList<string> BuildTrustedProjectRootPaths(CopilotAgentHostContextSnapshot hostContext)
+        {
+            ArgumentNullException.ThrowIfNull(hostContext);
+
+            var roots = new List<string>();
+            AddSearchCandidate(roots, hostContext.SolutionDirectoryPath);
+            if (roots.Count == 0)
+                AddSearchCandidate(roots, hostContext.ActiveDocumentPath);
             return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
         }
 

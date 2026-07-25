@@ -57,6 +57,8 @@ namespace ColorVision.Copilot
 
         public int ProjectInstructionPromptCharacters { get; init; }
 
+        public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
+
         public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
 
         public long RecordedSkillRuns { get; init; }
@@ -155,6 +157,7 @@ namespace ColorVision.Copilot
                 .Append(" 个文档，序列化提示 ")
                 .Append(FormatCount(snapshot.ProjectInstructionPromptCharacters))
                 .AppendLine(" 字符");
+            AppendTrustedProjectRoots(builder, snapshot.TrustedProjectRootPaths);
             AppendProjectInstructionDetails(builder, snapshot.ProjectInstructions);
             builder.Append("Agent 预算：上下文 ")
                 .Append(FormatCount(snapshot.AgentContextWindowTokens))
@@ -212,6 +215,42 @@ namespace ColorVision.Copilot
                 if (document.IsTruncated)
                     builder.Append(" · 已截断");
                 builder.AppendLine();
+            }
+        }
+
+        private static void AppendTrustedProjectRoots(StringBuilder builder, IReadOnlyList<string>? roots)
+        {
+            var normalizedRoots = (roots ?? Array.Empty<string>())
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(FormatProjectRootLabel)
+                .Where(label => label.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(5)
+                .ToArray();
+            builder.Append("受信项目根：");
+            if (normalizedRoots.Length == 0)
+            {
+                builder.AppendLine("无");
+                return;
+            }
+
+            builder.AppendLine();
+            foreach (var root in normalizedRoots)
+                builder.Append("  - ").AppendLine(root);
+        }
+
+        private static string FormatProjectRootLabel(string path)
+        {
+            try
+            {
+                var normalized = Path.GetFullPath(path)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                var name = Path.GetFileName(normalized);
+                return string.IsNullOrWhiteSpace(name) ? "project root" : name;
+            }
+            catch
+            {
+                return "project root";
             }
         }
 
@@ -304,7 +343,7 @@ namespace ColorVision.Copilot
             var truncatedInstructions = snapshot.ProjectInstructions.Count(document => document?.IsTruncated == true);
             if (truncatedInstructions > 0)
             {
-                suggestions.Add($"{FormatCount(truncatedInstructions)} 个项目指令文档已截断；请精简通用规则，或把局部规则放到更靠近目标代码的 AGENTS.md。");
+                suggestions.Add($"{FormatCount(truncatedInstructions)} 个项目指令文档已截断；请精简通用规则，或把局部规则放到更靠近目标代码的 AGENTS.md/CLAUDE.md。");
             }
 
             if (snapshot.AgentContextEnabled
@@ -326,7 +365,7 @@ namespace ColorVision.Copilot
         {
             var normalized = (path ?? string.Empty).Trim();
             if (normalized.Length == 0)
-                return "AGENTS.md";
+                return "project instructions";
 
             var parent = Path.GetFileName(Path.GetDirectoryName(normalized));
             var fileName = Path.GetFileName(normalized);
