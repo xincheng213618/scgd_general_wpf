@@ -202,6 +202,27 @@ class CacheManager:
                 is_active       INTEGER DEFAULT 1
             );
 
+            -- Centrally managed Copilot model profiles. Provider credentials are
+            -- encrypted by CopilotConfigService before they reach this table.
+            CREATE TABLE IF NOT EXISTS copilot_profiles (
+                id                  TEXT PRIMARY KEY,
+                name                TEXT NOT NULL,
+                vendor_type         TEXT NOT NULL,
+                provider_type       TEXT NOT NULL,
+                base_url            TEXT NOT NULL,
+                model               TEXT NOT NULL,
+                api_key_encrypted   TEXT NOT NULL,
+                allow_insecure_http INTEGER NOT NULL DEFAULT 0,
+                reasoning_mode      TEXT NOT NULL DEFAULT 'Default',
+                is_enabled          INTEGER NOT NULL DEFAULT 1,
+                is_default          INTEGER NOT NULL DEFAULT 0,
+                sort_order          INTEGER NOT NULL DEFAULT 0,
+                created_at          TEXT NOT NULL,
+                updated_at          TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_copilot_profiles_order
+                ON copilot_profiles(is_enabled, sort_order, name);
+
             -- Audit log: records all admin operations
             CREATE TABLE IF NOT EXISTS audit_log (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,

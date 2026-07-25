@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -53,6 +53,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v3(db)
     if from_version < 4:
         _migration_v4(db)
+    if from_version < 5:
+        _migration_v5(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -128,6 +130,32 @@ def _migration_v4(db: sqlite3.Connection):
         );
         CREATE INDEX IF NOT EXISTS idx_access_visitor_client_day
             ON access_visitor_daily(day, client_type);
+        """
+    )
+
+
+def _migration_v5(db: sqlite3.Connection):
+    """v5: Add centrally managed Copilot model profiles."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS copilot_profiles (
+            id                  TEXT PRIMARY KEY,
+            name                TEXT NOT NULL,
+            vendor_type         TEXT NOT NULL,
+            provider_type       TEXT NOT NULL,
+            base_url            TEXT NOT NULL,
+            model               TEXT NOT NULL,
+            api_key_encrypted   TEXT NOT NULL,
+            allow_insecure_http INTEGER NOT NULL DEFAULT 0,
+            reasoning_mode      TEXT NOT NULL DEFAULT 'Default',
+            is_enabled          INTEGER NOT NULL DEFAULT 1,
+            is_default          INTEGER NOT NULL DEFAULT 0,
+            sort_order          INTEGER NOT NULL DEFAULT 0,
+            created_at          TEXT NOT NULL,
+            updated_at          TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_copilot_profiles_order
+            ON copilot_profiles(is_enabled, sort_order, name);
         """
     )
 

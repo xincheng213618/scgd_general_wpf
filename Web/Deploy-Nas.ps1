@@ -396,7 +396,7 @@ try {
     }
 
     if (-not $skipTests) {
-        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts') -WorkingDirectory $backendPath
+        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts', 'test_copilot_config_api') -WorkingDirectory $backendPath
     }
 
     $listenerBeforeRestart = Get-WebListener
@@ -429,6 +429,10 @@ try {
     if ($trafficAssets.Count -eq 0) {
         throw 'TrafficPage frontend asset is missing from the live build.'
     }
+    $copilotAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'CopilotConfigPage-*.js' -File)
+    if ($copilotAssets.Count -eq 0) {
+        throw 'CopilotConfigPage frontend asset is missing from the live build.'
+    }
 
     $analyticsCode = "import json,sqlite3,sys; db=sqlite3.connect(sys.argv[1]); names=['access_daily','access_route_daily','access_client_daily','access_visitor_daily']; print(json.dumps({name:db.execute('select count(*) from '+name).fetchone()[0] for name in names})); db.close()"
     $analyticsJson = @(& $pythonExe -c $analyticsCode $databasePath)
@@ -446,7 +450,7 @@ try {
         deployed_commit = $deployedCommit
         backup_path = $backupPath
         frontend_build = 'success'
-        backend_targeted_tests = if ($skipTests) { 'skipped' } else { 25 }
+        backend_targeted_tests = if ($skipTests) { 'skipped' } else { 'passed' }
         old_pid = $oldPid
         new_pid = $newPid
         health = $readiness.health.status

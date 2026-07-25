@@ -222,6 +222,52 @@ export interface ThemeSettingsFormValues {
   density: 'middle' | 'small'
 }
 
+export type CopilotVendorType =
+  | 'Custom'
+  | 'DeepSeek'
+  | 'OpenAI'
+  | 'Claude'
+  | 'Grok'
+  | 'Gemini'
+  | 'GLM'
+  | 'MiniMax'
+  | 'Xiaomi'
+  | 'SenseNova'
+
+export type CopilotProviderType = 'OpenAICompatible' | 'AnthropicCompatible'
+export type CopilotReasoningMode = 'Default' | 'Disabled' | 'Enabled' | 'High' | 'Max'
+
+export interface CopilotProfile {
+  id: string
+  name: string
+  vendorType: CopilotVendorType
+  providerType: CopilotProviderType
+  baseUrl: string
+  model: string
+  hasApiKey: boolean
+  allowInsecureHttp: boolean
+  reasoningMode: CopilotReasoningMode
+  enabled: boolean
+  isDefault: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CopilotProfilePayload {
+  name: string
+  vendorType: CopilotVendorType
+  providerType: CopilotProviderType
+  baseUrl: string
+  model: string
+  apiKey?: string
+  allowInsecureHttp: boolean
+  reasoningMode: CopilotReasoningMode
+  enabled: boolean
+  isDefault: boolean
+  sortOrder: number
+}
+
 export interface PublishIntegrityCheck {
   key: string
   title: string

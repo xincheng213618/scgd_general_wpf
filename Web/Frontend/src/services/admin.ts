@@ -3,6 +3,8 @@ import type {
   ApiKeyItem,
   AuditLogResponse,
   CacheStatus,
+  CopilotProfile,
+  CopilotProfilePayload,
   CreateApiKeyPayload,
   CreateApiKeyResult,
   DocsStatus,
@@ -10,7 +12,7 @@ import type {
   ScheduledJob,
   TrafficStatsResponse,
 } from '../types/admin'
-import { getJson, postJson } from './request'
+import { deleteJson, getJson, postJson, putJson } from './request'
 
 export function getAdminStats() {
   return getJson<AdminStats>('/api/admin/stats/overview')
@@ -89,4 +91,22 @@ export function getAuditLog(params: {
   if (params.actor) search.set('actor', params.actor)
   if (params.target) search.set('target', params.target)
   return getJson<AuditLogResponse>(`/api/admin/audit-log?${search.toString()}`)
+}
+
+export function listCopilotProfiles() {
+  return getJson<CopilotProfile[]>('/api/admin/copilot/profiles')
+}
+
+export function createCopilotProfile(payload: CopilotProfilePayload) {
+  return postJson<CopilotProfile>('/api/admin/copilot/profiles', payload)
+}
+
+export function updateCopilotProfile(id: string, payload: CopilotProfilePayload) {
+  return putJson<CopilotProfile>(`/api/admin/copilot/profiles/${encodeURIComponent(id)}`, payload)
+}
+
+export function deleteCopilotProfile(id: string) {
+  return deleteJson<{ status: string; id: string }>(
+    `/api/admin/copilot/profiles/${encodeURIComponent(id)}`,
+  )
 }
