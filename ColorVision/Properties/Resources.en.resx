@@ -251,6 +251,18 @@
   <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
     <value>Already up to date</value>
   </data>
+  <data name="UpdatePreviewServerUnavailableHeading" xml:space="preserve">
+    <value>Cannot connect to the update server</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableSummary" xml:space="preserve">
+    <value>Version information for the application, plugins, and themes could not be retrieved.</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
+    <value>The update server did not return version information. Check the network or proxy settings, or copy the offline command above and download the full installer on a connected jump host.</value>
+  </data>
+  <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
+    <value>Windows did not detect an internet connection. Copy the offline command above to download the full installer on a connected jump host.</value>
+  </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>Update now</value>
   </data>
@@ -322,6 +334,27 @@
   </data>
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Program backups</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
+    <value>Copy offline command</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
+    <value>Left-click to copy the PowerShell command; right-click to choose a path and save a .ps1 script.</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
+    <value>Offline command copied</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
+    <value>Run the PowerShell command on a connected jump host, then copy the downloaded installer back and run it.</value>
+  </data>
+  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
+    <value>Save offline download script</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
+    <value>Offline script saved</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
+    <value>Saved to: {0}</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>

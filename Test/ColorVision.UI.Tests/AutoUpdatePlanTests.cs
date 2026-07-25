@@ -36,6 +36,21 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void OfflineInstallerCommandDownloadsTheLatestFullInstallerToTheDesktop()
+        {
+            string command = AutoUpdater.BuildOfflineInstallerDownloadPowerShellCommand(
+                "https://updates.example.test/",
+                "user:password");
+
+            Assert.Contains("https://updates.example.test/api/app/latest-version", command);
+            Assert.Contains("https://updates.example.test/api/app/releases/$latest/download", command);
+            Assert.Contains("[Environment]::GetFolderPath('Desktop')", command);
+            Assert.Contains("ColorVision-{0}.exe", command);
+            Assert.Contains("Basic dXNlcjpwYXNzd29yZA==", command);
+            Assert.DoesNotContain(".cvx", command, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public void PreviewStateTransitionPreservesUpdateOptionsMadeWhileChecking()
         {
             UpdatePreviewDialogContext checkingContext = new()

@@ -54,6 +54,30 @@ namespace ColorVision.Update
             };
         }
 
+        public static UpdatePreviewDialogContext CreateServerUnavailableContext(UpdateServerCheckStatus status)
+        {
+            string message = status == UpdateServerCheckStatus.NoInternetConnection
+                ? Resources.UpdatePreviewNoInternetConnectionMessage
+                : Resources.UpdatePreviewServerUnavailableMessage;
+
+            return new UpdatePreviewDialogContext
+            {
+                Heading = Resources.UpdatePreviewServerUnavailableHeading,
+                Summary = Resources.UpdatePreviewServerUnavailableSummary,
+                CheckingTitle = Resources.UpdatePreviewScanningTitle,
+                CheckingSummary = Resources.UpdatePreviewCheckingSummary,
+                EmptyStateTitle = Resources.UpdatePreviewServerUnavailableHeading,
+                EmptyStateMessage = message,
+                StateGlyph = "\uE7BA",
+                HostVersionValue = AutoUpdater.CurrentVersion?.ToString() ?? Resources.UpdatePreviewUnknownVersion,
+                CreateSnapshotBeforeUpdate = ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate,
+                DisableSystemProxyForUpdates = UpdateNetworkConfig.Instance.DisableSystemProxyForUpdates,
+                ConfirmButtonText = Resources.UpdatePreviewUpdateNowButtonText,
+                CancelButtonText = Resources.UpdatePreviewCloseButtonText,
+                IsChecking = false,
+            };
+        }
+
         public static UpdatePreviewDialogContext Build(AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan, bool isStartupCheck)
         {
             UpdatePreviewDialogContext context = new()

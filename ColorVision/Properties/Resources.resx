@@ -251,6 +251,18 @@
   <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
     <value>已是最新版本</value>
   </data>
+  <data name="UpdatePreviewServerUnavailableHeading" xml:space="preserve">
+    <value>无法连接更新服务器</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableSummary" xml:space="preserve">
+    <value>未能获取主程序、插件和主题的最新版本信息。</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
+    <value>已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置，也可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
+  </data>
+  <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
+    <value>Windows 未检测到可用的互联网连接。可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
+  </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>立即更新</value>
   </data>
@@ -295,6 +307,27 @@
   </data>
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>程序备份</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
+    <value>复制离线下载命令</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
+    <value>左键复制 PowerShell 命令；右键选择保存路径并导出 .ps1 脚本。</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
+    <value>离线下载命令已复制</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
+    <value>请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。</value>
+  </data>
+  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
+    <value>保存离线下载脚本</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
+    <value>离线脚本已保存</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
+    <value>已保存到：{0}</value>
   </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>

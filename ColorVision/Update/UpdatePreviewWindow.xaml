@@ -61,6 +61,15 @@
                             VerticalAlignment="Top"
                             Visibility="{Binding HostVersionVisibility}">
 
+                    <Button x:Name="CopyOfflineDownloadCommandButton"
+                            Margin="0,0,0,6"
+                            HorizontalAlignment="Right"
+                            Click="CopyOfflineDownloadCommandButton_Click"
+                            Content="{x:Static properties:Resources.UpdatePreviewCopyOfflineDownloadCommand}"
+                            IsEnabled="{Binding CanCancel}"
+                            MouseRightButtonUp="CopyOfflineDownloadCommandButton_MouseRightButtonUp"
+                            Style="{StaticResource UpdateDialogTextButtonStyle}"
+                            ToolTip="{x:Static properties:Resources.UpdatePreviewCopyOfflineDownloadCommandDescription}" />
                     <TextBlock 
                                HorizontalAlignment="Right"
                                Cursor="Hand"

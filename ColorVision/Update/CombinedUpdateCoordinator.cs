@@ -67,16 +67,26 @@ namespace ColorVision.Update
                 {
                     try
                     {
-                        (applicationPlan, pluginPlan) = await GetUpdatePlansAsync(
+                        UpdatePlansResult plansResult = await GetUpdatePlansAsync(
                             includeApplicationUpdates: true,
                             includePluginUpdates: true,
                             includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                             cancellationToken: previewCancellation.Token);
+                        applicationPlan = plansResult.ApplicationPlan;
+                        pluginPlan = plansResult.PluginPlan;
                         await _locker.WaitAsync(previewCancellation.Token);
                         lockTaken = true;
 
                         if (currentWindow.IsClosed)
                             return;
+
+                        if (plansResult.ServerCheckStatus != UpdateServerCheckStatus.Success)
+                        {
+                            applicationPlan = null;
+                            pluginPlan = null;
+                            context.CopyFrom(UpdatePreviewContextFactory.CreateServerUnavailableContext(plansResult.ServerCheckStatus));
+                            return;
+                        }
 
                         if (!HasUpdates(applicationPlan, pluginPlan))
                         {
@@ -98,14 +108,15 @@ namespace ColorVision.Update
                             context.IsChecking = false;
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         if (currentWindow.IsClosed)
                             return;
 
-                        context.IsChecking = false;
-                        currentWindow.DialogResult = false;
-                        throw;
+                        log.Warn($"Interactive update check could not reach the update service: {ex.GetBaseException().Message}");
+                        applicationPlan = null;
+                        pluginPlan = null;
+                        context.CopyFrom(UpdatePreviewContextFactory.CreateServerUnavailableContext(UpdateServerCheckStatus.ServerUnavailable));
                     }
                 })
                 {
@@ -169,11 +180,13 @@ namespace ColorVision.Update
             await _locker.WaitAsync(cancellationToken);
             try
             {
-                (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await GetUpdatePlansAsync(
+                UpdatePlansResult plansResult = await GetUpdatePlansAsync(
                     includeApplicationUpdates: includeApplicationUpdates,
                     includePluginUpdates: includePluginUpdates,
                     includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: true,
                     cancellationToken: cancellationToken);
+                AutoUpdatePlan? applicationPlan = plansResult.ApplicationPlan;
+                CombinedPluginUpdatePlan? pluginPlan = plansResult.PluginPlan;
 
                 if (!HasUpdates(applicationPlan, pluginPlan))
                 {
@@ -468,16 +481,17 @@ namespace ColorVision.Update
             return paths.Count == plan.Updates.Count;
         }
 
-        private static Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildPendingStartupPlansAsync(CancellationToken cancellationToken)
+        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildPendingStartupPlansAsync(CancellationToken cancellationToken)
         {
-            return GetUpdatePlansAsync(
+            UpdatePlansResult result = await GetUpdatePlansAsync(
                 includeApplicationUpdates: AutoUpdateConfig.Instance.IsAutoUpdate,
                 includePluginUpdates: MarketplaceWindowConfig.Instance.IsAutoUpdate,
                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                 cancellationToken: cancellationToken);
+            return (result.ApplicationPlan, result.PluginPlan);
         }
 
-        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> GetUpdatePlansAsync(
+        private static async Task<UpdatePlansResult> GetUpdatePlansAsync(
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
@@ -537,12 +551,16 @@ namespace ColorVision.Update
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate)
         {
-            (AutoUpdatePlan? applicationPlan, CombinedPluginUpdatePlan? pluginPlan) = await BuildUpdatePlansAsync(
+            UpdatePlansResult plansResult = await BuildUpdatePlansAsync(
                 includeApplicationUpdates,
                 includePluginUpdates,
                 includeCurrentHostPluginUpdatesWhenFullApplicationUpdate,
                 CancellationToken.None);
-            return new UpdatePlanCheckResult(applicationPlan, pluginPlan, DateTimeOffset.UtcNow);
+            return new UpdatePlanCheckResult(
+                plansResult.ApplicationPlan,
+                plansResult.PluginPlan,
+                plansResult.ServerCheckStatus,
+                DateTimeOffset.UtcNow);
         }
 
         private static bool CanReuseSharedUpdateCheck(
@@ -566,6 +584,7 @@ namespace ColorVision.Update
                 return true;
 
             return sharedCheck.Task.IsCompletedSuccessfully
+                && sharedCheck.Task.Result.ServerCheckStatus == UpdateServerCheckStatus.Success
                 && DateTimeOffset.UtcNow - sharedCheck.Task.Result.CompletedAt <= SharedUpdateCheckDuration;
         }
 
@@ -582,7 +601,7 @@ namespace ColorVision.Update
                 && (!requestedIncludesCurrentHostPlugins || existingIncludesCurrentHostPlugins);
         }
 
-        private static (AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan) CopyUpdatePlansForConsumer(
+        private static UpdatePlansResult CopyUpdatePlansForConsumer(
             UpdatePlanCheckResult result,
             bool includeApplicationUpdates,
             bool includePluginUpdates,
@@ -603,7 +622,7 @@ namespace ColorVision.Update
             CombinedPluginUpdatePlan? pluginPlan = canUsePluginPlan
                 ? ClonePluginPlan(result.PluginPlan!)
                 : null;
-            return (applicationPlan, pluginPlan);
+            return new UpdatePlansResult(applicationPlan, pluginPlan, result.ServerCheckStatus);
         }
 
         private static CombinedPluginUpdatePlan ClonePluginPlan(CombinedPluginUpdatePlan source)
@@ -618,7 +637,7 @@ namespace ColorVision.Update
             return clone;
         }
 
-        private static async Task<(AutoUpdatePlan? ApplicationPlan, CombinedPluginUpdatePlan? PluginPlan)> BuildUpdatePlansAsync(
+        private static async Task<UpdatePlansResult> BuildUpdatePlansAsync(
             bool includeApplicationUpdates,
             bool includePluginUpdates,
             bool includeCurrentHostPluginUpdatesWhenFullApplicationUpdate = false,
@@ -627,20 +646,21 @@ namespace ColorVision.Update
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
                 log.Info("Skipped update plan check because Windows reports no internet connectivity.");
-                return (null, null);
+                return new UpdatePlansResult(null, null, UpdateServerCheckStatus.NoInternetConnection);
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             MarketplaceManager? marketplaceManager = includePluginUpdates ? MarketplaceManager.GetInstance() : null;
-            Task<AutoUpdatePlan?> applicationTask = includeApplicationUpdates
-                ? AutoUpdater.GetUpdatePlanAsync(forceRefresh: false, cancellationToken)
-                : Task.FromResult<AutoUpdatePlan?>(null);
+            Task<AutoUpdatePlanCheckResult> applicationTask = includeApplicationUpdates
+                ? AutoUpdater.GetUpdatePlanCheckResultAsync(forceRefresh: false, cancellationToken)
+                : Task.FromResult(new AutoUpdatePlanCheckResult(null, UpdateServerCheckStatus.Success));
             Task pluginVersionsTask = marketplaceManager != null
                 ? marketplaceManager.RefreshVersionsAsync(cancellationToken)
                 : Task.CompletedTask;
 
             await Task.WhenAll(applicationTask, pluginVersionsTask);
-            AutoUpdatePlan? applicationPlan = await applicationTask;
+            AutoUpdatePlanCheckResult applicationResult = await applicationTask;
+            AutoUpdatePlan? applicationPlan = applicationResult.Plan;
 
             CombinedPluginUpdatePlan? pluginPlan = null;
             if (marketplaceManager != null)
@@ -658,12 +678,18 @@ namespace ColorVision.Update
             }
 
             log.Info($"Update check completed in {stopwatch.ElapsedMilliseconds}ms. ApplicationUpdate={applicationPlan != null}, PluginUpdates={pluginPlan?.Updates.Count ?? 0}.");
-            return (applicationPlan, pluginPlan);
+            return new UpdatePlansResult(applicationPlan, pluginPlan, applicationResult.Status);
         }
+
+        private sealed record UpdatePlansResult(
+            AutoUpdatePlan? ApplicationPlan,
+            CombinedPluginUpdatePlan? PluginPlan,
+            UpdateServerCheckStatus ServerCheckStatus);
 
         private sealed record UpdatePlanCheckResult(
             AutoUpdatePlan? ApplicationPlan,
             CombinedPluginUpdatePlan? PluginPlan,
+            UpdateServerCheckStatus ServerCheckStatus,
             DateTimeOffset CompletedAt);
 
         private sealed record SharedUpdateCheck(

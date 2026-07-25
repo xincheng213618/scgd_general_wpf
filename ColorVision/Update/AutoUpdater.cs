@@ -37,6 +37,17 @@ namespace ColorVision.Update
             : LatestVersion;
     }
 
+    internal enum UpdateServerCheckStatus
+    {
+        Success,
+        NoInternetConnection,
+        ServerUnavailable,
+    }
+
+    internal sealed record LatestVersionCheckResult(Version Version, UpdateServerCheckStatus Status);
+
+    internal sealed record AutoUpdatePlanCheckResult(AutoUpdatePlan? Plan, UpdateServerCheckStatus Status);
+
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
@@ -70,6 +81,34 @@ namespace ColorVision.Update
         public static string GetReleasePackageDownloadUrl(Version version) => BuildAppApiUrl($"releases/{Uri.EscapeDataString(version.ToString())}/download");
 
         public static string GetIncrementalPackageDownloadUrl(Version version) => BuildAppApiUrl($"updates/{Uri.EscapeDataString(version.ToString())}/download");
+
+        public static string GetOfflineInstallerDownloadPowerShellCommand()
+        {
+            return BuildOfflineInstallerDownloadPowerShellCommand(
+                MarketplaceConfig.ServiceBaseUrl,
+                DownloadFileConfig.Instance.Authorization);
+        }
+
+        internal static string BuildOfflineInstallerDownloadPowerShellCommand(string serviceBaseUrl, string? authorization)
+        {
+            string baseUrl = serviceBaseUrl.TrimEnd('/');
+            string latestVersionUrl = $"{baseUrl}/api/app/latest-version";
+            string releaseDownloadUrl = $"{baseUrl}/api/app/releases/$latest/download";
+            string encodedAuthorization = string.IsNullOrWhiteSpace(authorization)
+                ? string.Empty
+                : Convert.ToBase64String(Encoding.ASCII.GetBytes(authorization));
+            string headers = string.IsNullOrWhiteSpace(encodedAuthorization)
+                ? "$headers = @{}"
+                : $"$headers = @{{ Authorization = 'Basic {EscapePowerShellSingleQuotedString(encodedAuthorization)}' }}";
+
+            return $"$ErrorActionPreference = 'Stop'; {headers}; "
+                + $"$metadata = Invoke-RestMethod -Uri '{EscapePowerShellSingleQuotedString(latestVersionUrl)}' -Headers $headers -UseBasicParsing; "
+                + "$latest = if ($metadata -is [string]) { $metadata.Trim() } else { [string]$metadata.version }; "
+                + "if ([string]::IsNullOrWhiteSpace($latest)) { throw 'The update server did not return a version.' }; "
+                + "$output = Join-Path ([Environment]::GetFolderPath('Desktop')) (\"ColorVision-{0}.exe\" -f $latest); "
+                + $"Invoke-WebRequest -Uri '{EscapePowerShellSingleQuotedString(releaseDownloadUrl)}' -Headers $headers -OutFile $output -UseBasicParsing; "
+                + "Write-Host (\"Downloaded: {0}\" -f $output)";
+        }
 
         public static string GetApplicationPackageCacheDirectory(bool isIncremental)
         {
@@ -126,32 +165,41 @@ namespace ColorVision.Update
 
         public static async Task<Version> GetLatestVersionNumber(string url, bool forceRefresh, CancellationToken cancellationToken = default)
         {
+            LatestVersionCheckResult result = await GetLatestVersionCheckResultAsync(url, forceRefresh, cancellationToken);
+            return result.Version;
+        }
+
+        internal static async Task<LatestVersionCheckResult> GetLatestVersionCheckResultAsync(
+            string url,
+            bool forceRefresh,
+            CancellationToken cancellationToken = default)
+        {
             if (string.IsNullOrWhiteSpace(url))
             {
                 log.Warn("Failed to fetch update metadata: update service URL is empty.");
-                return new Version();
+                return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.ServerUnavailable);
             }
 
             if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out Version freshCachedVersion))
-                return freshCachedVersion;
+                return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
 
             if (!WindowsNetworkState.IsConnectedToInternet())
             {
                 if (TryGetAnyCachedLatestVersion(url, out Version offlineCachedVersion))
                 {
                     log.Info("Windows reports no internet connectivity; using cached update metadata.");
-                    return offlineCachedVersion;
+                    return new LatestVersionCheckResult(offlineCachedVersion, UpdateServerCheckStatus.NoInternetConnection);
                 }
 
                 log.Info("Skipped update metadata check because Windows reports no internet connectivity.");
-                return new Version();
+                return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.NoInternetConnection);
             }
 
             await _latestVersionSemaphore.WaitAsync(cancellationToken);
             try
             {
                 if (!forceRefresh && TryGetFreshCachedLatestVersion(url, out freshCachedVersion))
-                    return freshCachedVersion;
+                    return new LatestVersionCheckResult(freshCachedVersion, UpdateServerCheckStatus.Success);
 
                 string? cachedETag = GetCachedLatestVersionETag(url);
                 using HttpResponseMessage response = await UpdateHttpClientProvider.SendWithTransientRetryAsync(
@@ -169,7 +217,7 @@ namespace ColorVision.Update
                     && TryGetAnyCachedLatestVersion(url, out Version notModifiedVersion))
                 {
                     TouchCachedLatestVersion(url);
-                    return notModifiedVersion;
+                    return new LatestVersionCheckResult(notModifiedVersion, UpdateServerCheckStatus.Success);
                 }
 
                 response.EnsureSuccessStatusCode();
@@ -178,13 +226,14 @@ namespace ColorVision.Update
                 if (!Version.TryParse(versionString.Trim(), out Version? latestVersion))
                 {
                     log.Warn($"Invalid update version payload from {url}: {versionString}");
-                    return TryGetAnyCachedLatestVersion(url, out Version invalidPayloadCachedVersion)
+                    Version fallbackVersion = TryGetAnyCachedLatestVersion(url, out Version invalidPayloadCachedVersion)
                         ? invalidPayloadCachedVersion
                         : new Version();
+                    return new LatestVersionCheckResult(fallbackVersion, UpdateServerCheckStatus.ServerUnavailable);
                 }
 
                 SetCachedLatestVersion(url, latestVersion, response.Headers.ETag?.ToString());
-                return latestVersion;
+                return new LatestVersionCheckResult(latestVersion, UpdateServerCheckStatus.Success);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -201,7 +250,8 @@ namespace ColorVision.Update
             catch (Exception ex)
             {
                 log.Error($"Unexpected failure checking update metadata from {url}.", ex);
-                return TryGetAnyCachedLatestVersion(url, out Version cachedVersion) ? cachedVersion : new Version();
+                Version fallbackVersion = TryGetAnyCachedLatestVersion(url, out Version cachedVersion) ? cachedVersion : new Version();
+                return new LatestVersionCheckResult(fallbackVersion, UpdateServerCheckStatus.ServerUnavailable);
             }
             finally
             {
@@ -209,16 +259,16 @@ namespace ColorVision.Update
             }
         }
 
-        private static Version UseCachedVersionAfterFailure(string url, string warning)
+        private static LatestVersionCheckResult UseCachedVersionAfterFailure(string url, string warning)
         {
             if (TryGetAnyCachedLatestVersion(url, out Version cachedVersion))
             {
                 log.Warn($"{warning} Using the last successful response.");
-                return cachedVersion;
+                return new LatestVersionCheckResult(cachedVersion, UpdateServerCheckStatus.ServerUnavailable);
             }
 
             log.Warn(warning);
-            return new Version();
+            return new LatestVersionCheckResult(new Version(), UpdateServerCheckStatus.ServerUnavailable);
         }
 
         private static bool TryGetFreshCachedLatestVersion(string url, out Version version)
@@ -286,12 +336,22 @@ namespace ColorVision.Update
 
         public static async Task<AutoUpdatePlan?> GetUpdatePlanAsync(bool forceRefresh, CancellationToken cancellationToken = default)
         {
-            Version latestVersion = await GetLatestVersionNumber(UpdateUrl, forceRefresh, cancellationToken);
+            AutoUpdatePlanCheckResult result = await GetUpdatePlanCheckResultAsync(forceRefresh, cancellationToken);
+            return result.Plan;
+        }
+
+        internal static async Task<AutoUpdatePlanCheckResult> GetUpdatePlanCheckResultAsync(
+            bool forceRefresh,
+            CancellationToken cancellationToken = default)
+        {
+            LatestVersionCheckResult latestVersionResult = await GetLatestVersionCheckResultAsync(UpdateUrl, forceRefresh, cancellationToken);
+            Version latestVersion = latestVersionResult.Version;
             if (latestVersion == new Version())
-                return null;
+                return new AutoUpdatePlanCheckResult(null, latestVersionResult.Status);
 
             Version? currentVersion = CurrentVersion;
-            return currentVersion == null ? null : BuildUpdatePlan(currentVersion, latestVersion);
+            AutoUpdatePlan? plan = currentVersion == null ? null : BuildUpdatePlan(currentVersion, latestVersion);
+            return new AutoUpdatePlanCheckResult(plan, latestVersionResult.Status);
         }
 
         internal static AutoUpdatePlan? BuildUpdatePlan(Version currentVersion, Version latestVersion)
@@ -626,6 +686,11 @@ namespace ColorVision.Update
         private static string BuildAppApiUrl(string relativePath)
         {
             return MarketplaceConfig.BuildApiUrl($"api/app/{relativePath.TrimStart('/')}");
+        }
+
+        private static string EscapePowerShellSingleQuotedString(string value)
+        {
+            return value.Replace("'", "''", StringComparison.Ordinal);
         }
 
         public static bool IsIncrementalPackageFileReady(string? filePath)
