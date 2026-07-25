@@ -83,6 +83,7 @@ public sealed class FlowAutoExposureTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowCameraRunTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowAutoFocusTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiTemplateEditor : FlowPropertyEditorProxy { }
+public sealed class FlowBuildPoiTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiFilterTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiReviseTemplateEditor : FlowPropertyEditorProxy { }
 public sealed class FlowPoiOutputTemplateEditor : FlowPropertyEditorProxy { }

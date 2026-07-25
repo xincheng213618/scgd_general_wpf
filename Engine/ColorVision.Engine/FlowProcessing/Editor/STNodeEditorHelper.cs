@@ -61,6 +61,17 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             STNodeEditor.SelectAllNodes();
         }
 
+        public void ClearSelection()
+        {
+            STNodeEditor.SetActiveNode(null);
+            foreach (STNode node in STNodeEditor.GetSelectedNode())
+            {
+                node.SetSelected(bSelected: false, bRedraw: false);
+            }
+            STNodeEditor.Invalidate();
+            HidePropertyEditor();
+        }
+
         public void Copy()
         {
             STNodeEditor.CopySelectionToClipboard();
@@ -123,6 +134,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public void RefreshActiveNodePropertyPanel()
         {
+            if (!STNodeEditor.Dispatcher.CheckAccess())
+            {
+                _ = STNodeEditor.BeginInvoke(new Action(RefreshActiveNodePropertyPanel));
+                return;
+            }
+
             StackPanel signPanel;
 
             if (UseDockPanel)

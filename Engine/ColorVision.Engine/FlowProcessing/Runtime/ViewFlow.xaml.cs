@@ -780,6 +780,8 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
             }
 
+            STNodeEditorHelper.ClearSelection();
+
             foreach (STNode node in STNodeEditorMain.Nodes)
             {
                 foreach (STNodeOption option in node.GetAllInputOptions())

@@ -43,17 +43,17 @@ namespace ColorVision.UI.Tests
             Assert.NotNull(data);
             Assert.True(data.Length > 0);
 
-            // Parse the save data format: [type_len][module|short-name][guid_len][guid][key-value pairs...]
+            // Parse the save data format: [type_len][module|full-name][guid_len][guid][key-value pairs...]
             int pos = 0;
             string modelKey = Encoding.UTF8.GetString(data, pos + 1, data[pos]);
             pos += data[pos] + 1;
             string guidKey = Encoding.UTF8.GetString(data, pos + 1, data[pos]);
             pos += data[pos] + 1;
 
-            // Namespace moves must not change the persisted model key.
+            // Older readers require the persisted full type name.
             Assert.Contains("|", modelKey);
             string typeName = modelKey.Split('|')[1];
-            Assert.Equal(typeof(STNodeHub).Name, typeName);
+            Assert.Equal(typeof(STNodeHub).FullName, typeName);
 
             // guidKey should be a valid GUID
             Assert.True(Guid.TryParse(guidKey, out _));
@@ -205,8 +205,8 @@ namespace ColorVision.UI.Tests
             string inHubType = inHubKey.Split('|')[1];
 
             Assert.NotEqual(hubType, inHubType);
-            Assert.Equal(typeof(STNodeHub).Name, hubType);
-            Assert.Equal(typeof(STNodeInHub).Name, inHubType);
+            Assert.Equal(typeof(STNodeHub).FullName, hubType);
+            Assert.Equal(typeof(STNodeInHub).FullName, inHubType);
         }
 
         [Fact]
@@ -227,6 +227,72 @@ namespace ColorVision.UI.Tests
             container.LoadCanvas(CreateCanvasData(nodeData));
 
             Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
+        }
+
+        [Fact]
+        public void NodeSaveDataKeepsCurrentModelKey()
+        {
+            var node = new STNodeHub();
+            node.Create();
+
+            byte[] nodeData = node.GetSaveData();
+            string modelKey = Encoding.UTF8.GetString(nodeData, 1, nodeData[0]);
+
+            Assert.Equal("ST.Library.UI.dll|ST.Library.UI.NodeEditor.STNodeHub", modelKey);
+        }
+
+        [Fact]
+        public void CanvasLoad_ResolvesMovedFullTypeNameBySuffix()
+        {
+            var original = new STNodeHub();
+            original.Create();
+            byte[] nodeData = ReplaceNodeIdentityForReadTest(
+                original.GetSaveData(),
+                "ST.Library.UI.dll|Legacy.Library.Nodes.STNodeHub",
+                Guid.NewGuid().ToString());
+
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(STNodeHub).Assembly));
+            container.LoadCanvas(CreateCanvasData(nodeData));
+
+            Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
+        }
+
+        [Fact]
+        public void CanvasLoad_StillReadsShortModelKey()
+        {
+            var original = new STNodeHub();
+            original.Create();
+            byte[] nodeData = ReplaceNodeIdentityForReadTest(
+                original.GetSaveData(),
+                "ST.Library.UI.dll|STNodeHub",
+                Guid.NewGuid().ToString());
+
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(STNodeHub).Assembly));
+            container.LoadCanvas(CreateCanvasData(nodeData));
+
+            Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
+        }
+
+        private static byte[] ReplaceNodeIdentityForReadTest(byte[] nodeData, string modelKey, string typeGuid)
+        {
+            int offset = 0;
+            offset += nodeData[offset] + 1;
+            offset += nodeData[offset] + 1;
+
+            byte[] modelBytes = Encoding.UTF8.GetBytes(modelKey);
+            byte[] guidBytes = Encoding.UTF8.GetBytes(typeGuid);
+            Assert.True(modelBytes.Length <= byte.MaxValue);
+            Assert.True(guidBytes.Length <= byte.MaxValue);
+
+            using var stream = new MemoryStream();
+            stream.WriteByte((byte)modelBytes.Length);
+            stream.Write(modelBytes);
+            stream.WriteByte((byte)guidBytes.Length);
+            stream.Write(guidBytes);
+            stream.Write(nodeData, offset, nodeData.Length - offset);
+            return stream.ToArray();
         }
 
         private static byte[] CreateCanvasData(byte[] nodeData)

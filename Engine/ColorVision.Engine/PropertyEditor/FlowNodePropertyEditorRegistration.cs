@@ -19,6 +19,7 @@ using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates.POI.POIOutput;
@@ -64,6 +65,7 @@ namespace ColorVision.Engine.PropertyEditor
             FlowPropertyEditorRegistry.Register<FlowCameraRunTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateCameraRunParam()));
             FlowPropertyEditorRegistry.Register<FlowAutoFocusTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateAutoFocus()));
             FlowPropertyEditorRegistry.Register<FlowPoiTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoi()));
+            FlowPropertyEditorRegistry.Register<FlowBuildPoiTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplateBuildPoi()));
             FlowPropertyEditorRegistry.Register<FlowPoiFilterTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiFilterParam()));
             FlowPropertyEditorRegistry.Register<FlowPoiReviseTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiReviseParam()));
             FlowPropertyEditorRegistry.Register<FlowPoiOutputTemplateEditor>((property, obj) => CreateTemplateEditor(property, obj, new TemplatePoiOutputParam()));

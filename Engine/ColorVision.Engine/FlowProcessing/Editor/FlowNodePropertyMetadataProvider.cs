@@ -1,5 +1,6 @@
 using ColorVision.UI;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib.PropertyEditor;
 using ST.Library.UI.NodeEditor;
 using ST.Library.UI;
@@ -40,6 +41,13 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public bool IsBrowsable(PropertyInfo propertyInfo)
         {
             if (propertyInfo.GetCustomAttribute<BrowsableAttribute>()?.Browsable == false)
+            {
+                return false;
+            }
+
+            Type? nodeType = propertyInfo.ReflectedType;
+            if (propertyInfo.Name == nameof(FlowEngineLib.Base.CVBaseServerNode.DeviceCode)
+                && (nodeType == typeof(LocalBuildPoiNode) || nodeType == typeof(LocalBuildPoiByTemplateNode)))
             {
                 return false;
             }

@@ -1084,6 +1084,8 @@ namespace ColorVision.Engine.FlowProcessing
                 _cancelFlowStartRequested = false;
             }
 
+            View.STNodeEditorHelper.ClearSelection();
+
             bool started = false;
             MeasureBatchModel? preparedBatch = null;
             FlowStatus unstartedBatchStatus = FlowStatus.Failed;

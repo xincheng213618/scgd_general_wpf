@@ -2,6 +2,7 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
 using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
@@ -112,6 +113,29 @@ public class NodeConfiguratorBindingTests
                 finally
                 {
                     TemplateCameraRunParam.Params.Remove(cameraTemplate);
+                }
+
+                const string buildPoiTemplateName = "UnitTest.BuildPoi.Template";
+                var buildPoiTemplate = new TemplateModel<ParamBuildPoi>(
+                    buildPoiTemplateName,
+                    new ParamBuildPoi { Name = buildPoiTemplateName });
+                TemplateBuildPoi.Params.Add(buildPoiTemplate);
+                try
+                {
+                    var localBuildPoiNode = new LocalBuildPoiByTemplateNode
+                    {
+                        ParameterTemplateName = buildPoiTemplateName
+                    };
+                    PropertyInfo property = typeof(LocalBuildPoiByTemplateNode)
+                        .GetProperty(nameof(LocalBuildPoiByTemplateNode.ParameterTemplateName))!;
+                    DockPanel editor = new FlowBuildPoiTemplateEditor().GenProperties(property, localBuildPoiNode);
+                    var combo = Assert.Single(FindVisualChildren<HandyControl.Controls.ComboBox>(editor));
+
+                    Assert.Equal(buildPoiTemplateName, ((TemplateBase)combo.SelectedItem).Key);
+                }
+                finally
+                {
+                    TemplateBuildPoi.Params.Remove(buildPoiTemplate);
                 }
 
                 var smuNode = new SMUNode

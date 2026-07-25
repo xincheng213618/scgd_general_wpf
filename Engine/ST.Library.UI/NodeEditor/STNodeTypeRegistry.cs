@@ -123,6 +123,10 @@ internal static class STNodeTypeRegistry
 			{
 				return true;
 			}
+			if (TryGetNodeTypeByLegacySuffix(model, out type))
+			{
+				return true;
+			}
 			type = null;
 			return false;
 		}
@@ -130,7 +134,31 @@ internal static class STNodeTypeRegistry
 
 	public static string GetModelByType(Type type)
 	{
-		return $"{type.Module.Name}|{type.Name}";
+		return $"{type.Module.Name}|{type.FullName}";
+	}
+
+	private static bool TryGetNodeTypeByLegacySuffix(string model, out Type type)
+	{
+		type = null;
+		if (string.IsNullOrEmpty(model))
+		{
+			return false;
+		}
+
+		int moduleSeparator = model.IndexOf('|');
+		if (moduleSeparator <= 0 || moduleSeparator >= model.Length - 1)
+		{
+			return false;
+		}
+		string legacyTypeName = model.Substring(moduleSeparator + 1);
+		int typeNameSeparator = Math.Max(legacyTypeName.LastIndexOf('.'), legacyTypeName.LastIndexOf('+'));
+		if (typeNameSeparator < 0 || typeNameSeparator >= legacyTypeName.Length - 1)
+		{
+			return false;
+		}
+
+		string currentModel = string.Concat(model.AsSpan(0, moduleSeparator + 1), legacyTypeName.AsSpan(typeNameSeparator + 1));
+		return ModelTypes.TryGetValue(currentModel, out type);
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
@@ -169,21 +197,24 @@ internal static class STNodeTypeRegistry
 				GuidTypes.Add(guid, type);
 			}
 
-			string model = GetModelByType(type);
-			if (AmbiguousModels.Contains(model))
-			{
-				continue;
-			}
-			if (ModelTypes.TryGetValue(model, out Type existingType) && existingType != type)
-			{
-				ModelTypes.Remove(model);
-				AmbiguousModels.Add(model);
-			}
-			else
-			{
-				ModelTypes[model] = type;
-			}
+			RegisterModelKey(GetModelByType(type), type);
+			RegisterModelKey($"{type.Module.Name}|{type.Name}", type);
 		}
+	}
+
+	private static void RegisterModelKey(string model, Type type)
+	{
+		if (AmbiguousModels.Contains(model))
+		{
+			return;
+		}
+		if (ModelTypes.TryGetValue(model, out Type existingType) && existingType != type)
+		{
+			ModelTypes.Remove(model);
+			AmbiguousModels.Add(model);
+			return;
+		}
+		ModelTypes[model] = type;
 	}
 
 	private static bool ShouldScanAssembly(Assembly assembly)
