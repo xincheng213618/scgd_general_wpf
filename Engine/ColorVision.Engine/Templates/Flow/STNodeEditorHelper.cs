@@ -50,6 +50,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodeEditor = sTNodeEditor;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
+            STNodeEditor.SelectedChanged += STNodeEditorMain_SelectedChanged;
             AddContentMenu();
         }
 
@@ -101,6 +102,23 @@ namespace ColorVision.Engine.Templates.Flow
             RefreshActiveNodePropertyPanel();
         }
 
+        private void STNodeEditorMain_SelectedChanged(object? sender, EventArgs e)
+        {
+            RefreshActiveNodePropertyPanel();
+        }
+
+        internal static bool ShouldShowPropertyEditor(STNodeEditor nodeEditor)
+        {
+            STNode? activeNode = nodeEditor.ActiveNode;
+            if (activeNode == null || !activeNode.IsSelected)
+            {
+                return false;
+            }
+
+            STNode[] selectedNodes = nodeEditor.GetSelectedNode();
+            return selectedNodes.Length == 1 && ReferenceEquals(selectedNodes[0], activeNode);
+        }
+
         public void RefreshActiveNodePropertyPanel()
         {
             StackPanel signPanel;
@@ -120,8 +138,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             signPanel.Children.Clear();
 
-            if (STNodeEditor.ActiveNode == null)
+            STNode? activeNode = STNodeEditor.ActiveNode;
+            if (!ShouldShowPropertyEditor(STNodeEditor))
             {
+                signPanel.Visibility = Visibility.Collapsed;
                 if (UseDockPanel)
                 {
                     // Don't hide the dock panel — let the user manage its visibility
@@ -142,12 +162,12 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 PropertyEditorPanel.Visibility = Visibility.Visible;
             }
-            var configurator = NodeConfiguratorRegistry.GetConfigurator(STNodeEditor.ActiveNode.GetType());
+            var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
             if (configurator != null)
             {
                 var context = new NodeConfiguratorContext
                 {
-                    Node = STNodeEditor.ActiveNode,
+                    Node = activeNode,
                     SignStackPanel = signPanel,
                     STNodeEditor = STNodeEditor,
                     Refresh = RefreshActiveNodePropertyPanel
@@ -158,9 +178,9 @@ namespace ColorVision.Engine.Templates.Flow
             signPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
 
-            var resourceManager = PropertyEditorHelper.GetResourceManager(STNodeEditor.ActiveNode);
+            var resourceManager = PropertyEditorHelper.GetResourceManager(activeNode);
             StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
-                STNodeEditor.ActiveNode,
+                activeNode,
                 resourceManager,
                 metadataProvider: FlowNodePropertyMetadataProvider.Instance,
                 advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
@@ -573,6 +593,7 @@ namespace ColorVision.Engine.Templates.Flow
         public void Dispose()
         {
             STNodeEditor.ActiveChanged -= STNodeEditorMain_ActiveChanged;
+            STNodeEditor.SelectedChanged -= STNodeEditorMain_SelectedChanged;
             STNodeEditor.ContextMenuOpening -= STNodeEditor_ContextMenuOpening;
             GC.SuppressFinalize(this);
         }

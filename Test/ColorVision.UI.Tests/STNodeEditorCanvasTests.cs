@@ -1,4 +1,5 @@
 #pragma warning disable CA1707
+using ColorVision.Engine.Templates.Flow;
 using ST.Library.UI.NodeEditor;
 using System.Runtime.ExceptionServices;
 
@@ -87,6 +88,41 @@ namespace ColorVision.UI.Tests
                     STMouseButtons.Left,
                     enableBlankLeftDragCanvasAtMouseDown,
                     System.Windows.Input.ModifierKeys.None));
+            });
+        }
+
+        [Fact]
+        public void NodeActivation_RequiresLeftMouseButton()
+        {
+            Assert.True(TestNodeEditor.ShouldActivateNodeFromMouseForTest(STMouseButtons.Left));
+            Assert.False(TestNodeEditor.ShouldActivateNodeFromMouseForTest(STMouseButtons.Right));
+            Assert.False(TestNodeEditor.ShouldActivateNodeFromMouseForTest(STMouseButtons.Middle));
+        }
+
+        [Fact]
+        public void PropertyEditorVisibility_RequiresOneActiveSelectedNode()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                var first = new TrackingNode();
+                var second = new TrackingNode();
+                first.Create();
+                second.Create();
+                editor.Nodes.Add(first);
+                editor.Nodes.Add(second);
+
+                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+
+                editor.SetActiveNode(first);
+                Assert.True(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+
+                second.SetSelected(bSelected: true, bRedraw: false);
+                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+
+                second.SetSelected(bSelected: false, bRedraw: false);
+                editor.SetActiveNode(null);
+                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
             });
         }
 
@@ -413,6 +449,11 @@ namespace ColorVision.UI.Tests
 
         private sealed class TestNodeEditor : STNodeEditor
         {
+            public static bool ShouldActivateNodeFromMouseForTest(STMouseButtons button)
+            {
+                return ShouldActivateNodeFromMouse(button);
+            }
+
             public static bool ShouldPanBlankCanvasForTest(
                 STMouseButtons button,
                 bool enableBlankLeftDragCanvasAtMouseDown,

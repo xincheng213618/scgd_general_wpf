@@ -1152,6 +1152,10 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			return;
 		}
 		m_ca = CanvasAction.None;
+		if (!ShouldActivateNodeFromMouse(nodeEvent.Button))
+		{
+			SetActiveNode(null);
+		}
 		m_mi.XMatched = (m_mi.YMatched = false);
 		m_pt_down_in_control = nodeEvent.Location;
 		m_pt_down_in_canvas.X = ((float)nodeEvent.X - _CanvasOffsetX) / _CanvasScale;
@@ -1191,6 +1195,10 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
 		{
 			EnableBlankLeftDragCanvas = false;
+		}
+		if (nodeFindInfo.Node != null && !ShouldActivateNodeFromMouse(nodeEvent.Button))
+		{
+			return;
 		}
 		if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
 		{
@@ -1234,10 +1242,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			SetActiveNode(nodeFindInfo.Node);
 			if (PointInRectangle(nodeFindInfo.Node.Rectangle, m_pt_down_in_canvas.X, m_pt_down_in_canvas.Y))
 			{
-				if (nodeEvent.Button == STMouseButtons.Right)
-				{
-					return;
-				}
 				m_dic_pt_selected.Clear();
 				lock (m_hs_node_selected)
 				{
@@ -1275,6 +1279,11 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			m_node_down = null;
 		}
 		e.Handled = nodeEvent.Button != STMouseButtons.Right;
+	}
+
+	protected internal static bool ShouldActivateNodeFromMouse(STMouseButtons button)
+	{
+		return button == STMouseButtons.Left;
 	}
 
 	protected internal static bool ShouldPanBlankCanvas(STMouseButtons button, bool enableBlankLeftDragCanvasAtMouseDown, ModifierKeys modifiers)
