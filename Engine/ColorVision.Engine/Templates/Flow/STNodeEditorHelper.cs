@@ -873,7 +873,7 @@ namespace ColorVision.Engine.Templates.Flow
         public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.ClientSize.Width / 2f, STNodeEditor.ClientSize.Height / 2f); OnPropertyChanged(); } }
         public void AutoSize()
         {
-            STNodeEditor.FitCanvasToNodes();
+            STNodeEditor.FitCanvasToNodes(0.85f);
             OnPropertyChanged(nameof(CanvasScale));
         }
 

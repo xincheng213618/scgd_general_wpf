@@ -98,6 +98,20 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FitCanvasToNodes_CanLeaveAdditionalViewportMargin()
+        {
+            RunInSta(() =>
+            {
+                using var editor = CreateEditorWithNode();
+                editor.LimitCanvasToContentBounds = false;
+
+                editor.FitCanvasToNodes(0.85f);
+
+                Assert.Equal(0.85f, editor.CanvasScale);
+            });
+        }
+
+        [Fact]
         public void DrawNodes_SkipsNodesOutsideTheViewport()
         {
             RunInSta(() =>
@@ -242,6 +256,7 @@ namespace ColorVision.UI.Tests
                     6,
                     node.Height - 20);
                 Assert.True(activeOutsideAlpha > selectedOutsideAlpha);
+                Assert.Equal(0, activeBitmap.GetPixel(node.Left - 4, node.Top + node.Height / 2).A);
             });
         }
 
