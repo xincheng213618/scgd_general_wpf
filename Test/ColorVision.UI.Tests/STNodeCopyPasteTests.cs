@@ -1,5 +1,8 @@
 #pragma warning disable CA1707
+using ST.Library.UI.NodeContainer;
 using ST.Library.UI.NodeEditor;
+using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace ColorVision.UI.Tests
@@ -40,17 +43,17 @@ namespace ColorVision.UI.Tests
             Assert.NotNull(data);
             Assert.True(data.Length > 0);
 
-            // Parse the save data format: [type_len][module|fullname][guid_len][guid][key-value pairs...]
+            // Parse the save data format: [type_len][module|short-name][guid_len][guid][key-value pairs...]
             int pos = 0;
             string modelKey = Encoding.UTF8.GetString(data, pos + 1, data[pos]);
             pos += data[pos] + 1;
             string guidKey = Encoding.UTF8.GetString(data, pos + 1, data[pos]);
             pos += data[pos] + 1;
 
-            // modelKey should be "module|FullTypeName"
+            // Namespace moves must not change the persisted model key.
             Assert.Contains("|", modelKey);
             string typeName = modelKey.Split('|')[1];
-            Assert.Equal(typeof(STNodeHub).FullName, typeName);
+            Assert.Equal(typeof(STNodeHub).Name, typeName);
 
             // guidKey should be a valid GUID
             Assert.True(Guid.TryParse(guidKey, out _));
@@ -183,7 +186,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void GetSaveData_DifferentNodeTypes_ProduceDifferentModuleKeys()
+        public void GetSaveData_DifferentNodeTypes_ProduceDifferentModelKeys()
         {
             var hub = new STNodeHub();
             hub.Create();
@@ -202,8 +205,48 @@ namespace ColorVision.UI.Tests
             string inHubType = inHubKey.Split('|')[1];
 
             Assert.NotEqual(hubType, inHubType);
-            Assert.Equal(typeof(STNodeHub).FullName, hubType);
-            Assert.Equal(typeof(STNodeInHub).FullName, inHubType);
+            Assert.Equal(typeof(STNodeHub).Name, hubType);
+            Assert.Equal(typeof(STNodeInHub).Name, inHubType);
+        }
+
+        [Fact]
+        public void CanvasLoad_UsesModelKeyWhenTypeGuidDoesNotMatch()
+        {
+            var original = new STNodeHub();
+            original.Create();
+            byte[] nodeData = original.GetSaveData();
+
+            int guidLengthOffset = nodeData[0] + 1;
+            int guidLength = nodeData[guidLengthOffset];
+            byte[] replacementGuid = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+            Assert.Equal(guidLength, replacementGuid.Length);
+            Array.Copy(replacementGuid, 0, nodeData, guidLengthOffset + 1, guidLength);
+
+            var container = new CVNodeContainer();
+            Assert.True(container.LoadAssembly(typeof(STNodeHub).Assembly));
+            container.LoadCanvas(CreateCanvasData(nodeData));
+
+            Assert.IsType<STNodeHub>(Assert.Single(container.Nodes.Cast<STNode>()));
+        }
+
+        private static byte[] CreateCanvasData(byte[] nodeData)
+        {
+            using var stream = new MemoryStream();
+            stream.Write(STNodeConstant.NodeFlag);
+            stream.WriteByte(STNodeConstant.Version);
+
+            using (var gzip = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true))
+            {
+                gzip.Write(BitConverter.GetBytes(0f));
+                gzip.Write(BitConverter.GetBytes(0f));
+                gzip.Write(BitConverter.GetBytes(1f));
+                gzip.Write(BitConverter.GetBytes(1));
+                gzip.Write(BitConverter.GetBytes(nodeData.Length));
+                gzip.Write(nodeData);
+                gzip.Write(BitConverter.GetBytes(0));
+            }
+
+            return stream.ToArray();
         }
 
         [Fact(Skip = RequiresStaUiTestRunner)]

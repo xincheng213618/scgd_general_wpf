@@ -1,5 +1,5 @@
 #pragma warning disable CA1707
-using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.UI.Tests;
 

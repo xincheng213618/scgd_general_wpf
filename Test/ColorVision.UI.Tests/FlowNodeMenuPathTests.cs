@@ -1,4 +1,4 @@
-using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing.Editor;
 
 namespace ColorVision.UI.Tests;
 

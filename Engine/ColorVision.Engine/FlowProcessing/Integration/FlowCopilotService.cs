@@ -34,7 +34,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
 
         private ViewFlow View => _manager.View;
         private FlowControl FlowControl => _manager.FlowControl;
-        private FlowParam? SlectFlowParam => _manager.SlectFlowParam;
+        private FlowParam? SelectedFlowParam => _manager.SelectedFlowParam;
         private int TemplateFlowParamsIndex => _manager.TemplateFlowParamsIndex;
         private ObservableCollection<TemplateModel<FlowParam>> FlowParams => _manager.FlowParams;
         private MeasureBatchModel? Batch => _manager.Batch;
@@ -65,7 +65,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
 
         public CopilotFlowContextSnapshot CaptureCopilotFlowSnapshot()
         {
-            var flowParam = SlectFlowParam ?? (TemplateFlowParamsIndex >= 0 && TemplateFlowParamsIndex < FlowParams.Count ? FlowParams[TemplateFlowParamsIndex].Value : null);
+            var flowParam = SelectedFlowParam ?? (TemplateFlowParamsIndex >= 0 && TemplateFlowParamsIndex < FlowParams.Count ? FlowParams[TemplateFlowParamsIndex].Value : null);
             var nodes = BuildNodeSnapshots();
             var edges = BuildEdgeSnapshots();
             var batch = Batch;

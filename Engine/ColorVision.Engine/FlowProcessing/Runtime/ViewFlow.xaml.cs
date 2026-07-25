@@ -112,8 +112,8 @@ namespace ColorVision.Engine.FlowProcessing
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
             NewFlowCommand = new RelayCommand(a => NewFlow());
-            DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SlectFlowParam != null);
-            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SlectFlowParam != null);
+            DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SelectedFlowParam != null);
+            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => !_isStandalone && FlowEngineManager.GetInstance().SelectedFlowParam != null);
             ImportFlowCommand = new RelayCommand(a => ImportFlow(), a => !_isStandalone);
             ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
 
@@ -190,7 +190,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void DeleteFlow()
         {
-            var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+            var flowParam = FlowEngineManager.GetInstance().SelectedFlowParam;
             if (flowParam == null) return;
 
             if (MessageBox.Show(Application.Current.GetActiveWindow(),
@@ -210,7 +210,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void ExportFlow()
         {
-            var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+            var flowParam = FlowEngineManager.GetInstance().SelectedFlowParam;
             if (flowParam == null) return;
 
             var templateFlow = new TemplateFlow();
@@ -304,10 +304,10 @@ namespace ColorVision.Engine.FlowProcessing
                     return false;
                 }
 
-                var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+                var flowParam = FlowEngineManager.GetInstance().SelectedFlowParam;
                 if (flowParam == null)
                 {
-                    log.Error("Save: SlectFlowParam 为 null, 无法保存");
+                    log.Error("Save: SelectedFlowParam 为 null, 无法保存");
                     MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowParamSelected);
                     return false;
                 }

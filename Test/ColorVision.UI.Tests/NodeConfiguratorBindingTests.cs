@@ -2,8 +2,8 @@
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Flow.NodeConfigurator;
-using ColorVision.Engine.Templates.Flow.Nodes;
+using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using FlowEngineLib;
 using FlowEngineLib.PropertyEditor;
 using HandyControl.Interactivity;

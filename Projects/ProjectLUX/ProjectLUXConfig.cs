@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectLUX.PluginConfig;

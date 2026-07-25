@@ -1,5 +1,5 @@
 using ColorVision.Engine.Services.Devices.Camera.Local;
-using ColorVision.Engine.Templates.Flow.Nodes;
+using ColorVision.Engine.FlowProcessing.Nodes;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine;
 using FlowEngineLib.Base;

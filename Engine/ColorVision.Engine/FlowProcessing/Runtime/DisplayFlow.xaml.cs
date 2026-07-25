@@ -101,7 +101,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                 {
-                    FlowEngineManager.SlectFlowParam = flowParam;
+                    FlowEngineManager.SelectedFlowParam = flowParam;
                     FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
                     if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
                         LastFlowTime = time;
@@ -283,7 +283,7 @@ namespace ColorVision.Engine.FlowProcessing
             try
             {
                 ComboBoxFlow.SelectedItem = flowTemplate;
-                FlowEngineManager.SlectFlowParam = flowTemplate.Value;
+                FlowEngineManager.SelectedFlowParam = flowTemplate.Value;
                 FlowEngineManager.TemplateFlowParamsIndex = TemplateFlow.Params.IndexOf(flowTemplate);
                 FlowEngineConfig.Instance.LastSelectFlow = flowTemplate.Id;
             }
@@ -346,7 +346,7 @@ namespace ColorVision.Engine.FlowProcessing
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-                FlowEngineManager.SlectFlowParam = flowParam;
+                FlowEngineManager.SelectedFlowParam = flowParam;
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
@@ -383,7 +383,7 @@ namespace ColorVision.Engine.FlowProcessing
             ResetNodeTitleProgress();
             View.FlowEngineControl.LoadFromBase64(string.Empty);
             FlowEngineManager.CVBaseServerNodes.Clear();
-            FlowEngineManager.SlectFlowParam = flowParam;
+            FlowEngineManager.SelectedFlowParam = flowParam;
             if (flowParam == null)
                 FlowEngineManager.TemplateFlowParamsIndex = -1;
             View.STNodeEditorHelper.AddNodeContext();

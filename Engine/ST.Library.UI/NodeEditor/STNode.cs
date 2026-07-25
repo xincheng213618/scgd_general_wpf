@@ -765,7 +765,7 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 		List<byte> list = new List<byte>();
 		Type type = GetType();
-		byte[] bytes = Encoding.UTF8.GetBytes(type.Module.Name + "|" + type.FullName);
+		byte[] bytes = Encoding.UTF8.GetBytes(STNodeTypeRegistry.GetModelByType(type));
 		list.Add((byte)bytes.Length);
 		list.AddRange(bytes);
 		bytes = Encoding.UTF8.GetBytes(type.GUID.ToString());
