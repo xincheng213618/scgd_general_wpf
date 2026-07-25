@@ -45,6 +45,29 @@ public class FlowExecutionNodeResolutionTests
         Assert.Same(node, resolved);
     }
 
+    [Fact]
+    public void ResolveExecutionNode_UsesStableIdWhenNamesAreDuplicated()
+    {
+        CVCommonNode first = CreateNode("PG.GECS", "SVR.PG.Default");
+        CVCommonNode failed = CreateNode("PG.GECS", "SVR.PG.Default");
+
+        CVCommonNode? resolved = STNodeEditorHelper.ResolveExecutionNode(
+            new[] { first, failed },
+            failed.NodeID);
+
+        Assert.Same(failed, resolved);
+    }
+
+    [Fact]
+    public void FailedAction_CarriesStableNodeIdToFlowCompletionData()
+    {
+        var action = new CVBaseCFC("serial", ActionTypeEnum.Start);
+
+        action.Failed("failed", "PG.GECS.SVR.PG.Default", DateTime.Now, "node-id");
+
+        Assert.Equal("node-id", action.Data["ErrorNodeId"]);
+    }
+
     private static CVCommonNode CreateNode(string title, string nodeName)
     {
         return new CVCommonNode(title, "SVR", nodeName, string.Empty)

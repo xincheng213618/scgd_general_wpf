@@ -1828,11 +1828,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 				}
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
-					DrawBezier(graphics, m_p_line_hover, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
-					DrawBezier(graphics, m_p_line, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+					float x1 = outputOption.DotLeft + outputOption.DotSize;
+					float y1 = outputOption.DotTop + outputOption.DotSize / 2;
+					float x2 = item.DotLeft - 1;
+					float y2 = item.DotTop + item.DotSize / 2;
+					DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
+					DrawBezier(graphics, m_p_line, x1, y1, x2, y2, _Curvature);
 					if (m_is_buildpath)
 					{
-						GraphicsPath key = CreateBezierPath(outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+						GraphicsPath key = CreateBezierPath(x1, y1, x2, y2, _Curvature);
 						m_dic_gp_info.Add(key, new ConnectionInfo
 						{
 							Output = outputOption,
@@ -2492,9 +2496,9 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			float routeY = Math.Max(y1, y2) + 70f;
 			float startGutterX = x1 + 30f;
 			float endGutterX = x2 - 30f;
-			graphicsPath.AddBezier(x1, y1, startGutterX, y1, startGutterX, routeY, startGutterX, routeY);
-			graphicsPath.AddLine(startGutterX, routeY, endGutterX, routeY);
-			graphicsPath.AddBezier(endGutterX, routeY, endGutterX, y2, endGutterX, y2, x2, y2);
+			float midpointX = (x1 + x2) / 2f;
+			graphicsPath.AddBezier(x1, y1, startGutterX, y1, startGutterX, routeY, midpointX, routeY);
+			graphicsPath.AddBezier(midpointX, routeY, endGutterX, routeY, endGutterX, y2, x2, y2);
 			return graphicsPath;
 		}
 

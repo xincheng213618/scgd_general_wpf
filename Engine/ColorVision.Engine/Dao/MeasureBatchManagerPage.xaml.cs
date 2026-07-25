@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;

@@ -30,9 +30,9 @@ public class CVTransAction
 		trans_action.GetStartNode().DoPublishStatus(serverName);
 	}
 
-	public void NodeOverTime(string nodeName)
+	public void NodeOverTime(string nodeName, string nodeId = "")
 	{
-		trans_action.OverTime(nodeName, startTime);
+		trans_action.OverTime(nodeName, startTime, nodeId);
 		FinishFlow();
 	}
 
@@ -51,9 +51,9 @@ public class CVTransAction
 		NodeFinished(masterValue, masterId, masterResultType);
 	}
 
-	public void NodeFailed(string msg, string nodeName)
+	public void NodeFailed(string msg, string nodeName, string nodeId = "")
 	{
-		trans_action.Failed(msg, nodeName, startTime);
+		trans_action.Failed(msg, nodeName, startTime, nodeId);
 		FinishFlow();
 	}
 

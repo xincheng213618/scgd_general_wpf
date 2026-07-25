@@ -18,6 +18,19 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void CreateBezierPath_BackwardConnectionDoesNotUseSharedHorizontalSegment()
+        {
+            using System.Drawing.Drawing2D.GraphicsPath path =
+                TestNodeEditor.CreateBezierPathForTest(700, 100, 400, 100, 0.3f);
+
+            Assert.DoesNotContain(
+                path.PathTypes.Skip(1),
+                type => (type & (byte)System.Drawing.Drawing2D.PathPointType.PathTypeMask)
+                    == (byte)System.Drawing.Drawing2D.PathPointType.Line);
+            Assert.Equal(170, path.PathPoints.Max(point => point.Y));
+        }
+
+        [Fact]
         public void CanvasBounds_AreLimitedByDefault()
         {
             RunInSta(() =>

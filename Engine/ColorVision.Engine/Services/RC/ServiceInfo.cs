@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI.LogImp;
 using System;
@@ -77,7 +78,7 @@ namespace ColorVision.Engine.Services.RC
         public void OpenLog()
         {
             string baseDir = Directory.GetParent(ServiceInfo.ExecutablePath).FullName;
-            string latestLogPath = LogFileHelper.GetLatestMainLogPath(baseDir);
+            string latestLogPath = ServiceLogFileLocator.GetLatestMainLogPath(baseDir);
             if (!string.IsNullOrEmpty(latestLogPath))
             {
                 WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));

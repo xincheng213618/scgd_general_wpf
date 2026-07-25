@@ -13,6 +13,7 @@ internal static class STNodeTypeRegistry
 	private static readonly HashSet<Type> NodeTypes = new HashSet<Type>();
 	private static readonly Dictionary<string, Type> GuidTypes = new Dictionary<string, Type>();
 	private static readonly Dictionary<string, Type> ModelTypes = new Dictionary<string, Type>();
+	private static readonly HashSet<string> AmbiguousModels = new HashSet<string>();
 	private static readonly Dictionary<Assembly, List<Type>> AssemblyTypes = new Dictionary<Assembly, List<Type>>();
 	private static bool _initialized;
 
@@ -129,7 +130,7 @@ internal static class STNodeTypeRegistry
 
 	public static string GetModelByType(Type type)
 	{
-		return $"{type.Module.Name}|{type.FullName}";
+		return $"{type.Module.Name}|{type.Name}";
 	}
 
 	private static void CurrentDomain_AssemblyLoad(object sender, AssemblyLoadEventArgs args)
@@ -169,9 +170,18 @@ internal static class STNodeTypeRegistry
 			}
 
 			string model = GetModelByType(type);
-			if (!ModelTypes.ContainsKey(model))
+			if (AmbiguousModels.Contains(model))
 			{
-				ModelTypes.Add(model, type);
+				continue;
+			}
+			if (ModelTypes.TryGetValue(model, out Type existingType) && existingType != type)
+			{
+				ModelTypes.Remove(model);
+				AmbiguousModels.Add(model);
+			}
+			else
+			{
+				ModelTypes[model] = type;
 			}
 		}
 	}

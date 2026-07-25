@@ -448,10 +448,12 @@ public abstract class BaseStartNode : CVCommonNode
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
 		string message = string.Empty;
 		string errorNodeName = string.Empty;
+		string errorNodeId = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
 			Dictionary<string, object> data = startAction.Data;
 			errorNodeName = GetDataString(data, "ErrorNodeName");
+			errorNodeId = GetDataString(data, "ErrorNodeId");
 			message = GetDataString(data, "Msg");
 			if (string.IsNullOrWhiteSpace(message) && !string.IsNullOrWhiteSpace(errorNodeName) && data != null && data.TryGetValue(errorNodeName, out object nodeStatusObj))
 			{
@@ -462,7 +464,7 @@ public abstract class BaseStartNode : CVCommonNode
 				message = flowStatus.ToString();
 			}
 		}
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName));
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName, errorNodeId));
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

@@ -422,7 +422,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 			}
 			_IsRunning = attachedStartNodes.Any(startNode => startNode.Running);
 			finished = Finished;
-			args = new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName);
+			args = new FlowEngineEventArgs(baseStartNode.NodeName, e.SerialNumber, e.Status, e.TotalTime, e.Message, e.ErrorNodeName, e.ErrorNodeId);
 		}
 		finished?.Invoke(sender, args);
 	}

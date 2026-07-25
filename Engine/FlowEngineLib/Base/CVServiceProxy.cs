@@ -258,7 +258,7 @@ public class CVServiceProxy
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.NodeFailed(cmd.resp.Message, GetFullNodeName());
+			trans.NodeFailed(cmd.resp.Message, GetFullNodeName(), NodeID);
 		}
 		if (_IsPublishStatus)
 		{
@@ -320,7 +320,7 @@ public class CVServiceProxy
 		CVTransAction cVTransAction = RemoveTrans(cmd2.SerialNumber, cmd2.MsgID);
 		if (cVTransAction != null)
 		{
-			cVTransAction.NodeOverTime(GetFullNodeName());
+			cVTransAction.NodeOverTime(GetFullNodeName(), NodeID);
 			if (logger.IsInfoEnabled)
 			{
 				logger.InfoFormat("{0}/{1}/{2}/{3} => OverTime", Title, DeviceCode, ZIndex, NodeID);

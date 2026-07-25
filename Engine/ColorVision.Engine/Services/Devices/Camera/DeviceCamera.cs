@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CA1822,CA1863,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
@@ -125,7 +127,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void OpenCameraLog()
         {
             string baseDir = Directory.GetParent(ServiceConfig.Instance.CVMainService_x64).FullName;
-            string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_camera");
+            string? latestLogPath = ServiceLogFileLocator.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_camera");
             if (!string.IsNullOrEmpty(latestLogPath))
             {
                 WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));

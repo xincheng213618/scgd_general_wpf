@@ -1,3 +1,5 @@
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.FlowProcessing.Integration;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Solution;
@@ -313,7 +315,7 @@ namespace ColorVision.Copilot.Mcp
             }, cancellationToken);
         }
 
-        private static object BuildPropertyPreview(FlowEngineManager manager, CopilotFlowPatchRequest request)
+        private static object BuildPropertyPreview(FlowCopilotService manager, CopilotFlowPatchRequest request)
         {
             var preview = manager.PreviewCopilotFlowNodePropertyChange(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision);
             return new
@@ -342,7 +344,7 @@ namespace ColorVision.Copilot.Mcp
             }, cancellationToken);
         }
 
-        private static async Task<CopilotMcpToolCallResult> InvokeFlowManagerAsync(Func<FlowEngineManager, CopilotMcpToolCallResult> action, CancellationToken cancellationToken)
+        private static async Task<CopilotMcpToolCallResult> InvokeFlowManagerAsync(Func<FlowCopilotService, CopilotMcpToolCallResult> action, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var manager = FlowEngineManager.Current;
@@ -352,9 +354,9 @@ namespace ColorVision.Copilot.Mcp
             try
             {
                 if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
-                    return await Application.Current.Dispatcher.InvokeAsync(() => action(manager));
+                    return await Application.Current.Dispatcher.InvokeAsync(() => action(manager.Copilot));
 
-                return action(manager);
+                return action(manager.Copilot);
             }
             catch (OperationCanceledException)
             {
@@ -473,11 +475,11 @@ namespace ColorVision.Copilot.Mcp
                     return await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return manager.CaptureCopilotFlowSnapshot();
+                        return manager.Copilot.CaptureCopilotFlowSnapshot();
                     });
                 }
 
-                return manager.CaptureCopilotFlowSnapshot();
+                return manager.Copilot.CaptureCopilotFlowSnapshot();
             }
             catch
             {
@@ -500,11 +502,11 @@ namespace ColorVision.Copilot.Mcp
                     return await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return manager.CaptureCopilotFlowNodeCatalog(query, maxResults);
+                        return manager.Copilot.CaptureCopilotFlowNodeCatalog(query, maxResults);
                     });
                 }
 
-                return manager.CaptureCopilotFlowNodeCatalog(query, maxResults);
+                return manager.Copilot.CaptureCopilotFlowNodeCatalog(query, maxResults);
             }
             catch
             {

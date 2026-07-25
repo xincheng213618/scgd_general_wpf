@@ -17,7 +17,9 @@ public class FlowEngineEventArgs : EventArgs
 
 	public string ErrorNodeName { get; set; }
 
-	public FlowEngineEventArgs(string startNodeName, string serialNumber, StatusTypeEnum status, long totalTime, string message, string errorNodeName = "")
+	public string ErrorNodeId { get; set; }
+
+	public FlowEngineEventArgs(string startNodeName, string serialNumber, StatusTypeEnum status, long totalTime, string message, string errorNodeName = "", string errorNodeId = "")
 	{
 		StartNodeName = startNodeName;
 		SerialNumber = serialNumber;
@@ -25,5 +27,6 @@ public class FlowEngineEventArgs : EventArgs
 		TotalTime = totalTime;
 		Message = message;
 		ErrorNodeName = errorNodeName;
+		ErrorNodeId = errorNodeId;
 	}
 }

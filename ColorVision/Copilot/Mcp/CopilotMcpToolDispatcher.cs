@@ -1,4 +1,5 @@
 #pragma warning disable CA1822,CA1826,CA1859,CA1861
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;

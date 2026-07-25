@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1863,CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
@@ -198,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (string.IsNullOrWhiteSpace(baseDir))
                 return;
 
-            string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_Spectrum");
+            string? latestLogPath = ServiceLogFileLocator.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_Spectrum");
             if (!string.IsNullOrEmpty(latestLogPath))
             {
                 WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
