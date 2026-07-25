@@ -431,7 +431,7 @@ namespace ColorVision.Copilot
         {
             if (Keyboard.Modifiers == ModifierKeys.None
                 && DataContext is CopilotChatViewModel referenceViewModel
-                && referenceViewModel.HasComposerReferenceSuggestions)
+                && referenceViewModel.IsComposerReferenceMentionActive)
             {
                 if (e.Key == Key.Escape)
                 {
@@ -445,12 +445,24 @@ namespace ColorVision.Copilot
                     e.Handled = true;
                     return;
                 }
-                if (e.Key is Key.Enter or Key.Tab
-                    && referenceViewModel.TryCompleteComposerReference())
+                if (e.Key is Key.Enter or Key.Tab)
                 {
-                    MovePromptCaretToEnd();
-                    e.Handled = true;
-                    return;
+                    if (referenceViewModel.HasComposerReferenceSuggestions
+                        && referenceViewModel.TryCompleteComposerReference())
+                    {
+                        MovePromptCaretToEnd();
+                        e.Handled = true;
+                        return;
+                    }
+
+                    if (CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
+                            e.Key == Key.Tab,
+                            referenceViewModel.HasComposerReferenceSuggestions,
+                            referenceViewModel.IsComposerReferenceSearchPending))
+                    {
+                        e.Handled = true;
+                        return;
+                    }
                 }
             }
 

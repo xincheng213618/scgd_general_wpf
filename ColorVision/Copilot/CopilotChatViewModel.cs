@@ -87,6 +87,8 @@ namespace ColorVision.Copilot
         private CopilotComposerReferenceItem? _selectedComposerReference;
         private string _conversationSearchText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
+        private bool _isComposerReferenceMentionActive;
+        private bool _isComposerReferenceSearchPending;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
         private bool _isApplyingPromptHistory;
@@ -901,6 +903,42 @@ namespace ColorVision.Copilot
 
         public bool HasComposerReferenceSuggestions => ComposerReferenceSuggestions.Count > 0;
 
+        public bool IsComposerReferenceMentionActive
+        {
+            get => _isComposerReferenceMentionActive;
+            private set
+            {
+                if (!SetProperty(ref _isComposerReferenceMentionActive, value))
+                    return;
+
+                OnPropertyChanged(nameof(IsComposerReferencePopoverOpen));
+                OnPropertyChanged(nameof(HasComposerReferenceStatus));
+                OnPropertyChanged(nameof(ComposerReferenceStatusText));
+            }
+        }
+
+        public bool IsComposerReferenceSearchPending
+        {
+            get => _isComposerReferenceSearchPending;
+            private set
+            {
+                if (!SetProperty(ref _isComposerReferenceSearchPending, value))
+                    return;
+
+                OnPropertyChanged(nameof(HasComposerReferenceStatus));
+                OnPropertyChanged(nameof(ComposerReferenceStatusText));
+            }
+        }
+
+        public bool IsComposerReferencePopoverOpen => IsComposerReferenceMentionActive;
+
+        public bool HasComposerReferenceStatus =>
+            IsComposerReferenceMentionActive && !HasComposerReferenceSuggestions;
+
+        public string ComposerReferenceStatusText => IsComposerReferenceSearchPending
+            ? "正在索引工作区文件…"
+            : "未找到关联项，请继续输入或按 Esc 关闭";
+
         public CopilotComposerReferenceItem? SelectedComposerReference
         {
             get => _selectedComposerReference;
@@ -958,6 +996,8 @@ namespace ColorVision.Copilot
         public void DismissComposerReferenceSuggestions()
         {
             CancelComposerReferenceRefresh(resetSession: true);
+            IsComposerReferenceMentionActive = false;
+            IsComposerReferenceSearchPending = false;
             ClearComposerReferenceSuggestions();
         }
 
@@ -966,6 +1006,7 @@ namespace ColorVision.Copilot
             ComposerReferenceSuggestions.Clear();
             SelectedComposerReference = null;
             OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
+            OnPropertyChanged(nameof(HasComposerReferenceStatus));
         }
 
         private void RefreshComposerReferenceSuggestions()
@@ -991,6 +1032,7 @@ namespace ColorVision.Copilot
             _composerReferenceSessionKey = sessionKey;
 
             CancelComposerReferenceRefresh(resetSession: false);
+            IsComposerReferenceMentionActive = true;
             var version = Interlocked.Increment(ref _composerReferenceRefreshVersion);
             var cancellation = new CancellationTokenSource();
             _composerReferenceRefreshCts = cancellation;
@@ -1001,6 +1043,7 @@ namespace ColorVision.Copilot
 
             if (!string.IsNullOrWhiteSpace(workspaceRoot))
             {
+                IsComposerReferenceSearchPending = true;
                 _ = RefreshWorkspaceComposerReferencesAsync(
                     mention.Query,
                     workspaceRoot,
@@ -1009,6 +1052,10 @@ namespace ColorVision.Copilot
                     previousValue,
                     version,
                     cancellation.Token);
+            }
+            else
+            {
+                IsComposerReferenceSearchPending = false;
             }
         }
 
@@ -1035,6 +1082,7 @@ namespace ColorVision.Copilot
                     return;
                 }
 
+                IsComposerReferenceSearchPending = false;
                 var merged = CopilotComposerReferenceCatalog.MergeSearchResults(
                     query,
                     immediateSuggestions,
@@ -1047,6 +1095,15 @@ namespace ColorVision.Copilot
             catch
             {
                 // Template and menu references remain available if file indexing fails.
+            }
+            finally
+            {
+                if (!cancellationToken.IsCancellationRequested
+                    && version == Volatile.Read(ref _composerReferenceRefreshVersion)
+                    && Volatile.Read(ref _disposeState) == 0)
+                {
+                    IsComposerReferenceSearchPending = false;
+                }
             }
         }
 
@@ -1062,6 +1119,7 @@ namespace ColorVision.Copilot
                 string.Equals(item.Value, preferredValue, StringComparison.OrdinalIgnoreCase))
                 ?? ComposerReferenceSuggestions.FirstOrDefault();
             OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
+            OnPropertyChanged(nameof(HasComposerReferenceStatus));
         }
 
         private void CancelComposerReferenceRefresh(bool resetSession)

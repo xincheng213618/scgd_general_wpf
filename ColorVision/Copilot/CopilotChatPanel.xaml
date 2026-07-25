@@ -1834,7 +1834,7 @@
                             BorderBrush="{DynamicResource PrimaryBrush}"
                             BorderThickness="1"
                             CornerRadius="9"
-                            Visibility="{Binding HasComposerReferenceSuggestions, Converter={StaticResource bool2VisibilityConverter}}">
+                            Visibility="{Binding IsComposerReferencePopoverOpen, Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel LastChildFill="True">
                             <DockPanel DockPanel.Dock="Top" Margin="10,7,10,4">
                                 <TextBlock DockPanel.Dock="Right"
@@ -1848,6 +1848,13 @@
                                            Opacity="0.68"
                                            Text="@ 关联模板、菜单或文件" />
                             </DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Margin="12,9,12,12"
+                                       HorizontalAlignment="Center"
+                                       FontSize="10"
+                                       Opacity="0.58"
+                                       Text="{Binding ComposerReferenceStatusText}"
+                                       Visibility="{Binding HasComposerReferenceStatus, Converter={StaticResource bool2VisibilityConverter}}" />
                             <ListBox Background="Transparent"
                                      BorderThickness="0"
                                      ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"

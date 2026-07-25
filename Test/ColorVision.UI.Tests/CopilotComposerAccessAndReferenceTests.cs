@@ -72,6 +72,25 @@ public sealed class CopilotComposerAccessAndReferenceTests
         Assert.False(CopilotComposerReferenceCatalog.TryParseMention(completed, out _));
     }
 
+    [Theory]
+    [InlineData(false, false, true, true)]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, true, false, true)]
+    [InlineData(false, false, false, false)]
+    public void ReferenceCompletionKeysWaitForUsableSearchState(
+        bool isTabKey,
+        bool hasSuggestions,
+        bool isSearchPending,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
+                isTabKey,
+                hasSuggestions,
+                isSearchPending));
+    }
+
     [Fact]
     public void WorkspaceFileSearchSkipsBuildOutput()
     {

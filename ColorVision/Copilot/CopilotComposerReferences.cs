@@ -110,6 +110,14 @@ namespace ColorVision.Copilot
             return text[..mention.StartIndex] + $"@[{safeTitle}] ";
         }
 
+        internal static bool ShouldConsumeReferenceCompletionKey(
+            bool isTabKey,
+            bool hasSuggestions,
+            bool isSearchPending)
+        {
+            return isTabKey || hasSuggestions || isSearchPending;
+        }
+
         internal static IReadOnlyList<CopilotComposerReferenceItem> SearchImmediate(
             string? query,
             string? activeDocumentPath)
