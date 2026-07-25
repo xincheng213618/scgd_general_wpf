@@ -86,6 +86,22 @@ public class BatchImageProcessingTests
     }
 
     [Fact]
+    public void FirstCatalogAlgorithmPerformsFormatOnlyConversionWithoutChangingPixels()
+    {
+        using Mat source = new(2, 3, MatType.CV_16UC1);
+        source.SetTo(Scalar.All(1234));
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()[0];
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal("仅转换格式", algorithm.Name);
+        Assert.Equal(string.Empty, algorithm.Suffix);
+        Assert.NotSame(source, result);
+        Assert.Equal(source.Type(), result.Type());
+        Assert.Equal((ushort)1234, result.At<ushort>(0, 0));
+    }
+
+    [Fact]
     public void EveryCatalogAlgorithmProcessesASixteenBitColorImage()
     {
         using Mat source = new(24, 32, MatType.CV_16UC3);

@@ -11,20 +11,42 @@ namespace ColorVision.Copilot
         private const int MaximumFollowUpCharacters = 300;
         private const int VisibleHistoryEvidenceLimit = 4;
 
-        private static readonly string[] LocalEvidenceMarkers =
+        private static readonly string[] LocalScopeMarkers =
         {
-            "当前项目", "这个项目", "本项目", "项目里", "工程里", "工作区", "仓库", "代码", "源码",
-            "文件", "类", "方法", "函数", "实现位置", "在哪里实现", "在哪实现", "查找实现", "搜索代码",
-            "修改", "改一下", "修复", "排查", "重构", "新增", "添加", "删除", "报错", "异常",
-            "current project", "this project", "workspace", "repository", "repo", "source code", "codebase",
-            "find in files", "search the code", "where is", "fix", "debug", "refactor", "modify",
+            "当前项目", "这个项目", "本项目", "项目里", "工程里", "工作区", "仓库", "当前代码", "这份代码",
+            "current project", "this project", "workspace", "repository", "repo", "codebase", "this code",
+        };
+
+        private static readonly string[] LocalArtifactMarkers =
+        {
+            "代码", "源码", "文件", "目录", "类", "方法", "函数", "实现",
+            "code", "source", "file", "directory", "class", "method", "function", "implementation",
+        };
+
+        private static readonly string[] LocalInspectionMarkers =
+        {
+            "查看", "读取", "查找", "搜索", "定位", "实现位置", "在哪里实现", "在哪实现", "报错", "异常",
+            "inspect", "read", "find", "search", "locate", "where is", "error", "exception",
+        };
+
+        private static readonly string[] ConceptualQuestionMarkers =
+        {
+            "是什么", "什么是", "原理", "概念", "区别", "介绍", "解释", "为什么", "如何", "怎么", "怎样",
+            "what is", "what are", "concept", "difference", "explain", "why", "how to", "how do",
         };
 
         private static readonly string[] WorkspaceEditMarkers =
         {
             "请修改", "帮我修改", "修改这个", "修改代码", "修改文件", "帮我改", "改一下", "修复这个", "修复代码", "重构", "替换代码", "编辑文件", "更新代码", "应用补丁", "写入文件",
+            "实现一下", "帮我实现", "实现功能", "开发功能",
             "删除文件", "删除旧文件", "删除这个文件", "移除文件", "移除旧文件", "移除这个文件",
-            "please modify", "please edit", "edit the file", "fix this", "fix the code", "refactor", "replace the code", "update the file", "apply the patch", "delete file", "delete the file", "remove file", "remove the file",
+            "please modify", "please edit", "edit the file", "fix this", "fix the code", "please implement", "implement a", "implement the", "implement this", "make this change", "change the code", "refactor", "replace the code", "update the file", "apply the patch", "delete file", "delete the file", "remove file", "remove the file",
+        };
+
+        private static readonly string[] WorkspaceEditExplanationMarkers =
+        {
+            "如何修改", "怎么修改", "怎样修改", "如何修复", "怎么修复", "怎样修复", "如何实现", "怎么实现", "怎样实现", "如何重构", "怎么重构", "怎样重构",
+            "how to modify", "how do i modify", "how to fix", "how do i fix", "how to implement", "how do i implement", "how to refactor", "how do i refactor",
         };
 
         private static readonly string[] WorkspaceEditOptOutMarkers =
@@ -43,7 +65,21 @@ namespace ColorVision.Copilot
         {
             "新建文件", "创建文件", "新增文件", "添加文件", "新建类", "创建类", "新增类", "添加类",
             "新建多个文件", "创建多个文件", "新增多个文件", "添加多个文件", "新建两个文件", "创建两个文件",
+            "新建脚本", "创建脚本", "写一个脚本", "写个脚本", "编写脚本", "生成脚本",
             "create a file", "create the file", "add a file", "add the file", "create a class", "add a class", "new source file",
+            "create a script", "create the script", "write a script", "generate a script",
+        };
+
+        private static readonly string[] ScriptCreateActionMarkers =
+        {
+            "新建", "创建", "写一个", "写个", "编写", "生成",
+            "create", "write", "generate", "add",
+        };
+
+        private static readonly string[] WorkspaceCreateExplanationMarkers =
+        {
+            "如何新建", "怎么新建", "怎样新建", "如何创建", "怎么创建", "怎样创建", "如何编写", "怎么编写", "怎样编写",
+            "how to create", "how do i create", "how to write", "how do i write", "explain how to create",
         };
 
         private static readonly string[] WorkspaceValidationMarkers =
@@ -190,6 +226,38 @@ namespace ColorVision.Copilot
             "shell command", "terminal command", "run command", "execute command", "run script", "execute script",
         };
 
+        private static readonly string[] ScriptRuntimeMarkers =
+        {
+            "Python", "Python脚本", "Python 脚本", ".py", "Node.js", "NodeJS", "Node JS", "node", "npm", "npx",
+            "JavaScript", "TypeScript", ".js", ".mjs", ".cjs", ".ts", "PowerShell", "pwsh", "CMD", ".cmd", ".bat",
+            "python", "python script", "node.js", "nodejs", "node script", "javascript", "typescript", "powershell", "batch script",
+        };
+
+        private static readonly string[] ScriptExecutionMarkers =
+        {
+            "运行", "执行", "调用", "启动", "处理", "转换", "批量", "自动化",
+            "run", "execute", "invoke", "start", "process", "convert", "batch", "automate",
+        };
+
+        private static readonly string[] BatchAutomationMarkers =
+        {
+            "批量转换", "批量处理文件", "批处理文件", "自动处理文件",
+            "batch convert", "batch process", "convert all", "process all files",
+        };
+
+        private static readonly string[] BatchImageMarkers =
+        {
+            "CVRAW", "CVCIE", "批量图像", "批量图片", "批量转换图像", "批量转换图片", "批量执行算法",
+            "cvraw", "cvcie", "batch image", "batch convert images", "batch image processing",
+        };
+
+        private static readonly string[] ShellExplanationMarkers =
+        {
+            "如何运行", "怎么运行", "怎样运行", "如何执行", "怎么执行", "怎样执行", "运行原理", "执行原理",
+            "如何创建", "怎么创建", "怎样创建",
+            "how to run", "how do i run", "how to execute", "how do i execute", "how to create", "how do i create", "explain how to run",
+        };
+
         private static readonly string[] FollowUpWebToolNames =
         {
             "FetchUrl", "WebSearch", "DelegateScout",
@@ -207,7 +275,19 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            return ContainsAny(request.UserText, LocalEvidenceMarkers);
+            if (ContainsAny(request.UserText, LocalScopeMarkers)
+                || ContainsAny(request.UserText, WorkspaceEditMarkers)
+                    && !ContainsAny(request.UserText, WorkspaceEditExplanationMarkers)
+                || ContainsAny(request.UserText, WorkspaceCreateMarkers)
+                    && !ContainsAny(request.UserText, WorkspaceCreateExplanationMarkers)
+                || ContainsAny(request.UserText, WorkspaceRollbackMarkers))
+            {
+                return true;
+            }
+
+            return ContainsAny(request.UserText, LocalArtifactMarkers)
+                && ContainsAny(request.UserText, LocalInspectionMarkers)
+                && !ContainsAny(request.UserText, ConceptualQuestionMarkers);
         }
 
         public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)
@@ -216,7 +296,8 @@ namespace ColorVision.Copilot
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0
-                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
+                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
+                || ContainsAny(request.UserText, WorkspaceEditExplanationMarkers))
             {
                 return false;
             }
@@ -243,12 +324,16 @@ namespace ColorVision.Copilot
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
                 || request.WritableLocalRootPaths.Count == 0
-                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers))
+                || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
+                || ContainsAny(request.UserText, WorkspaceCreateExplanationMarkers))
             {
                 return false;
             }
 
-            return ContainsAny(request.UserText, WorkspaceCreateMarkers);
+            return ContainsAny(request.UserText, WorkspaceCreateMarkers)
+                || ContainsAny(request.UserText, ScriptCreateActionMarkers)
+                    && (ContainsAny(request.UserText, ScriptRuntimeMarkers)
+                        || request.UserText.Contains("脚本", StringComparison.OrdinalIgnoreCase));
         }
 
         public static bool NeedsWorkspaceValidation(CopilotAgentRequest? request)
@@ -358,7 +443,21 @@ namespace ColorVision.Copilot
 
         public static bool NeedsShellExecution(CopilotAgentRequest? request)
         {
-            return IsAgentRequest(request) && ContainsAny(request!.UserText, ShellMarkers);
+            if (!IsAgentRequest(request) || ContainsAny(request!.UserText, ShellExplanationMarkers))
+                return false;
+
+            return ContainsAny(request.UserText, ShellMarkers)
+                || ContainsAny(request.UserText, ScriptRuntimeMarkers)
+                    && ContainsAny(request.UserText, ScriptExecutionMarkers)
+                || ContainsAny(request.UserText, BatchAutomationMarkers)
+                    && !NeedsBatchImageProcessing(request);
+        }
+
+        public static bool NeedsBatchImageProcessing(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
+                && ContainsAny(request.UserText, BatchImageMarkers);
         }
 
         internal static bool ExplicitlyRequiresPublicWebSearch(CopilotAgentRequest? request)
@@ -412,6 +511,16 @@ namespace ColorVision.Copilot
             return string.Equals(tool?.Name, "RunWorkspaceValidation", StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static bool IsShellExecutionTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsBatchImageProcessingTool(ICopilotTool? tool)
+        {
+            return string.Equals(tool?.Name, "OpenBatchImageProcessing", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static bool CanExposeExternalTool(CopilotAgentRequest? request, string? toolName, string? description)
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)
@@ -438,7 +547,9 @@ namespace ColorVision.Copilot
                 return false;
 
             if (ContainsAny(request.UserText, NewTopicMarkers)
-                || ContainsAny(request.UserText, LocalEvidenceMarkers))
+                || ContainsAny(request.UserText, LocalScopeMarkers)
+                || ContainsAny(request.UserText, LocalArtifactMarkers)
+                    && ContainsAny(request.UserText, LocalInspectionMarkers))
                 return false;
             var capability = tool.Capability;
             if (capability.Access != CopilotToolAccess.ReadOnly

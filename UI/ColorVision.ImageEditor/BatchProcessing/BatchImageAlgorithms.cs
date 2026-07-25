@@ -45,6 +45,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             return new List<BatchImageAlgorithmDefinition>
             {
+                new("仅转换格式", string.Empty, new NoBatchAlgorithmOptions(), source => source.Clone()),
                 InPlace("反相", "_invert", new NoBatchAlgorithmOptions(), OpenCvImageAlgorithms.Invert),
                 new("伪彩色", "_pseudo", pseudoColor, source => ApplyPseudoColor(source, pseudoColor)),
                 new("自动色阶", "_autolevels", new NoBatchAlgorithmOptions(), ApplyAutoLevels),

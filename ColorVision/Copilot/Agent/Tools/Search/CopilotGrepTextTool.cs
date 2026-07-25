@@ -19,7 +19,9 @@ namespace ColorVision.Copilot
 
         public bool IsAvailable(CopilotAgentRequest request)
         {
-            return request?.SearchRootPaths?.Count > 0 && request.Mode != CopilotAgentMode.Chat;
+            return request?.SearchRootPaths?.Count > 0
+                && request.Mode != CopilotAgentMode.Chat
+                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
         }
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);

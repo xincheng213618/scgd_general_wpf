@@ -116,6 +116,7 @@ namespace ColorVision.Copilot
             return new ICopilotTool[]
             {
                 new CopilotCreateFlowTool(applicationCapabilities),
+                new CopilotOpenBatchImageProcessingTool(),
                 new CopilotExecuteMenuTool(applicationCapabilities),
                 new CopilotSetThemeTool(),
                 new CopilotSetLanguageTool(applicationCapabilities),

@@ -52,6 +52,10 @@ namespace ColorVision.FloatingBall
                     return;
                 }
 
+                var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
+                if (activeRun != null)
+                    _desktopPetService.SetCopilotConversation(activeRun.ConversationId);
+
                 var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
                 var pendingCount = pendingActions.Count;
                 _lastPendingActionCount = pendingCount;
@@ -82,14 +86,17 @@ namespace ColorVision.FloatingBall
                     case CopilotAgentTaskHostChangeKind.Queued:
                     case CopilotAgentTaskHostChangeKind.Started:
                     case CopilotAgentTaskHostChangeKind.CheckpointReady:
+                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
                         ApplyCurrentActiveState();
                         break;
 
                     case CopilotAgentTaskHostChangeKind.ControlRequested:
+                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
                         _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);
                         break;
 
                     case CopilotAgentTaskHostChangeKind.Completed:
+                        _desktopPetService.SetCopilotConversation(e.Run.ConversationId);
                         HandleCompletedRun(e.Run);
                         break;
                 }
@@ -164,6 +171,10 @@ namespace ColorVision.FloatingBall
 
         private void ApplyCurrentActiveState()
         {
+            var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
+            if (activeRun != null)
+                _desktopPetService.SetCopilotConversation(activeRun.ConversationId);
+
             if (CopilotMcpConfirmationStore.Instance.PendingCount > 0)
             {
                 _desktopPetService.SetActivityState(DesktopPetActivityState.Waiting);

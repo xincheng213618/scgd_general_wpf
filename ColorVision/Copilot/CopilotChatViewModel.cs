@@ -579,6 +579,20 @@ namespace ColorVision.Copilot
             set => SelectConversation(value, persist: true);
         }
 
+        internal bool TrySelectConversation(string? conversationId)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId) || !CanSwitchConversation)
+                return false;
+
+            var conversation = Conversations.FirstOrDefault(item =>
+                string.Equals(item.Id, conversationId.Trim(), StringComparison.Ordinal));
+            if (conversation == null)
+                return false;
+
+            SelectConversation(conversation, persist: true, preferredProfileId: conversation.ProfileId);
+            return true;
+        }
+
         public CopilotProfileConfig? SelectedProfile
         {
             get => _selectedProfile;

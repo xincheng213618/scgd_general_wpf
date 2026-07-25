@@ -18,6 +18,7 @@ namespace ColorVision.FloatingBall
         private DesktopPetActivityState _activityState = DesktopPetActivityState.Idle;
         private ConfirmableAction? _pendingCopilotAction;
         private int _pendingCopilotActionCount;
+        private string _copilotConversationId = string.Empty;
 
         private DesktopPetService()
         {
@@ -137,6 +138,12 @@ namespace ColorVision.FloatingBall
             return DesktopPetCopilotBridge.Reject(action, out message);
         }
 
+        internal void SetCopilotConversation(string? conversationId)
+        {
+            if (!string.IsNullOrWhiteSpace(conversationId))
+                _copilotConversationId = conversationId.Trim();
+        }
+
         public void Notify(string title, string message, DesktopPetNotificationKind kind = DesktopPetNotificationKind.Info)
         {
             if (!DesktopPetConfig.Instance.ShowNotifications || !MainWindowConfig.Instance.OpenFloatingBall)
@@ -243,7 +250,9 @@ namespace ColorVision.FloatingBall
             }
 
             ShowMainWindow();
-            CopilotPanelService.GetInstance().ShowPanel();
+            var copilot = CopilotPanelService.GetInstance();
+            if (!copilot.ShowConversation(_copilotConversationId))
+                copilot.ShowPanel();
         }
     }
 

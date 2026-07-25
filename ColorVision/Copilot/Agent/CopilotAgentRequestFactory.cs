@@ -154,7 +154,15 @@ namespace ColorVision.Copilot
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
             var writableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
             var writableLocalFilePaths = BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
+            var intentProbe = new CopilotAgentRequest
+            {
+                UserText = normalizedUserText,
+                Mode = mode,
+                ReadableLocalFilePaths = explicitLocalFilePaths,
+                ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+            };
             var projectInstructions = mode == CopilotAgentMode.Chat
+                || !CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe)
                 ? Array.Empty<CopilotProjectInstructionDocument>()
                 : CopilotAgentProjectInstructions.Discover(searchRootPaths, hostContext.ActiveDocumentPath);
 

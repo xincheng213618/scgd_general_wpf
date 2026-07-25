@@ -23,7 +23,8 @@ namespace ColorVision.Copilot
         {
             return request != null
                 && request.Mode != CopilotAgentMode.Chat
-                && (request.ReadableLocalDirectoryPaths.Count > 0 || request.SearchRootPaths.Count > 0);
+                && (request.ReadableLocalDirectoryPaths.Count > 0 || request.SearchRootPaths.Count > 0)
+                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
         }
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);

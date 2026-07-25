@@ -20,6 +20,12 @@ namespace ColorVision.Copilot
         public static readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan MaximumExecutionTimeout = TimeSpan.FromMinutes(10);
 
+        public CopilotToolCapabilityDescriptor()
+        {
+            ExecutionTimeout = DefaultExecutionTimeout;
+            AuditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary;
+        }
+
         public CopilotToolAccess Access { get; init; }
 
         public CopilotToolRiskLevel RiskLevel { get; init; }
@@ -30,9 +36,9 @@ namespace ColorVision.Copilot
 
         public CopilotToolConcurrencyMode ConcurrencyMode { get; init; }
 
-        public TimeSpan ExecutionTimeout { get; init; } = DefaultExecutionTimeout;
+        public TimeSpan ExecutionTimeout { get; init; }
 
-        public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; } = CopilotToolAuditArgumentMode.RedactedSummary;
+        public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; }
 
         public CopilotToolEvidenceMode EvidenceMode { get; init; }
 

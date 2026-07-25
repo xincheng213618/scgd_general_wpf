@@ -303,7 +303,8 @@ namespace ColorVision.Copilot
                 return false;
             return contextScope switch
             {
-                CopilotSubagentContextScope.WorkspaceReadOnly => request.SearchRootPaths.Count > 0,
+                CopilotSubagentContextScope.WorkspaceReadOnly => request.SearchRootPaths.Count > 0
+                    && CopilotToolIntentPolicy.NeedsLocalEvidence(request),
                 CopilotSubagentContextScope.PublicWeb => CopilotToolIntentPolicy.NeedsPublicWebSearch(request) || CopilotToolIntentPolicy.NeedsUrlFetch(request),
                 _ => false,
             };
