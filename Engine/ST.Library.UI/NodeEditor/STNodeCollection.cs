@@ -200,11 +200,15 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("删除节点");
 		STNode node = m_nodes[nIndex];
 		var nodeState = m_owner.CaptureNodeStateForRemoval(node);
+		var connectionOperations = m_owner.CaptureNodeConnectionsForRemoval(node);
 		bool lockOption = node.LockOption;
 		node.LockOption = false;
 		try
 		{
-			node.Owner = null;
+			using (m_owner.SuspendHistoryRecording())
+			{
+				node.Owner = null;
+			}
 		}
 		finally
 		{
@@ -215,6 +219,7 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		{
 			m_owner.SetActiveNode(null);
 		}
+		m_owner.RecordNodeConnectionsRemoved(connectionOperations);
 		m_owner.RecordNodeRemoved(node, nIndex, nodeState);
 		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(node));
 		_Count--;

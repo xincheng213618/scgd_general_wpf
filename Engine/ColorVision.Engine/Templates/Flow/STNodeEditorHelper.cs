@@ -242,24 +242,12 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodeEditor.ContextMenu = new ContextMenu();
             STNodeEditor.ContextMenuOpening += STNodeEditor_ContextMenuOpening;
-            STNodeEditor.OptionDisConnected += (s, e) =>
-            {
-                IsOptionDisConnected = true;
-            };
         }
 
-        bool IsOptionDisConnected;
         private System.Drawing.Point contextCanvasPoint;
 
         private void STNodeEditor_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (IsOptionDisConnected)
-            {
-                IsOptionDisConnected = false;
-                e.Handled = true;
-                return;
-            }
-
             var mousePosition = Mouse.GetPosition(STNodeEditor);
             var clientPoint = new System.Drawing.Point((int)Math.Round(mousePosition.X), (int)Math.Round(mousePosition.Y));
             contextCanvasPoint = STNodeEditor.ControlToCanvas(clientPoint);
@@ -568,6 +556,7 @@ namespace ColorVision.Engine.Templates.Flow
         public void Dispose()
         {
             STNodeEditor.ActiveChanged -= STNodeEditorMain_ActiveChanged;
+            STNodeEditor.ContextMenuOpening -= STNodeEditor_ContextMenuOpening;
             GC.SuppressFinalize(this);
         }
 

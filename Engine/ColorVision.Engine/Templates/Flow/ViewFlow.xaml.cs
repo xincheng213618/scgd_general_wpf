@@ -95,6 +95,7 @@ namespace ColorVision.Engine.Services.Flow
 
             InitializeComponent();
             EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
+            EditorCanvas.AttachEditCommandRouting(this);
 
             AutoSizeCommand = new RelayCommand(a => STNodeEditorHelper.AutoSize());
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
@@ -119,7 +120,21 @@ namespace ColorVision.Engine.Services.Flow
                 else
                     Clear();
             }, (s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
+            {
+                if (_isStandalone)
+                {
+                    Window? window = Window.GetWindow(this);
+                    if (window != null)
+                        window.Close();
+                    else
+                        Clear();
+                }
+                else
+                {
+                    Clear();
+                }
+            }, (s, e) => { e.CanExecute = true; }));
 
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>
             {
@@ -238,10 +253,14 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Save()
         {
+            TrySave();
+        }
+
+        internal bool TrySave()
+        {
             if (_isStandalone)
             {
-                SaveStandaloneDocument();
-                return;
+                return SaveStandaloneDocument();
             }
 
             log.Info("Save: 开始保存流程");
@@ -254,7 +273,7 @@ namespace ColorVision.Engine.Services.Flow
                 if (!STNodeEditorHelper.CheckFlow())
                 {
                     log.Warn("Save: CheckFlow验证失败, 取消保存");
-                    return;
+                    return false;
                 }
 
                 var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
@@ -262,7 +281,7 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     log.Error("Save: SlectFlowParam 为 null, 无法保存");
                     MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_NoFlowParamSelected);
-                    return;
+                    return false;
                 }
 
                 byte[] canvasData = STNodeEditorMain.GetCanvasData();
@@ -270,7 +289,7 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     log.Error("Save: GetCanvasData 返回空数据");
                     MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_GetCanvasDataFailed);
-                    return;
+                    return false;
                 }
 
                 log.Info($"Save: 画布数据大小={canvasData.Length} bytes, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}");
@@ -278,11 +297,13 @@ namespace ColorVision.Engine.Services.Flow
                 TemplateFlow.Save2DB(flowParam);
                 STNodeEditorMain.MarkSaved();
                 log.Info("Save: 流程保存成功");
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error("Save: 保存流程时发生异常", ex);
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
+                return false;
             }
         }
 
@@ -302,6 +323,8 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (_isStandalone)
             {
+                if (!ConfirmStandaloneDocumentReplacement())
+                    return;
                 StopStandaloneFlow();
                 FlowEngineControl.FlowClear();
                 _standaloneNodeManager!.ClearDevice();
@@ -315,8 +338,15 @@ namespace ColorVision.Engine.Services.Flow
 
         public void OpenStandaloneFile(string filePath)
         {
+            TryOpenStandaloneFile(filePath);
+        }
+
+        private bool TryOpenStandaloneFile(string filePath)
+        {
             if (!_isStandalone)
                 throw new InvalidOperationException("Only a standalone ViewFlow can open a file document.");
+            if (!ConfirmStandaloneDocumentReplacement())
+                return false;
 
             _standaloneFlowParam = null;
             _standaloneFilePath = filePath;
@@ -343,7 +373,7 @@ namespace ColorVision.Engine.Services.Flow
                             MqttRCService.GetInstance().ServiceTokens);
                         STNodeEditorMain.ClearHistory();
                         UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
-                        return;
+                        return true;
                     }
                 }
                 catch (Exception ex)
@@ -355,12 +385,20 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
             STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
+            return true;
         }
 
         public void OpenStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
         {
+            TryOpenStandaloneFlowParam(flowParam, saveToTemplate);
+        }
+
+        private bool TryOpenStandaloneFlowParam(FlowParam flowParam, bool saveToTemplate)
+        {
             if (!_isStandalone)
                 throw new InvalidOperationException("Only a standalone ViewFlow can open a template document.");
+            if (!ConfirmStandaloneDocumentReplacement())
+                return false;
 
             _standaloneFlowParam = flowParam;
             _standaloneFilePath = null;
@@ -380,8 +418,10 @@ namespace ColorVision.Engine.Services.Flow
             {
                 log.Error(ex);
                 MessageBox.Show(ex.Message);
+                return false;
             }
             UpdateStandaloneWindowTitle(flowParam.Name);
+            return true;
         }
 
         public bool HasStandaloneChanges()
@@ -400,11 +440,13 @@ namespace ColorVision.Engine.Services.Flow
                 RestoreDirectory = true
             };
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                OpenStandaloneFile(dialog.FileName);
+                TryOpenStandaloneFile(dialog.FileName);
         }
 
         private void NewDocument()
         {
+            if (!ConfirmStandaloneDocumentReplacement())
+                return;
             _standaloneFlowParam = null;
             _standaloneFilePath = null;
             _standaloneDocumentName = Properties.Resources.New;
@@ -420,26 +462,26 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (_standaloneFlowParam != null)
             {
-                OpenStandaloneFlowParam(_standaloneFlowParam, _saveStandaloneFlowParam);
+                TryOpenStandaloneFlowParam(_standaloneFlowParam, _saveStandaloneFlowParam);
             }
             else if (!string.IsNullOrEmpty(_standaloneFilePath))
             {
-                OpenStandaloneFile(_standaloneFilePath);
+                TryOpenStandaloneFile(_standaloneFilePath);
             }
         }
 
-        private void SaveStandaloneDocument()
+        private bool SaveStandaloneDocument()
         {
             Keyboard.ClearFocus();
             Focus();
             if (!STNodeEditorHelper.CheckFlow())
-                return;
+                return false;
 
             byte[] canvasData = STNodeEditorMain.GetCanvasData();
             if (canvasData == null || canvasData.Length == 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.Flow_GetCanvasDataFailed);
-                return;
+                return false;
             }
 
             try
@@ -461,7 +503,7 @@ namespace ColorVision.Engine.Services.Flow
                             Title = Properties.Resources.Save
                         };
                         if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                            return;
+                            return false;
                         _standaloneFilePath = dialog.FileName;
                         _standaloneFlowParam = null;
                         _standaloneDocumentName = Path.GetFileName(dialog.FileName);
@@ -473,12 +515,46 @@ namespace ColorVision.Engine.Services.Flow
 
                 STNodeEditorMain.MarkSaved();
                 MessageBox.Show(Properties.Resources.SaveSucess);
+                return true;
             }
             catch (Exception ex)
             {
                 log.Error("Save standalone flow failed.", ex);
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.Flow_SaveFailed, ex.Message));
+                return false;
             }
+        }
+
+        internal bool ConfirmStandaloneDocumentReplacement()
+        {
+            if (!_isStandalone || !HasStandaloneChanges())
+                return true;
+            if (!ShouldConfirmStandaloneDocumentReplacement(
+                    isStandalone: true,
+                    hasChanges: true,
+                    editSavePromptEnabled: FlowEngineConfig.Instance.IsAutoEditSave))
+                return true;
+
+            MessageBoxResult result = MessageBox.Show(
+                Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
+                Properties.Resources.SaveChangesPrompt,
+                "ColorVision",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+            return result switch
+            {
+                MessageBoxResult.Yes => TrySave(),
+                MessageBoxResult.No => true,
+                _ => false
+            };
+        }
+
+        internal static bool ShouldConfirmStandaloneDocumentReplacement(
+            bool isStandalone,
+            bool hasChanges,
+            bool editSavePromptEnabled)
+        {
+            return isStandalone && hasChanges && editSavePromptEnabled;
         }
 
         private void UpdateStandaloneWindowTitle(string? documentName)

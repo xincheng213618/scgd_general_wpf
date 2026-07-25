@@ -138,6 +138,7 @@ public class FlowEngineControlLifecycleTests
             editor.Nodes.Add(startB);
             editor.Nodes.Add(sink);
             Assert.Equal(ConnectionStatus.Connected, startA.m_op_start.ConnectOption(sink.Input));
+            Assert.Equal(ConnectionStatus.Connected, startB.m_op_start.ConnectOption(sink.Input));
 
             control.StartByName("Start-A", "SN-A1");
             startA.AddActive("SN-A2");
@@ -264,6 +265,261 @@ public class FlowEngineControlLifecycleTests
         });
     }
 
+    [Fact]
+    public void StopConvergesStartAndControlRunningStateAcrossRegistryRebuild()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            control.StartByName("Start", "SN-1");
+            Assert.True(start.Running);
+            Assert.True(control.IsRunning);
+
+            control.StopNode("Start", "SN-1");
+            Assert.False(start.Running);
+            Assert.False(control.IsRunning);
+            Assert.Equal(0, start.ActiveCount);
+
+            var otherStart = CreateStartNode("Other");
+            editor.Nodes.Add(otherStart);
+            editor.Nodes.Remove(otherStart);
+
+            Assert.False(control.IsRunning);
+            control.StartByName("Start", "SN-2");
+            Assert.True(start.Running);
+            Assert.True(control.IsRunning);
+        });
+    }
+
+    [Fact]
+    public void StartWithoutConnectedOutputDoesNotRemainRunning()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Start");
+            editor.Nodes.Add(start);
+
+            control.StartByName("Start", "SN-1");
+
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(start.Running);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Fact]
+    public void RemovingRunningStartCancelsActionsAndDisposesRuntimeResources()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Start");
+            editor.Nodes.Add(start);
+            var action = start.AddActive("SN-1");
+            var resource = new DisposableProbe();
+            action.RuntimeResources.Set("probe", resource);
+
+            editor.Nodes.Remove(start);
+
+            Assert.Equal(StatusTypeEnum.Canceled, action.FlowStatus);
+            Assert.True(action.RuntimeResources.IsDisposed);
+            Assert.True(resource.IsDisposed);
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(start.Running);
+            Assert.False(control.IsRunning);
+        });
+    }
+
+    [Fact]
+    public void StartRenameAndUndoRebuildStartRegistry()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            editor.EnableHistory = true;
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Before");
+            editor.Nodes.Add(start);
+            editor.ClearHistory();
+
+            start.NodeName = "After";
+
+            Assert.Equal(new[] { "After" }, control.GetStartNodeNames());
+            editor.Undo();
+            Assert.Equal("Before", start.NodeName);
+            Assert.Equal(new[] { "Before" }, control.GetStartNodeNames());
+        });
+    }
+
+    [Fact]
+    public void ServerIdentityChangesReindexServicesAndDeviceRegistration()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            editor.EnableHistory = true;
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var server = CreateServerNode("Service.Old", "S01", "D01");
+            editor.Nodes.Add(server);
+            editor.ClearHistory();
+
+            server.NodeType = "Service.New";
+            server.NodeName = "S02";
+            server.DeviceCode = "D02";
+
+            Assert.Empty(control.GetServiceCodes("Service.Old"));
+            Assert.Equal(new[] { "S02" }, control.GetServiceCodes("Service.New"));
+            server.Token = "unchanged";
+            UpdateDevices(nodeManager, ("Service.Old", "S01", "D01", "stale"));
+            Assert.Equal("unchanged", server.Token);
+            UpdateDevices(nodeManager, ("Service.New", "S02", "D02", "current"));
+            Assert.Equal("current", server.Token);
+
+            editor.Undo();
+            Assert.Equal("D01", server.DeviceCode);
+            editor.Undo();
+            Assert.Equal("S01", server.NodeName);
+            server.NodeType = "Service.Old";
+            Assert.Equal("Service.Old", server.NodeType);
+            Assert.Equal(new[] { "S01" }, control.GetServiceCodes("Service.Old"));
+        });
+    }
+
+    [Fact]
+    public void GraphChangesInvalidateCacheWhenHistoryIsDisabled()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            Assert.False(editor.EnableHistory);
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            control.SeedLoadedCanvasCache();
+
+            sink.Title = "Changed";
+            Assert.Equal(0, control.LoadedCanvasCount);
+
+            control.SeedLoadedCanvasCache();
+            sink.Left += 10;
+            Assert.Equal(0, control.LoadedCanvasCount);
+
+            control.SeedLoadedCanvasCache();
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+
+            Assert.Equal(0, control.LoadedCanvasCount);
+        });
+    }
+
+    [Fact]
+    public void StopAllRejectsNewActionsUntilTeardownCompletes()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var start = CreateStartNode("Start");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            var activeAction = start.AddActive("SN-1");
+            using var resource = new BlockingDisposableProbe();
+            activeAction.RuntimeResources.Set("blocking", resource);
+
+            Task stopTask = Task.Run(start.StopAll);
+            Assert.True(resource.Entered.Wait(TimeSpan.FromSeconds(5)));
+
+            start.Start("SN-2");
+            resource.Release.Set();
+
+            Assert.True(stopTask.Wait(TimeSpan.FromSeconds(5)));
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(start.Running);
+            Assert.True(activeAction.RuntimeResources.IsDisposed);
+        });
+    }
+
+    [Fact]
+    public void StopAllCleansEveryActionWhenFinishingOneActionFails()
+    {
+        RunInSta(() =>
+        {
+            var start = CreateStartNode("Start");
+            var firstAction = start.AddActive("SN-1");
+            var secondAction = start.AddActive("SN-2");
+            var firstResource = new DisposableProbe();
+            var secondResource = new DisposableProbe();
+            firstAction.RuntimeResources.Set("first", firstResource);
+            secondAction.RuntimeResources.Set("second", secondResource);
+            start.ThrowOnPublish = true;
+
+            Assert.Throws<InvalidOperationException>(start.StopAll);
+
+            Assert.Equal(0, start.ActiveCount);
+            Assert.False(start.Running);
+            Assert.True(firstResource.IsDisposed);
+            Assert.True(secondResource.IsDisposed);
+        });
+    }
+
+    [Fact]
+    public void FinishedAndNodeChurnAreSerialized()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var stableStart = CreateStartNode("Stable");
+            editor.Nodes.Add(stableStart);
+            var churnNodes = Enumerable.Range(0, 64).Select(index => CreateStartNode($"Churn-{index}")).ToArray();
+            foreach (var node in churnNodes)
+            {
+                editor.Nodes.Add(node);
+            }
+            using var gate = new ManualResetEventSlim();
+            Task completionTask = Task.Run(() =>
+            {
+                gate.Wait();
+                for (int i = 0; i < 2_000; i++)
+                {
+                    stableStart.RaiseFinished($"SN-{i}");
+                }
+            });
+
+            gate.Set();
+            for (int i = 0; i < 2_000; i++)
+            {
+                TestStartNode node = churnNodes[i % churnNodes.Length];
+                editor.Nodes.Remove(node);
+                editor.Nodes.Add(node);
+            }
+
+            Assert.True(completionTask.Wait(TimeSpan.FromSeconds(10)));
+        });
+    }
+
     private static TestStartNode CreateStartNode(string name)
     {
         var node = new TestStartNode(name);
@@ -370,10 +626,45 @@ public class FlowEngineControlLifecycleTests
 
         public int ActiveCount => startActions.Count;
 
-        public void AddActive(string serialNumber)
+        public bool ThrowOnPublish { get; set; }
+
+        public CVStartCFC AddActive(string serialNumber)
         {
-            startActions.Add(serialNumber, new CVStartCFC(this, ActionTypeEnum.Start, serialNumber));
+            var action = new CVStartCFC(this, ActionTypeEnum.Start, serialNumber);
+            startActions.Add(serialNumber, action);
             Running = true;
+            return action;
+        }
+
+        public override void DoPublishStatus(string msg)
+        {
+            if (ThrowOnPublish)
+            {
+                throw new InvalidOperationException("Test finishing failure.");
+            }
+        }
+    }
+
+    private sealed class DisposableProbe : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose()
+        {
+            IsDisposed = true;
+        }
+    }
+
+    private sealed class BlockingDisposableProbe : IDisposable
+    {
+        public ManualResetEventSlim Entered { get; } = new();
+
+        public ManualResetEventSlim Release { get; } = new();
+
+        public void Dispose()
+        {
+            Entered.Set();
+            Release.Wait(TimeSpan.FromSeconds(5));
         }
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -182,6 +183,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 	private HashSet<STNode> m_hs_node_selected = new HashSet<STNode>();
 
 	private bool m_is_process_mouse_event = true;
+
+	private long m_suppress_context_menu_until;
 
 	private bool m_is_buildpath;
 
@@ -1130,9 +1133,15 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			{
 				if (m_enableEdit)
 				{
+					bool hadHoveredConnection = m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover);
+					ConnectionStatus disconnectStatus;
 					using (BeginEditTransaction("断开连接"))
 					{
-						DisConnectionHover();
+						disconnectStatus = DisConnectionHover();
+					}
+					if (hadHoveredConnection && disconnectStatus == ConnectionStatus.DisConnected)
+					{
+						m_suppress_context_menu_until = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
 					}
 					m_is_process_mouse_event = false;
 				}
@@ -1368,6 +1377,18 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		m_ca = CanvasAction.None;
 		ReleaseMouseCapture();
 		Invalidate();
+	}
+
+	protected override void OnContextMenuOpening(System.Windows.Controls.ContextMenuEventArgs e)
+	{
+		long suppressUntil = m_suppress_context_menu_until;
+		m_suppress_context_menu_until = 0;
+		if (suppressUntil >= Stopwatch.GetTimestamp())
+		{
+			e.Handled = true;
+			return;
+		}
+		base.OnContextMenuOpening(e);
 	}
 
 	protected override void OnLostMouseCapture(WpfMouseEventArgs e)

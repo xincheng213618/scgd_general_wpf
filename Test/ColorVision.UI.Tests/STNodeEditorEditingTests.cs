@@ -119,6 +119,87 @@ public class STNodeEditorEditingTests
     }
 
     [Fact]
+    public void DynamicHubDisconnect_FirstOfTwoEdges_UndoRestoresOriginalPorts()
+    {
+        RunInSta(() =>
+        {
+            using var editor = CreateEditor();
+            var first = CreateNode<EditorHistorySourceNode>();
+            var second = CreateNode<EditorHistorySourceNode>();
+            var hub = CreateNode<STNodeInHub>();
+            editor.Nodes.AddRange(new STNode[] { first, second, hub });
+            STNodeOption firstInput = hub.GetAllInputOptions()[0];
+            Assert.Equal(ConnectionStatus.Connected, first.Output.ConnectOption(firstInput));
+            STNodeOption secondInput = hub.GetAllInputOptions()[1];
+            Assert.Equal(ConnectionStatus.Connected, second.Output.ConnectOption(secondInput));
+            Assert.Equal(3, hub.GetAllInputOptions().Length);
+            editor.ClearHistory();
+
+            Assert.Equal(ConnectionStatus.DisConnected, first.Output.DisConnectOption(firstInput));
+            Assert.Equal(2, hub.GetAllInputOptions().Length);
+
+            editor.Undo();
+
+            ConnectionInfo[] restored = editor.GetConnections();
+            Assert.Equal(2, restored.Length);
+            Assert.Equal(3, hub.GetAllInputOptions().Length);
+            Assert.Same(firstInput, Assert.Single(restored, connection => ReferenceEquals(connection.Output, first.Output)).Input);
+            Assert.Same(secondInput, Assert.Single(restored, connection => ReferenceEquals(connection.Output, second.Output)).Input);
+            Assert.NotSame(restored[0].Input, restored[1].Input);
+
+            editor.Redo();
+            Assert.Single(editor.GetConnections());
+            Assert.Same(secondInput, editor.GetConnections()[0].Input);
+            Assert.Equal(2, hub.GetAllInputOptions().Length);
+        });
+    }
+
+    [Fact]
+    public void DeleteMultiConnectedDynamicHub_UndoRestoresOriginalPortsAndEdges()
+    {
+        RunInSta(() =>
+        {
+            using var editor = CreateEditor();
+            var first = CreateNode<EditorHistorySourceNode>();
+            var second = CreateNode<EditorHistorySourceNode>();
+            var hub = CreateNode<STNodeInHub>();
+            editor.Nodes.AddRange(new STNode[] { first, second, hub });
+            STNodeOption firstInput = hub.GetAllInputOptions()[0];
+            Assert.Equal(ConnectionStatus.Connected, first.Output.ConnectOption(firstInput));
+            STNodeOption secondInput = hub.GetAllInputOptions()[1];
+            Assert.Equal(ConnectionStatus.Connected, second.Output.ConnectOption(secondInput));
+            editor.ClearHistory();
+            editor.AddSelectedNode(hub);
+
+            Assert.True(editor.DeleteSelectedNodes());
+            Assert.Equal(2, editor.Nodes.Count);
+            Assert.Empty(editor.GetConnections());
+
+            editor.Undo();
+
+            Assert.Equal(3, editor.Nodes.Count);
+            Assert.Same(hub, editor.Nodes[2]);
+            Assert.Equal(3, hub.GetAllInputOptions().Length);
+            ConnectionInfo[] restored = editor.GetConnections();
+            Assert.Equal(2, restored.Length);
+            Assert.Same(firstInput, Assert.Single(restored, connection => ReferenceEquals(connection.Output, first.Output)).Input);
+            Assert.Same(secondInput, Assert.Single(restored, connection => ReferenceEquals(connection.Output, second.Output)).Input);
+
+            editor.Redo();
+
+            Assert.Equal(2, editor.Nodes.Count);
+            Assert.Empty(editor.GetConnections());
+
+            editor.Undo();
+
+            Assert.Equal(3, editor.Nodes.Count);
+            Assert.Equal(2, editor.GetConnections().Length);
+            Assert.Same(firstInput, Assert.Single(editor.GetConnections(), connection => ReferenceEquals(connection.Output, first.Output)).Input);
+            Assert.Same(secondInput, Assert.Single(editor.GetConnections(), connection => ReferenceEquals(connection.Output, second.Output)).Input);
+        });
+    }
+
+    [Fact]
     public void DeleteConnectedNode_UndoRestoresNodeOrderIdentityAndEdge()
     {
         RunInSta(() =>
@@ -373,6 +454,66 @@ public class STNodeEditorEditingTests
             editor.Undo();
             Assert.Equal("Saved title", node.Title);
             Assert.False(editor.IsModified);
+        });
+    }
+
+    [Fact]
+    public void ExecuteEditTransaction_ExceptionRollsBackStateAndKeepsSavePoint()
+    {
+        RunInSta(() =>
+        {
+            using var editor = CreateEditor();
+            var node = CreateNode<EditorHistorySourceNode>();
+            editor.Nodes.Add(node);
+            editor.ClearHistory();
+            editor.MarkSaved();
+            string originalTitle = node.Title;
+            System.Drawing.Point originalLocation = node.Location;
+
+            Assert.Throws<InvalidOperationException>(() =>
+                editor.ExecuteEditTransaction("失败编辑", () =>
+                {
+                    node.Title = "Changed";
+                    node.Location = new System.Drawing.Point(300, 200);
+                    throw new InvalidOperationException("expected");
+                }));
+
+            Assert.Equal(originalTitle, node.Title);
+            Assert.Equal(originalLocation, node.Location);
+            Assert.False(editor.IsModified);
+            Assert.False(editor.CanUndo);
+            Assert.False(editor.CanRedo);
+        });
+    }
+
+    [Fact]
+    public void ExecuteEditTransaction_ExceptionRollsBackNodesAndConnections()
+    {
+        RunInSta(() =>
+        {
+            using var editor = CreateEditor();
+            var existing = CreateNode<EditorHistorySourceNode>();
+            editor.Nodes.Add(existing);
+            editor.ClearHistory();
+            editor.MarkSaved();
+            var added = CreateNode<EditorHistorySinkNode>();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                editor.ExecuteEditTransaction("失败结构编辑", () =>
+                {
+                    editor.Nodes.Add(added);
+                    Assert.Equal(ConnectionStatus.Connected, existing.Output.ConnectOption(added.Input));
+                    throw new InvalidOperationException("expected");
+                }));
+
+            Assert.Single(editor.Nodes.Cast<STNode>());
+            Assert.Same(existing, editor.Nodes[0]);
+            Assert.Empty(editor.GetConnections());
+            Assert.Equal(0, existing.Output.ConnectionCount);
+            Assert.Equal(0, added.Input.ConnectionCount);
+            Assert.False(editor.IsModified);
+            Assert.False(editor.CanUndo);
+            Assert.False(editor.CanRedo);
         });
     }
 

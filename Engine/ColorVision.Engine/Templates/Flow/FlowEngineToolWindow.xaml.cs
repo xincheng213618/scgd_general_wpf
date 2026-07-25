@@ -37,15 +37,14 @@ namespace ColorVision.Engine.Templates.Flow
             View = new ViewFlow(FlowEngineManager.GetInstance(), true);
             ViewHost.Content = View;
 
+            Closing += (_, e) =>
+            {
+                if (!View.ConfirmStandaloneDocumentReplacement())
+                    e.Cancel = true;
+            };
+
             Closed += (_, _) =>
             {
-                if (FlowEngineConfig.Instance.IsAutoEditSave &&
-                    View.HasStandaloneChanges() &&
-                    MessageBox.Show(Properties.Resources.SaveChangesPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    View.Save();
-                }
-
                 View.STNodeEditorHelper?.HidePropertyEditor();
                 View.Dispose();
             };

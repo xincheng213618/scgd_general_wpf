@@ -1686,6 +1686,7 @@ namespace ProjectARVRPro
 
             ImageView.Dispose();
             flowControl.Stop();
+            flowEngine.Dispose();
             STNodeEditorMain.Dispose();
             timer?.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();

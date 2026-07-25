@@ -170,12 +170,16 @@ internal sealed class STNodeOptionReference
 	private readonly STNode _node;
 	private readonly bool _isInput;
 	private readonly int _index;
+	private readonly STNodeOption _option;
+	private readonly int _optionCount;
 
-	private STNodeOptionReference(STNode node, bool isInput, int index)
+	private STNodeOptionReference(STNode node, bool isInput, int index, STNodeOption option, int optionCount)
 	{
 		_node = node;
 		_isInput = isInput;
 		_index = index;
+		_option = option;
+		_optionCount = optionCount;
 	}
 
 	public static STNodeOptionReference Create(STNodeOption option)
@@ -188,12 +192,31 @@ internal sealed class STNodeOptionReference
 			? option.Owner.GetAllInputOptions()
 			: option.Owner.GetAllOutputOptions();
 		int index = Array.IndexOf(options, option);
-		return index < 0 ? null : new STNodeOptionReference(option.Owner, option.IsInput, index);
+		return index < 0 ? null : new STNodeOptionReference(option.Owner, option.IsInput, index, option, options.Length);
 	}
 
 	public STNodeOption Resolve(Dictionary<string, byte[]> state = null)
 	{
 		STNodeOption[] options = _isInput ? _node.GetAllInputOptions() : _node.GetAllOutputOptions();
+		int currentIndex = Array.IndexOf(options, _option);
+		if (currentIndex >= 0)
+		{
+			return options[currentIndex];
+		}
+		if (state != null && _option.Owner == null)
+		{
+			STNodeOptionCollection collection = _isInput ? _node.InputOptions : _node.OutputOptions;
+			if (collection.Count >= _optionCount && _index < collection.Count)
+			{
+				STNodeOption replacement = collection[_index];
+				if (replacement.ConnectionCount == 0)
+				{
+					collection.RemoveAt(_index);
+				}
+			}
+			collection.Insert(Math.Min(_index, collection.Count), _option);
+			return _option;
+		}
 		if ((_index < 0 || _index >= options.Length) && state != null)
 		{
 			_node.OnLoadNode(state.ToDictionary(pair => pair.Key, pair => (byte[])pair.Value.Clone()));
@@ -455,6 +478,8 @@ public partial class STNodeEditor
 
 	public event EventHandler HistoryChanged;
 
+	public event EventHandler NodeLocationChanged;
+
 	private void InitializeEditing()
 	{
 		_readOnlyUndoHistory = new ReadOnlyObservableCollection<STNodeEditHistoryEntry>(_undoHistory);
@@ -463,7 +488,7 @@ public partial class STNodeEditor
 		CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (_, _) => Redo(), (_, e) => e.CanExecute = CanRedo));
 		CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, (_, _) => CutSelectionToClipboard(), (_, e) => e.CanExecute = EnableEdit && GetSelectedNode().Length > 0));
 		CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopySelectionToClipboard(), (_, e) => e.CanExecute = GetSelectedNode().Length > 0));
-		CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (_, _) => PasteFromClipboard(), (_, e) => e.CanExecute = EnableEdit && ClipboardContainsGraph()));
+		CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (_, _) => ExecutePasteCommand(), (_, e) => e.CanExecute = EnableEdit && ClipboardContainsGraph()));
 		CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (_, _) => DeleteSelectedNodes(), (_, e) => e.CanExecute = EnableEdit && GetSelectedNode().Length > 0));
 		CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (_, _) => SelectAllNodes(), (_, e) => e.CanExecute = Nodes.Count > 0));
 		ClearHistory();
@@ -519,7 +544,11 @@ public partial class STNodeEditor
 
 		try
 		{
-			if (!_transactionCancelled)
+			if (_transactionCancelled)
+			{
+				RollbackTransaction();
+			}
+			else
 			{
 				AppendSnapshotChanges();
 				if (_transactionOperations.Count > 0)
@@ -539,6 +568,33 @@ public partial class STNodeEditor
 			_transactionCancelled = false;
 			RefreshNodeStateCache();
 		}
+	}
+
+	private void RollbackTransaction()
+	{
+		ReplayHistory(() =>
+		{
+			for (int i = _transactionOperations.Count - 1; i >= 0; i--)
+			{
+				_transactionOperations[i].Undo(this);
+			}
+			foreach (KeyValuePair<STNode, NodeEditSnapshot> pair in _transactionSnapshots)
+			{
+				STNode node = pair.Key;
+				if (!Nodes.Contains(node))
+				{
+					continue;
+				}
+				node.OnLoadNode(CloneState(pair.Value.State));
+				bool locked = node.LockLocation;
+				node.LockLocation = false;
+				node.Location = pair.Value.Location;
+				node.LockLocation = locked;
+			}
+			BuildBounds();
+			BuildLinePath();
+			Invalidate();
+		});
 	}
 
 	public IDisposable SuspendHistoryRecording()
@@ -654,6 +710,35 @@ public partial class STNodeEditor
 			: CloneState(CapturePersistentState(node));
 	}
 
+	internal List<STNodeConnectionEditOperation> CaptureNodeConnectionsForRemoval(STNode node)
+	{
+		if (!_enableHistory || _historySuppressionDepth > 0)
+		{
+			return null;
+		}
+		return GetConnections()
+			.Where(connection => ReferenceEquals(connection.Output.Owner, node) || ReferenceEquals(connection.Input.Owner, node))
+			.Select(connection => new STNodeConnectionEditOperation(
+				STNodeOptionReference.Create(connection.Output),
+				STNodeOptionReference.Create(connection.Input),
+				connected: false,
+				CloneState(CapturePersistentState(connection.Output.Owner)),
+				CloneState(CapturePersistentState(connection.Input.Owner))))
+			.ToList();
+	}
+
+	internal void RecordNodeConnectionsRemoved(List<STNodeConnectionEditOperation> operations)
+	{
+		if (operations == null)
+		{
+			return;
+		}
+		foreach (STNodeConnectionEditOperation operation in operations)
+		{
+			RecordOperation(operation, "断开连接");
+		}
+	}
+
 	internal void RecordNodeRemoved(STNode node, int index, Dictionary<string, byte[]> state)
 	{
 		if (state == null)
@@ -724,7 +809,12 @@ public partial class STNodeEditor
 
 	internal void OnNodeLocationChanged(STNode node, Point before, Point after)
 	{
-		if (before == after || _transactionDepth > 0)
+		if (before == after)
+		{
+			return;
+		}
+		NodeLocationChanged?.Invoke(this, EventArgs.Empty);
+		if (_transactionDepth > 0)
 		{
 			return;
 		}
@@ -813,6 +903,7 @@ public partial class STNodeEditor
 		_undoHistory.Clear();
 		_redoHistory.Clear();
 		HistoryChanged = null;
+		NodeLocationChanged = null;
 	}
 
 	private void RecordOperation(ISTNodeEditOperation operation, string description, bool allowMerge = false)

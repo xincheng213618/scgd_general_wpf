@@ -156,25 +156,30 @@ public partial class STNodeEditor
 		{
 			return Array.Empty<STNode>();
 		}
+		string base64 = System.Windows.Clipboard.GetData(ClipboardFormatV1) as string;
+		if (string.IsNullOrWhiteSpace(base64))
+		{
+			return Array.Empty<STNode>();
+		}
+		byte[] data = Convert.FromBase64String(base64);
+		if (IsMouseOver)
+		{
+			System.Windows.Point position = Mouse.GetPosition(this);
+			Point target = ControlToCanvas(new Point((int)Math.Round(position.X), (int)Math.Round(position.Y)));
+			return ImportSelectionData(data, target);
+		}
+		return ImportSelectionData(data);
+	}
+
+	private void ExecutePasteCommand()
+	{
 		try
 		{
-			string base64 = System.Windows.Clipboard.GetData(ClipboardFormatV1) as string;
-			if (string.IsNullOrWhiteSpace(base64))
-			{
-				return Array.Empty<STNode>();
-			}
-			byte[] data = Convert.FromBase64String(base64);
-			if (IsMouseOver)
-			{
-				System.Windows.Point position = Mouse.GetPosition(this);
-				Point target = ControlToCanvas(new Point((int)Math.Round(position.X), (int)Math.Round(position.Y)));
-				return ImportSelectionData(data, target);
-			}
-			return ImportSelectionData(data);
+			PasteFromClipboard();
 		}
 		catch
 		{
-			return Array.Empty<STNode>();
+			// Routed commands must not tear down the WPF input pipeline.
 		}
 	}
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
@@ -22,6 +23,10 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected Dictionary<string, CVStartCFC> startActions;
 
+	private readonly object startActionsLock = new object();
+
+	private int stopAllDepth;
+
 	protected Dictionary<string, List<CVBaseServerNode>> topicServer;
 
 	protected Dictionary<string, List<CVServiceProxy>> topicServerProxy;
@@ -30,7 +35,13 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public bool Ready { get; set; }
 
-	public bool Running { get; set; }
+	public bool Running
+	{
+		get => running;
+		set => running = value;
+	}
+
+	private volatile bool running;
 
 	[STNodeProperty("FlowALL.Timeout", "FlowALL.Timeout")]
 	public int FlowTimeout
@@ -209,11 +220,20 @@ public abstract class BaseStartNode : CVCommonNode
 	{
 	}
 
-	private void Startup(CVStartCFC action)
+	private bool TryStartup(CVStartCFC action)
 	{
+		lock (startActionsLock)
+		{
+			if (stopAllDepth > 0 || startActions.Count != 0)
+			{
+				return false;
+			}
+			startActions.Add(action.SerialNumber, action);
+			Running = true;
+		}
 		SetOptionText(m_op_start, action.SerialNumber);
-		startActions.Add(action.SerialNumber, action);
 		m_op_start.TransferData(action);
+		return true;
 	}
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
@@ -225,15 +245,12 @@ public abstract class BaseStartNode : CVCommonNode
 		if (action != null)
 		{
 			string serialNumber = action.SerialNumber;
-			if (string.IsNullOrEmpty(serialNumber) || !startActions.ContainsKey(serialNumber))
+			CVStartCFC cVStartCFC = string.IsNullOrEmpty(serialNumber) ? null : GetCFC(serialNumber);
+			if (cVStartCFC == null)
 			{
 				if (action.IsRunning)
 				{
-					if (startActions.Count == 0)
-					{
-						Startup(action);
-					}
-					else
+					if (!TryStartup(action))
 					{
 						action.SetStatusType(StatusTypeEnum.Failed);
 					}
@@ -245,7 +262,6 @@ public abstract class BaseStartNode : CVCommonNode
 				DoStatusTransferData(action);
 				return;
 			}
-			CVStartCFC cVStartCFC = startActions[serialNumber];
 			if (action.IsStop)
 			{
 				cVStartCFC.SetActionType(action.GetActionType());
@@ -270,9 +286,14 @@ public abstract class BaseStartNode : CVCommonNode
 	private void RemoveStartAction(CVStartCFC action)
 	{
 		string serialNumber = action.SerialNumber;
-		if (startActions.ContainsKey(serialNumber))
+		bool removed;
+		lock (startActionsLock)
 		{
-			startActions.Remove(serialNumber);
+			removed = startActions.Remove(serialNumber);
+			Running = startActions.Count > 0;
+		}
+		if (removed)
+		{
 			TimeSpan totalTime = action.GetTotalTime();
 			SetOptionText(m_op_start, $"{totalTime.TotalSeconds:F4}s" + "/--");
 			for (int i = 0; i < 2; i++)
@@ -299,14 +320,16 @@ public abstract class BaseStartNode : CVCommonNode
 		RemoveStartAction(startAction);
 		string msg = startAction.BuildStatusMsg(m_nodeName, m_deviceCode, -1);
 		DoPublishStatus(msg);
-		Running = false;
 	}
 
 	public CVStartCFC GetCFC(string serialNumber)
 	{
-		if (startActions.ContainsKey(serialNumber))
+		lock (startActionsLock)
 		{
-			return startActions[serialNumber];
+			if (startActions.TryGetValue(serialNumber, out CVStartCFC action))
+			{
+				return action;
+			}
 		}
 		return null;
 	}
@@ -355,7 +378,6 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void Start(string serialNumber)
 	{
-		Running = true;
 		CVStartCFC start = new CVStartCFC(serialNumber);
 		DoDispatch(start);
 	}
@@ -378,10 +400,37 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void StopAll()
 	{
-		foreach (string serialNumber in startActions.Keys.ToArray())
+		CVStartCFC[] actions;
+		ExceptionDispatchInfo firstFailure = null;
+		lock (startActionsLock)
 		{
-			Stop(serialNumber);
+			stopAllDepth++;
+			actions = startActions.Values.ToArray();
 		}
+		try
+		{
+			foreach (CVStartCFC action in actions)
+			{
+				try
+				{
+					action.SetActionType(ActionTypeEnum.Stop);
+					action.DoFinishing();
+				}
+				catch (Exception ex)
+				{
+					firstFailure ??= ExceptionDispatchInfo.Capture(ex);
+				}
+			}
+		}
+		finally
+		{
+			lock (startActionsLock)
+			{
+				stopAllDepth--;
+				Running = startActions.Count > 0;
+			}
+		}
+		firstFailure?.Throw();
 	}
 
 	public virtual void Dispose()
