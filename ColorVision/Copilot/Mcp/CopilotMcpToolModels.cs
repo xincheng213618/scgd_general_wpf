@@ -289,19 +289,19 @@ namespace ColorVision.Copilot.Mcp
         {
             return InvokeFlowManagerAsync(manager =>
             {
-                var currentRevision = manager.Context.CaptureSnapshot().Revision;
+                var currentRevision = manager.CaptureCopilotFlowSnapshot().Revision;
                 object change = request.Operation switch
                 {
                     "add_node" => new
                     {
                         operation = request.Operation,
-                        node = manager.GraphEditor.PreviewNodeAddition(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                        node = manager.PreviewCopilotFlowNodeAddition(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
                     },
-                    "set_property" => BuildPropertyPreview(manager.GraphEditor, request),
+                    "set_property" => BuildPropertyPreview(manager, request),
                     "connect" => new
                     {
                         operation = request.Operation,
-                        edge = manager.GraphEditor.PreviewConnection(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
+                        edge = manager.PreviewCopilotFlowConnection(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
                     },
                     _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),
                 };
@@ -315,9 +315,9 @@ namespace ColorVision.Copilot.Mcp
             }, cancellationToken);
         }
 
-        private static object BuildPropertyPreview(FlowCopilotGraphEditor graphEditor, CopilotFlowPatchRequest request)
+        private static object BuildPropertyPreview(FlowCopilotService manager, CopilotFlowPatchRequest request)
         {
-            var preview = graphEditor.PreviewNodePropertyChange(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision);
+            var preview = manager.PreviewCopilotFlowNodePropertyChange(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision);
             return new
             {
                 operation = request.Operation,
@@ -335,9 +335,9 @@ namespace ColorVision.Copilot.Mcp
             {
                 var snapshot = request.Operation switch
                 {
-                    "add_node" => manager.GraphEditor.AddNode(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
-                    "set_property" => manager.GraphEditor.SetNodeProperty(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision),
-                    "connect" => manager.GraphEditor.ConnectNodes(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
+                    "add_node" => manager.AddCopilotFlowNode(request.TypeKey, request.Left, request.Top, request.ExpectedRevision),
+                    "set_property" => manager.SetCopilotFlowNodeProperty(request.NodeId, request.PropertyName, request.Value, request.ExpectedRevision),
+                    "connect" => manager.ConnectCopilotFlowNodes(request.SourceNodeId, request.SourcePortId, request.TargetNodeId, request.TargetPortId, request.ExpectedRevision),
                     _ => throw new InvalidOperationException($"Unsupported Flow patch operation: {request.Operation}"),
                 };
                 return CopilotMcpToolCallResult.Ok($"Applied Flow patch operation={request.Operation}; revision={snapshot.Revision}. The flow was not saved or run.");
@@ -475,11 +475,11 @@ namespace ColorVision.Copilot.Mcp
                     return await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return manager.Copilot.Context.CaptureSnapshot();
+                        return manager.Copilot.CaptureCopilotFlowSnapshot();
                     });
                 }
 
-                return manager.Copilot.Context.CaptureSnapshot();
+                return manager.Copilot.CaptureCopilotFlowSnapshot();
             }
             catch
             {
@@ -502,11 +502,11 @@ namespace ColorVision.Copilot.Mcp
                     return await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return manager.Copilot.Context.CaptureNodeCatalog(query, maxResults);
+                        return manager.Copilot.CaptureCopilotFlowNodeCatalog(query, maxResults);
                     });
                 }
 
-                return manager.Copilot.Context.CaptureNodeCatalog(query, maxResults);
+                return manager.Copilot.CaptureCopilotFlowNodeCatalog(query, maxResults);
             }
             catch
             {

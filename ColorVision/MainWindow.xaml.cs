@@ -10,6 +10,7 @@ using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using AvalonDock.Controls;
 using AvalonDock.Layout;
 using log4net;
 using Microsoft.Xaml.Behaviors;
@@ -38,6 +39,8 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private const double RightMenuGlyphFontSize = 15;
+        private const string OpenDocumentFolderMenuUid = "ColorVision.OpenDocumentFolder";
+        private const string OpenDocumentFolderSeparatorUid = "ColorVision.OpenDocumentFolder.Separator";
 
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public DockViewManager DockViewManager => DockViewManager.GetInstance();
@@ -46,6 +49,7 @@ namespace ColorVision
         public MainWindow()
         {
             InitializeComponent();
+            DockingManager1.PreviewMouseRightButtonDown += DockingManager1_PreviewMouseRightButtonDown;
             Config.SetWindow(this);
 
             var IsAdministrator = Tool.IsAdministrator();
@@ -55,6 +59,68 @@ namespace ColorVision
             this.SetWindowFull(Config);
             HookUpdateNotification();
             
+        }
+
+        private void DockingManager1_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var tabItem = FindVisualAncestor<LayoutDocumentTabItem>(e.OriginalSource as DependencyObject);
+            var contextMenu = DockingManager1.DocumentContextMenu;
+            if (tabItem?.Model is not LayoutDocument document || contextMenu == null)
+                return;
+
+            var openFolderItem = contextMenu.Items
+                .OfType<MenuItem>()
+                .FirstOrDefault(item => item.Uid == OpenDocumentFolderMenuUid);
+            var separator = contextMenu.Items
+                .OfType<Separator>()
+                .FirstOrDefault(item => item.Uid == OpenDocumentFolderSeparatorUid);
+            if (openFolderItem == null)
+            {
+                openFolderItem = new MenuItem
+                {
+                    Header = ColorVision.UI.Properties.Resources.OpenFolder,
+                    Uid = OpenDocumentFolderMenuUid,
+                };
+                openFolderItem.Click += OpenDocumentFolder_Click;
+                separator = new Separator { Uid = OpenDocumentFolderSeparatorUid };
+                contextMenu.Items.Insert(0, separator);
+                contextMenu.Items.Insert(0, openFolderItem);
+            }
+
+            var visibility = EditorDocumentService.TryGetFilePath(document, out _)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            openFolderItem.CommandParameter = document;
+            openFolderItem.Visibility = visibility;
+            if (separator != null)
+                separator.Visibility = visibility;
+        }
+
+        private static void OpenDocumentFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem { CommandParameter: LayoutDocument document }
+                && EditorDocumentService.TryGetFilePath(document, out var filePath))
+            {
+                PlatformHelper.OpenFolderAndSelectFile(filePath);
+            }
+        }
+
+        private static T? FindVisualAncestor<T>(DependencyObject? source)
+            where T : DependencyObject
+        {
+            for (var current = source; current != null; current = GetParent(current))
+            {
+                if (current is T match)
+                    return match;
+            }
+            return null;
+        }
+
+        private static DependencyObject? GetParent(DependencyObject current)
+        {
+            if (current is FrameworkContentElement contentElement)
+                return contentElement.Parent;
+            return VisualTreeHelper.GetParent(current);
         }
 
         private void Window_Initialized(object sender, EventArgs e)

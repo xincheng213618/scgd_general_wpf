@@ -142,8 +142,10 @@ namespace ColorVision.Copilot
 
         private static readonly string[] FollowUpMarkers =
         {
-            "继续", "再看", "再查", "再检查", "再试", "现在呢", "然后呢", "还有呢", "刚才的", "上一个",
-            "continue", "again", "check again", "what about", "then", "the previous", "that result",
+            "继续", "执行", "运行", "开始", "做吧", "就这么做", "按这个来",
+            "再看", "再查", "再检查", "再试", "现在呢", "然后呢", "还有呢", "刚才的", "上一个",
+            "continue", "execute", "run it", "start", "do it", "go ahead",
+            "again", "check again", "what about", "then", "the previous", "that result",
         };
 
         private static readonly string[] FlowGraphMarkers =
@@ -499,6 +501,8 @@ namespace ColorVision.Copilot
             return ContainsAny(request.UserText, ShellMarkers)
                 || ContainsAny(request.UserText, ScriptRuntimeMarkers)
                     && ContainsAny(request.UserText, ScriptExecutionMarkers)
+                || ContainsAny(request.UserText, ScriptExecutionMarkers)
+                    && MatchesCurrentOrContinuation(request, ScriptRuntimeMarkers, "RunShellCommand")
                 || ContainsAny(request.UserText, BatchAutomationMarkers)
                     && !NeedsBatchImageProcessing(request);
         }
@@ -507,6 +511,8 @@ namespace ColorVision.Copilot
         {
             return IsAgentRequest(request)
                 && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
+                && !(ContainsAny(request.UserText, ScriptRuntimeMarkers)
+                    && ContainsAny(request.UserText, ScriptExecutionMarkers))
                 && ContainsAny(request.UserText, BatchImageMarkers)
                 && ContainsAny(request.UserText, BatchImageActionMarkers);
         }

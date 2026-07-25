@@ -12,7 +12,34 @@ namespace ColorVision.Scheduler
     /// </summary>
     public partial class CreateTask : Window
     {
-        public SchedulerInfo SchedulerInfo { get; set; } = new SchedulerInfo();
+        private SchedulerInfo _schedulerInfo = new();
+        private string? _originalJobName;
+        private string? _originalGroupName;
+        private bool _suppressSelectionChanged;
+
+        public SchedulerInfo SchedulerInfo
+        {
+            get => _schedulerInfo;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _schedulerInfo = value;
+
+                if (_originalJobName == null
+                    && QuartzSchedulerManager.GetInstance().TaskInfos.Any(info =>
+                        info.JobName == value.JobName && info.GroupName == value.GroupName))
+                {
+                    _originalJobName = value.JobName;
+                    _originalGroupName = value.GroupName;
+                }
+
+                if (IsInitialized)
+                    BindSchedulerInfo();
+            }
+        }
+
+        private bool IsEditing => _originalJobName != null && _originalGroupName != null;
+
         public CreateTask()
         {
             InitializeComponent();
@@ -21,80 +48,109 @@ namespace ColorVision.Scheduler
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ComboBoxMode.ItemsSource = from e1 in Enum.GetValues<JobExecutionMode>().Cast<JobExecutionMode>()
-                                       select new KeyValuePair<JobExecutionMode, string>(e1, e1.ToString());
-
+            _suppressSelectionChanged = true;
+            ComboBoxMode.ItemsSource = from mode in Enum.GetValues<JobExecutionMode>()
+                                       select new KeyValuePair<string, JobExecutionMode>(GetExecutionModeDisplay(mode), mode);
             TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
-            this.DataContext = SchedulerInfo;
+            DataContext = SchedulerInfo;
+            _suppressSelectionChanged = false;
+            RenderConfigurationEditor();
+        }
+
+        private static string GetExecutionModeDisplay(JobExecutionMode mode)
+        {
+            return mode == JobExecutionMode.Calendar
+                ? $"{mode.ToDescription()} ({Properties.Resources.Sched_Interval}: 24 h)"
+                : mode.ToDescription();
         }
 
 
         private void TaskComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (SchedulerInfo.JobType != null)
+            if (_suppressSelectionChanged || !ReferenceEquals(sender, TaskComboBox) || SchedulerInfo.JobType == null)
+                return;
+
+            if (!IsEditing)
             {
                 SchedulerInfo.JobName = QuartzSchedulerManager.GetInstance().GetNewJobName(SchedulerInfo.JobType.Name);
                 SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
+            }
 
-                StackPanelConfig.Children.Clear();
-                
-                // Check if job supports configuration
-                if (typeof(IConfigurableJob).IsAssignableFrom(SchedulerInfo.JobType))
+            RenderConfigurationEditor();
+        }
+
+        private void BindSchedulerInfo()
+        {
+            _suppressSelectionChanged = true;
+            DataContext = SchedulerInfo;
+            _suppressSelectionChanged = false;
+            RenderConfigurationEditor();
+        }
+
+        private void RenderConfigurationEditor()
+        {
+            StackPanelConfig.Children.Clear();
+            if (SchedulerInfo.JobType == null || !typeof(IConfigurableJob).IsAssignableFrom(SchedulerInfo.JobType))
+                return;
+
+            try
+            {
+                if (Activator.CreateInstance(SchedulerInfo.JobType) is IConfigurableJob jobInstance)
                 {
-                    try
+                    if (SchedulerInfo.Config == null || SchedulerInfo.Config.GetType() != jobInstance.ConfigType)
+                        SchedulerInfo.Config = jobInstance.CreateDefaultConfig();
+
+                    if (SchedulerInfo.Config != null)
                     {
-                        // Create an instance to get config type
-                        var jobInstance = Activator.CreateInstance(SchedulerInfo.JobType) as IConfigurableJob;
-                        if (jobInstance != null)
-                        {
-                            // Create or reuse config
-                            if (SchedulerInfo.Config == null || SchedulerInfo.Config.GetType() != jobInstance.ConfigType)
-                            {
-                                SchedulerInfo.Config = jobInstance.CreateDefaultConfig();
-                            }
-                            
-                            // Generate UI for config
-                            if (SchedulerInfo.Config != null)
-                            {
-                                var configPanel = PropertyEditorHelper.GenPropertyEditorControl(SchedulerInfo.Config);
-                                if (configPanel != null)
-                                {
-                                    StackPanelConfig.Children.Add(configPanel);
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to create configuration for job type '{SchedulerInfo.JobType.Name}': {ex.Message}\n\nThe job will be created without custom configuration.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        var configPanel = PropertyEditorHelper.GenPropertyEditorControl(SchedulerInfo.Config);
+                        if (configPanel != null)
+                            StackPanelConfig.Children.Add(configPanel);
                     }
                 }
             }
-
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to create configuration for job type '{SchedulerInfo.JobType.Name}': {ex.Message}\n\nThe job will be created without custom configuration.",
+                    "Configuration Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
+
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            var jobName = SchedulerInfo.JobName;
-            var groupName = SchedulerInfo.GroupName;
-            var cronExpression = SchedulerInfo.CronExpression;
+            try
+            {
+                QuartzSchedulerManager manager = QuartzSchedulerManager.GetInstance();
+                SchedulerOperationResult result = IsEditing
+                    ? await manager.UpdateJob(SchedulerInfo, _originalJobName!, _originalGroupName!)
+                    : await manager.CreateJob(SchedulerInfo);
 
-            if (string.IsNullOrWhiteSpace(jobName) || string.IsNullOrWhiteSpace(groupName))
-            {
-                MessageBox.Show("Please fill in all fields.");
-                return;
+                if (!result.Success)
+                {
+                    MessageBox.Show(
+                        result.Message,
+                        result.Error == SchedulerOperationError.Validation
+                            ? Properties.Resources.Sched_ParamError
+                            : Properties.Resources.Sched_Error,
+                        MessageBoxButton.OK,
+                        result.Error == SchedulerOperationError.Validation
+                            ? MessageBoxImage.Warning
+                            : MessageBoxImage.Error);
+                    return;
+                }
+
+                DialogResult = true;
             }
-            // 判断是新增还是编辑
-            var isEdit = QuartzSchedulerManager.GetInstance().TaskInfos.Any(x => x.JobName == jobName && x.GroupName == groupName);
-            if (isEdit)
+            catch (Exception ex)
             {
-                await QuartzSchedulerManager.GetInstance().UpdateJob(SchedulerInfo);
+                MessageBox.Show(
+                    ex.Message,
+                    Properties.Resources.Sched_Error,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
-            else
-            {
-                await QuartzSchedulerManager.GetInstance().CreateJob(SchedulerInfo);
-            }
-            this.DialogResult = true;
-            this.Close();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

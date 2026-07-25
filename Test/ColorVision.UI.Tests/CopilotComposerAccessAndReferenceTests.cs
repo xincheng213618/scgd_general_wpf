@@ -7,21 +7,49 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotComposerAccessAndReferenceTests
 {
     [Fact]
+    public void InProgressTaskLedgerDoesNotClaimTheAgentHasStopped()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            AgentTaskLedger = new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items =
+                [
+                    new CopilotAgentTaskItem { Id = 1, Title = "执行脚本", IsComplete = false },
+                ],
+            },
+            AgentStopReason = CopilotAgentStopReason.None,
+            IsExecutionInProgress = true,
+        };
+
+        Assert.Equal("任务执行中", message.AgentStopReasonLabel);
+    }
+
+    [Fact]
     public void ConversationAccessModeUpdatesLiveAgentContextAndRoundTrips()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
 
-        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
-        Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
-
-        conversation.AccessMode = CopilotAgentAccessMode.FullAccess;
-
+        Assert.Equal(CopilotAgentAccessMode.FullAccess, conversation.AccessMode);
         Assert.True(conversation.AccessContext.AllowsUnattendedProtectedActions);
+
+        conversation.AccessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
+
+        Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
         var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(
             JsonConvert.SerializeObject(conversation));
         Assert.NotNull(restored);
-        Assert.Equal(CopilotAgentAccessMode.FullAccess, restored.AccessMode);
-        Assert.True(restored.AccessContext.AllowsUnattendedProtectedActions);
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, restored.AccessMode);
+        Assert.False(restored.AccessContext.AllowsUnattendedProtectedActions);
+    }
+
+    [Fact]
+    public void FullAccessApprovalDoesNotRequireAConfirmationStoreAction()
+    {
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+
+        Assert.True(coordinator.BeginIfRequired(string.Empty));
     }
 
     [Fact]

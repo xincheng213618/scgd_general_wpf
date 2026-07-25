@@ -109,22 +109,36 @@ namespace ProjectARVRPro
         }
 
         bool IsSwitchRun;
+        private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
-        public void SwitchPGCompleted()
+        public async void SwitchPGCompleted()
+        {
+            try
+            {
+                await TryStartNextTemplateAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Error("启动下一项 ARVR 流程失败", ex);
+            }
+        }
+
+        public async Task<bool> TryStartNextTemplateAsync(CancellationToken cancellationToken = default)
         {
             if (IsSwitchRun)
             {
                 log.Info("重复触发PG");
-                return;
+                return false;
             }
             IsSwitchRun = true;
 
             try
             {
-                if (flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
+                cancellationToken.ThrowIfCancellationRequested();
+                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
                     log.Info("PG切换错误，正在执行流程或处理流程结果");
-                    return;
+                    return false;
                 }
 
                 // Find next enabled ProcessMeta
@@ -144,8 +158,11 @@ namespace ProjectARVRPro
                     TemplateModel<FlowParam> template = SelectFlowTemplate(processMeta);
                     CurrentTestType = nextTestType;
                     ProjectConfig.StepIndex = nextTestType;
-                    RunTemplate(template.Key, processMeta);
+                    return await TryRunTemplate(template.Key, processMeta, cancellationToken);
                 }
+
+                log.Info("没有可执行的 ARVR 流程");
+                return false;
             }
             finally
             {
@@ -486,105 +503,133 @@ namespace ProjectARVRPro
             }
         }
 
-        private void TestClick(object sender, RoutedEventArgs e)
+        private async void TestClick(object sender, RoutedEventArgs e)
         {
-            RunTemplate();
+            await RunTemplate();
         }
 
 
         ProjectARVRReuslt CurrentFlowResult { get; set; }
         int TryCount;
 
-        public Task RunTemplate()
+        public async Task RunTemplate()
         {
             if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template)
-                return Task.CompletedTask;
+                return;
 
             ProcessMeta? processMeta = ProcessManager.FindProcessMetaForTemplate(template.Key);
-            return RunTemplate(template.Key, processMeta);
+            await TryRunTemplate(template.Key, processMeta);
         }
 
-        private async Task RunTemplate(string flowTemplateKey, ProcessMeta? runProcessMeta)
+        private async Task<bool> TryRunTemplate(
+            string flowTemplateKey,
+            ProcessMeta? runProcessMeta,
+            CancellationToken cancellationToken = default)
         {
-            if (flowControl.IsFlowRun || _isFlowLifecycleActive)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
                 log.Info("当前flowControl存在流程执行或正在处理流程结果");
-                return;
+                return false;
             }
 
-            TryCount++;
-            _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
-            LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
-
-            CurrentFlowResult = new ProjectARVRReuslt();
-            CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-            CurrentFlowResult.Model = flowTemplateKey;
-            ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
-
-            Application.Current.Dispatcher.Invoke(() =>
+            _isFlowStartPending = true;
+            try
             {
-                int groupIndex = runProcessMeta == null ? -1 : ProcessMetas.IndexOf(runProcessMeta);
-                if (groupIndex >= 0)
+                cancellationToken.ThrowIfCancellationRequested();
+                TryCount++;
+                _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
+                LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
+
+                CurrentFlowResult = new ProjectARVRReuslt();
+                CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
+                CurrentFlowResult.Model = flowTemplateKey;
+                ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
+
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    CurrentFlowResult.TestType = groupIndex;
-                    ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
-                }
-                else
+                    int groupIndex = runProcessMeta == null ? -1 : ProcessMetas.IndexOf(runProcessMeta);
+                    if (groupIndex >= 0)
+                    {
+                        CurrentFlowResult.TestType = groupIndex;
+                        ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                    }
+                    else
+                    {
+                        CurrentFlowResult.TestType = CurrentTestType;
+                        ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                    }
+                });
+
+
+                FlowName = flowTemplateKey;
+
+                string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+                CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+
+                await Refresh();
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
                 {
-                    CurrentFlowResult.TestType = CurrentTestType;
-                    ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                    log.Info("找不到完整流程，运行失败");
+                    return false;
                 }
-            });
 
+                if (!await _pictureSwitchService.ExecuteAsync(runProcessMeta))
+                {
+                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                    CurrentFlowResult.Msg = "PictureSwitchFailed";
+                    await ExecuteProcessFailureAsync(runProcessMeta?.Process);
+                    RecordFlowFailure(CurrentFlowResult.Msg);
+                    logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
+                    SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
+                    TryCount = 0;
+                    return false;
+                }
+                cancellationToken.ThrowIfCancellationRequested();
 
-            FlowName = flowTemplateKey;
+                if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
+                {
+                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                    CurrentFlowResult.Msg = "PreProcessFailed";
+                    await ExecuteProcessFailureAsync(runProcessMeta?.Process);
+                    RecordFlowFailure(CurrentFlowResult.Msg);
+                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                    SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
+                    TryCount = 0;
+                    return false;
+                }
+                cancellationToken.ThrowIfCancellationRequested();
 
-            string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
-            CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+                CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-            await Refresh();
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                stopwatch.Reset();
+                stopwatch.Start();
 
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
+                MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
+                CurrentFlowResult.BatchId = id;
 
-            if (!await _pictureSwitchService.ExecuteAsync(runProcessMeta))
-            {
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = "PictureSwitchFailed";
-                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
-                RecordFlowFailure(CurrentFlowResult.Msg);
-                logTextBox.Text = FlowName + Environment.NewLine + "切图失败";
-                SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
-                TryCount = 0;
-                return;
+                _isFlowLifecycleActive = true;
+                try
+                {
+                    flowControl.Start(CurrentFlowResult.Code);
+                    timer.Change(0, 500); // 启动定时器
+                }
+                catch
+                {
+                    _isFlowLifecycleActive = false;
+                    throw;
+                }
+                return true;
             }
-
-            if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
+            finally
             {
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = "PreProcessFailed";
-                await ExecuteProcessFailureAsync(runProcessMeta?.Process);
-                RecordFlowFailure(CurrentFlowResult.Msg);
-                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                SendProjectResultResponse(_firstFlowFailure?.Code ?? -1, _firstFlowFailure?.Message ?? "ARVR Test Fail", ViewResultManager.Config.UseLegacyARVROutput ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult) : ObjectiveTestResult);
-                TryCount = 0;
-                return;
+                _isFlowStartPending = false;
             }
-
-            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-
-            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            stopwatch.Reset();
-            stopwatch.Start();
-
-            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
-            CurrentFlowResult.BatchId = id;
-
-            _isFlowLifecycleActive = true;
-            flowControl.Start(CurrentFlowResult.Code);
-            timer.Change(0, 500); // 启动定时器
         }
 
         private async Task<bool> PreProcessing(string flowName, string serialNumber)
@@ -771,7 +816,7 @@ namespace ProjectARVRPro
                         log.Info("重新尝试运行流程");
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            RunTemplate();
+                            _ = RunTemplate();
                         });
                     });
                     return;

@@ -830,6 +830,7 @@ namespace ColorVision.Copilot
                 fileHyperlink.SetResourceReference(TextElement.ForegroundProperty, "PrimaryBrush");
                 AutomationProperties.SetName(fileHyperlink, $"打开工作区文件：{linkText}");
                 fileHyperlink.Click += LocalFileHyperlink_Click;
+                fileHyperlink.ContextMenu = CreateLocalFileContextMenu(fileTarget);
                 inlines.Add(fileHyperlink);
                 return;
             }
@@ -863,6 +864,33 @@ namespace ColorVision.Copilot
 
             if (!CopilotLocalFileLinkNavigator.TryOpen(target, out var errorMessage))
                 hyperlink.ToolTip = "无法打开文件：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
+        }
+
+        private static ContextMenu CreateLocalFileContextMenu(CopilotLocalFileLinkTarget target)
+        {
+            var openFolderItem = new MenuItem
+            {
+                Header = ColorVision.UI.Properties.Resources.OpenFolder,
+                Tag = target,
+            };
+            openFolderItem.Click += LocalFileOpenFolder_Click;
+            return new ContextMenu
+            {
+                Items =
+                {
+                    openFolderItem,
+                },
+            };
+        }
+
+        private static void LocalFileOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (sender is not MenuItem { Tag: CopilotLocalFileLinkTarget target } menuItem)
+                return;
+
+            if (!CopilotLocalFileLinkNavigator.TryOpenContainingFolder(target, out var errorMessage))
+                menuItem.ToolTip = "无法打开文件夹：" + CopilotUserFacingErrorFormatter.Sanitize(errorMessage);
         }
 
         private static void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

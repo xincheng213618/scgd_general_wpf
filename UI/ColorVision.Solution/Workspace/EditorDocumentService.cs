@@ -96,6 +96,20 @@ namespace ColorVision.Solution.Workspace
             return GetActiveSession()?.TryReload(confirmDirty: true, externalChange: false, showError: true) == true;
         }
 
+        public static bool TryGetFilePath(LayoutDocument? document, out string filePath)
+        {
+            filePath = string.Empty;
+            if (document == null
+                || !_sessions.TryGetValue(document, out EditorDocumentSession? session)
+                || !File.Exists(session.ResourcePath))
+            {
+                return false;
+            }
+
+            filePath = session.ResourcePath;
+            return true;
+        }
+
         public static bool TryCloseAllDocuments()
         {
             return TryCloseSessions(_sessions.Values

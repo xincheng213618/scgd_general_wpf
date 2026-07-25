@@ -281,6 +281,30 @@
   <data name="Sched_Group" xml:space="preserve">
     <value>Group</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>Task type</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>Delayed start</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>No scheduled tasks yet</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>Create a task and configure its schedule</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>The task is running. Wait for it to finish before editing.</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>For safety, legacy Daily interval / Forever tasks were paused because this version now runs them at the configured interval instead of once per day. Review and resume them manually:&#xA;{0}</value>
+  </data>
   <data name="Sched_ElapsedMs" xml:space="preserve">
     <value>Elapsed(ms)</value>
   </data>
@@ -333,13 +357,13 @@
     <value>Priority (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>Higher value = higher priority</value>
+    <value>Higher values take priority only when several triggers are due at the same time and worker threads are limited.</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>Timeout(seconds)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0 means no timeout</value>
+    <value>Applies only to jobs that support cancellation; 0 means no timeout.</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = No limit</value>
@@ -396,13 +420,13 @@
     <value>Delay</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>Simple</value>
+    <value>Interval / repeat</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>Calendar</value>
+    <value>Daily</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>Interval</value>
+    <value>Daily interval</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>Once</value>

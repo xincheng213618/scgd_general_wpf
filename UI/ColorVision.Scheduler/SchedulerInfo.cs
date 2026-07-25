@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
 
 namespace ColorVision.Scheduler
 {
@@ -45,6 +46,19 @@ namespace ColorVision.Scheduler
     // 纯数据对象，不再包含命令
     public class SchedulerInfo: ViewModelBase
     {
+        public const int CurrentScheduleDefinitionVersion = 1;
+
+        public int ScheduleDefinitionVersion { get; set; } = CurrentScheduleDefinitionVersion;
+
+        [OnDeserializing]
+        internal void OnDeserializing(StreamingContext context)
+        {
+            // The version property did not exist in legacy scheduler_tasks.json
+            // files. Newtonsoft.Json calls this before applying persisted values,
+            // so a present version will still overwrite zero afterwards.
+            ScheduleDefinitionVersion = 0;
+        }
+
         public SchedulerStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); } }
         private SchedulerStatus _Status;
 

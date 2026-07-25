@@ -7,11 +7,13 @@ namespace ColorVision.Scheduler
 
         public override string Name => nameof(TaskViewerInitializer);
 
-        public override int Order => 1;
+        // Scheduler jobs may depend on MQTT, device services, RC, CUDA and flow
+        // runtime initializers. Start only after those lower-order dependencies.
+        public override int Order => 1000;
 
         public override async Task InitializeAsync()
         {
-            QuartzSchedulerManager.GetInstance();
+            await QuartzSchedulerManager.GetInstance().InitializationTask;
         }
     }
 }

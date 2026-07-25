@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
                     "file-read" => ("正在读取多个文件", "读取了多个文件"),
                     "file-search" => ("正在执行多次文件搜索", "执行了多次文件搜索"),
                     "delegation" => ("正在运行多个子 Agent", "运行了多个子 Agent"),
-                    "workspace" => ("正在处理多项文件修改", "处理了多项文件修改"),
+                    "workspace" => ("正在处理文件修改", "处理了文件修改"),
                     "application" => ("正在执行多个应用操作", "执行了多个应用操作"),
                     _ => ("正在运行多个工具调用", "运行了多个工具调用"),
                 };
@@ -66,11 +66,22 @@ namespace ColorVision.Copilot
                 if (Entries.Any(entry => entry.State == CopilotToolExecutionState.AwaitingApproval))
                     return completed + " · 等待批准";
 
-                var failureCount = Entries.Count(entry => entry.IsFailure);
-                return failureCount switch
+                var hardFailureCount = Entries.Count(entry => entry.State
+                    is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut);
+                if (hardFailureCount == 0)
+                {
+                    if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Denied))
+                        return completed + " · 未批准";
+                    if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Cancelled))
+                        return completed + " · 已取消";
+                    if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Interrupted))
+                        return completed + " · 已中断";
+                }
+
+                return hardFailureCount switch
                 {
                     0 => completed,
-                    _ when failureCount == Entries.Count => completed + " · 失败",
+                    _ when hardFailureCount == Entries.Count => completed + " · 失败",
                     _ => completed + " · 部分失败",
                 };
             }

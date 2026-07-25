@@ -281,6 +281,30 @@
   <data name="Sched_Group" xml:space="preserve">
     <value>Group</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>タスクの種類</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>実行スケジュール</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>遅延開始</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>スケジュールされたタスクはまだありません</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>タスクを作成して実行スケジュールを設定します</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>タスクは実行中です。完了してから編集してください。</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>安全のため、旧バージョンの「日次間隔 / 無期限」タスクを一時停止しました。このバージョンでは1日1回ではなく設定した間隔で実行されるためです。内容を確認してから手動で再開してください：&#xA;{0}</value>
+  </data>
   <data name="Sched_ElapsedMs" xml:space="preserve">
     <value>Elapsed(ms)</value>
   </data>
@@ -333,13 +357,13 @@
     <value>Priority (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>Higher value = higher priority</value>
+    <value>複数のトリガーが同時に到達し、実行スレッドが不足している場合のみ、値が大きいタスクが優先されます。</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>Timeout(seconds)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0 means no timeout</value>
+    <value>キャンセル対応のタスクにのみ適用されます。0 はタイムアウトなしです。</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = No limit</value>
@@ -396,13 +420,13 @@
     <value>Delay</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>Simple</value>
+    <value>間隔 / 繰り返し</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>Calendar</value>
+    <value>毎日</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>Interval</value>
+    <value>日次間隔</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>Once</value>

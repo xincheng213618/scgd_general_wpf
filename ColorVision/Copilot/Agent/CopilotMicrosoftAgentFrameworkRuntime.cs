@@ -2177,8 +2177,18 @@ namespace ColorVision.Copilot
                         ToolCall = CreateToolCall(tool, toolInput),
                     }
                     : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
-                if (approvalReservation != null && !_approvalCoordinator.Begin(approvalReservation.ApprovalActionId))
-                    throw new InvalidOperationException("The approved Agent Framework action is no longer executable.");
+                if (approvalReservation != null
+                    && !_approvalCoordinator.BeginIfRequired(approvalReservation.ApprovalActionId))
+                {
+                    var decision = CopilotFrameworkApprovalDecision.PolicyDenied(
+                        "The approved Agent Framework action is no longer executable.");
+                    Reject(approvalReservation, decision);
+                    return CopilotFrameworkToolResultFormatter.FormatRejected(
+                        tool.Name,
+                        decision.Reason,
+                        "approval_no_longer_executable",
+                        CopilotToolFailureKind.Authorization);
+                }
 
                 CopilotToolExecutionOutcome outcome;
                 try

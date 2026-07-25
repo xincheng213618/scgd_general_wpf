@@ -189,11 +189,20 @@ namespace ColorVision.Copilot
                 _confirmationStore.Cancel(handle.Action.ActionId, out _, "The approval request was cancelled with the Agent run.");
         }
 
-        public void Cancel(string actionId, string reason) => _confirmationStore.Cancel(actionId, out _, reason);
+        public void Cancel(string? actionId, string reason)
+        {
+            if (!string.IsNullOrWhiteSpace(actionId))
+                _confirmationStore.Cancel(actionId, out _, reason);
+        }
 
-        public bool Begin(string actionId) => _confirmationStore.BeginAgentFrameworkAction(actionId);
+        public bool BeginIfRequired(string? actionId) =>
+            string.IsNullOrWhiteSpace(actionId) || _confirmationStore.BeginAgentFrameworkAction(actionId);
 
-        public void Complete(string actionId, CopilotToolResult result) => _confirmationStore.CompleteAgentFrameworkAction(actionId, result);
+        public void Complete(string? actionId, CopilotToolResult result)
+        {
+            if (!string.IsNullOrWhiteSpace(actionId))
+                _confirmationStore.CompleteAgentFrameworkAction(actionId, result);
+        }
 
         private async Task<CopilotFrameworkApprovalDecision> AwaitDecisionAsync(
             ConfirmableAction action,

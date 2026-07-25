@@ -18,8 +18,9 @@ namespace ColorVision.Scheduler
         private CopilotDynamicContextSession? _copilotContextSession;
         private bool _isClosed;
         private int _pageIndex = 1;
+        private int _pageCount;
         private const int PageSize = 100;
-        private string _filter = Properties.Resources.Sched_All;
+        private JobExecutionResultFilter _resultFilter = JobExecutionResultFilter.All;
 
         /// <summary>
         /// 查看所有任务的执行历史
@@ -52,56 +53,54 @@ namespace ColorVision.Scheduler
         private void LoadData()
         {
             var dbManager = SchedulerDbManager.GetInstance();
-            List<JobExecutionRecord> records;
+            var result = dbManager.QueryExecutionHistory(new JobExecutionHistoryRequest(
+                _jobName,
+                _groupName,
+                _resultFilter,
+                _pageIndex,
+                PageSize));
 
-            if (_jobName != null && _groupName != null)
+            if (!result.QuerySucceeded)
             {
-                records = dbManager.QueryRecords(_jobName, _groupName, _pageIndex, PageSize);
-            }
-            else
-            {
-                records = dbManager.QueryAllRecords(_pageIndex, PageSize);
+                _currentRecords = Array.Empty<JobExecutionRecord>();
+                ListViewHistory.ItemsSource = _currentRecords;
+                _pageCount = 0;
+                UpdateStats(null);
+                UpdatePager();
+                MessageBox.Show(
+                    result.ErrorMessage ?? Properties.Resources.Sched_Error,
+                    Properties.Resources.Sched_Error,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                PublishCopilotContext();
+                return;
             }
 
-            // 应用筛选
-            if (_filter == Properties.Resources.Sched_SuccessFilter)
-                records = records.Where(r => r.Success).ToList();
-            else if (_filter == Properties.Resources.Sched_FailFilter)
-                records = records.Where(r => !r.Success).ToList();
-
-            _currentRecords = records;
+            _pageIndex = result.PageIndex;
+            _pageCount = result.PageCount;
+            _currentRecords = result.Records;
             ListViewHistory.ItemsSource = _currentRecords;
-            TextBlockPage.Text = string.Format(Properties.Resources.Sched_PageInfo, _pageIndex);
-
-            // 更新统计
-            UpdateStats();
+            UpdateStats(result);
+            UpdatePager();
             PublishCopilotContext();
         }
 
-        private void UpdateStats()
+        private void UpdateStats(JobExecutionHistoryPage? result)
         {
-            var dbManager = SchedulerDbManager.GetInstance();
+            TextBlockTotal.Text = (result?.TotalCount ?? 0).ToString();
+            TextBlockSuccess.Text = (result?.SuccessCount ?? 0).ToString();
+            TextBlockFailure.Text = (result?.FailureCount ?? 0).ToString();
+            TextBlockAvgTime.Text = $"{result?.AverageExecutionTimeMs ?? 0}ms";
+        }
 
-            if (_jobName != null && _groupName != null)
-            {
-                var stats = dbManager.GetTaskStats(_jobName, _groupName);
-                TextBlockTotal.Text = stats.RunCount.ToString();
-                TextBlockSuccess.Text = stats.SuccessCount.ToString();
-                TextBlockFailure.Text = stats.FailureCount.ToString();
-                TextBlockAvgTime.Text = $"{stats.AvgMs}ms";
-            }
-            else
-            {
-                // 全部任务的统计用当前页数据简单汇总
-                var records = ListViewHistory.ItemsSource as List<JobExecutionRecord>;
-                if (records != null && records.Count > 0)
-                {
-                    TextBlockTotal.Text = records.Count.ToString();
-                    TextBlockSuccess.Text = records.Count(r => r.Success).ToString();
-                    TextBlockFailure.Text = records.Count(r => !r.Success).ToString();
-                    TextBlockAvgTime.Text = $"{(long)records.Average(r => r.ExecutionTimeMs)}ms";
-                }
-            }
+        private void UpdatePager()
+        {
+            int displayPageCount = Math.Max(1, _pageCount);
+            TextBlockPage.Text = string.Format(
+                Properties.Resources.Sched_PageInfo,
+                $"{_pageIndex}/{displayPageCount}");
+            ButtonPreviousPage.IsEnabled = _pageCount > 0 && _pageIndex > 1;
+            ButtonNextPage.IsEnabled = _pageCount > 0 && _pageIndex < _pageCount;
         }
 
         private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -131,19 +130,24 @@ namespace ColorVision.Scheduler
 
         private void NextPage_Click(object sender, RoutedEventArgs e)
         {
-            _pageIndex++;
-            LoadData();
+            if (_pageCount > 0 && _pageIndex < _pageCount)
+            {
+                _pageIndex++;
+                LoadData();
+            }
         }
 
         private void ComboBoxFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!IsInitialized) return;
-            if (ComboBoxFilter.SelectedItem is ComboBoxItem item)
+            _resultFilter = ComboBoxFilter.SelectedIndex switch
             {
-                _filter = item.Content?.ToString() ?? Properties.Resources.Sched_All;
-                _pageIndex = 1;
-                LoadData();
-            }
+                1 => JobExecutionResultFilter.Succeeded,
+                2 => JobExecutionResultFilter.Failed,
+                _ => JobExecutionResultFilter.All,
+            };
+            _pageIndex = 1;
+            LoadData();
         }
 
         private void ListViewHistory_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -214,11 +218,12 @@ namespace ColorVision.Scheduler
 
         private string GetCopilotHistoryFilter()
         {
-            if (_filter == Properties.Resources.Sched_SuccessFilter)
-                return "Success only";
-            if (_filter == Properties.Resources.Sched_FailFilter)
-                return "Failure only";
-            return "All results";
+            return _resultFilter switch
+            {
+                JobExecutionResultFilter.Succeeded => "Success only",
+                JobExecutionResultFilter.Failed => "Failure only",
+                _ => "All results",
+            };
         }
 
         private void PublishCopilotContext()

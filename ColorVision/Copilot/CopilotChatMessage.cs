@@ -467,6 +467,8 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public string AgentStopReasonLabel => AgentStopReason switch
         {
+            CopilotAgentStopReason.None when IsExecutionInProgress => "任务执行中",
+            CopilotAgentStopReason.None when HasIncompleteAgentTasks => "任务尚未完成",
             CopilotAgentStopReason.Completed => "任务完成",
             CopilotAgentStopReason.AwaitingUser => "等待用户决定",
             CopilotAgentStopReason.ApprovalDenied => "审批未通过",
@@ -516,6 +518,8 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(ExecutionHeader));
                     OnPropertyChanged(nameof(ExecutionSummary));
                     OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+                    OnPropertyChanged(nameof(AgentStopReasonLabel));
+                    OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
                 }
             }
         }
@@ -1621,11 +1625,11 @@ namespace ColorVision.Copilot
                     _accessContext.Mode = normalized;
             }
         }
-        private CopilotAgentAccessMode _accessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
+        private CopilotAgentAccessMode _accessMode = CopilotAgentAccessMode.FullAccess;
 
         [JsonIgnore]
         internal CopilotAgentAccessContext AccessContext => _accessContext;
-        private readonly CopilotAgentAccessContext _accessContext = new();
+        private readonly CopilotAgentAccessContext _accessContext = new(CopilotAgentAccessMode.FullAccess);
 
         public int LastUsageInputTokens
         {

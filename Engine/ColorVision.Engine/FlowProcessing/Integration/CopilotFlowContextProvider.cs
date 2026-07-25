@@ -14,6 +14,13 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             "flow", "workflow", "node", "graph", "batch",
             "流程", "工作流", "节点", "连线", "批次", "流程图",
         ];
+        private static readonly string[] CurrentSurfaceReferenceTerms =
+        [
+            "current", "this", "here", "selected", "active",
+            "failed", "failure", "error", "exception", "timeout",
+            "当前", "这个", "这里", "选中", "活动", "刚才",
+            "失败", "错误", "异常", "超时", "为什么",
+        ];
         private readonly Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> _snapshotProvider;
         private readonly Func<bool> _isActive;
         private readonly Func<bool> _isCurrentSurface;
@@ -73,11 +80,13 @@ namespace ColorVision.Engine.FlowProcessing.Integration
 
         private bool ShouldCapture(CopilotContextRequest request)
         {
-            if (request.Scope == CopilotContextScope.Diagnose || _isCurrentSurface())
+            if (request.Scope == CopilotContextScope.Diagnose)
                 return true;
 
             var userText = request.UserText ?? string.Empty;
-            return FlowIntentTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase));
+            return FlowIntentTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase))
+                || _isCurrentSurface()
+                    && CurrentSurfaceReferenceTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase));
         }
 
         private static async Task<CopilotFlowContextSnapshot?> CaptureSnapshotAsync(
@@ -91,11 +100,11 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 return await dispatcher.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    return service.Context.CaptureSnapshot();
+                    return service.CaptureCopilotFlowSnapshot();
                 });
             }
 
-            return service.Context.CaptureSnapshot();
+            return service.CaptureCopilotFlowSnapshot();
         }
     }
 

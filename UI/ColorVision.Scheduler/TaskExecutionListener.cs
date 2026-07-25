@@ -1,10 +1,10 @@
-﻿#pragma warning disable CA2016
-
 using ColorVision.Scheduler.Data;
 using log4net;
 using Quartz;
 using Quartz.Listener;
-using System.Diagnostics;
+using System.Collections.Concurrent;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Scheduler
 {
@@ -12,8 +12,9 @@ namespace ColorVision.Scheduler
     {
         private readonly QuartzSchedulerManager _schedulerManager;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
-        private readonly Dictionary<string, Stopwatch> _executionTimers = new();
-        private readonly Dictionary<string, DateTime> _executionStartTimes = new();
+        private readonly ConcurrentDictionary<string, ExecutionState> _activeExecutions = new();
+        private readonly object _historyWriteSync = new();
+        private Task _historyWriteTail = Task.CompletedTask;
 
         public TaskExecutionListener(QuartzSchedulerManager schedulerManager)
         {
@@ -24,127 +25,234 @@ namespace ColorVision.Scheduler
 
         public event Action<IJobExecutionContext>? JobExecutedEvent;
 
-        public override Task JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
+        public override async Task JobToBeExecuted(IJobExecutionContext context, CancellationToken cancellationToken = default)
         {
-            // 任务即将执行，更新状态为 Running 并启动计时器
-            var jobKey = context.JobDetail.Key;
-            var taskInfo = _schedulerManager.TaskInfos.FirstOrDefault(t => t.JobName == jobKey.Name && t.GroupName == jobKey.Group);
-            if (taskInfo != null)
+            await base.JobToBeExecuted(context, cancellationToken);
+
+            JobKey jobKey = context.JobDetail.Key;
+            // Register the fire before awaiting the UI dispatcher. Another
+            // execution of the same JobKey can finish while this callback is
+            // queued, and its completion must still observe this fire as active.
+            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
+            try
             {
-                taskInfo.Status = SchedulerStatus.Running;
-                _logger.Info($"Job starting: {jobKey.Name}({jobKey.Group})");
-                
-                // 启动计时器
-                var timerKey = $"{jobKey.Name}_{jobKey.Group}";
-                var stopwatch = Stopwatch.StartNew();
-                lock (_executionTimers)
+                await InvokeOnUiThreadAsync(() =>
                 {
-                    _executionTimers[timerKey] = stopwatch;
-                    _executionStartTimes[timerKey] = DateTime.Now;
-                }
+                    SchedulerInfo? taskInfo = ResolveTaskInfo(context);
+                    if (taskInfo != null && taskInfo.Status != SchedulerStatus.Paused)
+                    {
+                        taskInfo.Status = SchedulerStatus.Running;
+                    }
+                });
+                _logger.Info($"Job starting: {jobKey.Name}({jobKey.Group}), FireInstanceId: {context.FireInstanceId}");
             }
-            return base.JobToBeExecuted(context, cancellationToken);
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to update starting state for job: {jobKey.Name}({jobKey.Group})", ex);
+            }
+
+            // Quartz awaits this listener before invoking the job, so record the
+            // start after any UI dispatch delay to align with JobRunTime.
+            _activeExecutions[context.FireInstanceId] = new ExecutionState(jobKey, DateTime.Now);
         }
 
-        public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
+        public override async Task JobWasExecuted(
+            IJobExecutionContext context,
+            JobExecutionException? jobException,
+            CancellationToken cancellationToken = default)
         {
-            base.JobWasExecuted(context, jobException, cancellationToken);
+            await base.JobWasExecuted(context, jobException, cancellationToken);
 
-            var jobKey = context.JobDetail.Key;
-
-            // 优化：尝试直接从 JobDataMap 获取 SchedulerInfo
-            SchedulerInfo? taskInfo = context.JobDetail.JobDataMap["SchedulerInfo"] as SchedulerInfo;
-
-            if (taskInfo != null)
+            JobKey jobKey = context.JobDetail.Key;
+            DateTime endTime = DateTime.Now;
+            DateTime startTime = endTime - context.JobRunTime;
+            if (_activeExecutions.TryRemove(context.FireInstanceId, out ExecutionState? executionState))
             {
-                taskInfo.RunCount++;
-                taskInfo.Status = SchedulerStatus.Ready;
-                
-                // 停止计时器并更新统计信息
-                var timerKey = $"{jobKey.Name}_{jobKey.Group}";
-                long executionTimeMs = 0;
-                DateTime startTime = DateTime.Now;
-                lock (_executionTimers)
+                startTime = executionState.StartTime;
+            }
+
+            long executionTimeMs = Math.Max(0, (long)context.JobRunTime.TotalMilliseconds);
+            bool success = jobException == null && !IsJobResultFailure(context.Result);
+            string executionResult = success
+                ? Properties.Resources.Sched_ExecSuccess
+                : Properties.Resources.Sched_ExecFail;
+            string executionMessage = jobException != null
+                ? jobException.InnerException?.Message ?? jobException.Message
+                : context.Result?.ToString() ?? string.Empty;
+            var executionRecord = new JobExecutionRecord
+            {
+                JobName = jobKey.Name,
+                GroupName = jobKey.Group,
+                StartTime = startTime,
+                EndTime = endTime,
+                ExecutionTimeMs = executionTimeMs,
+                Success = success,
+                Result = executionResult,
+                Message = executionMessage
+            };
+
+            if (jobException != null)
+            {
+                _logger.Error($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
+            }
+            else if (!success)
+            {
+                _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
+            }
+            else
+            {
+                _logger.Info($"Job completed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms");
+            }
+
+            try
+            {
+                await InvokeOnUiThreadAsync(() =>
                 {
-                    if (_executionTimers.TryGetValue(timerKey, out var stopwatch))
+                    SchedulerInfo? taskInfo = ResolveTaskInfo(context);
+                    if (taskInfo == null)
                     {
-                        stopwatch.Stop();
-                        executionTimeMs = stopwatch.ElapsedMilliseconds;
-                        _executionTimers.Remove(timerKey);
+                        return;
                     }
-                    if (_executionStartTimes.TryGetValue(timerKey, out var st))
+
+                    taskInfo.RunCount++;
+                    if (taskInfo.Status != SchedulerStatus.Paused)
                     {
-                        startTime = st;
-                        _executionStartTimes.Remove(timerKey);
+                        taskInfo.Status = HasActiveExecution(jobKey)
+                            ? SchedulerStatus.Running
+                            : SchedulerStatus.Ready;
                     }
-                }
 
-                // 更新执行时间统计
-                taskInfo.LastExecutionTimeMs = executionTimeMs;
-                
-                // 更新最大/最小执行时间
-                if (taskInfo.RunCount == 1)
-                {
-                    taskInfo.MinExecutionTimeMs = executionTimeMs;
-                    taskInfo.MaxExecutionTimeMs = executionTimeMs;
-                }
-                else
-                {
-                    if (executionTimeMs < taskInfo.MinExecutionTimeMs || taskInfo.MinExecutionTimeMs == 0)
-                        taskInfo.MinExecutionTimeMs = executionTimeMs;
-                    if (executionTimeMs > taskInfo.MaxExecutionTimeMs)
-                        taskInfo.MaxExecutionTimeMs = executionTimeMs;
-                }
-                
-                // 更新平均执行时间（基于所有执行次数）
-                if (taskInfo.RunCount > 0)
-                {
-                    taskInfo.AverageExecutionTimeMs = 
-                        (taskInfo.AverageExecutionTimeMs * (taskInfo.RunCount - 1) + executionTimeMs) / taskInfo.RunCount;
-                }
-
-                if (jobException != null)
-                {
-                    taskInfo.FailureCount++;
-                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecFail;
-                    taskInfo.LastExecutionMessage = jobException.InnerException?.Message ?? jobException.Message;
-                    _logger.Error($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
-                }
-                else if (IsJobResultFailure(context.Result))
-                {
-                    taskInfo.FailureCount++;
-                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecFail;
-                    taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
-                    _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
-                }
-                else
-                {
-                    taskInfo.SuccessCount++;
-                    taskInfo.LastExecutionResult = Properties.Resources.Sched_ExecSuccess;
-                    taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
-                    _logger.Info($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}, Duration: {executionTimeMs}ms");
-                }
-
-                // 保存执行记录到 SQLite
-                Task.Run(() =>
-                {
-                    var record = new JobExecutionRecord
-                    {
-                        JobName = jobKey.Name,
-                        GroupName = jobKey.Group,
-                        StartTime = startTime,
-                        EndTime = DateTime.Now,
-                        ExecutionTimeMs = executionTimeMs,
-                        Success = taskInfo.LastExecutionResult == Properties.Resources.Sched_ExecSuccess,
-                        Result = taskInfo.LastExecutionResult,
-                        Message = taskInfo.LastExecutionMessage
-                    };
-                    SchedulerDbManager.GetInstance().InsertRecord(record);
+                    UpdateExecutionStatistics(taskInfo, executionTimeMs);
+                    if (success)
+                        taskInfo.SuccessCount++;
+                    else
+                        taskInfo.FailureCount++;
+                    taskInfo.LastExecutionResult = executionResult;
+                    taskInfo.LastExecutionMessage = executionMessage;
                 });
             }
-            
-            JobExecutedEvent?.Invoke(context);
-            return Task.CompletedTask;
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to update completed state for job: {jobKey.Name}({jobKey.Group})", ex);
+            }
+
+            await WriteHistoryAsync(executionRecord);
+
+            RaiseJobExecuted(context);
+        }
+
+        private SchedulerInfo? ResolveTaskInfo(IJobExecutionContext context)
+        {
+            JobKey jobKey = context.JobDetail.Key;
+            SchedulerInfo? currentTaskInfo = _schedulerManager.TaskInfos.FirstOrDefault(
+                task => task.JobName == jobKey.Name && task.GroupName == jobKey.Group);
+            if (currentTaskInfo != null)
+            {
+                return currentTaskInfo;
+            }
+
+            JobDataMap jobDataMap = context.JobDetail.JobDataMap;
+            if (jobDataMap.TryGetValue("SchedulerInfo", out object? value) &&
+                value is SchedulerInfo taskInfo)
+            {
+                return taskInfo;
+            }
+
+            return null;
+        }
+
+        private bool HasActiveExecution(JobKey jobKey)
+        {
+            return _activeExecutions.Values.Any(execution => execution.JobKey.Equals(jobKey));
+        }
+
+        private static void UpdateExecutionStatistics(SchedulerInfo taskInfo, long executionTimeMs)
+        {
+            taskInfo.LastExecutionTimeMs = executionTimeMs;
+
+            if (taskInfo.RunCount == 1)
+            {
+                taskInfo.MinExecutionTimeMs = executionTimeMs;
+                taskInfo.MaxExecutionTimeMs = executionTimeMs;
+            }
+            else
+            {
+                if (executionTimeMs < taskInfo.MinExecutionTimeMs || taskInfo.MinExecutionTimeMs == 0)
+                {
+                    taskInfo.MinExecutionTimeMs = executionTimeMs;
+                }
+                if (executionTimeMs > taskInfo.MaxExecutionTimeMs)
+                {
+                    taskInfo.MaxExecutionTimeMs = executionTimeMs;
+                }
+            }
+
+            taskInfo.AverageExecutionTimeMs =
+                (taskInfo.AverageExecutionTimeMs * (taskInfo.RunCount - 1) + executionTimeMs) /
+                taskInfo.RunCount;
+        }
+
+        private Task WriteHistoryAsync(JobExecutionRecord record)
+        {
+            lock (_historyWriteSync)
+            {
+                _historyWriteTail = _historyWriteTail.ContinueWith(
+                    _ => WriteHistoryRecord(record),
+                    CancellationToken.None,
+                    TaskContinuationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
+                return _historyWriteTail;
+            }
+        }
+
+        private static void WriteHistoryRecord(JobExecutionRecord record)
+        {
+            try
+            {
+                SchedulerDbManager.GetInstance().InsertRecord(record);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to write execution history for job: {record.JobName}({record.GroupName})", ex);
+            }
+        }
+
+        private static Task InvokeOnUiThreadAsync(Action action)
+        {
+            Dispatcher? dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            {
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action, DispatcherPriority.DataBind).Task;
+        }
+
+        private void RaiseJobExecuted(IJobExecutionContext context)
+        {
+            Delegate[] handlers = JobExecutedEvent?.GetInvocationList() ?? Array.Empty<Delegate>();
+            foreach (Delegate handler in handlers)
+            {
+                if (handler is not Action<IJobExecutionContext> typedHandler)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    typedHandler(context);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("A JobExecutedEvent subscriber failed.", ex);
+                }
+            }
         }
 
         /// <summary>
@@ -153,7 +261,10 @@ namespace ColorVision.Scheduler
         /// </summary>
         private static bool IsJobResultFailure(object? result)
         {
-            if (result == null) return false;
+            if (result == null)
+            {
+                return false;
+            }
 
             // 通过反射检查是否有 bool Success 属性（避免 Scheduler 层直接引用 Engine 层类型）
             var successProp = result.GetType().GetProperty("Success");
@@ -163,5 +274,7 @@ namespace ColorVision.Scheduler
             }
             return false;
         }
+
+        private sealed record ExecutionState(JobKey JobKey, DateTime StartTime);
     }
 }

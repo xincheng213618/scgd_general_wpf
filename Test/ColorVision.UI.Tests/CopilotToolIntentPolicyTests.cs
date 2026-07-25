@@ -316,11 +316,46 @@ public sealed class CopilotToolIntentPolicyTests
 
     [Theory]
     [InlineData("创建一个 Python 脚本并执行它")]
+    [InlineData(@"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif")]
     [InlineData("用 Node.js 批量处理这些文件")]
     [InlineData("run npm test")]
     public void ExecutableAutomationRequestsExposeShell(string userText)
     {
         Assert.True(CopilotToolIntentPolicy.NeedsShellExecution(Request(userText)));
+    }
+
+    [Fact]
+    public void ShortExecuteFollowUpRetainsShellIntentFromThePreviousScriptRequest()
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = "执行",
+            Mode = CopilotAgentMode.Auto,
+            History =
+            [
+                new CopilotRequestMessage(
+                    "user",
+                    @"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif"),
+                new CopilotRequestMessage(
+                    "assistant",
+                    "脚本已创建为 convert_cvraw_to_tiff.py。"),
+            ],
+        };
+
+        Assert.True(CopilotToolIntentPolicy.NeedsShellExecution(request));
+        Assert.True(new CopilotShellCommandTool().IsAvailable(request));
+    }
+
+    [Fact]
+    public void ExplicitPythonBatchConversionDoesNotExposeTheNativeConversionDetour()
+    {
+        var request = Request(
+            @"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif");
+
+        Assert.True(CopilotToolIntentPolicy.NeedsShellExecution(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsBatchImageProcessing(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsBatchImageConversionExecution(request));
+        Assert.False(new CopilotConvertBatchImagesTool().IsAvailable(request));
     }
 
     [Fact]
@@ -459,11 +494,13 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.Equal(expected, CopilotToolIntentPolicy.NeedsBatchImageProcessing(Request(userText)));
     }
 
-    [Fact]
-    public void ScriptCreationExecutionContractRequiresWriteThenProcess()
+    [Theory]
+    [InlineData("创建一个 Python 脚本并执行它")]
+    [InlineData(@"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif")]
+    public void ScriptCreationExecutionContractRequiresWriteThenProcess(string userText)
     {
         var request = Request(
-            "创建一个 Python 脚本并执行它",
+            userText,
             writableRoots: [@"C:\workspace"]);
         var contract = CopilotAgentExecutionContract.Create(
             request,

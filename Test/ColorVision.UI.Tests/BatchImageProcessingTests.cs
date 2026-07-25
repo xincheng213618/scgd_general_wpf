@@ -253,6 +253,49 @@ public class BatchImageProcessingTests
     }
 
     [Fact]
+    public async Task ApprovedCopilotToolSkipsIdentityOutputsInsteadOfFailingTheBatch()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-batch-identity-{Guid.NewGuid():N}");
+        string existingTiff = Path.Combine(directory, "already-converted.tiff");
+        Directory.CreateDirectory(directory);
+        File.WriteAllBytes(existingTiff, [0x49, 0x49, 0x2A, 0x00]);
+        try
+        {
+            CopilotConvertBatchImagesTool tool = new();
+            CopilotAgentRequest request = new()
+            {
+                UserText = "批量转换图片为 TIFF",
+                Mode = CopilotAgentMode.Auto,
+                SearchRootPaths = [directory],
+                ReadableLocalDirectoryPaths = [directory],
+                WritableLocalRootPaths = [directory],
+            };
+            Assert.True(tool.InputSchema.TryBind(
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = new[] { directory },
+                    ["format"] = "tiff",
+                },
+                out CopilotAgentToolInput input,
+                out string bindError), bindError);
+
+            CopilotToolResult result = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Contains("skipped 1", result.Summary, StringComparison.OrdinalIgnoreCase);
+            using JsonDocument evidence = JsonDocument.Parse(result.Content);
+            Assert.Equal(1, evidence.RootElement.GetProperty("requested").GetInt32());
+            Assert.Equal(0, evidence.RootElement.GetProperty("processed").GetInt32());
+            Assert.Equal(1, evidence.RootElement.GetProperty("skipped_identity").GetInt32());
+            Assert.Equal(existingTiff, evidence.RootElement.GetProperty("skipped_identity_sources")[0].GetString());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task CopilotBatchConversionRejectsAnOutputOutsideApprovedRoots()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"colorvision-copilot-scope-{Guid.NewGuid():N}");

@@ -297,6 +297,30 @@
   <data name="Sched_Task" xml:space="preserve">
     <value>任务</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>任务类型</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>执行计划</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>延迟启动</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>还没有计划任务</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>创建一个任务并设置它的执行计划</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>任务正在执行，请等待完成后再编辑</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>为保证安全，旧版本的“每日间隔 + 永久”任务已暂停。本版本会按配置的间隔重复执行，而不是每天只执行一次。请检查后手动恢复：&#xA;{0}</value>
+  </data>
   <data name="Sched_RepeatCount" xml:space="preserve">
     <value>重复次数</value>
   </data>
@@ -313,13 +337,13 @@
     <value>优先级 (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>数值越大优先级越高</value>
+    <value>仅在多个触发器同时到期且执行线程不足时，数值较大的任务优先</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>超时时间(秒)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0表示无超时限制</value>
+    <value>仅对支持取消的任务生效；0表示无超时限制</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = 无限制</value>
@@ -376,13 +400,13 @@
     <value>延时</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>简单</value>
+    <value>间隔/重复</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>日历</value>
+    <value>每天</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>间隔</value>
+    <value>每日间隔</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>一次</value>

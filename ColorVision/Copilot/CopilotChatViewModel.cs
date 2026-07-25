@@ -692,7 +692,7 @@ namespace ColorVision.Copilot
         }
 
         public CopilotAgentAccessMode ComposerAccessMode =>
-            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.FullAccess;
 
         public bool IsComposerFullAccess => ComposerAccessMode == CopilotAgentAccessMode.FullAccess;
 

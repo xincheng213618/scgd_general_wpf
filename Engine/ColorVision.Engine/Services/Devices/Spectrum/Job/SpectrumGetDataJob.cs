@@ -1,16 +1,19 @@
-﻿using ColorVision.Scheduler;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Scheduler;
 using Quartz;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Job
 {
     [Display(Name = "Engine_PG_SingleSpectrumTest", ResourceType = typeof(Properties.Resources))]
+    [DisallowConcurrentExecution]
     public class SpectrumGetDataJob : IJob, IConfigurableJob
     {
         public Type ConfigType => typeof(SpectrumGetDataJobConfig);
@@ -18,7 +21,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
         public IJobConfig CreateDefaultConfig()
         {
             var config = new SpectrumGetDataJobConfig();
-            // Set default to first available device
             var firstDevice = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
             if (firstDevice != null)
             {
@@ -27,24 +29,54 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Job
             return config;
         }
 
-        public Task Execute(IJobExecutionContext context)
-        {            
-            if (context.JobDetail.JobDataMap["SchedulerInfo"] is not SchedulerInfo schedulerInfo)
+        public async Task Execute(IJobExecutionContext context)
+        {
+            CancellationToken cancellationToken = context.CancellationToken;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            SchedulerInfo schedulerInfo = ScheduledDeviceJobHelper.GetSchedulerInfo(context);
+            Dispatcher dispatcher = ScheduledDeviceJobHelper.GetApplicationDispatcher();
+            MsgRecord? msgRecord = await dispatcher.InvokeAsync(() =>
             {
-                return Task.CompletedTask;
-            }
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                DeviceSpectrum deviceSpectrum = null;
-                
-                if (schedulerInfo.Config is SpectrumGetDataJobConfig config && !string.IsNullOrEmpty(config.DeviceSpectrumName))
+                DeviceSpectrum? deviceSpectrum = null;
+                if (schedulerInfo.Config is SpectrumGetDataJobConfig config &&
+                    !string.IsNullOrEmpty(config.DeviceSpectrumName))
                 {
-                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>()
+                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices
+                        .OfType<DeviceSpectrum>()
                         .FirstOrDefault(d => d.Config.Name == config.DeviceSpectrumName);
                 }
-                deviceSpectrum?.DService.GetData();
-            });
-            return Task.CompletedTask;
+
+                if (deviceSpectrum == null)
+                {
+                    throw new JobExecutionException(Properties.Resources.Failure);
+                }
+
+                return deviceSpectrum.DService.GetData();
+            }, DispatcherPriority.Normal, cancellationToken).Task;
+
+            if (msgRecord == null)
+            {
+                throw new JobExecutionException(Properties.Resources.Failure);
+            }
+
+            MsgRecordState terminalState;
+            try
+            {
+                terminalState = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(
+                    msgRecord,
+                    ScheduledDeviceJobHelper.GetTimeout(schedulerInfo),
+                    cancellationToken);
+            }
+            catch (TimeoutException ex)
+            {
+                throw new JobExecutionException(Properties.Resources.Timeout, ex);
+            }
+
+            if (terminalState != MsgRecordState.Success)
+            {
+                throw ScheduledDeviceJobHelper.CreateTerminalStateException(msgRecord, terminalState);
+            }
         }
     }
 }

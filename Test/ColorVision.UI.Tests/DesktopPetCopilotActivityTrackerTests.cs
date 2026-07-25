@@ -5,6 +5,11 @@ namespace ColorVision.UI.Tests;
 
 public sealed class DesktopPetCopilotActivityTrackerTests
 {
+    private const int CompletionReady = (int)DesktopPetCopilotCompletionKind.Ready;
+    private const int CompletionBlocked = (int)DesktopPetCopilotCompletionKind.Blocked;
+    private const int CompletionPaused = (int)DesktopPetCopilotCompletionKind.Paused;
+    private const int CompletionCancelled = (int)DesktopPetCopilotCompletionKind.Cancelled;
+
     [Fact]
     public void ActivitiesFollowCodexNeedsInputBlockedReadyRunningPriority()
     {
@@ -69,10 +74,10 @@ public sealed class DesktopPetCopilotActivityTrackerTests
     }
 
     [Theory]
-    [InlineData(false, false, CopilotAgentControlIntent.None, 0)]
-    [InlineData(true, false, CopilotAgentControlIntent.None, 1)]
-    [InlineData(false, true, CopilotAgentControlIntent.Cancel, 3)]
-    [InlineData(false, true, CopilotAgentControlIntent.Pause, 2)]
+    [InlineData(false, false, CopilotAgentControlIntent.None, CompletionReady)]
+    [InlineData(true, false, CopilotAgentControlIntent.None, CompletionBlocked)]
+    [InlineData(false, true, CopilotAgentControlIntent.Cancel, CompletionCancelled)]
+    [InlineData(false, true, CopilotAgentControlIntent.Pause, CompletionPaused)]
     public void CompletedRunMapsToPetActivity(
         bool faulted,
         bool cancelled,
@@ -101,21 +106,21 @@ public sealed class DesktopPetCopilotActivityTrackerTests
     }
 
     [Theory]
-    [InlineData(CopilotAgentStopReason.None, DesktopPetCopilotCompletionKind.Ready)]
-    [InlineData(CopilotAgentStopReason.Completed, DesktopPetCopilotCompletionKind.Ready)]
-    [InlineData(CopilotAgentStopReason.AwaitingUser, DesktopPetCopilotCompletionKind.Paused)]
-    [InlineData(CopilotAgentStopReason.Paused, DesktopPetCopilotCompletionKind.Paused)]
-    [InlineData(CopilotAgentStopReason.Cancelled, DesktopPetCopilotCompletionKind.Cancelled)]
-    [InlineData(CopilotAgentStopReason.ApprovalDenied, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.BudgetExhausted, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.TaskPassLimit, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.Blocked, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.IncompleteOutput, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.ProviderFailure, DesktopPetCopilotCompletionKind.Blocked)]
-    [InlineData(CopilotAgentStopReason.Interrupted, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.None, CompletionReady)]
+    [InlineData(CopilotAgentStopReason.Completed, CompletionReady)]
+    [InlineData(CopilotAgentStopReason.AwaitingUser, CompletionPaused)]
+    [InlineData(CopilotAgentStopReason.Paused, CompletionPaused)]
+    [InlineData(CopilotAgentStopReason.Cancelled, CompletionCancelled)]
+    [InlineData(CopilotAgentStopReason.ApprovalDenied, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.BudgetExhausted, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.TaskPassLimit, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.Blocked, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.IncompleteOutput, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.ProviderFailure, CompletionBlocked)]
+    [InlineData(CopilotAgentStopReason.Interrupted, CompletionBlocked)]
     public void StructuredAgentStopReasonMapsToPetActivity(
         CopilotAgentStopReason stopReason,
-        DesktopPetCopilotCompletionKind expected)
+        int expectedValue)
     {
         var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);
         Assert.True(run.TryStart());
@@ -124,6 +129,8 @@ public sealed class DesktopPetCopilotActivityTrackerTests
         run.Complete(error: null);
 
         Assert.Equal(stopReason, run.AgentStopReason);
-        Assert.Equal(expected, DesktopPetCopilotBridge.ResolveCompletionKind(run));
+        Assert.Equal(
+            (DesktopPetCopilotCompletionKind)expectedValue,
+            DesktopPetCopilotBridge.ResolveCompletionKind(run));
     }
 }

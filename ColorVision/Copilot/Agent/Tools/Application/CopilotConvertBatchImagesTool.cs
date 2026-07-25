@@ -104,7 +104,7 @@ namespace ColorVision.Copilot
             {
                 return Failure("Batch image conversion arguments are invalid.", parseError, CopilotToolFailureKind.Validation);
             }
-            if (!TryResolveItems(request, options, cancellationToken, out var items, out var resolveError))
+            if (!TryResolveItems(request, options, cancellationToken, out var items, out var skippedIdentityPaths, out var resolveError))
             {
                 return Failure("Batch image conversion inputs are invalid.", resolveError, CopilotToolFailureKind.Validation);
             }
@@ -116,18 +116,20 @@ namespace ColorVision.Copilot
             BatchImageRunResult result;
             try
             {
-                result = await Task.Run(() => _processor.Process(
-                    new BatchImageProcessingRequest
-                    {
-                        Items = items,
-                        Algorithm = BatchImageAlgorithms.CreateFormatOnly(),
-                        OutputFormat = options.Format,
-                        OutputDirectory = outputDirectory,
-                        Suffix = options.Suffix,
-                        PreserveFolderStructure = options.PreserveFolderStructure,
-                        AvoidOverwrite = true,
-                    },
-                    cancellationToken: cancellationToken), cancellationToken);
+                result = items.Length == 0
+                    ? new BatchImageRunResult()
+                    : await Task.Run(() => _processor.Process(
+                        new BatchImageProcessingRequest
+                        {
+                            Items = items,
+                            Algorithm = BatchImageAlgorithms.CreateFormatOnly(),
+                            OutputFormat = options.Format,
+                            OutputDirectory = outputDirectory,
+                            Suffix = options.Suffix,
+                            PreserveFolderStructure = options.PreserveFolderStructure,
+                            AvoidOverwrite = true,
+                        },
+                        cancellationToken: cancellationToken), cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -149,11 +151,13 @@ namespace ColorVision.Copilot
             });
             var content = JsonSerializer.Serialize(new
             {
-                requested = items.Length,
+                requested = items.Length + skippedIdentityPaths.Length,
                 processed = result.Files.Count,
                 total = result.Files.Count,
                 succeeded = result.Succeeded,
                 failed = result.Failed,
+                skipped_identity = skippedIdentityPaths.Length,
+                skipped_identity_sources = skippedIdentityPaths,
                 cancelled = result.Cancelled,
                 results = rows,
                 results_truncated = result.Files.Count > MaximumResultRows,
@@ -164,7 +168,9 @@ namespace ColorVision.Copilot
                 ToolName = Name,
                 Success = success,
                 Summary = success
-                    ? $"Converted {result.Succeeded} image file(s) without overwriting existing outputs."
+                    ? skippedIdentityPaths.Length == 0
+                        ? $"Converted {result.Succeeded} image file(s) without overwriting existing outputs."
+                        : $"Converted {result.Succeeded} image file(s) and skipped {skippedIdentityPaths.Length} source file(s) already in the requested format."
                     : $"Batch conversion completed with {result.Succeeded} succeeded, {result.Failed} failed, cancelled={result.Cancelled}.",
                 Content = content,
                 ErrorMessage = success ? string.Empty : FirstFailure(result),
@@ -206,6 +212,7 @@ namespace ColorVision.Copilot
             ConversionOptions options,
             CancellationToken cancellationToken,
             out BatchImageItem[] items,
+            out string[] skippedIdentityPaths,
             out string error)
         {
             var allowedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
@@ -220,6 +227,7 @@ namespace ColorVision.Copilot
                 if (!CopilotWorkspaceSearchSupport.TryResolveExistingPathWithinRoots(source, allowedRoots, out var fullPath, out error))
                 {
                     items = Array.Empty<BatchImageItem>();
+                    skippedIdentityPaths = Array.Empty<string>();
                     return false;
                 }
 
@@ -228,6 +236,7 @@ namespace ColorVision.Copilot
                     if (!_processor.IsSupported(fullPath))
                     {
                         items = Array.Empty<BatchImageItem>();
+                        skippedIdentityPaths = Array.Empty<string>();
                         error = $"Unsupported image extension: {fullPath}";
                         return false;
                     }
@@ -258,6 +267,7 @@ namespace ColorVision.Copilot
                         if (resolved.Count > MaximumFiles)
                         {
                             items = Array.Empty<BatchImageItem>();
+                            skippedIdentityPaths = Array.Empty<string>();
                             error = $"The batch exceeds the {MaximumFiles}-file safety limit. Narrow the sources and retry.";
                             return false;
                         }
@@ -268,19 +278,37 @@ namespace ColorVision.Copilot
             if (resolved.Count == 0)
             {
                 items = Array.Empty<BatchImageItem>();
+                skippedIdentityPaths = Array.Empty<string>();
                 error = "No supported image files were found in the approved sources.";
                 return false;
             }
             if (resolved.Count > MaximumFiles)
             {
                 items = Array.Empty<BatchImageItem>();
+                skippedIdentityPaths = Array.Empty<string>();
                 error = $"The batch exceeds the {MaximumFiles}-file safety limit. Narrow the sources and retry.";
                 return false;
             }
 
-            items = resolved.ToArray();
+            skippedIdentityPaths = resolved
+                .Where(item => HasIdentityOutputBesideSource(item.FilePath, options))
+                .Select(item => item.FilePath)
+                .ToArray();
+            items = resolved
+                .Where(item => !HasIdentityOutputBesideSource(item.FilePath, options))
+                .ToArray();
             error = string.Empty;
             return true;
+        }
+
+        private static bool HasIdentityOutputBesideSource(string sourcePath, ConversionOptions options)
+        {
+            return string.IsNullOrWhiteSpace(options.OutputDirectory)
+                && string.IsNullOrWhiteSpace(options.Suffix)
+                && string.Equals(
+                    Path.GetExtension(sourcePath),
+                    BatchImageOutput.ResolveExtension(sourcePath, options.Format),
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool TryResolveOutputDirectory(
