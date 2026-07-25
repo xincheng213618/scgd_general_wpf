@@ -48,10 +48,6 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
             STNodeEditorMain.EnableHistory = true;
             AttachEditCommandRouting(this);
-            STNodeEditorMain.EnableBlankLeftDragCanvasChanged += STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
-            CanvasDragLockButton.SetCurrentValue(
-                System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
-                STNodeEditorMain.EnableBlankLeftDragCanvas);
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
             ThemeChanged(ThemeManager.Current.CurrentUITheme);
@@ -199,39 +195,9 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        private void CanvasDragLockButton_Checked(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.EnableBlankLeftDragCanvas = true;
-        }
-
-        private void CanvasDragLockButton_Unchecked(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.EnableBlankLeftDragCanvas = false;
-        }
-
-        private void STNodeEditorMain_EnableBlankLeftDragCanvasChanged(object? sender, EventArgs e)
-        {
-            void UpdateToggle()
-            {
-                CanvasDragLockButton.SetCurrentValue(
-                    System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty,
-                    STNodeEditorMain.EnableBlankLeftDragCanvas);
-            }
-
-            if (Dispatcher.CheckAccess())
-            {
-                UpdateToggle();
-            }
-            else
-            {
-                Dispatcher.BeginInvoke(UpdateToggle);
-            }
-        }
-
         public void Dispose()
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
-            STNodeEditorMain.EnableBlankLeftDragCanvasChanged -= STNodeEditorMain_EnableBlankLeftDragCanvasChanged;
             foreach ((UIElement host, CommandBinding binding) in _editCommandForwarders)
             {
                 host.CommandBindings.Remove(binding);

@@ -88,6 +88,8 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	private bool _EnableBlankLeftDragCanvas = true;
 
+	private bool _AutoSwitchCanvasDragBySelection;
+
 	private bool _ShowCanvasDragLockButton = true;
 
 	private STNodeCollection _Nodes;
@@ -730,6 +732,25 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 	}
 
+	[Description("根据节点选中状态自动切换空白区域左键拖动画布：无选中节点时启用，有选中节点时禁用")]
+	[DefaultValue(false)]
+	public bool AutoSwitchCanvasDragBySelection
+	{
+		get
+		{
+			return _AutoSwitchCanvasDragBySelection;
+		}
+		set
+		{
+			if (_AutoSwitchCanvasDragBySelection == value)
+			{
+				return;
+			}
+			_AutoSwitchCanvasDragBySelection = value;
+			UpdateCanvasDragModeFromSelection();
+		}
+	}
+
 	[DefaultValue(true)]
 	public bool ShowCanvasDragLockButton
 	{
@@ -814,10 +835,25 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 
 	protected internal virtual void OnSelectedChanged(EventArgs e)
 	{
+		UpdateCanvasDragModeFromSelection();
 		if (this.SelectedChanged != null)
 		{
 			this.SelectedChanged(this, e);
 		}
+	}
+
+	private void UpdateCanvasDragModeFromSelection()
+	{
+		if (!_AutoSwitchCanvasDragBySelection)
+		{
+			return;
+		}
+		bool hasSelection;
+		lock (m_hs_node_selected)
+		{
+			hasSelection = m_hs_node_selected.Count > 0;
+		}
+		EnableBlankLeftDragCanvas = !hasSelection;
 	}
 
 	protected virtual void OnActiveChanged(EventArgs e)
@@ -1150,6 +1186,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
 		if (nodeEvent.Button == STMouseButtons.Left
+			&& !_AutoSwitchCanvasDragBySelection
 			&& EnableBlankLeftDragCanvas
 			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
 		{
@@ -2017,6 +2054,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			m_hs_node_selected.Add(node);
 		}
+		UpdateCanvasDragModeFromSelection();
 	}
 
 	internal void InternalRemoveSelectedNode(STNode node)
@@ -2026,6 +2064,7 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		{
 			m_hs_node_selected.Remove(node);
 		}
+		UpdateCanvasDragModeFromSelection();
 	}
 
 	private Image CreateBorderImage(Color clr)
@@ -3166,10 +3205,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		bool flag = !node.IsSelected;
 		node.IsSelected = true;
+		bool changed;
 		lock (m_hs_node_selected)
 		{
-			return m_hs_node_selected.Add(node) || flag;
+			changed = m_hs_node_selected.Add(node) || flag;
 		}
+		UpdateCanvasDragModeFromSelection();
+		return changed;
 	}
 
 	public bool RemoveSelectedNode(STNode node)
@@ -3180,10 +3222,13 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 		bool isSelected = node.IsSelected;
 		node.IsSelected = false;
+		bool changed;
 		lock (m_hs_node_selected)
 		{
-			return m_hs_node_selected.Remove(node) || isSelected;
+			changed = m_hs_node_selected.Remove(node) || isSelected;
 		}
+		UpdateCanvasDragModeFromSelection();
+		return changed;
 	}
 
 	public Color SetTypeColor(Type t, Color clr)

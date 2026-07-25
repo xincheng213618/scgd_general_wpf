@@ -36,6 +36,57 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void AutoCanvasDragMode_FollowsSelectedNodeCollection()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor
+                {
+                    AutoSwitchCanvasDragBySelection = true
+                };
+                var first = new TrackingNode();
+                var second = new TrackingNode();
+                first.Create();
+                second.Create();
+                editor.Nodes.Add(first);
+                editor.Nodes.Add(second);
+
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+
+                first.SetSelected(bSelected: true, bRedraw: false);
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+
+                second.SetSelected(bSelected: true, bRedraw: false);
+                first.SetSelected(bSelected: false, bRedraw: false);
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+
+                second.SetSelected(bSelected: false, bRedraw: false);
+                Assert.True(editor.EnableBlankLeftDragCanvas);
+            });
+        }
+
+        [Fact]
+        public void ManualCanvasDragMode_RemainsTheCompatibleDefault()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor
+                {
+                    EnableBlankLeftDragCanvas = false
+                };
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+
+                node.SetSelected(bSelected: true, bRedraw: false);
+                node.SetSelected(bSelected: false, bRedraw: false);
+
+                Assert.False(editor.AutoSwitchCanvasDragBySelection);
+                Assert.False(editor.EnableBlankLeftDragCanvas);
+            });
+        }
+
+        [Fact]
         public void InfiniteCanvas_ZoomKeepsControlPointAnchored()
         {
             RunInSta(() =>
