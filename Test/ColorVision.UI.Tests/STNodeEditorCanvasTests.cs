@@ -225,6 +225,23 @@ namespace ColorVision.UI.Tests
                 using var selectedBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
                 int selectedEdgeColor = selectedBitmap.GetPixel(node.Left, node.Top + node.Height / 2).ToArgb();
                 Assert.NotEqual(normalEdgeColor, selectedEdgeColor);
+                long selectedOutsideAlpha = SumAlpha(
+                    selectedBitmap,
+                    node.Left - 6,
+                    node.Top + 10,
+                    6,
+                    node.Height - 20);
+                Assert.True(selectedOutsideAlpha > 0);
+
+                editor.SetActiveNode(node);
+                using var activeBitmap = editor.RenderNodes(new System.Drawing.Rectangle(0, 0, 240, 160));
+                long activeOutsideAlpha = SumAlpha(
+                    activeBitmap,
+                    node.Left - 6,
+                    node.Top + 10,
+                    6,
+                    node.Height - 20);
+                Assert.True(activeOutsideAlpha > selectedOutsideAlpha);
             });
         }
 
@@ -264,6 +281,19 @@ namespace ColorVision.UI.Tests
             node.Top = 100;
             editor.Nodes.Add(node);
             return editor;
+        }
+
+        private static long SumAlpha(System.Drawing.Bitmap bitmap, int left, int top, int width, int height)
+        {
+            long alpha = 0;
+            for (int y = top; y < top + height; y++)
+            {
+                for (int x = left; x < left + width; x++)
+                {
+                    alpha += bitmap.GetPixel(x, y).A;
+                }
+            }
+            return alpha;
         }
 
         private static void RunInSta(Action action)

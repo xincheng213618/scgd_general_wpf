@@ -1557,6 +1557,10 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 			{
 				node.OnDrawMark(dt);
 			}
+			if (_ShowBorder)
+			{
+				OnDrawNodeSelection(dt, node);
+			}
 		}
 	}
 
@@ -1567,12 +1571,11 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		bool isHovered = _HoverNode == node;
 		if (!_ShowNodeShadow)
 		{
-			if (!isActive && !isSelected && !isHovered)
+			if (!isHovered || isActive || isSelected)
 			{
 				return;
 			}
-			Color outlineColor = isActive ? _BorderActiveColor : (isSelected ? _BorderSelectedColor : _BorderHoverColor);
-			DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, isActive || isSelected ? 2f : 1f);
+			DrawNodeOutline(dt.Graphics, node.Rectangle, _BorderHoverColor, 1f, inset: true);
 			return;
 		}
 
@@ -1584,16 +1587,33 @@ public class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		}
 	}
 
-	private void DrawNodeOutline(Graphics graphics, Rectangle rectangle, Color color, float width)
+	protected virtual void OnDrawNodeSelection(DrawingTools dt, STNode node)
+	{
+		bool isActive = _ActiveNode == node;
+		if (!isActive && !node.IsSelected)
+		{
+			return;
+		}
+
+		float canvasScale = Math.Max(_CanvasScale, 0.2f);
+		Color outlineColor = isActive ? _BorderActiveColor : _BorderSelectedColor;
+		float glowWidth = (isActive ? 9f : 7f) / canvasScale;
+		float outlineWidth = (isActive ? 4f : 3f) / canvasScale;
+		int glowAlpha = isActive ? 130 : 90;
+		DrawNodeOutline(dt.Graphics, node.Rectangle, Color.FromArgb(glowAlpha, outlineColor), glowWidth, inset: false);
+		DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, outlineWidth, inset: false);
+	}
+
+	private void DrawNodeOutline(Graphics graphics, Rectangle rectangle, Color color, float width, bool inset)
 	{
 		GraphicsState graphicsState = graphics.Save();
 		graphics.SmoothingMode = SmoothingMode.AntiAlias;
-		float inset = width / 2f;
+		float pathInset = inset ? width / 2f : 0f;
 		RectangleF outlineRectangle = new RectangleF(
-			rectangle.Left + inset,
-			rectangle.Top + inset,
-			Math.Max(0f, rectangle.Width - width),
-			Math.Max(0f, rectangle.Height - width));
+			rectangle.Left + pathInset,
+			rectangle.Top + pathInset,
+			Math.Max(0f, rectangle.Width - pathInset * 2f),
+			Math.Max(0f, rectangle.Height - pathInset * 2f));
 		using GraphicsPath outlinePath = CreateRoundedRectanglePath(outlineRectangle, _NodeCornerRadius);
 		using Pen outlinePen = new Pen(color, width);
 		graphics.DrawPath(outlinePen, outlinePath);
