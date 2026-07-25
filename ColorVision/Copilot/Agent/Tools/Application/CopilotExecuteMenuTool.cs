@@ -109,8 +109,10 @@ namespace ColorVision.Copilot
 
         internal static bool HasReferencedMenu(CopilotAgentRequest request)
         {
-            ArgumentNullException.ThrowIfNull(request);
-            return request.ContextItems.Any(IsMenuReference);
+            return CopilotReferenceContextSupport.HasReference(
+                request,
+                "composer-menu:",
+                "[ColorVision menu reference]");
         }
 
         internal static bool TryGetReferencedMenuSelector(
@@ -119,9 +121,12 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
             const string Prefix = "ExecuteMenu query:";
-            var selectors = request.ContextItems
-                .Where(IsMenuReference)
-                .SelectMany(item => (item.Content ?? string.Empty)
+            var selectors = CopilotReferenceContextSupport
+                .EnumerateReferenceContents(
+                    request,
+                    "composer-menu:",
+                    "[ColorVision menu reference]")
+                .SelectMany(content => (content ?? string.Empty)
                     .Split(ContextLineSeparators, StringSplitOptions.RemoveEmptyEntries))
                 .Where(line => line.TrimStart().StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
                 .Select(line => line.TrimStart()[Prefix.Length..].Trim())
@@ -131,15 +136,6 @@ namespace ColorVision.Copilot
                 .ToArray();
             selector = selectors.Length == 1 ? selectors[0] : string.Empty;
             return selector.Length > 0;
-        }
-
-        private static bool IsMenuReference(ColorVision.UI.CopilotContextItem item)
-        {
-            return item != null
-                && ((item.Id ?? string.Empty).StartsWith("composer-menu:", StringComparison.OrdinalIgnoreCase)
-                    || (item.Content ?? string.Empty).Contains(
-                        "[ColorVision menu reference]",
-                        StringComparison.OrdinalIgnoreCase));
         }
     }
 }

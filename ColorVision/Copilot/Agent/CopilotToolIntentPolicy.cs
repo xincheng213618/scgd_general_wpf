@@ -686,20 +686,18 @@ namespace ColorVision.Copilot
 
         private static bool HasSavedTemplateContext(CopilotAgentRequest request)
         {
-            return request.ContextItems.Any(item =>
-                (item.Id ?? string.Empty).StartsWith("composer-template:", StringComparison.OrdinalIgnoreCase)
-                || (item.Content ?? string.Empty).Contains(
-                    "[ColorVision saved template reference]",
-                    StringComparison.OrdinalIgnoreCase));
+            return CopilotReferenceContextSupport.HasReference(
+                request,
+                "composer-template:",
+                "[ColorVision saved template reference]");
         }
 
         private static bool HasTemplateTypeContext(CopilotAgentRequest request)
         {
-            return request.ContextItems.Any(item =>
-                (item.Id ?? string.Empty).StartsWith("composer-template-type:", StringComparison.OrdinalIgnoreCase)
-                || (item.Content ?? string.Empty).Contains(
-                    "[ColorVision template type reference]",
-                    StringComparison.OrdinalIgnoreCase));
+            return CopilotReferenceContextSupport.HasReference(
+                request,
+                "composer-template-type:",
+                "[ColorVision template type reference]");
         }
 
         private static bool IsAgentRequest(CopilotAgentRequest? request)

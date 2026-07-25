@@ -87,6 +87,53 @@ public sealed class CopilotSavedTemplateContextTests
     }
 
     [Fact]
+    public void ComposerContextAttachmentExposesSavedTemplateReadTool()
+    {
+        var content = CopilotConversationRequestBuilder.BuildContextAttachmentContent(
+        [
+            new CopilotContextItem
+            {
+                Id = "composer-template:saved-sfr-default",
+                Content = "[ColorVision saved template reference]",
+            },
+        ]);
+        var request = new CopilotAgentRequest
+        {
+            UserText = "检查关联项",
+            Mode = CopilotAgentMode.Auto,
+            Attachments =
+            [
+                CopilotAttachmentItem.CreateContext(
+                    content,
+                    "Default",
+                    "composer-template:saved-sfr-default"),
+            ],
+        };
+
+        Assert.True(CopilotToolIntentPolicy.NeedsSavedTemplateContext(request));
+        Assert.True(new CopilotInspectSavedTemplateTool(new RecordingCapabilityInvoker()).IsAvailable(request));
+    }
+
+    [Fact]
+    public void ManualContextCannotImpersonateSavedTemplateReference()
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = "检查关联项",
+            Mode = CopilotAgentMode.Auto,
+            Attachments =
+            [
+                CopilotAttachmentItem.CreateContext(
+                    "[ColorVision saved template reference]",
+                    "Manual",
+                    "manual-context"),
+            ],
+        };
+
+        Assert.False(CopilotToolIntentPolicy.NeedsSavedTemplateContext(request));
+    }
+
+    [Fact]
     public async Task AgentToolPassesExactReferenceIdentityToReadCapability()
     {
         var invoker = new RecordingCapabilityInvoker();

@@ -83,6 +83,53 @@ public sealed class CopilotTemplateTypeContextTests
     }
 
     [Fact]
+    public void ComposerContextAttachmentExposesTemplateTypeInspection()
+    {
+        var content = CopilotConversationRequestBuilder.BuildContextAttachmentContent(
+        [
+            new CopilotContextItem
+            {
+                Id = "composer-template-type:sfr",
+                Content = "[ColorVision template type reference]",
+            },
+        ]);
+        var request = new CopilotAgentRequest
+        {
+            UserText = "检查关联项",
+            Mode = CopilotAgentMode.Auto,
+            Attachments =
+            [
+                CopilotAttachmentItem.CreateContext(
+                    content,
+                    "SFR",
+                    "composer-template-type:sfr"),
+            ],
+        };
+
+        Assert.True(CopilotToolIntentPolicy.NeedsTemplateTypeContext(request));
+        Assert.True(new CopilotInspectTemplateTypeTool(new RecordingCapabilityInvoker()).IsAvailable(request));
+    }
+
+    [Fact]
+    public void ManualContextCannotImpersonateTemplateTypeReference()
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = "检查关联项",
+            Mode = CopilotAgentMode.Auto,
+            Attachments =
+            [
+                CopilotAttachmentItem.CreateContext(
+                    "[ColorVision template type reference]",
+                    "Manual",
+                    "manual-context"),
+            ],
+        };
+
+        Assert.False(CopilotToolIntentPolicy.NeedsTemplateTypeContext(request));
+    }
+
+    [Fact]
     public async Task AgentToolPassesExactTemplateCodeToReadCapability()
     {
         var invoker = new RecordingCapabilityInvoker();
