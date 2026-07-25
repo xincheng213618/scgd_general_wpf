@@ -136,6 +136,7 @@ namespace ColorVision.Copilot
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
                 AgentDefaults = request.AgentDefaults,
+                AccessContext = request.AccessContext,
                 ExternalMcpServers = request.ExternalMcpServers,
             });
             var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);

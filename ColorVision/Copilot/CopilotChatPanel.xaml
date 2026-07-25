@@ -1828,6 +1828,81 @@
                     </StackPanel>
 
                     <Border Grid.Row="4"
+                            MaxHeight="260"
+                            Margin="0,0,0,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderBrush="{DynamicResource PrimaryBrush}"
+                            BorderThickness="1"
+                            CornerRadius="9"
+                            Visibility="{Binding HasComposerReferenceSuggestions, Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel LastChildFill="True">
+                            <DockPanel DockPanel.Dock="Top" Margin="10,7,10,4">
+                                <TextBlock DockPanel.Dock="Right"
+                                           VerticalAlignment="Center"
+                                           FontSize="9"
+                                           Opacity="0.48"
+                                           Text="↑↓ 选择 · Enter 关联 · Esc 关闭" />
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.68"
+                                           Text="@ 关联模板、菜单或文件" />
+                            </DockPanel>
+                            <ListBox Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{StaticResource ComposerPopoverListBoxItemStyle}"
+                                     ItemsSource="{Binding ComposerReferenceSuggestions}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     SelectedItem="{Binding SelectedComposerReference, Mode=TwoWay}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type local:CopilotComposerReferenceItem}">
+                                        <Button Padding="9,6"
+                                                Command="{Binding DataContext.SelectComposerReferenceCommand, Source={x:Reference Root}}"
+                                                CommandParameter="{Binding}"
+                                                Click="ComposerReferenceSuggestionButton_Click"
+                                                Style="{StaticResource ComposerPopoverButtonStyle}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="22" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="13"
+                                                           Foreground="{DynamicResource PrimaryBrush}"
+                                                           Text="{Binding IconGlyph}" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Text="{Binding Title}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Margin="0,2,0,0"
+                                                               FontSize="9"
+                                                               Opacity="0.54"
+                                                               Text="{Binding Subtitle}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <Border Grid.Column="2"
+                                                        Margin="10,0,0,0"
+                                                        Padding="5,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="{DynamicResource GlobalBorderBrush1}"
+                                                        CornerRadius="6">
+                                                    <TextBlock FontSize="9"
+                                                               Opacity="0.7"
+                                                               Text="{Binding KindLabel}" />
+                                                </Border>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <Border Grid.Row="4"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -1915,6 +1990,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -1952,9 +2028,71 @@
                                        Text="&#xE710;" />
                         </Button>
 
-                        <Border x:Name="ControlModePill"
+                        <Button x:Name="AccessModeButton"
                                 Grid.Row="0"
                                 Grid.Column="1"
+                                Height="28"
+                                Margin="4,0,0,0"
+                                Padding="6,0"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource CopilotIconButtonStyle}"
+                                Click="AccessModeButton_Click"
+                                ToolTip="{Binding ComposerAccessModeToolTip}">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="按需确认"
+                                              IsCheckable="True"
+                                              IsChecked="{Binding IsComposerConfirmAccess, Mode=OneWay}"
+                                              Command="{Binding SetComposerAccessModeCommand}"
+                                              CommandParameter="{x:Static local:CopilotAgentAccessMode.ConfirmProtectedActions}"
+                                              ToolTip="受保护操作执行前逐次确认。" />
+                                    <MenuItem Header="完全访问"
+                                              IsCheckable="True"
+                                              IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
+                                              Command="{Binding SetComposerAccessModeCommand}"
+                                              CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
+                                              ToolTip="当前会话的受保护操作无需逐次确认；范围和审计仍然生效。" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="12"
+                                           Text="&#xEA18;">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsComposerFullAccess}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock x:Name="AccessModeLabelTextBlock"
+                                           Margin="5,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding ComposerAccessModeLabel}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsComposerFullAccess}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource CopilotControlWarningBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+
+                        <Border x:Name="ControlModePill"
+                                Grid.Row="0"
+                                Grid.Column="2"
                                 Margin="4,0,0,0"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource McpStatusPillBorderStyle}"
@@ -1976,7 +2114,7 @@
                         </Border>
 
                         <Button Grid.Row="0"
-                                Grid.Column="2"
+                                Grid.Column="3"
                                 Width="44"
                                 Height="28"
                                 Margin="4,0"
@@ -1991,7 +2129,7 @@
 
                         <Grid x:Name="ComposerSelectorGrid"
                               Grid.Row="0"
-                              Grid.Column="3"
+                              Grid.Column="4"
                               MaxWidth="180"
                               Margin="4,0,4,0"
                               HorizontalAlignment="Right"
@@ -2265,7 +2403,7 @@
 
                         <StackPanel x:Name="ComposerActionStack"
                                     Grid.Row="0"
-                                    Grid.Column="4"
+                                    Grid.Column="5"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
                             <Button Width="28"

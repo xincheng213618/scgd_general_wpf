@@ -27,6 +27,46 @@ namespace ColorVision.Copilot
         Diagnose,
     }
 
+    public enum CopilotAgentAccessMode
+    {
+        ConfirmProtectedActions,
+        FullAccess,
+    }
+
+    public sealed class CopilotAgentAccessContext
+    {
+        private int _mode;
+
+        public CopilotAgentAccessContext(CopilotAgentAccessMode mode = CopilotAgentAccessMode.ConfirmProtectedActions)
+        {
+            Mode = mode;
+        }
+
+        public CopilotAgentAccessMode Mode
+        {
+            get => (CopilotAgentAccessMode)System.Threading.Volatile.Read(ref _mode);
+            set
+            {
+                var normalized = Enum.IsDefined(value) ? value : CopilotAgentAccessMode.ConfirmProtectedActions;
+                System.Threading.Volatile.Write(ref _mode, (int)normalized);
+            }
+        }
+
+        public bool AllowsUnattendedProtectedActions => Mode == CopilotAgentAccessMode.FullAccess;
+    }
+
+    internal static class CopilotAgentAccessPolicy
+    {
+        public static bool CanAutoApprove(CopilotAgentRequest request, ICopilotTool tool)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(tool);
+            return request.AccessContext.AllowsUnattendedProtectedActions
+                && request.Mode != CopilotAgentMode.Review
+                && tool.Capability.RequiresNativeApproval;
+        }
+    }
+
     public sealed class CopilotAgentToolInput
     {
         public static CopilotAgentToolInput Empty { get; } = new();
@@ -106,6 +146,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
+
+        public CopilotAgentAccessContext AccessContext { get; init; } = new();
 
         internal string RuntimeRoleInstructions { get; init; } = string.Empty;
 

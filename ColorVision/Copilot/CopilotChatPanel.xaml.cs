@@ -330,6 +330,16 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private void AccessModeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Top;
+            element.ContextMenu.IsOpen = true;
+        }
+
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
             SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
@@ -420,6 +430,31 @@ namespace ColorVision.Copilot
         private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.None
+                && DataContext is CopilotChatViewModel referenceViewModel
+                && referenceViewModel.HasComposerReferenceSuggestions)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    referenceViewModel.DismissComposerReferenceSuggestions();
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Up or Key.Down
+                    && referenceViewModel.TryNavigateComposerReference(previous: e.Key == Key.Up))
+                {
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Enter or Key.Tab
+                    && referenceViewModel.TryCompleteComposerReference())
+                {
+                    MovePromptCaretToEnd();
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            if (Keyboard.Modifiers == ModifierKeys.None
                 && e.Key is Key.Up or Key.Down
                 && DataContext is CopilotChatViewModel historyViewModel
                 && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
@@ -472,6 +507,11 @@ namespace ColorVision.Copilot
         }
 
         private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+        }
+
+        private void ComposerReferenceSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
         }
@@ -636,6 +676,7 @@ namespace ColorVision.Copilot
             ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
+            AccessModeLabelTextBlock.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
 
             UpdateEmptyStateVisibility();
         }

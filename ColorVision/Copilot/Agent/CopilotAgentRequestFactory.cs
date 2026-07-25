@@ -132,6 +132,8 @@ namespace ColorVision.Copilot
         public CopilotAgentDefaultsConfig AgentDefaults { get; init; } = new();
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
+
+        public CopilotAgentAccessContext AccessContext { get; init; } = new();
     }
 
     public static class CopilotAgentRequestFactory
@@ -230,6 +232,7 @@ namespace ColorVision.Copilot
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),
                 SkillOverrides = agentDefaults.CreateSkillOverrideSnapshot(),
+                AccessContext = input.AccessContext,
                 ExternalMcpServers = input.ExternalMcpServers
                     .Where(server => server?.Enabled == true)
                     .Select(server => server.Clone())

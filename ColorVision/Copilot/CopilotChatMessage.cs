@@ -1611,6 +1611,22 @@ namespace ColorVision.Copilot
         }
         private string _profileDisplayName = string.Empty;
 
+        public CopilotAgentAccessMode AccessMode
+        {
+            get => _accessMode;
+            set
+            {
+                var normalized = Enum.IsDefined(value) ? value : CopilotAgentAccessMode.ConfirmProtectedActions;
+                if (SetProperty(ref _accessMode, normalized))
+                    _accessContext.Mode = normalized;
+            }
+        }
+        private CopilotAgentAccessMode _accessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
+
+        [JsonIgnore]
+        internal CopilotAgentAccessContext AccessContext => _accessContext;
+        private readonly CopilotAgentAccessContext _accessContext = new();
+
         public int LastUsageInputTokens
         {
             get => _lastUsageInputTokens;
@@ -1717,6 +1733,15 @@ namespace ColorVision.Copilot
             {
                 DraftText = string.Empty;
                 changed = true;
+            }
+            if (!Enum.IsDefined(AccessMode))
+            {
+                AccessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
+                changed = true;
+            }
+            else
+            {
+                _accessContext.Mode = AccessMode;
             }
 
             if (Messages == null)

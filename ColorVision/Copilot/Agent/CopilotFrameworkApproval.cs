@@ -73,6 +73,13 @@ namespace ColorVision.Copilot
                 CopilotFrameworkApprovalDecisionKind.PolicyDenied,
                 "ColorVision policy denied this protected tool call: " + detail);
         }
+
+        public static CopilotFrameworkApprovalDecision ApprovedByFullAccess()
+        {
+            return new CopilotFrameworkApprovalDecision(
+                CopilotFrameworkApprovalDecisionKind.Approved,
+                "Approved by the current ColorVision conversation's Full access mode.");
+        }
     }
 
     internal sealed class CopilotFrameworkApprovalHandle

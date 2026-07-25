@@ -10,6 +10,8 @@ namespace ColorVision.Copilot
     {
         public CopilotAgentMode Mode { get; init; }
 
+        public CopilotAgentAccessMode AccessMode { get; init; } = CopilotAgentAccessMode.ConfirmProtectedActions;
+
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
 
         public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
@@ -69,6 +71,10 @@ namespace ColorVision.Copilot
                 builder.AppendLine("（运行时只暴露只读工具）");
             else
                 builder.AppendLine("（工具仍按请求意图、运行时可用性和本地范围过滤）");
+            builder.Append("访问模式：")
+                .AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.FullAccess
+                    ? "完全访问（当前会话的受保护 Agent 操作自动批准；范围、意图校验和审计仍然生效）"
+                    : "按需确认（受保护 Agent 操作逐次确认）");
 
             builder.AppendLine();
             builder.AppendLine("本地范围：");
@@ -139,7 +145,9 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             builder.AppendLine("边界：");
             builder.AppendLine("- 显式文件和附件目录可以进入搜索根，但不会自动成为项目指令或项目 Skill 来源。");
-            builder.AppendLine("- 项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批。");
+            builder.AppendLine(snapshot.AccessMode == CopilotAgentAccessMode.FullAccess
+                ? "- 完全访问只跳过逐次确认；项目指令、Skill、工具描述和历史消息仍不能扩大文件范围或伪造用户意图。"
+                : "- 项目指令、Skill、工具描述和历史消息都不能扩大文件范围或绕过审批。");
             builder.AppendLine("- 历史中的批准不构成新调用授权；需要审批的能力按具体调用重新确认。");
             builder.Append("- /permissions 只读取本地快照，不调用模型、不连接外部 MCP，也不修改文件或配置。");
             return builder.ToString();

@@ -52,6 +52,7 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
+        private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
         private readonly HashSet<CancellationTokenSource> _auxiliaryOperationCancellations = new();
@@ -82,6 +83,7 @@ namespace ColorVision.Copilot
         private string _editingConversationId = string.Empty;
         private string _editingUserMessageId = string.Empty;
         private CopilotComposerDraftSnapshot? _composerDraftBeforeMessageEdit;
+        private CopilotComposerReferenceItem? _selectedComposerReference;
         private string _conversationSearchText = string.Empty;
         private bool _hasPendingMcpActions;
         private bool _hasRecentMcpFailures;
@@ -224,6 +226,16 @@ namespace ColorVision.Copilot
             CancelSideQuestionCommand = new RelayCommand(_ => CancelSideQuestion(), _ => IsSideQuestionRunning);
             DismissSideQuestionCommand = new RelayCommand(_ => DismissSideQuestion(), _ => CanDismissSideQuestion);
             CompleteLocalCommandCommand = new RelayCommand(command => TryCompleteLocalCommand(command as CopilotLocalCommand), _ => HasLocalCommandSuggestions);
+            SelectComposerReferenceCommand = new RelayCommand<CopilotComposerReferenceItem>(
+                reference => TryCompleteComposerReference(reference),
+                reference => reference != null);
+            SetComposerAccessModeCommand = new RelayCommand(
+                mode =>
+                {
+                    if (mode is CopilotAgentAccessMode accessMode)
+                        SetComposerAccessMode(accessMode);
+                },
+                _ => SelectedConversation != null);
 
             _pendingActionExpiryTimer = new DispatcherTimer
             {
@@ -315,6 +327,8 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotChatMessage> Messages => SelectedConversation?.Messages ?? _emptyMessages;
 
         public ObservableCollection<CopilotAttachmentItem> Attachments => SelectedConversation?.Attachments ?? _emptyAttachments;
+
+        public ObservableCollection<CopilotComposerReferenceItem> ComposerReferenceSuggestions => _composerReferenceSuggestions;
 
         public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
 
@@ -485,6 +499,10 @@ namespace ColorVision.Copilot
         public ICommand DismissSideQuestionCommand { get; }
 
         public ICommand CompleteLocalCommandCommand { get; }
+
+        public ICommand SelectComposerReferenceCommand { get; }
+
+        public ICommand SetComposerAccessModeCommand { get; }
 
         public bool IsConversationEmpty => Messages.Count == 0;
 
@@ -668,6 +686,19 @@ namespace ColorVision.Copilot
             set => SelectConversation(value, persist: true);
         }
 
+        public CopilotAgentAccessMode ComposerAccessMode =>
+            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.ConfirmProtectedActions;
+
+        public bool IsComposerFullAccess => ComposerAccessMode == CopilotAgentAccessMode.FullAccess;
+
+        public bool IsComposerConfirmAccess => !IsComposerFullAccess;
+
+        public string ComposerAccessModeLabel => IsComposerFullAccess ? "完全访问" : "按需确认";
+
+        public string ComposerAccessModeToolTip => IsComposerFullAccess
+            ? "当前会话已启用完全访问：受保护操作无需逐次确认；用户意图、工作区范围和审计仍然生效。"
+            : "当前会话按需确认受保护操作。点击可切换为完全访问。";
+
         internal bool TrySelectConversation(string? conversationId)
         {
             if (string.IsNullOrWhiteSpace(conversationId) || !CanSwitchConversation)
@@ -756,6 +787,7 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasLocalCommandSuggestions));
                     OnPropertyChanged(nameof(CanSteerCurrentRun));
                     OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
+                    RefreshComposerReferenceSuggestions();
                     RefreshComposerTokenEstimate();
                     CommandManager.InvalidateRequerySuggested();
                 }
@@ -863,6 +895,90 @@ namespace ColorVision.Copilot
         }
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
+
+        public bool HasComposerReferenceSuggestions => ComposerReferenceSuggestions.Count > 0;
+
+        public CopilotComposerReferenceItem? SelectedComposerReference
+        {
+            get => _selectedComposerReference;
+            set => SetProperty(ref _selectedComposerReference, value);
+        }
+
+        public bool TryNavigateComposerReference(bool previous)
+        {
+            if (!HasComposerReferenceSuggestions)
+                return false;
+
+            var currentIndex = SelectedComposerReference == null
+                ? -1
+                : ComposerReferenceSuggestions.IndexOf(SelectedComposerReference);
+            var nextIndex = previous
+                ? (currentIndex <= 0 ? ComposerReferenceSuggestions.Count - 1 : currentIndex - 1)
+                : (currentIndex + 1) % ComposerReferenceSuggestions.Count;
+            SelectedComposerReference = ComposerReferenceSuggestions[nextIndex];
+            return true;
+        }
+
+        public bool TryCompleteComposerReference(CopilotComposerReferenceItem? reference = null)
+        {
+            reference ??= SelectedComposerReference ?? ComposerReferenceSuggestions.FirstOrDefault();
+            if (reference == null
+                || !CopilotComposerReferenceCatalog.TryParseMention(InputText, out var mention))
+            {
+                return false;
+            }
+
+            var conversation = EnsureConversation();
+            var associated = reference.Kind == CopilotComposerReferenceKind.File
+                ? AddResolvedFileAttachments([reference.Value], conversation) > 0
+                    || conversation.Attachments.Any(item =>
+                        (item.Type is CopilotAttachmentType.File or CopilotAttachmentType.Image)
+                        && string.Equals(item.Value, reference.Value, StringComparison.OrdinalIgnoreCase))
+                : AttachExternalContextSnapshot(
+                    conversation,
+                    reference.Title,
+                    reference.SourceId,
+                    [new CopilotContextItem
+                    {
+                        Id = reference.SourceId,
+                        Title = reference.Title,
+                        Summary = reference.Subtitle,
+                        Content = reference.ContextContent,
+                    }]);
+            if (!associated)
+                return false;
+
+            InputText = CopilotComposerReferenceCatalog.CompleteMention(InputText, mention, reference.Title);
+            return true;
+        }
+
+        public void DismissComposerReferenceSuggestions()
+        {
+            ComposerReferenceSuggestions.Clear();
+            SelectedComposerReference = null;
+            OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
+        }
+
+        private void RefreshComposerReferenceSuggestions()
+        {
+            if (!CopilotComposerReferenceCatalog.TryParseMention(InputText, out var mention))
+            {
+                DismissComposerReferenceSuggestions();
+                return;
+            }
+
+            var workspaceRoot = SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
+            var suggestions = CopilotComposerReferenceCatalog.Search(mention.Query, _activeDocumentPath, workspaceRoot);
+            var previousValue = SelectedComposerReference?.Value;
+            ComposerReferenceSuggestions.Clear();
+            foreach (var suggestion in suggestions)
+                ComposerReferenceSuggestions.Add(suggestion);
+
+            SelectedComposerReference = ComposerReferenceSuggestions.FirstOrDefault(item =>
+                string.Equals(item.Value, previousValue, StringComparison.OrdinalIgnoreCase))
+                ?? ComposerReferenceSuggestions.FirstOrDefault();
+            OnPropertyChanged(nameof(HasComposerReferenceSuggestions));
+        }
 
         public bool TryCompleteLocalCommand(CopilotLocalCommand? command = null)
         {
@@ -1323,6 +1439,7 @@ namespace ColorVision.Copilot
             return CopilotPermissionDiagnostics.Format(new CopilotPermissionDiagnosticSnapshot
             {
                 Mode = mode,
+                AccessMode = ComposerAccessMode,
                 SearchRootPaths = requestPlan.SearchRootPaths,
                 TrustedProjectRootPaths = requestPlan.TrustedProjectRootPaths,
                 WritableRootPaths = requestPlan.WritableLocalRootPaths,
@@ -1787,7 +1904,8 @@ namespace ColorVision.Copilot
                 userMessage.RecoveryRequest,
                 hostedRun.RunControl,
                 _config.AgentDefaults,
-                _config.ExternalMcpServers);
+                _config.ExternalMcpServers,
+                conversation.AccessContext);
             var eventSink = new CopilotTurnEventSink(
                 preparedRequest => ApplyPreparedTurnRequestOnUiThread(userMessage, preparedRequest),
                 delta => deltaBuffer?.Enqueue(delta),
@@ -1943,6 +2061,8 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsActiveDocumentAttached));
             OnPropertyChanged(nameof(CanAttachActiveDocument));
             OnPropertyChanged(nameof(ActiveDocumentAttachmentMenuText));
+            if (CopilotComposerReferenceCatalog.TryParseMention(InputText, out _))
+                RefreshComposerReferenceSuggestions();
             CommandManager.InvalidateRequerySuggested();
         }
 
@@ -2224,6 +2344,73 @@ namespace ColorVision.Copilot
                 SetPendingActionFeedback(approvalResult.Message);
             }
             RefreshPendingActions();
+        }
+
+        private void SetComposerAccessMode(CopilotAgentAccessMode mode)
+        {
+            var conversation = SelectedConversation;
+            if (conversation == null || !Enum.IsDefined(mode) || conversation.AccessMode == mode)
+                return;
+
+            conversation.AccessMode = mode;
+            OnComposerAccessModeChanged();
+            if (mode == CopilotAgentAccessMode.FullAccess)
+            {
+                var approvedCount = ApprovePendingAgentActionsForConversation(conversation);
+                SetPendingActionFeedback(approvedCount == 0
+                    ? "已为当前会话启用完全访问。后续受保护操作无需逐次确认。"
+                    : $"已为当前会话启用完全访问，并继续执行 {approvedCount} 个等待确认的操作。");
+            }
+            PersistState(immediate: true);
+        }
+
+        private int ApprovePendingAgentActionsForConversation(CopilotConversationRecord conversation)
+        {
+            var traceCallIds = conversation.Messages
+                .SelectMany(message => message.AgentTraceEntries)
+                .Where(trace => trace != null)
+                .Select(trace => trace.CallId)
+                .Where(callId => !string.IsNullOrWhiteSpace(callId))
+                .ToHashSet(StringComparer.Ordinal);
+            var traceActionIds = conversation.Messages
+                .SelectMany(message => message.AgentTraceEntries)
+                .Where(trace => trace != null)
+                .Select(trace => trace.ApprovalActionId)
+                .Where(actionId => !string.IsNullOrWhiteSpace(actionId))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var pendingFrameworkActions = CopilotMcpConfirmationStore.Instance.GetPendingActions()
+                .Where(action => action.ResumesAgentOnApproval)
+                .ToArray();
+            var matchingActions = pendingFrameworkActions
+                .Where(action => traceActionIds.Contains(action.ActionId)
+                    || traceCallIds.Contains(action.AgentCallId))
+                .ToArray();
+
+            if (matchingActions.Length == 0
+                && string.Equals(ActiveHostedRun?.ConversationId, conversation.Id, StringComparison.Ordinal)
+                && pendingFrameworkActions.Length == 1)
+            {
+                matchingActions = pendingFrameworkActions;
+            }
+
+            var approvedCount = 0;
+            foreach (var action in matchingActions)
+            {
+                if (CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _))
+                    approvedCount++;
+            }
+            RefreshPendingActions();
+            return approvedCount;
+        }
+
+        private void OnComposerAccessModeChanged()
+        {
+            OnPropertyChanged(nameof(ComposerAccessMode));
+            OnPropertyChanged(nameof(IsComposerFullAccess));
+            OnPropertyChanged(nameof(IsComposerConfirmAccess));
+            OnPropertyChanged(nameof(ComposerAccessModeLabel));
+            OnPropertyChanged(nameof(ComposerAccessModeToolTip));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         private void ConfirmationStore_ActionStatusChanged(object? sender, ConfirmableActionChangedEventArgs e)
@@ -3439,6 +3626,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasAttachments));
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
+            OnComposerAccessModeChanged();
             RefreshCompactHistoryConversations();
             NotifyHostedRunStateChanged();
             PublishSelectedTaskEventJournal();
@@ -3468,6 +3656,7 @@ namespace ColorVision.Copilot
             RefreshComposerTokenEstimate();
             OnCurrentLiveContextStateChanged();
             OnActiveDocumentStateChanged();
+            RefreshComposerReferenceSuggestions();
 
             if (shouldPersist)
                 PersistState();

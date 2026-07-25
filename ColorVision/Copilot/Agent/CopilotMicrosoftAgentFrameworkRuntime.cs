@@ -532,28 +532,36 @@ namespace ColorVision.Copilot
                             continue;
                         }
 
-                        var handle = _approvalCoordinator.RequestApproval(reservation.Tool, request, reservation.ToolInput, reservation.CallId, cancellationToken);
-                        bridge.PublishAwaitingApproval(reservation, handle.Action);
-                        emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
-
                         CopilotFrameworkApprovalDecision decision;
-                        try
+                        if (CopilotAgentAccessPolicy.CanAutoApprove(request, reservation.Tool))
                         {
-                            decision = await handle.Decision;
-                            cancellationToken.ThrowIfCancellationRequested();
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            _approvalCoordinator.Cancel(handle);
-                            throw;
-                        }
-                        if (decision.IsApproved)
-                        {
+                            decision = CopilotFrameworkApprovalDecision.ApprovedByFullAccess();
                             bridge.Approve(reservation);
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by Full access for this ColorVision conversation."));
                         }
                         else
                         {
-                            bridge.Reject(reservation, decision);
+                            var handle = _approvalCoordinator.RequestApproval(reservation.Tool, request, reservation.ToolInput, reservation.CallId, cancellationToken);
+                            bridge.PublishAwaitingApproval(reservation, handle.Action);
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
+                            try
+                            {
+                                decision = await handle.Decision;
+                                cancellationToken.ThrowIfCancellationRequested();
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                _approvalCoordinator.Cancel(handle);
+                                throw;
+                            }
+                            if (decision.IsApproved)
+                            {
+                                bridge.Approve(reservation);
+                            }
+                            else
+                            {
+                                bridge.Reject(reservation, decision);
+                            }
                         }
                         emit(CopilotAgentEvent.Status(decision.FormatStatus(reservation.Tool.Name)));
                         if (decision.IsApproved)
