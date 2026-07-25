@@ -260,7 +260,8 @@ namespace ColorVision.Copilot
                                 $"Template type: {title}",
                                 $"Code: {code}",
                                 $"Template dictionary id: {template.TemplateDicId}",
-                                "The user referenced this template type, not a specific saved template. Inspect current evidence before proposing or applying changes.",
+                                $"Read tool arguments: template_code={code}",
+                                "The user referenced this template type, not a specific saved template. Call the read-only InspectTemplateType tool before describing its fields or loaded saved templates.",
                             }),
                         });
                     }

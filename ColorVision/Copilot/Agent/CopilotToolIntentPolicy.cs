@@ -157,6 +157,11 @@ namespace ColorVision.Copilot
             "[ColorVision saved template reference]", "已保存模板", "保存模板", "saved template", "template code:",
         };
 
+        private static readonly string[] TemplateTypeContextMarkers =
+        {
+            "[ColorVision template type reference]", "模板类型", "template type reference",
+        };
+
         private static readonly string[] FlowMutationMarkers =
         {
             "添加", "新增", "创建", "插入", "连接", "修改", "设置", "移动",
@@ -410,6 +415,16 @@ namespace ColorVision.Copilot
                         request!,
                         SavedTemplateContextMarkers,
                         "InspectSavedTemplate"));
+        }
+
+        public static bool NeedsTemplateTypeContext(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && (HasTemplateTypeContext(request!)
+                    || MatchesCurrentOrContinuation(
+                        request!,
+                        TemplateTypeContextMarkers,
+                        "InspectTemplateType"));
         }
 
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
@@ -675,6 +690,15 @@ namespace ColorVision.Copilot
                 (item.Id ?? string.Empty).StartsWith("composer-template:", StringComparison.OrdinalIgnoreCase)
                 || (item.Content ?? string.Empty).Contains(
                     "[ColorVision saved template reference]",
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool HasTemplateTypeContext(CopilotAgentRequest request)
+        {
+            return request.ContextItems.Any(item =>
+                (item.Id ?? string.Empty).StartsWith("composer-template-type:", StringComparison.OrdinalIgnoreCase)
+                || (item.Content ?? string.Empty).Contains(
+                    "[ColorVision template type reference]",
                     StringComparison.OrdinalIgnoreCase));
         }
 

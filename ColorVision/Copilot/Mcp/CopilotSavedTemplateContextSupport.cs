@@ -2,6 +2,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,9 @@ namespace ColorVision.Copilot.Mcp
         private const int MaximumRawSnapshotCharacters = 200_000;
         private const int MaximumSnapshotJsonCharacters = 12_000;
         private const int MaximumMetadataCharacters = 240;
+        private const int MaximumTypeContextSavedNames = 40;
+        private const int MaximumTypeContextFields = 60;
+        private const int TypeContextFooterReserve = 420;
         private static readonly SnapshotLimits[] SnapshotLimitLevels =
         {
             new(300, 100, 1_200, 12),
@@ -77,6 +81,165 @@ namespace ColorVision.Copilot.Mcp
                     "saved_template_read_failed",
                     "The saved template could not be read: " + CopilotMcpAuditLogger.RedactText(ex.Message));
             }
+        }
+
+        public static CopilotMcpToolCallResult ReadType(string? templateCode)
+        {
+            var normalizedCode = (templateCode ?? string.Empty).Trim();
+            if (normalizedCode.Length == 0)
+                return CopilotMcpToolCallResult.Fail("missing_template_code", "get_template_type_context requires template_code from the selected template-type reference.");
+
+            try
+            {
+                if (!TryResolveTemplate(normalizedCode, out var template, out var resolvedCode, out var resolveError))
+                    return CopilotMcpToolCallResult.Fail("template_type_not_found", resolveError);
+
+                var warnings = new List<string>();
+                IReadOnlyList<string> savedTemplateNames;
+                try
+                {
+                    savedTemplateNames = template.GetTemplateNames()
+                        .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .Select(name => name.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                }
+                catch (Exception ex)
+                {
+                    savedTemplateNames = Array.Empty<string>();
+                    warnings.Add("Saved template names were unavailable: " + CopilotMcpAuditLogger.RedactText(ex.Message));
+                }
+
+                Type? parameterType = null;
+                try
+                {
+                    parameterType = template.GetTemplateType;
+                }
+                catch (Exception ex)
+                {
+                    warnings.Add("Parameter type metadata was unavailable: " + CopilotMcpAuditLogger.RedactText(ex.Message));
+                }
+
+                return BuildTypeContext(
+                    resolvedCode,
+                    template.Name,
+                    template.Title,
+                    template.TemplateDicId,
+                    template.GetType(),
+                    parameterType,
+                    savedTemplateNames,
+                    warnings);
+            }
+            catch (Exception ex)
+            {
+                return CopilotMcpToolCallResult.Fail(
+                    "template_type_read_failed",
+                    "The template type could not be inspected: " + CopilotMcpAuditLogger.RedactText(ex.Message));
+            }
+        }
+
+        internal static CopilotMcpToolCallResult BuildTypeContext(
+            string templateCode,
+            string? templateName,
+            string? templateTitle,
+            int templateDictionaryId,
+            Type templateRuntimeType,
+            Type? parameterType,
+            IReadOnlyList<string>? savedTemplateNames,
+            IReadOnlyList<string>? warnings = null)
+        {
+            ArgumentNullException.ThrowIfNull(templateRuntimeType);
+            var names = (savedTemplateNames ?? Array.Empty<string>())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var properties = parameterType == null
+                ? Array.Empty<PropertyDescriptor>()
+                : TypeDescriptor.GetProperties(parameterType)
+                    .Cast<PropertyDescriptor>()
+                    .Where(property => property.IsBrowsable)
+                    .OrderBy(property => property.Category, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(property => property.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            var safeProperties = properties
+                .Where(property => !CopilotMcpAuditLogger.IsSensitiveArgumentName(property.Name)
+                    && !CopilotMcpAuditLogger.IsSensitiveArgumentName(property.DisplayName))
+                .ToArray();
+            var sensitiveFieldCount = properties.Length - safeProperties.Length;
+            var builder = new StringBuilder();
+            builder.AppendLine("ColorVision template type context");
+            builder.AppendLine("Mode: read-only in-memory metadata");
+            builder.AppendLine("Would read template values: False");
+            builder.AppendLine("Would query database: False");
+            builder.AppendLine("Would modify: False");
+            builder.AppendLine("Would save: False");
+            builder.AppendLine($"Template code: {SanitizeMetadata(templateCode)}");
+            builder.AppendLine($"Template name: {SanitizeMetadata(templateName)}");
+            builder.AppendLine($"Template title: {SanitizeMetadata(templateTitle)}");
+            builder.AppendLine($"Template dictionary id: {templateDictionaryId.ToString(CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"Template runtime type: {SanitizeMetadata(templateRuntimeType.FullName)}");
+            builder.AppendLine($"Parameter runtime type: {SanitizeMetadata(parameterType?.FullName)}");
+            builder.AppendLine($"Loaded saved template count: {names.Length.ToString(CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"Browsable parameter field count: {properties.Length.ToString(CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"Sensitive parameter fields omitted: {sensitiveFieldCount.ToString(CultureInfo.InvariantCulture)}");
+
+            var truncated = false;
+            builder.AppendLine();
+            builder.AppendLine("Loaded saved template names:");
+            if (names.Length == 0)
+            {
+                builder.AppendLine("- (none)");
+            }
+            else
+            {
+                foreach (var name in names.Take(MaximumTypeContextSavedNames))
+                {
+                    if (!TryAppendTypeContextLine(builder, "- " + SanitizeMetadata(name)))
+                    {
+                        truncated = true;
+                        break;
+                    }
+                }
+                truncated |= names.Length > MaximumTypeContextSavedNames;
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Browsable parameter fields (schema only, no values):");
+            if (parameterType == null)
+            {
+                builder.AppendLine("- (parameter type unavailable)");
+            }
+            else if (safeProperties.Length == 0)
+            {
+                builder.AppendLine("- (none)");
+            }
+            else
+            {
+                foreach (var property in safeProperties.Take(MaximumTypeContextFields))
+                {
+                    var line = FormatPropertyMetadata(property);
+                    if (!TryAppendTypeContextLine(builder, line))
+                    {
+                        truncated = true;
+                        break;
+                    }
+                }
+                truncated |= safeProperties.Length > MaximumTypeContextFields;
+            }
+
+            foreach (var warning in warnings ?? Array.Empty<string>())
+            {
+                if (!TryAppendTypeContextLine(builder, "Warning: " + SanitizeMetadata(warning)))
+                {
+                    truncated = true;
+                    break;
+                }
+            }
+
+            builder.AppendLine($"Metadata truncated: {truncated}");
+            builder.AppendLine("This context used the already loaded template registry and type descriptors only. No template value, database row, mutation, or save was accessed.");
+            return CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd());
         }
 
         internal static CopilotMcpToolCallResult BuildSnapshot(
@@ -412,6 +575,34 @@ namespace ColorVision.Copilot.Mcp
                     return true;
             }
             return false;
+        }
+
+        private static string FormatPropertyMetadata(PropertyDescriptor property)
+        {
+            var builder = new StringBuilder();
+            builder.Append("- ").Append(SanitizeMetadata(property.Name));
+            if (!string.Equals(property.DisplayName, property.Name, StringComparison.Ordinal))
+                builder.Append(" (display: ").Append(SanitizeMetadata(property.DisplayName)).Append(')');
+            builder.Append(" | type: ").Append(SanitizeMetadata(property.PropertyType.FullName ?? property.PropertyType.Name));
+            builder.Append(property.IsReadOnly ? " | read-only" : " | writable");
+            if (!string.IsNullOrWhiteSpace(property.Category))
+                builder.Append(" | category: ").Append(SanitizeMetadata(property.Category));
+            if (!string.IsNullOrWhiteSpace(property.Description))
+                builder.Append(" | description: ").Append(SanitizeMetadata(property.Description));
+            return builder.ToString();
+        }
+
+        private static bool TryAppendTypeContextLine(StringBuilder builder, string line)
+        {
+            var safeLine = line ?? string.Empty;
+            if (builder.Length + safeLine.Length + Environment.NewLine.Length
+                > MaximumSnapshotJsonCharacters - TypeContextFooterReserve)
+            {
+                return false;
+            }
+
+            builder.AppendLine(safeLine);
+            return true;
         }
 
         private static string SanitizeMetadata(string? value)
