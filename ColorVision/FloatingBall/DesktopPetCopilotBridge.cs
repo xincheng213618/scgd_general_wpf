@@ -146,9 +146,25 @@ namespace ColorVision.FloatingBall
                     : DesktopPetCopilotCompletionKind.Cancelled;
             }
 
-            return run.Completion.IsFaulted
-                ? DesktopPetCopilotCompletionKind.Blocked
-                : DesktopPetCopilotCompletionKind.Ready;
+            if (run.Completion.IsFaulted)
+                return DesktopPetCopilotCompletionKind.Blocked;
+
+            return run.AgentStopReason switch
+            {
+                CopilotAgentStopReason.AwaitingUser or CopilotAgentStopReason.Paused
+                    => DesktopPetCopilotCompletionKind.Paused,
+                CopilotAgentStopReason.Cancelled
+                    => DesktopPetCopilotCompletionKind.Cancelled,
+                CopilotAgentStopReason.ApprovalDenied
+                    or CopilotAgentStopReason.BudgetExhausted
+                    or CopilotAgentStopReason.TaskPassLimit
+                    or CopilotAgentStopReason.Blocked
+                    or CopilotAgentStopReason.IncompleteOutput
+                    or CopilotAgentStopReason.ProviderFailure
+                    or CopilotAgentStopReason.Interrupted
+                    => DesktopPetCopilotCompletionKind.Blocked,
+                _ => DesktopPetCopilotCompletionKind.Ready,
+            };
         }
 
         private void ReconcileAndApply(IReadOnlyList<ConfirmableAction>? pendingActions = null)

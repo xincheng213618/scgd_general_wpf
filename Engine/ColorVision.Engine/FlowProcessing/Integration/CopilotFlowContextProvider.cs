@@ -91,11 +91,11 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 return await dispatcher.InvokeAsync(() =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    return service.CaptureCopilotFlowSnapshot();
+                    return service.Context.CaptureSnapshot();
                 });
             }
 
-            return service.CaptureCopilotFlowSnapshot();
+            return service.Context.CaptureSnapshot();
         }
     }
 

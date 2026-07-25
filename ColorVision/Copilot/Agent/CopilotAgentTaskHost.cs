@@ -62,6 +62,7 @@ namespace ColorVision.Copilot
         private readonly CancellationTokenSource _cancellation = new();
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
+        private int _agentStopReason;
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
@@ -91,6 +92,9 @@ namespace ColorVision.Copilot
         public bool IsAgent => Mode != CopilotAgentMode.Chat;
 
         public bool IsCheckpointReady => Volatile.Read(ref _checkpointReady) == 1;
+
+        public CopilotAgentStopReason AgentStopReason =>
+            (CopilotAgentStopReason)Volatile.Read(ref _agentStopReason);
 
         public CopilotHostedRunState State => (CopilotHostedRunState)Volatile.Read(ref _state);
 
@@ -124,6 +128,14 @@ namespace ColorVision.Copilot
             return IsAgent
                 && State == CopilotHostedRunState.Running
                 && Interlocked.CompareExchange(ref _checkpointReady, 1, 0) == 0;
+        }
+
+        internal void SetAgentStopReason(CopilotAgentStopReason stopReason)
+        {
+            if (!IsAgent || !Enum.IsDefined(stopReason))
+                return;
+
+            Volatile.Write(ref _agentStopReason, (int)stopReason);
         }
 
         internal bool TryRequestPause()

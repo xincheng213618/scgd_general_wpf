@@ -2134,6 +2134,7 @@ namespace ColorVision.Copilot
 
             var agentResult = result.AgentRunResult
                 ?? throw new InvalidOperationException("Agent turn completed without an agent result.");
+            hostedRun.SetAgentStopReason(agentResult.StopReason);
             userMessage.RequestContent = agentResult.PreparedUserMessageContent;
             assistantMessage.AgentTaskLedger = agentResult.TaskLedger;
             assistantMessage.AgentStopReason = agentResult.StopReason;

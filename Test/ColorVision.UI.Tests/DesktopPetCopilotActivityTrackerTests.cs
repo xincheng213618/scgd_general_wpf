@@ -99,4 +99,31 @@ public sealed class DesktopPetCopilotActivityTrackerTests
             (DesktopPetCopilotCompletionKind)expectedValue,
             DesktopPetCopilotBridge.ResolveCompletionKind(run));
     }
+
+    [Theory]
+    [InlineData(CopilotAgentStopReason.None, DesktopPetCopilotCompletionKind.Ready)]
+    [InlineData(CopilotAgentStopReason.Completed, DesktopPetCopilotCompletionKind.Ready)]
+    [InlineData(CopilotAgentStopReason.AwaitingUser, DesktopPetCopilotCompletionKind.Paused)]
+    [InlineData(CopilotAgentStopReason.Paused, DesktopPetCopilotCompletionKind.Paused)]
+    [InlineData(CopilotAgentStopReason.Cancelled, DesktopPetCopilotCompletionKind.Cancelled)]
+    [InlineData(CopilotAgentStopReason.ApprovalDenied, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.BudgetExhausted, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.TaskPassLimit, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.Blocked, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.IncompleteOutput, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.ProviderFailure, DesktopPetCopilotCompletionKind.Blocked)]
+    [InlineData(CopilotAgentStopReason.Interrupted, DesktopPetCopilotCompletionKind.Blocked)]
+    public void StructuredAgentStopReasonMapsToPetActivity(
+        CopilotAgentStopReason stopReason,
+        DesktopPetCopilotCompletionKind expected)
+    {
+        var run = new CopilotHostedAgentRun("conversation", CopilotAgentMode.Auto);
+        Assert.True(run.TryStart());
+
+        run.SetAgentStopReason(stopReason);
+        run.Complete(error: null);
+
+        Assert.Equal(stopReason, run.AgentStopReason);
+        Assert.Equal(expected, DesktopPetCopilotBridge.ResolveCompletionKind(run));
+    }
 }
