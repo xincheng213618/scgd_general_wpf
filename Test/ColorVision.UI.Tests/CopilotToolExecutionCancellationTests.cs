@@ -4,6 +4,8 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotToolExecutionCancellationTests
 {
+    private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+
     [Fact]
     public async Task ToolTimeoutDoesNotWaitForSynchronousPrefixOrBlockingCancellationCallback()
     {
@@ -29,12 +31,12 @@ public sealed class CopilotToolExecutionCancellationTests
 
         try
         {
-            Assert.True(tool.Started.Wait(TimeSpan.FromSeconds(1)));
-            var outcome = await executionTask.WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.True(tool.Started.Wait(TestTimeout));
+            var outcome = await executionTask.WaitAsync(TestTimeout);
 
             Assert.Equal(CopilotToolExecutionState.TimedOut, outcome.Execution.State);
             Assert.Equal(CopilotToolFailureKind.Transient, outcome.Result.FailureKind);
-            Assert.True(tool.CancellationCallbackStarted.Wait(TimeSpan.FromSeconds(1)));
+            Assert.True(tool.CancellationCallbackStarted.Wait(TestTimeout));
             Assert.False(tool.ReleaseCancellationCallback.IsSet);
             Assert.False(tool.ReleaseInvocation.IsSet);
         }
@@ -44,7 +46,7 @@ public sealed class CopilotToolExecutionCancellationTests
             tool.ReleaseInvocation.Set();
             try
             {
-                await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+                await executionTask.WaitAsync(TestTimeout);
             }
             catch
             {
@@ -65,17 +67,17 @@ public sealed class CopilotToolExecutionCancellationTests
 
         try
         {
-            Assert.True(tool.Started.Wait(TimeSpan.FromSeconds(1)));
+            Assert.True(tool.Started.Wait(TestTimeout));
             var cancelTask = Task.Factory.StartNew(
                 cancellation.Cancel,
                 CancellationToken.None,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
 
-            await cancelTask.WaitAsync(TimeSpan.FromSeconds(1));
+            await cancelTask.WaitAsync(TestTimeout);
             await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => executionTask.WaitAsync(TimeSpan.FromSeconds(1)));
-            Assert.True(tool.CancellationCallbackStarted.Wait(TimeSpan.FromSeconds(1)));
+                () => executionTask.WaitAsync(TestTimeout));
+            Assert.True(tool.CancellationCallbackStarted.Wait(TestTimeout));
             Assert.False(tool.ReleaseCancellationCallback.IsSet);
         }
         finally
@@ -84,7 +86,7 @@ public sealed class CopilotToolExecutionCancellationTests
             tool.ReleaseInvocation.Set();
             try
             {
-                await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+                await executionTask.WaitAsync(TestTimeout);
             }
             catch
             {

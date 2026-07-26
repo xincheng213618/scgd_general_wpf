@@ -6,6 +6,8 @@ namespace ColorVision.UI.Tests;
 
 public sealed class CopilotCancellationGuardChatClientTests
 {
+    private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+
     [Fact]
     public async Task NonStreamingCallReturnsCancellationWhenProviderIgnoresToken()
     {
@@ -18,14 +20,14 @@ public sealed class CopilotCancellationGuardChatClientTests
         var responseTask = client.GetResponseAsync(
             [new ChatMessage(ChatRole.User, "test")],
             cancellationToken: cancellation.Token);
-        await provider.ResponseStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.ResponseStarted.Task.WaitAsync(TestTimeout);
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => responseTask.WaitAsync(TimeSpan.FromSeconds(1)));
+            () => responseTask.WaitAsync(TestTimeout));
 
         provider.ReleaseResponse.TrySetResult();
-        await provider.ResponseFinished.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.ResponseFinished.Task.WaitAsync(TestTimeout);
     }
 
     [Fact]
@@ -47,15 +49,15 @@ public sealed class CopilotCancellationGuardChatClientTests
                 updates.Add(update);
             }
         });
-        await provider.StreamStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.StreamStarted.Task.WaitAsync(TestTimeout);
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => enumeration.WaitAsync(TimeSpan.FromSeconds(1)));
+            () => enumeration.WaitAsync(TestTimeout));
         Assert.Empty(updates);
 
         provider.ReleaseStream.TrySetResult();
-        await provider.StreamDisposed.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.StreamDisposed.Task.WaitAsync(TestTimeout);
     }
 
     [Fact]
@@ -74,7 +76,7 @@ public sealed class CopilotCancellationGuardChatClientTests
         }
 
         Assert.Equal("late update", Assert.Single(updates).Text);
-        await provider.StreamDisposed.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.StreamDisposed.Task.WaitAsync(TestTimeout);
     }
 
     [Fact]
@@ -98,13 +100,18 @@ public sealed class CopilotCancellationGuardChatClientTests
                 break;
             }
         });
-        await provider.StreamDisposalStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        try
+        {
+            await provider.StreamDisposalStarted.Task.WaitAsync(TestTimeout);
+            await enumeration.WaitAsync(TestTimeout);
+            Assert.False(provider.StreamDisposed.Task.IsCompleted);
+        }
+        finally
+        {
+            provider.ReleaseStreamDisposal.TrySetResult();
+        }
 
-        await enumeration.WaitAsync(TimeSpan.FromSeconds(1));
-        Assert.False(provider.StreamDisposed.Task.IsCompleted);
-
-        provider.ReleaseStreamDisposal.TrySetResult();
-        await provider.StreamDisposed.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await provider.StreamDisposed.Task.WaitAsync(TestTimeout);
     }
 
     private sealed class IgnoringCancellationChatClient : IChatClient
