@@ -62,7 +62,7 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
     }
 
     [Fact]
-    public async Task CompletedExclusiveExploreResultStreamsDirectlyWithoutCallingProvider()
+    public async Task CompletedExclusiveExploreResultStreamsDirectlyWhenDisplayFormatChanges()
     {
         const string callId = "call-completed-explore";
         const string answer =
@@ -74,7 +74,13 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         using var client = new CopilotDelegatedDirectAnswerChatClient(
             provider,
             ExclusiveExploreRequest(),
-            () => [CompletedExploreStep(callId, answer)],
+            () =>
+            [
+                CompletedExploreStep(
+                    callId,
+                    answer,
+                    displayContent: """{"format":"changed","answer_field":"not parsed"}"""),
+            ],
             taskLedgerEnabled: false,
             () => directAnswerCount++);
 
@@ -93,12 +99,14 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
     }
 
     [Theory]
-    [InlineData(true, true, "complete: yes — done.")]
-    [InlineData(false, false, "complete: yes — done.")]
-    [InlineData(false, true, "complete: no — missing evidence.")]
+    [InlineData(true, true, false, "complete: yes — done.")]
+    [InlineData(false, false, false, "complete: yes — done.")]
+    [InlineData(false, true, false, "complete: no — missing evidence.")]
+    [InlineData(false, true, true, "complete: yes — done.")]
     public async Task UnsafeOrIncompleteResultFallsBackToProvider(
         bool taskLedgerEnabled,
         bool successfulEvidence,
+        bool wasTruncated,
         string completionLine)
     {
         const string callId = "call-fallback-explore";
@@ -110,8 +118,33 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         using var client = new CopilotDelegatedDirectAnswerChatClient(
             provider,
             ExclusiveExploreRequest(),
-            () => [CompletedExploreStep(callId, answer, successfulEvidence)],
+            () => [CompletedExploreStep(callId, answer, successfulEvidence, wasTruncated: wasTruncated)],
             taskLedgerEnabled,
+            () => directAnswerCount++);
+
+        var response = await client.GetResponseAsync(
+            [FunctionResultMessage(callId)],
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(0, directAnswerCount);
+        Assert.Equal("provider fallback", response.Text);
+    }
+
+    [Fact]
+    public async Task LegacyFormattedContentWithoutStructuredAnswerFallsBackToProvider()
+    {
+        const string callId = "call-legacy-content";
+        const string answer =
+            "- C:\\workspace\\Coordinator.cs:24-26 — verified bounded evidence.\n"
+            + "complete: yes — done.";
+        using var provider = new RecordingChatClient("provider fallback");
+        var directAnswerCount = 0;
+        using var client = new CopilotDelegatedDirectAnswerChatClient(
+            provider,
+            ExclusiveExploreRequest(),
+            () => [CompletedExploreStep(callId, answer, includeStructuredAnswer: false)],
+            taskLedgerEnabled: false,
             () => directAnswerCount++);
 
         var response = await client.GetResponseAsync(
@@ -174,13 +207,16 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
     private static CopilotAgentStepRecord CompletedExploreStep(
         string callId,
         string answer,
-        bool successfulEvidence = true) => new()
+        bool successfulEvidence = true,
+        string? displayContent = null,
+        bool includeStructuredAnswer = true,
+        bool wasTruncated = false) => new()
     {
         ToolCall = new CopilotToolCall { ToolName = "DelegateExplore" },
         Observation = new CopilotToolObservation
         {
             Success = true,
-            Content =
+            Content = displayContent ??
                 "[Explore subagent result]\n"
                 + "role: explore\n"
                 + "run_id: explore-test\n"
@@ -194,6 +230,15 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                 + "tools_used: ReadLocalFile\n"
                 + "answer:\n"
                 + answer,
+            DelegatedAnswer = includeStructuredAnswer
+                ? new CopilotDelegatedAnswer
+                {
+                    Text = answer,
+                    StopReason = CopilotAgentStopReason.Completed,
+                    HasSuccessfulEvidence = successfulEvidence,
+                    WasTruncated = wasTruncated,
+                }
+                : null,
             DelegatedRunUsage = new CopilotDelegatedRunUsage
             {
                 RoleId = "explore",

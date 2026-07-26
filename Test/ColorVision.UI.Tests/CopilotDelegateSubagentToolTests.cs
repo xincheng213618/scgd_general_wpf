@@ -24,6 +24,11 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        var delegatedAnswer = Assert.IsType<CopilotDelegatedAnswer>(result.DelegatedAnswer);
+        Assert.Equal("Verified finding.", delegatedAnswer.Text);
+        Assert.Equal(CopilotAgentStopReason.Completed, delegatedAnswer.StopReason);
+        Assert.True(delegatedAnswer.HasSuccessfulEvidence);
+        Assert.False(delegatedAnswer.WasTruncated);
     }
 
     [Fact]
@@ -60,6 +65,7 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Partial observation.", result.Content, StringComparison.Ordinal);
         Assert.Contains("evidence only", result.ErrorMessage, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.DelegatedAnswer?.StopReason);
     }
 
     [Fact]

@@ -183,6 +183,17 @@ namespace ColorVision.Copilot
         public bool UsedEstimatedUsage { get; init; }
     }
 
+    public sealed class CopilotDelegatedAnswer
+    {
+        public string Text { get; init; } = string.Empty;
+
+        public CopilotAgentStopReason StopReason { get; init; }
+
+        public bool HasSuccessfulEvidence { get; init; }
+
+        public bool WasTruncated { get; init; }
+    }
+
     public sealed class CopilotToolResult
     {
         public string ToolName { get; init; } = string.Empty;
@@ -210,6 +221,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
 
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
+
+        public CopilotDelegatedAnswer? DelegatedAnswer { get; init; }
     }
 
     public sealed class CopilotLocalFileReadScope
@@ -281,6 +294,8 @@ namespace ColorVision.Copilot
 
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
 
+        public CopilotDelegatedAnswer? DelegatedAnswer { get; init; }
+
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
             return new CopilotToolObservation
@@ -297,6 +312,7 @@ namespace ColorVision.Copilot
                 SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
                 LocalFileReadScopes = result?.LocalFileReadScopes ?? Array.Empty<CopilotLocalFileReadScope>(),
                 DelegatedRunUsage = result?.DelegatedRunUsage,
+                DelegatedAnswer = result?.DelegatedAnswer,
             };
         }
     }

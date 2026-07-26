@@ -942,6 +942,13 @@ namespace ColorVision.Copilot
                     ProviderCalls = result.Budget.ProviderCalls,
                     UsedEstimatedUsage = result.Budget.UsedEstimatedUsage,
                 },
+                DelegatedAnswer = new CopilotDelegatedAnswer
+                {
+                    Text = result.Answer,
+                    StopReason = result.StopReason,
+                    HasSuccessfulEvidence = result.HasSuccessfulEvidence,
+                    WasTruncated = result.WasTruncated,
+                },
             };
         }
 

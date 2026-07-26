@@ -110,29 +110,27 @@ namespace ColorVision.Copilot
                 && step.Observation?.Success == true
                 && step.Observation.DelegatedRunUsage?.StopReason == CopilotAgentStopReason.Completed
                 && string.Equals(step.Execution?.CallId, functionResultCallIds[0], StringComparison.Ordinal)
-                && TryExtractCompletedAnswer(step.Observation.Content, out answer);
+                && TryUseCompletedAnswer(step.Observation.DelegatedAnswer, out answer);
         }
 
-        internal static bool TryExtractCompletedAnswer(string? delegatedResultContent, out string answer)
+        internal static bool TryUseCompletedAnswer(
+            CopilotDelegatedAnswer? delegatedAnswer,
+            out string answer)
         {
             answer = string.Empty;
-            if (string.IsNullOrWhiteSpace(delegatedResultContent))
+            if (delegatedAnswer == null
+                || delegatedAnswer.StopReason != CopilotAgentStopReason.Completed
+                || !delegatedAnswer.HasSuccessfulEvidence
+                || delegatedAnswer.WasTruncated)
+            {
                 return false;
+            }
 
-            var normalized = delegatedResultContent
+            var candidate = (delegatedAnswer.Text ?? string.Empty)
                 .Replace("\r\n", "\n", StringComparison.Ordinal)
-                .Replace('\r', '\n');
-            const string answerMarker = "\nanswer:\n";
-            var answerMarkerIndex = normalized.IndexOf(answerMarker, StringComparison.OrdinalIgnoreCase);
-            if (answerMarkerIndex < 0)
-                return false;
-
-            var metadata = normalized[..answerMarkerIndex];
-            var candidate = normalized[(answerMarkerIndex + answerMarker.Length)..].Trim();
-            if (!metadata.Contains("\nstop_reason: Completed\n", StringComparison.OrdinalIgnoreCase)
-                || !metadata.Contains("\nsuccessful_tool_evidence: true\n", StringComparison.OrdinalIgnoreCase)
-                || !metadata.Contains("\noutput_truncated: false\n", StringComparison.OrdinalIgnoreCase)
-                || candidate.Length == 0
+                .Replace('\r', '\n')
+                .Trim();
+            if (candidate.Length == 0
                 || candidate.Length > MaximumDirectAnswerCharacters
                 || !CopilotSubagentRunner.HasCompleteDeclaration(candidate))
             {
