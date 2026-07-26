@@ -7,12 +7,19 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
     public partial class FlowEditorCanvas : UserControl, IDisposable
     {
+        internal const double PropertyPanelMaxWidth = 420;
+        internal const double PropertyPanelMaxHeight = 520;
+        internal const double PropertyPanelNodeGap = 10;
+
         private bool _forwardingEditCommand;
+        private bool _propertyPanelPositionUpdatePending;
+        private bool _disposed;
         private readonly List<(UIElement Host, CommandBinding Binding)> _editCommandForwarders = [];
 
         public static readonly DependencyProperty ToolbarContentProperty = DependencyProperty.Register(
@@ -25,7 +32,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             nameof(PropertyPanelMargin),
             typeof(Thickness),
             typeof(FlowEditorCanvas),
-            new PropertyMetadata(new Thickness(0, 54, 10, 10)));
+            new PropertyMetadata(new Thickness(0, 54, 10, 10), OnPropertyPanelMarginChanged));
 
         public object? ToolbarContent
         {
@@ -48,9 +55,135 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             InitializeComponent();
             STNodeEditorMain.EnableHistory = true;
             AttachEditCommandRouting(this);
+            SizeChanged += FlowEditorCanvas_SizeChanged;
+            PropertyEditorPanel.IsVisibleChanged += PropertyEditorPanel_IsVisibleChanged;
+            PropertyEditorPanel.SizeChanged += PropertyEditorPanel_SizeChanged;
+            STNodeEditorMain.ActiveChanged += STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.SelectedChanged += STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.CanvasMoved += STNodeEditorMain_CanvasChanged;
+            STNodeEditorMain.CanvasScaled += STNodeEditorMain_CanvasChanged;
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
             ThemeChanged(ThemeManager.Current.CurrentUITheme);
+        }
+
+        private static void OnPropertyPanelMarginChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((FlowEditorCanvas)d).QueuePropertyPanelPositionUpdate();
+        }
+
+        private void FlowEditorCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdatePropertyPanelSizeLimit();
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void PropertyEditorPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (PropertyEditorPanel.IsVisible)
+            {
+                UpdatePropertyPanelSizeLimit();
+                QueuePropertyPanelPositionUpdate();
+            }
+        }
+
+        private void PropertyEditorPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void STNodeEditorMain_SelectionChanged(object? sender, EventArgs e)
+        {
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void STNodeEditorMain_CanvasChanged(object? sender, EventArgs e)
+        {
+            QueuePropertyPanelPositionUpdate();
+        }
+
+        private void UpdatePropertyPanelSizeLimit()
+        {
+            double availableWidth = Math.Max(0, ActualWidth - PropertyPanelMargin.Left - PropertyPanelMargin.Right);
+            double availableHeight = Math.Max(0, ActualHeight - PropertyPanelMargin.Top - PropertyPanelMargin.Bottom);
+            if (availableWidth > 0)
+                PropertyEditorPanel.MaxWidth = Math.Min(PropertyPanelMaxWidth, availableWidth);
+            if (availableHeight > 0)
+                PropertyEditorPanel.MaxHeight = Math.Min(PropertyPanelMaxHeight, availableHeight);
+        }
+
+        private void QueuePropertyPanelPositionUpdate()
+        {
+            if (_disposed || _propertyPanelPositionUpdatePending || PropertyEditorPanel.Visibility != Visibility.Visible)
+                return;
+
+            _propertyPanelPositionUpdatePending = true;
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                _propertyPanelPositionUpdatePending = false;
+                UpdatePropertyPanelPosition();
+            }));
+        }
+
+        private void UpdatePropertyPanelPosition()
+        {
+            STNode? activeNode = STNodeEditorMain.ActiveNode;
+            if (_disposed ||
+                PropertyEditorPanel.Visibility != Visibility.Visible ||
+                activeNode == null ||
+                !activeNode.IsSelected)
+                return;
+
+            System.Drawing.Rectangle nodeRectangle = STNodeEditorMain.CanvasToControl(activeNode.Rectangle);
+            var nodeBounds = new Rect(nodeRectangle.X, nodeRectangle.Y, nodeRectangle.Width, nodeRectangle.Height);
+            var panelSize = new System.Windows.Size(PropertyEditorPanel.ActualWidth, PropertyEditorPanel.ActualHeight);
+            var viewportSize = new System.Windows.Size(ActualWidth, ActualHeight);
+            System.Windows.Point position = CalculatePropertyPanelPosition(
+                nodeBounds,
+                panelSize,
+                viewportSize,
+                PropertyPanelMargin);
+
+            Canvas.SetLeft(PropertyEditorPanel, position.X);
+            Canvas.SetTop(PropertyEditorPanel, position.Y);
+        }
+
+        internal static System.Windows.Point CalculatePropertyPanelPosition(
+            Rect nodeBounds,
+            System.Windows.Size panelSize,
+            System.Windows.Size viewportSize,
+            Thickness safeArea)
+        {
+            double leftBound = Math.Max(0, safeArea.Left);
+            double topBound = Math.Max(0, safeArea.Top);
+            double rightBound = Math.Max(leftBound, viewportSize.Width - Math.Max(0, safeArea.Right));
+            double bottomBound = Math.Max(topBound, viewportSize.Height - Math.Max(0, safeArea.Bottom));
+            double panelWidth = Math.Min(Math.Max(0, panelSize.Width), rightBound - leftBound);
+            double panelHeight = Math.Min(Math.Max(0, panelSize.Height), bottomBound - topBound);
+            double maxLeft = Math.Max(leftBound, rightBound - panelWidth);
+            double maxTop = Math.Max(topBound, bottomBound - panelHeight);
+            double rightCandidate = nodeBounds.Right + PropertyPanelNodeGap;
+            double leftCandidate = nodeBounds.Left - PropertyPanelNodeGap - panelWidth;
+
+            double left;
+            if (rightCandidate <= maxLeft)
+            {
+                left = rightCandidate;
+            }
+            else if (leftCandidate >= leftBound)
+            {
+                left = leftCandidate;
+            }
+            else
+            {
+                double rightSpace = rightBound - nodeBounds.Right;
+                double leftSpace = nodeBounds.Left - leftBound;
+                left = rightSpace >= leftSpace ? maxLeft : leftBound;
+            }
+
+            return new System.Windows.Point(
+                Math.Clamp(left, leftBound, maxLeft),
+                Math.Clamp(nodeBounds.Top, topBound, maxTop));
         }
 
         public void AttachEditCommandRouting(UIElement host)
@@ -197,7 +330,15 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public void Dispose()
         {
+            _disposed = true;
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+            SizeChanged -= FlowEditorCanvas_SizeChanged;
+            PropertyEditorPanel.IsVisibleChanged -= PropertyEditorPanel_IsVisibleChanged;
+            PropertyEditorPanel.SizeChanged -= PropertyEditorPanel_SizeChanged;
+            STNodeEditorMain.ActiveChanged -= STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.SelectedChanged -= STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.CanvasMoved -= STNodeEditorMain_CanvasChanged;
+            STNodeEditorMain.CanvasScaled -= STNodeEditorMain_CanvasChanged;
             foreach ((UIElement host, CommandBinding binding) in _editCommandForwarders)
             {
                 host.CommandBindings.Remove(binding);

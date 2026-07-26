@@ -185,6 +185,59 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void PropertyEditorPosition_PrefersRightSideAndRespectsSafeArea()
+        {
+            var position = FlowEditorCanvas.CalculatePropertyPanelPosition(
+                new System.Windows.Rect(100, 120, 80, 50),
+                new System.Windows.Size(300, 260),
+                new System.Windows.Size(900, 600),
+                new System.Windows.Thickness(0, 54, 10, 20));
+
+            Assert.Equal(190, position.X);
+            Assert.Equal(120, position.Y);
+        }
+
+        [Fact]
+        public void PropertyEditorPosition_FallsBackToLeftAndClampsVertically()
+        {
+            var position = FlowEditorCanvas.CalculatePropertyPanelPosition(
+                new System.Windows.Rect(700, 500, 100, 50),
+                new System.Windows.Size(300, 260),
+                new System.Windows.Size(900, 600),
+                new System.Windows.Thickness(0, 54, 10, 20));
+
+            Assert.Equal(390, position.X);
+            Assert.Equal(320, position.Y);
+        }
+
+        [Fact]
+        public void NodeMovement_HidesEmbeddedPropertyEditor()
+        {
+            RunInSta(() =>
+            {
+                using var editor = new STNodeEditor();
+                var node = new TrackingNode();
+                node.Create();
+                editor.Nodes.Add(node);
+                editor.SetActiveNode(node);
+                var propertyPanel = new System.Windows.Controls.Grid
+                {
+                    Visibility = System.Windows.Visibility.Visible
+                };
+                using var helper = new STNodeEditorHelper(editor)
+                {
+                    UseDockPanel = false,
+                    SignStackPanel = new System.Windows.Controls.StackPanel(),
+                    PropertyEditorPanel = propertyPanel
+                };
+
+                node.Location = new System.Drawing.Point(30, 40);
+
+                Assert.Equal(System.Windows.Visibility.Collapsed, propertyPanel.Visibility);
+            });
+        }
+
+        [Fact]
         public void PropertyEditorRefresh_FromWorkerThread_IsDispatchedToOwner()
         {
             RunInSta(() =>

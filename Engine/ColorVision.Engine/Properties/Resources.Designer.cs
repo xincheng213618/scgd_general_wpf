@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Properties {
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
         }
-
+        
         /// <summary>
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
@@ -1948,6 +1948,105 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 克隆校正模板 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplates {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择要克隆的模板 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesAvailable {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已克隆 {0} 个校正模板；同名模板已跳过 {1} 个。 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesCompleted {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesCompleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 从另一台物理相机复制校正模板并保留原名称，使流程中的模板名称绑定无需重新配置。 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesDescription {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 克隆校正模板失败：{0} 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesFailure {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesFailure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 以下模板未找到完整的同名校正组资源，名称已保留，但使用前需要配置目标相机的校正文件：{0} 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesNeedsConfiguration {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNeedsConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请至少选择一个校正模板。 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesNoSelection {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNoSelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请选择来源物理相机。 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesNoSource {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNoSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 只复制模板名称和选中规则，不复制旧相机的校正文件。目标相机存在同名校正组时会自动映射；否则保留模板名并提示补充校正配置。 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesSafetyNote {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesSafetyNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 来源相机 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesSource {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目标相机 的本地化字符串。
+        /// </summary>
+        public static string CloneCalibrationTemplatesTarget {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesTarget", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>
         public static string Close {
@@ -3568,7 +3667,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("DisplayAlgorithmRecalculate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 显示设置 的本地化字符串。
         /// </summary>
@@ -6376,7 +6475,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("Flow_NodeExecutionDetails", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 节点: 的本地化字符串。
         /// </summary>
@@ -8959,16 +9058,7 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("NoAlgorithmServiceAvailable", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   查找类似 请选择算法服务 的本地化字符串。
-        /// </summary>
-        public static string SelectAlgorithmService {
-            get {
-                return ResourceManager.GetString("SelectAlgorithmService", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   查找类似 三个全为False时执行会报错 的本地化字符串。
         /// </summary>
@@ -11108,6 +11198,15 @@ namespace ColorVision.Engine.Properties {
         public static string SectionParamLimits {
             get {
                 return ResourceManager.GetString("SectionParamLimits", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请选择算法服务 的本地化字符串。
+        /// </summary>
+        public static string SelectAlgorithmService {
+            get {
+                return ResourceManager.GetString("SelectAlgorithmService", resourceCulture);
             }
         }
         
@@ -13878,72 +13977,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowStartNodeNotFound_RunFailed {
             get {
                 return ResourceManager.GetString("WorkflowStartNodeNotFound_RunFailed", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplates {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplates", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesDescription {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesDescription", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesSource {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesSource", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesTarget {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesTarget", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesAvailable {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesAvailable", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesSafetyNote {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesSafetyNote", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesNoSource {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesNoSource", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesNoSelection {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesNoSelection", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesCompleted {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesCompleted", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesNeedsConfiguration {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesNeedsConfiguration", resourceCulture);
-            }
-        }
-
-        public static string CloneCalibrationTemplatesFailure {
-            get {
-                return ResourceManager.GetString("CloneCalibrationTemplatesFailure", resourceCulture);
             }
         }
     }

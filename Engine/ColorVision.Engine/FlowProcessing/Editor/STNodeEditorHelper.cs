@@ -18,6 +18,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.Engine.FlowProcessing.Editor
 {
@@ -36,6 +37,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         /// </summary>
         public bool UseDockPanel { get; set; }
 
+        private bool _hidePropertyEditorUntilNextSelection;
 
         public static STNodeTreeView STNodeTreeView { get 
             {
@@ -53,6 +55,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             STNodeEditor = sTNodeEditor;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
             STNodeEditor.SelectedChanged += STNodeEditorMain_SelectedChanged;
+            STNodeEditor.NodeLocationChanged += STNodeEditor_NodeLocationChanged;
+            STNodeEditor.PreviewMouseLeftButtonDown += STNodeEditor_PreviewMouseLeftButtonDown;
             AddContentMenu();
         }
 
@@ -112,12 +116,41 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
+            _hidePropertyEditorUntilNextSelection = false;
             RefreshActiveNodePropertyPanel();
         }
 
         private void STNodeEditorMain_SelectedChanged(object? sender, EventArgs e)
         {
+            _hidePropertyEditorUntilNextSelection = false;
             RefreshActiveNodePropertyPanel();
+        }
+
+        private void STNodeEditor_NodeLocationChanged(object? sender, EventArgs e)
+        {
+            if (UseDockPanel)
+                return;
+
+            _hidePropertyEditorUntilNextSelection = true;
+            HidePropertyEditor();
+        }
+
+        private void STNodeEditor_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (UseDockPanel || !_hidePropertyEditorUntilNextSelection)
+                return;
+
+            System.Windows.Point mousePosition = e.GetPosition(STNodeEditor);
+            var canvasPosition = STNodeEditor.ControlToCanvas(new System.Drawing.PointF(
+                (float)mousePosition.X,
+                (float)mousePosition.Y));
+            if (STNodeEditor.FindNodeFromPoint(canvasPosition).Node == null)
+                return;
+
+            _hidePropertyEditorUntilNextSelection = false;
+            _ = STNodeEditor.Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(RefreshActiveNodePropertyPanel));
         }
 
         internal static bool ShouldShowPropertyEditor(STNodeEditor nodeEditor)
@@ -158,7 +191,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             signPanel.Children.Clear();
 
             STNode? activeNode = STNodeEditor.ActiveNode;
-            if (!ShouldShowPropertyEditor(STNodeEditor))
+            if (_hidePropertyEditorUntilNextSelection || !ShouldShowPropertyEditor(STNodeEditor))
             {
                 signPanel.Visibility = Visibility.Collapsed;
                 if (UseDockPanel)
@@ -172,14 +205,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return;
             }
 
-            // Show the property editor
             if (UseDockPanel)
             {
                 WorkspaceManager.LayoutManager?.ShowPanel(FlowNodePropertyPanel.PanelId);
-            }
-            else
-            {
-                PropertyEditorPanel.Visibility = Visibility.Visible;
             }
             var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
             if (configurator != null)
@@ -204,6 +232,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 metadataProvider: FlowNodePropertyMetadataProvider.Instance,
                 advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
             signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            if (!UseDockPanel)
+                PropertyEditorPanel.Visibility = signPanel.Visibility;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
 
@@ -693,6 +723,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         {
             STNodeEditor.ActiveChanged -= STNodeEditorMain_ActiveChanged;
             STNodeEditor.SelectedChanged -= STNodeEditorMain_SelectedChanged;
+            STNodeEditor.NodeLocationChanged -= STNodeEditor_NodeLocationChanged;
+            STNodeEditor.PreviewMouseLeftButtonDown -= STNodeEditor_PreviewMouseLeftButtonDown;
             STNodeEditor.ContextMenuOpening -= STNodeEditor_ContextMenuOpening;
             GC.SuppressFinalize(this);
         }

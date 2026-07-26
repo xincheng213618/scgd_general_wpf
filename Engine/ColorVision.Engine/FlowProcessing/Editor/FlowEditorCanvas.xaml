@@ -34,21 +34,22 @@
             </StackPanel>
         </Grid>
 
-        <Grid x:Name="PropertyEditorPanel"
-              Width="360"
-              Margin="{Binding PropertyPanelMargin, RelativeSource={RelativeSource AncestorType={x:Type local:FlowEditorCanvas}}}"
-              HorizontalAlignment="Right"
-              VerticalAlignment="Stretch"
-              Visibility="Collapsed"
-              Opacity="0.9"
-              Panel.ZIndex="30">
-            <Border Background="{DynamicResource GlobalBackground}"
-                    BorderBrush="{DynamicResource GlobalBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="7"
-                    Opacity="0.78"/>
-            <local:FlowNodePropertyPanel x:Name="InlineNodePropertyPanel"
-                                         Background="Transparent"/>
-        </Grid>
+        <Canvas x:Name="PropertyEditorOverlay"
+                ClipToBounds="True"
+                Panel.ZIndex="30">
+            <Grid x:Name="PropertyEditorPanel"
+                  MaxWidth="420"
+                  MaxHeight="520"
+                  Visibility="Collapsed"
+                  Opacity="0.9">
+                <Border Background="{DynamicResource GlobalBackground}"
+                        BorderBrush="{DynamicResource GlobalBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="7"
+                        Opacity="0.78"/>
+                <local:FlowNodePropertyPanel x:Name="InlineNodePropertyPanel"
+                                             Background="Transparent"/>
+            </Grid>
+        </Canvas>
     </Grid>
 </UserControl>
