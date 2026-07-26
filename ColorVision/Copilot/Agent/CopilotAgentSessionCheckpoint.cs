@@ -201,8 +201,7 @@ namespace ColorVision.Copilot
                     || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
                     || message.Content.Length > MaxConversationMemoryContentLength
                     || message.Content.Contains('\0'))
-                || TaskEventJournal == null
-                || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
+                || TaskEventJournal?.IsStructurallyValid() != true)
             {
                 return false;
             }
