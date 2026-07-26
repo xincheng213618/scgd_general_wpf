@@ -32,6 +32,7 @@ namespace ColorVision.Copilot
         private const int MaximumConversationSearchTerms = 8;
         private static readonly TimeSpan ConversationSearchDebounceDelay = TimeSpan.FromMilliseconds(180);
         private static readonly TimeSpan RecentMcpFailureWindow = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan StateSnapshotUiSliceBudget = TimeSpan.FromMilliseconds(4);
         private static readonly HashSet<string> UnsafeAttachmentExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".application", ".bat", ".cmd", ".com", ".cpl", ".exe", ".gadget", ".hta", ".inf", ".ins", ".isp",
@@ -5614,21 +5615,43 @@ namespace ColorVision.Copilot
         {
             var dispatcher = Application.Current?.Dispatcher;
             CopilotChatStateSnapshot snapshot;
-            if (dispatcher == null || dispatcher.CheckAccess())
+            if (dispatcher == null
+                || dispatcher.CheckAccess()
+                || _stateStore is not IIncrementalCopilotChatStateStore incrementalStateStore)
             {
                 snapshot = _stateStore.CaptureSnapshot(_state);
             }
             else
             {
-                var captureOperation = dispatcher.InvokeAsync(
-                    () => _stateStore.CaptureSnapshot(_state),
+                var beginCaptureOperation = dispatcher.InvokeAsync(
+                    () => incrementalStateStore.BeginSnapshot(_state),
                     DispatcherPriority.Background,
                     cancellationToken);
-                snapshot = await captureOperation.Task.ConfigureAwait(false);
+                var capture = await beginCaptureOperation.Task.ConfigureAwait(false);
+                while (!capture.IsComplete)
+                {
+                    var captureSliceOperation = dispatcher.InvokeAsync(
+                        () => CaptureStateSnapshotSlice(capture),
+                        DispatcherPriority.Background,
+                        cancellationToken);
+                    await captureSliceOperation.Task.ConfigureAwait(false);
+                }
+
+                snapshot = capture.Complete();
             }
 
             var serializedState = await Task.Run(() => _stateStore.Serialize(snapshot), cancellationToken).ConfigureAwait(false);
             await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static void CaptureStateSnapshotSlice(CopilotChatStateSnapshotCapture capture)
+        {
+            var startedAt = Stopwatch.GetTimestamp();
+            do
+            {
+                capture.CaptureNextChunk();
+            }
+            while (!capture.IsComplete && Stopwatch.GetElapsedTime(startedAt) < StateSnapshotUiSliceBudget);
         }
 
         private void Application_Exit(object? sender, ExitEventArgs e)

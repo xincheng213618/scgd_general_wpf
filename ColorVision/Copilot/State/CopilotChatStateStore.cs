@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -54,6 +55,90 @@ namespace ColorVision.Copilot
         }
     }
 
+    public sealed class CopilotChatStateSnapshotCapture
+    {
+        private readonly JsonSerializer _serializer;
+        private readonly JObject _document;
+        private readonly JArray _conversationDocuments = new();
+        private readonly JArray? _queuedFollowUpRecoveryDocuments;
+        private readonly CopilotConversationRecord[] _conversations;
+        private readonly CopilotQueuedFollowUpRecoveryRecord[] _queuedFollowUpRecoveries;
+        private int _conversationIndex;
+        private int _queuedFollowUpRecoveryIndex;
+
+        internal CopilotChatStateSnapshotCapture(CopilotChatState state, JsonSerializerSettings serializerSettings)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            ArgumentNullException.ThrowIfNull(serializerSettings);
+
+            state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
+            _serializer = JsonSerializer.Create(serializerSettings);
+            _conversations = state.Conversations?.ToArray() ?? [];
+            _queuedFollowUpRecoveries = state.QueuedFollowUpRecoveries?.ToArray() ?? [];
+            _queuedFollowUpRecoveryDocuments = _queuedFollowUpRecoveries.Length > 0 ? new JArray() : null;
+            _document = new JObject
+            {
+                [nameof(CopilotChatState.SchemaVersion)] = state.SchemaVersion,
+                [nameof(CopilotChatState.Conversations)] = _conversationDocuments,
+            };
+            AddStringProperty(_document, nameof(CopilotChatState.ActiveConversationId), state.ActiveConversationId);
+            AddStringProperty(_document, nameof(CopilotChatState.ActiveProfileId), state.ActiveProfileId);
+            if (_queuedFollowUpRecoveryDocuments != null)
+                _document[nameof(CopilotChatState.QueuedFollowUpRecoveries)] = _queuedFollowUpRecoveryDocuments;
+        }
+
+        public bool IsComplete =>
+            _conversationIndex >= _conversations.Length
+            && _queuedFollowUpRecoveryIndex >= _queuedFollowUpRecoveries.Length;
+
+        public bool CaptureNextChunk()
+        {
+            if (_conversationIndex < _conversations.Length)
+            {
+                AddObject(_conversationDocuments, _conversations[_conversationIndex++]);
+                return true;
+            }
+
+            if (_queuedFollowUpRecoveryIndex < _queuedFollowUpRecoveries.Length)
+            {
+                AddObject(_queuedFollowUpRecoveryDocuments!, _queuedFollowUpRecoveries[_queuedFollowUpRecoveryIndex++]);
+                return true;
+            }
+
+            return false;
+        }
+
+        public CopilotChatStateSnapshot Complete()
+        {
+            if (!IsComplete)
+                throw new InvalidOperationException("Copilot state snapshot capture is incomplete.");
+
+            return new CopilotChatStateSnapshot(_document);
+        }
+
+        private void AddObject(JArray target, object? value)
+        {
+            if (value == null)
+            {
+                target.Add(JValue.CreateNull());
+                return;
+            }
+
+            var builder = new StringBuilder();
+            using var stringWriter = new StringWriter(builder, CultureInfo.InvariantCulture);
+            using var jsonWriter = new JsonTextWriter(stringWriter);
+            _serializer.Serialize(jsonWriter, value);
+            jsonWriter.Flush();
+            target.Add(new JRaw(builder.ToString()));
+        }
+
+        private static void AddStringProperty(JObject document, string propertyName, string? value)
+        {
+            if (value != null)
+                document[propertyName] = value;
+        }
+    }
+
     public interface ICopilotChatStateStore
     {
         string AttachmentDirectoryPath { get; }
@@ -73,7 +158,12 @@ namespace ColorVision.Copilot
         int CleanupOrphanedAttachments(CopilotChatState state);
     }
 
-    public sealed class CopilotChatStateStore : ICopilotChatStateStore
+    public interface IIncrementalCopilotChatStateStore : ICopilotChatStateStore
+    {
+        CopilotChatStateSnapshotCapture BeginSnapshot(CopilotChatState state);
+    }
+
+    public sealed class CopilotChatStateStore : IIncrementalCopilotChatStateStore
     {
         private const long MaximumStateFileBytes = 64L * 1024 * 1024;
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
@@ -190,10 +280,17 @@ namespace ColorVision.Copilot
 
         public CopilotChatStateSnapshot CaptureSnapshot(CopilotChatState state)
         {
-            ArgumentNullException.ThrowIfNull(state);
-            state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
-            var serializer = JsonSerializer.Create(SerializerSettings);
-            return new CopilotChatStateSnapshot(JObject.FromObject(state, serializer));
+            var capture = BeginSnapshot(state);
+            while (capture.CaptureNextChunk())
+            {
+            }
+
+            return capture.Complete();
+        }
+
+        public CopilotChatStateSnapshotCapture BeginSnapshot(CopilotChatState state)
+        {
+            return new CopilotChatStateSnapshotCapture(state, SerializerSettings);
         }
 
         public string Serialize(CopilotChatStateSnapshot snapshot)
