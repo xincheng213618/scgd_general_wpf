@@ -1221,29 +1221,17 @@ namespace ColorVision.Copilot
             get
             {
                 var server = CopilotMcpServer.Instance;
-                var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
-                var status = string.IsNullOrWhiteSpace(server.LastStatusMessage)
-                    ? "No MCP status message is available."
-                    : CopilotMcpAuditLogger.RedactText(server.LastStatusMessage);
-
                 var entries = CopilotMcpAuditLogger.GetRecentEntries(8);
-                var failureCount = entries.Count(entry => !entry.Success);
-                var builder = new StringBuilder();
-                builder.AppendLine($"Endpoint: {_config.McpEndpoint}");
-                builder.AppendLine($"Service: {BuildMcpStatusSummary()}");
-                builder.AppendLine($"Pending actions: {pendingCount}");
-                builder.AppendLine($"Recent calls: {entries.Count}; failures: {failureCount}");
-
-                var lastEntry = entries.Count > 0 ? entries[^1] : null;
-                if (lastEntry != null)
-                    builder.AppendLine($"Last call: {FormatMcpAuditEntryForTooltip(lastEntry)}");
-
-                var lastError = CopilotMcpAuditLogger.GetLastError();
-                if (lastError != null)
-                    builder.AppendLine($"Last error: {FormatMcpAuditEntryForTooltip(lastError)}");
-
-                builder.Append(status);
-                return builder.ToString();
+                return CopilotMcpDiagnostics.Format(new CopilotMcpDiagnosticSnapshot
+                {
+                    Endpoint = _config.McpEndpoint,
+                    Enabled = _config.McpEnabled,
+                    Running = server.IsRunning,
+                    PendingActions = CopilotMcpConfirmationStore.Instance.PendingCount,
+                    RecentEntries = entries,
+                    LastError = CopilotMcpAuditLogger.GetLastError(),
+                    StatusMessage = server.LastStatusMessage,
+                });
             }
         }
 
@@ -2389,30 +2377,6 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(McpStatusLabel));
             OnPropertyChanged(nameof(McpStatusToolTip));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
-        }
-
-        private string BuildMcpStatusSummary()
-        {
-            if (!_config.McpEnabled)
-                return "Disabled";
-
-            if (CopilotMcpServer.Instance.IsRunning)
-                return "Running";
-
-            return "Stopped";
-        }
-
-        private static string FormatMcpAuditEntryForTooltip(CopilotMcpAuditEntry entry)
-        {
-            var result = entry.Success ? "OK" : "failed";
-            var message = string.IsNullOrWhiteSpace(entry.ErrorMessage)
-                ? string.Empty
-                : " - " + CopilotMcpAuditLogger.RedactText(entry.ErrorMessage);
-            var caller = string.IsNullOrWhiteSpace(entry.CallerSource)
-                ? string.Empty
-                : $" caller={entry.CallerSource}";
-
-            return $"{entry.TimestampUtc.ToLocalTime():HH:mm:ss} {entry.ToolName} {result} {entry.DurationMs}ms{caller}{message}";
         }
 
         private void RefreshPendingActions()

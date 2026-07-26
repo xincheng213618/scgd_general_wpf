@@ -160,12 +160,12 @@ namespace ColorVision.Copilot
             IsTracked = usage != null;
             if (usage == null)
             {
-                UsageSummary = "No local usage evidence yet; the override applies when this skill is discovered.";
+                UsageSummary = "尚无本地使用证据；发现该 Skill 时仍会应用此覆盖设置。";
                 return;
             }
 
-            UsageSummary = $"Loaded {usage.LoadedRuns}/{usage.SelectedRuns} selected run(s) ({usage.LoadRate:P0}); consecutive misses {usage.ConsecutiveSelectedWithoutLoad}/{CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold}"
-                + (isHistoricalExplicitOnly ? " · Auto currently resolves to explicit-only" : string.Empty);
+            UsageSummary = $"已加载 {usage.LoadedRuns}/{usage.SelectedRuns} 次选中运行（{usage.LoadRate:P0}）；连续未加载 {usage.ConsecutiveSelectedWithoutLoad}/{CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold}"
+                + (isHistoricalExplicitOnly ? " · 自动策略当前解析为仅显式调用" : string.Empty);
         }
     }
 
@@ -2236,14 +2236,14 @@ namespace ColorVision.Copilot
         private void OnAgentSkillSettingChanged()
         {
             RefreshAgentSkillSummaryText();
-            MarkSettingsPending("Agent Skill policy changed. Click Apply or Save to update the model Skill catalog.");
+            MarkSettingsPending("Agent Skill 策略已更改；单击“应用”或“保存”后更新模型 Skill 目录。");
         }
 
         private void RefreshAgentSkillSummaryText()
         {
             var snapshot = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             var overrideCount = AgentSkillSettings.Count(setting => setting.State != CopilotAgentSkillOverrideState.Auto);
-            AgentSkillsSummaryText = CopilotAgentSkillDiagnostics.FormatSummary(snapshot) + $" {overrideCount} manual override(s).";
+            AgentSkillsSummaryText = CopilotAgentSkillDiagnostics.FormatSummary(snapshot) + $" 手动覆盖 {overrideCount} 个。";
         }
 
         private void RefreshAgentSkillDiagnostics()
@@ -2257,7 +2257,7 @@ namespace ColorVision.Copilot
             }
             catch (Exception ex)
             {
-                AgentSkillsSummaryText = "Skill usage history is unavailable.";
+                AgentSkillsSummaryText = "Skill 使用历史当前不可用。";
                 AgentSkillsDiagnosticsText = SanitizeError(ex.Message);
             }
         }

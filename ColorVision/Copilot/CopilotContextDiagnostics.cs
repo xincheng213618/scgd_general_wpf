@@ -243,14 +243,12 @@ namespace ColorVision.Copilot
         {
             try
             {
-                var normalized = Path.GetFullPath(path)
-                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                var name = Path.GetFileName(normalized);
-                return string.IsNullOrWhiteSpace(name) ? "project root" : name;
+                var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+                return string.IsNullOrWhiteSpace(normalized) ? path.Trim() : normalized;
             }
             catch
             {
-                return "project root";
+                return path.Trim();
             }
         }
 
