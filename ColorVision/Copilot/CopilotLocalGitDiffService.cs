@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed record CopilotLocalGitDiffResult(bool Success, string Report);
+    internal sealed record CopilotLocalGitDiffResult(bool Success, string Report);
 
-    public sealed class CopilotLocalGitDiffService
+    internal sealed class CopilotLocalGitDiffService
     {
         private const string ResultJsonMarker = "result_json: ";
         private readonly Func<CopilotAgentRequest, CopilotAgentToolInput, CancellationToken, Task<CopilotToolResult>> _inspectStatus;

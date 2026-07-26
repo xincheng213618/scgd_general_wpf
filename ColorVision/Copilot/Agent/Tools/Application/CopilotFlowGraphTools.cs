@@ -92,7 +92,7 @@ namespace ColorVision.Copilot
             ExecutionTimeout = TimeSpan.FromSeconds(30),
             AuditArgumentMode = CopilotToolAuditArgumentMode.NamesOnly,
             EvidenceMode = CopilotToolEvidenceMode.None,
-            AllowsTemporaryFullAccess = true,
+            AllowsTemporaryFullAccess = false,
         };
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);

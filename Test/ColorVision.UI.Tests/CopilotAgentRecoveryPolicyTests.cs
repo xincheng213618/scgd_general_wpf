@@ -57,6 +57,52 @@ public sealed class CopilotAgentRecoveryPolicyTests
     }
 
     [Fact]
+    public void ProviderFailureWithIncompleteTasksKeepsResumeEntryPoint()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var ledger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items =
+            [
+                new CopilotAgentTaskItem
+                {
+                    Id = 1,
+                    Title = "继续检查工作区",
+                    IsComplete = false,
+                },
+            ],
+        };
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordTaskLedger(ledger, "provider-failure");
+        journal.RecordStop(CopilotAgentStopReason.ProviderFailure);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Provider disconnected")
+        {
+            AgentStopReason = CopilotAgentStopReason.ProviderFailure,
+            AgentTaskLedger = ledger,
+        };
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot);
+
+        Assert.True(message.HasIncompleteAgentTasks);
+        Assert.True(message.HasRecoverableAgentTasks);
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Resume, decision.Request!.Mode);
+        Assert.Equal("继续任务", decision.ActionLabel);
+    }
+
+    [Fact]
     public void ReplanRecoveryRetainsOriginalTaskIntentForToolSelection()
     {
         const string originalTask = "只读审计 C:\\workspace\\ColorVision\\Copilot，列出至少 30 条可验证的问题；不要修改任何文件。";

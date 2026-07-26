@@ -13,7 +13,7 @@ using ColorVision.Copilot.Mcp;
 
 namespace ColorVision.Copilot
 {
-    public sealed record CopilotWorkspaceValidationCommand(
+    internal sealed record CopilotWorkspaceValidationCommand(
         string ExecutablePath,
         IReadOnlyList<string> Arguments,
         string WorkingDirectory,
@@ -24,21 +24,21 @@ namespace ColorVision.Copilot
         public Action<string>? StandardErrorReceived { get; init; }
     }
 
-    public sealed record CopilotWorkspaceValidationProcessResult(
+    internal sealed record CopilotWorkspaceValidationProcessResult(
         int ExitCode,
         bool TimedOut,
         string StandardOutput,
         string StandardError,
         TimeSpan Duration);
 
-    public interface ICopilotWorkspaceValidationRunner
+    internal interface ICopilotWorkspaceValidationRunner
     {
         Task<CopilotWorkspaceValidationProcessResult> RunAsync(
             CopilotWorkspaceValidationCommand command,
             CancellationToken cancellationToken);
     }
 
-    public sealed class CopilotWorkspaceValidationService
+    internal sealed class CopilotWorkspaceValidationService
     {
         internal const string ValidationFailedFailureCode = "workspace_validation_failed";
         internal const string ValidationTimedOutFailureCode = "workspace_validation_timed_out";
@@ -414,7 +414,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotWorkspaceValidationProcessRunner : ICopilotWorkspaceValidationRunner
+    internal sealed class CopilotWorkspaceValidationProcessRunner : ICopilotWorkspaceValidationRunner
     {
         private const int MaxStreamCharacters = 32_768;
 

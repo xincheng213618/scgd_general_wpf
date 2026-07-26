@@ -1,5 +1,10 @@
 using ColorVision.Copilot.Mcp;
 using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -90,6 +95,75 @@ namespace ColorVision.Copilot
             Task.FromResult(CopilotFrameworkApprovalDecision.PolicyDenied("The approval handle was not initialized."));
     }
 
+    internal static class CopilotAgentToolInputExactBinding
+    {
+        public static string Create(CopilotAgentToolInput? input)
+        {
+            input ??= CopilotAgentToolInput.Empty;
+            var arguments = JsonSerializer.SerializeToElement(input.Arguments);
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("arguments");
+                WriteCanonicalJsonElement(writer, arguments);
+                writer.WriteString("cursor", input.Cursor ?? string.Empty);
+                WriteNullableInt(writer, "endLine", input.EndLine);
+                writer.WriteString("path", input.Path ?? string.Empty);
+                writer.WriteString("query", input.Query ?? string.Empty);
+                WriteNullableInt(writer, "startColumn", input.StartColumn);
+                WriteNullableInt(writer, "startLine", input.StartLine);
+                writer.WriteEndObject();
+            }
+
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        public static string CreateExecutionSignature(string? toolName, CopilotAgentToolInput? input)
+        {
+            var normalizedToolName = JsonSerializer.Serialize(toolName?.Trim() ?? string.Empty);
+            var bytes = Encoding.UTF8.GetBytes(normalizedToolName + Create(input));
+            return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        }
+
+        private static void WriteNullableInt(Utf8JsonWriter writer, string propertyName, int? value)
+        {
+            writer.WritePropertyName(propertyName);
+            if (value.HasValue)
+                writer.WriteNumberValue(value.Value);
+            else
+                writer.WriteNullValue();
+        }
+
+        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
+        {
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    writer.WriteStartObject();
+                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
+                    {
+                        writer.WritePropertyName(property.Name);
+                        WriteCanonicalJsonElement(writer, property.Value);
+                    }
+                    writer.WriteEndObject();
+                    return;
+                case JsonValueKind.Array:
+                    writer.WriteStartArray();
+                    foreach (var item in value.EnumerateArray())
+                        WriteCanonicalJsonElement(writer, item);
+                    writer.WriteEndArray();
+                    return;
+                case JsonValueKind.Undefined:
+                    writer.WriteNullValue();
+                    return;
+                default:
+                    value.WriteTo(writer);
+                    return;
+            }
+        }
+    }
+
     internal sealed class CopilotFrameworkApprovalCoordinator
     {
         private readonly CopilotMcpConfirmationStore _confirmationStore;
@@ -117,6 +191,7 @@ namespace ColorVision.Copilot
 
             var completion = new TaskCompletionSource<CopilotFrameworkApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
             var argumentsSummary = CopilotToolApprovalArgumentFormatter.Create(input);
+            var exactArgumentsBinding = CopilotAgentToolInputExactBinding.Create(input);
             var presentation = tool switch
             {
                 ICopilotFrameworkContextualApprovalPresentation contextualPresenter => contextualPresenter.CreateApprovalPresentation(request, input),
@@ -159,12 +234,14 @@ namespace ColorVision.Copilot
                     presentation.Description,
                     tool.Name,
                     argumentsSummary,
+                    exactArgumentsBinding,
                     callId,
                     CopilotConfirmationRequestContext.ForAgent(
                         request,
                         presentation,
                         "in-app-agent-framework"),
-                    createdAction => action = createdAction);
+                    createdAction => action = createdAction,
+                    reviewDetails: presentation.ReviewDetails);
 
                 if (cancellationToken.IsCancellationRequested)
                 {

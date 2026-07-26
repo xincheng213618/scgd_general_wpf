@@ -20,7 +20,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpToolDispatcher :
+    internal sealed class CopilotMcpToolDispatcher :
         ICopilotApplicationCapabilityInvoker,
         ICopilotApprovedApplicationCapabilityInvoker
     {
@@ -98,7 +98,6 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["max_entries"] = IntegerProperty("Maximum audit entries to return.", 1, 200),
                     ["tool"] = StringProperty("Optional tool name filter."),
-                    ["action_id"] = StringProperty("Optional confirmable action id filter."),
                     ["failed_only"] = BooleanProperty("When true, return only failed entries."),
                 }), "audit", "read-only", "Call get_audit_log with { \"max_entries\": 20, \"failed_only\": true }."),
                 Tool("get_audit_summary", "Return a compact MCP audit summary with recent counts, last failure, callers, and pending approvals. Optional argument: max_entries.", Schema(new Dictionary<string, object>
@@ -242,12 +241,13 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["name"] = StringProperty("Optional new flow name."),
                 }), "app-control", "confirmation-required", "Call create_flow with { \"name\": \"CalibrationFlow\" }, then wait for approval in ColorVision."),
-                Tool("confirm_action", "Execute a previously approved confirmation-required action. Required arguments: action_id, tool_name, arguments_summary.", Schema(new Dictionary<string, object>
+                Tool("confirm_action", "Execute a previously approved confirmation-required action. Required arguments: action_id, tool_name, arguments_digest.", Schema(new Dictionary<string, object>
                 {
                     ["action_id"] = StringProperty("Confirmable action id returned by a previous tool call."),
                     ["tool_name"] = StringProperty("Original tool name for the confirmable action."),
-                    ["arguments_summary"] = StringProperty("Original redacted arguments_summary returned with the action."),
-                }, "action_id", "tool_name", "arguments_summary"), "app-control", "confirmation-required", "Call confirm_action only after the user approves the action in ColorVision."),
+                    ["arguments_digest"] = StringProperty("Opaque SHA-256 arguments_digest returned with the action. Copy it exactly; it binds approval to the complete original arguments."),
+                    ["arguments_summary"] = StringProperty("Optional redacted display summary. It is not used to authorize execution."),
+                }, "action_id", "tool_name", "arguments_digest"), "app-control", "confirmation-required", "Call confirm_action only after the user approves the action in ColorVision, using the exact returned arguments_digest."),
                 Tool("preview_template_patch", "Preview a proposed template JSON patch without saving it. Required arguments: template_identifier, proposed_changes. Optional: current_json.", Schema(new Dictionary<string, object>
                 {
                     ["template_identifier"] = StringProperty("Template name, id, key, or editor identifier."),
@@ -422,12 +422,12 @@ namespace ColorVision.Copilot.Mcp
             return true;
         }
 
-        public Task<CopilotMcpToolCallResult> CallAsync(
+        internal Task<CopilotMcpToolCallResult> CallAsync(
             string toolName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CancellationToken cancellationToken)
         {
-            return CallCoreAsync(toolName, arguments, cancellationToken, "in-process-external");
+            return CallCoreAsync(toolName, arguments, "in-process-external", cancellationToken);
         }
 
         internal Task<CopilotMcpToolCallResult> CallExternalAsync(
@@ -436,14 +436,14 @@ namespace ColorVision.Copilot.Mcp
             string callerSource,
             CancellationToken cancellationToken)
         {
-            return CallCoreAsync(toolName, arguments, cancellationToken, callerSource);
+            return CallCoreAsync(toolName, arguments, callerSource, cancellationToken);
         }
 
         private async Task<CopilotMcpToolCallResult> CallCoreAsync(
             string toolName,
             IReadOnlyDictionary<string, JsonElement>? arguments,
-            CancellationToken cancellationToken,
-            string callerSource)
+            string callerSource,
+            CancellationToken cancellationToken)
         {
             var normalizedToolName = NormalizeToolName(toolName);
             var stopwatch = Stopwatch.StartNew();
@@ -479,7 +479,7 @@ namespace ColorVision.Copilot.Mcp
                 CopilotApplicationCapabilityCaller.InAppAgent => InAppAgentCallerSource,
                 _ => throw new ArgumentOutOfRangeException(nameof(caller)),
             };
-            var result = await CallCoreAsync(capabilityName, arguments, cancellationToken, callerSource);
+            var result = await CallCoreAsync(capabilityName, arguments, callerSource, cancellationToken);
             return ToApplicationCapabilityResult(result);
         }
 
@@ -507,8 +507,8 @@ namespace ColorVision.Copilot.Mcp
             var result = await CallCoreAsync(
                 capabilityName,
                 arguments,
-                cancellationToken,
-                InAppAgentFrameworkApprovedCallerSource);
+                InAppAgentFrameworkApprovedCallerSource,
+                cancellationToken);
             return ToApplicationCapabilityResult(result);
         }
 
@@ -637,11 +637,9 @@ namespace ColorVision.Copilot.Mcp
         {
             var maxEntries = Math.Clamp(GetInt(arguments, "max_entries") ?? MaxAuditEntries, 1, 200);
             var toolFilter = NormalizeToolName(GetString(arguments, "tool"));
-            var actionIdFilter = GetString(arguments, "action_id").Trim();
             var failedOnly = GetBool(arguments, "failed_only") ?? false;
             var entries = CopilotMcpAuditLogger.GetRecentEntries(200)
                 .Where(entry => string.IsNullOrWhiteSpace(toolFilter) || string.Equals(entry.ToolName, toolFilter, StringComparison.OrdinalIgnoreCase))
-                .Where(entry => string.IsNullOrWhiteSpace(actionIdFilter) || string.Equals(entry.ActionId, actionIdFilter, StringComparison.OrdinalIgnoreCase))
                 .Where(entry => !failedOnly || !entry.Success)
                 .TakeLast(maxEntries)
                 .ToArray();
@@ -715,7 +713,7 @@ namespace ColorVision.Copilot.Mcp
             {
                 foreach (var action in pendingActions.Take(8))
                 {
-                    builder.AppendLine($"- action_id={action.ActionId}; tool={action.ToolName}; risk={action.RiskLevel}; status={action.StatusLabel}; expires_at={action.ExpiresAt:O}; title={action.Title}");
+                    builder.AppendLine($"- tool={action.ToolName}; risk={action.RiskLevel}; status={action.StatusLabel}; expires_at={action.ExpiresAt:O}; title={action.Title}");
                 }
 
                 if (pendingActions.Count > 8)
@@ -1545,7 +1543,7 @@ namespace ColorVision.Copilot.Mcp
         {
             var actionId = GetString(arguments, "action_id");
             var toolName = NormalizeToolName(GetString(arguments, "tool_name"));
-            var argumentsSummary = GetString(arguments, "arguments_summary");
+            var argumentsDigest = GetString(arguments, "arguments_digest");
 
             if (string.IsNullOrWhiteSpace(actionId))
                 return CopilotMcpToolCallResult.Fail("missing_action_id", "The confirm_action tool requires action_id.");
@@ -1553,13 +1551,13 @@ namespace ColorVision.Copilot.Mcp
             if (string.IsNullOrWhiteSpace(toolName))
                 return CopilotMcpToolCallResult.Fail("missing_tool_name", "The confirm_action tool requires tool_name.");
 
-            if (string.IsNullOrWhiteSpace(argumentsSummary))
-                return CopilotMcpToolCallResult.Fail("missing_arguments_summary", "The confirm_action tool requires the original arguments_summary.");
+            if (string.IsNullOrWhiteSpace(argumentsDigest))
+                return CopilotMcpToolCallResult.Fail("missing_arguments_digest", "The confirm_action tool requires the exact arguments_digest returned with the action.");
 
             return await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                 actionId,
                 toolName,
-                argumentsSummary,
+                argumentsDigest,
                 callerSource,
                 GetWorkspaceSnapshot().SolutionDirectoryPath,
                 cancellationToken);
@@ -1901,6 +1899,7 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Fail("sensitive_arguments_not_allowed", "ColorVision MCP refuses to create confirmable actions that contain token, api key, password, authorization, or bearer secret values.");
 
             var argumentsSummary = BuildArgumentSummary(arguments);
+            var exactArgumentsBinding = BuildExactArgumentBinding(arguments);
             var normalizedToolName = NormalizeToolName(toolName);
             var requestContext = CreateConfirmationRequestContext(
                 normalizedToolName,
@@ -1915,7 +1914,8 @@ namespace ColorVision.Copilot.Mcp
                 argumentsSummary,
                 executor,
                 executeOnApproval,
-                requestContext: requestContext);
+                requestContext: requestContext,
+                exactArgumentsBinding: exactArgumentsBinding);
 
             var builder = new StringBuilder();
             builder.AppendLine("confirmation_required");
@@ -1926,6 +1926,7 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"risk_level: {action.RiskLevel}");
             builder.AppendLine($"tool_name: {action.ToolName}");
             builder.AppendLine($"arguments_summary: {action.ArgumentsSummary}");
+            builder.AppendLine($"arguments_digest: {action.ArgumentsDigest}");
             builder.AppendLine($"created_at: {action.CreatedAt:O}");
             builder.AppendLine($"expires_at: {action.ExpiresAt:O}");
             builder.AppendLine(executeOnApproval
@@ -3126,7 +3127,7 @@ namespace ColorVision.Copilot.Mcp
                 builder.AppendLine();
                 builder.AppendLine($"- Timestamp UTC: {entry.TimestampUtc:O}");
                 builder.AppendLine($"  Tool: {EmptyLabel(entry.ToolName)}");
-                builder.AppendLine($"  Action id: {EmptyLabel(entry.ActionId)}");
+                builder.AppendLine($"  Approval event: {!string.IsNullOrWhiteSpace(entry.ActionId)}");
                 builder.AppendLine($"  Arguments: {EmptyLabel(entry.ArgumentSummary)}");
                 builder.AppendLine($"  Success: {entry.Success}");
                 builder.AppendLine($"  Duration ms: {entry.DurationMs}");
@@ -3146,10 +3147,10 @@ namespace ColorVision.Copilot.Mcp
             var error = entry.Success || string.IsNullOrWhiteSpace(entry.ErrorMessage)
                 ? string.Empty
                 : $"; error={entry.ErrorMessage}";
-            var actionId = string.IsNullOrWhiteSpace(entry.ActionId)
+            var approvalEvent = string.IsNullOrWhiteSpace(entry.ActionId)
                 ? string.Empty
-                : $"; action_id={entry.ActionId}";
-            return $"{entry.TimestampUtc:O}; tool={EmptyLabel(entry.ToolName)}; result={result}; duration_ms={entry.DurationMs}; caller={EmptyLabel(entry.CallerSource)}{actionId}{error}";
+                : "; approval_event=true";
+            return $"{entry.TimestampUtc:O}; tool={EmptyLabel(entry.ToolName)}; result={result}; duration_ms={entry.DurationMs}; caller={EmptyLabel(entry.CallerSource)}{approvalEvent}{error}";
         }
 
         private static bool IsRealFailureAuditEntry(CopilotMcpAuditEntry entry)
@@ -3186,6 +3187,54 @@ namespace ColorVision.Copilot.Mcp
                 return "{}";
 
             return string.Join(", ", arguments.Select(pair => $"{pair.Key}={TrimLong(CopilotMcpAuditLogger.RedactArgument(pair.Key, pair.Value.ToString()), 160)}"));
+        }
+
+        private static string BuildExactArgumentBinding(IReadOnlyDictionary<string, JsonElement>? arguments)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
+            {
+                writer.WriteStartObject();
+                if (arguments != null)
+                {
+                    foreach (var pair in arguments.OrderBy(item => item.Key, StringComparer.Ordinal))
+                    {
+                        writer.WritePropertyName(pair.Key);
+                        WriteCanonicalJsonElement(writer, pair.Value);
+                    }
+                }
+                writer.WriteEndObject();
+            }
+
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
+        {
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    writer.WriteStartObject();
+                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
+                    {
+                        writer.WritePropertyName(property.Name);
+                        WriteCanonicalJsonElement(writer, property.Value);
+                    }
+                    writer.WriteEndObject();
+                    return;
+                case JsonValueKind.Array:
+                    writer.WriteStartArray();
+                    foreach (var item in value.EnumerateArray())
+                        WriteCanonicalJsonElement(writer, item);
+                    writer.WriteEndArray();
+                    return;
+                case JsonValueKind.Undefined:
+                    writer.WriteNullValue();
+                    return;
+                default:
+                    value.WriteTo(writer);
+                    return;
+            }
         }
 
         private static string GetString(IReadOnlyDictionary<string, JsonElement>? arguments, params string[] names)

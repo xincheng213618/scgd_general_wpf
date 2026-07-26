@@ -37,7 +37,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotInspectGitDiffTool(CopilotGitDiffInspectionService service)
+        internal CopilotInspectGitDiffTool(CopilotGitDiffInspectionService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }

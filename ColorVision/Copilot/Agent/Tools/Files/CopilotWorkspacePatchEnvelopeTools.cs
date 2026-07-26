@@ -75,7 +75,7 @@ namespace ColorVision.Copilot
     {
         private readonly CopilotWorkspacePatchStore _store;
 
-        public CopilotPreviewWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
+        internal CopilotPreviewWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
         }
@@ -106,7 +106,7 @@ namespace ColorVision.Copilot
     {
         private readonly CopilotWorkspacePatchStore _store;
 
-        public CopilotApplyWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
+        internal CopilotApplyWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
         }
@@ -157,7 +157,7 @@ namespace ColorVision.Copilot
     {
         private readonly CopilotWorkspacePatchStore _store;
 
-        public CopilotRollbackWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
+        internal CopilotRollbackWorkspacePatchEnvelopeTool(CopilotWorkspacePatchStore store)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
         }

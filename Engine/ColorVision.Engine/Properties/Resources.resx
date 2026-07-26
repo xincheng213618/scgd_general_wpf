@@ -1039,4 +1039,37 @@
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>节点执行详情</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>克隆校正模板</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>从另一台物理相机复制校正模板并保留原名称，使流程中的模板名称绑定无需重新配置。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>来源相机</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>目标相机</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>选择要克隆的模板</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>只复制模板名称和选中规则，不复制旧相机的校正文件。目标相机存在同名校正组时会自动映射；否则保留模板名并提示补充校正配置。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>请选择来源物理相机。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>请至少选择一个校正模板。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>已克隆 {0} 个校正模板；同名模板已跳过 {1} 个。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>以下模板未找到完整的同名校正组资源，名称已保留，但使用前需要配置目标相机的校正文件：{0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>克隆校正模板失败：{0}</value>
+  </data>
 </root>

@@ -48,7 +48,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | 8 | `suggest_template_patch` / `preview_template_patch` | 生成模板修改建议和预览 |
 | 9 | `apply_template_patch` + 用户批准 + `confirm_action` | 只对已预览、已批准、参数匹配的模板 patch 生效 |
 
-工具返回 `confirmation-required` 时，客户端应把 `action_id` 和 `arguments_summary` 交给用户确认；用户在 ColorVision 待确认区批准后再调用 `confirm_action`。
+工具返回 `confirmation-required` 时，客户端应把 `action_id`、`tool_name`、用于展示的 `arguments_summary` 和绑定完整规范化原始参数的 `arguments_digest` 交给用户确认。用户在 ColorVision 待确认区批准后，客户端必须原样提交 `action_id`、`tool_name` 与 `arguments_digest` 调用 `confirm_action`；摘要不会作为执行授权。
 
 ## 工具和资源
 
@@ -73,7 +73,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 
 明确不支持设备控制、流程启动/停止/重跑、任意 shell/cmd/PowerShell/batch/Python 或进程执行、文件删除、任意路径读取、配置静默修改、二进制图片通过上下文快照上传。
 
-文件工具只允许读取规范化后的 ColorVision 工作区根内文本文件。确认动作会记录 `action_id`、工具名、风险、过期时间和脱敏参数摘要；token、密码、API key、Authorization、bearer secret 等敏感值不会进入待确认动作。
+文件工具只允许读取规范化后的 ColorVision 工作区根内文本文件。确认动作会在本地记录 `action_id`、工具名、风险、过期时间、脱敏参数摘要和完整参数的 SHA-256 指纹；执行时使用固定时间比较核对该指纹。通用 MCP 审计资源只标记是否为审批事件，不返回可复用的 `action_id` 或参数指纹；客户端只能从自己创建动作的原始响应取得确认载荷。token、密码、API key、Authorization、bearer secret 等敏感值不会进入待确认动作。
 
 ## 排查
 

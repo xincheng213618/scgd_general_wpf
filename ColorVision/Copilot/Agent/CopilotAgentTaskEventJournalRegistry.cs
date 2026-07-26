@@ -2,7 +2,7 @@ using System;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotAgentTaskEventJournalContext
+    internal sealed class CopilotAgentTaskEventJournalContext
     {
         public string ConversationId { get; init; } = string.Empty;
 
@@ -20,7 +20,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public static class CopilotAgentTaskEventJournalRegistry
+    internal static class CopilotAgentTaskEventJournalRegistry
     {
         private static readonly object SyncRoot = new();
         private static CopilotAgentTaskEventJournalContext? _current;

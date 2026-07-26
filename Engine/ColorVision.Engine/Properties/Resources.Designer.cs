@@ -13880,5 +13880,71 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowStartNodeNotFound_RunFailed", resourceCulture);
             }
         }
+
+        public static string CloneCalibrationTemplates {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplates", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesDescription {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesDescription", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesSource {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesSource", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesTarget {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesTarget", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesAvailable {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesAvailable", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesSafetyNote {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesSafetyNote", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesNoSource {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNoSource", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesNoSelection {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNoSelection", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesCompleted {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesCompleted", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesNeedsConfiguration {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesNeedsConfiguration", resourceCulture);
+            }
+        }
+
+        public static string CloneCalibrationTemplatesFailure {
+            get {
+                return ResourceManager.GetString("CloneCalibrationTemplatesFailure", resourceCulture);
+            }
+        }
     }
 }

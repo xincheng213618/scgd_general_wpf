@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpDiagnosticSnapshot
+    internal sealed class CopilotMcpDiagnosticSnapshot
     {
         public string Endpoint { get; init; } = string.Empty;
 
@@ -22,7 +22,7 @@ namespace ColorVision.Copilot.Mcp
         public string StatusMessage { get; init; } = string.Empty;
     }
 
-    public static class CopilotMcpDiagnostics
+    internal static class CopilotMcpDiagnostics
     {
         public static string Format(CopilotMcpDiagnosticSnapshot snapshot)
         {

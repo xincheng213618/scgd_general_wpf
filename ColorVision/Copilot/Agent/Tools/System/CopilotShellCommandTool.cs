@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotShellCommandTool(CopilotShellCommandService service)
+        internal CopilotShellCommandTool(CopilotShellCommandService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }

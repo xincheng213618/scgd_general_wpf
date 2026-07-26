@@ -114,7 +114,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public static class CopilotApplicationCapability
+    internal static class CopilotApplicationCapability
     {
         public static bool HasMenuIntent(string? text) => CopilotMenuToolSupport.HasMenuIntent(text);
 

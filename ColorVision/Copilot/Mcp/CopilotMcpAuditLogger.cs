@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpAuditEntry
+    internal sealed class CopilotMcpAuditEntry
     {
         public DateTimeOffset TimestampUtc { get; init; }
 
@@ -32,7 +32,7 @@ namespace ColorVision.Copilot.Mcp
         public string WorkspacePath { get; init; } = string.Empty;
     }
 
-    public static class CopilotMcpAuditLogger
+    internal static class CopilotMcpAuditLogger
     {
         private const int MaxEntries = 200;
         private static readonly ILog Log = LogManager.GetLogger("ColorVision.Copilot.McpAudit");

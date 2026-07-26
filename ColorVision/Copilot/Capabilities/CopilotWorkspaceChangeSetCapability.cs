@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed partial class CopilotWorkspacePatchStore
+    internal sealed partial class CopilotWorkspacePatchStore
     {
         private const int MaxChangeSetFiles = 8;
         private const int MaxChangeSets = 8;

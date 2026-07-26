@@ -386,7 +386,7 @@ namespace ColorVision.Copilot
         private sealed record SqlToken(string Text, int Depth, int Index);
     }
 
-    public sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
+    internal sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
     {
         private static readonly string[] SensitiveColumnMarkers =
         {
@@ -484,7 +484,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotDatabaseSqlService
+    internal sealed class CopilotDatabaseSqlService
     {
         private const int MaximumContentLength = 32_000;
         private static readonly string[] SensitiveColumnMarkers =

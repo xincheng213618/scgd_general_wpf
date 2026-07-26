@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public enum CopilotApprovalSourceKind
+    internal enum CopilotApprovalSourceKind
     {
         Unknown,
         InAppAgent,
@@ -17,7 +18,7 @@ namespace ColorVision.Copilot.Mcp
         ColorVisionUi,
     }
 
-    public sealed class CopilotConfirmationRequestContext
+    internal sealed class CopilotConfirmationRequestContext
     {
         public CopilotApprovalSourceKind SourceKind { get; init; }
 
@@ -147,7 +148,7 @@ namespace ColorVision.Copilot.Mcp
             values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
     }
 
-    public readonly record struct CopilotConfirmationReviewContext(
+    internal readonly record struct CopilotConfirmationReviewContext(
         string ConversationId,
         string TaskId,
         string WorkspacePath);
@@ -181,13 +182,23 @@ namespace ColorVision.Copilot.Mcp
 
         public string ArgumentsSummary { get; init; } = string.Empty;
 
+        public string ArgumentsDigest { get; init; } = string.Empty;
+
+        public string ReviewDetails { get; internal init; } = string.Empty;
+
+        public bool HasReviewDetails => !string.IsNullOrWhiteSpace(ReviewDetails);
+
+        public string ReviewDetailsHeading => HasReviewDetails ? "完整执行详情" : "参数摘要";
+
+        public string ReviewDisplayText => HasReviewDetails ? ReviewDetails : ArgumentsSummary;
+
         public bool ExecuteOnApproval { get; init; }
 
         public bool ResumesAgentOnApproval { get; init; }
 
         public string AgentCallId { get; internal set; } = string.Empty;
 
-        public CopilotConfirmationRequestContext RequestContext { get; internal set; } = new();
+        internal CopilotConfirmationRequestContext RequestContext { get; set; } = new();
 
         public string RequesterLabel => RequestContext.RequesterLabel;
 
@@ -273,6 +284,7 @@ namespace ColorVision.Copilot.Mcp
             action_id = ActionId,
             tool_name = ToolName,
             arguments_summary = ArgumentsSummary,
+            arguments_digest = ArgumentsDigest,
             request_source = RequestContext.RequestSource,
             conversation_id = RequestContext.ConversationId,
             task_id = RequestContext.TaskId,
@@ -321,10 +333,11 @@ namespace ColorVision.Copilot.Mcp
         public ConfirmableAction Action { get; }
     }
 
-    public sealed class CopilotMcpConfirmationStore
+    internal sealed class CopilotMcpConfirmationStore
     {
         public const int MaximumActiveActions = 64;
         public const int MaximumRetainedActions = 256;
+        public const int MaximumReviewDetailsCharacters = 65_536;
 
         private static readonly Lazy<CopilotMcpConfirmationStore> LazyInstance = new(() => new CopilotMcpConfirmationStore());
         private static readonly TimeSpan DefaultLifetime = TimeSpan.FromMinutes(5);
@@ -375,7 +388,9 @@ namespace ColorVision.Copilot.Mcp
             Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
             bool executeOnApproval = false,
             bool resumesAgentOnApproval = false,
-            CopilotConfirmationRequestContext? requestContext = null)
+            CopilotConfirmationRequestContext? requestContext = null,
+            string? exactArgumentsBinding = null,
+            string? reviewDetails = null)
         {
             return CreateCore(
                 title,
@@ -388,7 +403,9 @@ namespace ColorVision.Copilot.Mcp
                 resumesAgentOnApproval,
                 string.Empty,
                 requestContext,
-                null);
+                exactArgumentsBinding,
+                null,
+                reviewDetails);
         }
 
         internal ConfirmableAction CreateAgentFrameworkApproval(
@@ -396,9 +413,11 @@ namespace ColorVision.Copilot.Mcp
             string description,
             string toolName,
             string argumentsSummary,
+            string exactArgumentsBinding,
             string agentCallId,
             CopilotConfirmationRequestContext requestContext,
-            Action<ConfirmableAction> beforePublish)
+            Action<ConfirmableAction> beforePublish,
+            string? reviewDetails = null)
         {
             return CreateCore(
                 title,
@@ -411,7 +430,9 @@ namespace ColorVision.Copilot.Mcp
                 resumesAgentOnApproval: true,
                 agentCallId,
                 requestContext,
-                beforePublish);
+                exactArgumentsBinding,
+                beforePublish,
+                reviewDetails);
         }
 
         private ConfirmableAction CreateCore(
@@ -425,9 +446,12 @@ namespace ColorVision.Copilot.Mcp
             bool resumesAgentOnApproval,
             string agentCallId,
             CopilotConfirmationRequestContext? requestContext,
-            Action<ConfirmableAction>? beforePublish)
+            string? exactArgumentsBinding,
+            Action<ConfirmableAction>? beforePublish,
+            string? reviewDetails)
         {
             ArgumentNullException.ThrowIfNull(executor);
+            var normalizedReviewDetails = NormalizeReviewDetails(reviewDetails);
 
             ExpireStaleActions();
             var now = DateTimeOffset.UtcNow;
@@ -440,6 +464,8 @@ namespace ColorVision.Copilot.Mcp
                 RiskLevel = Sanitize(riskLevel),
                 ToolName = Sanitize(toolName),
                 ArgumentsSummary = Sanitize(argumentsSummary),
+                ArgumentsDigest = ComputeArgumentsDigest(exactArgumentsBinding ?? argumentsSummary),
+                ReviewDetails = normalizedReviewDetails,
                 ExecuteOnApproval = executeOnApproval,
                 ResumesAgentOnApproval = resumesAgentOnApproval,
                 AgentCallId = Sanitize(agentCallId),
@@ -648,7 +674,7 @@ namespace ColorVision.Copilot.Mcp
         public async Task<CopilotMcpToolCallResult> ExecuteApprovedAsync(
             string actionId,
             string toolName,
-            string argumentsSummary,
+            string argumentsDigest,
             string callerSource,
             string workspacePath,
             CancellationToken cancellationToken)
@@ -666,8 +692,8 @@ namespace ColorVision.Copilot.Mcp
                 if (!string.Equals(action.ToolName, toolName, StringComparison.OrdinalIgnoreCase))
                     return CopilotMcpToolCallResult.Fail("action_tool_mismatch", $"The action was created for tool_name={action.ToolName}, not {toolName}.");
 
-                if (!string.Equals(action.ArgumentsSummary, Sanitize(argumentsSummary), StringComparison.Ordinal))
-                    return CopilotMcpToolCallResult.Fail("action_arguments_mismatch", "The confirmation arguments do not match the pending action arguments_summary.");
+                if (!ArgumentsDigestsMatch(action.ArgumentsDigest, argumentsDigest))
+                    return CopilotMcpToolCallResult.Fail("action_arguments_mismatch", "The confirmation arguments_digest does not match the approved action.");
 
                 if (action.RequestContext.SourceKind == CopilotApprovalSourceKind.ExternalMcp
                     && !string.Equals(
@@ -773,7 +799,7 @@ namespace ColorVision.Copilot.Mcp
             return await ExecuteApprovedAsync(
                 action.ActionId,
                 action.ToolName,
-                action.ArgumentsSummary,
+                action.ArgumentsDigest,
                 action.RequestContext.RequestSource,
                 reviewContext.WorkspacePath,
                 cancellationToken);
@@ -969,10 +995,46 @@ namespace ColorVision.Copilot.Mcp
             return Convert.ToHexString(bytes).ToLowerInvariant();
         }
 
+        private static string ComputeArgumentsDigest(string? exactArgumentsBinding)
+        {
+            var bytes = Encoding.UTF8.GetBytes(exactArgumentsBinding ?? string.Empty);
+            return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        }
+
+        private static bool ArgumentsDigestsMatch(string expectedDigest, string? suppliedDigest)
+        {
+            var normalized = (suppliedDigest ?? string.Empty).Trim().ToLowerInvariant();
+            if (expectedDigest.Length != 64
+                || normalized.Length != 64
+                || normalized.Any(character => !Uri.IsHexDigit(character)))
+            {
+                return false;
+            }
+
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.ASCII.GetBytes(expectedDigest),
+                Encoding.ASCII.GetBytes(normalized));
+        }
+
         private static string Sanitize(string? value)
         {
             var text = CopilotMcpAuditLogger.RedactText(value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
             return text.Length <= 1000 ? text : text[..1000] + "...";
+        }
+
+        private static string NormalizeReviewDetails(string? value)
+        {
+            var text = value ?? string.Empty;
+            if (text.Contains('\0'))
+                throw new ArgumentException("Approval review details cannot contain NUL characters.", nameof(value));
+            if (text.Length > MaximumReviewDetailsCharacters)
+            {
+                throw new ArgumentException(
+                    $"Approval review details cannot exceed {MaximumReviewDetailsCharacters} characters.",
+                    nameof(value));
+            }
+
+            return text;
         }
 
         private static CopilotConfirmationRequestContext NormalizeRequestContext(

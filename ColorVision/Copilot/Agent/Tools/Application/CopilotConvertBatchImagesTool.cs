@@ -74,7 +74,7 @@ namespace ColorVision.Copilot
             CopilotToolIdempotency.NonIdempotent,
             executionTimeout: TimeSpan.FromMinutes(10),
             auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-            allowsTemporaryFullAccess: true);
+            allowsTemporaryFullAccess: false);
 
         public CopilotToolInputSchema InputSchema => Schema;
 

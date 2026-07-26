@@ -37,7 +37,8 @@ namespace ColorVision.Copilot.Mcp
             builder.AppendLine($"工具：{action.ToolName}");
             builder.AppendLine($"操作 ID：{action.ActionId}");
             if (!string.IsNullOrWhiteSpace(action.ArgumentsSummary))
-                builder.Append($"参数：{action.ArgumentsSummary}");
+                builder.AppendLine($"参数：{action.ArgumentsSummary}");
+            builder.Append($"参数指纹（SHA-256）：{action.ArgumentsDigest}");
             return builder.ToString();
         }
 

@@ -16,7 +16,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotTcpPortInspectionService(CopilotShellCommandService shellService)
+        internal CopilotTcpPortInspectionService(CopilotShellCommandService shellService)
         {
             _shellService = shellService ?? throw new ArgumentNullException(nameof(shellService));
         }

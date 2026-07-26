@@ -3160,4 +3160,37 @@
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>節點執行詳情</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>複製校正模板</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>從另一台實體相機複製校正模板並保留原名稱，讓流程中的模板名稱綁定不需重新設定。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>來源相機</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>目標相機</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>選擇要複製的模板</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>只複製模板名稱和選取規則，不複製舊相機的校正檔案。目標相機存在同名校正群組時會自動對應。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>請選擇來源實體相機。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>請至少選擇一個校正模板。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>已複製 {0} 個校正模板；已略過 {1} 個同名模板。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>以下模板未能對應同名校正群組的所有資源。名稱已保留，但使用前需設定目標相機的校正檔案：{0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>複製校正模板失敗：{0}</value>
+  </data>
 </root>

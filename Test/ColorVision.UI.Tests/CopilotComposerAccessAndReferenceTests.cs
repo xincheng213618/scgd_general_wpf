@@ -197,6 +197,23 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Fact]
+    public void OnlyPathAndHashBoundWorkspaceEnvelopeToolsAllowTemporaryApproval()
+    {
+        var autoApprovableToolNames = CopilotToolRegistry.CreateCoreDefaultTools()
+            .Where(tool => tool.Capability.AllowsTemporaryFullAccess)
+            .Select(tool => tool.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            ["ApplyWorkspacePatchEnvelope", "RollbackWorkspacePatchEnvelope"],
+            autoApprovableToolNames);
+        Assert.False(new CopilotApplyTemplatePatchTool().AllowsTemporaryFullAccess);
+        Assert.False(new CopilotApplyFlowPatchTool().Capability.AllowsTemporaryFullAccess);
+        Assert.False(new CopilotConvertBatchImagesTool().Capability.AllowsTemporaryFullAccess);
+    }
+
+    [Fact]
     public void TemporaryGrantLifetimeIsClampedToSafetyMaximum()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");

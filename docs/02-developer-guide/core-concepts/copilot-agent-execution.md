@@ -12,7 +12,7 @@ CopilotToolRegistry
   -> ContextWindowCompactionStrategy 在每次模型调用前压缩上下文
   -> TokenBudgetChatClient 累计本请求模型用量并限制循环
   -> Always 审批工具由 ApprovalRequiredAIFunction 形成精确调用边界
-  -> 按需确认时 Pending Actions 收集批准/拒绝/过期决定；完全访问时按会话策略自动批准
+  -> 按需确认时 Pending Actions 收集批准/拒绝/过期决定；临时授权仅允许路径和哈希绑定的工作区补丁/回滚自动批准
   -> 使用同一 AgentSession 回传 ToolApprovalResponseContent
   -> CopilotToolExecutor 运行前置 Hook
   -> 进入资源感知执行闸门（最多 4 个独立只读调用）
@@ -30,7 +30,7 @@ CopilotToolRegistry
   -> 完成后序列化 AgentSession 到当前会话检查点
 ```
 
-`CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问模式由 `CopilotConversationRecord.AccessMode` 按会话持久化，并通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session。`ConfirmProtectedActions` 继续创建 Pending Action；`FullAccess` 只对 `RequiresNativeApproval` 的精确调用生成自动批准决定。Review 模式、工具 Schema、意图策略、工作区范围、执行契约、并发闸门、超时和审计不受影响。运行中切换为完全访问会继续当前会话正等待的 Framework Action，之后的调用读取新的模式；切回按需确认后，后续调用重新等待。新会话和 conversation branch 默认按需确认，不继承源会话的完全访问。
+`CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。`ConfirmProtectedActions` 继续创建 Pending Action；内部兼容枚举名 `FullAccess` 表示最长 15 分钟的临时授权，必须精确绑定 conversation、task 和当前 workspace，并且只有 `AllowsTemporaryFullAccess` 的工具才可进入自动批准。目前该集合严格限制为 `ApplyWorkspacePatchEnvelope` 与 `RollbackWorkspacePatchEnvelope`；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。Review 模式、工具 Schema、意图策略、工作区范围、执行契约、并发闸门、超时和审计不受影响。启用临时授权不会批准已经等待的 Framework Action；任务结束、失败、取消、超时、工作区变化或应用重启都会撤销授权，新会话和 conversation branch 也不会继承。
 
 `DesktopPetCopilotBridge` 订阅同一 `CopilotAgentTaskHost` 与 `CopilotMcpConfirmationStore`，但不再用最后一次事件覆盖单个会话 ID。`DesktopPetCopilotActivityTracker` 为每个会话保留有界活动，按 `NeedsInput -> Blocked -> Ready -> Running` 排序；完成、失败和暂停状态会留到用户打开对应会话，取消的排队任务会移除而不会抢走当前活动会话。宠物单击打开最高优先级活动，右键活动菜单最多展开八项；打开终态活动后再显示下一项。该状态投影只影响桌宠呈现和会话导航，不改变任务调度、审批或恢复语义，与 [Codex Pets](https://learn.chatgpt.com/docs/pets?surface=app) 的多聊天活动优先级保持一致。
 

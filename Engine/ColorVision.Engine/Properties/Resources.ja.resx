@@ -3349,4 +3349,37 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>ノード実行の詳細</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>校正テンプレートを複製</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>別の物理カメラから校正テンプレートを名前を保持したままコピーし、フローのテンプレート名バインドを再設定せずに済むようにします。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>コピー元カメラ</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>コピー先カメラ</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>複製するテンプレートを選択</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>テンプレート名と選択ルールのみをコピーし、旧カメラの校正ファイルはコピーしません。同名のコピー先校正グループがあれば自動的に割り当てます。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>コピー元の物理カメラを選択してください。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>校正テンプレートを1つ以上選択してください。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>校正テンプレートを {0} 件複製しました。同名の {1} 件はスキップしました。</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>次のテンプレートは同名校正グループの全リソースを割り当てられませんでした。名前は保持されていますが、使用前にコピー先カメラの校正ファイルを設定してください：{0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>校正テンプレートの複製に失敗しました：{0}</value>
+  </data>
 </root>

@@ -20,7 +20,7 @@
 
 `ApprovalMode.Always` 的工具应实现 `ICopilotFrameworkApprovedTool`。运行时只会对同时满足这两个条件的工具包装 `ApprovalRequiredAIFunction`；批准后才调用 `ExecuteApprovedAsync`。普通 `ExecuteAsync` 必须继续保留直接调用和业务入口所需的确认，不能把“来自模型”本身视为授权。
 
-需要向用户展示具体目标和冲突指纹的工具还可实现 `ICopilotFrameworkApprovalPresentation`。Framework 审批层会使用工具生成的标题和说明，而不是展示原始参数值；工作区补丁因此能显示完整目标路径以及应用前后的 SHA-256，同时审计仍只记录参数字段名。
+需要向用户展示具体目标和冲突指纹的工具还可实现 `ICopilotFrameworkApprovalPresentation`。`CopilotToolApprovalPresentation.ReviewDetails` 用于仅在本机审批窗口展示不可静默截断的完整执行详情；它有独立的 64K 上限，不进入 `ConfirmActionPayloadJson`、普通审计或日志。Shell 使用该字段展示解析后的 Shell、工作目录、超时、完整命令、字符数与命令 SHA-256，窗口要求显式确认已核对详情。工作区补丁也能显示完整目标路径以及应用前后的 SHA-256，同时审计仍只记录参数字段名。审批动作另以完整 `CopilotAgentToolInput` 生成规范化绑定：固定字段顺序、对象键递归排序、数组保持原顺序，再计算完整 SHA-256；Agent Framework 的批准后执行签名复用同一绑定，因此截断的展示摘要、嵌套对象插入顺序或分隔符都不能把批准转移到另一组参数。
 
 `CopilotToolCapabilityDescriptor` 是工具策略的标准快照，集中承载访问级别、风险、审批、幂等性、并发、超时和参数审计模式。Harness 提示、Framework 审批包装、执行闸门、重试、trace 与审计都只消费该 Descriptor，避免各层分别解释工具属性。现有工具的独立属性会由 `ICopilotTool.Capability` 默认桥接，新增工具可以直接提供 Descriptor；注册表会在工具进入运行时前拒绝非法枚举值及“高风险写入但从不审批”等不安全组合。有效并发与超时也在 Descriptor 中统一收敛：写入或非幂等能力强制独占，超时限制在默认 30 秒、最大 10 分钟之间。
 

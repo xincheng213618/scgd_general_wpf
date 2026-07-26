@@ -3373,4 +3373,37 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>Сведения о выполнении узла</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>Клонировать шаблоны калибровки</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>Скопируйте шаблоны калибровки с другой физической камеры, сохранив имена, чтобы не перенастраивать привязки в процессе.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>Исходная камера</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>Целевая камера</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>Выберите шаблоны для клонирования</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>Копируются только имена и правила выбора. Файлы калибровки старой камеры не копируются. Одноимённые группы целевой камеры сопоставляются автоматически.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>Выберите исходную физическую камеру.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>Выберите хотя бы один шаблон калибровки.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>Клонировано шаблонов: {0}; пропущено одноимённых шаблонов: {1}.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>Для следующих шаблонов не удалось сопоставить все ресурсы одноимённой группы. Имена сохранены, но перед использованием необходимо настроить файлы калибровки целевой камеры: {0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>Не удалось клонировать шаблоны калибровки: {0}</value>
+  </data>
 </root>

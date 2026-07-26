@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
         bool PatchTruncated,
         IReadOnlyList<CopilotGitDiffSection> Sections);
 
-    public sealed class CopilotGitDiffInspectionService
+    internal sealed class CopilotGitDiffInspectionService
     {
         public const int MaxPatchCharactersPerSection = 24_000;
         private const string ShellTruncationMarker = "...<shell output truncated>...";

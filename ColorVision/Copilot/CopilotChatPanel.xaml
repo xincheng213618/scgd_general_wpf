@@ -961,6 +961,11 @@
                                                                    Opacity="0.58"
                                                                    Text="{Binding ArgumentsSummary, StringFormat=参数：{0}}"
                                                                    TextWrapping="Wrap" />
+                                                        <TextBlock Margin="0,2,0,0"
+                                                                   FontFamily="Consolas"
+                                                                   Opacity="0.58"
+                                                                   Text="{Binding ArgumentsDigest, StringFormat=参数指纹（SHA-256）：{0}}"
+                                                                   TextWrapping="Wrap" />
                                                         <WrapPanel Margin="0,5,0,0">
                                                             <Button Margin="0,0,6,0"
                                                                     Padding="8,3"
@@ -2142,7 +2147,7 @@
                                               IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
-                                              ToolTip="最长 15 分钟，仅自动批准明确支持且写入范围完全位于当前工作区的结构化操作；Shell、菜单、数据库和范围不可界定的操作仍逐项确认。" />
+                                              ToolTip="最长 15 分钟，当前仅自动批准已预览且执行前逐文件复核路径和 SHA-256 的工作区补丁及回滚；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">

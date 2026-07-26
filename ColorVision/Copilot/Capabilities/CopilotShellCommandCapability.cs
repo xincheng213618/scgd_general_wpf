@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -13,7 +14,7 @@ using ColorVision.Copilot.Mcp;
 
 namespace ColorVision.Copilot
 {
-    public sealed record CopilotShellProcessCommand(
+    internal sealed record CopilotShellProcessCommand(
         CopilotShellKind Shell,
         string ExecutablePath,
         IReadOnlyList<string> Arguments,
@@ -27,7 +28,7 @@ namespace ColorVision.Copilot
         public Action<string>? StandardErrorReceived { get; init; }
     }
 
-    public sealed record CopilotShellProcessResult(
+    internal sealed record CopilotShellProcessResult(
         int ExitCode,
         bool TimedOut,
         string StandardOutput,
@@ -37,12 +38,12 @@ namespace ColorVision.Copilot
         public bool ProcessTreeContained { get; init; }
     }
 
-    public interface ICopilotShellProcessRunner
+    internal interface ICopilotShellProcessRunner
     {
         Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken);
     }
 
-    public sealed class CopilotShellCommandService
+    internal sealed class CopilotShellCommandService
     {
         public const int MaximumCommandCharacters = 16_384;
         internal const string NonzeroExitFailureCode = "shell_nonzero_exit";
@@ -177,10 +178,29 @@ namespace ColorVision.Copilot
             var shellLabel = GetShellLabel(execution.Shell);
             return new CopilotToolApprovalPresentation(
                 $"Run {shellLabel} command",
-                $"Shell: {shellLabel}\nWorking directory: {execution.WorkingDirectory}\nTimeout: {execution.TimeoutSeconds} seconds\nCommand:\n{execution.CommandText}",
+                $"Review the complete {shellLabel} command and resolved working directory before approving.",
                 ImpactSummary: $"将在工作目录 {execution.WorkingDirectory} 中执行一条 {shellLabel} 命令；其影响取决于命令内容。",
                 Reversibility: CopilotApprovalReversibility.NotReversible,
-                ReversibilitySummary: "Copilot 不会自动撤销命令产生的文件、进程、网络或系统状态变化。");
+                ReversibilitySummary: "Copilot 不会自动撤销命令产生的文件、进程、网络或系统状态变化。")
+            {
+                ReviewDetails = BuildApprovalReviewDetails(execution),
+            };
+        }
+
+        private static string BuildApprovalReviewDetails(CopilotShellExecution execution)
+        {
+            var commandDigest = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(execution.CommandText))).ToLowerInvariant();
+            var builder = new StringBuilder();
+            builder.AppendLine($"Shell: {GetShellLabel(execution.Shell)}");
+            builder.AppendLine($"Working directory: {execution.WorkingDirectory}");
+            builder.AppendLine($"Timeout: {execution.TimeoutSeconds} seconds");
+            builder.AppendLine($"Command characters: {execution.CommandText.Length}");
+            builder.AppendLine($"Command SHA-256: {commandDigest}");
+            builder.AppendLine();
+            builder.AppendLine("Complete command:");
+            builder.Append(execution.CommandText);
+            return builder.ToString();
         }
 
         internal static CopilotShellKind ResolveShell(CopilotShellKind requested, CopilotShellKind preferred)
@@ -434,7 +454,7 @@ namespace ColorVision.Copilot
             int TimeoutSeconds);
     }
 
-    public sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
+    internal sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
     {
         private const int MaxStreamCharacters = 65_536;
         public async Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)

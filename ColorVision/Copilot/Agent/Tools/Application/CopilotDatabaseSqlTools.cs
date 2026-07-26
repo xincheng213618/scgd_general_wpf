@@ -28,7 +28,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotQueryDatabaseSqlTool(CopilotDatabaseSqlService service)
+        internal CopilotQueryDatabaseSqlTool(CopilotDatabaseSqlService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotExecuteDatabaseSqlTool(CopilotDatabaseSqlService service)
+        internal CopilotExecuteDatabaseSqlTool(CopilotDatabaseSqlService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }

@@ -2683,17 +2683,7 @@ namespace ColorVision.Copilot
 
             private static string BuildExecutionSignature(string toolName, CopilotAgentToolInput toolInput)
             {
-                return string.Join("|", new[]
-                {
-                    toolName?.Trim() ?? string.Empty,
-                    toolInput.Query?.Trim() ?? string.Empty,
-                    toolInput.Path?.Trim() ?? string.Empty,
-                    toolInput.Cursor?.Trim() ?? string.Empty,
-                    toolInput.StartLine?.ToString() ?? string.Empty,
-                    toolInput.StartColumn?.ToString() ?? string.Empty,
-                    toolInput.EndLine?.ToString() ?? string.Empty,
-                    toolInput.GetStableArgumentsJson(),
-                });
+                return CopilotAgentToolInputExactBinding.CreateExecutionSignature(toolName, toolInput);
             }
 
             private static string CreateRejectedArgumentSummary(IReadOnlyDictionary<string, object?> arguments)

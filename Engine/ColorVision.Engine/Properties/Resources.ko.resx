@@ -3369,4 +3369,37 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>노드 실행 세부 정보</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>보정 템플릿 복제</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>다른 물리 카메라의 보정 템플릿 이름을 유지하여 복사하므로 플로의 템플릿 이름 바인딩을 다시 설정할 필요가 없습니다.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>원본 카메라</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>대상 카메라</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>복제할 템플릿 선택</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>템플릿 이름과 선택 규칙만 복사하며 기존 카메라의 보정 파일은 복사하지 않습니다. 대상 카메라에 같은 이름의 보정 그룹이 있으면 자동으로 매핑합니다.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>원본 물리 카메라를 선택하세요.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>보정 템플릿을 하나 이상 선택하세요.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>보정 템플릿 {0}개를 복제했고 같은 이름의 템플릿 {1}개를 건너뛰었습니다.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>다음 템플릿은 같은 이름의 보정 그룹에서 모든 리소스를 매핑하지 못했습니다. 이름은 유지되지만 사용 전에 대상 카메라의 보정 파일을 설정해야 합니다: {0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>보정 템플릿 복제 실패: {0}</value>
+  </data>
 </root>

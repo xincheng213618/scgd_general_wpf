@@ -14,7 +14,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotInspectGitWorkingTreeTool(CopilotGitWorkingTreeInspectionService service)
+        internal CopilotInspectGitWorkingTreeTool(CopilotGitWorkingTreeInspectionService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }

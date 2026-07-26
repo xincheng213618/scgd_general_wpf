@@ -120,7 +120,7 @@ namespace ColorVision.Copilot.Mcp
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
     }
 
-    public sealed class CopilotMcpRuntimeSettings
+    internal sealed class CopilotMcpRuntimeSettings
     {
         public bool Enabled { get; init; }
 
@@ -133,7 +133,7 @@ namespace ColorVision.Copilot.Mcp
         public string Endpoint => $"http://{Host}:{Port}/mcp";
     }
 
-    public sealed class CopilotTemplatePatchApplyRequest
+    internal sealed class CopilotTemplatePatchApplyRequest
     {
         public string PreviewId { get; init; } = string.Empty;
 
@@ -146,7 +146,7 @@ namespace ColorVision.Copilot.Mcp
         public string PatchedJson { get; init; } = string.Empty;
     }
 
-    public sealed class CopilotFlowPatchRequest
+    internal sealed class CopilotFlowPatchRequest
     {
         public string Operation { get; init; } = string.Empty;
 
@@ -173,7 +173,7 @@ namespace ColorVision.Copilot.Mcp
         public string TargetPortId { get; init; } = string.Empty;
     }
 
-    public sealed class CopilotMcpHttpRequest
+    internal sealed class CopilotMcpHttpRequest
     {
         public string Method { get; init; } = string.Empty;
 
@@ -186,7 +186,7 @@ namespace ColorVision.Copilot.Mcp
         public string CallerSource { get; init; } = string.Empty;
     }
 
-    public sealed class CopilotMcpHttpResponse
+    internal sealed class CopilotMcpHttpResponse
     {
         public int StatusCode { get; init; }
 
@@ -197,7 +197,7 @@ namespace ColorVision.Copilot.Mcp
         public IReadOnlyDictionary<string, string> Headers { get; init; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
-    public sealed class CopilotMcpToolEnvironment
+    internal sealed class CopilotMcpToolEnvironment
     {
         private static readonly JsonSerializerOptions FlowPatchPreviewJsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
         private static readonly string[] FlowPatchPreviewEffects = ["Changes only the active Flow editor after approval", "Does not save or run the flow"];

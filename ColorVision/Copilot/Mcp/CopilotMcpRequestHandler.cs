@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpRequestHandler
+    internal sealed class CopilotMcpRequestHandler
     {
         private static readonly JsonSerializerOptions JsonOptions = new()
         {

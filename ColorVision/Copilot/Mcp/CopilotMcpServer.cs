@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpServer : IDisposable
+    internal sealed class CopilotMcpServer : IDisposable
     {
         public const int MaximumConcurrentClients = 16;
         private const int MaxRequestHeaderBytes = 64 * 1024;

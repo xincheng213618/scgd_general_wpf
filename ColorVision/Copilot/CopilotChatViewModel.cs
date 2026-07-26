@@ -2561,14 +2561,11 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var result = MessageBox.Show(
-                Application.Current.GetActiveWindow(),
-                CopilotMcpConfirmationDecision.BuildApprovalPrompt(action!),
-                "确认受保护操作",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning,
-                MessageBoxResult.No);
-            if (result != MessageBoxResult.Yes)
+            var reviewWindow = new CopilotActionReviewWindow(action!);
+            var owner = Application.Current.GetActiveWindow();
+            if (owner != null)
+                reviewWindow.Owner = owner;
+            if (reviewWindow.ShowDialog() != true)
             {
                 SetPendingActionFeedback($"未批准操作 {action!.ActionId}。");
                 return;
@@ -2642,8 +2639,8 @@ namespace ColorVision.Copilot
                 DateTimeOffset.UtcNow.Add(CopilotAgentAccessContext.MaximumFullAccessLifetime));
             OnComposerAccessModeChanged();
             SetPendingActionFeedback(string.IsNullOrWhiteSpace(taskId)
-                ? "已为下一任务启用临时自动批准（最长 15 分钟）。仅支持的工作区结构化操作可自动执行；已有待审批操作仍需单独决定。"
-                : "已为本任务启用临时自动批准（最长 15 分钟）。仅支持的工作区结构化操作可自动执行；已有待审批操作仍需单独决定。");
+                ? "已为下一任务启用临时自动批准（最长 15 分钟）。当前仅工作区补丁及回滚可自动执行；已有待审批操作仍需单独决定。"
+                : "已为本任务启用临时自动批准（最长 15 分钟）。当前仅工作区补丁及回滚可自动执行；已有待审批操作仍需单独决定。");
             PersistState(immediate: true);
         }
 
@@ -2698,7 +2695,7 @@ namespace ColorVision.Copilot
                 ? "当前 ColorVision 应用"
                 : conversation.FullAccessWorkspacePath;
             var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "15 分钟内";
-            return $"临时自动批准仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。仅自动批准声明支持且写入范围完全位于当前工作区的结构化操作；Shell、菜单、数据库和范围不可界定的操作仍逐项确认。任务结束、工作区变化或应用重启后恢复按需确认。";
+            return $"临时自动批准仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。当前仅自动批准已预览且执行前逐文件复核路径和 SHA-256 的工作区补丁及回滚；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。任务结束、工作区变化或应用重启后恢复按需确认。";
         }
 
         private static bool WorkspacePathsMatch(string expectedPath, string currentPath)

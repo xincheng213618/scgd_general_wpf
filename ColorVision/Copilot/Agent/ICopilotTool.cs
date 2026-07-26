@@ -129,7 +129,10 @@ namespace ColorVision.Copilot
         string Description,
         string ImpactSummary = "",
         CopilotApprovalReversibility Reversibility = CopilotApprovalReversibility.Unknown,
-        string ReversibilitySummary = "");
+        string ReversibilitySummary = "")
+    {
+        public string ReviewDetails { get; init; } = string.Empty;
+    }
 
     public interface ICopilotFrameworkApprovalPresentation
     {

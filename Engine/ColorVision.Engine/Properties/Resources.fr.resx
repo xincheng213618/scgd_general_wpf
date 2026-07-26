@@ -3370,4 +3370,37 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>Détails d’exécution du nœud</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>Cloner les modèles d’étalonnage</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>Copiez les modèles d’étalonnage d’une autre caméra physique en conservant leurs noms afin de ne pas reconfigurer les liaisons du flux.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>Caméra source</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>Caméra cible</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>Sélectionner les modèles à cloner</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>Seuls les noms et les règles de sélection sont copiés. Les fichiers d’étalonnage de l’ancienne caméra ne sont jamais copiés. Les groupes cibles de même nom sont associés automatiquement.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>Sélectionnez une caméra physique source.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>Sélectionnez au moins un modèle d’étalonnage.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>{0} modèle(s) d’étalonnage cloné(s) ; {1} modèle(s) de même nom ignoré(s).</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>Les modèles suivants n’ont pas pu associer toutes les ressources d’un groupe d’étalonnage de même nom. Leurs noms ont été conservés, mais les fichiers de la caméra cible doivent être configurés : {0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>Échec du clonage des modèles d’étalonnage : {0}</value>
+  </data>
 </root>

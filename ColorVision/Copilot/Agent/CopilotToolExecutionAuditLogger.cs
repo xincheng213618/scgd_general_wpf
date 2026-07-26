@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotToolExecutionAuditEntry
+    internal sealed class CopilotToolExecutionAuditEntry
     {
         public string CallId { get; init; } = string.Empty;
 
@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
         public string ErrorMessage { get; init; } = string.Empty;
     }
 
-    public static class CopilotToolExecutionAuditLogger
+    internal static class CopilotToolExecutionAuditLogger
     {
         private const int MaxEntries = 200;
         private static readonly ILog Log = LogManager.GetLogger("ColorVision.Copilot.AgentToolAudit");

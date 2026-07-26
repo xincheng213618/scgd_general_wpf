@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
 
         public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
 
-        public bool AllowsTemporaryFullAccess => true;
+        public bool AllowsTemporaryFullAccess => false;
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("JSON object containing the preview_id to apply.", required: true);
 

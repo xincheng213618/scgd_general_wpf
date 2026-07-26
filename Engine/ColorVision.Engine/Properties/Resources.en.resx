@@ -4480,4 +4480,37 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeExecutionDetails" xml:space="preserve">
     <value>Node Execution Details</value>
   </data>
+  <data name="CloneCalibrationTemplates" xml:space="preserve">
+    <value>Clone calibration templates</value>
+  </data>
+  <data name="CloneCalibrationTemplatesDescription" xml:space="preserve">
+    <value>Copy calibration templates from another physical camera and preserve their names so flow bindings do not need to be configured again.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSource" xml:space="preserve">
+    <value>Source camera</value>
+  </data>
+  <data name="CloneCalibrationTemplatesTarget" xml:space="preserve">
+    <value>Target camera</value>
+  </data>
+  <data name="CloneCalibrationTemplatesAvailable" xml:space="preserve">
+    <value>Select templates to clone</value>
+  </data>
+  <data name="CloneCalibrationTemplatesSafetyNote" xml:space="preserve">
+    <value>Only template names and selection rules are copied. Calibration files from the old camera are never copied. Matching target-camera groups are mapped automatically; otherwise the template name is preserved and additional calibration setup is reported.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSource" xml:space="preserve">
+    <value>Select a source physical camera.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNoSelection" xml:space="preserve">
+    <value>Select at least one calibration template.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesCompleted" xml:space="preserve">
+    <value>Cloned {0} calibration template(s); skipped {1} template(s) with the same name.</value>
+  </data>
+  <data name="CloneCalibrationTemplatesNeedsConfiguration" xml:space="preserve">
+    <value>The following templates could not map every resource in a same-named calibration group. Their names were preserved, but target-camera calibration files must be configured before use: {0}</value>
+  </data>
+  <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
+    <value>Failed to clone calibration templates: {0}</value>
+  </data>
 </root>

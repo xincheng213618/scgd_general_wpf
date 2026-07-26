@@ -33,7 +33,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotWorkspaceValidationTool(CopilotWorkspaceValidationService service)
+        internal CopilotWorkspaceValidationTool(CopilotWorkspaceValidationService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }

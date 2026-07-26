@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed partial class CopilotWorkspacePatchStore
+    internal sealed partial class CopilotWorkspacePatchStore
     {
         public async Task<CopilotToolResult> PreviewPatchEnvelopeAsync(
             CopilotAgentRequest request,

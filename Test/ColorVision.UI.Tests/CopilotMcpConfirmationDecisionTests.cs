@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
+using System.Text.Json;
 
 namespace ColorVision.UI.Tests
 {
@@ -25,6 +26,7 @@ namespace ColorVision.UI.Tests
                 Assert.Contains(action.ReversibilityLabel, prompt, StringComparison.Ordinal);
                 Assert.Contains(action.ToolName, prompt, StringComparison.Ordinal);
                 Assert.Contains(action.ArgumentsSummary, prompt, StringComparison.Ordinal);
+                Assert.Contains(action.ArgumentsDigest, prompt, StringComparison.Ordinal);
                 Assert.Contains("请仅在来源、任务、工作区和影响都符合你的意图时批准", prompt, StringComparison.Ordinal);
             }
             finally
@@ -131,6 +133,10 @@ namespace ColorVision.UI.Tests
                 "Resume after a user decision.",
                 "agent_tool",
                 "{\"scope\":\"current\"}",
+                CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
+                {
+                    Arguments = new Dictionary<string, object?> { ["scope"] = "current" },
+                }),
                 $"call-{Guid.NewGuid():N}",
                 CreateRequestContext(),
                 _ => { });
@@ -197,7 +203,7 @@ namespace ColorVision.UI.Tests
                 var wrongCaller = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                     action.ActionId,
                     action.ToolName,
-                    action.ArgumentsSummary,
+                    action.ArgumentsDigest,
                     "tcp://127.0.0.2",
                     WorkspacePath,
                     CancellationToken.None);
@@ -208,7 +214,7 @@ namespace ColorVision.UI.Tests
                 var wrongWorkspace = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                     action.ActionId,
                     action.ToolName,
-                    action.ArgumentsSummary,
+                    action.ArgumentsDigest,
                     callerSource,
                     @"C:\ColorVision\OtherWorkspace",
                     CancellationToken.None);
@@ -219,7 +225,7 @@ namespace ColorVision.UI.Tests
                 var executed = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                     action.ActionId,
                     action.ToolName,
-                    action.ArgumentsSummary,
+                    action.ArgumentsDigest,
                     callerSource,
                     WorkspacePath,
                     CancellationToken.None);
@@ -301,7 +307,7 @@ namespace ColorVision.UI.Tests
                 var wrongWorkspace = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                     action.ActionId,
                     action.ToolName,
-                    action.ArgumentsSummary,
+                    action.ArgumentsDigest,
                     callerSource,
                     WorkspacePath,
                     CancellationToken.None);
@@ -312,7 +318,7 @@ namespace ColorVision.UI.Tests
                 var executed = await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
                     action.ActionId,
                     action.ToolName,
-                    action.ArgumentsSummary,
+                    action.ArgumentsDigest,
                     callerSource,
                     string.Empty,
                     CancellationToken.None);
@@ -324,6 +330,215 @@ namespace ColorVision.UI.Tests
                 CancelIfActive(action);
             }
         }
+
+        [Fact]
+        public void ConfirmActionSchemaRequiresOpaqueArgumentsDigest()
+        {
+            var dispatcher = new CopilotMcpToolDispatcher();
+            var descriptor = Assert.Single(
+                dispatcher.ListTools(),
+                tool => string.Equals(tool.Name, "confirm_action", StringComparison.Ordinal));
+            using var schema = JsonDocument.Parse(JsonSerializer.Serialize(descriptor.InputSchema));
+            var required = schema.RootElement
+                .GetProperty("required")
+                .EnumerateArray()
+                .Select(item => item.GetString())
+                .ToArray();
+
+            Assert.Contains("arguments_digest", required);
+            Assert.DoesNotContain("arguments_summary", required);
+            Assert.True(schema.RootElement.GetProperty("properties").TryGetProperty("arguments_digest", out _));
+        }
+
+        [Fact]
+        public async Task GenericAuditToolsDoNotDiscloseReusableActionIdentifiers()
+        {
+            var action = CreateAction(executeOnApproval: false);
+            var dispatcher = new CopilotMcpToolDispatcher();
+            try
+            {
+                var auditDescriptor = Assert.Single(
+                    dispatcher.ListTools(),
+                    tool => string.Equals(tool.Name, "get_audit_log", StringComparison.Ordinal));
+                using var schema = JsonDocument.Parse(JsonSerializer.Serialize(auditDescriptor.InputSchema));
+                Assert.False(schema.RootElement.GetProperty("properties").TryGetProperty("action_id", out _));
+
+                var auditLog = await dispatcher.CallAsync(
+                    "get_audit_log",
+                    new Dictionary<string, JsonElement>
+                    {
+                        ["max_entries"] = JsonSerializer.SerializeToElement(200),
+                    },
+                    CancellationToken.None);
+                var auditSummary = await dispatcher.CallAsync(
+                    "get_audit_summary",
+                    new Dictionary<string, JsonElement>
+                    {
+                        ["max_entries"] = JsonSerializer.SerializeToElement(200),
+                    },
+                    CancellationToken.None);
+
+                Assert.True(auditLog.Success);
+                Assert.True(auditSummary.Success);
+                Assert.DoesNotContain(action.ActionId, auditLog.Text, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(action.ActionId, auditSummary.Text, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("Approval event: True", auditLog.Text, StringComparison.Ordinal);
+            }
+            finally
+            {
+                CancelIfActive(action);
+            }
+        }
+
+        [Fact]
+        public void AgentFrameworkDigestUsesCompleteCanonicalToolInput()
+        {
+            var sharedPrefix = new string('x', 1600);
+            var firstBinding = CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
+            {
+                Query = "inspect",
+                Path = @"C:\ColorVision\SafetyContract\config.json",
+                Cursor = "cursor-1",
+                StartLine = 2,
+                StartColumn = 3,
+                EndLine = 9,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["payload"] = new Dictionary<string, object?>
+                    {
+                        ["z"] = new object?[] { 1, true, sharedPrefix + "-first" },
+                        ["a"] = new Dictionary<string, object?>
+                        {
+                            ["second"] = 2,
+                            ["first"] = 1,
+                        },
+                    },
+                },
+            });
+            var reorderedBinding = CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
+            {
+                Query = "inspect",
+                Path = @"C:\ColorVision\SafetyContract\config.json",
+                Cursor = "cursor-1",
+                StartLine = 2,
+                StartColumn = 3,
+                EndLine = 9,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["payload"] = new Dictionary<string, object?>
+                    {
+                        ["a"] = new Dictionary<string, object?>
+                        {
+                            ["first"] = 1,
+                            ["second"] = 2,
+                        },
+                        ["z"] = new object?[] { 1, true, sharedPrefix + "-first" },
+                    },
+                },
+            });
+            var changedBinding = CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
+            {
+                Query = "inspect",
+                Path = @"C:\ColorVision\SafetyContract\config.json",
+                Cursor = "cursor-1",
+                StartLine = 2,
+                StartColumn = 3,
+                EndLine = 9,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["payload"] = new Dictionary<string, object?>
+                    {
+                        ["a"] = new Dictionary<string, object?>
+                        {
+                            ["first"] = 1,
+                            ["second"] = 2,
+                        },
+                        ["z"] = new object?[] { 1, true, sharedPrefix + "-second" },
+                    },
+                },
+            });
+
+            Assert.Equal(firstBinding, reorderedBinding);
+            Assert.NotEqual(firstBinding, changedBinding);
+            Assert.True(firstBinding.Length > 1600);
+            Assert.Equal(
+                CopilotAgentToolInputExactBinding.CreateExecutionSignature("agent_tool", new CopilotAgentToolInput
+                {
+                    Query = "inspect",
+                    Path = @"C:\ColorVision\SafetyContract\config.json",
+                    Cursor = "cursor-1",
+                    StartLine = 2,
+                    StartColumn = 3,
+                    EndLine = 9,
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["payload"] = new Dictionary<string, object?>
+                        {
+                            ["a"] = new Dictionary<string, object?>
+                            {
+                                ["first"] = 1,
+                                ["second"] = 2,
+                            },
+                            ["z"] = new object?[] { 1, true, sharedPrefix + "-first" },
+                        },
+                    },
+                }),
+                CopilotAgentToolInputExactBinding.CreateExecutionSignature("agent_tool", new CopilotAgentToolInput
+                {
+                    Query = "inspect",
+                    Path = @"C:\ColorVision\SafetyContract\config.json",
+                    Cursor = "cursor-1",
+                    StartLine = 2,
+                    StartColumn = 3,
+                    EndLine = 9,
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["payload"] = new Dictionary<string, object?>
+                        {
+                            ["z"] = new object?[] { 1, true, sharedPrefix + "-first" },
+                            ["a"] = new Dictionary<string, object?>
+                            {
+                                ["second"] = 2,
+                                ["first"] = 1,
+                            },
+                        },
+                    },
+                }));
+            Assert.NotEqual(
+                CopilotAgentToolInputExactBinding.CreateExecutionSignature("agent_tool", new CopilotAgentToolInput
+                {
+                    Query = "left|right",
+                    Path = "tail",
+                }),
+                CopilotAgentToolInputExactBinding.CreateExecutionSignature("agent_tool", new CopilotAgentToolInput
+                {
+                    Query = "left",
+                    Path = "right|tail",
+                }));
+
+            var firstAction = CreateAgentFrameworkAction(firstBinding);
+            var reorderedAction = CreateAgentFrameworkAction(reorderedBinding);
+            var changedAction = CreateAgentFrameworkAction(changedBinding);
+            try
+            {
+                Assert.Equal(firstAction.ArgumentsDigest, reorderedAction.ArgumentsDigest);
+                Assert.NotEqual(firstAction.ArgumentsDigest, changedAction.ArgumentsDigest);
+            }
+            finally
+            {
+                CancelIfActive(firstAction);
+                CancelIfActive(reorderedAction);
+                CancelIfActive(changedAction);
+            }
+        }
+
+        [Fact]
+        public Task LongArgumentsWithSameVisiblePrefixCannotReuseFirstApproval() =>
+            AssertLongArgumentsCannotReuseApprovalAsync(approveFirstAction: true);
+
+        [Fact]
+        public Task LongArgumentsWithSameVisiblePrefixCannotReuseSecondApproval() =>
+            AssertLongArgumentsCannotReuseApprovalAsync(approveFirstAction: false);
 
         private static ConfirmableAction CreateAction(
             bool executeOnApproval,
@@ -338,6 +553,19 @@ namespace ColorVision.UI.Tests
                 executor ?? (_ => Task.FromResult(CopilotMcpToolCallResult.Ok("executed"))),
                 executeOnApproval,
                 requestContext: CreateRequestContext());
+        }
+
+        private static ConfirmableAction CreateAgentFrameworkAction(string exactArgumentsBinding)
+        {
+            return CopilotMcpConfirmationStore.Instance.CreateAgentFrameworkApproval(
+                "Continue the hosted task",
+                "Resume after a user decision.",
+                "agent_tool",
+                "fields=payload",
+                exactArgumentsBinding,
+                $"call-{Guid.NewGuid():N}",
+                CreateRequestContext(),
+                _ => { });
         }
 
         private static CopilotConfirmationRequestContext CreateRequestContext() =>
@@ -356,6 +584,96 @@ namespace ColorVision.UI.Tests
 
         private static CopilotConfirmationReviewContext CreateReviewContext() =>
             new(ConversationId, TaskId, WorkspacePath);
+
+        private static async Task AssertLongArgumentsCannotReuseApprovalAsync(bool approveFirstAction)
+        {
+            var executionCount = 0;
+            var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+            {
+                WorkspaceSnapshotProvider = () => new CopilotMcpWorkspaceSnapshot
+                {
+                    SolutionDirectoryPath = WorkspacePath,
+                },
+                SetLanguageHandler = (_, _) =>
+                {
+                    executionCount++;
+                    return Task.FromResult(CopilotMcpToolCallResult.Ok("executed"));
+                },
+            });
+            var commonPrefix = $"language-{Guid.NewGuid():N}-" + new string('x', 1200);
+            var firstResult = await dispatcher.CallAsync(
+                "set_language",
+                new Dictionary<string, JsonElement>
+                {
+                    ["language"] = JsonSerializer.SerializeToElement(commonPrefix + "-first"),
+                },
+                CancellationToken.None);
+            var secondResult = await dispatcher.CallAsync(
+                "set_language",
+                new Dictionary<string, JsonElement>
+                {
+                    ["language"] = JsonSerializer.SerializeToElement(commonPrefix + "-second"),
+                },
+                CancellationToken.None);
+            var firstAction = Assert.Single(
+                CopilotMcpConfirmationStore.Instance.GetPendingActions(),
+                action => string.Equals(action.ActionId, firstResult.ApprovalActionId, StringComparison.Ordinal));
+            var secondAction = Assert.Single(
+                CopilotMcpConfirmationStore.Instance.GetPendingActions(),
+                action => string.Equals(action.ActionId, secondResult.ApprovalActionId, StringComparison.Ordinal));
+
+            try
+            {
+                Assert.True(firstResult.RequiresApproval);
+                Assert.True(secondResult.RequiresApproval);
+                Assert.Equal(firstAction.ArgumentsSummary, secondAction.ArgumentsSummary);
+                Assert.NotEqual(firstAction.ArgumentsDigest, secondAction.ArgumentsDigest);
+                Assert.Contains($"arguments_digest: {firstAction.ArgumentsDigest}", firstResult.Text, StringComparison.Ordinal);
+                Assert.Contains($"arguments_digest: {secondAction.ArgumentsDigest}", secondResult.Text, StringComparison.Ordinal);
+                Assert.Contains("\"arguments_digest\"", firstAction.ConfirmActionPayloadJson, StringComparison.Ordinal);
+
+                var approvedAction = approveFirstAction ? firstAction : secondAction;
+                var otherAction = approveFirstAction ? secondAction : firstAction;
+                Assert.True(CopilotMcpConfirmationStore.Instance.Approve(
+                    approvedAction.ActionId,
+                    new CopilotConfirmationReviewContext(string.Empty, string.Empty, WorkspacePath),
+                    out _));
+
+                var wrongDigestResult = await dispatcher.CallAsync(
+                    "confirm_action",
+                    CreateConfirmActionArguments(approvedAction, otherAction.ArgumentsDigest),
+                    CancellationToken.None);
+
+                Assert.False(wrongDigestResult.Success);
+                Assert.Equal("action_arguments_mismatch", wrongDigestResult.ErrorCode);
+                Assert.Equal(ConfirmableActionStatus.Approved, approvedAction.Status);
+                Assert.Equal(0, executionCount);
+
+                var exactDigestResult = await dispatcher.CallAsync(
+                    "confirm_action",
+                    CreateConfirmActionArguments(approvedAction, approvedAction.ArgumentsDigest),
+                    CancellationToken.None);
+
+                Assert.True(exactDigestResult.Success);
+                Assert.Equal(ConfirmableActionStatus.Executed, approvedAction.Status);
+                Assert.Equal(1, executionCount);
+            }
+            finally
+            {
+                CancelIfActive(firstAction);
+                CancelIfActive(secondAction);
+            }
+        }
+
+        private static IReadOnlyDictionary<string, JsonElement> CreateConfirmActionArguments(
+            ConfirmableAction action,
+            string argumentsDigest) =>
+            new Dictionary<string, JsonElement>
+            {
+                ["action_id"] = JsonSerializer.SerializeToElement(action.ActionId),
+                ["tool_name"] = JsonSerializer.SerializeToElement(action.ToolName),
+                ["arguments_digest"] = JsonSerializer.SerializeToElement(argumentsDigest),
+            };
 
         private static CopilotAgentRequest CreateAgentRequest() =>
             new()
