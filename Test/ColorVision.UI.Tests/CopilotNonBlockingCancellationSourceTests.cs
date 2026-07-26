@@ -97,4 +97,43 @@ public sealed class CopilotNonBlockingCancellationSourceTests
             _ = callbackCompleted.Wait(TimeSpan.FromSeconds(2));
         }
     }
+
+    [Fact]
+    public async Task RepeatedRequestAndDisposeStayNonBlockingWhileCallbackIsRunning()
+    {
+        var source = new CopilotNonBlockingCancellationSource();
+        using var callbackStarted = new ManualResetEventSlim();
+        using var releaseCallback = new ManualResetEventSlim();
+        using var registration = source.Token.Register(() =>
+        {
+            callbackStarted.Set();
+            releaseCallback.Wait(CancellationToken.None);
+        });
+        var firstRequest = Task.Factory.StartNew(
+            source.RequestCancellation,
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+
+        try
+        {
+            Assert.True(callbackStarted.Wait(TimeSpan.FromSeconds(2)));
+            await firstRequest.WaitAsync(TimeSpan.FromSeconds(1));
+
+            source.RequestCancellation();
+            source.Dispose();
+            source.RequestCancellation();
+            source.Dispose();
+
+            Assert.True(source.IsCancellationRequested);
+            Assert.False(source.DisposalCompletion.IsCompleted);
+        }
+        finally
+        {
+            releaseCallback.Set();
+            source.Dispose();
+        }
+
+        await source.DisposalCompletion.WaitAsync(TimeSpan.FromSeconds(2));
+    }
 }

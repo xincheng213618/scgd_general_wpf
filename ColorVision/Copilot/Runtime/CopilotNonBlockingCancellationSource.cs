@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
 
         public CancellationToken Token => _token;
 
+        public bool IsCancellationRequested => _token.IsCancellationRequested;
+
         internal Task DisposalCompletion => _disposalCompletion.Task;
 
         public void RequestCancellation()

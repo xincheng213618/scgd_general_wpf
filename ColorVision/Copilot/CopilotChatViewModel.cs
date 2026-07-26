@@ -54,16 +54,16 @@ namespace ColorVision.Copilot
         private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, CancellationTokenSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
-        private readonly HashSet<CancellationTokenSource> _auxiliaryOperationCancellations = new();
+        private readonly Dictionary<string, CopilotNonBlockingCancellationSource> _conversationTitleGenerations = new(StringComparer.Ordinal);
+        private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
         private readonly DispatcherTimer _pendingActionExpiryTimer;
-        private CancellationTokenSource? _pendingActionFeedbackCts;
-        private CancellationTokenSource? _compactConversationCts;
-        private CancellationTokenSource? _fileAttachmentCts;
-        private CancellationTokenSource? _webPageAttachmentCts;
-        private CancellationTokenSource? _sideQuestionCts;
-        private CancellationTokenSource? _composerReferenceRefreshCts;
+        private CopilotNonBlockingCancellationSource? _pendingActionFeedbackCts;
+        private CopilotNonBlockingCancellationSource? _compactConversationCts;
+        private CopilotNonBlockingCancellationSource? _fileAttachmentCts;
+        private CopilotNonBlockingCancellationSource? _webPageAttachmentCts;
+        private CopilotNonBlockingCancellationSource? _sideQuestionCts;
+        private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
         private CopilotConversationRecord? _selectedConversation;
@@ -1061,7 +1061,7 @@ namespace ColorVision.Copilot
             CancelComposerReferenceRefresh(resetSession: false);
             IsComposerReferenceMentionActive = true;
             var version = Interlocked.Increment(ref _composerReferenceRefreshVersion);
-            var cancellation = new CancellationTokenSource();
+            var cancellation = new CopilotNonBlockingCancellationSource();
             _composerReferenceRefreshCts = cancellation;
             var immediateSuggestions = CopilotComposerReferenceCatalog.SearchImmediate(
                 mention.Query,
@@ -1155,7 +1155,7 @@ namespace ColorVision.Copilot
             var cancellation = Interlocked.Exchange(ref _composerReferenceRefreshCts, null);
             if (cancellation != null)
             {
-                cancellation.Cancel();
+                cancellation.RequestCancellation();
                 cancellation.Dispose();
             }
             if (resetSession)
@@ -1477,7 +1477,7 @@ namespace ColorVision.Copilot
                 .Append(new CopilotRequestMessage("user", compactRequest))
                 .ToArray();
 
-            using var cancellation = new CancellationTokenSource();
+            using var cancellation = new CopilotNonBlockingCancellationSource();
             _compactConversationCts = cancellation;
             _isCompactingConversation = true;
             IsBusy = true;
@@ -1787,7 +1787,7 @@ namespace ColorVision.Copilot
                 return;
 
             SideQuestionStatusText = "正在取消旁路提问…";
-            TryCancelCancellationSource(cancellation);
+            cancellation.RequestCancellation();
         }
 
         private void DismissSideQuestion()
@@ -2678,14 +2678,14 @@ namespace ColorVision.Copilot
 
         private void SetPendingActionFeedback(string message)
         {
-            _pendingActionFeedbackCts?.Cancel();
-            var cts = new CancellationTokenSource();
+            _pendingActionFeedbackCts?.RequestCancellation();
+            var cts = new CopilotNonBlockingCancellationSource();
             _pendingActionFeedbackCts = cts;
             PendingActionFeedbackText = message ?? string.Empty;
             _ = ClearPendingActionFeedbackAsync(cts);
         }
 
-        private async Task ClearPendingActionFeedbackAsync(CancellationTokenSource cts)
+        private async Task ClearPendingActionFeedbackAsync(CopilotNonBlockingCancellationSource cts)
         {
             try
             {
@@ -2710,7 +2710,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void ClearPendingActionFeedback(CancellationTokenSource cts)
+        private void ClearPendingActionFeedback(CopilotNonBlockingCancellationSource cts)
         {
             if (!ReferenceEquals(_pendingActionFeedbackCts, cts))
                 return;
@@ -2887,17 +2887,17 @@ namespace ColorVision.Copilot
         {
             if (_isCompactingConversation)
             {
-                _compactConversationCts?.Cancel();
+                _compactConversationCts?.RequestCancellation();
                 return;
             }
             if (_fileAttachmentCts != null)
             {
-                TryCancelCancellationSource(_fileAttachmentCts);
+                _fileAttachmentCts.RequestCancellation();
                 return;
             }
             if (_webPageAttachmentCts != null)
             {
-                TryCancelCancellationSource(_webPageAttachmentCts);
+                _webPageAttachmentCts.RequestCancellation();
                 return;
             }
             if (IsViewingQueuedRun || IsViewingActiveRun)
@@ -3998,7 +3998,7 @@ namespace ColorVision.Copilot
                 return;
 
             CancelConversationTitleGeneration(conversation.Id);
-            var generation = new CancellationTokenSource();
+            var generation = new CopilotNonBlockingCancellationSource();
             _conversationTitleGenerations[conversation.Id] = generation;
             _ = GenerateConversationTitleAsync(conversation, requestProfile.Clone(), generation);
         }
@@ -4016,7 +4016,7 @@ namespace ColorVision.Copilot
         private async Task GenerateConversationTitleAsync(
             CopilotConversationRecord conversation,
             CopilotProfileConfig requestProfile,
-            CancellationTokenSource generation)
+            CopilotNonBlockingCancellationSource generation)
         {
             try
             {
@@ -4077,10 +4077,10 @@ namespace ColorVision.Copilot
             }
         }
 
-        private bool IsCurrentConversationTitleGeneration(string conversationId, CancellationTokenSource generation) =>
+        private bool IsCurrentConversationTitleGeneration(string conversationId, CopilotNonBlockingCancellationSource generation) =>
             _conversationTitleGenerations.TryGetValue(conversationId, out var current) && ReferenceEquals(current, generation);
 
-        private void CompleteConversationTitleGeneration(string conversationId, CancellationTokenSource generation)
+        private void CompleteConversationTitleGeneration(string conversationId, CopilotNonBlockingCancellationSource generation)
         {
             if (IsCurrentConversationTitleGeneration(conversationId, generation))
                 _conversationTitleGenerations.Remove(conversationId);
@@ -4092,7 +4092,7 @@ namespace ColorVision.Copilot
             if (!_conversationTitleGenerations.Remove(conversationId, out var generation))
                 return;
 
-            TryCancelCancellationSource(generation);
+            generation.RequestCancellation();
         }
 
         private void CancelAllConversationTitleGenerations()
@@ -4100,17 +4100,17 @@ namespace ColorVision.Copilot
             var generations = _conversationTitleGenerations.Values.ToArray();
             _conversationTitleGenerations.Clear();
             foreach (var generation in generations)
-                TryCancelCancellationSource(generation);
+                generation.RequestCancellation();
         }
 
-        private CancellationTokenSource BeginAuxiliaryOperation()
+        private CopilotNonBlockingCancellationSource BeginAuxiliaryOperation()
         {
-            var cancellation = new CancellationTokenSource();
+            var cancellation = new CopilotNonBlockingCancellationSource();
             _auxiliaryOperationCancellations.Add(cancellation);
             return cancellation;
         }
 
-        private void CompleteAuxiliaryOperation(CancellationTokenSource cancellation)
+        private void CompleteAuxiliaryOperation(CopilotNonBlockingCancellationSource cancellation)
         {
             _auxiliaryOperationCancellations.Remove(cancellation);
             cancellation.Dispose();
@@ -4121,22 +4121,7 @@ namespace ColorVision.Copilot
             var cancellations = _auxiliaryOperationCancellations.ToArray();
             _auxiliaryOperationCancellations.Clear();
             foreach (var cancellation in cancellations)
-                TryCancelCancellationSource(cancellation);
-        }
-
-        private static void TryCancelCancellationSource(CancellationTokenSource cancellation)
-        {
-            try
-            {
-                cancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (AggregateException ex)
-            {
-                Trace.TraceWarning($"Copilot auxiliary operation cancellation callback failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}");
-            }
+                cancellation.RequestCancellation();
         }
 
         private void BringConversationToFront(CopilotConversationRecord conversation)
@@ -5649,7 +5634,7 @@ namespace ColorVision.Copilot
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
             if (_sideQuestionCts != null)
-                TryCancelCancellationSource(_sideQuestionCts);
+                _sideQuestionCts.RequestCancellation();
             RestoreQueuedFollowUpsToDrafts();
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
@@ -5729,9 +5714,9 @@ namespace ColorVision.Copilot
             _conversationSearchDebounceTimer.Stop();
             _conversationSearchDebounceTimer.Tick -= ConversationSearchDebounceTimer_Tick;
             _pendingActionExpiryTimer.Stop();
-            _pendingActionFeedbackCts?.Cancel();
+            _pendingActionFeedbackCts?.RequestCancellation();
             _pendingActionFeedbackCts = null;
-            _compactConversationCts?.Cancel();
+            _compactConversationCts?.RequestCancellation();
             CancelComposerReferenceRefresh(resetSession: true);
             _stateSaveScheduler.Dispose();
             GC.SuppressFinalize(this);
