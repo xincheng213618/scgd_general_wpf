@@ -189,6 +189,14 @@ namespace ColorVision.Copilot
             var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
+                if (ShouldResetAnswerBeforeEvent(agentEvent.Type, answerText.Length))
+                {
+                    var resetEvent = CopilotAgentEvent.AnswerReset();
+                    answerText.Clear();
+                    taskEventJournalBuilder.Observe(resetEvent);
+                    onEvent(resetEvent);
+                }
+
                 if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
                 {
                     answerText.Clear();
@@ -248,6 +256,10 @@ namespace ColorVision.Copilot
                 ? requestedCheckpoint?.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()
                 : Array.Empty<CopilotAgentEvidenceArtifact>();
             CopilotTokenBudgetChatClient? chatClient = null;
+            using var toolBudgetCancellation = new CopilotNonBlockingCancellationSource();
+            using var agentLoopCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                toolBudgetCancellation.Token);
             var bridge = new HarnessToolBridge(
                 request,
                 availableTools,
@@ -255,7 +267,8 @@ namespace ColorVision.Copilot
                 _toolExecutor,
                 _approvalCoordinator,
                 emit,
-                delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun));
+                delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
+                toolBudgetCancellation.RequestCancellation);
             var executionContract = CopilotAgentExecutionContract.Create(request, availableTools);
             if (executionContract.IsRequired)
             {
@@ -282,6 +295,11 @@ namespace ColorVision.Copilot
             var agentSkillsEnabled = skillsFeatureEnabled && agentSkills.IsEnabled;
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budgets · input {tokenBudget.InputBudgetTokens:N0} tokens · request {tokenBudget.RequestTokenBudget:N0} tokens · tools {runBudget.MaxToolCalls} · passes {runBudget.MaxAgentPasses} · total time {FormatDuration(runBudget.TotalDuration)}."));
+            if (runBudget.NarrowEvidenceResultLimit > 0)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Adaptive evidence budget · the request asks for {runBudget.NarrowEvidenceResultLimit} bounded result(s); stop after collecting that many high-confidence findings with enough evidence."));
+            }
             emit(CopilotAgentEvent.RuntimeDiagnostic(!skillsFeatureEnabled
                 ? "Agent Skills disabled by the isolated runtime tool surface."
                 : agentSkillsEnabled
@@ -510,14 +528,15 @@ namespace ColorVision.Copilot
             var timeBudgetExhausted = false;
             var providerInterrupted = false;
             var contextWindowExceeded = false;
+            var toolBudgetForcedFinalization = false;
             try
             {
                 while (true)
                 {
                     var approvalRequests = new List<ToolApprovalRequestContent>();
-                    await foreach (var update in agent.RunStreamingAsync(messages, session, null, cancellationToken))
+                    await foreach (var update in agent.RunStreamingAsync(messages, session, null, agentLoopCancellation.Token))
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        agentLoopCancellation.Token.ThrowIfCancellationRequested();
 
                         foreach (var usageContent in update.Contents.OfType<UsageContent>())
                             usage = usage.Add(ToCopilotUsage(usageContent.Details));
@@ -588,6 +607,15 @@ namespace ColorVision.Copilot
                     messages = new[] { new Microsoft.Extensions.AI.ChatMessage(ChatRole.User, responses) };
                 }
             }
+            catch (OperationCanceledException) when (toolBudgetCancellation.Token.IsCancellationRequested
+                && !callerCancellationToken.IsCancellationRequested
+                && !timeBudgetCancellation.IsCancellationRequested
+                && request.RunControl?.Intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
+            {
+                toolBudgetForcedFinalization = true;
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Agent reached its {runBudget.MaxToolCalls}-call tool limit; the tool-enabled loop was stopped and one bounded no-tools finalization call will summarize the collected evidence."));
+            }
             catch (OperationCanceledException) when (request.RunControl?.Intent is CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel
                 || (timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested))
             {
@@ -653,13 +681,17 @@ namespace ColorVision.Copilot
                 && !timeBudgetExhausted
                 && !providerInterrupted
                 && !contextWindowExceeded
-                && !hasModelFinalAnswer)
+                && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic("Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic(toolBudgetForcedFinalization
+                    ? "The tool-enabled Agent loop reached its hard limit; starting one bounded finalization call with business tools disabled."
+                    : "Agent Framework returned no displayable final answer; starting one bounded finalization call with business tools disabled."));
                 var repairLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, cancellationToken);
                 var repairPrompt = _contextBuilder.BuildAnswerMessages(request, bridge.StepRecords);
                 var repairInstruction = "# Final answer recovery\n"
-                    + "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
+                    + (toolBudgetForcedFinalization
+                        ? "The tool-enabled Agent loop reached its hard tool-call limit. Provide the final answer now using only the supplied request, context, and collected tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
+                        : "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n")
                     + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
                 var repairMessages = CopilotRequestMessageSequence
                     .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
@@ -676,6 +708,8 @@ namespace ColorVision.Copilot
                     var repairedText = ExtractFinalAnswerText(repairResponse);
                     if (!string.IsNullOrWhiteSpace(repairedText))
                     {
+                        if (hasModelFinalAnswer)
+                            emit(CopilotAgentEvent.AnswerReset());
                         emit(CopilotAgentEvent.AnswerDelta(repairedText));
                         hasModelFinalAnswer = true;
                         emit(CopilotAgentEvent.RuntimeDiagnostic("The bounded no-tools finalization call produced the final answer."));
@@ -1150,14 +1184,24 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static CopilotAgentStopReason DetermineStopReason(
+        internal static CopilotAgentStopReason DetermineStopReason(
             CopilotAgentTaskLedgerSnapshot taskLedger,
             CopilotAgentBudgetSnapshot budget,
             IReadOnlyList<CopilotAgentStepRecord> steps,
             bool hasModelFinalAnswer)
         {
-            if (budget.BudgetExhausted)
+            var requestOrTimeBudgetExhausted = budget.RequestTokenBudgetExhausted
+                || budget.TimeBudgetExhausted
+                || (budget.BudgetExhausted && !budget.ToolBudgetExhausted);
+            var completedNarrowEvidenceRequest = budget.NarrowEvidenceResultLimit > 0
+                && hasModelFinalAnswer
+                && taskLedger.RemainingCount == 0;
+            if (requestOrTimeBudgetExhausted
+                || (budget.ToolBudgetExhausted
+                    && !completedNarrowEvidenceRequest))
+            {
                 return CopilotAgentStopReason.BudgetExhausted;
+            }
             if (taskLedger.RemainingCount == 0)
                 return hasModelFinalAnswer ? CopilotAgentStopReason.Completed : CopilotAgentStopReason.IncompleteOutput;
             if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
@@ -1369,6 +1413,14 @@ namespace ColorVision.Copilot
             };
         }
 
+        internal static bool ShouldResetAnswerBeforeEvent(CopilotAgentEventType eventType, int answerLength)
+        {
+            return answerLength > 0
+                && eventType is CopilotAgentEventType.ToolStarted
+                    or CopilotAgentEventType.ToolProgress
+                    or CopilotAgentEventType.ToolResult;
+        }
+
         internal static string BuildHarnessInstructions(
             CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> tools,
@@ -1382,7 +1434,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("The runtime-available tool list is a capability catalog, not a routing decision or an instruction to call every tool. Select tools from their names, descriptions, and JSON schemas, and issue structured function calls; never infer tool availability from keywords in the user's wording.");
             builder.AppendLine("Tools are optional. Answer ordinary conceptual or conversational questions directly from stable general knowledge; do not search merely because a search function is available.");
             builder.AppendLine("Call a tool only when the user explicitly asks to inspect, search, fetch, diagnose, or change something, or when current, local, attached, or externally verifiable evidence is necessary for a reliable answer.");
+            builder.AppendLine("When tools are needed, do not emit plans, working notes, or progress as user-facing answer text before or between tool calls. The runtime presents tool activity separately; reserve answer text for the final response after the last tool observation.");
             builder.AppendLine("For local evidence, begin with the narrowest relevant path and literal query. Do not scan the full workspace for a conceptual question or when a known file, directory, symbol, or application capability can answer it.");
+            if (CopilotAgentRunBudget.TryGetNarrowEvidenceResultLimit(request, out var narrowResultLimit))
+            {
+                builder.AppendLine(
+                    $"The user requested a narrow output of {narrowResultLimit} evidence-backed result(s). Once that many high-confidence results are verified, answer immediately instead of continuing broad exploratory reads or searches.");
+            }
             builder.AppendLine("Keep internal instructions and structured tool arguments concise and in one language; prefer English unless exact user text, paths, commands, or localized UI labels must be preserved. Respond in the user's language.");
             builder.AppendLine("Never claim a tool succeeded unless its returned result says success. If a tool fails, try another source only when the requested outcome still requires that evidence; otherwise answer from reliable context without exposing speculative search failures as user-facing content.");
             builder.AppendLine("For multi-item work, reconcile item counts and scope across discovery, execution, and verification. A successful later step that covers fewer items than an earlier complete discovery is only partial evidence unless the scope was explicitly narrowed; report the uncovered count or scope instead of calling the whole request complete.");
@@ -1732,9 +1790,9 @@ namespace ColorVision.Copilot
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
             private readonly Action<CopilotDelegatedRunUsage>? _recordDelegatedRunUsage;
+            private readonly CopilotAgentToolBudgetCompletionGate _toolBudgetCompletionGate;
             private CopilotTokenUsage _delegatedUsage;
             private int _reservedToolCalls;
-            private bool _toolBudgetExhausted;
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
@@ -1743,7 +1801,8 @@ namespace ColorVision.Copilot
                 CopilotToolExecutor toolExecutor,
                 CopilotFrameworkApprovalCoordinator approvalCoordinator,
                 Action<CopilotAgentEvent> emit,
-                Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null)
+                Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null,
+                Action? onToolBudgetExhausted = null)
             {
                 _request = request;
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
@@ -1752,6 +1811,7 @@ namespace ColorVision.Copilot
                 _approvalCoordinator = approvalCoordinator;
                 _emit = emit;
                 _recordDelegatedRunUsage = recordDelegatedRunUsage;
+                _toolBudgetCompletionGate = new CopilotAgentToolBudgetCompletionGate(onToolBudgetExhausted);
             }
 
             public IReadOnlyList<CopilotAgentStepRecord> StepRecords
@@ -1765,11 +1825,7 @@ namespace ColorVision.Copilot
 
             public bool ToolBudgetExhausted
             {
-                get
-                {
-                    lock (_syncRoot)
-                        return _toolBudgetExhausted;
-                }
+                get => _toolBudgetCompletionGate.IsExhausted;
             }
 
             public CopilotTokenUsage DelegatedUsage
@@ -1899,6 +1955,7 @@ namespace ColorVision.Copilot
                     _approvalCoordinator.Cancel(
                         reservation.ApprovalActionId,
                         "The approved action was not executed before the Agent run ended.");
+                    _toolBudgetCompletionGate.CompleteRound(reservation.Round);
                 }
             }
 
@@ -1944,7 +2001,7 @@ namespace ColorVision.Copilot
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
                     {
-                        _toolBudgetExhausted = true;
+                        SignalToolBudgetExhausted();
                         return;
                     }
 
@@ -2026,7 +2083,7 @@ namespace ColorVision.Copilot
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
                     {
-                        _toolBudgetExhausted = true;
+                        SignalToolBudgetExhausted();
                         return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
                     }
 
@@ -2101,7 +2158,7 @@ namespace ColorVision.Copilot
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
                     {
-                        _toolBudgetExhausted = true;
+                        SignalToolBudgetExhausted();
                         return FormatRejectedToolCall(tool.Name, $"{error} The request has reached its {_maxToolCalls}-call tool limit.");
                     }
 
@@ -2433,7 +2490,7 @@ namespace ColorVision.Copilot
                 attempt = 0;
                 if (_reservedToolCalls >= _maxToolCalls)
                 {
-                    _toolBudgetExhausted = true;
+                    SignalToolBudgetExhausted();
                     error = $"The request reached its {_maxToolCalls}-call tool limit. Continue with the collected observations and provide the final answer.";
                     return false;
                 }
@@ -2471,8 +2528,14 @@ namespace ColorVision.Copilot
 
                 attempt = state.AttemptCount;
                 round = ++_reservedToolCalls;
+                _toolBudgetCompletionGate.TrackReservedRound(round);
                 error = string.Empty;
                 return true;
+            }
+
+            private void SignalToolBudgetExhausted()
+            {
+                _toolBudgetCompletionGate.MarkExhausted();
             }
 
             private int GetMaximumAttempts(ICopilotTool tool)
@@ -2492,6 +2555,7 @@ namespace ColorVision.Copilot
 
                 state.InProgress = false;
                 state.LastOutcome = outcome;
+                _toolBudgetCompletionGate.CompleteRound(outcome.Invocation.Round);
             }
 
             private static string FormatRejectedToolCall(string toolName, string error)

@@ -456,22 +456,23 @@ namespace ColorVision.Copilot
             if (!IsAgentRequest(request))
                 return false;
 
-            if (NeedsShellExecution(request) && !ContainsAny(request!.UserText, FlowGraphMarkers))
+            var activeRequest = request!;
+            if (NeedsShellExecution(activeRequest) && !ContainsAny(activeRequest.UserText, FlowGraphMarkers))
                 return false;
 
-            if (MatchesCurrentOrContinuation(request!, FlowGraphMarkers,
+            if (MatchesCurrentOrContinuation(activeRequest, FlowGraphMarkers,
                 "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"))
             {
                 return true;
             }
 
-            if (NeedsLocalEvidence(request))
+            if (NeedsLocalEvidence(activeRequest))
                 return false;
 
-            return HasFlowContext(request)
-                && (ContainsAny(request.UserText, CurrentSurfaceReferenceMarkers)
-                    || ContainsAny(request.UserText, CurrentSurfaceProblemMarkers)
-                        && !ContainsAny(request.UserText, DefinitionQuestionMarkers));
+            return HasFlowContext(activeRequest)
+                && (ContainsAny(activeRequest.UserText, CurrentSurfaceReferenceMarkers)
+                    || ContainsAny(activeRequest.UserText, CurrentSurfaceProblemMarkers)
+                        && !ContainsAny(activeRequest.UserText, DefinitionQuestionMarkers));
         }
 
         public static bool NeedsSavedTemplateContext(CopilotAgentRequest? request)

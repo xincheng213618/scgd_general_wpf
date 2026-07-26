@@ -640,11 +640,15 @@ namespace ColorVision.Copilot
 
         public bool BudgetExhausted { get; init; }
 
+        public bool RequestTokenBudgetExhausted { get; init; }
+
         public int MaxToolCalls { get; init; }
 
         public int ToolCalls { get; init; }
 
         public bool ToolBudgetExhausted { get; init; }
+
+        public int NarrowEvidenceResultLimit { get; init; }
 
         public int MaxAgentPasses { get; init; }
 
