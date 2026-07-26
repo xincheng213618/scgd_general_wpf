@@ -137,6 +137,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan MaximumHookPhaseTimeout = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan DefaultProgressInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan MaximumProgressInterval = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan MinimumStructuredProgressInterval = TimeSpan.FromMilliseconds(250);
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _hooks;
         private readonly Func<DateTimeOffset> _utcNow;
@@ -424,9 +425,47 @@ namespace ColorVision.Copilot
         {
             try
             {
-                using var timer = new PeriodicTimer(_progressInterval);
-                while (await timer.WaitForNextTickAsync(cancellationToken))
+                var hasPublishedStructuredProgress = false;
+                var lastStructuredProgressAt = TimeSpan.Zero;
+                var lastPublishedProgressVersion = 0L;
+                while (true)
                 {
+                    var waitResult = await progressContext.WaitForUpdateAsync(
+                        _progressInterval,
+                        cancellationToken);
+                    if (waitResult == CopilotToolProgressWaitResult.Completed)
+                        return;
+
+                    CopilotToolProgressUpdate? reportedProgress;
+                    if (waitResult == CopilotToolProgressWaitResult.Updated)
+                    {
+                        if (hasPublishedStructuredProgress)
+                        {
+                            var remainingDelay = MinimumStructuredProgressInterval
+                                - (stopwatch.Elapsed - lastStructuredProgressAt);
+                            if (remainingDelay > TimeSpan.Zero)
+                                await Task.Delay(remainingDelay, cancellationToken);
+                        }
+
+                        progressContext.DrainUpdateNotifications();
+                        var progressSnapshot = progressContext.GetLatestSnapshot();
+                        reportedProgress = progressSnapshot.Update;
+                        if (reportedProgress == null
+                            || progressSnapshot.Version <= lastPublishedProgressVersion)
+                            continue;
+                        lastStructuredProgressAt = stopwatch.Elapsed;
+                        hasPublishedStructuredProgress = true;
+                        lastPublishedProgressVersion = progressSnapshot.Version;
+                    }
+                    else
+                    {
+                        var progressSnapshot = progressContext.GetLatestSnapshot();
+                        reportedProgress = progressSnapshot.Update;
+                        lastPublishedProgressVersion = Math.Max(
+                            lastPublishedProgressVersion,
+                            progressSnapshot.Version);
+                    }
+
                     if (!stopwatch.IsRunning)
                         return;
 
@@ -439,7 +478,6 @@ namespace ColorVision.Copilot
                         elapsedMs,
                         timeout,
                         queueDurationMs: queueDurationMs);
-                    var reportedProgress = progressContext.LatestSnapshot;
                     var progressText = FormatReportedProgress(reportedProgress);
                     onEvent(CopilotAgentEvent.ToolProgress(
                         execution,
