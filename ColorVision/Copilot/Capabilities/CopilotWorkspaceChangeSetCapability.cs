@@ -132,7 +132,8 @@ namespace ColorVision.Copilot
                 builder.AppendLine("Every file is revalidated before the first write. If a later write fails, completed writes are compensated.");
                 foreach (var record in records)
                 {
-                    builder.Append("- ").Append(record.Operation).Append(": ").Append(record.FullPath);
+                    builder.Append("- ").Append(record.Operation).Append(": ");
+                    CopilotApprovalReviewTextEncoder.Append(builder, record.FullPath);
                     if (record.Operation == WorkspacePatchOperation.Replace)
                         builder.Append(" (").Append(record.Replacements.Length)
                             .Append(record.Replacements.Length == 1 ? " replacement)" : " replacements)");
@@ -142,11 +143,12 @@ namespace ColorVision.Copilot
                         .Append(" -> ")
                         .AppendLine(rollback ? record.BeforeSha256 : record.AfterSha256);
                 }
+                var reviewDetails = builder.ToString().TrimEnd();
                 return new CopilotToolApprovalPresentation(
                     rollback
                         ? $"Rollback {records.Length}-file workspace change set"
                         : $"Apply {records.Length}-file workspace change set",
-                    builder.ToString().TrimEnd(),
+                    "Review every target path and SHA-256 transition in the complete execution details before approving.",
                     ImpactSummary: rollback
                         ? $"将把当前工作区中的 {records.Length} 个文件恢复到该变更集应用前的内容。"
                         : $"将以一个受保护变更集写入当前工作区中的 {records.Length} 个文件。",
@@ -155,7 +157,10 @@ namespace ColorVision.Copilot
                         : CopilotApprovalReversibility.AutomaticUntilExpiry,
                     ReversibilitySummary: rollback
                         ? "回滚本身不会再生成自动恢复点；如需撤销回滚，需要后续手动修改。"
-                        : $"可在 {changeSet.ExpiresAtUtc.ToLocalTime():HH:mm:ss} 前通过该变更集整体回滚。");
+                        : $"可在 {changeSet.ExpiresAtUtc.ToLocalTime():HH:mm:ss} 前通过该变更集整体回滚。")
+                {
+                    ReviewDetails = reviewDetails,
+                };
             }
         }
 

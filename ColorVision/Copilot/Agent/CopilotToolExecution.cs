@@ -31,6 +31,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRequest AgentRequest { get; init; } = null!;
 
+        internal CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
+
         public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
         public CopilotToolCall ToolCall { get; init; } = new();
@@ -657,7 +659,8 @@ namespace ColorVision.Copilot
                 && !CopilotMcpConfirmationStore.Instance.LinkAgentCall(
                     result.Approval.ActionId,
                     invocation.CallId,
-                    invocation.AgentRequest))
+                    invocation.AgentRequest,
+                    invocation.ExecutionScope))
             {
                 result = new CopilotToolResult
                 {
@@ -695,6 +698,16 @@ namespace ColorVision.Copilot
         {
             var toolInput = invocation.ToolInput ?? CopilotAgentToolInput.Empty;
             var toolCall = invocation.ToolCall ?? new CopilotToolCall();
+            var executionSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
+                invocation.Tool.Name,
+                toolInput);
+            var executionScope = invocation.ExecutionScope.IsEmpty
+                ? CopilotExecutionScope.ForAgentRequest(invocation.AgentRequest)
+                : invocation.ExecutionScope;
+            executionScope = executionScope.BindToolCall(
+                invocation.Tool.Name,
+                callId,
+                executionSignature);
             if (string.IsNullOrWhiteSpace(toolCall.ToolName))
             {
                 toolCall = new CopilotToolCall
@@ -715,6 +728,7 @@ namespace ColorVision.Copilot
                 RuntimeName = string.IsNullOrWhiteSpace(invocation.RuntimeName) ? "agent" : invocation.RuntimeName.Trim(),
                 Tool = invocation.Tool,
                 AgentRequest = invocation.AgentRequest,
+                ExecutionScope = executionScope,
                 ToolInput = toolInput,
                 ToolCall = toolCall,
                 FrameworkApprovalGranted = invocation.FrameworkApprovalGranted,

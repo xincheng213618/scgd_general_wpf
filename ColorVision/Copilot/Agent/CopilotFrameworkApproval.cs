@@ -1,5 +1,7 @@
 using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -126,6 +128,27 @@ namespace ColorVision.Copilot
             return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         }
 
+        public static bool MatchesExecutionSignature(
+            string? toolName,
+            CopilotAgentToolInput? input,
+            string? expectedSignature)
+        {
+            if (string.IsNullOrWhiteSpace(expectedSignature))
+                return false;
+
+            try
+            {
+                var actualBytes = Convert.FromHexString(CreateExecutionSignature(toolName, input));
+                var expectedBytes = Convert.FromHexString(expectedSignature.Trim());
+                return actualBytes.Length == expectedBytes.Length
+                    && CryptographicOperations.FixedTimeEquals(actualBytes, expectedBytes);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static void WriteNullableInt(Utf8JsonWriter writer, string propertyName, int? value)
         {
             writer.WritePropertyName(propertyName);
@@ -164,6 +187,71 @@ namespace ColorVision.Copilot
         }
     }
 
+    internal static class CopilotAgentToolInputSnapshot
+    {
+        public static bool TryCreate(
+            CopilotAgentToolInput? input,
+            out CopilotAgentToolInput snapshot,
+            out string error)
+        {
+            input ??= CopilotAgentToolInput.Empty;
+            try
+            {
+                var serializedArguments = JsonSerializer.SerializeToElement(input.Arguments);
+                if (serializedArguments.ValueKind != JsonValueKind.Object)
+                {
+                    snapshot = CopilotAgentToolInput.Empty;
+                    error = "Tool arguments must serialize to a JSON object.";
+                    return false;
+                }
+
+                var frozenArguments = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var property in serializedArguments.EnumerateObject())
+                {
+                    if (!frozenArguments.TryAdd(property.Name, property.Value.Clone()))
+                    {
+                        snapshot = CopilotAgentToolInput.Empty;
+                        error = $"Tool arguments contain the duplicate field '{property.Name}'.";
+                        return false;
+                    }
+                }
+
+                snapshot = new CopilotAgentToolInput
+                {
+                    Arguments = new ReadOnlyDictionary<string, object?>(frozenArguments),
+                    Query = input.Query ?? string.Empty,
+                    Path = input.Path ?? string.Empty,
+                    Cursor = input.Cursor ?? string.Empty,
+                    StartLine = input.StartLine,
+                    StartColumn = input.StartColumn,
+                    EndLine = input.EndLine,
+                };
+                error = string.Empty;
+                return true;
+            }
+            catch
+            {
+                snapshot = CopilotAgentToolInput.Empty;
+                error = "Tool arguments could not be frozen into an immutable approval snapshot.";
+                return false;
+            }
+        }
+    }
+
+    internal readonly record struct CopilotFrameworkApprovalReservationKey(
+        string ProviderCallId,
+        string ExecutionSignature)
+    {
+        public static CopilotFrameworkApprovalReservationKey Create(
+            string? providerCallId,
+            string executionSignature)
+        {
+            return new CopilotFrameworkApprovalReservationKey(
+                string.IsNullOrWhiteSpace(providerCallId) ? string.Empty : providerCallId.Trim(),
+                executionSignature ?? string.Empty);
+        }
+    }
+
     internal sealed class CopilotFrameworkApprovalCoordinator
     {
         private readonly CopilotMcpConfirmationStore _confirmationStore;
@@ -183,7 +271,8 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
             string callId,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            CopilotExecutionScope? executionScope = null)
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
@@ -239,7 +328,8 @@ namespace ColorVision.Copilot
                     CopilotConfirmationRequestContext.ForAgent(
                         request,
                         presentation,
-                        "in-app-agent-framework"),
+                        "in-app-agent-framework",
+                        executionScope),
                     createdAction => action = createdAction,
                     reviewDetails: presentation.ReviewDetails);
 
@@ -279,9 +369,18 @@ namespace ColorVision.Copilot
         public bool BeginIfRequired(
             string? actionId,
             CopilotAgentRequest request,
-            string currentWorkspacePath) =>
+            string currentWorkspacePath,
+            string argumentsDigest,
+            string agentCallId,
+            CopilotExecutionScope? executionScope = null) =>
             !string.IsNullOrWhiteSpace(actionId)
-            && _confirmationStore.BeginAgentFrameworkAction(actionId, request, currentWorkspacePath);
+            && _confirmationStore.BeginAgentFrameworkAction(
+                actionId,
+                request,
+                currentWorkspacePath,
+                argumentsDigest,
+                agentCallId,
+                executionScope);
 
         public void Complete(string? actionId, CopilotToolResult result)
         {

@@ -44,6 +44,15 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
     }
 
+    internal interface ICopilotScopedApplicationCapabilityInvoker
+    {
+        Task<CopilotApplicationCapabilityCallResult> InvokeScopedAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken);
+    }
+
     internal static class CopilotApplicationCapabilityInvocation
     {
         public static Task<CopilotApplicationCapabilityCallResult> InvokeAsync(
@@ -58,6 +67,15 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
             if (!frameworkApprovalGranted)
             {
+                if (invoker is ICopilotScopedApplicationCapabilityInvoker scopedInvoker)
+                {
+                    return scopedInvoker.InvokeScopedAsync(
+                        capabilityName,
+                        arguments,
+                        request,
+                        cancellationToken);
+                }
+
                 return invoker.InvokeAsync(
                     capabilityName,
                     arguments,

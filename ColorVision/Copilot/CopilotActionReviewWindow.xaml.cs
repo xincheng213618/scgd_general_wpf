@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.Copilot
@@ -22,16 +23,50 @@ namespace ColorVision.Copilot
         internal CopilotActionReviewWindow(Mcp.ConfirmableAction action)
         {
             _action = action ?? throw new ArgumentNullException(nameof(action));
-            InitializeComponent();
             DataContext = action;
-            ApproveButton.IsEnabled = !action.HasReviewDetails;
+            InitializeComponent();
+            ApproveButton.IsEnabled = action.IsPending && !action.HasReviewDetails;
+            _action.PropertyChanged += Action_PropertyChanged;
+            Closed += CopilotActionReviewWindow_Closed;
             Loaded += CopilotActionReviewWindow_Loaded;
         }
 
         private void CopilotActionReviewWindow_Loaded(object sender, RoutedEventArgs e)
         {
             ApplyOwnerThemeResources();
+            if (!_action.IsPending)
+            {
+                Close();
+                return;
+            }
             ReviewDetailsTextBox.Focus();
+        }
+
+        private void Action_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(Mcp.ConfirmableAction.Status))
+                return;
+
+            if (Dispatcher.CheckAccess())
+                InvalidateTerminalReview();
+            else
+                _ = Dispatcher.BeginInvoke(InvalidateTerminalReview);
+        }
+
+        private void InvalidateTerminalReview()
+        {
+            if (_action.IsPending)
+                return;
+
+            ApproveButton.IsEnabled = false;
+            ReviewAcknowledgementCheckBox.IsEnabled = false;
+            if (IsVisible)
+                Close();
+        }
+
+        private void CopilotActionReviewWindow_Closed(object? sender, EventArgs e)
+        {
+            _action.PropertyChanged -= Action_PropertyChanged;
         }
 
         private void ApplyOwnerThemeResources()

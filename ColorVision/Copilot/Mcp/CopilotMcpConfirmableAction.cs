@@ -20,6 +20,8 @@ namespace ColorVision.Copilot.Mcp
 
     internal sealed class CopilotConfirmationRequestContext
     {
+        public CopilotExecutionScope Scope { get; init; } = CopilotExecutionScope.Empty;
+
         public CopilotApprovalSourceKind SourceKind { get; init; }
 
         public string RequestSource { get; init; } = string.Empty;
@@ -38,26 +40,26 @@ namespace ColorVision.Copilot.Mcp
 
         public string ReversibilitySummary { get; init; } = string.Empty;
 
-        public string RequesterLabel => SourceKind switch
-        {
-            CopilotApprovalSourceKind.InAppAgent => "ColorVision Copilot 任务",
-            CopilotApprovalSourceKind.ExternalMcp => string.IsNullOrWhiteSpace(RequestSource)
-                ? "外部 MCP 客户端"
-                : $"外部 MCP 客户端 · {RequestSource}",
-            CopilotApprovalSourceKind.ColorVisionUi => "ColorVision 本地界面",
-            _ => "来源未标记的本地操作",
-        };
+        public string RequesterLabel => CopilotApprovalReviewTextEncoder.Encode(SourceKind switch
+            {
+                CopilotApprovalSourceKind.InAppAgent => "ColorVision Copilot 任务",
+                CopilotApprovalSourceKind.ExternalMcp => string.IsNullOrWhiteSpace(RequestSource)
+                    ? "外部 MCP 客户端"
+                    : $"外部 MCP 客户端 · {RequestSource}",
+                CopilotApprovalSourceKind.ColorVisionUi => "ColorVision 本地界面",
+                _ => "来源未标记的本地操作",
+            });
 
         public string TaskScopeLabel
         {
             get
             {
                 if (!string.IsNullOrWhiteSpace(TaskLabel))
-                    return TaskLabel;
+                    return CopilotApprovalReviewTextEncoder.Encode(TaskLabel);
                 if (!string.IsNullOrWhiteSpace(TaskId))
-                    return $"任务 {ShortId(TaskId)}";
+                    return CopilotApprovalReviewTextEncoder.Encode($"任务 {ShortId(TaskId)}");
                 if (!string.IsNullOrWhiteSpace(ConversationId))
-                    return $"会话 {ShortId(ConversationId)}";
+                    return CopilotApprovalReviewTextEncoder.Encode($"会话 {ShortId(ConversationId)}");
                 return SourceKind == CopilotApprovalSourceKind.ExternalMcp
                     ? "外部 MCP 请求"
                     : "当前应用操作";
@@ -66,18 +68,18 @@ namespace ColorVision.Copilot.Mcp
 
         public string WorkspaceLabel => string.IsNullOrWhiteSpace(WorkspacePath)
             ? "当前 ColorVision 应用"
-            : WorkspacePath;
+            : CopilotApprovalReviewTextEncoder.Encode(WorkspacePath);
 
         public string ImpactLabel => string.IsNullOrWhiteSpace(ImpactSummary)
             ? "请根据操作说明和参数确认影响范围。"
-            : ImpactSummary;
+            : CopilotApprovalReviewTextEncoder.Encode(ImpactSummary);
 
         public string ReversibilityLabel
         {
             get
             {
                 if (!string.IsNullOrWhiteSpace(ReversibilitySummary))
-                    return ReversibilitySummary;
+                    return CopilotApprovalReviewTextEncoder.Encode(ReversibilitySummary);
                 return Reversibility switch
                 {
                     CopilotApprovalReversibility.AutomaticUntilExpiry => "支持在有效期内自动撤销。",
@@ -100,11 +102,14 @@ namespace ColorVision.Copilot.Mcp
         internal static CopilotConfirmationRequestContext ForAgent(
             CopilotAgentRequest request,
             CopilotToolApprovalPresentation? presentation = null,
-            string requestSource = CopilotMcpToolDispatcher.InAppAgentCallerSource)
+            string requestSource = CopilotMcpToolDispatcher.InAppAgentCallerSource,
+            CopilotExecutionScope? executionScope = null)
         {
             ArgumentNullException.ThrowIfNull(request);
+            executionScope ??= CopilotExecutionScope.ForAgentRequest(request);
             return new CopilotConfirmationRequestContext
             {
+                Scope = executionScope,
                 SourceKind = CopilotApprovalSourceKind.InAppAgent,
                 RequestSource = requestSource,
                 ConversationId = request.ConversationId,
@@ -121,11 +126,13 @@ namespace ColorVision.Copilot.Mcp
 
         internal CopilotConfirmationRequestContext MergeAgentScope(
             CopilotAgentRequest request,
-            string requestSource)
+            string requestSource,
+            CopilotExecutionScope? executionScope = null)
         {
-            var agent = ForAgent(request, requestSource: requestSource);
+            var agent = ForAgent(request, requestSource: requestSource, executionScope: executionScope);
             return new CopilotConfirmationRequestContext
             {
+                Scope = agent.Scope,
                 SourceKind = CopilotApprovalSourceKind.InAppAgent,
                 RequestSource = FirstNonEmpty(RequestSource, agent.RequestSource),
                 ConversationId = agent.ConversationId,
@@ -135,6 +142,29 @@ namespace ColorVision.Copilot.Mcp
                 ImpactSummary = FirstNonEmpty(ImpactSummary, agent.ImpactSummary),
                 Reversibility = Reversibility,
                 ReversibilitySummary = ReversibilitySummary,
+            };
+        }
+
+        internal CopilotExecutionScope ResolveExecutionScope()
+        {
+            if (!Scope.IsEmpty)
+                return Scope;
+
+            return SourceKind switch
+            {
+                CopilotApprovalSourceKind.InAppAgent => CopilotExecutionScope.ForAgentRequest(new CopilotAgentRequest
+                {
+                    ConversationId = ConversationId,
+                    TaskId = TaskId,
+                    WorkspacePath = WorkspacePath,
+                }),
+                CopilotApprovalSourceKind.ExternalMcp => CopilotExecutionScope.ForExternalMcpSession(
+                    RequestSource,
+                    RequestSource,
+                    WorkspacePath),
+                _ => CopilotExecutionScope.ForInProcess(
+                    FirstNonEmpty(RequestSource, "colorvision-ui"),
+                    WorkspacePath),
             };
         }
 
@@ -169,6 +199,7 @@ namespace ColorVision.Copilot.Mcp
         private static readonly JsonSerializerOptions ConfirmActionPayloadJsonOptions = new() { WriteIndented = true };
         private static readonly TimeSpan ExpiringSoonThreshold = TimeSpan.FromSeconds(60);
         private ConfirmableActionStatus _status = ConfirmableActionStatus.Pending;
+        private string _reviewDetails = string.Empty;
 
         public string ActionId { get; init; } = string.Empty;
 
@@ -184,7 +215,11 @@ namespace ColorVision.Copilot.Mcp
 
         public string ArgumentsDigest { get; init; } = string.Empty;
 
-        public string ReviewDetails { get; internal init; } = string.Empty;
+        public string ReviewDetails
+        {
+            get => _reviewDetails;
+            internal init => _reviewDetails = value;
+        }
 
         public bool HasReviewDetails => !string.IsNullOrWhiteSpace(ReviewDetails);
 
@@ -233,6 +268,8 @@ namespace ColorVision.Copilot.Mcp
                     return;
 
                 _status = value;
+                if (value != ConfirmableActionStatus.Pending)
+                    ClearReviewDetails();
                 OnPropertyChanged(nameof(Status));
                 OnPropertyChanged(nameof(StatusLabel));
                 OnPropertyChanged(nameof(IsPending));
@@ -317,6 +354,18 @@ namespace ColorVision.Copilot.Mcp
 
         internal void ReleaseExecutor() => Executor = MissingExecutorAsync;
 
+        internal void ClearReviewDetails()
+        {
+            if (_reviewDetails.Length == 0)
+                return;
+
+            _reviewDetails = string.Empty;
+            OnPropertyChanged(nameof(ReviewDetails));
+            OnPropertyChanged(nameof(HasReviewDetails));
+            OnPropertyChanged(nameof(ReviewDetailsHeading));
+            OnPropertyChanged(nameof(ReviewDisplayText));
+        }
+
         private static Task<CopilotMcpToolCallResult> MissingExecutorAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(CopilotMcpToolCallResult.Fail("action_executor_missing", "No executor is attached to this action."));
@@ -337,7 +386,7 @@ namespace ColorVision.Copilot.Mcp
     {
         public const int MaximumActiveActions = 64;
         public const int MaximumRetainedActions = 256;
-        public const int MaximumReviewDetailsCharacters = 65_536;
+        public const int MaximumReviewDetailsCharacters = 131_072;
 
         private static readonly Lazy<CopilotMcpConfirmationStore> LazyInstance = new(() => new CopilotMcpConfirmationStore());
         private static readonly TimeSpan DefaultLifetime = TimeSpan.FromMinutes(5);
@@ -497,7 +546,8 @@ namespace ColorVision.Copilot.Mcp
         public bool LinkAgentCall(
             string actionId,
             string callId,
-            CopilotAgentRequest request)
+            CopilotAgentRequest request,
+            CopilotExecutionScope? executionScope = null)
         {
             if (string.IsNullOrWhiteSpace(callId) || request == null)
                 return false;
@@ -506,10 +556,12 @@ namespace ColorVision.Copilot.Mcp
             if (action == null)
                 return false;
 
+            executionScope ??= CopilotExecutionScope.ForAgentRequest(request);
             CopilotConfirmationRequestContext? updatedContext = null;
             lock (_syncRoot)
             {
                 var requestContext = action.RequestContext;
+                var actionScope = requestContext.ResolveExecutionScope();
                 if (requestContext.SourceKind != CopilotApprovalSourceKind.InAppAgent
                     || !string.Equals(
                         requestContext.RequestSource,
@@ -519,6 +571,12 @@ namespace ColorVision.Copilot.Mcp
                         && !string.Equals(requestContext.ConversationId, request.ConversationId, StringComparison.Ordinal))
                     || (!string.IsNullOrWhiteSpace(requestContext.TaskId)
                         && !string.Equals(requestContext.TaskId, request.TaskId, StringComparison.Ordinal)))
+                {
+                    return false;
+                }
+                if (!actionScope.MatchesAuthorizationScope(executionScope)
+                    || (actionScope.HasToolCallBinding
+                        && !actionScope.MatchesOperationBinding(executionScope)))
                 {
                     return false;
                 }
@@ -532,7 +590,8 @@ namespace ColorVision.Copilot.Mcp
                 action.AgentCallId = callId.Trim();
                 updatedContext = action.RequestContext.MergeAgentScope(
                     request,
-                    CopilotMcpToolDispatcher.InAppAgentCallerSource);
+                    CopilotMcpToolDispatcher.InAppAgentCallerSource,
+                    executionScope);
             }
 
             if (updatedContext != null)
@@ -679,6 +738,25 @@ namespace ColorVision.Copilot.Mcp
             string workspacePath,
             CancellationToken cancellationToken)
         {
+            return await ExecuteApprovedAsync(
+                actionId,
+                toolName,
+                argumentsDigest,
+                CopilotExecutionScope.ForExternalMcpSession(
+                    callerSource,
+                    callerSource,
+                    workspacePath),
+                cancellationToken);
+        }
+
+        public async Task<CopilotMcpToolCallResult> ExecuteApprovedAsync(
+            string actionId,
+            string toolName,
+            string argumentsDigest,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(executionScope);
             var action = Find(actionId);
             if (action == null)
                 return CopilotMcpToolCallResult.Fail("action_not_found", $"No confirmable action exists for action_id={actionId}.");
@@ -698,8 +776,8 @@ namespace ColorVision.Copilot.Mcp
                 if (action.RequestContext.SourceKind == CopilotApprovalSourceKind.ExternalMcp
                     && !string.Equals(
                         action.RequestContext.RequestSource,
-                        Sanitize(callerSource),
-                        StringComparison.OrdinalIgnoreCase))
+                        Sanitize(executionScope.CallerIdentity),
+                        StringComparison.Ordinal))
                 {
                     return CopilotMcpToolCallResult.Fail(
                         "action_source_mismatch",
@@ -707,13 +785,20 @@ namespace ColorVision.Copilot.Mcp
                 }
 
                 var actionWorkspacePath = NormalizeWorkspaceForComparison(action.RequestContext.WorkspacePath);
-                var currentWorkspacePath = NormalizeWorkspaceForComparison(workspacePath);
+                var currentWorkspacePath = NormalizeWorkspaceForComparison(executionScope.WorkspacePath);
                 if (action.RequestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ExternalMcp
                     && !string.Equals(actionWorkspacePath, currentWorkspacePath, StringComparison.OrdinalIgnoreCase))
                 {
                     return CopilotMcpToolCallResult.Fail(
                         "action_workspace_mismatch",
                         "The active workspace changed after this action was approved.");
+                }
+
+                if (!action.RequestContext.ResolveExecutionScope().MatchesAuthorizationScope(executionScope))
+                {
+                    return CopilotMcpToolCallResult.Fail(
+                        "action_scope_mismatch",
+                        "The approved action belongs to a different execution session, task, run, caller, or capability contract.");
                 }
 
                 if (!string.Equals(action.RiskLevel, "confirmation-required", StringComparison.OrdinalIgnoreCase))
@@ -800,21 +885,24 @@ namespace ColorVision.Copilot.Mcp
                 action.ActionId,
                 action.ToolName,
                 action.ArgumentsDigest,
-                action.RequestContext.RequestSource,
-                reviewContext.WorkspacePath,
+                action.RequestContext.ResolveExecutionScope().WithWorkspace(reviewContext.WorkspacePath),
                 cancellationToken);
         }
 
         internal bool BeginAgentFrameworkAction(
             string actionId,
             CopilotAgentRequest request,
-            string currentWorkspacePath)
+            string currentWorkspacePath,
+            string argumentsDigest,
+            string agentCallId,
+            CopilotExecutionScope? executionScope = null)
         {
             ArgumentNullException.ThrowIfNull(request);
             var action = Find(actionId);
             if (action == null)
                 return false;
 
+            executionScope = executionScope?.WithWorkspace(currentWorkspacePath);
             var expired = false;
             lock (_syncRoot)
             {
@@ -827,6 +915,28 @@ namespace ColorVision.Copilot.Mcp
                     out _))
                 {
                     return false;
+                }
+                if (string.IsNullOrWhiteSpace(agentCallId)
+                    || string.IsNullOrWhiteSpace(action.AgentCallId)
+                    || !string.Equals(
+                        action.AgentCallId,
+                        agentCallId.Trim(),
+                        StringComparison.Ordinal))
+                {
+                    return false;
+                }
+                if (!ArgumentsDigestsMatch(action.ArgumentsDigest, argumentsDigest))
+                {
+                    return false;
+                }
+                if (executionScope != null)
+                {
+                    var actionScope = action.RequestContext.ResolveExecutionScope();
+                    if (!actionScope.MatchesAuthorizationScope(executionScope)
+                        || !actionScope.MatchesOperationBinding(executionScope))
+                    {
+                        return false;
+                    }
                 }
 
                 if ((action.Status == ConfirmableActionStatus.Pending || action.Status == ConfirmableActionStatus.Approved)
@@ -915,6 +1025,8 @@ namespace ColorVision.Copilot.Mcp
         {
             lock (_syncRoot)
             {
+                foreach (var action in _actions)
+                    action.ClearReviewDetails();
                 _actions.Clear();
                 _actionLifetime = DefaultLifetime;
             }
@@ -1043,6 +1155,7 @@ namespace ColorVision.Copilot.Mcp
             context ??= new CopilotConfirmationRequestContext();
             return new CopilotConfirmationRequestContext
             {
+                Scope = context.ResolveExecutionScope(),
                 SourceKind = Enum.IsDefined(context.SourceKind)
                     ? context.SourceKind
                     : CopilotApprovalSourceKind.Unknown,

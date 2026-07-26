@@ -193,13 +193,16 @@ namespace ColorVision.Copilot
                 SHA256.HashData(Encoding.UTF8.GetBytes(execution.CommandText))).ToLowerInvariant();
             var builder = new StringBuilder();
             builder.AppendLine($"Shell: {GetShellLabel(execution.Shell)}");
-            builder.AppendLine($"Working directory: {execution.WorkingDirectory}");
+            builder.Append("Working directory: ");
+            CopilotApprovalReviewTextEncoder.Append(builder, execution.WorkingDirectory);
+            builder.AppendLine();
             builder.AppendLine($"Timeout: {execution.TimeoutSeconds} seconds");
             builder.AppendLine($"Command characters: {execution.CommandText.Length}");
             builder.AppendLine($"Command SHA-256: {commandDigest}");
+            builder.AppendLine(@"Review encoding: backslashes are doubled; line endings, tabs, Unicode format, and invisible control characters are escaped.");
             builder.AppendLine();
-            builder.AppendLine("Complete command:");
-            builder.Append(execution.CommandText);
+            builder.AppendLine("Complete command (review-escaped):");
+            CopilotApprovalReviewTextEncoder.Append(builder, execution.CommandText);
             return builder.ToString();
         }
 

@@ -2570,6 +2570,12 @@ namespace ColorVision.Copilot
                 SetPendingActionFeedback($"未批准操作 {action!.ActionId}。");
                 return;
             }
+            if (!CanReviewPendingAction(action))
+            {
+                SetPendingActionFeedback($"操作 {action!.ActionId} 已失效、被取消，或不再属于当前任务；没有执行。");
+                RefreshPendingActions();
+                return;
+            }
 
             var reviewContext = CreateConfirmationReviewContext();
             if (action!.ExecuteOnApproval)

@@ -455,6 +455,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentAccessContext AccessContext { get; init; } = new();
 
+        internal CopilotExecutionScope RuntimeExecutionScope { get; set; } = CopilotExecutionScope.Empty;
+
         internal string RuntimeRoleInstructions { get; init; } = string.Empty;
 
         internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;

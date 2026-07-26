@@ -210,10 +210,12 @@ namespace ColorVision.Copilot
         public async Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var result = await _capabilityInvoker.InvokeAsync(
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
                 _mcpToolName,
                 ToJsonArguments(toolInput),
-                CopilotApplicationCapabilityCaller.InAppAgent,
+                request,
+                frameworkApprovalGranted: false,
                 cancellationToken);
             return new CopilotToolResult
             {

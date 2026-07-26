@@ -30,6 +30,20 @@ namespace ColorVision.Copilot.Mcp
         public string TaskId { get; init; } = string.Empty;
 
         public string WorkspacePath { get; init; } = string.Empty;
+
+        public string SessionIdentity { get; init; } = string.Empty;
+
+        public string RunId { get; init; } = string.Empty;
+
+        public string ParentRunId { get; init; } = string.Empty;
+
+        public string TraceId { get; init; } = string.Empty;
+
+        public string ScopeId { get; init; } = string.Empty;
+
+        public string ProviderCallId { get; init; } = string.Empty;
+
+        public string ArgumentsSignature { get; init; } = string.Empty;
     }
 
     internal static class CopilotMcpAuditLogger
@@ -49,16 +63,28 @@ namespace ColorVision.Copilot.Mcp
 
         public static void ToolCallStarted(string toolName, string argumentSummary, string? callerSource = null)
         {
+            ToolCallStarted(
+                toolName,
+                argumentSummary,
+                CopilotExecutionScope.ForInProcess(callerSource ?? string.Empty));
+        }
+
+        public static void ToolCallStarted(
+            string toolName,
+            string argumentSummary,
+            CopilotExecutionScope executionScope)
+        {
+            executionScope ??= CopilotExecutionScope.Empty;
             var scope = new CopilotMcpAuditScope
             {
                 TimestampUtc = DateTimeOffset.UtcNow,
                 ToolName = Sanitize(toolName),
                 ArgumentSummary = Sanitize(Redact(argumentSummary)),
-                CallerSource = Sanitize(callerSource),
+                ExecutionScope = executionScope,
             };
 
             CurrentScope.Value = scope;
-            Log.Info($"MCP tool call started. TimestampUtc={scope.TimestampUtc:O} Tool={scope.ToolName} Arguments={scope.ArgumentSummary} Caller={EmptyLabel(scope.CallerSource)}");
+            Log.Info($"MCP tool call started. TimestampUtc={scope.TimestampUtc:O} Tool={scope.ToolName} Arguments={scope.ArgumentSummary} Caller={EmptyLabel(executionScope.CallerIdentity)} ScopeId={executionScope.ScopeId}");
         }
 
         public static void ToolCallCompleted(string toolName, bool success, TimeSpan elapsed, string message)
@@ -69,11 +95,11 @@ namespace ColorVision.Copilot.Mcp
                 TimestampUtc = scope?.TimestampUtc ?? DateTimeOffset.UtcNow,
                 ToolName = Sanitize(scope?.ToolName ?? toolName),
                 ArgumentSummary = Sanitize(scope?.ArgumentSummary),
-                CallerSource = Sanitize(scope?.CallerSource),
                 Success = success,
                 DurationMs = (long)elapsed.TotalMilliseconds,
                 ErrorMessage = success ? string.Empty : Sanitize(message),
             };
+            entry = WithExecutionScope(entry, scope?.ExecutionScope);
 
             lock (SyncRoot)
             {
@@ -83,7 +109,7 @@ namespace ColorVision.Copilot.Mcp
             }
 
             CurrentScope.Value = null;
-            Log.Info($"MCP tool call completed. TimestampUtc={DateTimeOffset.UtcNow:O} Tool={entry.ToolName} Arguments={entry.ArgumentSummary} Success={entry.Success} DurationMs={entry.DurationMs} Error={EmptyLabel(entry.ErrorMessage)} Caller={EmptyLabel(entry.CallerSource)}");
+            Log.Info($"MCP tool call completed. TimestampUtc={DateTimeOffset.UtcNow:O} Tool={entry.ToolName} Arguments={entry.ArgumentSummary} Success={entry.Success} DurationMs={entry.DurationMs} Error={EmptyLabel(entry.ErrorMessage)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)}");
         }
 
         public static void AuthenticationFailed(string? callerSource, string reason)
@@ -123,7 +149,8 @@ namespace ColorVision.Copilot.Mcp
 
         private static void RecordActionEvent(string eventName, ConfirmableAction action, bool success, string message)
         {
-            var entry = new CopilotMcpAuditEntry
+            var executionScope = action.RequestContext.ResolveExecutionScope();
+            var entry = WithExecutionScope(new CopilotMcpAuditEntry
             {
                 TimestampUtc = DateTimeOffset.UtcNow,
                 ToolName = Sanitize(eventName),
@@ -138,7 +165,7 @@ namespace ColorVision.Copilot.Mcp
                 ConversationId = Sanitize(action.RequestContext.ConversationId),
                 TaskId = Sanitize(action.RequestContext.TaskId),
                 WorkspacePath = Sanitize(action.RequestContext.WorkspacePath),
-            };
+            }, executionScope);
 
             lock (SyncRoot)
             {
@@ -147,7 +174,35 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+        }
+
+        private static CopilotMcpAuditEntry WithExecutionScope(
+            CopilotMcpAuditEntry entry,
+            CopilotExecutionScope? executionScope)
+        {
+            executionScope ??= CopilotExecutionScope.Empty;
+            return new CopilotMcpAuditEntry
+            {
+                TimestampUtc = entry.TimestampUtc,
+                ToolName = entry.ToolName,
+                ArgumentSummary = entry.ArgumentSummary,
+                Success = entry.Success,
+                DurationMs = entry.DurationMs,
+                ErrorMessage = entry.ErrorMessage,
+                CallerSource = Sanitize(FirstNonEmpty(entry.CallerSource, executionScope.CallerIdentity)),
+                ActionId = entry.ActionId,
+                ConversationId = Sanitize(FirstNonEmpty(entry.ConversationId, executionScope.ConversationId)),
+                TaskId = Sanitize(FirstNonEmpty(entry.TaskId, executionScope.TaskId)),
+                WorkspacePath = Sanitize(FirstNonEmpty(entry.WorkspacePath, executionScope.WorkspacePath)),
+                SessionIdentity = Sanitize(executionScope.SessionIdentity),
+                RunId = Sanitize(executionScope.RunId),
+                ParentRunId = Sanitize(executionScope.ParentRunId),
+                TraceId = Sanitize(executionScope.TraceId),
+                ScopeId = Sanitize(executionScope.ScopeId),
+                ProviderCallId = Sanitize(executionScope.ProviderCallId),
+                ArgumentsSignature = Sanitize(executionScope.ArgumentsSignature),
+            };
         }
 
         public static IReadOnlyList<CopilotMcpAuditEntry> GetRecentEntries(int maxEntries)
@@ -259,6 +314,11 @@ namespace ColorVision.Copilot.Mcp
             return string.IsNullOrWhiteSpace(value) ? "(none)" : value.Trim();
         }
 
+        private static string FirstNonEmpty(params string?[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+        }
+
         private sealed class CopilotMcpAuditScope
         {
             public DateTimeOffset TimestampUtc { get; init; }
@@ -267,7 +327,7 @@ namespace ColorVision.Copilot.Mcp
 
             public string ArgumentSummary { get; init; } = string.Empty;
 
-            public string CallerSource { get; init; } = string.Empty;
+            public CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
         }
     }
 }

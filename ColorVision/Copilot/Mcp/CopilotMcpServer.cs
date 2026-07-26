@@ -62,6 +62,7 @@ namespace ColorVision.Copilot.Mcp
             lock (_syncRoot)
             {
                 var previousPort = _settings.Port;
+                var previousBearerToken = _settings.BearerToken;
                 _settings = settings ?? new CopilotMcpRuntimeSettings();
 
                 if (!_settings.Enabled)
@@ -78,6 +79,8 @@ namespace ColorVision.Copilot.Mcp
 
                 if (IsRunning && _listener != null && previousPort == _settings.Port)
                 {
+                    if (!string.Equals(previousBearerToken, _settings.BearerToken, StringComparison.Ordinal))
+                        _requestHandler.ClearSessions();
                     LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
                     return;
                 }
@@ -136,6 +139,7 @@ namespace ColorVision.Copilot.Mcp
             }
             finally
             {
+                _requestHandler.ClearSessions();
                 _listener = null;
                 _cts?.Dispose();
                 _cts = null;

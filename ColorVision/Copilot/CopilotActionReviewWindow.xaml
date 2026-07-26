@@ -154,6 +154,7 @@
                          FontFamily="Consolas"
                          FontSize="12"
                          Foreground="{DynamicResource GlobalTextBrush}"
+                         FlowDirection="LeftToRight"
                          HorizontalScrollBarVisibility="Auto"
                          IsReadOnly="True"
                          Text="{Binding ReviewDisplayText, Mode=OneWay}"

@@ -3,6 +3,8 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace ColorVision.Copilot
@@ -10,6 +12,42 @@ namespace ColorVision.Copilot
     internal sealed class CopilotToolExecutionAuditEntry
     {
         public string CallId { get; init; } = string.Empty;
+
+        public CopilotExecutionSourceKind SourceKind { get; init; }
+
+        public CopilotExecutionAuthorizationChannel AuthorizationChannel { get; init; }
+
+        public string ScopeId { get; init; } = string.Empty;
+
+        public string AuthorizationScopeId { get; init; } = string.Empty;
+
+        public string OperationBindingId { get; init; } = string.Empty;
+
+        public string TraceId { get; init; } = string.Empty;
+
+        public string SessionIdentity { get; init; } = string.Empty;
+
+        public string CallerIdentity { get; init; } = string.Empty;
+
+        public string ConversationId { get; init; } = string.Empty;
+
+        public string TaskId { get; init; } = string.Empty;
+
+        public string RunId { get; init; } = string.Empty;
+
+        public string ParentRunId { get; init; } = string.Empty;
+
+        public string WorkspaceIdentity { get; init; } = string.Empty;
+
+        public string WorkspaceSnapshotId { get; init; } = string.Empty;
+
+        public long CapabilityRevision { get; init; }
+
+        public string ScopeToolName { get; init; } = string.Empty;
+
+        public string ProviderCallId { get; init; } = string.Empty;
+
+        public string ArgumentsSignature { get; init; } = string.Empty;
 
         public int Round { get; init; }
 
@@ -67,9 +105,28 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(outcome);
             var execution = outcome.Execution;
+            var executionScope = ResolveExecutionScope(outcome);
             var entry = new CopilotToolExecutionAuditEntry
             {
                 CallId = Sanitize(execution.CallId),
+                SourceKind = executionScope.SourceKind,
+                AuthorizationChannel = executionScope.AuthorizationChannel,
+                ScopeId = ProjectScopeValue(executionScope.ScopeId),
+                AuthorizationScopeId = ProjectScopeValue(executionScope.AuthorizationScopeId),
+                OperationBindingId = ProjectScopeValue(executionScope.OperationBindingId),
+                TraceId = ProjectScopeValue(executionScope.TraceId),
+                SessionIdentity = ProjectScopeValue(executionScope.SessionIdentity),
+                CallerIdentity = ProjectScopeValue(executionScope.CallerIdentity),
+                ConversationId = ProjectScopeValue(executionScope.ConversationId),
+                TaskId = ProjectScopeValue(executionScope.TaskId),
+                RunId = ProjectScopeValue(executionScope.RunId),
+                ParentRunId = ProjectScopeValue(executionScope.ParentRunId),
+                WorkspaceIdentity = ProjectScopeValue(executionScope.WorkspaceIdentity),
+                WorkspaceSnapshotId = ProjectScopeValue(executionScope.WorkspaceSnapshotId),
+                CapabilityRevision = executionScope.CapabilityRevision,
+                ScopeToolName = ProjectScopeValue(executionScope.ToolName),
+                ProviderCallId = ProjectScopeValue(executionScope.ProviderCallId),
+                ArgumentsSignature = ProjectArgumentsSignature(executionScope.ArgumentsSignature),
                 Round = execution.Round,
                 Attempt = execution.Attempt,
                 MaxAttempts = execution.MaxAttempts,
@@ -101,7 +158,7 @@ namespace ColorVision.Copilot
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"Agent tool completed. CallId={entry.CallId} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"Agent tool completed. CallId={entry.CallId} ProviderCallId={EmptyLabel(entry.ProviderCallId)} Runtime={entry.RuntimeName} Round={entry.Round} Attempt={entry.Attempt}/{entry.MaxAttempts} Tool={entry.ToolName} ScopeTool={EmptyLabel(entry.ScopeToolName)} Source={entry.SourceKind} AuthorizationChannel={entry.AuthorizationChannel} ScopeId={EmptyLabel(entry.ScopeId)} AuthorizationScopeId={EmptyLabel(entry.AuthorizationScopeId)} OperationBindingId={EmptyLabel(entry.OperationBindingId)} TraceId={EmptyLabel(entry.TraceId)} Session={EmptyLabel(entry.SessionIdentity)} Caller={EmptyLabel(entry.CallerIdentity)} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} ParentRun={EmptyLabel(entry.ParentRunId)} Workspace={EmptyLabel(entry.WorkspaceIdentity)} WorkspaceSnapshot={EmptyLabel(entry.WorkspaceSnapshotId)} CapabilityRevision={entry.CapabilityRevision} ArgumentsSignature={EmptyLabel(entry.ArgumentsSignature)} Access={entry.Access} Risk={entry.RiskLevel} Approval={entry.ApprovalMode} Idempotency={entry.Idempotency} Concurrency={entry.ConcurrencyMode} ConcurrencyKey={EmptyLabel(entry.ConcurrencyKey)} QueueMs={entry.QueueDurationMs} State={entry.State} FailureKind={entry.FailureKind} FailureCode={EmptyLabel(entry.FailureCode)} RetryEligible={entry.RetryEligible} ApprovalActionId={EmptyLabel(entry.ApprovalActionId)} DurationMs={entry.DurationMs} Arguments={entry.ArgumentSummary} Error={EmptyLabel(entry.ErrorMessage)}");
         }
 
         public static IReadOnlyList<CopilotToolExecutionAuditEntry> GetRecentEntries(int maxEntries = 50)
@@ -199,10 +256,51 @@ namespace ColorVision.Copilot
                 || string.Equals(name, "endLine", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static CopilotExecutionScope ResolveExecutionScope(CopilotToolExecutionOutcome outcome)
+        {
+            var invocation = outcome.Invocation;
+            if (invocation == null)
+                return CopilotExecutionScope.Empty;
+            if (!invocation.ExecutionScope.IsEmpty)
+                return invocation.ExecutionScope;
+            if (invocation.AgentRequest == null)
+                return CopilotExecutionScope.Empty;
+
+            var executionScope = CopilotExecutionScope.ForAgentRequest(invocation.AgentRequest);
+            try
+            {
+                return executionScope.BindToolCall(
+                    outcome.Execution.ToolName,
+                    outcome.Execution.CallId,
+                    CopilotAgentToolInputExactBinding.CreateExecutionSignature(
+                        outcome.Execution.ToolName,
+                        invocation.ToolInput));
+            }
+            catch
+            {
+                return executionScope;
+            }
+        }
+
         private static string Sanitize(string? value)
         {
             var text = (value ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
             return text.Length <= 800 ? text : text[..800] + "...";
+        }
+
+        private static string ProjectScopeValue(string? value)
+            => Sanitize(CopilotMcpAuditLogger.RedactText(value));
+
+        private static string ProjectArgumentsSignature(string? value)
+        {
+            var signature = ProjectScopeValue(value);
+            if (signature.Length == 0)
+                return string.Empty;
+            if (signature.Length == 64 && signature.All(Uri.IsHexDigit))
+                return signature.ToLowerInvariant();
+
+            return "sha256:" + Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(signature))).ToLowerInvariant();
         }
 
         private static string EmptyLabel(string? value) => string.IsNullOrWhiteSpace(value) ? "(none)" : value;

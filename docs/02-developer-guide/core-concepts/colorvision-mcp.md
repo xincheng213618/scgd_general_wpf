@@ -1,7 +1,6 @@
 # ColorVision 本地 MCP
 
 ColorVision 本地 MCP 让 Codex 或其他 MCP 客户端在本机读取正在运行的 ColorVision 上下文，用于诊断、导航、日志查看、文档搜索和有限的低风险 UI 操作。它默认关闭，只绑定 loopback，并使用 bearer token 认证。本页是维护入口，源码以 `ColorVision/Copilot/Mcp/` 和 `ColorVision/Copilot/Capabilities/` 为准。
-
 本页描述的是 ColorVision 作为 MCP server 的入站接口。Copilot 作为 MCP client 连接其他 Streamable HTTP 服务的配置、权限和执行链，参见 [外部 MCP 工具发现](./copilot-agent-extensions.md#外部-mcp-工具发现)。两者可以独立启用。
 
 ## 核心边界
@@ -11,12 +10,12 @@ ColorVision 本地 MCP 让 Codex 或其他 MCP 客户端在本机读取正在运
 | 默认关闭 | 用户需要在 Copilot 设置里启用并保存 |
 | 仅本机 | 默认端点是 `http://127.0.0.1:38473/mcp` |
 | 需要 token | token 存在 Copilot 设置中，外部客户端通过 `COLORVISION_MCP_TOKEN` 读取 |
+| 每客户端会话 | `initialize` 后由响应头签发 `Mcp-Session-Id`，后续请求必须原样携带 |
 | 先诊断后操作 | 优先读状态、上下文、日志、文档和文件 |
 | 高风险不开放 | 不控制设备、不执行流程、不跑 shell、不删文件、不读任意路径 |
 | 可确认操作要二次授权 | MCP 只创建待确认动作，用户必须在 ColorVision 里批准后才能 `confirm_action` |
 
 Codex 自己可能有本地命令行能力，那不是 ColorVision MCP 暴露的工具。不要把 shell、PowerShell、Python 或任意命令执行写进本协议。
-
 ## 启用
 
 在 ColorVision 的 Copilot 设置里启用 `Local MCP`，确认端口，默认 `38473`，保存后本地 server 会立即应用设置。外部 MCP 客户端连接时使用：
@@ -30,8 +29,8 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ```powershell
 [Environment]::SetEnvironmentVariable("COLORVISION_MCP_TOKEN", "<token from ColorVision settings>", "User")
 ```
-
 修改 Codex 配置或环境变量后，需要重启 Codex 会话。
+服务使用 Streamable HTTP 会话语义：客户端先发送单独的 `initialize` 请求，从响应头取得随机的 `Mcp-Session-Id`，随后在 `notifications/initialized`、工具和资源请求中携带该头。成熟 MCP 客户端会自动处理该握手。会话只保存在 ColorVision 进程内，绑定创建它的网络来源，空闲 30 分钟、服务停止/重启或 bearer token 变化后失效；客户端收到缺少会话的 `400` 或会话失效的 `404` 时应重新初始化。原始 session ID 不进入审批 UI、普通审计或日志。
 
 ## 调用顺序
 
@@ -73,7 +72,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 
 明确不支持设备控制、流程启动/停止/重跑、任意 shell/cmd/PowerShell/batch/Python 或进程执行、文件删除、任意路径读取、配置静默修改、二进制图片通过上下文快照上传。
 
-文件工具只允许读取规范化后的 ColorVision 工作区根内文本文件。确认动作会在本地记录 `action_id`、工具名、风险、过期时间、脱敏参数摘要和完整参数的 SHA-256 指纹；执行时使用固定时间比较核对该指纹。通用 MCP 审计资源只标记是否为审批事件，不返回可复用的 `action_id` 或参数指纹；客户端只能从自己创建动作的原始响应取得确认载荷。token、密码、API key、Authorization、bearer secret 等敏感值不会进入待确认动作。
+文件工具只允许读取规范化后的 ColorVision 工作区根内文本文件。每个已初始化客户端使用由随机 session ID 派生的不可逆 caller identity；即使两个客户端都来自 `127.0.0.1`，一个客户端也不能确认或执行另一个客户端创建的动作。审计、审计摘要和待审批计数按该会话隔离；未绑定到应用内 Copilot 对话的外部 MCP 会话不能读取进程级 Agent 任务事件。确认动作会在本地记录 `action_id`、工具名、风险、过期时间、脱敏参数摘要和完整参数的 SHA-256 指纹；执行时使用固定时间比较核对该指纹和 caller identity。通用 MCP 审计资源只标记是否为审批事件，不返回可复用的 `action_id` 或参数指纹；客户端只能从自己创建动作的原始响应取得确认载荷。token、原始 session ID、密码、API key、Authorization、bearer secret 等敏感值不会进入待确认动作。
 
 ## 排查
 
@@ -82,6 +81,7 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | MCP disabled | Copilot 设置是否启用并保存 |
 | 端口不可用 | Copilot 设置里的端口是否被占用 |
 | 401 或 token mismatch | `COLORVISION_MCP_TOKEN` 是否和 ColorVision 当前 token 一致 |
+| 400 缺少会话 / 404 session expired | 完成或重新执行 `initialize`；检查 ColorVision 是否重启、token 是否变化或会话是否空闲超过 30 分钟 |
 | Codex 看不到 server | Codex 配置是否重启生效，URL 是否和 ColorVision 端点一致 |
 | 工具要求确认 | 用户是否在 ColorVision Copilot 待确认区域批准 |
 | 模板 patch 无法应用 | 当前活动模板编辑器是否还是 preview 时的同一个编辑器和 JSON 快照 |
@@ -90,6 +90,6 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ## 验证
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj --filter "CopilotCapabilitiesTests|CopilotMcpTests" -v minimal
+dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp|FullyQualifiedName~CopilotApprovalReview" -v minimal
 dotnet build ColorVision/ColorVision.csproj -v minimal
 ```

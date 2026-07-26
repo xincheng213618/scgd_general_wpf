@@ -128,16 +128,18 @@ namespace ColorVision.UI.Tests
         [Fact]
         public async Task AgentFrameworkActionIsApprovedWithoutDirectExecution()
         {
+            var agentCallId = $"call-{Guid.NewGuid():N}";
+            var exactArgumentsBinding = CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?> { ["scope"] = "current" },
+            });
             var action = CopilotMcpConfirmationStore.Instance.CreateAgentFrameworkApproval(
                 "Continue the hosted task",
                 "Resume after a user decision.",
                 "agent_tool",
                 "{\"scope\":\"current\"}",
-                CopilotAgentToolInputExactBinding.Create(new CopilotAgentToolInput
-                {
-                    Arguments = new Dictionary<string, object?> { ["scope"] = "current" },
-                }),
-                $"call-{Guid.NewGuid():N}",
+                exactArgumentsBinding,
+                agentCallId,
                 CreateRequestContext(),
                 _ => { });
             try
@@ -156,12 +158,123 @@ namespace ColorVision.UI.Tests
                 Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
                     action.ActionId,
                     CreateAgentRequest(),
-                    @"C:\ColorVision\OtherWorkspace"));
+                    @"C:\ColorVision\OtherWorkspace",
+                    action.ArgumentsDigest,
+                    agentCallId));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    CreateAgentRequest(),
+                    WorkspacePath,
+                    new string('0', 64),
+                    agentCallId));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    CreateAgentRequest(),
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    $"call-{Guid.NewGuid():N}"));
                 Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
                 Assert.True(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
                     action.ActionId,
                     CreateAgentRequest(),
-                    WorkspacePath));
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId));
+                Assert.Equal(ConfirmableActionStatus.Executing, action.Status);
+            }
+            finally
+            {
+                CancelIfActive(action);
+            }
+        }
+
+        [Fact]
+        public void AgentFrameworkActionRequiresExactRunCapabilityCallAndSignatureScope()
+        {
+            var request = CreateAgentRequest();
+            var agentCallId = $"call-{Guid.NewGuid():N}";
+            const string executionSignature = "signature-approved";
+            var approvedScope = CopilotExecutionScope.ForAgentRequest(request, runId: "run-approved")
+                .WithRuntimeSnapshot("workspace-snapshot-a", capabilityRevision: 17)
+                .BindToolCall("agent_tool", agentCallId, executionSignature);
+            var action = CopilotMcpConfirmationStore.Instance.CreateAgentFrameworkApproval(
+                "Continue the hosted task",
+                "Resume after a user decision.",
+                "agent_tool",
+                "fields=payload",
+                "{\"payload\":\"approved\"}",
+                agentCallId,
+                CopilotConfirmationRequestContext.ForAgent(
+                    request,
+                    executionScope: approvedScope),
+                _ => { });
+
+            try
+            {
+                Assert.True(CopilotMcpConfirmationStore.Instance.Approve(
+                    action.ActionId,
+                    CreateReviewContext(),
+                    out _));
+
+                var wrongRun = CopilotExecutionScope.ForAgentRequest(request, runId: "run-other")
+                    .WithRuntimeSnapshot("workspace-snapshot-a", 17)
+                    .BindToolCall("agent_tool", agentCallId, executionSignature);
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    request,
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId,
+                    wrongRun));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+
+                var wrongCapability = CopilotExecutionScope.ForAgentRequest(request, runId: "run-approved")
+                    .WithRuntimeSnapshot("workspace-snapshot-a", 18)
+                    .BindToolCall("agent_tool", agentCallId, executionSignature);
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    request,
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId,
+                    wrongCapability));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+
+                var wrongCall = approvedScope.BindToolCall(
+                    "agent_tool",
+                    $"call-{Guid.NewGuid():N}",
+                    executionSignature);
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    request,
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId,
+                    wrongCall));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+
+                var wrongSignature = approvedScope.BindToolCall(
+                    "agent_tool",
+                    agentCallId,
+                    "signature-changed");
+                Assert.False(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    request,
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId,
+                    wrongSignature));
+                Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+
+                Assert.True(CopilotMcpConfirmationStore.Instance.BeginAgentFrameworkAction(
+                    action.ActionId,
+                    request,
+                    WorkspacePath,
+                    action.ArgumentsDigest,
+                    agentCallId,
+                    approvedScope));
                 Assert.Equal(ConfirmableActionStatus.Executing, action.Status);
             }
             finally
@@ -530,6 +643,102 @@ namespace ColorVision.UI.Tests
                 CancelIfActive(reorderedAction);
                 CancelIfActive(changedAction);
             }
+        }
+
+        [Fact]
+        public void AgentFrameworkApprovalSnapshotDeepFreezesMutableArguments()
+        {
+            var nested = new Dictionary<string, object?>
+            {
+                ["command"] = "approved",
+            };
+            var items = new List<object?>
+            {
+                nested,
+                "stable",
+            };
+            var arguments = new Dictionary<string, object?>
+            {
+                ["payload"] = nested,
+                ["items"] = items,
+            };
+            var mutableInput = new CopilotAgentToolInput
+            {
+                Query = "inspect",
+                Path = @"C:\ColorVision\SafetyContract\config.json",
+                Arguments = arguments,
+            };
+
+            Assert.True(CopilotAgentToolInputSnapshot.TryCreate(
+                mutableInput,
+                out var snapshot,
+                out var error),
+                error);
+            var approvedBinding = CopilotAgentToolInputExactBinding.Create(snapshot);
+            var approvedSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
+                "agent_tool",
+                snapshot);
+
+            nested["command"] = "mutated";
+            items.Add("late-item");
+            arguments["late-field"] = true;
+
+            Assert.Equal(approvedBinding, CopilotAgentToolInputExactBinding.Create(snapshot));
+            Assert.True(CopilotAgentToolInputExactBinding.MatchesExecutionSignature(
+                "agent_tool",
+                snapshot,
+                approvedSignature));
+            Assert.False(CopilotAgentToolInputExactBinding.MatchesExecutionSignature(
+                "agent_tool",
+                mutableInput,
+                approvedSignature));
+
+            var frozenPayload = Assert.IsType<JsonElement>(snapshot.Arguments["payload"]);
+            Assert.Equal("approved", frozenPayload.GetProperty("command").GetString());
+            var frozenItems = Assert.IsType<JsonElement>(snapshot.Arguments["items"]);
+            Assert.Equal(2, frozenItems.GetArrayLength());
+            var writableView = Assert.IsAssignableFrom<IDictionary<string, object?>>(snapshot.Arguments);
+            Assert.Throws<NotSupportedException>(() => writableView.Add("late-field", true));
+        }
+
+        [Fact]
+        public void AgentFrameworkApprovalSnapshotFailsClosedForCyclicArguments()
+        {
+            var cycle = new List<object?>();
+            cycle.Add(cycle);
+            var input = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["payload"] = cycle,
+                },
+            };
+
+            Assert.False(CopilotAgentToolInputSnapshot.TryCreate(
+                input,
+                out var snapshot,
+                out var error));
+            Assert.Same(CopilotAgentToolInput.Empty, snapshot);
+            Assert.Contains("immutable approval snapshot", error, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void AgentFrameworkApprovalReservationKeyBindsProviderCallIdAndSignature()
+        {
+            const string signature = "0123456789abcdef";
+
+            Assert.Equal(
+                CopilotFrameworkApprovalReservationKey.Create(" call-a ", signature),
+                CopilotFrameworkApprovalReservationKey.Create("call-a", signature));
+            Assert.NotEqual(
+                CopilotFrameworkApprovalReservationKey.Create("call-a", signature),
+                CopilotFrameworkApprovalReservationKey.Create("call-b", signature));
+            Assert.NotEqual(
+                CopilotFrameworkApprovalReservationKey.Create(null, signature),
+                CopilotFrameworkApprovalReservationKey.Create("call-a", signature));
+            Assert.Equal(
+                CopilotFrameworkApprovalReservationKey.Create(null, signature),
+                CopilotFrameworkApprovalReservationKey.Create(" ", signature));
         }
 
         [Fact]

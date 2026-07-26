@@ -392,6 +392,8 @@ namespace ColorVision.Copilot
                 .AppendLine("Return only a concise evidence-backed result for the parent Agent. Tools are unavailable in this stage. Keep the whole result under 2,500 characters: omit headings, tables, code blocks, and task restatement; use at most one finding bullet per named file followed by one `complete: yes|no — reason` line. Cite exact paths and line numbers or exact public URLs only when present in the evidence. Treat each L<number>: prefix in a successful ReadLocalFile observation as the authoritative source line; never recount lines from raw text. Every workspace finding bullet must use exactly `- <full-path>:<line-or-range> — <claim>` so the cited range remains machine-checkable; do not put the path and line range in separate fields. Copy a code identifier only with the exact spelling shown in a retained observation; never rename or infer a class, method, field, or property, and describe behavior without naming a symbol when its declaration is absent. For workspace findings, directory listings and search hits are discovery only; cite a source file only when a successful ReadLocalFile observation contains that exact file and cited line range. Do not invent missing evidence, continue the investigation, or call a candidate verified when its causal path remains uninspected. A request to read named files requires successful source evidence from each named file, not full-file traversal, unless the original user task explicitly asks for exhaustive or full-file analysis. For a bounded or narrow task, omitted unrelated file text alone does not make the task incomplete once every requested claim, item, and file scope is supported by retained evidence; report partial only when a required claim, item, file, or causal step remains unverified.")
                 .ToString()
                 .TrimEnd();
+            var finalizationExecutionScope = CopilotExecutionScope.ForAgentRun(explorationRequest)
+                .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
 
             return new CopilotAgentRequest
             {
@@ -435,6 +437,7 @@ namespace ColorVision.Copilot
                     "You are the no-tools finalization stage of a bounded delegated investigation. Use only the supplied task and collected observations. Return a compact evidence-backed result to the parent Agent using the exact requested finding-bullet and complete-line format. Copy code identifiers only with the exact spelling present in retained observations; never rename or infer them. Clearly state when required evidence is missing, but do not mark a bounded task partial merely because unrelated text outside the retained read scopes was omitted.",
                 HarnessFeatures = CopilotAgentHarnessFeatures.None,
                 RuntimePurpose = CopilotAgentRuntimePurpose.DelegatedEvidenceFinalization,
+                RuntimeExecutionScope = finalizationExecutionScope,
             };
         }
 
@@ -711,6 +714,8 @@ namespace ColorVision.Copilot
             var parentBudget = CopilotAgentRunBudget.Resolve(parentRequest);
             var childProfile = parentRequest.Profile.Clone();
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
+            var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
+                .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
 
             return new CopilotAgentRequest
             {
@@ -758,6 +763,7 @@ namespace ColorVision.Copilot
                 RequiredSuccessfulToolNames = preselectedFiles.Length == 0
                     ? GetRequiredEvidenceToolNames(role)
                     : Array.Empty<string>(),
+                RuntimeExecutionScope = childExecutionScope,
             };
         }
 

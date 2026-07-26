@@ -186,7 +186,10 @@ namespace ColorVision.Copilot
             ValidateProfile(request.Profile);
 
             var requestedCheckpoint = request.SessionCheckpoint;
-            var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(requestedCheckpoint?.TaskEventJournal);
+            var baseExecutionScope = CopilotExecutionScope.ForAgentRun(request);
+            var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
+                requestedCheckpoint?.TaskEventJournal,
+                baseExecutionScope.RunId);
             var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
@@ -247,6 +250,10 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic($"Request tool surface · {availableTools.Length}/{registeredToolCount} candidate tool(s) selected after mode and intent filtering."));
             var availableToolNames = availableTools.Select(tool => tool.Name).ToArray();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
+            var executionScope = baseExecutionScope.WithRuntimeSnapshot(
+                environmentContext.Fingerprint,
+                capabilitySnapshot.Revision);
+            request.RuntimeExecutionScope = executionScope;
             var checkpointCompatibility = requestedCheckpoint?.EvaluateFor(request.Profile, capabilitySnapshot, availableToolNames, environmentContext);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
@@ -263,6 +270,7 @@ namespace ColorVision.Copilot
                 toolBudgetCancellation.Token);
             var bridge = new HarnessToolBridge(
                 request,
+                executionScope,
                 availableTools,
                 runBudget.MaxToolCalls,
                 _toolExecutor,
@@ -624,7 +632,13 @@ namespace ColorVision.Copilot
                         }
                         else
                         {
-                            var handle = _approvalCoordinator.RequestApproval(reservation.Tool, request, reservation.ToolInput, reservation.CallId, cancellationToken);
+                            var handle = _approvalCoordinator.RequestApproval(
+                                reservation.Tool,
+                                request,
+                                reservation.ToolInput,
+                                reservation.CallId,
+                                cancellationToken,
+                                reservation.ExecutionScope);
                             bridge.PublishAwaitingApproval(reservation, handle.Action);
                             emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} is waiting for explicit approval in ColorVision."));
                             try
@@ -2014,13 +2028,14 @@ namespace ColorVision.Copilot
         private sealed class HarnessToolBridge
         {
             private readonly CopilotAgentRequest _request;
+            private readonly CopilotExecutionScope _executionScope;
             private readonly IReadOnlyDictionary<string, ICopilotTool> _tools;
             private readonly CopilotToolExecutor _toolExecutor;
             private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly List<CopilotAgentStepRecord> _stepRecords = new();
             private readonly Dictionary<string, ToolAttemptState> _attemptsBySignature = new(StringComparer.OrdinalIgnoreCase);
-            private readonly Dictionary<string, FrameworkApprovalReservation> _approvedCalls = new(StringComparer.OrdinalIgnoreCase);
+            private readonly Dictionary<CopilotFrameworkApprovalReservationKey, FrameworkApprovalReservation> _approvedCalls = new();
             private readonly CopilotProviderToolCallLedger _providerToolCalls = new();
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
@@ -2031,6 +2046,7 @@ namespace ColorVision.Copilot
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
+                CopilotExecutionScope executionScope,
                 IReadOnlyList<ICopilotTool> tools,
                 int maxToolCalls,
                 CopilotToolExecutor toolExecutor,
@@ -2040,6 +2056,7 @@ namespace ColorVision.Copilot
                 Action? onToolBudgetExhausted = null)
             {
                 _request = request;
+                _executionScope = executionScope ?? throw new ArgumentNullException(nameof(executionScope));
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
                 _maxToolCalls = Math.Max(1, maxToolCalls);
                 _toolExecutor = toolExecutor;
@@ -2101,6 +2118,11 @@ namespace ColorVision.Copilot
                     error = $"Function {functionCall.Name} is not registered as a natively approved ColorVision tool.";
                     return false;
                 }
+                if (string.IsNullOrWhiteSpace(functionCall.CallId))
+                {
+                    error = "The protected Agent Framework tool call is missing its provider call id.";
+                    return false;
+                }
 
                 var arguments = functionCall.Arguments == null
                     ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
@@ -2110,8 +2132,13 @@ namespace ColorVision.Copilot
                     RecordRejectedToolCall(tool, arguments, error, functionCall.CallId);
                     return false;
                 }
+                if (!CopilotAgentToolInputSnapshot.TryCreate(toolInput, out var approvedToolInput, out error))
+                {
+                    RecordRejectedToolCall(tool, arguments, error, functionCall.CallId);
+                    return false;
+                }
 
-                var signature = BuildExecutionSignature(tool.Name, toolInput);
+                var signature = BuildExecutionSignature(tool.Name, approvedToolInput);
                 string? reservationError = null;
                 lock (_syncRoot)
                 {
@@ -2127,13 +2154,18 @@ namespace ColorVision.Copilot
                     {
                         reservation = new FrameworkApprovalReservation
                         {
-                            CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId,
+                            CallId = functionCall.CallId.Trim(),
                             Round = round,
                             Attempt = attempt,
                             MaxAttempts = GetMaximumAttempts(tool),
                             Signature = signature,
+                            ProviderCallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? string.Empty : functionCall.CallId.Trim(),
                             Tool = tool,
-                            ToolInput = toolInput,
+                            ToolInput = approvedToolInput,
+                            ExecutionScope = _executionScope.BindToolCall(
+                                tool.Name,
+                                functionCall.CallId,
+                                signature),
                             StartedAtUtc = DateTimeOffset.UtcNow,
                         };
                     }
@@ -2141,7 +2173,7 @@ namespace ColorVision.Copilot
 
                 if (reservationError != null)
                 {
-                    RecordGuardRejectedToolCall(tool, toolInput, signature, reservationError, functionCall.CallId);
+                    RecordGuardRejectedToolCall(tool, approvedToolInput, signature, reservationError, functionCall.CallId);
                     error = reservationError;
                     return false;
                 }
@@ -2153,6 +2185,7 @@ namespace ColorVision.Copilot
             public void PublishAwaitingApproval(FrameworkApprovalReservation reservation, Mcp.ConfirmableAction action)
             {
                 reservation.ApprovalActionId = action.ActionId;
+                reservation.ApprovalArgumentsDigest = action.ArgumentsDigest;
                 var result = new CopilotToolResult
                 {
                     ToolName = reservation.Tool.Name,
@@ -2173,7 +2206,9 @@ namespace ColorVision.Copilot
             public void Approve(FrameworkApprovalReservation reservation)
             {
                 lock (_syncRoot)
-                    _approvedCalls[reservation.Signature] = reservation;
+                    _approvedCalls[CopilotFrameworkApprovalReservationKey.Create(
+                        reservation.ProviderCallId,
+                        reservation.Signature)] = reservation;
             }
 
             public void CancelOutstandingApprovals()
@@ -2248,15 +2283,22 @@ namespace ColorVision.Copilot
                         ? new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
                         : new Dictionary<string, object?>(functionCall.Arguments, StringComparer.OrdinalIgnoreCase);
                     var toolInput = CreateNamesOnlyToolInput(arguments);
+                    var unknownCallId = string.IsNullOrWhiteSpace(functionCall.CallId)
+                        ? Guid.NewGuid().ToString("N")
+                        : functionCall.CallId.Trim();
                     var invocation = new CopilotToolInvocation
                     {
-                        CallId = string.IsNullOrWhiteSpace(functionCall.CallId) ? Guid.NewGuid().ToString("N") : functionCall.CallId.Trim(),
+                        CallId = unknownCallId,
                         Round = round,
                         Attempt = 1,
                         MaxAttempts = 1,
                         RuntimeName = "agent-framework",
                         Tool = tool,
                         AgentRequest = _request,
+                        ExecutionScope = _executionScope.BindToolCall(
+                            tool.Name,
+                            unknownCallId,
+                            BuildExecutionSignature(tool.Name, toolInput)),
                         ToolInput = toolInput,
                         ToolCall = new CopilotToolCall
                         {
@@ -2503,7 +2545,9 @@ namespace ColorVision.Copilot
                 string? reservationError = null;
                 lock (_syncRoot)
                 {
-                    if (_approvedCalls.Remove(signature, out approvalReservation))
+                    if (_approvedCalls.Remove(
+                        CopilotFrameworkApprovalReservationKey.Create(providerCallId, signature),
+                        out approvalReservation))
                     {
                         round = approvalReservation.Round;
                         attempt = approvalReservation.Attempt;
@@ -2526,16 +2570,23 @@ namespace ColorVision.Copilot
                 if (reservationError != null)
                     return RecordGuardRejectedToolCall(tool, toolInput, signature, reservationError, providerCallId);
 
+                var invocationCallId = string.IsNullOrWhiteSpace(providerCallId)
+                    ? Guid.NewGuid().ToString("N")
+                    : providerCallId.Trim();
                 var invocation = approvalReservation == null
                     ? new CopilotToolInvocation
                     {
-                        CallId = string.IsNullOrWhiteSpace(providerCallId) ? Guid.NewGuid().ToString("N") : providerCallId.Trim(),
+                        CallId = invocationCallId,
                         Round = round,
                         Attempt = attempt,
                         MaxAttempts = maxAttempts,
                         RuntimeName = "agent-framework",
                         Tool = tool,
                         AgentRequest = _request,
+                        ExecutionScope = _executionScope.BindToolCall(
+                            tool.Name,
+                            invocationCallId,
+                            signature),
                         ToolInput = toolInput,
                         ToolCall = CreateToolCall(tool, toolInput),
                     }
@@ -2586,6 +2637,14 @@ namespace ColorVision.Copilot
 
             private bool CanBeginApprovedExecution(FrameworkApprovalReservation reservation)
             {
+                if (!CopilotAgentToolInputExactBinding.MatchesExecutionSignature(
+                    reservation.Tool.Name,
+                    reservation.ToolInput,
+                    reservation.Signature))
+                {
+                    return false;
+                }
+
                 var currentWorkspacePath = GetCurrentWorkspacePath();
                 return reservation.ApprovedByFullAccess
                     ? CopilotAgentAccessPolicy.CanAutoApprove(
@@ -2595,7 +2654,10 @@ namespace ColorVision.Copilot
                     : _approvalCoordinator.BeginIfRequired(
                         reservation.ApprovalActionId,
                         _request,
-                        currentWorkspacePath);
+                        currentWorkspacePath,
+                        reservation.ApprovalArgumentsDigest,
+                        reservation.CallId,
+                        reservation.ExecutionScope);
             }
 
             private CopilotToolInvocation CreateInvocation(FrameworkApprovalReservation reservation, bool frameworkApprovalGranted)
@@ -2609,6 +2671,7 @@ namespace ColorVision.Copilot
                     RuntimeName = "agent-framework",
                     Tool = reservation.Tool,
                     AgentRequest = _request,
+                    ExecutionScope = reservation.ExecutionScope,
                     ToolInput = reservation.ToolInput,
                     ToolCall = CreateToolCall(reservation.Tool, reservation.ToolInput),
                     FrameworkApprovalGranted = frameworkApprovalGranted,
@@ -2840,13 +2903,19 @@ namespace ColorVision.Copilot
 
                 public string Signature { get; init; } = string.Empty;
 
+                public string ProviderCallId { get; init; } = string.Empty;
+
                 public ICopilotTool Tool { get; init; } = null!;
 
                 public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
+                public CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
+
                 public DateTimeOffset StartedAtUtc { get; init; }
 
                 public string ApprovalActionId { get; set; } = string.Empty;
+
+                public string ApprovalArgumentsDigest { get; set; } = string.Empty;
 
                 public bool ApprovedByFullAccess { get; set; }
             }
