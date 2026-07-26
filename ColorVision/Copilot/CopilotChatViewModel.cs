@@ -652,7 +652,24 @@ namespace ColorVision.Copilot
             ? Properties.Resources.CopilotSelectHistoryOrNew
             : Properties.Resources.CopilotConfigureModelFirst;
 
-        public string PrimaryActionGlyph => HasExclusiveLocalOperation || IsViewingActiveRun ? "■" : IsViewingQueuedRun ? "×" : "↑";
+        public string PrimaryActionGlyph
+        {
+            get
+            {
+                if (HasExclusiveLocalOperation)
+                    return "■";
+                if (IsViewingActiveRun)
+                {
+                    return ActiveHostedRunInteraction.PrimaryAction switch
+                    {
+                        CopilotHostedRunPrimaryAction.Cancel => "×",
+                        CopilotHostedRunPrimaryAction.None => "…",
+                        _ => "■",
+                    };
+                }
+                return IsViewingQueuedRun ? "×" : "↑";
+            }
+        }
 
         public string PrimaryActionToolTip
         {
@@ -667,7 +684,14 @@ namespace ColorVision.Copilot
                 if (IsViewingQueuedRun)
                     return "取消这个排队任务";
                 if (IsViewingActiveRun)
-                    return IsAgentRequestActive ? "停止当前 Agent 任务" : Properties.Resources.CopilotStopGeneration;
+                {
+                    return ActiveHostedRun?.State switch
+                    {
+                        CopilotHostedRunState.PauseRequested => "正在暂停当前 Agent 任务；再次点击将改为取消",
+                        CopilotHostedRunState.CancelRequested => "正在取消当前任务",
+                        _ => IsAgentRequestActive ? "停止当前 Agent 任务" : Properties.Resources.CopilotStopGeneration,
+                    };
+                }
                 if (IsBusy)
                 {
                     var admission = EvaluateComposerRequestAdmission(ResolveComposerRequestMode());
@@ -862,7 +886,13 @@ namespace ColorVision.Copilot
         public string InputPlaceholder => IsEditingMessage
             ? "修改后按 Enter 重新发送"
             : IsViewingActiveRun
-                ? "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问"
+                ? ActiveHostedRun?.State switch
+                {
+                    CopilotHostedRunState.PauseRequested => "任务正在暂停 · 当前输入会保留到任务结束",
+                    CopilotHostedRunState.CancelRequested => "任务正在取消 · 当前输入会保留到任务结束",
+                    _ when IsAgentRequestActive => "Enter 调整 · Tab 排队 · @ 关联 · /btw 旁路提问",
+                    _ => "正在生成回复 · 可使用 /status 或 /btw",
+                }
                 : IsConversationEmpty ? "随心输入 · @ 关联 · / 或 $ 命令" : "要求后续变更 · @ 关联 · / 或 $ 命令";
 
         public bool IsEditingMessage => !string.IsNullOrWhiteSpace(_editingConversationId)
@@ -1145,6 +1175,9 @@ namespace ColorVision.Copilot
 
         private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
 
+        private CopilotHostedRunInteraction ActiveHostedRunInteraction =>
+            CopilotHostedRunInteractionPolicy.Evaluate(ActiveHostedRun?.State ?? CopilotHostedRunState.Completed);
+
         private CopilotHostedAgentRun? SelectedHostedRun => _taskHost.FindRunByConversationId(SelectedConversation?.Id);
 
         private bool IsAgentRequestActive => ActiveHostedRun?.IsAgent == true;
@@ -1153,7 +1186,11 @@ namespace ColorVision.Copilot
 
         private bool IsViewingQueuedRun => SelectedHostedRun?.State == CopilotHostedRunState.Queued;
 
-        public bool CanSteerCurrentRun => IsBusy && IsAgentRequestActive && IsViewingActiveRun && !IsInputEmpty;
+        public bool CanSteerCurrentRun => IsBusy
+            && IsAgentRequestActive
+            && IsViewingActiveRun
+            && ActiveHostedRunInteraction.AcceptsNewInput
+            && !IsInputEmpty;
 
         public bool CanQueueCurrentRunFollowUp => CanSteerCurrentRun
             && ResolveComposerRequestMode() != CopilotAgentMode.Chat
@@ -2865,6 +2902,8 @@ namespace ColorVision.Copilot
             }
             if (IsViewingQueuedRun || IsViewingActiveRun)
             {
+                if (IsViewingActiveRun && ActiveHostedRunInteraction.PrimaryAction == CopilotHostedRunPrimaryAction.None)
+                    return;
                 StopCurrentReply();
                 return;
             }
@@ -3561,6 +3600,14 @@ namespace ColorVision.Copilot
             var activeRun = ActiveHostedRun;
             if (!IsViewingActiveRun || activeRun == null)
                 return;
+
+            if (activeRun.State == CopilotHostedRunState.CancelRequested)
+                return;
+            if (activeRun.State == CopilotHostedRunState.PauseRequested)
+            {
+                _taskHost.RequestCancel(activeRun.Id);
+                return;
+            }
 
             // Match Codex's single-stop interaction: keep recovery state when a
             // safe checkpoint exists, otherwise cancel the in-flight turn.
