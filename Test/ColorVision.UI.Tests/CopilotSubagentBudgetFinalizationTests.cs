@@ -1,5 +1,7 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
 
@@ -35,6 +37,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Contains("L<number>:", role.RuntimeInstructions, StringComparison.Ordinal);
         Assert.Contains("<full-path>:<line-or-range>", role.RuntimeInstructions, StringComparison.Ordinal);
         Assert.Contains("full-file traversal is required only", role.RuntimeInstructions, StringComparison.Ordinal);
+        Assert.Contains("never rename or infer one from behavior", role.RuntimeInstructions, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -55,7 +58,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
             var parentRequest = new CopilotAgentRequest
             {
-                UserText = $"Use only DelegateExplore to inspect {root}.",
+                UserText = $"请只使用 DelegateExplore 只读检查 {root} 下的源代码文件，不要修改文件。",
                 Profile = CreateProfile(),
                 SearchRootPaths = [root],
                 TrustedProjectRootPaths = [root],
@@ -74,6 +77,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             Assert.True(childRequest.PreferBatchReadLocalFiles);
             Assert.Equal(paths, childRequest.ReadableLocalFilePaths, StringComparer.OrdinalIgnoreCase);
             Assert.Empty(childRequest.RequiredSuccessfulToolNames);
+            Assert.True(CopilotSubagentRunner.CanUsePreselectedEvidence(childRequest, role));
 
             var readTool = Assert.IsType<CopilotReadLocalFileTool>(
                 role.CreateTools().Single(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)));
@@ -116,6 +120,137 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         }
     }
 
+    [Theory]
+    [InlineData("Read the full files Coordinator.cs and Explore.cs.")]
+    [InlineData("逐行检查 Coordinator.cs 和 Explore.cs 的全文。")]
+    public void ExhaustiveNamedFileTasksKeepTheModelDrivenExplorationLoop(string task)
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var request = new CopilotAgentRequest
+        {
+            UserText = task,
+            Profile = CreateProfile(),
+            ReadableLocalFilePaths = [@"C:\workspace\Coordinator.cs", @"C:\workspace\Explore.cs"],
+            PreferBatchReadLocalFiles = true,
+            Mode = CopilotAgentMode.Code,
+        };
+
+        Assert.True(CopilotAgentRunBudget.ContainsExhaustiveScope(task));
+        Assert.False(CopilotSubagentRunner.CanUsePreselectedEvidence(request, role));
+    }
+
+    [Fact]
+    public void ModelGeneratedFullFileWordingCannotInflateTheOriginalBoundedUserScope()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-child-original-scope-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fileNames = new[] { "Coordinator.cs", "Explore.cs", "RoleCatalog.cs" };
+            var paths = fileNames.Select(fileName => Path.Combine(root, fileName)).ToArray();
+            foreach (var path in paths)
+                File.WriteAllText(path, "// bounded evidence");
+            var parentTask = $"请使用 DelegateExplore 检查 {root} 下的 {string.Join("、", fileNames)}，返回一条结论。";
+            var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+            var childRequest = CopilotSubagentRunner.CreateChildRequest(
+                new CopilotAgentRequest
+                {
+                    UserText = parentTask,
+                    Profile = CreateProfile(),
+                    SearchRootPaths = [root],
+                    TrustedProjectRootPaths = [root],
+                    Mode = CopilotAgentMode.Code,
+                },
+                role,
+                new CopilotSubagentRunRequest
+                {
+                    RunId = "explore-original-scope-test",
+                    Task = $"Read the full contents of {string.Join(", ", fileNames)} in {root}.",
+                    RequestTokenBudget = 16_384,
+                });
+
+            Assert.Equal(parentTask, childRequest.TaskIntentText);
+            Assert.True(CopilotAgentRunBudget.ContainsExhaustiveScope(childRequest.UserText));
+            Assert.False(CopilotAgentRunBudget.ContainsExhaustiveScope(childRequest.TaskIntentText));
+            Assert.True(CopilotSubagentRunner.CanUsePreselectedEvidence(childRequest, role));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("complete: yes — all evidence collected.", true)]
+    [InlineData("- finding\nCOMPLETE: YES - done", true)]
+    [InlineData("complete: no — one file is missing.", false)]
+    [InlineData("Evidence summary without a completion declaration.", false)]
+    public void EvidenceSynthesisRequiresAnExplicitCompleteDeclaration(string answer, bool expected)
+    {
+        Assert.Equal(expected, CopilotSubagentRunner.HasCompleteDeclaration(answer));
+    }
+
+    [Theory]
+    [InlineData("complete: yes — every named file has grounded evidence.", CopilotAgentStopReason.Completed)]
+    [InlineData("complete: no — another causal step is still missing.", CopilotAgentStopReason.IncompleteOutput)]
+    public async Task PreselectedEvidenceFastPathUsesOneProviderCallAndKeepsGroundedScopes(
+        string completionLine,
+        CopilotAgentStopReason expectedStopReason)
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-child-preloaded-evidence-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fileNames = new[] { "Coordinator.cs", "Explore.cs", "RoleCatalog.cs" };
+            var paths = fileNames.Select(fileName => Path.Combine(root, fileName)).ToArray();
+            foreach (var path in paths)
+                await File.WriteAllTextAsync(path, "// budget evidence");
+
+            var answer = string.Join(
+                Environment.NewLine,
+                paths.Select(path => $"- {path}:1 — verified bounded budget evidence."))
+                + Environment.NewLine
+                + completionLine;
+            using var chatClient = new RecordingChatClient(answer);
+            var runner = new CopilotSubagentRunner(_ => chatClient);
+            var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+            var parentRequest = new CopilotAgentRequest
+            {
+                UserText = $"请只使用 DelegateExplore 只读检查 {root} 下的源代码文件，不要修改文件。",
+                Profile = CreateProfile(),
+                SearchRootPaths = [root],
+                TrustedProjectRootPaths = [root],
+                Mode = CopilotAgentMode.Code,
+            };
+
+            var result = await runner.RunAsync(
+                parentRequest,
+                role,
+                new CopilotSubagentRunRequest
+                {
+                    RunId = "explore-preloaded-evidence-test",
+                    Task = $"Inspect budget evidence in {string.Join(", ", fileNames)} under {root}.",
+                    RequestTokenBudget = 16_384,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(expectedStopReason, result.StopReason);
+            Assert.True(result.UsedPreselectedEvidence);
+            Assert.False(result.UsedBudgetFinalization);
+            Assert.True(result.HasSuccessfulEvidence);
+            Assert.Equal(["ReadLocalFile"], result.ToolNames);
+            Assert.Equal(1, result.Budget.ToolCalls);
+            Assert.Equal(1, result.Budget.ProviderCalls);
+            Assert.Equal(1, chatClient.CallCount);
+            Assert.Contains("[Selection] Task-focused evidence window", chatClient.LastPrompt, StringComparison.Ordinal);
+            Assert.All(fileNames, fileName => Assert.Contains(fileName, chatClient.LastPrompt, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task NamedWorkspaceBatchSelectsLateTaskFocusedEvidenceFromEveryFile()
     {
@@ -133,6 +268,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             var filler = Enumerable.Range(1, 140)
                 .Select(index => $"// unrelated filler {index:D3} {new string('x', 72)}")
                 .ToArray();
+            filler[127] = "private static CopilotAgentBudgetSnapshot CombineBudgets(";
             var evidenceLines = new[]
             {
                 "private const int MaximumRunTokenBudget = 16_384; // coordinator budget evidence",
@@ -163,6 +299,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             var readTool = Assert.IsType<CopilotReadLocalFileTool>(
                 role.CreateTools().Single(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)));
 
+            Assert.True(CopilotSubagentRunner.CanUsePreselectedEvidence(childRequest, role));
             var result = await readTool.ExecuteAsync(childRequest, CopilotAgentToolInput.Empty, CancellationToken.None);
 
             Assert.True(result.Success);
@@ -176,6 +313,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             });
             foreach (var evidenceLine in evidenceLines)
                 Assert.Contains($"L141: {evidenceLine}", result.Content, StringComparison.Ordinal);
+            Assert.Contains("L128: private static CopilotAgentBudgetSnapshot CombineBudgets(", result.Content, StringComparison.Ordinal);
             Assert.Contains("[Selection] Task-focused evidence window", result.Content, StringComparison.Ordinal);
             Assert.Contains("3 task-focused evidence window(s)", result.Summary, StringComparison.Ordinal);
             Assert.DoesNotContain("L1: // unrelated filler", result.Content, StringComparison.Ordinal);
@@ -348,6 +486,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Contains("under 2,500 characters", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("complete: yes|no", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("omitted unrelated file text alone does not make the task incomplete", finalization.UserText, StringComparison.Ordinal);
+        Assert.Contains("Copy a code identifier only with the exact spelling shown", finalization.UserText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -550,5 +689,54 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             Model = "test-model",
             MaxTokens = 4_096,
         };
+    }
+
+    private sealed class RecordingChatClient(string answer) : IChatClient
+    {
+        public int CallCount { get; private set; }
+
+        public string LastPrompt { get; private set; } = string.Empty;
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Record(messages);
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, answer)));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Record(messages);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, answer)
+            {
+                FinishReason = ChatFinishReason.Stop,
+            };
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+        }
+
+        private void Record(IEnumerable<ChatMessage> messages)
+        {
+            CallCount++;
+            LastPrompt = string.Join(
+                Environment.NewLine,
+                messages
+                    .SelectMany(message => message.Contents)
+                    .OfType<TextContent>()
+                    .Select(content => content.Text));
+        }
     }
 }

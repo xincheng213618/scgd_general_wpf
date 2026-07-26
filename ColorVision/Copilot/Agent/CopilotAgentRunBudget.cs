@@ -51,8 +51,8 @@ namespace ColorVision.Copilot
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private static readonly string[] ExhaustiveScopeMarkers =
         {
-            "全面", "全量", "所有", "全部", "整个", "逐一", "每个", "完整审计",
-            "comprehensive", "exhaustive", "all files", "all locations", "entire", "every file",
+            "全面", "全量", "所有", "全部", "整个", "逐一", "逐行", "每个", "完整审计", "完整文件", "全文",
+            "comprehensive", "exhaustive", "all files", "all locations", "entire", "every file", "full file", "full contents",
         };
 
         public const int MinimumRequestTokenBudget = 4096;
@@ -179,7 +179,7 @@ namespace ColorVision.Copilot
 
         private static int Clamp(int value, int minimum, int maximum) => Math.Clamp(value, minimum, maximum);
 
-        private static bool ContainsExhaustiveScope(string? text)
+        internal static bool ContainsExhaustiveScope(string? text)
         {
             var source = text ?? string.Empty;
             return ExhaustiveScopeMarkers.Any(marker => source.Contains(marker, StringComparison.OrdinalIgnoreCase));

@@ -57,6 +57,8 @@ namespace ColorVision.Copilot
 
         public bool UsedBudgetFinalization { get; init; }
 
+        public bool UsedPreselectedEvidence { get; init; }
+
         public bool HasSuccessfulEvidence { get; init; }
     }
 
@@ -77,6 +79,9 @@ namespace ColorVision.Copilot
         private static readonly Regex NamedTaskFileRegex = new(
             @"(?<![\p{L}\p{N}_@+.\-])(?<name>[\p{L}\p{N}_@+\-]+(?:\.[\p{L}\p{N}_@+\-]+)+)(?![\p{L}\p{N}_@+.\-])",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex CompleteDeclarationRegex = new(
+            @"^\s*complete\s*:\s*yes\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
 
         public CopilotSubagentRunner()
@@ -102,39 +107,67 @@ namespace ColorVision.Copilot
             var registry = new CopilotToolRegistry(tools);
             var catalog = new CopilotCapabilityCatalog();
             catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, role.Id, "ColorVision " + role.DisplayName, tools);
-            var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
-                registry,
-                new CopilotAgentContextBuilder(),
-                new CopilotToolExecutor(),
-                _chatClientFactory,
-                EmptyExternalToolProvider.Instance,
-                catalog);
             var childRequest = CreateChildRequest(parentRequest, role, runRequest);
+            var toolExecutor = new CopilotToolExecutor();
             var answer = new StringBuilder();
-            var result = await runtime.RunAsync(
+            var preselectedOutcome = await TryExecutePreselectedEvidenceAsync(
                 childRequest,
-                agentEvent =>
-                {
-                    if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
-                    {
-                        answer.Clear();
-                    }
-                    else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta)
-                    {
-                        answer.Append(agentEvent.Text);
-                    }
-                },
+                role,
+                tools,
+                toolExecutor,
                 cancellationToken);
+            var usedPreselectedEvidence = preselectedOutcome != null
+                && HasSuccessfulPreselectedEvidence(childRequest, [preselectedOutcome.StepRecord]);
+            CopilotAgentRunResult result;
+            if (usedPreselectedEvidence)
+            {
+                result = CreatePreselectedEvidenceRunResult(
+                    childRequest,
+                    preselectedOutcome!,
+                    stopwatch.Elapsed);
+            }
+            else
+            {
+                var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+                    registry,
+                    new CopilotAgentContextBuilder(),
+                    toolExecutor,
+                    _chatClientFactory,
+                    EmptyExternalToolProvider.Instance,
+                    catalog);
+                result = await runtime.RunAsync(
+                    childRequest,
+                    agentEvent =>
+                    {
+                        if (agentEvent.Type == CopilotAgentEventType.AnswerReset)
+                        {
+                            answer.Clear();
+                        }
+                        else if (agentEvent.Type == CopilotAgentEventType.AnswerDelta)
+                        {
+                            answer.Append(agentEvent.Text);
+                        }
+                    },
+                    cancellationToken);
+            }
 
             var explorationAnswer = answer.ToString().Trim();
             CopilotAgentRunResult? finalizationResult = null;
             var usedBudgetFinalization = false;
-            var finalizationRequest = CreateBudgetFinalizationRequest(
-                childRequest,
-                role,
-                result,
-                runRequest.RequestTokenBudget,
-                stopwatch.Elapsed);
+            var finalizationCompleted = false;
+            var finalizationRequest = usedPreselectedEvidence
+                ? CreatePreselectedEvidenceFinalizationRequest(
+                    childRequest,
+                    role,
+                    result,
+                    runRequest.RequestTokenBudget,
+                    stopwatch.Elapsed)
+                : CreateBudgetFinalizationRequest(
+                    childRequest,
+                    role,
+                    result,
+                    runRequest.RequestTokenBudget,
+                    stopwatch.Elapsed);
             if (finalizationRequest != null)
             {
                 answer.Clear();
@@ -161,8 +194,9 @@ namespace ColorVision.Copilot
                             }
                         },
                         cancellationToken);
-                    usedBudgetFinalization = finalizationResult.StopReason == CopilotAgentStopReason.Completed
+                    finalizationCompleted = finalizationResult.StopReason == CopilotAgentStopReason.Completed
                         && !string.IsNullOrWhiteSpace(answer.ToString());
+                    usedBudgetFinalization = finalizationCompleted && !usedPreselectedEvidence;
                 }
                 catch (OperationCanceledException)
                 {
@@ -176,7 +210,7 @@ namespace ColorVision.Copilot
                 }
             }
 
-            var finalAnswer = usedBudgetFinalization
+            var finalAnswer = finalizationCompleted
                 ? answer.ToString().Trim()
                 : explorationAnswer;
             var requiredEvidenceToolNames = GetRequiredEvidenceToolNames(role);
@@ -192,9 +226,11 @@ namespace ColorVision.Copilot
                 result.StepRecords,
                 finalAnswer);
             var hasSuccessfulEvidence = successfulEvidence.Length > 0 && unobservedFileCitations.Count == 0;
-            var effectiveStopReason = usedBudgetFinalization
+            var effectiveStopReason = finalizationCompleted
                 ? CopilotAgentStopReason.Completed
                 : result.StopReason;
+            if (finalizationCompleted && !HasCompleteDeclaration(finalAnswer))
+                effectiveStopReason = CopilotAgentStopReason.IncompleteOutput;
             if (effectiveStopReason == CopilotAgentStopReason.Completed && !hasSuccessfulEvidence)
                 effectiveStopReason = CopilotAgentStopReason.IncompleteOutput;
             if (unobservedFileCitations.Count > 0)
@@ -211,7 +247,7 @@ namespace ColorVision.Copilot
                 finalizationResult?.Budget,
                 runRequest.RequestTokenBudget,
                 stopwatch.Elapsed,
-                usedBudgetFinalization);
+                finalizationCompleted);
             var wasTruncated = finalAnswer.Length > role.MaximumAnswerCharacters;
             if (wasTruncated)
                 finalAnswer = finalAnswer[..role.MaximumAnswerCharacters].TrimEnd() + $"\n...<{role.DisplayName} answer truncated>";
@@ -233,6 +269,7 @@ namespace ColorVision.Copilot
                     .ToArray(),
                 WasTruncated = wasTruncated,
                 UsedBudgetFinalization = usedBudgetFinalization,
+                UsedPreselectedEvidence = usedPreselectedEvidence,
                 HasSuccessfulEvidence = hasSuccessfulEvidence,
             };
         }
@@ -267,17 +304,71 @@ namespace ColorVision.Copilot
             if (remainingDuration < MinimumFinalizationDuration)
                 return null;
 
+            return CreateEvidenceFinalizationRequest(
+                explorationRequest,
+                role,
+                explorationResult.StepRecords,
+                remainingTokens,
+                remainingDuration,
+                explorationBudget.ContextWindowTokens,
+                preserveProjectInstructions: false);
+        }
+
+        internal static CopilotAgentRequest? CreatePreselectedEvidenceFinalizationRequest(
+            CopilotAgentRequest explorationRequest,
+            CopilotSubagentRoleDescriptor role,
+            CopilotAgentRunResult explorationResult,
+            int totalTokenBudget,
+            TimeSpan elapsed)
+        {
+            ArgumentNullException.ThrowIfNull(explorationRequest);
+            ArgumentNullException.ThrowIfNull(role);
+            ArgumentNullException.ThrowIfNull(explorationResult);
+            if (!CanUsePreselectedEvidence(explorationRequest, role)
+                || !HasSuccessfulPreselectedEvidence(explorationRequest, explorationResult.StepRecords))
+            {
+                return null;
+            }
+
+            var remainingTokens = Math.Clamp(
+                totalTokenBudget,
+                CopilotAgentRunBudget.MinimumRequestTokenBudget,
+                CopilotAgentRunBudget.MaximumRequestTokenBudget);
+            var explorationBudget = CopilotAgentRunBudget.Resolve(explorationRequest);
+            var remainingDuration = explorationBudget.TotalDuration - elapsed;
+            if (remainingDuration < MinimumFinalizationDuration)
+                return null;
+
+            return CreateEvidenceFinalizationRequest(
+                explorationRequest,
+                role,
+                explorationResult.StepRecords,
+                remainingTokens,
+                remainingDuration,
+                explorationBudget.ContextWindowTokens,
+                preserveProjectInstructions: true);
+        }
+
+        private static CopilotAgentRequest CreateEvidenceFinalizationRequest(
+            CopilotAgentRequest explorationRequest,
+            CopilotSubagentRoleDescriptor role,
+            IReadOnlyList<CopilotAgentStepRecord> stepRecords,
+            int remainingTokens,
+            TimeSpan remainingDuration,
+            int contextWindowTokens,
+            bool preserveProjectInstructions)
+        {
             var evidenceCharacterBudget = Math.Clamp(
                 Math.Max(0, remainingTokens - FinalizationPromptTokenReserve)
                     * CopilotTokenEstimator.AsciiCharactersPerToken,
                 MinimumFinalizationEvidenceCharacters,
                 MaximumFinalizationEvidenceCharacters);
             var perObservationCharacters = Math.Clamp(
-                evidenceCharacterBudget / Math.Max(1, explorationResult.StepRecords.Count),
+                evidenceCharacterBudget / Math.Max(1, stepRecords.Count),
                 800,
                 evidenceCharacterBudget);
             var observations = new CopilotAgentContextBuilder().BuildObservationSummary(
-                explorationResult.StepRecords,
+                stepRecords,
                 role.MaximumToolCalls,
                 perObservationCharacters,
                 includeContent: true,
@@ -295,7 +386,7 @@ namespace ColorVision.Copilot
                 .AppendLine(observations)
                 .AppendLine()
                 .AppendLine("# Finalization requirements")
-                .AppendLine("Return only a concise evidence-backed result for the parent Agent. Tools are unavailable in this stage. Keep the whole result under 2,500 characters: omit headings, tables, code blocks, and task restatement; use at most one finding bullet per named file followed by one `complete: yes|no — reason` line. Cite exact paths and line numbers or exact public URLs only when present in the evidence. Treat each L<number>: prefix in a successful ReadLocalFile observation as the authoritative source line; never recount lines from raw text. Every workspace finding bullet must use exactly `- <full-path>:<line-or-range> — <claim>` so the cited range remains machine-checkable; do not put the path and line range in separate fields. For workspace findings, directory listings and search hits are discovery only; cite a source file only when a successful ReadLocalFile observation contains that exact file and cited line range. Do not invent missing evidence, continue the investigation, or call a candidate verified when its causal path remains uninspected. A request to read named files requires successful source evidence from each named file, not full-file traversal, unless the task explicitly asks for exhaustive or full-file analysis. For a bounded or narrow task, omitted unrelated file text alone does not make the task incomplete once every requested claim, item, and file scope is supported by retained evidence; report partial only when a required claim, item, file, or causal step remains unverified.")
+                .AppendLine("Return only a concise evidence-backed result for the parent Agent. Tools are unavailable in this stage. Keep the whole result under 2,500 characters: omit headings, tables, code blocks, and task restatement; use at most one finding bullet per named file followed by one `complete: yes|no — reason` line. Cite exact paths and line numbers or exact public URLs only when present in the evidence. Treat each L<number>: prefix in a successful ReadLocalFile observation as the authoritative source line; never recount lines from raw text. Every workspace finding bullet must use exactly `- <full-path>:<line-or-range> — <claim>` so the cited range remains machine-checkable; do not put the path and line range in separate fields. Copy a code identifier only with the exact spelling shown in a retained observation; never rename or infer a class, method, field, or property, and describe behavior without naming a symbol when its declaration is absent. For workspace findings, directory listings and search hits are discovery only; cite a source file only when a successful ReadLocalFile observation contains that exact file and cited line range. Do not invent missing evidence, continue the investigation, or call a candidate verified when its causal path remains uninspected. A request to read named files requires successful source evidence from each named file, not full-file traversal, unless the original user task explicitly asks for exhaustive or full-file analysis. For a bounded or narrow task, omitted unrelated file text alone does not make the task incomplete once every requested claim, item, and file scope is supported by retained evidence; report partial only when a required claim, item, file, or causal step remains unverified.")
                 .ToString()
                 .TrimEnd();
 
@@ -310,7 +401,9 @@ namespace ColorVision.Copilot
                 SearchRootPaths = Array.Empty<string>(),
                 TrustedProjectRootPaths = Array.Empty<string>(),
                 ActiveDocumentPath = string.Empty,
-                ProjectInstructions = Array.Empty<CopilotProjectInstructionDocument>(),
+                ProjectInstructions = preserveProjectInstructions
+                    ? explorationRequest.ProjectInstructions
+                    : Array.Empty<CopilotProjectInstructionDocument>(),
                 ReadableLocalFilePaths = Array.Empty<string>(),
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),
                 WritableLocalRootPaths = Array.Empty<string>(),
@@ -324,7 +417,7 @@ namespace ColorVision.Copilot
                 SkillOverrides = explorationRequest.SkillOverrides,
                 RunBudgetOverride = new CopilotAgentRunBudgetOverride
                 {
-                    ContextWindowTokens = explorationBudget.ContextWindowTokens,
+                    ContextWindowTokens = contextWindowTokens,
                     RequestTokenBudget = remainingTokens,
                     MaxToolCalls = CopilotAgentRunBudget.MinimumToolCalls,
                     MaxAgentPasses = CopilotAgentRunBudget.MinimumAgentPasses,
@@ -333,7 +426,7 @@ namespace ColorVision.Copilot
                 ExternalMcpServers = Array.Empty<CopilotMcpClientServerConfig>(),
                 ForceExternalMcpToolRefresh = false,
                 RuntimeRoleInstructions =
-                    "You are the no-tools finalization stage of a bounded delegated investigation. Use only the supplied task and collected observations. Return a compact evidence-backed result to the parent Agent using the exact requested finding-bullet and complete-line format; clearly state when required evidence is missing, but do not mark a bounded task partial merely because unrelated text outside the retained read scopes was omitted.",
+                    "You are the no-tools finalization stage of a bounded delegated investigation. Use only the supplied task and collected observations. Return a compact evidence-backed result to the parent Agent using the exact requested finding-bullet and complete-line format. Copy code identifiers only with the exact spelling present in retained observations; never rename or infer them. Clearly state when required evidence is missing, but do not mark a bounded task partial merely because unrelated text outside the retained read scopes was omitted.",
                 HarnessFeatures = CopilotAgentHarnessFeatures.None,
             };
         }
@@ -412,6 +505,9 @@ namespace ColorVision.Copilot
             return new CopilotAgentRequest
             {
                 UserText = runRequest.Task.Trim(),
+                TaskIntentText = string.IsNullOrWhiteSpace(parentRequest.TaskIntentText)
+                    ? parentRequest.UserText.Trim()
+                    : parentRequest.TaskIntentText.Trim(),
                 Profile = childProfile,
                 History = Array.Empty<CopilotRequestMessage>(),
                 Attachments = Array.Empty<CopilotAttachmentItem>(),
@@ -451,6 +547,138 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>(),
             };
         }
+
+        internal static bool CanUsePreselectedEvidence(
+            CopilotAgentRequest? request,
+            CopilotSubagentRoleDescriptor? role)
+        {
+            if (request == null
+                || role == null
+                || role.ContextScope != CopilotSubagentContextScope.WorkspaceReadOnly
+                || !role.ReadCapabilities.HasFlag(CopilotSubagentReadCapabilities.ReadLocalFile)
+                || !request.PreferBatchReadLocalFiles
+                || request.ReadableLocalFilePaths.Count is < 2 or > MaximumPreselectedWorkspaceFiles
+                || CopilotAgentRunBudget.ContainsExhaustiveScope(
+                    string.IsNullOrWhiteSpace(request.TaskIntentText)
+                        ? request.UserText
+                        : request.TaskIntentText))
+            {
+                return false;
+            }
+
+            var selectedNames = request.ReadableLocalFilePaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var namedTaskFiles = NamedTaskFileRegex.Matches(request.UserText ?? string.Empty)
+                .Select(match => match.Groups["name"].Value)
+                .Where(IsLikelyNamedTaskFile)
+                .Select(Path.GetFileName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            return selectedNames.Count == request.ReadableLocalFilePaths.Count
+                && namedTaskFiles.Length == selectedNames.Count
+                && namedTaskFiles.All(selectedNames.Contains);
+        }
+
+        internal static bool HasSuccessfulPreselectedEvidence(
+            CopilotAgentRequest request,
+            IReadOnlyList<CopilotAgentStepRecord> steps)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var expectedPaths = request.ReadableLocalFilePaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(Path.GetFullPath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (expectedPaths.Count < 2)
+                return false;
+
+            var successfulReads = (steps ?? Array.Empty<CopilotAgentStepRecord>())
+                .Where(step => step?.Observation?.Success == true
+                    && string.Equals(step.ToolCall?.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            var successfullyReadPaths = successfulReads
+                .SelectMany(step => step.Observation.SuccessfullyReadLocalFilePaths)
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(Path.GetFullPath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var scopedPaths = successfulReads
+                .SelectMany(step => step.Observation.LocalFileReadScopes)
+                .Where(scope => !string.IsNullOrWhiteSpace(scope?.Path))
+                .Select(scope => Path.GetFullPath(scope.Path))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return expectedPaths.All(path => successfullyReadPaths.Contains(path) && scopedPaths.Contains(path));
+        }
+
+        private static async Task<CopilotToolExecutionOutcome?> TryExecutePreselectedEvidenceAsync(
+            CopilotAgentRequest request,
+            CopilotSubagentRoleDescriptor role,
+            IReadOnlyList<ICopilotTool> tools,
+            CopilotToolExecutor toolExecutor,
+            CancellationToken cancellationToken)
+        {
+            if (!CanUsePreselectedEvidence(request, role))
+                return null;
+
+            var readTool = tools.FirstOrDefault(tool =>
+                string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                && tool.CanHandle(request));
+            if (readTool == null)
+                return null;
+
+            var toolInput = CopilotAgentToolInput.Empty;
+            return await toolExecutor.ExecuteAsync(
+                new CopilotToolInvocation
+                {
+                    CallId = $"preselected-{Guid.NewGuid():N}",
+                    Round = 1,
+                    RuntimeName = "subagent-preload",
+                    Tool = readTool,
+                    AgentRequest = request,
+                    ToolInput = toolInput,
+                    ToolCall = new CopilotToolCall
+                    {
+                        ToolName = readTool.Name,
+                        ToolInput = toolInput,
+                        Reason = "The host resolved every named task file and preloaded one bounded read-only evidence batch.",
+                    },
+                },
+                _ => { },
+                cancellationToken);
+        }
+
+        private static CopilotAgentRunResult CreatePreselectedEvidenceRunResult(
+            CopilotAgentRequest request,
+            CopilotToolExecutionOutcome outcome,
+            TimeSpan elapsed)
+        {
+            var runBudget = CopilotAgentRunBudget.Resolve(request);
+            return new CopilotAgentRunResult
+            {
+                StepRecords = [outcome.StepRecord],
+                Usage = CopilotTokenUsage.Empty,
+                Budget = runBudget.CreateSnapshot(
+                    tokenSnapshot: null,
+                    elapsed,
+                    toolCalls: 1,
+                    timeBudgetExhausted: false),
+                StopReason = CopilotAgentStopReason.IncompleteOutput,
+            };
+        }
+
+        private static bool IsLikelyNamedTaskFile(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var extension = Path.GetExtension(value);
+            return extension.Length is > 1 and <= 12 && extension.Skip(1).Any(char.IsLetter);
+        }
+
+        internal static bool HasCompleteDeclaration(string? answer) =>
+            !string.IsNullOrWhiteSpace(answer) && CompleteDeclarationRegex.IsMatch(answer);
 
         internal static string[] ResolveNamedTaskFiles(string? task, IEnumerable<string>? roots)
         {
@@ -747,6 +975,7 @@ namespace ColorVision.Copilot
             builder.Append("request_token_budget: ").AppendLine(runRequest.RequestTokenBudget.ToString());
             builder.Append("queue_ms: ").AppendLine(Math.Max(0, runRequest.QueueDurationMs).ToString());
             builder.Append("budget_finalization: ").AppendLine(result.UsedBudgetFinalization ? "true" : "false");
+            builder.Append("preselected_evidence: ").AppendLine(result.UsedPreselectedEvidence ? "true" : "false");
             builder.Append("successful_tool_evidence: ").AppendLine(result.HasSuccessfulEvidence ? "true" : "false");
             builder.Append("output_truncated: ").AppendLine(result.WasTruncated ? "true" : "false");
             builder.Append("tools_used: ").AppendLine(result.ToolNames.Count == 0 ? "none" : string.Join(", ", result.ToolNames));

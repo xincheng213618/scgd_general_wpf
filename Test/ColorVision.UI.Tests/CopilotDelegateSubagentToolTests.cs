@@ -12,6 +12,7 @@ public sealed class CopilotDelegateSubagentToolTests
             Answer = "Verified finding.",
             StopReason = CopilotAgentStopReason.Completed,
             HasSuccessfulEvidence = true,
+            UsedPreselectedEvidence = true,
             ToolNames = ["ReadLocalFile"],
             Budget = new CopilotAgentBudgetSnapshot { ToolCalls = 1 },
         }));
@@ -21,6 +22,7 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.True(result.Success);
         Assert.Equal(CopilotToolFailureKind.None, result.FailureKind);
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
+        Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
     }
 
@@ -117,6 +119,7 @@ public sealed class CopilotDelegateSubagentToolTests
                 ToolNames = result.ToolNames,
                 WasTruncated = result.WasTruncated,
                 UsedBudgetFinalization = result.UsedBudgetFinalization,
+                UsedPreselectedEvidence = result.UsedPreselectedEvidence,
                 HasSuccessfulEvidence = result.HasSuccessfulEvidence,
             });
         }

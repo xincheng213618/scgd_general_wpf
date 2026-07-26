@@ -43,6 +43,29 @@ public sealed class CopilotAgentRunBudgetTests
             StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ExploreDelegationPreservesTheUsersBoundedScopeAndExactIdentifiers()
+    {
+        var request = Request(
+            @"请使用 DelegateExplore 检查 C:\workspace 下的 Coordinator.cs、Explore.cs 和 RoleCatalog.cs。");
+
+        var instructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new CopilotDelegateExploreTool()],
+            CopilotAgentEnvironmentContext.Capture(request),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+
+        Assert.Contains(
+            "never upgrade a request to read or inspect named files into full-content",
+            instructions,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Preserve exact child citations and code-identifier spelling",
+            instructions,
+            StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("Read-only audit C:\\workspace\\Copilot and list two verifiable findings. Do not modify files.", 2, 20)]
     [InlineData("只读检查 C:\\workspace\\Copilot，给出三条风险；不要修改任何文件。", 3, 24)]

@@ -535,7 +535,7 @@ namespace ColorVision.Copilot
                 var start = bestCenter;
                 var end = bestCenter;
                 var selectedCharacters = GetLineCharacterCount(lines[bestCenter]);
-                var precedingBudget = maximumWindowCharacters / 4;
+                var precedingBudget = maximumWindowCharacters / 2;
                 var precedingCharacters = 0;
                 while (start > 0)
                 {
