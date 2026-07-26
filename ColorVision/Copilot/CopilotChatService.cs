@@ -715,7 +715,7 @@ namespace ColorVision.Copilot
                 {
                     payloadMessages.Add(new
                     {
-                        role = CopilotOpenAiChatRequestPolicy.GetInstructionRole(config),
+                        role = CopilotOpenAiRequestPolicy.GetInstructionRole(config),
                         content = systemPrompt,
                     });
                 }
@@ -738,7 +738,7 @@ namespace ColorVision.Copilot
                     },
                     ["messages"] = payloadMessages,
                 };
-                payload[CopilotOpenAiChatRequestPolicy
+                payload[CopilotOpenAiRequestPolicy
                     .GetMaximumOutputTokensPropertyName(config)] =
                     config.MaxTokens;
 

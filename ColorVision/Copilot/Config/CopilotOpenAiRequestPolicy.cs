@@ -2,13 +2,15 @@ using System;
 
 namespace ColorVision.Copilot
 {
-    internal static class CopilotOpenAiChatRequestPolicy
+    internal static class CopilotOpenAiRequestPolicy
     {
+        public const string ResponsesAgentSessionTransportVersion = "openai-responses-stateless-v1";
+
         public static string GetMaximumOutputTokensPropertyName(
             CopilotProfileConfig profile)
         {
             ArgumentNullException.ThrowIfNull(profile);
-            return UsesOfficialOpenAiChatParameters(profile)
+            return UsesOfficialOpenAiApi(profile)
                 ? "max_completion_tokens"
                 : "max_tokens";
         }
@@ -27,7 +29,22 @@ namespace ColorVision.Copilot
             return !IsOfficialOpenAiReasoningModel(profile);
         }
 
-        private static bool UsesOfficialOpenAiChatParameters(
+        public static bool UsesResponsesApi(CopilotProfileConfig profile)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+            return UsesOfficialOpenAiApi(profile);
+        }
+
+        public static string GetAgentSessionTransportVersion(
+            CopilotProfileConfig profile)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+            return UsesResponsesApi(profile)
+                ? ResponsesAgentSessionTransportVersion
+                : string.Empty;
+        }
+
+        private static bool UsesOfficialOpenAiApi(
             CopilotProfileConfig profile)
         {
             if (profile.VendorType != CopilotVendorType.OpenAI
@@ -53,7 +70,7 @@ namespace ColorVision.Copilot
         private static bool IsOfficialOpenAiReasoningModel(
             CopilotProfileConfig profile)
         {
-            if (!UsesOfficialOpenAiChatParameters(profile))
+            if (!UsesOfficialOpenAiApi(profile))
                 return false;
 
             var model = profile.Model?.Trim() ?? string.Empty;

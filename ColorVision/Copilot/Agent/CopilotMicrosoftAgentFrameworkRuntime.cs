@@ -5,8 +5,6 @@ using Anthropic.Core;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
-using OpenAI;
-using OpenAI.Chat;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,8 +14,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.ClientModel;
-using System.ClientModel.Primitives;
 using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
@@ -1447,13 +1443,9 @@ namespace ColorVision.Copilot
                 return anthropicClient.AsIChatClient(profile.Model, profile.MaxTokens);
             }
 
-            var options = new OpenAIClientOptions
-            {
-                Endpoint = NormalizeOpenAiEndpoint(profile.BaseUrl),
-                Transport = new HttpClientPipelineTransport(CopilotProviderHttpTransport.CreateClient()),
-            };
-            var client = new ChatClient(profile.Model, new ApiKeyCredential(profile.ApiKey), options);
-            return client.AsIChatClient();
+            return CopilotOpenAiAgentChatClientFactory.Create(
+                profile,
+                CopilotProviderHttpTransport.CreateClient());
         }
 
         private static ChatOptions BuildChatOptions(CopilotProfileConfig profile, IList<AITool> tools)
@@ -1499,20 +1491,6 @@ namespace ColorVision.Copilot
                 CopilotReasoningMode.Max => new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh, Output = ReasoningOutput.Full },
                 _ => null,
             };
-        }
-
-        private static Uri NormalizeOpenAiEndpoint(string baseUrl)
-        {
-            var value = (baseUrl ?? string.Empty).Trim().TrimEnd('/');
-            const string chatCompletionsSuffix = "/chat/completions";
-            if (value.EndsWith(chatCompletionsSuffix, StringComparison.OrdinalIgnoreCase))
-                value = value[..^chatCompletionsSuffix.Length];
-
-            var endpoint = new Uri(value, UriKind.Absolute);
-            if (string.IsNullOrWhiteSpace(endpoint.AbsolutePath) || endpoint.AbsolutePath == "/")
-                value = value.TrimEnd('/') + "/v1";
-
-            return new Uri(value, UriKind.Absolute);
         }
 
         private static Microsoft.Extensions.AI.ChatMessage ToFrameworkMessage(CopilotRequestMessage message)

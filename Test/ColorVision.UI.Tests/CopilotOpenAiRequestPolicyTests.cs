@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace ColorVision.UI.Tests;
 
-public sealed class CopilotOpenAiChatRequestPolicyTests
+public sealed class CopilotOpenAiRequestPolicyTests
 {
     [Fact]
     public async Task OfficialModernModelUsesCurrentOpenAiChatParameters()

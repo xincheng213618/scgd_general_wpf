@@ -392,6 +392,10 @@ namespace ColorVision.Copilot
                 profile.Model?.Trim() ?? string.Empty,
                 profile.EffectiveSystemPrompt,
             });
+            var transportVersion = CopilotOpenAiRequestPolicy
+                .GetAgentSessionTransportVersion(profile);
+            if (transportVersion.Length > 0)
+                value += "|" + transportVersion;
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
             return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
         }
