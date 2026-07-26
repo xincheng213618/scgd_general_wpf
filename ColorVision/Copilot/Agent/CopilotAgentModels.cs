@@ -154,6 +154,8 @@ namespace ColorVision.Copilot
         internal string RuntimeRoleInstructions { get; init; } = string.Empty;
 
         internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;
+
+        internal IReadOnlyList<string> RequiredSuccessfulToolNames { get; init; } = Array.Empty<string>();
     }
 
     public sealed class CopilotDelegatedRunUsage

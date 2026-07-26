@@ -7,8 +7,10 @@ public sealed class CopilotNarrowEvidenceAnswerPolicyTests
     [Theory]
     [InlineData("发现 1 条可验证的问题：附件上限是 32，可能不足以满足大型审查。", "the claimed impact is speculative")]
     [InlineData("问题：未观察到取消方法的实现，需要检查并确认是否会阻塞。", "the answer says required evidence was not inspected")]
+    [InlineData("审计结果：1 条可验证的问题。问题描述：响应限制已定义，但无法验证实际读取路径是否使用它；若缺乏检查，可能耗尽内存。", "the answer says required evidence was not inspected")]
     [InlineData("One issue: this hard-coded limit may be insufficient for large reviews.", "the claimed impact is speculative")]
     [InlineData("Finding: the implementation was not inspected and needs verification.", "the answer says required evidence was not inspected")]
+    [InlineData("One verified finding. Issue description: the limit exists, but the enforcement path could not be verified.", "the answer says required evidence was not inspected")]
     public void RejectsSpeculativeOrSelfDeclaredUnverifiedFindings(string answer, string expectedReason)
     {
         Assert.True(CopilotNarrowEvidenceAnswerPolicy.TryGetUnsupportedFindingReason(

@@ -58,4 +58,15 @@ public sealed class CopilotLocalPathAuthorizationTests
 
         Assert.Equal([expected], paths, StringComparer.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void MarkdownLinkWithForwardSlashesProducesAWindowsPath()
+    {
+        var expected = Path.GetFullPath(@"C:\workspace\sample.cs");
+
+        var paths = CopilotLocalFileToolSupport.ExtractExplicitLocalFilePaths(
+            "See [sample.cs](<C:/workspace/sample.cs:42>) for the verified branch.");
+
+        Assert.Equal([expected], paths, StringComparer.OrdinalIgnoreCase);
+    }
 }

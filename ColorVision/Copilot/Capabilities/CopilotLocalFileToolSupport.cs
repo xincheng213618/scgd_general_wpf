@@ -27,9 +27,9 @@ namespace ColorVision.Copilot
         private const int BinaryPreviewBytes = 4096;
         public const int MaxReadCharacters = 20000;
 
-        private static readonly Regex QuotedWindowsPathRegex = new("[\"\\u201C](?<path>[A-Za-z]:\\\\[^\"\\u201D\r\n]+)[\"\\u201D]", RegexOptions.Compiled);
+        private static readonly Regex QuotedWindowsPathRegex = new("[\"\\u201C](?<path>[A-Za-z]:[\\\\/][^\"\\u201D\r\n]+)[\"\\u201D]", RegexOptions.Compiled);
         private static readonly Regex BareWindowsPathRegex = new(
-            @"(?<![""\u201C])(?<path>[A-Za-z]:\\[^\s""\u201C\u201D<>|,:;!?)}\]\uFF0C\u3002\uFF1B\uFF1A\uFF01\uFF1F\uFF09\u3011\u300B\u3001]+)",
+            @"(?<![""\u201C])(?<path>[A-Za-z]:[\\/][^\s""\u201C\u201D<>|,:;!?)}\]\uFF0C\u3002\uFF1B\uFF1A\uFF01\uFF1F\uFF09\u3011\u300B\u3001]+)",
             RegexOptions.Compiled);
         private static readonly char[] PathTrimCharacters = { '.', ',', ';', ':', '!', '?', ')', ']', '}', '>', '"', '\'', '\uFF0C', '\u3002', '\uFF1B', '\uFF1A', '\uFF01', '\uFF1F', '\uFF09', '\u3011', '\u300B', '\u3001' };
 

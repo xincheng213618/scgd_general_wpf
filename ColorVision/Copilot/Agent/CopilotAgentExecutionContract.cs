@@ -12,6 +12,7 @@ namespace ColorVision.Copilot
     internal enum CopilotAgentExecutionRequirement
     {
         None,
+        SubagentEvidence,
         AttachedFileEvidence,
         LocalFileEvidence,
         GitReviewEvidence,
@@ -110,6 +111,7 @@ namespace ColorVision.Copilot
             {
                 var requirementDescription = Requirement switch
                 {
+                    CopilotAgentExecutionRequirement.SubagentEvidence => "successful request-scoped evidence",
                     CopilotAgentExecutionRequirement.AttachedFileEvidence => "attached file evidence",
                     CopilotAgentExecutionRequirement.LocalFileEvidence => "explicit local file evidence",
                     CopilotAgentExecutionRequirement.GitReviewEvidence => "Git working tree and diff evidence",
@@ -314,6 +316,21 @@ namespace ColorVision.Copilot
                 return Required(
                     CopilotAgentExecutionRequirement.PublicWebSearch,
                     [webSearchTools],
+                    prerequisiteToolGroups,
+                    attachedFilePaths,
+                    requiredLocalFilePaths);
+            }
+
+            var requiredSuccessfulTools = request.RequiredSuccessfulToolNames
+                .Where(requiredName => availableTools.Any(tool =>
+                    string.Equals(tool.Name, requiredName, StringComparison.OrdinalIgnoreCase)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (requiredSuccessfulTools.Length > 0)
+            {
+                return Required(
+                    CopilotAgentExecutionRequirement.SubagentEvidence,
+                    [requiredSuccessfulTools],
                     prerequisiteToolGroups,
                     attachedFilePaths,
                     requiredLocalFilePaths);

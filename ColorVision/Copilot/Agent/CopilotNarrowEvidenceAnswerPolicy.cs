@@ -16,7 +16,8 @@ namespace ColorVision.Copilot
             "未发现可验证", "没有发现可验证", "未形成可验证", "没有形成可验证",
             "证据不足以形成", "未作为缺陷报告", "未能验证", "无法验证",
             "no verified finding", "no verifiable finding", "did not establish",
-            "could not verify", "unable to verify", "not being reported as a defect",
+            "could not verify", "could not be verified", "unable to verify", "unable to be verified",
+            "not being reported as a defect",
         };
 
         private static readonly string[] ChineseSpeculationMarkers =
@@ -27,8 +28,16 @@ namespace ColorVision.Copilot
         private static readonly string[] MissingEvidenceMarkers =
         {
             "未观察到", "未查看", "尚未检查", "需要检查", "需要确认", "需检查", "需确认",
+            "无法验证", "未能验证",
             "not observed", "not inspected", "not examined", "needs verification",
             "requires verification", "need to inspect", "need to verify", "verify by checking",
+            "could not verify", "could not be verified", "unable to verify", "unable to be verified",
+        };
+
+        private static readonly string[] AffirmativeFindingMarkers =
+        {
+            "问题描述", "问题说明", "缺陷描述", "风险描述", "文件与位置",
+            "finding details", "issue description", "problem description", "risk description",
         };
 
         private static readonly Regex EnglishFindingRegex = new(
@@ -48,8 +57,8 @@ namespace ColorVision.Copilot
             var text = answer?.Trim() ?? string.Empty;
             if (!CopilotAgentRunBudget.TryGetNarrowEvidenceResultLimit(request, out _)
                 || text.Length == 0
-                || ContainsAny(text, NoFindingMarkers)
-                || !ContainsFindingClaim(text))
+                || !ContainsFindingClaim(text)
+                || IsExplicitNoFindingAnswer(text))
             {
                 return false;
             }
@@ -80,6 +89,13 @@ namespace ColorVision.Copilot
         private static bool ContainsFindingClaim(string text)
         {
             return ContainsAny(text, ChineseFindingMarkers) || EnglishFindingRegex.IsMatch(text);
+        }
+
+        private static bool IsExplicitNoFindingAnswer(string text)
+        {
+            var prefix = text[..Math.Min(text.Length, 320)];
+            return ContainsAny(prefix, NoFindingMarkers)
+                && !ContainsAny(text, AffirmativeFindingMarkers);
         }
 
         private static bool ContainsAny(string text, string[] markers)

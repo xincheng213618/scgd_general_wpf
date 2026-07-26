@@ -11,6 +11,9 @@ public sealed class CopilotDelegateSubagentToolTests
         {
             Answer = "Verified finding.",
             StopReason = CopilotAgentStopReason.Completed,
+            HasSuccessfulEvidence = true,
+            ToolNames = ["ReadLocalFile"],
+            Budget = new CopilotAgentBudgetSnapshot { ToolCalls = 1 },
         }));
 
         var result = await tool.ExecuteAsync(Request(), Input(), CancellationToken.None);
@@ -19,6 +22,23 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(CopilotToolFailureKind.None, result.FailureKind);
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+    }
+
+    [Fact]
+    public async Task CompletedTextWithoutSuccessfulToolEvidenceIsRejected()
+    {
+        var tool = new CopilotDelegateExploreTool(new StubRunner(new CopilotSubagentResult
+        {
+            Answer = "```tool_call\n{\"tool\":\"ReadFile\"}\n```",
+            StopReason = CopilotAgentStopReason.Completed,
+        }));
+
+        var result = await tool.ExecuteAsync(Request(), Input(), CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
+        Assert.Contains("without successful request-scoped tool evidence", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("successful_tool_evidence: false", result.Content, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -96,6 +116,8 @@ public sealed class CopilotDelegateSubagentToolTests
                 Budget = result.Budget,
                 ToolNames = result.ToolNames,
                 WasTruncated = result.WasTruncated,
+                UsedBudgetFinalization = result.UsedBudgetFinalization,
+                HasSuccessfulEvidence = result.HasSuccessfulEvidence,
             });
         }
     }
