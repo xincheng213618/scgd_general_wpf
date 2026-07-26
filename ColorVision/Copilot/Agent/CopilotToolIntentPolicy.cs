@@ -30,6 +30,33 @@ namespace ColorVision.Copilot
             "inspect", "read", "find", "search", "audit", "review", "examine", "locate", "where is", "error", "exception",
         };
 
+        private static readonly string[] WorkspaceDiscoveryMarkers =
+        {
+            "当前项目", "这个项目", "本项目", "项目里", "项目中", "工程里", "工程中", "工作区", "仓库", "代码库",
+            "其他文件", "其它文件", "其余文件", "所有文件", "全部文件", "相关文件", "相关代码", "同名文件",
+            "查找引用", "搜索引用", "所有引用", "引用位置", "引用处", "调用方", "调用位置", "使用位置", "影响范围",
+            "current project", "this project", "workspace", "repository", "codebase",
+            "other file", "all files", "related files", "related code", "same-named file", "same named file",
+            "find references", "search references", "all references", "references to", "usages", "callers", "call sites",
+            "elsewhere", "across the project", "across this project", "across the workspace", "impact scope",
+        };
+
+        private static readonly string[] GitWorkingTreeMarkers =
+        {
+            "Git 状态", "Git状态", "Git 工作树", "Git工作树", "当前分支", "Git 分支", "Git分支",
+            "上游分支", "领先上游", "落后上游", "未跟踪文件", "冲突文件",
+            "git status", "git working tree", "git worktree", "current git branch", "git branch",
+            "git upstream", "ahead of upstream", "behind upstream", "untracked files", "conflicted files",
+        };
+
+        private static readonly string[] GitDiffMarkers =
+        {
+            "Git 差异", "Git差异", "Git 修改", "Git修改", "代码差异", "文件差异", "当前改动",
+            "当前修改", "待提交修改", "改了什么", "修改了什么", "有哪些修改", "变更内容", "补丁内容",
+            "git diff", "git changes", "current changes", "pending changes", "what changed",
+            "changes made", "staged changes", "unstaged changes", "patch contents",
+        };
+
         private static readonly string[] ConceptualQuestionMarkers =
         {
             "是什么", "什么是", "原理", "概念", "区别", "介绍", "解释", "为什么", "如何", "怎么", "怎样",
@@ -140,7 +167,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] DelegatedWorkspaceEvidenceMarkers =
         {
-            "DelegateExplore", "Explore 子代理", "Explore子代理", "工作区子代理", "源码子代理",
+            "Delegate", "Explore 子代理", "Explore子代理", "工作区子代理", "源码子代理",
             "workspace subagent", "workspace sub-agent", "explore subagent", "explore sub-agent",
         };
 
@@ -391,6 +418,34 @@ namespace ColorVision.Copilot
                 && !ContainsAny(request.UserText, ConceptualQuestionMarkers);
         }
 
+        internal static bool NeedsWorkspaceDiscovery(CopilotAgentRequest? request)
+        {
+            return NeedsLocalEvidence(request) && !HasBoundedExplicitFileScope(request);
+        }
+
+        internal static bool HasBoundedExplicitFileScope(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request)
+                || request!.ReadableLocalFilePaths.Count is < 1 or > 3
+                || request.ReadableLocalDirectoryPaths.Count > 0
+                || request.RequiresDelegatedWorkspaceEvidence
+                || request.ReadableLocalFilePaths.Any(path => string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                || NeedsWorkspaceEdit(request)
+                || NeedsWorkspaceCreate(request)
+                || NeedsWorkspaceRollback(request)
+                || NeedsWorkspaceValidation(request)
+                || NeedsShellExecution(request)
+                || NeedsBatchImageProcessing(request))
+            {
+                return false;
+            }
+
+            var intentText = RemoveExplicitFilePaths(request);
+            return !ContainsAny(intentText, WorkspaceDiscoveryMarkers)
+                && !ContainsAny(intentText, DelegatedWorkspaceEvidenceMarkers)
+                && !ContainsAny(intentText, ExternalLocalSearchMarkers);
+        }
+
         public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)
         {
             if (request == null
@@ -583,6 +638,35 @@ namespace ColorVision.Copilot
                     || MatchesCurrentOrContinuation(request, TcpPortMarkers, "InspectTcpPort"));
         }
 
+        public static bool NeedsGitWorkingTreeInspection(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request))
+                return false;
+
+            var activeRequest = request!;
+            var intentText = RemoveExplicitFilePaths(activeRequest);
+            return activeRequest.Mode == CopilotAgentMode.Review
+                || NeedsWorkspaceEdit(activeRequest)
+                || NeedsWorkspaceCreate(activeRequest)
+                || NeedsWorkspaceRollback(activeRequest)
+                || ContainsAny(intentText, GitWorkingTreeMarkers)
+                || ContainsAny(intentText, GitDiffMarkers);
+        }
+
+        public static bool NeedsGitDiffInspection(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request))
+                return false;
+
+            var activeRequest = request!;
+            var intentText = RemoveExplicitFilePaths(activeRequest);
+            return activeRequest.Mode == CopilotAgentMode.Review
+                || NeedsWorkspaceEdit(activeRequest)
+                || NeedsWorkspaceCreate(activeRequest)
+                || NeedsWorkspaceRollback(activeRequest)
+                || ContainsAny(intentText, GitDiffMarkers);
+        }
+
         public static bool NeedsShellExecution(CopilotAgentRequest? request)
         {
             if (!IsAgentRequest(request)
@@ -765,7 +849,7 @@ namespace ColorVision.Copilot
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
-            if (request.RequiresDelegatedWorkspaceEvidence
+            if ((request.RequiresDelegatedWorkspaceEvidence || HasBoundedExplicitFileScope(request))
                 && IsDirectWorkspaceEvidenceIdentity(toolName, description))
             {
                 return false;
@@ -777,7 +861,7 @@ namespace ColorVision.Copilot
             if (ContainsAny(identity, ExternalUrlFetchMarkers))
                 return NeedsUrlFetch(request);
             if (ContainsAny(identity, ExternalLocalSearchMarkers))
-                return NeedsLocalEvidence(request);
+                return NeedsWorkspaceDiscovery(request);
 
             return true;
         }
@@ -937,6 +1021,19 @@ namespace ColorVision.Copilot
         {
             var value = text ?? string.Empty;
             return markers.Any(marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string RemoveExplicitFilePaths(CopilotAgentRequest request)
+        {
+            var result = request.UserText ?? string.Empty;
+            foreach (var path in request.ReadableLocalFilePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+            {
+                result = result.Replace(path, string.Empty, StringComparison.OrdinalIgnoreCase);
+                var alternatePath = path.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                if (!string.Equals(alternatePath, path, StringComparison.Ordinal))
+                    result = result.Replace(alternatePath, string.Empty, StringComparison.OrdinalIgnoreCase);
+            }
+            return result;
         }
 
     }
