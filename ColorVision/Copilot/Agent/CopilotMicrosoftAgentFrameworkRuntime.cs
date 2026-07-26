@@ -339,7 +339,14 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic(
                         "The explicit completed DelegateExplore result was returned directly without a second parent provider call."));
                 });
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(delegatedDirectAnswerChatClient, bridge.RecordUnknownToolCall);
+            var explicitDelegationDispatchChatClient = new CopilotExplicitDelegationDispatchChatClient(
+                delegatedDirectAnswerChatClient,
+                request,
+                HarnessToolBridge.ToFunctionName("DelegateExplore"),
+                taskLedgerEnabled,
+                () => emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "The explicit exclusive DelegateExplore request was dispatched directly without a parent provider planning call.")));
+            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(explicitDelegationDispatchChatClient, bridge.RecordUnknownToolCall);
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
             {
@@ -2474,7 +2481,7 @@ namespace ColorVision.Copilot
                 return tool.Capability.RequiresNativeApproval;
             }
 
-            private static string ToFunctionName(string toolName)
+            public static string ToFunctionName(string toolName)
             {
                 var snakeCase = Regex.Replace(toolName ?? string.Empty, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
                 snakeCase = Regex.Replace(snakeCase, "[^a-z0-9]+", "_").Trim('_');

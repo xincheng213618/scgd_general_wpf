@@ -7,7 +7,7 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotDelegatedDirectAnswerChatClientTests
 {
     [Fact]
-    public async Task AgentRuntimeSkipsTheSecondParentProviderCallForCompletedExclusiveExplore()
+    public async Task AgentRuntimeSkipsBothParentProviderCallsForCompletedExclusiveExplore()
     {
         const string answer =
             "- C:\\workspace\\Coordinator.cs:24-26 — verified the bounded coordinator budget.\n"
@@ -47,14 +47,75 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
             CancellationToken.None);
 
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
-        Assert.Equal(1, provider.CallCount);
-        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.Equal(0, provider.CallCount);
+        Assert.Equal(1, result.Budget.ProviderCalls);
         Assert.True(result.Budget.UsedDelegatedDirectAnswer);
         Assert.Single(result.StepRecords);
         Assert.Equal(answer, string.Concat(events
             .Where(agentEvent => agentEvent.Type == CopilotAgentEventType.AnswerDelta)
             .Select(agentEvent => agentEvent.Text)));
         Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains(
+                "without a second parent provider call",
+                StringComparison.Ordinal));
+        Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains(
+                "without a parent provider planning call",
+                StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AgentRuntimeUsesOneParentFallbackWhenExploreAnswerCannotReturnDirectly()
+    {
+        using var provider = new RecordingChatClient("parent fallback");
+        var registry = new CopilotToolRegistry(
+        [
+            new CopilotDelegateExploreTool(new StubSubagentRunner(new CopilotSubagentResult
+            {
+                Answer = "The delegated inspection completed, but its answer is not safe to return directly.",
+                StopReason = CopilotAgentStopReason.Completed,
+                ToolNames = ["ReadLocalFile"],
+                Budget = new CopilotAgentBudgetSnapshot
+                {
+                    ProviderCalls = 1,
+                    ToolCalls = 1,
+                    RequestTokenBudget = 16_384,
+                    ConsumedTokens = 2_048,
+                },
+                UsedPreselectedEvidence = true,
+                HasSuccessfulEvidence = true,
+            })),
+        ]);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            registry,
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(
+            ExclusiveExploreRequest(),
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(1, provider.CallCount);
+        Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.False(result.Budget.UsedDelegatedDirectAnswer);
+        Assert.Single(result.StepRecords);
+        Assert.Equal("parent fallback", string.Concat(events
+            .Where(agentEvent => agentEvent.Type == CopilotAgentEventType.AnswerDelta)
+            .Select(agentEvent => agentEvent.Text)));
+        Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains(
+                "without a parent provider planning call",
+                StringComparison.Ordinal));
+        Assert.DoesNotContain(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
             && agentEvent.Text.Contains(
                 "without a second parent provider call",
