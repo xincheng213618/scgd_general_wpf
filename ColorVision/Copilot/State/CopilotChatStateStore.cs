@@ -524,6 +524,24 @@ namespace ColorVision.Copilot
                 }
             }
 
+            var recoveryToken = document.GetValue(nameof(CopilotChatState.QueuedFollowUpRecoveries), StringComparison.OrdinalIgnoreCase);
+            if (recoveryToken != null && recoveryToken.Type != JTokenType.Null)
+            {
+                if (recoveryToken is not JArray recoveries)
+                    return false;
+
+                foreach (var recoveryTokenItem in recoveries)
+                {
+                    if (recoveryTokenItem is not JObject recovery
+                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.RunId), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.ConversationId), StringComparison.OrdinalIgnoreCase))
+                        || !IsOptionalString(recovery.GetValue(nameof(CopilotQueuedFollowUpRecoveryRecord.Prompt), StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
             return true;
         }
 

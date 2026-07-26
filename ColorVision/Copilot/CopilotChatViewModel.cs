@@ -2252,8 +2252,10 @@ namespace ColorVision.Copilot
             }
             if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
                 RefreshAgentTasks();
-            if (e.Kind is CopilotAgentTaskHostChangeKind.Started or CopilotAgentTaskHostChangeKind.Completed)
-                RemoveQueuedFollowUp(e.Run.Id);
+            if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
+                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: false);
+            else if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
+                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: true);
             RefreshQueuedFollowUpPositions();
             NotifyHostedRunStateChanged();
             CommandManager.InvalidateRequerySuggested();
@@ -2339,7 +2341,7 @@ namespace ColorVision.Copilot
             if (_stateStore is not CopilotChatStateStore stateStore)
                 return;
 
-            StateRecoveryNoticeText = stateStore.LastLoadStatus.Source switch
+            var loadNotice = stateStore.LastLoadStatus.Source switch
             {
                 _ when stateStore.IsManagedAttachmentCleanupProtected => "此前的会话状态无法完整恢复；托管附件已保护，自动清理暂停。",
                 CopilotChatStateLoadSource.Temporary => "已从写入中断前的临时快照恢复会话。",
@@ -2347,6 +2349,12 @@ namespace ColorVision.Copilot
                 CopilotChatStateLoadSource.Unrecoverable => "会话状态无法读取，已打开空会话；可恢复的托管附件不会被自动删除。",
                 _ => string.Empty,
             };
+            var queuedFollowUpNotice = _state.RecoveredQueuedFollowUpCount > 0
+                ? $"已将 {_state.RecoveredQueuedFollowUpCount} 条未执行的排队后续恢复到对应会话草稿。"
+                : string.Empty;
+            StateRecoveryNoticeText = string.Join(
+                Environment.NewLine,
+                new[] { loadNotice, queuedFollowUpNotice }.Where(text => !string.IsNullOrWhiteSpace(text)));
             StateRecoveryNoticeToolTip = string.IsNullOrWhiteSpace(StateRecoveryNoticeText)
                 ? string.Empty
                 : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}状态目录：{stateStore.StateDirectoryPath}";
@@ -2971,12 +2979,13 @@ namespace ColorVision.Copilot
                 submissionContext);
             _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
             QueuedFollowUps.Add(queuedFollowUp);
+            AddQueuedFollowUpRecovery(queuedFollowUp);
             itemReady.SetResult(queuedFollowUp);
             RefreshQueuedFollowUpPositions();
 
             DismissLocalCommandResult();
             InputText = string.Empty;
-            PersistState();
+            PersistState(immediate: true);
             return true;
         }
 
@@ -3006,7 +3015,7 @@ namespace ColorVision.Copilot
 
         private CopilotPreparedQueuedFollowUpTurn PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
         {
-            RemoveQueuedFollowUp(queuedFollowUp.RunId);
+            RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
             var conversation = Conversations.FirstOrDefault(candidate =>
                 string.Equals(candidate.Id, queuedFollowUp.ConversationId, StringComparison.Ordinal))
                 ?? throw new InvalidOperationException("The conversation for the queued Copilot follow-up no longer exists.");
@@ -3029,8 +3038,9 @@ namespace ColorVision.Copilot
             conversation.ProfileDisplayName = queuedFollowUp.Profile.DisplayLabel;
             conversation.Messages.Add(userMessage);
             conversation.Messages.Add(assistantMessage);
+            RemoveQueuedFollowUpRecovery(queuedFollowUp.RunId);
             UpdateConversationMetadata(conversation, touch: true);
-            PersistState();
+            PersistState(immediate: true);
             return new CopilotPreparedQueuedFollowUpTurn(conversation, userMessage, assistantMessage, turnSnapshot);
         }
 
@@ -3058,6 +3068,8 @@ namespace ColorVision.Copilot
             if (queuedFollowUp == null || !_taskHost.MoveQueuedRun(queuedFollowUp.RunId, offset))
                 return;
             RefreshQueuedFollowUpPositions();
+            SynchronizeQueuedFollowUpRecoveryOrder();
+            PersistState(immediate: true);
         }
 
         private void DeleteQueuedFollowUp(CopilotQueuedFollowUp? queuedFollowUp)
@@ -3066,12 +3078,69 @@ namespace ColorVision.Copilot
                 _taskHost.RequestCancel(queuedFollowUp.RunId);
         }
 
-        private void RemoveQueuedFollowUp(string runId)
+        private void RemoveQueuedFollowUp(string runId, bool removeRecoveryRecord = true)
         {
-            if (!_queuedFollowUpsByRunId.Remove(runId, out var queuedFollowUp))
+            var changed = false;
+            if (_queuedFollowUpsByRunId.Remove(runId, out var queuedFollowUp))
+            {
+                QueuedFollowUps.Remove(queuedFollowUp);
+                OnQueuedFollowUpsChanged();
+                changed = true;
+            }
+            if (removeRecoveryRecord)
+                changed |= RemoveQueuedFollowUpRecovery(runId);
+            if (changed && removeRecoveryRecord)
+                PersistState(immediate: true);
+        }
+
+        private void AddQueuedFollowUpRecovery(CopilotQueuedFollowUp queuedFollowUp)
+        {
+            _state.QueuedFollowUpRecoveries ??= new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
+            _state.QueuedFollowUpRecoveries.Add(new CopilotQueuedFollowUpRecoveryRecord
+            {
+                RunId = queuedFollowUp.RunId,
+                ConversationId = queuedFollowUp.ConversationId,
+                Prompt = queuedFollowUp.Prompt,
+            });
+        }
+
+        private bool RemoveQueuedFollowUpRecovery(string runId)
+        {
+            if (_state.QueuedFollowUpRecoveries == null)
+                return false;
+
+            var changed = false;
+            for (var index = _state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
+            {
+                if (!string.Equals(_state.QueuedFollowUpRecoveries[index]?.RunId, runId, StringComparison.Ordinal))
+                    continue;
+
+                _state.QueuedFollowUpRecoveries.RemoveAt(index);
+                changed = true;
+            }
+            return changed;
+        }
+
+        private void SynchronizeQueuedFollowUpRecoveryOrder()
+        {
+            if (_state.QueuedFollowUpRecoveries == null || _state.QueuedFollowUpRecoveries.Count < 2)
                 return;
-            QueuedFollowUps.Remove(queuedFollowUp);
-            OnQueuedFollowUpsChanged();
+
+            var positions = _taskHost.ScheduledRuns
+                .Select((run, index) => new { run.Id, Position = index })
+                .ToDictionary(item => item.Id, item => item.Position, StringComparer.Ordinal);
+            var ordered = _state.QueuedFollowUpRecoveries
+                .Select((record, index) => new { Record = record, OriginalPosition = index })
+                .OrderBy(item => positions.TryGetValue(item.Record.RunId, out var position) ? position : int.MaxValue)
+                .ThenBy(item => item.OriginalPosition)
+                .Select(item => item.Record)
+                .ToArray();
+            if (ordered.SequenceEqual(_state.QueuedFollowUpRecoveries))
+                return;
+
+            _state.QueuedFollowUpRecoveries.Clear();
+            foreach (var record in ordered)
+                _state.QueuedFollowUpRecoveries.Add(record);
         }
 
         private void RefreshQueuedFollowUpPositions()
@@ -5556,26 +5625,19 @@ namespace ColorVision.Copilot
 
         private void RestoreQueuedFollowUpsToDrafts()
         {
-            foreach (var group in QueuedFollowUps.GroupBy(item => item.ConversationId, StringComparer.Ordinal))
+            _state.QueuedFollowUpRecoveries ??= new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
+            var persistedRunIds = _state.QueuedFollowUpRecoveries
+                .Where(record => record != null)
+                .Select(record => record.RunId)
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (var queuedFollowUp in QueuedFollowUps.OrderBy(item => item.QueuePosition))
             {
-                var conversation = Conversations.FirstOrDefault(candidate =>
-                    string.Equals(candidate.Id, group.Key, StringComparison.Ordinal));
-                if (conversation == null)
+                if (!persistedRunIds.Add(queuedFollowUp.RunId))
                     continue;
 
-                var prompts = group.OrderBy(item => item.QueuePosition).Select(item => item.Prompt).ToArray();
-                if (prompts.Length == 0)
-                    continue;
-                var restoredDraft = prompts.Length == 1
-                    ? prompts[0]
-                    : "以下排队后续尚未执行，请检查后重新发送：" + Environment.NewLine + Environment.NewLine
-                        + string.Join(
-                            Environment.NewLine + Environment.NewLine,
-                            prompts.Select((prompt, index) => $"{index + 1}. {prompt}"));
-                conversation.DraftText = string.IsNullOrWhiteSpace(conversation.DraftText)
-                    ? restoredDraft
-                    : conversation.DraftText.TrimEnd() + Environment.NewLine + Environment.NewLine + restoredDraft;
+                AddQueuedFollowUpRecovery(queuedFollowUp);
             }
+            CopilotQueuedFollowUpRecovery.RestoreToDrafts(_state);
         }
 
         private void FinalizeUnstartedRunsForShutdown(IReadOnlyList<CopilotHostedAgentRun> scheduledRuns)
