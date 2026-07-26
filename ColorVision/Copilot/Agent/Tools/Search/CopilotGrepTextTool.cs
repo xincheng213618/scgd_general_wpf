@@ -8,7 +8,7 @@ namespace ColorVision.Copilot
     {
         public string Name => "GrepText";
 
-        public string Description => "Search one stable bounded page of workspace text matches, optionally limited to one workspace directory, with an opaque continuation cursor when more matches remain.";
+        public string Description => "Search one stable bounded page of workspace text matches, optionally limited to one workspace directory, with an opaque continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that text is absent.";
 
         public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
         {

@@ -486,6 +486,10 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.True(
             instructions.IndexOf("SearchFiles and GrepText", StringComparison.Ordinal)
             < instructions.IndexOf("<runtime_environment>", StringComparison.Ordinal));
+        Assert.Contains(
+            "An empty successful result with scan_complete=true is definitive evidence",
+            instructions,
+            StringComparison.Ordinal);
         Assert.EndsWith("</runtime_environment>", instructions, StringComparison.Ordinal);
     }
 
