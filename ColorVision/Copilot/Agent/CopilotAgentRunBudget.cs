@@ -168,6 +168,11 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = Math.Max(
                 0,
                 tokenSnapshot.ContextRecoveryEstimatedInputTokensBefore);
+            var providerCalls = Math.Max(0, tokenSnapshot.ProviderCalls);
+            var providerRetryCount = Math.Clamp(
+                tokenSnapshot.ProviderRetryCount,
+                0,
+                providerCalls);
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -175,8 +180,16 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = tokenSnapshot.InputBudgetTokens,
                 RequestTokenBudget = RequestTokenBudget,
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
-                ProviderCalls = tokenSnapshot.ProviderCalls,
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    tokenSnapshot.ProviderRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, tokenSnapshot.ProviderRetryDelayMs)
+                    : 0,
                 ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(

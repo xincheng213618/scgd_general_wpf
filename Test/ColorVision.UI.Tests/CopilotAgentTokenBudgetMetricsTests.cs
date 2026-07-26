@@ -22,8 +22,11 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             new ChatOptions { Instructions = "Use only verified evidence." });
         client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
         {
-            ProviderCalls = 1,
+            ProviderCalls = 3,
             PeakEstimatedInputTokens = 50_000,
+            ProviderRetryCount = 2,
+            ProviderRateLimitRetryCount = 1,
+            ProviderRetryDelayMs = 1_250,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 90_000,
             ContextRecoveryEstimatedInputTokensAfter = 35_000,
@@ -33,9 +36,12 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
 
         var snapshot = client.Snapshot;
 
-        Assert.Equal(2, snapshot.ProviderCalls);
+        Assert.Equal(4, snapshot.ProviderCalls);
         Assert.Equal(180, snapshot.ConsumedTokens);
         Assert.Equal(50_000, snapshot.PeakEstimatedInputTokens);
+        Assert.Equal(2, snapshot.ProviderRetryCount);
+        Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
+        Assert.Equal(1_250, snapshot.ProviderRetryDelayMs);
         Assert.Equal(2, snapshot.ContextRecoveryCount);
         Assert.Equal(90_000, snapshot.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(35_000, snapshot.ContextRecoveryEstimatedInputTokensAfter);
@@ -44,6 +50,35 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.Equal(180, snapshot.ReportedTotalTokens);
         Assert.Equal(110, snapshot.ReportedCachedInputTokens);
         Assert.False(snapshot.UsedEstimatedUsage);
+    }
+
+    [Fact]
+    public async Task SnapshotTracksProviderRetryKindAndPlannedDelay()
+    {
+        using var client = CreateClient(usage: null);
+
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "First attempt.")]);
+        client.RecordProviderRetry(new CopilotProviderRetryInfo(
+            1,
+            2,
+            3,
+            TimeSpan.FromMilliseconds(250),
+            "HTTP 429",
+            429));
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Second attempt.")]);
+        client.RecordProviderRetry(new CopilotProviderRetryInfo(
+            2,
+            3,
+            3,
+            TimeSpan.FromSeconds(1),
+            "HTTP 503",
+            503));
+
+        var snapshot = client.Snapshot;
+
+        Assert.Equal(2, snapshot.ProviderRetryCount);
+        Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
+        Assert.Equal(1_250, snapshot.ProviderRetryDelayMs);
     }
 
     [Fact]

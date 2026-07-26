@@ -67,6 +67,9 @@ namespace ColorVision.Copilot
         private CopilotTokenUsage _usage;
         private int _providerCalls;
         private int _peakEstimatedInputTokens;
+        private int _providerRetryCount;
+        private int _providerRateLimitRetryCount;
+        private long _providerRetryDelayMs;
         private int _contextRecoveryCount;
         private long _contextRecoveryEstimatedInputTokensBefore;
         private long _contextRecoveryEstimatedInputTokensAfter;
@@ -99,11 +102,33 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(delegatedRun);
             lock (_syncRoot)
             {
+                var delegatedProviderCalls = Math.Max(0, delegatedRun.ProviderCalls);
+                var delegatedProviderRetryCount = Math.Clamp(
+                    delegatedRun.ProviderRetryCount,
+                    0,
+                    delegatedProviderCalls);
                 _usage = _usage.Add(delegatedRun.Usage);
-                _providerCalls += Math.Max(0, delegatedRun.ProviderCalls);
+                _providerCalls = AddClamped(_providerCalls, delegatedProviderCalls);
                 _peakEstimatedInputTokens = Math.Max(
                     _peakEstimatedInputTokens,
                     Math.Max(0, delegatedRun.PeakEstimatedInputTokens));
+                _providerRetryCount = AddClamped(
+                    _providerRetryCount,
+                    delegatedProviderRetryCount);
+                _providerRateLimitRetryCount = Math.Min(
+                    _providerRetryCount,
+                    AddClamped(
+                        _providerRateLimitRetryCount,
+                        Math.Clamp(
+                            delegatedRun.ProviderRateLimitRetryCount,
+                            0,
+                            delegatedProviderRetryCount)));
+                if (delegatedProviderRetryCount > 0)
+                {
+                    _providerRetryDelayMs = AddClamped(
+                        _providerRetryDelayMs,
+                        delegatedRun.ProviderRetryDelayMs);
+                }
                 _contextRecoveryCount = AddClamped(
                     _contextRecoveryCount,
                     delegatedRun.ContextRecoveryCount);
@@ -119,6 +144,20 @@ namespace ColorVision.Copilot
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
+            }
+        }
+
+        internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            lock (_syncRoot)
+            {
+                _providerRetryCount = AddClamped(_providerRetryCount, 1);
+                if (retry.StatusCode == 429)
+                    _providerRateLimitRetryCount = AddClamped(_providerRateLimitRetryCount, 1);
+                _providerRetryDelayMs = AddClamped(
+                    _providerRetryDelayMs,
+                    ToMilliseconds(retry.Delay));
             }
         }
 
@@ -338,6 +377,8 @@ namespace ColorVision.Copilot
                     (long)reportedInputTokens + reportedOutputTokens),
                 0,
                 int.MaxValue);
+            var providerCalls = Math.Max(0, _providerCalls);
+            var providerRetryCount = Math.Clamp(_providerRetryCount, 0, providerCalls);
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = true,
@@ -345,8 +386,16 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = _budget.InputBudgetTokens,
                 RequestTokenBudget = _budget.RequestTokenBudget,
                 ConsumedTokens = Math.Max(0, _consumedTokens),
-                ProviderCalls = Math.Max(0, _providerCalls),
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, _peakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    _providerRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, _providerRetryDelayMs)
+                    : 0,
                 ContextRecoveryCount = Math.Max(0, _contextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = Math.Max(
                     0,
@@ -398,6 +447,13 @@ namespace ColorVision.Copilot
             return normalizedLeft > long.MaxValue - normalizedRight
                 ? long.MaxValue
                 : normalizedLeft + normalizedRight;
+        }
+
+        private static long ToMilliseconds(TimeSpan delay)
+        {
+            return delay <= TimeSpan.Zero
+                ? 0
+                : (long)Math.Ceiling(delay.TotalMilliseconds);
         }
 
         private static int EstimateTokens(

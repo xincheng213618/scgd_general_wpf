@@ -17,7 +17,11 @@ public sealed class CopilotDelegateSubagentToolTests
             Budget = new CopilotAgentBudgetSnapshot
             {
                 ToolCalls = 1,
+                ProviderCalls = 3,
                 PeakEstimatedInputTokens = 12_000,
+                ProviderRetryCount = 2,
+                ProviderRateLimitRetryCount = 1,
+                ProviderRetryDelayMs = 1_500,
                 ContextRecoveryCount = 2,
                 ContextRecoveryEstimatedInputTokensBefore = 40_000,
                 ContextRecoveryEstimatedInputTokensAfter = 18_000,
@@ -35,7 +39,11 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(3, result.DelegatedRunUsage?.ProviderCalls);
         Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
+        Assert.Equal(2, result.DelegatedRunUsage?.ProviderRetryCount);
+        Assert.Equal(1, result.DelegatedRunUsage?.ProviderRateLimitRetryCount);
+        Assert.Equal(1_500, result.DelegatedRunUsage?.ProviderRetryDelayMs);
         Assert.Equal(2, result.DelegatedRunUsage?.ContextRecoveryCount);
         Assert.Equal(40_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(18_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensAfter);

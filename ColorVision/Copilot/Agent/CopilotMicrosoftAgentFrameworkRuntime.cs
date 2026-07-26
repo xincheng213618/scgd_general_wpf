@@ -327,7 +327,11 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
+                retry =>
+                {
+                    chatClient.RecordProviderRetry(retry);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+                });
             var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
@@ -1058,7 +1062,11 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
+                retry =>
+                {
+                    chatClient.RecordProviderRetry(retry);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+                });
             using var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,

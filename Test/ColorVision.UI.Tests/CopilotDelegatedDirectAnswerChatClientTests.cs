@@ -23,11 +23,14 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                 ToolNames = ["ReadLocalFile"],
                 Budget = new CopilotAgentBudgetSnapshot
                 {
-                    ProviderCalls = 1,
+                    ProviderCalls = 3,
                     ToolCalls = 1,
                     RequestTokenBudget = 16_384,
                     ConsumedTokens = 2_048,
                     PeakEstimatedInputTokens = 6_000,
+                    ProviderRetryCount = 2,
+                    ProviderRateLimitRetryCount = 1,
+                    ProviderRetryDelayMs = 1_500,
                     ContextRecoveryCount = 1,
                     ContextRecoveryEstimatedInputTokensBefore = 8_000,
                     ContextRecoveryEstimatedInputTokensAfter = 3_000,
@@ -53,8 +56,11 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
 
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.Equal(0, provider.CallCount);
-        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Equal(3, result.Budget.ProviderCalls);
         Assert.Equal(6_000, result.Budget.PeakEstimatedInputTokens);
+        Assert.Equal(2, result.Budget.ProviderRetryCount);
+        Assert.Equal(1, result.Budget.ProviderRateLimitRetryCount);
+        Assert.Equal(1_500, result.Budget.ProviderRetryDelayMs);
         Assert.Equal(1, result.Budget.ContextRecoveryCount);
         Assert.Equal(8_000, result.Budget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(3_000, result.Budget.ContextRecoveryEstimatedInputTokensAfter);

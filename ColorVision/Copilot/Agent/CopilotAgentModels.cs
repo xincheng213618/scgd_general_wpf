@@ -184,6 +184,12 @@ namespace ColorVision.Copilot
 
         public int PeakEstimatedInputTokens { get; init; }
 
+        public int ProviderRetryCount { get; init; }
+
+        public int ProviderRateLimitRetryCount { get; init; }
+
+        public long ProviderRetryDelayMs { get; init; }
+
         public int ContextRecoveryCount { get; init; }
 
         public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
@@ -705,6 +711,12 @@ namespace ColorVision.Copilot
         public int ProviderCalls { get; init; }
 
         public int PeakEstimatedInputTokens { get; init; }
+
+        public int ProviderRetryCount { get; init; }
+
+        public int ProviderRateLimitRetryCount { get; init; }
+
+        public long ProviderRetryDelayMs { get; init; }
 
         public int ContextRecoveryCount { get; init; }
 

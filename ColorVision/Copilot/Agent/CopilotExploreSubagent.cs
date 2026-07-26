@@ -470,6 +470,20 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = AddClampedLong(
                 exploration.ContextRecoveryEstimatedInputTokensBefore,
                 finalization.ContextRecoveryEstimatedInputTokensBefore);
+            var explorationProviderCalls = Math.Max(0, exploration.ProviderCalls);
+            var finalizationProviderCalls = Math.Max(0, finalization.ProviderCalls);
+            var providerCalls = AddClamped(explorationProviderCalls, finalizationProviderCalls);
+            var explorationProviderRetryCount = Math.Clamp(
+                exploration.ProviderRetryCount,
+                0,
+                explorationProviderCalls);
+            var finalizationProviderRetryCount = Math.Clamp(
+                finalization.ProviderRetryCount,
+                0,
+                finalizationProviderCalls);
+            var providerRetryCount = AddClamped(
+                explorationProviderRetryCount,
+                finalizationProviderRetryCount);
             var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
             var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
             var reportedTotalTokens = Math.Max(
@@ -491,10 +505,29 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = Math.Max(exploration.InputBudgetTokens, finalization.InputBudgetTokens),
                 RequestTokenBudget = normalizedTotalTokenBudget,
                 ConsumedTokens = consumedTokens,
-                ProviderCalls = Math.Max(0, exploration.ProviderCalls) + Math.Max(0, finalization.ProviderCalls),
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(
                     Math.Max(0, exploration.PeakEstimatedInputTokens),
                     Math.Max(0, finalization.PeakEstimatedInputTokens)),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Min(
+                    providerRetryCount,
+                    AddClamped(
+                        Math.Clamp(
+                            exploration.ProviderRateLimitRetryCount,
+                            0,
+                            explorationProviderRetryCount),
+                        Math.Clamp(
+                            finalization.ProviderRateLimitRetryCount,
+                            0,
+                            finalizationProviderRetryCount))),
+                ProviderRetryDelayMs = AddClampedLong(
+                    explorationProviderRetryCount > 0
+                        ? exploration.ProviderRetryDelayMs
+                        : 0,
+                    finalizationProviderRetryCount > 0
+                        ? finalization.ProviderRetryDelayMs
+                        : 0),
                 ContextRecoveryCount = AddClamped(
                     exploration.ContextRecoveryCount,
                     finalization.ContextRecoveryCount),
@@ -1001,6 +1034,9 @@ namespace ColorVision.Copilot
                     StopReason = result.StopReason,
                     ToolCalls = result.Budget.ToolCalls,
                     PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
+                    ProviderRetryCount = result.Budget.ProviderRetryCount,
+                    ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,
+                    ProviderRetryDelayMs = result.Budget.ProviderRetryDelayMs,
                     ContextRecoveryCount = result.Budget.ContextRecoveryCount,
                     ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
                     ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,

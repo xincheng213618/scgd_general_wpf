@@ -76,9 +76,12 @@ public sealed class CopilotAgentRunMetricsTests
         {
             RequestTokenBudget = 512 * 1024,
             ConsumedTokens = 11_185,
-            ProviderCalls = 2,
+            ProviderCalls = 3,
             InputBudgetTokens = 1_000_000,
             PeakEstimatedInputTokens = 8_192,
+            ProviderRetryCount = 2,
+            ProviderRateLimitRetryCount = 1,
+            ProviderRetryDelayMs = 1_500,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 50_000,
             ContextRecoveryEstimatedInputTokensAfter = 22_000,
@@ -106,11 +109,12 @@ public sealed class CopilotAgentRunMetricsTests
         };
         var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
 
-        Assert.Equal("父 1 / 子 1 · 11.2k tokens · 委派直返", assistant.AgentRunCompactLabel);
-        Assert.Contains("已处理 25s · 父 1 / 子 1 · 11.2k tokens · 委派直返", assistant.ThinkingHeader, StringComparison.Ordinal);
-        Assert.Contains("模型调用：2（父 1 / 子 1）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Equal("父 2 / 子 1 · 11.2k tokens · 委派直返", assistant.AgentRunCompactLabel);
+        Assert.Contains("已处理 25s · 父 2 / 子 1 · 11.2k tokens · 委派直返", assistant.ThinkingHeader, StringComparison.Ordinal);
+        Assert.Contains("模型调用：3（父 2 / 子 1）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("令牌：11,185（父 4,203 / 子 6,982）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("提供商用量：输入 10,000 · 输出 1,185 · 总计 11,185 · 缓存输入 7,500（75%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("提供商重试：2 次 · 计划等待 1.5s · 限流 1 次", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("峰值输入（估算）：8,192 / 1,000,000", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("窗口恢复：2 次 · 累计输入（估算）50,000 → 22,000 tokens（缩减 56%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
@@ -134,9 +138,12 @@ public sealed class CopilotAgentRunMetricsTests
         var restoredConversation = Assert.Single(restored.Conversations);
         restoredConversation.EnsureValid();
         var restoredMessage = Assert.Single(restoredConversation.Messages);
-        Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderCalls);
+        Assert.Equal(3, restoredMessage.AgentRunBudget.ProviderCalls);
         Assert.Equal(11_185, restoredMessage.AgentRunBudget.ConsumedTokens);
         Assert.Equal(8_192, restoredMessage.AgentRunBudget.PeakEstimatedInputTokens);
+        Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderRetryCount);
+        Assert.Equal(1, restoredMessage.AgentRunBudget.ProviderRateLimitRetryCount);
+        Assert.Equal(1_500, restoredMessage.AgentRunBudget.ProviderRetryDelayMs);
         Assert.Equal(2, restoredMessage.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(50_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(22_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);
@@ -169,6 +176,9 @@ public sealed class CopilotAgentRunMetricsTests
                 ConsumedTokens = -1,
                 ProviderCalls = -2,
                 PeakEstimatedInputTokens = -8,
+                ProviderRetryCount = -4,
+                ProviderRateLimitRetryCount = 8,
+                ProviderRetryDelayMs = -250,
                 ContextRecoveryCount = -3,
                 ContextRecoveryEstimatedInputTokensBefore = -12,
                 ContextRecoveryEstimatedInputTokensAfter = 99,
@@ -193,6 +203,9 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(0, assistant.AgentRunBudget.ConsumedTokens);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderCalls);
         Assert.Equal(0, assistant.AgentRunBudget.PeakEstimatedInputTokens);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderRetryCount);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderRateLimitRetryCount);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderRetryDelayMs);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);

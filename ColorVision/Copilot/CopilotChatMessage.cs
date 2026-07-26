@@ -594,6 +594,7 @@ namespace ColorVision.Copilot
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
                 || AgentRunBudget.PeakEstimatedInputTokens > 0
+                || AgentRunBudget.ProviderRetryCount > 0
                 || AgentRunBudget.ContextRecoveryCount > 0
                 || AgentRunBudget.ReportedTotalTokens > 0
                 || AgentRunBudget.ElapsedMs > 0
@@ -695,6 +696,24 @@ namespace ColorVision.Copilot
                     else
                     {
                         builder.Append(" · 缓存未上报");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ProviderRetryCount > 0)
+                {
+                    builder.Append("提供商重试：")
+                        .Append(AgentRunBudget.ProviderRetryCount.ToString("N0"))
+                        .Append(" 次");
+                    if (AgentRunBudget.ProviderRetryDelayMs > 0)
+                    {
+                        builder.Append(" · 计划等待 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderRetryDelayMs));
+                    }
+                    if (AgentRunBudget.ProviderRateLimitRetryCount > 0)
+                    {
+                        builder.Append(" · 限流 ")
+                            .Append(AgentRunBudget.ProviderRateLimitRetryCount.ToString("N0"))
+                            .Append(" 次");
                     }
                     builder.AppendLine();
                 }
@@ -1761,6 +1780,11 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = Math.Max(
                 0,
                 budget.ContextRecoveryEstimatedInputTokensBefore);
+            var providerCalls = Math.Max(0, budget.ProviderCalls);
+            var providerRetryCount = Math.Clamp(
+                budget.ProviderRetryCount,
+                0,
+                providerCalls);
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1769,8 +1793,16 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = Math.Max(0, budget.InputBudgetTokens),
                 RequestTokenBudget = Math.Max(0, budget.RequestTokenBudget),
                 ConsumedTokens = Math.Max(0, budget.ConsumedTokens),
-                ProviderCalls = Math.Max(0, budget.ProviderCalls),
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, budget.PeakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    budget.ProviderRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, budget.ProviderRetryDelayMs)
+                    : 0,
                 ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
@@ -1822,6 +1854,9 @@ namespace ColorVision.Copilot
                 && left.ConsumedTokens == right.ConsumedTokens
                 && left.ProviderCalls == right.ProviderCalls
                 && left.PeakEstimatedInputTokens == right.PeakEstimatedInputTokens
+                && left.ProviderRetryCount == right.ProviderRetryCount
+                && left.ProviderRateLimitRetryCount == right.ProviderRateLimitRetryCount
+                && left.ProviderRetryDelayMs == right.ProviderRetryDelayMs
                 && left.ContextRecoveryCount == right.ContextRecoveryCount
                 && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
                 && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter
