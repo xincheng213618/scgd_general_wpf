@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## [1.4.7.3] 2026.07.26
+- 适配新版 FlowProcessing 流程运行时命名空间，保持 Conoscope 采集流程和窗口入口兼容。
+
 ## [1.4.6.1] 2026.05.26
 - 架构治理第一阶段：新增 CONO-00 ~ CONO-60 编号化架构分层文档（Docs/ARCHITECTURE.md）。
 - 抽出 ConoscopeAnalysisWorkflow 应用服务，将色域/对比度分析的状态管理和计算编排从 ConoscopeWindow.AnalysisRibbon.cs 迁移至 Application 层。

@@ -1404,6 +1404,12 @@ namespace ColorVision.Copilot
             }
             if (tools.Any(tool => string.Equals(tool.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase)))
                 builder.AppendLine("RunShellCommand is the general non-interactive Windows command surface for PowerShell and CMD, including installed runtimes and project scripts such as python, py, node, npm, npx, .ps1, .cmd, and .bat. Prefer a narrower fixed diagnostic when it fully answers the request. Use PowerShell by default and CMD only for explicit CMD or batch syntax. For substantial new Python, JavaScript, PowerShell, or batch logic, create the script with PreviewWorkspacePatchEnvelope and ApplyWorkspacePatchEnvelope, then run the saved file from its exact working directory; do not hide a large program inside the command argument. Put the complete invocation in the structured command argument instead of merely printing it in prose. It always requires native approval and returns the real exit code, stdout, and stderr. A nonzero exit or timeout is a terminal failed result with captured evidence, not a reason to repeat the same command. Never claim execution from a command suggestion alone.");
+            if (tools.Any(tool => string.Equals(tool.Name, "RunShellCommand", StringComparison.OrdinalIgnoreCase))
+                && (request.UserText.Contains("CVRAW", StringComparison.OrdinalIgnoreCase)
+                    || request.UserText.Contains("CVCIE", StringComparison.OrdinalIgnoreCase)))
+            {
+                builder.AppendLine("For explicit Python or command automation involving CVRAW/CVCIE, follow the loaded colorvision-batch-image-conversion skill: Python only orchestrates the current ColorVision executable and must not decode the proprietary format, install image packages, or delete source files.");
+            }
             if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.TaskLedger))
                 builder.AppendLine("For multi-step work, create a concise todo list, keep it synchronized with actual progress, and complete each item only after verifying its result. Keep working while executable todo items remain; stop only when they are complete or a concrete blocker is reported.");
             if (request.HarnessFeatures.HasFlag(CopilotAgentHarnessFeatures.AgentMode))

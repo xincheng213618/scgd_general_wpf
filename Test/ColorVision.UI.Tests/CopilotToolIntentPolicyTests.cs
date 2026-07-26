@@ -359,6 +359,95 @@ public sealed class CopilotToolIntentPolicyTests
     }
 
     [Fact]
+    public void ExplicitScriptRequestIgnoresUnrelatedAttachedFlowContext()
+    {
+        var request = Request(
+            @"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif",
+            contextItems:
+            [
+                new CopilotContextItem
+                {
+                    Id = "workspace:flow",
+                    Title = "Flow context · AOI",
+                    Content = "Attached automatically by the current page.",
+                },
+            ]);
+
+        Assert.True(CopilotToolIntentPolicy.NeedsShellExecution(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsFlowGraph(request));
+        Assert.False(new CopilotSearchFlowNodeCatalogTool().IsAvailable(request));
+    }
+
+    [Fact]
+    public void ExplicitExternalDirectoryBecomesWritableForRequestedScriptCreation()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-script-scope-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(root, "workspace");
+        var externalRoot = Path.Combine(root, "work");
+        Directory.CreateDirectory(workspaceRoot);
+        Directory.CreateDirectory(externalRoot);
+        try
+        {
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: workspaceRoot,
+                attachments: null);
+
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"{externalRoot} 里面的 CVRAW 文件，写一个 Python 脚本并运行批量转换成 TIFF",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.Contains(externalRoot, plan.WritableLocalRootPaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadOnlyExternalDirectoryDoesNotBecomeWritable()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-read-scope-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(root, "workspace");
+        var externalRoot = Path.Combine(root, "external");
+        Directory.CreateDirectory(workspaceRoot);
+        Directory.CreateDirectory(externalRoot);
+        try
+        {
+            var hostContext = new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: workspaceRoot,
+                attachments: null);
+
+            var plan = CopilotAgentRequestFactory.Prepare(
+                $"查看 {externalRoot} 里面有哪些 CVRAW 文件",
+                CopilotAgentMode.Auto,
+                hostContext);
+
+            Assert.DoesNotContain(externalRoot, plan.WritableLocalRootPaths, StringComparer.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EnvironmentContextPublishesCurrentColorVisionExecutable()
+    {
+        var context = CopilotAgentEnvironmentContext.Capture(Request(
+            "创建一个 Python 脚本并执行它",
+            writableRoots: [Environment.CurrentDirectory],
+            searchRoots: [Environment.CurrentDirectory]));
+
+        Assert.Equal(Environment.ProcessPath, context.ApplicationExecutablePath, ignoreCase: true);
+        Assert.Contains("\"application_executable\"", context.BuildPromptDataBlock(), StringComparison.Ordinal);
+        Assert.True(context.IsStructurallyValid());
+    }
+
+    [Fact]
     public void NativeCvrawBatchConversionDoesNotRequireShell()
     {
         var request = Request("批量转换 cvraw 文件为 TIFF");
@@ -534,7 +623,8 @@ public sealed class CopilotToolIntentPolicyTests
         string userText,
         IReadOnlyList<string>? writableRoots = null,
         IReadOnlyList<string>? searchRoots = null,
-        IReadOnlyList<string>? readableFiles = null)
+        IReadOnlyList<string>? readableFiles = null,
+        IReadOnlyList<CopilotContextItem>? contextItems = null)
     {
         return new CopilotAgentRequest
         {
@@ -543,6 +633,7 @@ public sealed class CopilotToolIntentPolicyTests
             WritableLocalRootPaths = writableRoots ?? Array.Empty<string>(),
             SearchRootPaths = searchRoots ?? Array.Empty<string>(),
             ReadableLocalFilePaths = readableFiles ?? Array.Empty<string>(),
+            ContextItems = contextItems ?? Array.Empty<CopilotContextItem>(),
         };
     }
 

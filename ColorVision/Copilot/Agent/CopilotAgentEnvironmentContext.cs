@@ -11,13 +11,15 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentEnvironmentContext
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         public const int MaxScopedPaths = 8;
         public const int MaxPathLength = 1_024;
 
         public int Version { get; init; } = CurrentVersion;
 
         public string WorkingDirectory { get; init; } = string.Empty;
+
+        public string ApplicationExecutablePath { get; init; } = string.Empty;
 
         public string Platform { get; init; } = string.Empty;
 
@@ -63,6 +65,7 @@ namespace ColorVision.Copilot
             var context = new CopilotAgentEnvironmentContext
             {
                 WorkingDirectory = workingDirectory,
+                ApplicationExecutablePath = NormalizeExistingFile(Environment.ProcessPath) ?? string.Empty,
                 Platform = OperatingSystem.IsWindows() ? "Windows" : RuntimeInformation.OSDescription,
                 Architecture = RuntimeInformation.OSArchitecture.ToString(),
                 Shell = shell,
@@ -83,6 +86,7 @@ namespace ColorVision.Copilot
             var payload = new Dictionary<string, object?>
             {
                 ["working_directory"] = WorkingDirectory,
+                ["application_executable"] = EmptyAsNull(ApplicationExecutablePath),
                 ["platform"] = Platform,
                 ["architecture"] = Architecture,
                 ["shell"] = Shell,
@@ -102,6 +106,7 @@ namespace ColorVision.Copilot
         {
             return Version == CurrentVersion
                 && IsSafeRequiredValue(WorkingDirectory, MaxPathLength)
+                && IsSafeOptionalValue(ApplicationExecutablePath, MaxPathLength)
                 && IsSafeRequiredValue(Platform, 256)
                 && IsSafeRequiredValue(Architecture, 64)
                 && IsSafeRequiredValue(Shell, 64)
@@ -122,6 +127,7 @@ namespace ColorVision.Copilot
             {
                 Version = Version,
                 WorkingDirectory = WorkingDirectory,
+                ApplicationExecutablePath = ApplicationExecutablePath,
                 Platform = Platform,
                 Architecture = Architecture,
                 Shell = Shell,
@@ -143,6 +149,7 @@ namespace ColorVision.Copilot
             {
                 context.Version,
                 context.WorkingDirectory,
+                context.ApplicationExecutablePath,
                 context.Platform,
                 context.Architecture,
                 context.Shell,
@@ -185,6 +192,12 @@ namespace ColorVision.Copilot
         {
             var normalized = NormalizePath(path);
             return Directory.Exists(normalized) ? normalized : null;
+        }
+
+        private static string? NormalizeExistingFile(string? path)
+        {
+            var normalized = NormalizePath(path);
+            return File.Exists(normalized) ? normalized : null;
         }
 
         private static GitContext CaptureGitContext(string workingDirectory)

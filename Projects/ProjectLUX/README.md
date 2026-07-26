@@ -8,7 +8,7 @@ LUX 亮度测试系统 — 基于 ColorVision 平台的显示设备光学质量�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.4.42 |
+| 版本 | 1.1.4.45 |
 | 插件要求 | ColorVision >= 1.3.15.10 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe / Fix / Summary) |

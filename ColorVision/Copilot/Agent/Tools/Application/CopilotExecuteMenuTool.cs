@@ -45,6 +45,9 @@ namespace ColorVision.Copilot
             if (CopilotFlowCreationSupport.HasCreateIntent(request.UserText))
                 return false;
 
+            if (CopilotToolIntentPolicy.NeedsShellExecution(request) && !HasReferencedMenu(request))
+                return false;
+
             if (!CopilotApplicationCapability.HasMenuIntent(request.UserText))
                 return false;
 

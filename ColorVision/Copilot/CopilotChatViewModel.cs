@@ -179,7 +179,6 @@ namespace ColorVision.Copilot
             SelectConversationCommand = new RelayCommand<CopilotConversationRecord>(
                 conversation => SelectConversation(conversation, persist: true),
                 conversation => CanSwitchConversation && conversation != null);
-            CancelCommand = new RelayCommand(_ => CancelActiveRun(), _ => IsBusy);
             PrimaryActionCommand = new RelayCommand(_ => ExecutePrimaryAction());
             OpenSettingsCommand = new RelayCommand(_ => OpenSettings(), _ => !IsBusy);
             AddFileAttachmentCommand = new RelayCommand(_ => RunUiOperation(AddFileAttachmentAsync, "附加文件"), _ => !IsBusy);
@@ -414,8 +413,6 @@ namespace ColorVision.Copilot
         public ICommand ClearConversationSearchCommand { get; }
 
         public ICommand SelectConversationCommand { get; }
-
-        public ICommand CancelCommand { get; }
 
         public ICommand PrimaryActionCommand { get; }
 
@@ -655,7 +652,7 @@ namespace ColorVision.Copilot
             ? Properties.Resources.CopilotSelectHistoryOrNew
             : Properties.Resources.CopilotConfigureModelFirst;
 
-        public string PrimaryActionGlyph => HasExclusiveLocalOperation ? "■" : IsViewingQueuedRun ? "×" : IsViewingActiveRun ? (CanPauseAgentRun ? "Ⅱ" : "■") : "↑";
+        public string PrimaryActionGlyph => HasExclusiveLocalOperation || IsViewingActiveRun ? "■" : IsViewingQueuedRun ? "×" : "↑";
 
         public string PrimaryActionToolTip
         {
@@ -670,7 +667,7 @@ namespace ColorVision.Copilot
                 if (IsViewingQueuedRun)
                     return "取消这个排队任务";
                 if (IsViewingActiveRun)
-                    return CanPauseAgentRun ? "暂停并保存当前 Agent 任务" : Properties.Resources.CopilotStopGeneration;
+                    return IsAgentRequestActive ? "停止当前 Agent 任务" : Properties.Resources.CopilotStopGeneration;
                 if (IsBusy)
                 {
                     var admission = EvaluateComposerRequestAdmission(ResolveComposerRequestMode());
@@ -1162,12 +1159,6 @@ namespace ColorVision.Copilot
             && ResolveComposerRequestMode() != CopilotAgentMode.Chat
             && _taskHost.QueuedCount < _taskHost.MaxQueuedRuns;
 
-        public bool CanCancelAgentRun => IsViewingActiveRun
-            && IsAgentRequestActive
-            && SelectedHostedRun?.CanRequestCancel == true;
-
-        public bool CanPauseAgentRun => IsViewingActiveRun && ActiveHostedRun?.CanRequestPause == true;
-
         public bool IsBusy
         {
             get => _isBusy;
@@ -1186,8 +1177,6 @@ namespace ColorVision.Copilot
                 OnPropertyChanged(nameof(CanAttachCurrentLiveContext));
                 OnPropertyChanged(nameof(CanSteerCurrentRun));
                 OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
-                OnPropertyChanged(nameof(CanCancelAgentRun));
-                OnPropertyChanged(nameof(CanPauseAgentRun));
                 OnPropertyChanged(nameof(InputPlaceholder));
                 RefreshComposerTokenEstimate();
                 CommandManager.InvalidateRequerySuggested();
@@ -2270,8 +2259,6 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanSwitchConversation));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
             OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
-            OnPropertyChanged(nameof(CanCancelAgentRun));
-            OnPropertyChanged(nameof(CanPauseAgentRun));
             OnPropertyChanged(nameof(PrimaryActionGlyph));
             OnPropertyChanged(nameof(PrimaryActionToolTip));
             OnPropertyChanged(nameof(InputPlaceholder));
@@ -2888,7 +2875,7 @@ namespace ColorVision.Copilot
             }
             if (IsViewingQueuedRun || IsViewingActiveRun)
             {
-                CancelCurrentReply(discardAgentCheckpoint: !CanPauseAgentRun);
+                StopCurrentReply();
                 return;
             }
 
@@ -3511,27 +3498,7 @@ namespace ColorVision.Copilot
             return new CopilotPromptQueueResult(true, SelectedProfile?.IsConfigured == true);
         }
 
-        private void CancelActiveRun()
-        {
-            if (_isCompactingConversation)
-            {
-                _compactConversationCts?.Cancel();
-                return;
-            }
-            if (_fileAttachmentCts != null)
-            {
-                TryCancelCancellationSource(_fileAttachmentCts);
-                return;
-            }
-            if (_webPageAttachmentCts != null)
-            {
-                TryCancelCancellationSource(_webPageAttachmentCts);
-                return;
-            }
-            CancelCurrentReply(discardAgentCheckpoint: true);
-        }
-
-        private void CancelCurrentReply(bool discardAgentCheckpoint)
+        private void StopCurrentReply()
         {
             var selectedRun = SelectedHostedRun;
             if (selectedRun?.State == CopilotHostedRunState.Queued)
@@ -3544,7 +3511,9 @@ namespace ColorVision.Copilot
             if (!IsViewingActiveRun || activeRun == null)
                 return;
 
-            if (!discardAgentCheckpoint && activeRun.IsAgent && _taskHost.RequestPause(activeRun.Id))
+            // Match Codex's single-stop interaction: keep recovery state when a
+            // safe checkpoint exists, otherwise cancel the in-flight turn.
+            if (activeRun.IsAgent && _taskHost.RequestPause(activeRun.Id))
                 return;
 
             _taskHost.RequestCancel(activeRun.Id);

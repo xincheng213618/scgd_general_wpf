@@ -26,4 +26,5 @@ Use the generic workspace patch and shell primitives. Do not invent a separate t
 - Validate paths inside the request-scoped workspace before writing or executing.
 - Do not install packages, download executables, change execution policy, elevate privileges, or invoke an interactive shell unless explicitly requested and supported by the approval flow.
 - Prefer an existing ColorVision application tool for proprietary formats and product workflows. In particular, do not pretend that Pillow or stock OpenCV can decode CVRAW/CVCIE.
+- For a CVRAW/CVCIE script request, load `colorvision-batch-image-conversion` and follow its exact `ColorVision.exe` CLI contract. Python may orchestrate the native executable but must not implement a decoder.
 - For repeatable product workflows, use the matching ColorVision skill instead of copying a large bespoke program into the command argument.

@@ -403,10 +403,15 @@ namespace ColorVision.Copilot
 
         public static bool NeedsFlowGraph(CopilotAgentRequest? request)
         {
-            return IsAgentRequest(request)
-                && (HasFlowContext(request!)
-                    || MatchesCurrentOrContinuation(request!, FlowGraphMarkers,
-                        "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"));
+            if (!IsAgentRequest(request))
+                return false;
+
+            if (NeedsShellExecution(request) && !ContainsAny(request!.UserText, FlowGraphMarkers))
+                return false;
+
+            return HasFlowContext(request!)
+                || MatchesCurrentOrContinuation(request, FlowGraphMarkers,
+                    "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch");
         }
 
         public static bool NeedsSavedTemplateContext(CopilotAgentRequest? request)

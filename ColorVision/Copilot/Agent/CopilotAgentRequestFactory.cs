@@ -157,7 +157,9 @@ namespace ColorVision.Copilot
                 .ToArray();
             var searchRootPaths = BuildSearchRootPaths(hostContext, explicitLocalPaths);
             var trustedProjectRootPaths = BuildTrustedProjectRootPaths(hostContext);
-            var writableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
+            var workspaceWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots([hostContext.SolutionDirectoryPath]);
+            var requestedWritableLocalRootPaths = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(
+                workspaceWritableLocalRootPaths.Concat(explicitLocalDirectoryPaths));
             var writableLocalFilePaths = BuildWritableLocalFilePaths(hostContext, explicitLocalFilePaths);
             var intentProbe = new CopilotAgentRequest
             {
@@ -165,7 +167,13 @@ namespace ColorVision.Copilot
                 Mode = mode,
                 ReadableLocalFilePaths = explicitLocalFilePaths,
                 ReadableLocalDirectoryPaths = explicitLocalDirectoryPaths,
+                WritableLocalRootPaths = requestedWritableLocalRootPaths,
+                WritableLocalFilePaths = writableLocalFilePaths,
             };
+            var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
+                || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
+                ? requestedWritableLocalRootPaths
+                : workspaceWritableLocalRootPaths;
             var projectInstructions = mode == CopilotAgentMode.Chat
                 || !CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe)
                 ? Array.Empty<CopilotProjectInstructionDocument>()
