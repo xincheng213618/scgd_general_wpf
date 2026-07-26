@@ -59,7 +59,7 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotHostedAgentRun : IDisposable
     {
-        private readonly CancellationTokenSource _cancellation = new();
+        private readonly CopilotNonBlockingCancellationSource _cancellation = new();
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
         private int _agentStopReason;
@@ -186,17 +186,7 @@ namespace ColorVision.Copilot
 
         private void CancelExecutionToken()
         {
-            try
-            {
-                _cancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (AggregateException ex)
-            {
-                Trace.TraceWarning($"Copilot run cancellation callback failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}");
-            }
+            _cancellation.RequestCancellation();
         }
 
         internal void Complete(Exception? error)
