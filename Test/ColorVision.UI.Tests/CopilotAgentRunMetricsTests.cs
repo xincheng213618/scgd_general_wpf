@@ -82,6 +82,10 @@ public sealed class CopilotAgentRunMetricsTests
             ProviderRetryCount = 2,
             ProviderRateLimitRetryCount = 1,
             ProviderRetryDelayMs = 1_500,
+            ProviderResponseCount = 2,
+            ProviderFirstResponseLatencyTotalMs = 1_250,
+            ProviderFirstResponseLatencyMaxMs = 800,
+            ProviderCallDurationTotalMs = 4_200,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 50_000,
             ContextRecoveryEstimatedInputTokensAfter = 22_000,
@@ -115,6 +119,7 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Contains("令牌：11,185（父 4,203 / 子 6,982）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("提供商用量：输入 10,000 · 输出 1,185 · 总计 11,185 · 缓存输入 7,500（75%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("提供商重试：2 次 · 计划等待 1.5s · 限流 1 次", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("模型延迟：首响应平均 625ms · 最慢 800ms · 有效响应 2 / 3 · 调用累计 4.2s", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("峰值输入（估算）：8,192 / 1,000,000", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("窗口恢复：2 次 · 累计输入（估算）50,000 → 22,000 tokens（缩减 56%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
@@ -144,6 +149,10 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderRetryCount);
         Assert.Equal(1, restoredMessage.AgentRunBudget.ProviderRateLimitRetryCount);
         Assert.Equal(1_500, restoredMessage.AgentRunBudget.ProviderRetryDelayMs);
+        Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderResponseCount);
+        Assert.Equal(1_250, restoredMessage.AgentRunBudget.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(800, restoredMessage.AgentRunBudget.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(4_200, restoredMessage.AgentRunBudget.ProviderCallDurationTotalMs);
         Assert.Equal(2, restoredMessage.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(50_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(22_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);
@@ -179,6 +188,10 @@ public sealed class CopilotAgentRunMetricsTests
                 ProviderRetryCount = -4,
                 ProviderRateLimitRetryCount = 8,
                 ProviderRetryDelayMs = -250,
+                ProviderResponseCount = 99,
+                ProviderFirstResponseLatencyTotalMs = 1_500,
+                ProviderFirstResponseLatencyMaxMs = 2_000,
+                ProviderCallDurationTotalMs = 3_000,
                 ContextRecoveryCount = -3,
                 ContextRecoveryEstimatedInputTokensBefore = -12,
                 ContextRecoveryEstimatedInputTokensAfter = 99,
@@ -206,6 +219,10 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(0, assistant.AgentRunBudget.ProviderRetryCount);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderRateLimitRetryCount);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderRetryDelayMs);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderResponseCount);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderCallDurationTotalMs);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);

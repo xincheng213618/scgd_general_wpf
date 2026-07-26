@@ -31,6 +31,10 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                     ProviderRetryCount = 2,
                     ProviderRateLimitRetryCount = 1,
                     ProviderRetryDelayMs = 1_500,
+                    ProviderResponseCount = 2,
+                    ProviderFirstResponseLatencyTotalMs = 900,
+                    ProviderFirstResponseLatencyMaxMs = 550,
+                    ProviderCallDurationTotalMs = 2_800,
                     ContextRecoveryCount = 1,
                     ContextRecoveryEstimatedInputTokensBefore = 8_000,
                     ContextRecoveryEstimatedInputTokensAfter = 3_000,
@@ -61,6 +65,10 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(2, result.Budget.ProviderRetryCount);
         Assert.Equal(1, result.Budget.ProviderRateLimitRetryCount);
         Assert.Equal(1_500, result.Budget.ProviderRetryDelayMs);
+        Assert.Equal(2, result.Budget.ProviderResponseCount);
+        Assert.Equal(900, result.Budget.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(550, result.Budget.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(2_800, result.Budget.ProviderCallDurationTotalMs);
         Assert.Equal(1, result.Budget.ContextRecoveryCount);
         Assert.Equal(8_000, result.Budget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(3_000, result.Budget.ContextRecoveryEstimatedInputTokensAfter);

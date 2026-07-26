@@ -717,6 +717,38 @@ namespace ColorVision.Copilot
                     }
                     builder.AppendLine();
                 }
+                if (AgentRunBudget.ProviderResponseCount > 0
+                    || AgentRunBudget.ProviderCallDurationTotalMs > 0)
+                {
+                    builder.Append("模型延迟：");
+                    var hasLatencyValue = false;
+                    if (AgentRunBudget.ProviderResponseCount > 0)
+                    {
+                        var averageFirstResponseLatencyMs =
+                            AgentRunBudget.ProviderFirstResponseLatencyTotalMs
+                            / AgentRunBudget.ProviderResponseCount;
+                        builder.Append("首响应平均 ")
+                            .Append(FormatTraceDuration(averageFirstResponseLatencyMs))
+                            .Append(" · 最慢 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderFirstResponseLatencyMaxMs));
+                        hasLatencyValue = true;
+                        if (AgentRunBudget.ProviderResponseCount < totalProviderCalls)
+                        {
+                            builder.Append(" · 有效响应 ")
+                                .Append(AgentRunBudget.ProviderResponseCount)
+                                .Append(" / ")
+                                .Append(totalProviderCalls);
+                        }
+                    }
+                    if (AgentRunBudget.ProviderCallDurationTotalMs > 0)
+                    {
+                        if (hasLatencyValue)
+                            builder.Append(" · ");
+                        builder.Append("调用累计 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderCallDurationTotalMs));
+                    }
+                    builder.AppendLine();
+                }
                 if (AgentRunBudget.PeakEstimatedInputTokens > 0)
                 {
                     builder.Append("峰值输入（估算）：")
@@ -1785,6 +1817,13 @@ namespace ColorVision.Copilot
                 budget.ProviderRetryCount,
                 0,
                 providerCalls);
+            var providerResponseCount = Math.Clamp(
+                budget.ProviderResponseCount,
+                0,
+                providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, budget.ProviderFirstResponseLatencyTotalMs)
+                : 0;
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1802,6 +1841,17 @@ namespace ColorVision.Copilot
                     providerRetryCount),
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, budget.ProviderRetryDelayMs)
+                    : 0,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    budget.ProviderFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? Math.Max(
+                        providerFirstResponseLatencyTotalMs,
+                        budget.ProviderCallDurationTotalMs)
                     : 0,
                 ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
@@ -1857,6 +1907,10 @@ namespace ColorVision.Copilot
                 && left.ProviderRetryCount == right.ProviderRetryCount
                 && left.ProviderRateLimitRetryCount == right.ProviderRateLimitRetryCount
                 && left.ProviderRetryDelayMs == right.ProviderRetryDelayMs
+                && left.ProviderResponseCount == right.ProviderResponseCount
+                && left.ProviderFirstResponseLatencyTotalMs == right.ProviderFirstResponseLatencyTotalMs
+                && left.ProviderFirstResponseLatencyMaxMs == right.ProviderFirstResponseLatencyMaxMs
+                && left.ProviderCallDurationTotalMs == right.ProviderCallDurationTotalMs
                 && left.ContextRecoveryCount == right.ContextRecoveryCount
                 && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
                 && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter

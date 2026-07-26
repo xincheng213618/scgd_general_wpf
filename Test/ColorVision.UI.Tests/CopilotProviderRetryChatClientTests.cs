@@ -95,6 +95,10 @@ public sealed class CopilotProviderRetryChatClientTests
         Assert.Equal(1, result.Budget.ProviderRetryCount);
         Assert.Equal(1, result.Budget.ProviderRateLimitRetryCount);
         Assert.Equal(250, result.Budget.ProviderRetryDelayMs);
+        Assert.Equal(1, result.Budget.ProviderResponseCount);
+        Assert.True(
+            result.Budget.ProviderCallDurationTotalMs
+            >= result.Budget.ProviderFirstResponseLatencyTotalMs);
         Assert.Contains(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
             && agentEvent.Text.Contains("Provider request retry 2/3", StringComparison.Ordinal));

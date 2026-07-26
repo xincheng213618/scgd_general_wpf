@@ -856,6 +856,13 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
+                + (budgetSnapshot.ProviderResponseCount > 0
+                    ? $" · first response avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderFirstResponseLatencyTotalMs / budgetSnapshot.ProviderResponseCount))}"
+                        + $", max {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderFirstResponseLatencyMaxMs))}"
+                    : string.Empty)
+                + (budgetSnapshot.ProviderCallDurationTotalMs > 0
+                    ? $" · cumulative provider wait {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderCallDurationTotalMs))}"
+                    : string.Empty)
                 + (usage.CachedInputTokens.HasValue
                     ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"
                     : " · cache reads unavailable")

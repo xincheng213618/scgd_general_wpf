@@ -190,6 +190,14 @@ namespace ColorVision.Copilot
 
         public long ProviderRetryDelayMs { get; init; }
 
+        public int ProviderResponseCount { get; init; }
+
+        public long ProviderFirstResponseLatencyTotalMs { get; init; }
+
+        public long ProviderFirstResponseLatencyMaxMs { get; init; }
+
+        public long ProviderCallDurationTotalMs { get; init; }
+
         public int ContextRecoveryCount { get; init; }
 
         public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
@@ -717,6 +725,14 @@ namespace ColorVision.Copilot
         public int ProviderRateLimitRetryCount { get; init; }
 
         public long ProviderRetryDelayMs { get; init; }
+
+        public int ProviderResponseCount { get; init; }
+
+        public long ProviderFirstResponseLatencyTotalMs { get; init; }
+
+        public long ProviderFirstResponseLatencyMaxMs { get; init; }
+
+        public long ProviderCallDurationTotalMs { get; init; }
 
         public int ContextRecoveryCount { get; init; }
 

@@ -641,6 +641,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             ProviderRetryCount = 1,
             ProviderRateLimitRetryCount = 1,
             ProviderRetryDelayMs = 500,
+            ProviderResponseCount = 2,
+            ProviderFirstResponseLatencyTotalMs = 700,
+            ProviderFirstResponseLatencyMaxMs = 500,
+            ProviderCallDurationTotalMs = 1_500,
             ContextRecoveryCount = 1,
             ContextRecoveryEstimatedInputTokensBefore = 9_000,
             ContextRecoveryEstimatedInputTokensAfter = 4_000,
@@ -672,6 +676,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(3, combined.ProviderRetryCount);
         Assert.Equal(2, combined.ProviderRateLimitRetryCount);
         Assert.Equal(1_700, combined.ProviderRetryDelayMs);
+        Assert.Equal(4, combined.ProviderResponseCount);
+        Assert.Equal(1_600, combined.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(600, combined.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(4_000, combined.ProviderCallDurationTotalMs);
         Assert.Equal(3, combined.ContextRecoveryCount);
         Assert.Equal(39_000, combined.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(14_000, combined.ContextRecoveryEstimatedInputTokensAfter);
@@ -731,6 +739,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 ProviderRetryCount = 2,
                 ProviderRateLimitRetryCount = 1,
                 ProviderRetryDelayMs = 1_200,
+                ProviderResponseCount = 2,
+                ProviderFirstResponseLatencyTotalMs = 900,
+                ProviderFirstResponseLatencyMaxMs = 600,
+                ProviderCallDurationTotalMs = 2_500,
                 ContextRecoveryCount = 2,
                 ContextRecoveryEstimatedInputTokensBefore = 30_000,
                 ContextRecoveryEstimatedInputTokensAfter = 10_000,

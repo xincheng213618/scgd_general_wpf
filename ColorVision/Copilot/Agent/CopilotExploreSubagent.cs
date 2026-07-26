@@ -484,6 +484,28 @@ namespace ColorVision.Copilot
             var providerRetryCount = AddClamped(
                 explorationProviderRetryCount,
                 finalizationProviderRetryCount);
+            var explorationProviderResponseCount = Math.Clamp(
+                exploration.ProviderResponseCount,
+                0,
+                explorationProviderCalls);
+            var finalizationProviderResponseCount = Math.Clamp(
+                finalization.ProviderResponseCount,
+                0,
+                finalizationProviderCalls);
+            var providerResponseCount = Math.Min(
+                providerCalls,
+                AddClamped(
+                    explorationProviderResponseCount,
+                    finalizationProviderResponseCount));
+            var explorationFirstResponseLatencyTotalMs = explorationProviderResponseCount > 0
+                ? Math.Max(0, exploration.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var finalizationFirstResponseLatencyTotalMs = finalizationProviderResponseCount > 0
+                ? Math.Max(0, finalization.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var providerFirstResponseLatencyTotalMs = AddClampedLong(
+                explorationFirstResponseLatencyTotalMs,
+                finalizationFirstResponseLatencyTotalMs);
             var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
             var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
             var reportedTotalTokens = Math.Max(
@@ -528,6 +550,28 @@ namespace ColorVision.Copilot
                     finalizationProviderRetryCount > 0
                         ? finalization.ProviderRetryDelayMs
                         : 0),
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Min(
+                    providerFirstResponseLatencyTotalMs,
+                    Math.Max(
+                        Math.Clamp(
+                            exploration.ProviderFirstResponseLatencyMaxMs,
+                            0,
+                            explorationFirstResponseLatencyTotalMs),
+                        Math.Clamp(
+                            finalization.ProviderFirstResponseLatencyMaxMs,
+                            0,
+                            finalizationFirstResponseLatencyTotalMs))),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? AddClampedLong(
+                        Math.Max(
+                            explorationFirstResponseLatencyTotalMs,
+                            exploration.ProviderCallDurationTotalMs),
+                        Math.Max(
+                            finalizationFirstResponseLatencyTotalMs,
+                            finalization.ProviderCallDurationTotalMs))
+                    : 0,
                 ContextRecoveryCount = AddClamped(
                     exploration.ContextRecoveryCount,
                     finalization.ContextRecoveryCount),
@@ -1037,6 +1081,10 @@ namespace ColorVision.Copilot
                     ProviderRetryCount = result.Budget.ProviderRetryCount,
                     ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,
                     ProviderRetryDelayMs = result.Budget.ProviderRetryDelayMs,
+                    ProviderResponseCount = result.Budget.ProviderResponseCount,
+                    ProviderFirstResponseLatencyTotalMs = result.Budget.ProviderFirstResponseLatencyTotalMs,
+                    ProviderFirstResponseLatencyMaxMs = result.Budget.ProviderFirstResponseLatencyMaxMs,
+                    ProviderCallDurationTotalMs = result.Budget.ProviderCallDurationTotalMs,
                     ContextRecoveryCount = result.Budget.ContextRecoveryCount,
                     ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
                     ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,

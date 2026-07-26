@@ -173,6 +173,13 @@ namespace ColorVision.Copilot
                 tokenSnapshot.ProviderRetryCount,
                 0,
                 providerCalls);
+            var providerResponseCount = Math.Clamp(
+                tokenSnapshot.ProviderResponseCount,
+                0,
+                providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderFirstResponseLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -189,6 +196,17 @@ namespace ColorVision.Copilot
                     providerRetryCount),
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, tokenSnapshot.ProviderRetryDelayMs)
+                    : 0,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? Math.Max(
+                        providerFirstResponseLatencyTotalMs,
+                        tokenSnapshot.ProviderCallDurationTotalMs)
                     : 0,
                 ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,

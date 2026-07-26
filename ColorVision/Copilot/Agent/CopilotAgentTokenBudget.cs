@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -70,6 +71,10 @@ namespace ColorVision.Copilot
         private int _providerRetryCount;
         private int _providerRateLimitRetryCount;
         private long _providerRetryDelayMs;
+        private int _providerResponseCount;
+        private long _providerFirstResponseLatencyTotalMs;
+        private long _providerFirstResponseLatencyMaxMs;
+        private long _providerCallDurationTotalMs;
         private int _contextRecoveryCount;
         private long _contextRecoveryEstimatedInputTokensBefore;
         private long _contextRecoveryEstimatedInputTokensAfter;
@@ -129,6 +134,30 @@ namespace ColorVision.Copilot
                         _providerRetryDelayMs,
                         delegatedRun.ProviderRetryDelayMs);
                 }
+                var delegatedProviderResponseCount = Math.Clamp(
+                    delegatedRun.ProviderResponseCount,
+                    0,
+                    delegatedProviderCalls);
+                var delegatedFirstResponseLatencyTotalMs = delegatedProviderResponseCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderFirstResponseLatencyTotalMs)
+                    : 0;
+                _providerResponseCount = Math.Min(
+                    _providerCalls,
+                    AddClamped(_providerResponseCount, delegatedProviderResponseCount));
+                _providerFirstResponseLatencyTotalMs = AddClamped(
+                    _providerFirstResponseLatencyTotalMs,
+                    delegatedFirstResponseLatencyTotalMs);
+                _providerFirstResponseLatencyMaxMs = Math.Max(
+                    _providerFirstResponseLatencyMaxMs,
+                    Math.Clamp(
+                        delegatedRun.ProviderFirstResponseLatencyMaxMs,
+                        0,
+                        delegatedFirstResponseLatencyTotalMs));
+                _providerCallDurationTotalMs = AddClamped(
+                    _providerCallDurationTotalMs,
+                    Math.Max(
+                        delegatedFirstResponseLatencyTotalMs,
+                        delegatedRun.ProviderCallDurationTotalMs));
                 _contextRecoveryCount = AddClamped(
                     _contextRecoveryCount,
                     delegatedRun.ContextRecoveryCount);
@@ -194,19 +223,25 @@ namespace ColorVision.Copilot
                 throw new CopilotAgentTokenBudgetExceededException();
 
             ChatResponse response;
+            var providerStopwatch = Stopwatch.StartNew();
             try
             {
                 response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
             catch
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
+            var providerDurationMs = ToMilliseconds(providerStopwatch.Elapsed);
+            RecordProviderFirstResponse(providerDurationMs);
+            RecordProviderCallDuration(providerDurationMs);
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
             CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageWeight(response.Messages)));
             return response;
@@ -226,30 +261,37 @@ namespace ColorVision.Copilot
 
             var usage = CopilotTokenUsage.Empty;
             long responseWeight = 0;
+            long providerCallDurationTicks = 0;
             var completed = false;
             IAsyncEnumerator<ChatResponseUpdate>? enumerator;
+            var providerStopwatch = Stopwatch.StartNew();
             try
             {
                 enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
             catch
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
+            providerCallDurationTicks = Math.Max(0, providerStopwatch.ElapsedTicks);
 
             if (enumerator == null)
             {
+                RecordProviderCallDuration(ToMilliseconds(providerCallDurationTicks));
                 CommitUsage(
                     usage,
                     EstimateTokens(materializedMessages, options, responseWeight));
                 yield break;
             }
 
+            RecordProviderFirstResponse(ToMilliseconds(providerCallDurationTicks));
             await using (enumerator)
             {
                 try
@@ -260,13 +302,26 @@ namespace ColorVision.Copilot
                         responseWeight += EstimateContentWeight(update.Contents);
                         usage = usage.MergeProgress(ExtractUsage(update.Contents));
                         yield return update;
-                        if (!await enumerator.MoveNextAsync())
+                        providerStopwatch.Restart();
+                        bool hasNext;
+                        try
+                        {
+                            hasNext = await enumerator.MoveNextAsync();
+                        }
+                        finally
+                        {
+                            providerCallDurationTicks = AddClamped(
+                                providerCallDurationTicks,
+                                providerStopwatch.ElapsedTicks);
+                        }
+                        if (!hasNext)
                             break;
                     }
                     completed = true;
                 }
                 finally
                 {
+                    RecordProviderCallDuration(ToMilliseconds(providerCallDurationTicks));
                     CommitUsage(
                         usage,
                         EstimateTokens(materializedMessages, options, responseWeight),
@@ -367,6 +422,31 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void RecordProviderFirstResponse(long latencyMs)
+        {
+            var normalizedLatencyMs = Math.Max(0, latencyMs);
+            lock (_syncRoot)
+            {
+                _providerResponseCount = AddClamped(_providerResponseCount, 1);
+                _providerFirstResponseLatencyTotalMs = AddClamped(
+                    _providerFirstResponseLatencyTotalMs,
+                    normalizedLatencyMs);
+                _providerFirstResponseLatencyMaxMs = Math.Max(
+                    _providerFirstResponseLatencyMaxMs,
+                    normalizedLatencyMs);
+            }
+        }
+
+        private void RecordProviderCallDuration(long durationMs)
+        {
+            lock (_syncRoot)
+            {
+                _providerCallDurationTotalMs = AddClamped(
+                    _providerCallDurationTotalMs,
+                    durationMs);
+            }
+        }
+
         private CopilotAgentBudgetSnapshot CreateSnapshot()
         {
             var reportedInputTokens = Math.Max(0, _usage.InputTokens);
@@ -379,6 +459,10 @@ namespace ColorVision.Copilot
                 int.MaxValue);
             var providerCalls = Math.Max(0, _providerCalls);
             var providerRetryCount = Math.Clamp(_providerRetryCount, 0, providerCalls);
+            var providerResponseCount = Math.Clamp(_providerResponseCount, 0, providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, _providerFirstResponseLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = true,
@@ -396,6 +480,15 @@ namespace ColorVision.Copilot
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, _providerRetryDelayMs)
                     : 0,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    _providerFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = Math.Max(
+                    providerFirstResponseLatencyTotalMs,
+                    _providerCallDurationTotalMs),
                 ContextRecoveryCount = Math.Max(0, _contextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = Math.Max(
                     0,
@@ -454,6 +547,13 @@ namespace ColorVision.Copilot
             return delay <= TimeSpan.Zero
                 ? 0
                 : (long)Math.Ceiling(delay.TotalMilliseconds);
+        }
+
+        private static long ToMilliseconds(long stopwatchTicks)
+        {
+            return stopwatchTicks <= 0
+                ? 0
+                : (long)Math.Ceiling(stopwatchTicks * 1000d / Stopwatch.Frequency);
         }
 
         private static int EstimateTokens(
