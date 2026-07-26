@@ -173,6 +173,9 @@ namespace ColorVision.Copilot
 
         public static bool ShouldIncludeTemperature(CopilotProfileConfig profile)
         {
+            if (!CopilotOpenAiChatRequestPolicy.SupportsTemperature(profile))
+                return false;
+
             var mode = CopilotReasoningCapabilities.GetEffectiveMode(profile);
             if (profile.VendorType == CopilotVendorType.DeepSeek)
                 return mode is CopilotReasoningMode.Default or CopilotReasoningMode.Disabled;

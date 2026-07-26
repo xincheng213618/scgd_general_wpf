@@ -715,7 +715,7 @@ namespace ColorVision.Copilot
                 {
                     payloadMessages.Add(new
                     {
-                        role = "system",
+                        role = CopilotOpenAiChatRequestPolicy.GetInstructionRole(config),
                         content = systemPrompt,
                     });
                 }
@@ -732,13 +732,15 @@ namespace ColorVision.Copilot
                 {
                     ["model"] = config.Model,
                     ["stream"] = true,
-                    ["max_tokens"] = config.MaxTokens,
                     ["stream_options"] = new
                     {
                         include_usage = true,
                     },
                     ["messages"] = payloadMessages,
                 };
+                payload[CopilotOpenAiChatRequestPolicy
+                    .GetMaximumOutputTokensPropertyName(config)] =
+                    config.MaxTokens;
 
                 if (CopilotReasoningRequestMapper.ShouldIncludeTemperature(config))
                     payload["temperature"] = config.Temperature;
