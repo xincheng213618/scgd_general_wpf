@@ -1136,6 +1136,9 @@ namespace ColorVision.Copilot.Mcp
         {
             var templateCode = GetString(arguments, "template_code", "code");
             var templateName = GetString(arguments, "template_name", "name");
+            if (string.IsNullOrWhiteSpace(templateCode) || string.IsNullOrWhiteSpace(templateName))
+                return CopilotSavedTemplateContextSupport.Read(templateCode, templateName);
+
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
             {
@@ -1149,6 +1152,9 @@ namespace ColorVision.Copilot.Mcp
         private static CopilotMcpToolCallResult GetTemplateTypeContext(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
             var templateCode = GetString(arguments, "template_code", "code");
+            if (string.IsNullOrWhiteSpace(templateCode))
+                return CopilotSavedTemplateContextSupport.ReadType(templateCode);
+
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
                 return dispatcher.Invoke(() => CopilotSavedTemplateContextSupport.ReadType(templateCode));
