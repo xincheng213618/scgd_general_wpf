@@ -660,6 +660,83 @@ public sealed class CopilotToolIntentPolicyTests
     }
 
     [Fact]
+    public void RuntimeInstructionsScaleWithTheAvailableCapabilityFamilies()
+    {
+        var request = Request(
+            "检查当前项目的实现",
+            writableRoots: [Environment.CurrentDirectory],
+            searchRoots: [Environment.CurrentDirectory]);
+        var environment = CopilotAgentEnvironmentContext.Capture(request);
+        var localInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("SearchFiles"), new NamedTool("ReadLocalFile")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var webInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("FetchUrl"), new NamedTool("WebSearch")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var writeInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("PreviewWorkspacePatchEnvelope", CopilotToolAccess.Write)],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var fullInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [
+                new NamedTool("SearchFiles"),
+                new NamedTool("ReadLocalFile"),
+                new NamedTool("FetchUrl"),
+                new NamedTool("WebSearch"),
+                new NamedTool("PreviewWorkspacePatchEnvelope", CopilotToolAccess.Write),
+            ],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var publicCodeReviewInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            new CopilotAgentRequest
+            {
+                UserText = "Review the implementation at the supplied public URL.",
+                Mode = CopilotAgentMode.Review,
+            },
+            [new NamedTool("WebSearch")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+
+        Assert.Contains("SearchFiles and GrepText", localInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("FetchUrl processes", localInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("Write-capable tools", localInstructions, StringComparison.Ordinal);
+        Assert.Contains("FetchUrl processes", webInstructions, StringComparison.Ordinal);
+        Assert.Contains("WebSearch already deep-reads", webInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("For local evidence", webInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("Write-capable tools", webInstructions, StringComparison.Ordinal);
+        Assert.Contains(
+            "A constant or limit, style preference, missing optional feature, hypothetical scenario",
+            publicCodeReviewInstructions,
+            StringComparison.Ordinal);
+        Assert.Contains("Write-capable tools", writeInstructions, StringComparison.Ordinal);
+        Assert.Contains("PreviewWorkspacePatchEnvelope", writeInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("FetchUrl processes", writeInstructions, StringComparison.Ordinal);
+        Assert.Contains("SearchFiles and GrepText", fullInstructions, StringComparison.Ordinal);
+        Assert.Contains("FetchUrl processes", fullInstructions, StringComparison.Ordinal);
+        Assert.Contains("Write-capable tools", fullInstructions, StringComparison.Ordinal);
+        Assert.True(
+            fullInstructions.Length - localInstructions.Length > 1_500,
+            $"Local-only instructions retained too much unrelated context ({localInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+        Assert.True(
+            fullInstructions.Length - webInstructions.Length > 2_500,
+            $"Web-only instructions retained too much unrelated context ({webInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+        Assert.True(
+            fullInstructions.Length - writeInstructions.Length > 2_500,
+            $"Write-only instructions retained too much unrelated context ({writeInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+    }
+
+    [Fact]
     public void TokenUsageAggregatesCacheReadsWithoutDoubleCountingTotals()
     {
         var usage = new CopilotTokenUsage(100, 20, 120, 80)
