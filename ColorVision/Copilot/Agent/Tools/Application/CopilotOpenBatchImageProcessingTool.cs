@@ -53,8 +53,9 @@ namespace ColorVision.Copilot
                 };
             }
 
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await CopilotUiDispatcher.InvokeAsync(() =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var existing = Application.Current.Windows
                     .OfType<BatchImageProcessingWindow>()
                     .FirstOrDefault();
@@ -72,7 +73,7 @@ namespace ColorVision.Copilot
                 };
                 window.Show();
                 window.Activate();
-            });
+            }, cancellationToken);
 
             return new CopilotToolResult
             {

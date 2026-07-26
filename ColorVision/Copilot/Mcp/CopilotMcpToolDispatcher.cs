@@ -1331,13 +1331,14 @@ namespace ColorVision.Copilot.Mcp
                     $"Panel alias '{panelTarget.Value.Alias}' resolved to '{panelTarget.Value.TargetId}', but that panel is not registered. Supported aliases: {string.Join(", ", SupportedPanelAliases)}.");
             }
 
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await CopilotUiDispatcher.InvokeAsync(() =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (string.Equals(panelTarget.Value.TargetId, CopilotPanelService.PanelId, StringComparison.OrdinalIgnoreCase))
                     CopilotPanelService.GetInstance().ShowPanel();
                 else
                     layoutManager.ShowPanel(panelTarget.Value.TargetId);
-            });
+            }, cancellationToken);
 
             return CopilotMcpToolCallResult.Ok($"Panel open request was scheduled: alias={panelTarget.Value.Alias}, target={panelTarget.Value.TargetId}, risk=low-risk-action.");
         }

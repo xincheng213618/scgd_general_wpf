@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -23,6 +24,22 @@ namespace ColorVision.Copilot
             return Invoke(Application.Current?.Dispatcher, action, fallback);
         }
 
+        public static async Task InvokeAsync(Action action, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            await InvokeAsync(Application.Current?.Dispatcher, () =>
+            {
+                action();
+                return true;
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        public static Task<T> InvokeAsync<T>(Func<T> action, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            return InvokeAsync(Application.Current?.Dispatcher, action, cancellationToken);
+        }
+
         internal static T Invoke<T>(Dispatcher? dispatcher, Func<T> action, T fallback)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -45,6 +62,22 @@ namespace ColorVision.Copilot
             {
                 return fallback;
             }
+        }
+
+        internal static async Task<T> InvokeAsync<T>(
+            Dispatcher? dispatcher,
+            Func<T> action,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (dispatcher == null || dispatcher.CheckAccess())
+                return action();
+            if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                throw new OperationCanceledException("The Copilot UI is shutting down.", cancellationToken);
+
+            var operation = dispatcher.InvokeAsync(action, DispatcherPriority.Normal, cancellationToken);
+            return await operation.Task.ConfigureAwait(false);
         }
     }
 }
