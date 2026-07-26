@@ -101,9 +101,9 @@ public sealed class CopilotProviderRetryChatClientTests
             >= result.Budget.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(1, result.Budget.ProviderStreamChunkCount);
         Assert.Equal(0, result.Budget.ProviderStreamInterChunkLatencyCount);
-        var retryEvent = Assert.Single(events.Where(agentEvent =>
+        var retryEvent = Assert.Single(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
-            && agentEvent.Text.Contains("Provider request retry 2/3", StringComparison.Ordinal)));
+            && agentEvent.Text.Contains("Provider request retry 2/3", StringComparison.Ordinal));
         Assert.NotNull(retryEvent.ProviderRetry);
         Assert.Equal(2, retryEvent.ProviderRetry.NextAttempt);
         Assert.Equal(429, retryEvent.ProviderRetry.StatusCode);

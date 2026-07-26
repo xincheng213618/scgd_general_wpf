@@ -33,6 +33,8 @@ namespace ColorVision.Copilot
 
         public string ActiveProviderRetryFailureKind { get; init; } = string.Empty;
 
+        public string ActiveProviderRetryRequestId { get; init; } = string.Empty;
+
         public string ReasoningLabel { get; init; } = string.Empty;
 
         public CopilotAgentMode Mode { get; init; }
@@ -148,6 +150,10 @@ namespace ColorVision.Copilot
             }
             if (!string.IsNullOrWhiteSpace(snapshot.ActiveProviderRetryFailureKind))
                 builder.Append(" · ").Append(snapshot.ActiveProviderRetryFailureKind.Trim());
+            var requestId = CopilotProviderRequestId.Normalize(
+                snapshot.ActiveProviderRetryRequestId);
+            if (requestId.Length > 0)
+                builder.Append(" · 请求 ").Append(requestId);
             if (snapshot.ActiveProviderRetryDelayMilliseconds > 0)
             {
                 builder.Append(" · 计划等待 ")

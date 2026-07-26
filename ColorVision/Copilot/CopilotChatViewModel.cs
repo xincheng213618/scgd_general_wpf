@@ -1356,6 +1356,7 @@ namespace ColorVision.Copilot
                     ? 0
                     : (long)Math.Clamp(latestProviderRetry.Delay.TotalMilliseconds, 0, long.MaxValue),
                 ActiveProviderRetryFailureKind = latestProviderRetry?.FailureKind ?? string.Empty,
+                ActiveProviderRetryRequestId = latestProviderRetry?.RequestId ?? string.Empty,
                 ReasoningLabel = profile?.ReasoningLabel ?? "默认",
                 Mode = ResolveComposerRequestMode(),
                 AgentState = activeRun?.State.ToString() ?? "Idle",

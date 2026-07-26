@@ -20,14 +20,20 @@ namespace ColorVision.Copilot
         int MaximumAttempts,
         TimeSpan Delay,
         string FailureKind,
-        int? StatusCode)
+        int? StatusCode,
+        string RequestId = "")
     {
         public string ToDiagnosticText()
         {
             var delay = Delay.TotalSeconds >= 1
                 ? $"{Delay.TotalSeconds:0.#}s"
                 : $"{Math.Max(0, Delay.TotalMilliseconds):0}ms";
-            return $"Provider request retry {NextAttempt}/{MaximumAttempts} · {FailureKind} before the first content or tool call · waiting {delay}; no content or tool call was replayed.";
+            var normalizedRequestId =
+                CopilotProviderRequestId.Normalize(RequestId);
+            var request = normalizedRequestId.Length == 0
+                ? string.Empty
+                : $" · request {normalizedRequestId}";
+            return $"Provider request retry {NextAttempt}/{MaximumAttempts} · {FailureKind}{request} before the first content or tool call · waiting {delay}; no content or tool call was replayed.";
         }
     }
 
@@ -239,7 +245,8 @@ namespace ColorVision.Copilot
                 _maximumAttempts,
                 ResolveRetryDelay(exception, _delayFactory(failedAttempt)),
                 failureKind,
-                statusCode);
+                statusCode,
+                CopilotProviderRequestId.Find(exception));
         }
 
         internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception)

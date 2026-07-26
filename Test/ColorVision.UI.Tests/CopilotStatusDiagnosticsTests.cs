@@ -33,6 +33,7 @@ public sealed class CopilotStatusDiagnosticsTests
             ActiveProviderRetryMaximumAttempts = 4,
             ActiveProviderRetryDelayMilliseconds = 1_500,
             ActiveProviderRetryFailureKind = "HTTP 429",
+            ActiveProviderRetryRequestId = "req_status_429",
         });
 
         Assert.Contains(
@@ -40,7 +41,7 @@ public sealed class CopilotStatusDiagnosticsTests
             report,
             StringComparison.Ordinal);
         Assert.Contains(
-            "当前运行重试：2 次 · 最近 3/4 · HTTP 429 · 计划等待 1.5 秒",
+            "当前运行重试：2 次 · 最近 3/4 · HTTP 429 · 请求 req_status_429 · 计划等待 1.5 秒",
             report,
             StringComparison.Ordinal);
     }
@@ -62,13 +63,17 @@ public sealed class CopilotStatusDiagnosticsTests
             3,
             TimeSpan.FromSeconds(1),
             "HTTP 429",
-            429);
+            429,
+            "req_latest_retry");
 
         run.RecordProviderRetry(first);
         run.RecordProviderRetry(latest);
 
         Assert.Equal(2, run.ProviderRetrySnapshot.Count);
         Assert.Same(latest, run.ProviderRetrySnapshot.Latest);
+        Assert.Equal(
+            "req_latest_retry",
+            run.ProviderRetrySnapshot.Latest?.RequestId);
         run.Complete(null);
     }
 }

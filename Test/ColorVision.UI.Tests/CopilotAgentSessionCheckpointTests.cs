@@ -1,5 +1,7 @@
 using ColorVision.Copilot;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ColorVision.UI.Tests;
 
@@ -187,6 +189,24 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Equal(payload, rejected);
     }
 
+    [Fact]
+    public void OfficialOpenAiResponsesMigrationRetiresOnlyLegacyOfficialCheckpointKeys()
+    {
+        var officialProfile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://api.openai.com/v1");
+        var proxyProfile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://example.test/v1");
+
+        Assert.NotEqual(
+            CreateLegacyProfileKey(officialProfile),
+            CopilotAgentSessionCheckpoint.CreateProfileKey(officialProfile));
+        Assert.Equal(
+            CreateLegacyProfileKey(proxyProfile),
+            CopilotAgentSessionCheckpoint.CreateProfileKey(proxyProfile));
+    }
+
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(
         CopilotAgentTaskEventJournalSnapshot taskEventJournal)
     {
@@ -216,5 +236,33 @@ public sealed class CopilotAgentSessionCheckpointTests
             RunId = runId,
             SubjectId = runId,
         };
+    }
+
+    private static CopilotProfileConfig CreateOpenAiProfile(
+        CopilotVendorType vendorType,
+        string baseUrl)
+    {
+        return new CopilotProfileConfig
+        {
+            Id = "test-profile",
+            VendorType = vendorType,
+            ProviderType = CopilotProviderType.OpenAICompatible,
+            BaseUrl = baseUrl,
+            Model = "gpt-5.5",
+        };
+    }
+
+    private static string CreateLegacyProfileKey(CopilotProfileConfig profile)
+    {
+        var value = string.Join("|", new[]
+        {
+            profile.Id?.Trim() ?? string.Empty,
+            profile.ProviderType.ToString(),
+            profile.BaseUrl?.Trim().TrimEnd('/') ?? string.Empty,
+            profile.Model?.Trim() ?? string.Empty,
+            profile.EffectiveSystemPrompt,
+        });
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+        return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
     }
 }

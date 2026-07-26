@@ -318,7 +318,7 @@
                                             Margin="8,0,0,0"
                                             Padding="10,4"
                                             Command="{Binding TestSelectedProfileCommand}"
-                                            Content="Test Model"
+                                            Content="{Binding SelectedProfileConnectionTestActionText}"
                                             IsEnabled="{Binding CanTestSelectedProfile}" />
                                     <TextBlock Margin="0,4,0,0"
                                                Foreground="{DynamicResource GlobalTextBrush}"
