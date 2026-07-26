@@ -115,8 +115,11 @@ namespace ColorVision.Copilot
     public sealed class CopilotChatMessage : ViewModelBase
     {
         internal const int MaximumAssistantTextCharacters = 262_144;
+        internal const string CompressedRequestContentPrefix = "cv-request-gzip-v1:";
         internal const string ResponseTruncationMarker = "\n\n...<response truncated by app>";
         internal const string ReasoningTruncationMarker = "\n...<reasoning truncated by app>";
+        private const int MinimumRequestContentCompressionCharacters = 1_024;
+        private const int MaximumCompressibleRequestContentCharacters = CopilotAgentSessionCheckpoint.MaxSerializedSessionCharacters;
         private const int MaximumResponseInterruptionDetailLength = 800;
         private static readonly char[] ExecutionLineSeparators = { '\r', '\n' };
         private static readonly string[] ExecutionBlockSeparators = { "\r\n\r\n", "\n\n", "\r\r" };
@@ -197,14 +200,52 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeIsResponseContentTruncated() => IsResponseContentTruncated;
 
+        [Newtonsoft.Json.JsonIgnore]
         public string RequestContent
         {
             get => _requestContent;
-            set => SetProperty(ref _requestContent, value ?? string.Empty);
+            set
+            {
+                if (SetProperty(ref _requestContent, value ?? string.Empty))
+                    _requestContentPayload = string.Empty;
+            }
         }
         private string _requestContent = string.Empty;
+        private string _requestContentPayload = string.Empty;
 
-        public bool ShouldSerializeRequestContent() => !string.IsNullOrEmpty(RequestContent);
+        [Newtonsoft.Json.JsonProperty(nameof(RequestContent))]
+        private string RequestContentPayload
+        {
+            get
+            {
+                if (_requestContentPayload.Length == 0 && _requestContent.Length > 0)
+                {
+                    _requestContentPayload = CopilotPersistedTextCodec.Encode(
+                        _requestContent,
+                        CompressedRequestContentPrefix,
+                        MinimumRequestContentCompressionCharacters,
+                        MaximumCompressibleRequestContentCharacters);
+                }
+
+                return _requestContentPayload;
+            }
+            set
+            {
+                var payload = value ?? string.Empty;
+                _requestContent = CopilotPersistedTextCodec.Decode(
+                    payload,
+                    CompressedRequestContentPrefix,
+                    MaximumCompressibleRequestContentCharacters);
+                _requestContentPayload = CopilotPersistedTextCodec.RetainOrEncode(
+                    payload,
+                    _requestContent,
+                    CompressedRequestContentPrefix,
+                    MinimumRequestContentCompressionCharacters,
+                    MaximumCompressibleRequestContentCharacters);
+            }
+        }
+
+        public bool ShouldSerializeRequestContentPayload() => !string.IsNullOrEmpty(RequestContent);
 
         public bool IsContentDisplayOnly
         {

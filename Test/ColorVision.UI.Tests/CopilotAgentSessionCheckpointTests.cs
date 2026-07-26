@@ -167,6 +167,26 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.DoesNotContain(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, serialized, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void PersistedTextCodecRejectsContentBeyondTheDecodedLimit()
+    {
+        const string prefix = "test-gzip:";
+        var decoded = new string('z', 4_097);
+        var payload = CopilotPersistedTextCodec.Encode(
+            decoded,
+            prefix,
+            minimumCompressionCharacters: 1,
+            maximumDecodedCharacters: decoded.Length);
+
+        var rejected = CopilotPersistedTextCodec.Decode(
+            payload,
+            prefix,
+            maximumDecodedCharacters: decoded.Length - 1);
+
+        Assert.StartsWith(prefix, payload, StringComparison.Ordinal);
+        Assert.Equal(payload, rejected);
+    }
+
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(
         CopilotAgentTaskEventJournalSnapshot taskEventJournal)
     {

@@ -241,4 +241,72 @@ public class CopilotChatStateSnapshotTests
             diagnosticOnlyAssistant.ExecutionContent,
             restoredConversation.Messages[2].ExecutionContent);
     }
+
+    [Fact]
+    public void MessageSnapshotCompressesLargeRequestContentWithoutChangingRuntimeContracts()
+    {
+        var requestContent = "# Captured context\n" + new string('x', 32_000);
+        var message = new CopilotChatMessage(CopilotChatRole.User, "Inspect the captured context.")
+        {
+            RequestContent = requestContent,
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(message);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = "profile",
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+
+        var serialized = store.Serialize(state);
+        var document = JObject.Parse(serialized);
+        var persistedRequestContent = document[nameof(CopilotChatState.Conversations)]![0]!
+            [nameof(CopilotConversationRecord.Messages)]![0]!
+            [nameof(CopilotChatMessage.RequestContent)]!
+            .Value<string>();
+        var restored = JsonConvert.DeserializeObject<CopilotChatState>(serialized);
+        var systemTextJson = System.Text.Json.JsonSerializer.Serialize(message);
+        using var systemTextDocument = System.Text.Json.JsonDocument.Parse(systemTextJson);
+
+        Assert.NotNull(persistedRequestContent);
+        Assert.StartsWith(CopilotChatMessage.CompressedRequestContentPrefix, persistedRequestContent, StringComparison.Ordinal);
+        Assert.True(persistedRequestContent.Length < requestContent.Length / 2);
+        Assert.NotNull(restored);
+        Assert.Equal(requestContent, Assert.Single(Assert.Single(restored.Conversations).Messages).RequestContent);
+        Assert.Equal(
+            requestContent,
+            systemTextDocument.RootElement.GetProperty(nameof(CopilotChatMessage.RequestContent)).GetString());
+        Assert.DoesNotContain(CopilotChatMessage.CompressedRequestContentPrefix, systemTextJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MessageSnapshotMigratesLegacyRequestContentAndEscapesPrefixCollisions()
+    {
+        var legacyRequestContent = "# Legacy context\n" + new string('y', 32_000);
+        var legacyDocument = "{\"Role\":0,\"Content\":\"Question\",\"RequestContent\":"
+            + JsonConvert.SerializeObject(legacyRequestContent)
+            + "}";
+
+        var restoredLegacy = JsonConvert.DeserializeObject<CopilotChatMessage>(legacyDocument);
+        var migratedDocument = JsonConvert.SerializeObject(restoredLegacy);
+        var prefixCollision = CopilotChatMessage.CompressedRequestContentPrefix + "literal user text";
+        var collisionMessage = new CopilotChatMessage(CopilotChatRole.User, "Question")
+        {
+            RequestContent = prefixCollision,
+        };
+        var collisionDocument = JObject.Parse(JsonConvert.SerializeObject(collisionMessage));
+        var collisionPayload = collisionDocument[nameof(CopilotChatMessage.RequestContent)]!.Value<string>();
+        var restoredCollision = JsonConvert.DeserializeObject<CopilotChatMessage>(collisionDocument.ToString(Formatting.None));
+
+        Assert.NotNull(restoredLegacy);
+        Assert.Equal(legacyRequestContent, restoredLegacy.RequestContent);
+        Assert.Contains(CopilotChatMessage.CompressedRequestContentPrefix, migratedDocument, StringComparison.Ordinal);
+        Assert.True(migratedDocument.Length < legacyDocument.Length / 2);
+        Assert.NotEqual(prefixCollision, collisionPayload);
+        Assert.StartsWith(CopilotChatMessage.CompressedRequestContentPrefix, collisionPayload, StringComparison.Ordinal);
+        Assert.NotNull(restoredCollision);
+        Assert.Equal(prefixCollision, restoredCollision.RequestContent);
+    }
 }
