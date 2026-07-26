@@ -50,6 +50,10 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(0, provider.CallCount);
         Assert.Equal(1, result.Budget.ProviderCalls);
         Assert.True(result.Budget.UsedDelegatedDirectAnswer);
+        Assert.Equal(1, result.Budget.RegisteredToolCount);
+        Assert.Equal(1, result.Budget.AvailableToolCount);
+        Assert.True(result.Budget.AvailableToolDefinitionCharacters > 0);
+        Assert.True(result.Budget.HarnessInstructionCharacters > 0);
         Assert.Single(result.StepRecords);
         Assert.Equal(answer, string.Concat(events
             .Where(agentEvent => agentEvent.Type == CopilotAgentEventType.AnswerDelta)
@@ -63,6 +67,11 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
             agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
             && agentEvent.Text.Contains(
                 "without a parent provider planning call",
+                StringComparison.Ordinal));
+        Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains(
+                "Request prompt surface",
                 StringComparison.Ordinal));
     }
 

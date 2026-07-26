@@ -702,6 +702,14 @@ namespace ColorVision.Copilot
 
         public bool ToolBudgetExhausted { get; init; }
 
+        public int RegisteredToolCount { get; init; }
+
+        public int AvailableToolCount { get; init; }
+
+        public int AvailableToolDefinitionCharacters { get; init; }
+
+        public int HarnessInstructionCharacters { get; init; }
+
         public int NarrowEvidenceResultLimit { get; init; }
 
         public int MaxAgentPasses { get; init; }

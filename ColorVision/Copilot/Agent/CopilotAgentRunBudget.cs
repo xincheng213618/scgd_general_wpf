@@ -153,7 +153,8 @@ namespace ColorVision.Copilot
             int toolCalls,
             bool timeBudgetExhausted,
             bool toolBudgetExhausted = false,
-            bool usedDelegatedDirectAnswer = false)
+            bool usedDelegatedDirectAnswer = false,
+            CopilotAgentToolSurfaceMetrics toolSurface = default)
         {
             tokenSnapshot ??= new CopilotAgentBudgetSnapshot();
             return new CopilotAgentBudgetSnapshot
@@ -171,6 +172,13 @@ namespace ColorVision.Copilot
                 MaxToolCalls = MaxToolCalls,
                 ToolCalls = Math.Clamp(toolCalls, 0, MaxToolCalls),
                 ToolBudgetExhausted = toolBudgetExhausted,
+                RegisteredToolCount = Math.Max(0, toolSurface.RegisteredToolCount),
+                AvailableToolCount = Math.Clamp(
+                    toolSurface.AvailableToolCount,
+                    0,
+                    Math.Max(0, toolSurface.RegisteredToolCount)),
+                AvailableToolDefinitionCharacters = Math.Max(0, toolSurface.AvailableToolDefinitionCharacters),
+                HarnessInstructionCharacters = Math.Max(0, toolSurface.HarnessInstructionCharacters),
                 NarrowEvidenceResultLimit = NarrowEvidenceResultLimit,
                 MaxAgentPasses = MaxAgentPasses,
                 TotalDurationMs = Math.Max(1, (long)TotalDuration.TotalMilliseconds),

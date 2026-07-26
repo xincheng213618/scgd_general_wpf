@@ -594,7 +594,11 @@ namespace ColorVision.Copilot
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
                 || AgentRunBudget.ElapsedMs > 0
-                || AgentRunBudget.UsedDelegatedDirectAnswer);
+                || AgentRunBudget.UsedDelegatedDirectAnswer
+                || AgentRunBudget.RegisteredToolCount > 0
+                || AgentRunBudget.AvailableToolCount > 0
+                || AgentRunBudget.AvailableToolDefinitionCharacters > 0
+                || AgentRunBudget.HarnessInstructionCharacters > 0);
 
         [JsonIgnore]
         public string AgentRunCompactLabel
@@ -664,6 +668,29 @@ namespace ColorVision.Copilot
                     builder.Append(" / ").Append(AgentRunBudget.MaxToolCalls);
                 if (delegatedToolCalls > 0)
                     builder.Append(" · 子 ").Append(delegatedToolCalls);
+                if (AgentRunBudget.RegisteredToolCount > 0
+                    || AgentRunBudget.AvailableToolCount > 0
+                    || AgentRunBudget.AvailableToolDefinitionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("工具面：")
+                        .Append(AgentRunBudget.AvailableToolCount)
+                        .Append(" / ")
+                        .Append(AgentRunBudget.RegisteredToolCount);
+                    if (AgentRunBudget.AvailableToolDefinitionCharacters > 0)
+                    {
+                        builder.Append(" · 定义 ")
+                            .Append(AgentRunBudget.AvailableToolDefinitionCharacters.ToString("N0"))
+                            .Append(" 字符");
+                    }
+                }
+                if (AgentRunBudget.HarnessInstructionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("运行指令：")
+                        .Append(AgentRunBudget.HarnessInstructionCharacters.ToString("N0"))
+                        .Append(" 字符");
+                }
                 if (AgentRunBudget.ElapsedMs > 0)
                 {
                     builder.AppendLine();
@@ -1611,6 +1638,13 @@ namespace ColorVision.Copilot
                 MaxToolCalls = maxToolCalls,
                 ToolCalls = toolCalls,
                 ToolBudgetExhausted = budget.ToolBudgetExhausted,
+                RegisteredToolCount = Math.Max(0, budget.RegisteredToolCount),
+                AvailableToolCount = Math.Clamp(
+                    budget.AvailableToolCount,
+                    0,
+                    Math.Max(0, budget.RegisteredToolCount)),
+                AvailableToolDefinitionCharacters = Math.Max(0, budget.AvailableToolDefinitionCharacters),
+                HarnessInstructionCharacters = Math.Max(0, budget.HarnessInstructionCharacters),
                 NarrowEvidenceResultLimit = Math.Max(0, budget.NarrowEvidenceResultLimit),
                 MaxAgentPasses = Math.Max(0, budget.MaxAgentPasses),
                 TotalDurationMs = Math.Max(0, budget.TotalDurationMs),
@@ -1641,6 +1675,10 @@ namespace ColorVision.Copilot
                 && left.MaxToolCalls == right.MaxToolCalls
                 && left.ToolCalls == right.ToolCalls
                 && left.ToolBudgetExhausted == right.ToolBudgetExhausted
+                && left.RegisteredToolCount == right.RegisteredToolCount
+                && left.AvailableToolCount == right.AvailableToolCount
+                && left.AvailableToolDefinitionCharacters == right.AvailableToolDefinitionCharacters
+                && left.HarnessInstructionCharacters == right.HarnessInstructionCharacters
                 && left.NarrowEvidenceResultLimit == right.NarrowEvidenceResultLimit
                 && left.MaxAgentPasses == right.MaxAgentPasses
                 && left.TotalDurationMs == right.TotalDurationMs
