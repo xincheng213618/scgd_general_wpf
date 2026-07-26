@@ -67,6 +67,49 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.DoesNotContain("DelegateExplore", toolNames);
     }
 
+    [Theory]
+    [InlineData(@"只读审计 C:\Users\17917\Desktop\scgd_general_wpf\ColorVision\Copilot，列出至少 30 条可验证的问题；不要修改任何文件，不要执行写操作。")]
+    [InlineData("只读检查当前项目，不做任何修改。")]
+    [InlineData("Read-only audit this repository; no write operations.")]
+    [InlineData("Inspect the workspace without modifying any files.")]
+    public void ExplicitReadOnlyRequestLimitsTheEntireToolSurface(string userText)
+    {
+        var request = Request(
+            userText,
+            contextItems:
+            [
+                new CopilotContextItem
+                {
+                    Id = "workspace:flow",
+                    Title = "Flow context · AOI",
+                    Content = "Attached automatically by the current page.",
+                },
+            ]);
+        var registry = new CopilotToolRegistry(
+        [
+            new NamedTool("InspectWorkspace"),
+            new NamedTool("ApplyWorkspaceChange", CopilotToolAccess.Write),
+            new NamedTool("InvokeApplicationCommand", CopilotToolAccess.Write),
+        ]);
+
+        var toolNames = registry.FindTools(request)
+            .Select(tool => tool.Name)
+            .ToArray();
+
+        Assert.True(CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsFlowMutation(request));
+        Assert.Equal(["InspectWorkspace"], toolNames);
+    }
+
+    [Theory]
+    [InlineData("实现只读模式，只修改这个文件，不要修改其他文件。")]
+    [InlineData("修改这个文件，但不要修改其他文件。")]
+    [InlineData("Implement the read-only setting without changing unrelated files.")]
+    public void ScopedMutationLimitsDoNotDisableRequestedWrites(string userText)
+    {
+        Assert.False(CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(Request(userText)));
+    }
+
     [Fact]
     public void ConceptualRequestSkipsProjectInstructionDiscovery()
     {
@@ -746,11 +789,15 @@ public sealed class CopilotToolIntentPolicyTests
             .Single(role => string.Equals(role.ToolName, "DelegateExplore", StringComparison.OrdinalIgnoreCase));
     }
 
-    private sealed class NamedTool(string name) : ICopilotTool
+    private sealed class NamedTool(
+        string name,
+        CopilotToolAccess access = CopilotToolAccess.ReadOnly) : ICopilotTool
     {
         public string Name { get; } = name;
 
         public string Description => Name;
+
+        public CopilotToolAccess Access { get; } = access;
 
         public bool CanHandle(CopilotAgentRequest request) => true;
 

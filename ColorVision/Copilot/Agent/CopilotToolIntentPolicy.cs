@@ -56,6 +56,22 @@ namespace ColorVision.Copilot
             "do not modify", "don't modify", "do not edit", "don't edit", "explain only", "analysis only", "read only",
         };
 
+        private static readonly string[] ExplicitReadOnlyRequestMarkers =
+        {
+            "只读审计", "只读 审计", "只读检查", "只读 检查", "只读分析", "只读 分析", "只读评审", "只读 评审",
+            "仅做只读", "只做只读",
+            "不要修改任何文件", "不修改任何文件", "不得修改任何文件",
+            "不要改动任何文件", "不改动任何文件", "不得改动任何文件",
+            "不要写入任何文件", "不写入任何文件", "不得写入任何文件",
+            "不要执行写操作", "不执行写操作", "不得执行写操作", "禁止执行写操作", "禁止写操作",
+            "不做任何修改", "不作任何修改",
+            "read-only audit", "read only audit", "read-only inspection", "read only inspection",
+            "read-only review", "read only review", "read-only analysis", "read only analysis",
+            "do not modify any file", "don't modify any file", "do not edit any file", "don't edit any file",
+            "do not write any file", "don't write any file", "no file modifications", "no write operations",
+            "do not perform write operations", "without modifying any file",
+        };
+
         private static readonly string[] WorkspaceRollbackMarkers =
         {
             "撤销修改", "撤销刚才", "回滚修改", "回滚刚才", "回滚补丁", "还原文件", "恢复原文件",
@@ -339,6 +355,7 @@ namespace ColorVision.Copilot
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
+                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
                 || ContainsAny(request.UserText, WorkspaceEditExplanationMarkers))
@@ -354,6 +371,7 @@ namespace ColorVision.Copilot
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
+                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0 && request.WritableLocalFilePaths.Count == 0)
             {
                 return false;
@@ -367,6 +385,7 @@ namespace ColorVision.Copilot
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
+                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceEditOptOutMarkers)
                 || ContainsAny(request.UserText, WorkspaceCreateExplanationMarkers))
@@ -385,6 +404,7 @@ namespace ColorVision.Copilot
             if (request == null
                 || request.Mode == CopilotAgentMode.Chat
                 || request.Mode == CopilotAgentMode.Review
+                || ExplicitlyDisallowsWriteAccess(request)
                 || request.WritableLocalRootPaths.Count == 0
                 || ContainsAny(request.UserText, WorkspaceValidationExplanationMarkers))
             {
@@ -449,6 +469,7 @@ namespace ColorVision.Copilot
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
         {
             return IsAgentRequest(request)
+                && !ExplicitlyDisallowsWriteAccess(request)
                 && ContainsAny(request!.UserText, FlowMutationMarkers)
                 && !ContainsAny(request.UserText, MutationExplanationMarkers)
                 && (HasFlowContext(request) || ContainsAny(request.UserText, FlowGraphMarkers));
@@ -470,6 +491,7 @@ namespace ColorVision.Copilot
         public static bool NeedsDatabaseWrite(CopilotAgentRequest? request)
         {
             return IsAgentRequest(request)
+                && !ExplicitlyDisallowsWriteAccess(request)
                 && ContainsAny(request!.UserText, DatabaseMarkers)
                 && ContainsAny(request.UserText, DatabaseMutationMarkers)
                 && !ContainsAny(request.UserText, MutationExplanationMarkers);
@@ -512,7 +534,9 @@ namespace ColorVision.Copilot
 
         public static bool NeedsShellExecution(CopilotAgentRequest? request)
         {
-            if (!IsAgentRequest(request) || ContainsAny(request!.UserText, ShellExplanationMarkers))
+            if (!IsAgentRequest(request)
+                || ExplicitlyDisallowsWriteAccess(request)
+                || ContainsAny(request!.UserText, ShellExplanationMarkers))
                 return false;
 
             return ContainsAny(request.UserText, ShellMarkers)
@@ -527,6 +551,7 @@ namespace ColorVision.Copilot
         public static bool NeedsBatchImageProcessing(CopilotAgentRequest? request)
         {
             return IsAgentRequest(request)
+                && !ExplicitlyDisallowsWriteAccess(request)
                 && !ContainsAny(request!.UserText, ConceptualQuestionMarkers)
                 && !(ContainsAny(request.UserText, ScriptRuntimeMarkers)
                     && ContainsAny(request.UserText, ScriptExecutionMarkers))
@@ -597,6 +622,11 @@ namespace ColorVision.Copilot
         internal static bool ExplicitlyDisallowsPublicWebAccess(CopilotAgentRequest? request)
         {
             return request != null && ContainsAny(request.UserText, PublicWebOptOutMarkers);
+        }
+
+        internal static bool ExplicitlyDisallowsWriteAccess(CopilotAgentRequest? request)
+        {
+            return request != null && ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers);
         }
 
         internal static bool IsUrlFetchTool(ICopilotTool? tool)
