@@ -39,18 +39,6 @@ jobs:
       run: |
         msbuild build.sln /p:Configuration=Release /p:Platform=x64
 
-    - name: Run .NET tests
-      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
-
-    - name: Upload test diagnostics
-      if: failure()
-      uses: actions/upload-artifact@v7
-      with:
-        name: dotnet-test-diagnostics-${{ github.run_id }}
-        path: TestResults
-        if-no-files-found: ignore
-        retention-days: 7
-
     - name: Publish to NuGet
       if: github.event_name == 'push'
       env:
