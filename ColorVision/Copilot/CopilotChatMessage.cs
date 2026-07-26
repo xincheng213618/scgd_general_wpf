@@ -430,7 +430,8 @@ namespace ColorVision.Copilot
                     && AgentBlockers.Any(blocker => blocker?.Kind == CopilotAgentBlockerKind.ProviderOutput)));
 
         [JsonIgnore]
-        public bool HasRecoverableAgentTasks => (HasIncompleteAgentTasks
+        public bool HasRecoverableAgentTasks => (!IsUser && AgentStopReason == CopilotAgentStopReason.Paused)
+            || (HasIncompleteAgentTasks
                 && AgentStopReason is CopilotAgentStopReason.BudgetExhausted or CopilotAgentStopReason.TaskPassLimit or CopilotAgentStopReason.Paused)
             || (HasIncompleteAgentTasks && AgentStopReason == CopilotAgentStopReason.Interrupted)
             || HasRecoverableFinalAnswer;

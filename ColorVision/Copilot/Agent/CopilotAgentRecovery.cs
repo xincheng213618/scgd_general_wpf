@@ -78,7 +78,8 @@ namespace ColorVision.Copilot
             }
 
             var isFinalAnswerRecovery = message.HasRecoverableFinalAnswer;
-            var isTaskRecovery = message.HasIncompleteAgentTasks
+            var isTaskRecovery = (message.HasIncompleteAgentTasks
+                    || message.AgentStopReason == CopilotAgentStopReason.Paused)
                 && message.AgentStopReason is (CopilotAgentStopReason.BudgetExhausted
                     or CopilotAgentStopReason.TaskPassLimit
                     or CopilotAgentStopReason.Paused
