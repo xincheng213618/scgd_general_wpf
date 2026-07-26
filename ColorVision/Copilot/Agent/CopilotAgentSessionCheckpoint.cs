@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -56,6 +58,10 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentSessionCheckpoint
     {
         public const int MaxSerializedSessionCharacters = 4_000_000;
+        internal const string CompressedSerializedSessionPrefix = "cv-gzip-v1:";
+        private const int MinimumSerializedSessionCompressionCharacters = 1_024;
+        private const int MaxSerializedSessionUtf8Bytes = MaxSerializedSessionCharacters * 4;
+        private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
         public const int MaxCheckpointCapabilities = 2_048;
         public const int MaxAvailableToolNames = 2_048;
         public const int MaxAvailableToolNameLength = 256;
@@ -66,9 +72,36 @@ namespace ColorVision.Copilot
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
 
+        private string _serializedSessionJson = string.Empty;
+        private string _serializedSessionPayload = string.Empty;
+
         public string ProfileKey { get; init; } = string.Empty;
 
-        public string SerializedSessionJson { get; init; } = string.Empty;
+        [Newtonsoft.Json.JsonIgnore]
+        public string SerializedSessionJson
+        {
+            get => _serializedSessionJson;
+            init
+            {
+                _serializedSessionJson = value ?? string.Empty;
+                _serializedSessionPayload = EncodeSerializedSession(_serializedSessionJson);
+            }
+        }
+
+        [Newtonsoft.Json.JsonProperty(nameof(SerializedSessionJson))]
+        private string SerializedSessionPayload
+        {
+            get => _serializedSessionPayload;
+            init
+            {
+                var payload = value ?? string.Empty;
+                _serializedSessionJson = DecodeSerializedSession(payload);
+                _serializedSessionPayload = payload.StartsWith(CompressedSerializedSessionPrefix, StringComparison.Ordinal)
+                    && !string.Equals(_serializedSessionJson, payload, StringComparison.Ordinal)
+                    ? payload
+                    : EncodeSerializedSession(_serializedSessionJson);
+            }
+        }
 
         public long CapabilityCatalogRevision { get; init; }
 
@@ -91,6 +124,17 @@ namespace ColorVision.Copilot
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
         public DateTimeOffset UpdatedAtUtc { get; init; }
+
+        public CopilotAgentSessionCheckpoint()
+        {
+        }
+
+        internal CopilotAgentSessionCheckpoint(CopilotAgentSessionCheckpoint source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            _serializedSessionJson = source._serializedSessionJson;
+            _serializedSessionPayload = source._serializedSessionPayload;
+        }
 
         public bool IsUsableFor(CopilotProfileConfig profile)
         {
@@ -296,10 +340,9 @@ namespace ColorVision.Copilot
         internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
         {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
-            var checkpoint = new CopilotAgentSessionCheckpoint
+            var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
-                SerializedSessionJson = SerializedSessionJson,
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
                 Capabilities = Capabilities,
                 ToolSurfaceVersion = ToolSurfaceVersion,
@@ -346,6 +389,64 @@ namespace ColorVision.Copilot
             });
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
             return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
+        }
+
+        private static string EncodeSerializedSession(string value)
+        {
+            if (value.Length < MinimumSerializedSessionCompressionCharacters
+                || value.Length > MaxSerializedSessionCharacters)
+            {
+                return value;
+            }
+
+            var uncompressedBytes = Encoding.UTF8.GetBytes(value);
+            using var output = new MemoryStream();
+            using (var gzip = new GZipStream(output, CompressionLevel.Fastest, leaveOpen: true))
+            {
+                gzip.Write(uncompressedBytes);
+            }
+
+            var payload = CompressedSerializedSessionPrefix + Convert.ToBase64String(output.ToArray());
+            return payload.Length < value.Length ? payload : value;
+        }
+
+        private static string DecodeSerializedSession(string payload)
+        {
+            if (!payload.StartsWith(CompressedSerializedSessionPrefix, StringComparison.Ordinal)
+                || payload.Length > MaxSerializedSessionCharacters + CompressedSerializedSessionPrefix.Length)
+            {
+                return payload;
+            }
+
+            try
+            {
+                var compressedBytes = Convert.FromBase64String(payload[CompressedSerializedSessionPrefix.Length..]);
+                using var input = new MemoryStream(compressedBytes, writable: false);
+                using var gzip = new GZipStream(input, CompressionMode.Decompress);
+                using var output = new MemoryStream();
+                var buffer = new byte[8192];
+                while (true)
+                {
+                    var bytesRead = gzip.Read(buffer, 0, buffer.Length);
+                    if (bytesRead == 0)
+                        break;
+                    if (output.Length + bytesRead > MaxSerializedSessionUtf8Bytes)
+                        return payload;
+
+                    output.Write(buffer, 0, bytesRead);
+                }
+
+                var decoded = StrictUtf8.GetString(output.GetBuffer(), 0, checked((int)output.Length));
+                return decoded.Length <= MaxSerializedSessionCharacters ? decoded : payload;
+            }
+            catch (Exception exception) when (exception is FormatException
+                or InvalidDataException
+                or IOException
+                or ArgumentException
+                or DecoderFallbackException)
+            {
+                return payload;
+            }
         }
 
         private static bool IsSha256(string value) => value?.Length == 64 && value.All(Uri.IsHexDigit);

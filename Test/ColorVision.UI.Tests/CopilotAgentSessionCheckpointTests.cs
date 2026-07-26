@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Newtonsoft.Json;
 
 namespace ColorVision.UI.Tests;
 
@@ -86,6 +87,84 @@ public sealed class CopilotAgentSessionCheckpointTests
 
         Assert.True(conversation.EnsureValid());
         Assert.Null(conversation.AgentSessionCheckpoint);
+    }
+
+    [Fact]
+    public void NewtonsoftPersistenceCompressesLargeSessionAndRoundTrips()
+    {
+        var sessionJson = "{\"content\":\"" + new string('x', 32_000) + "\"}";
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = sessionJson,
+        };
+
+        var serialized = JsonConvert.SerializeObject(checkpoint);
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(serialized);
+
+        Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, serialized, StringComparison.Ordinal);
+        Assert.True(serialized.Length < sessionJson.Length / 2);
+        Assert.NotNull(restored);
+        Assert.Equal(sessionJson, restored.SerializedSessionJson);
+    }
+
+    [Fact]
+    public void NewtonsoftPersistenceLoadsLegacyUncompressedSession()
+    {
+        const string sessionJson = "{\"legacy\":true}";
+        var serialized = "{\"SerializedSessionJson\":" + JsonConvert.SerializeObject(sessionJson) + "}";
+
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(serialized);
+
+        Assert.NotNull(restored);
+        Assert.Equal(sessionJson, restored.SerializedSessionJson);
+    }
+
+    [Fact]
+    public void NewtonsoftPersistenceMigratesLargeLegacySessionOnNextSave()
+    {
+        var sessionJson = "{\"legacy\":\"" + new string('x', 32_000) + "\"}";
+        var legacyDocument = "{\"SerializedSessionJson\":" + JsonConvert.SerializeObject(sessionJson) + "}";
+
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(legacyDocument);
+        var migratedDocument = JsonConvert.SerializeObject(restored);
+
+        Assert.NotNull(restored);
+        Assert.Equal(sessionJson, restored.SerializedSessionJson);
+        Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, migratedDocument, StringComparison.Ordinal);
+        Assert.True(migratedDocument.Length < legacyDocument.Length / 2);
+    }
+
+    [Fact]
+    public void MalformedCompressedSessionRemainsRecoverableForValidation()
+    {
+        var malformedPayload = CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix + "not-base64";
+        var serialized = "{\"SerializedSessionJson\":" + JsonConvert.SerializeObject(malformedPayload) + "}";
+
+        var restored = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(serialized);
+
+        Assert.NotNull(restored);
+        Assert.Equal(malformedPayload, restored.SerializedSessionJson);
+        Assert.False(restored.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void SystemTextJsonPersistenceKeepsTheRuntimeSessionContract()
+    {
+        var sessionJson = "{\"content\":\"" + new string('x', 32_000) + "\"}";
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = sessionJson,
+        };
+
+        var serialized = System.Text.Json.JsonSerializer.Serialize(checkpoint);
+        using var document = System.Text.Json.JsonDocument.Parse(serialized);
+
+        Assert.Equal(
+            sessionJson,
+            document.RootElement.GetProperty(nameof(CopilotAgentSessionCheckpoint.SerializedSessionJson)).GetString());
+        Assert.DoesNotContain(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, serialized, StringComparison.Ordinal);
     }
 
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(

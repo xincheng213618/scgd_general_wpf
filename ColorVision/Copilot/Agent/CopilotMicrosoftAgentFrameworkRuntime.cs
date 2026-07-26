@@ -1163,10 +1163,9 @@ namespace ColorVision.Copilot
             CopilotAgentTaskEventJournalSnapshot taskEventJournal,
             IReadOnlyList<CopilotRequestMessage> conversationMemory)
         {
-            var copy = new CopilotAgentSessionCheckpoint
+            var copy = new CopilotAgentSessionCheckpoint(checkpoint)
             {
                 ProfileKey = checkpoint.ProfileKey,
-                SerializedSessionJson = checkpoint.SerializedSessionJson,
                 CapabilityCatalogRevision = checkpoint.CapabilityCatalogRevision,
                 Capabilities = (checkpoint.Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
                 ToolSurfaceVersion = checkpoint.ToolSurfaceVersion,

@@ -107,4 +107,45 @@ public class CopilotChatStateSnapshotTests
 
         Assert.Equal("Copilot state snapshot capture is incomplete.", exception.Message);
     }
+
+    [Fact]
+    public void StateStoreRoundTripsACompressedCheckpointSession()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var sessionJson = "{\"content\":\"" + new string('x', 32_000) + "\"}";
+            var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+            conversation.AgentSessionCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "test-profile",
+                SerializedSessionJson = sessionJson,
+            };
+            var state = new CopilotChatState
+            {
+                ActiveConversationId = conversation.Id,
+                ActiveProfileId = "profile",
+                Conversations = new ObservableCollection<CopilotConversationRecord>
+                {
+                    conversation,
+                },
+            };
+            var store = new CopilotChatStateStore(root);
+
+            store.Save(state);
+            var serialized = File.ReadAllText(store.StateFilePath);
+            var loaded = store.Load();
+
+            Assert.Contains(CopilotAgentSessionCheckpoint.CompressedSerializedSessionPrefix, serialized, StringComparison.Ordinal);
+            Assert.True(serialized.Length < sessionJson.Length / 2);
+            var loadedConversation = Assert.Single(loaded.Conversations);
+            Assert.NotNull(loadedConversation.AgentSessionCheckpoint);
+            Assert.Equal(sessionJson, loadedConversation.AgentSessionCheckpoint.SerializedSessionJson);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
 }
