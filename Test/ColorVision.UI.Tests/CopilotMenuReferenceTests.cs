@@ -108,6 +108,41 @@ public sealed class CopilotMenuReferenceTests
         Assert.False(CopilotExecuteMenuTool.TryGetReferencedMenuSelector(request, out _));
     }
 
+    [Theory]
+    [InlineData("批量转换 CVRAW 文件为 TIFF")]
+    [InlineData("Open Batch Image Processing")]
+    public void GenericMenuDefersBatchImageRequestsToDedicatedTools(string userText)
+    {
+        var request = new CopilotAgentRequest
+        {
+            UserText = userText,
+            Mode = CopilotAgentMode.Auto,
+        };
+
+        Assert.True(CopilotExecuteMenuTool.ShouldDeferToDedicatedTool(request));
+    }
+
+    [Fact]
+    public void ExplicitMenuReferenceOverridesDedicatedToolRouting()
+    {
+        var reference = CopilotComposerReferenceCatalog.CreateMenuReference(
+            "批量图像处理",
+            "工具 > 批量图像处理",
+            "MenuBatchImageProcessing",
+            "low-risk-action");
+        var request = new CopilotAgentRequest
+        {
+            UserText = "打开关联的批量图像处理菜单",
+            Mode = CopilotAgentMode.Auto,
+            Attachments =
+            [
+                ComposerContextAttachment(reference),
+            ],
+        };
+
+        Assert.False(CopilotExecuteMenuTool.ShouldDeferToDedicatedTool(request));
+    }
+
     private static CopilotAttachmentItem ComposerContextAttachment(CopilotComposerReferenceItem reference)
     {
         var content = CopilotConversationRequestBuilder.BuildContextAttachmentContent(

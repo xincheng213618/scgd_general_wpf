@@ -25,7 +25,7 @@ namespace ColorVision.Copilot
 
         public string Name => "ExecuteMenu";
 
-        public string Description => "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated lower-risk tools such as SetTheme when available.";
+        public string Description => "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated tools such as SetTheme, ConvertBatchImages, or OpenBatchImageProcessing when available; never use this generic fallback for batch image conversion or processing.";
 
         public CopilotToolAccess Access => CopilotToolAccess.Write;
 
@@ -48,11 +48,21 @@ namespace ColorVision.Copilot
             if (CopilotToolIntentPolicy.NeedsShellExecution(request) && !HasReferencedMenu(request))
                 return false;
 
+            if (ShouldDeferToDedicatedTool(request))
+                return false;
+
             if (!CopilotApplicationCapability.HasMenuIntent(request.UserText))
                 return false;
 
             return HasReferencedMenu(request)
                 || CopilotApplicationCapability.HasMenuCandidates(request.UserText);
+        }
+
+        internal static bool ShouldDeferToDedicatedTool(CopilotAgentRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return CopilotToolIntentPolicy.NeedsBatchImageProcessing(request)
+                && !HasReferencedMenu(request);
         }
 
         public async Task<CopilotToolResult> ExecuteAsync(
