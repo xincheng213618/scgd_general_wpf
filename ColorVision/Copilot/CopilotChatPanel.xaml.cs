@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
         private CopilotChatViewModel? _attachedViewModel;
         private ObservableCollection<CopilotChatMessage>? _attachedMessages;
         private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
+        private ScrollViewer? _messagesScrollViewer;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
         private bool _isScrollToBottomPending;
@@ -207,6 +208,7 @@ namespace ColorVision.Copilot
 
             CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
+            _messagesScrollViewer = null;
         }
 
         private void AttachViewModel(CopilotChatViewModel? viewModel)
@@ -619,7 +621,8 @@ namespace ColorVision.Copilot
         private bool IsNearBottom()
         {
             const double threshold = 36;
-            return MessagesScrollViewer.ScrollableHeight - MessagesScrollViewer.VerticalOffset <= threshold;
+            var scrollViewer = GetMessagesScrollViewer();
+            return scrollViewer == null || scrollViewer.ScrollableHeight - scrollViewer.VerticalOffset <= threshold;
         }
 
         private void ScrollToBottom()
@@ -633,7 +636,9 @@ namespace ColorVision.Copilot
             {
                 try
                 {
-                    MessagesScrollViewer.ScrollToEnd();
+                    if (MessagesListBox.Items.Count > 0)
+                        MessagesListBox.ScrollIntoView(MessagesListBox.Items[MessagesListBox.Items.Count - 1]);
+                    GetMessagesScrollViewer()?.ScrollToEnd();
                 }
                 finally
                 {
@@ -656,8 +661,35 @@ namespace ColorVision.Copilot
 
         private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
+            var scrollViewer = GetMessagesScrollViewer();
+            if (scrollViewer == null || !ReferenceEquals(e.OriginalSource, scrollViewer))
+                return;
+
             if (IsNearBottom())
                 HideScrollToLatestButton();
+        }
+
+        private ScrollViewer? GetMessagesScrollViewer()
+        {
+            _messagesScrollViewer ??= FindVisualChild<ScrollViewer>(MessagesListBox);
+            return _messagesScrollViewer;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            var childCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (var index = 0; index < childCount; index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                if (child is T match)
+                    return match;
+
+                var nestedMatch = FindVisualChild<T>(child);
+                if (nestedMatch != null)
+                    return nestedMatch;
+            }
+
+            return null;
         }
 
         private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)

@@ -1050,15 +1050,48 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <ScrollViewer x:Name="MessagesScrollViewer"
-                              Grid.Row="1"
-                              ScrollChanged="MessagesScrollViewer_ScrollChanged"
-                              VerticalScrollBarVisibility="Auto">
-                    <ItemsControl MaxWidth="880"
-                                  Margin="16,12,16,12"
-                                  HorizontalAlignment="Stretch"
-                                  ItemsSource="{Binding Messages}">
-                        <ItemsControl.ItemTemplate>
+                <ListBox x:Name="MessagesListBox"
+                         Grid.Row="1"
+                         Padding="16,12,16,12"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         HorizontalContentAlignment="Stretch"
+                         ItemsSource="{Binding Messages}"
+                         ScrollViewer.CanContentScroll="True"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.ScrollChanged="MessagesScrollViewer_ScrollChanged"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.ScrollUnit="Pixel"
+                         VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListBoxItem}">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Focusable" Value="False" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="IsTabStop" Value="False" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="MaxWidth" Value="880" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:CopilotChatMessage}">
                                 <Grid Margin="0,0,0,12">
                                     <Border x:Name="UserBubble"
@@ -1404,9 +1437,8 @@
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
                 <Button x:Name="ScrollToLatestButton"
                         Grid.Row="1"
