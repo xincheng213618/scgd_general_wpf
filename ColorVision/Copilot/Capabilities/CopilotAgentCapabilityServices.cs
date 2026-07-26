@@ -127,7 +127,9 @@ namespace ColorVision.Copilot
             if (Application.Current == null)
                 return false;
 
-            return Application.Current.Dispatcher.Invoke(() => CopilotMenuToolSupport.Resolve(text).Candidates.Count > 0);
+            return CopilotUiDispatcher.InvokeBounded(
+                () => CopilotMenuToolSupport.Resolve(text).Candidates.Count > 0,
+                fallback: false);
         }
 
         public static async Task<CopilotCapabilityResult> ExecuteMenuAsync(string? sourceText, CancellationToken cancellationToken)
@@ -207,8 +209,11 @@ namespace ColorVision.Copilot
                 };
             }
 
-            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            CopilotUiDispatcher.Schedule(() =>
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 try
                 {
                     if (selectedCandidate.MenuItem.Command?.CanExecute(null) == true)
@@ -217,7 +222,8 @@ namespace ColorVision.Copilot
                 catch
                 {
                 }
-            }));
+            }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             return new CopilotCapabilityResult
             {
