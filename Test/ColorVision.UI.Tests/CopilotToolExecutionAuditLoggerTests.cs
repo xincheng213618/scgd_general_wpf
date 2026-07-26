@@ -10,21 +10,28 @@ public sealed class CopilotToolExecutionAuditLoggerTests
         CopilotToolExecutionAuditLogger.ClearForTests();
         try
         {
-            var scope = CopilotExecutionScope.ForAgentRequest(
-                    new CopilotAgentRequest
-                    {
-                        ConversationId = "conversation-7",
-                        TaskId = "task-7",
-                        WorkspacePath = @"C:\ColorVision\Scope",
-                    },
+            var request = new CopilotAgentRequest
+            {
+                ConversationId = "conversation-7",
+                TaskId = "task-7",
+                WorkspacePath = @"C:\ColorVision\Scope",
+            };
+            request.RuntimeExecutionScope = CopilotExecutionScope.ForAgentRequest(
+                    request,
                     runId: "run-7",
                     parentRunId: "run-parent",
                     traceId: "trace-7")
                 .WithRuntimeSnapshot("workspace-snapshot-7", capabilityRevision: 42)
-                .WithAuthorizationChannel(CopilotExecutionAuthorizationChannel.AgentFrameworkApproved)
-                .BindToolCall("test_tool", "provider-call-7", new string('a', 64));
+                .WithAuthorizationChannel(CopilotExecutionAuthorizationChannel.AgentFrameworkApproved);
+            var signature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
+                "test_tool",
+                CopilotAgentToolInput.Empty);
+            var scope = request.RuntimeExecutionScope.BindToolCall(
+                "test_tool",
+                "provider-call-7",
+                signature);
 
-            Record(scope, "provider-call-7");
+            Record(CopilotExecutionScope.Empty, "provider-call-7", request);
 
             var entry = Assert.Single(CopilotToolExecutionAuditLogger.GetRecentEntries());
             Assert.Equal(scope.SourceKind, entry.SourceKind);
@@ -100,13 +107,17 @@ public sealed class CopilotToolExecutionAuditLoggerTests
         }
     }
 
-    private static void Record(CopilotExecutionScope scope, string callId)
+    private static void Record(
+        CopilotExecutionScope scope,
+        string callId,
+        CopilotAgentRequest? request = null)
     {
         CopilotToolExecutionAuditLogger.Record(new CopilotToolExecutionOutcome
         {
             Invocation = new CopilotToolInvocation
             {
                 ExecutionScope = scope,
+                AgentRequest = request!,
             },
             Result = new CopilotToolResult
             {
