@@ -2313,21 +2313,83 @@ namespace ColorVision.Copilot
         }
         private string _profileDisplayName = string.Empty;
 
-        public CopilotAgentAccessMode AccessMode
+        [JsonIgnore]
+        public CopilotAgentAccessMode AccessMode => _accessContext.Mode;
+
+        [JsonIgnore]
+        public bool IsFullAccessPreparedForNextTask => _accessContext.IsPreparedForNextTask;
+
+        [JsonIgnore]
+        public string FullAccessTaskId => _accessContext.GrantedTaskId;
+
+        [JsonIgnore]
+        public string FullAccessWorkspacePath => _accessContext.WorkspacePath;
+
+        [JsonIgnore]
+        public DateTimeOffset? FullAccessExpiresAtUtc => _accessContext.ExpiresAtUtc;
+
+        // AccessMode used to be persisted as an indefinite conversation setting. Read and
+        // discard that legacy property so reopening the application always restores the
+        // safe per-action confirmation posture.
+        [JsonProperty(nameof(AccessMode))]
+        private CopilotAgentAccessMode PersistedLegacyAccessMode
         {
-            get => _accessMode;
-            set
-            {
-                var normalized = Enum.IsDefined(value) ? value : CopilotAgentAccessMode.ConfirmProtectedActions;
-                if (SetProperty(ref _accessMode, normalized))
-                    _accessContext.Mode = normalized;
-            }
+            set => _legacyAccessModeLoaded = true;
         }
-        private CopilotAgentAccessMode _accessMode = CopilotAgentAccessMode.FullAccess;
+        private bool _legacyAccessModeLoaded;
 
         [JsonIgnore]
         internal CopilotAgentAccessContext AccessContext => _accessContext;
-        private readonly CopilotAgentAccessContext _accessContext = new(CopilotAgentAccessMode.FullAccess);
+        private readonly CopilotAgentAccessContext _accessContext = new();
+
+        internal void PrepareFullAccessGrant(
+            string workspacePath,
+            string? taskId,
+            DateTimeOffset expiresAtUtc)
+        {
+            _accessContext.PrepareFullAccess(Id, workspacePath, taskId, expiresAtUtc);
+            NotifyAccessGrantChanged();
+        }
+
+        internal bool BindFullAccessGrantToTask(string taskId, string workspacePath)
+        {
+            var beforeTaskId = FullAccessTaskId;
+            var beforeMode = AccessMode;
+            var bound = _accessContext.BindToTask(Id, taskId, workspacePath);
+            if (beforeMode != AccessMode
+                || !string.Equals(beforeTaskId, FullAccessTaskId, StringComparison.Ordinal))
+            {
+                NotifyAccessGrantChanged();
+            }
+            return bound;
+        }
+
+        internal bool RevokeFullAccessGrant(string? taskId = null)
+        {
+            if (!_accessContext.Revoke(taskId))
+                return false;
+
+            NotifyAccessGrantChanged();
+            return true;
+        }
+
+        internal bool ExpireFullAccessGrantIfNeeded()
+        {
+            if (!_accessContext.ExpireIfNeeded())
+                return false;
+
+            NotifyAccessGrantChanged();
+            return true;
+        }
+
+        private void NotifyAccessGrantChanged()
+        {
+            OnPropertyChanged(nameof(AccessMode));
+            OnPropertyChanged(nameof(IsFullAccessPreparedForNextTask));
+            OnPropertyChanged(nameof(FullAccessTaskId));
+            OnPropertyChanged(nameof(FullAccessWorkspacePath));
+            OnPropertyChanged(nameof(FullAccessExpiresAtUtc));
+        }
 
         public int LastUsageInputTokens
         {
@@ -2447,15 +2509,12 @@ namespace ColorVision.Copilot
                 DraftText = string.Empty;
                 changed = true;
             }
-            if (!Enum.IsDefined(AccessMode))
+            if (_legacyAccessModeLoaded)
             {
-                AccessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
+                _legacyAccessModeLoaded = false;
                 changed = true;
             }
-            else
-            {
-                _accessContext.Mode = AccessMode;
-            }
+            changed |= _accessContext.Revoke();
 
             if (Messages == null)
             {

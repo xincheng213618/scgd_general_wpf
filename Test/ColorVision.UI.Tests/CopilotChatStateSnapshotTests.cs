@@ -409,4 +409,161 @@ public class CopilotChatStateSnapshotTests
         Assert.NotNull(restoredCollision);
         Assert.Equal(prefixCollision, restoredCollision.RequestContent);
     }
+
+    [Fact]
+    public async Task FutureSchemaStateBlocksFallbackAndAllWrites()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            Directory.CreateDirectory(store.StateDirectoryPath);
+            var futureDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion + 1, "Future history");
+            var backupDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion, "Older backup");
+            File.WriteAllText(store.StateFilePath, futureDocument.ToString(Formatting.None));
+            File.WriteAllText(store.BackupStateFilePath, backupDocument.ToString(Formatting.None));
+            var originalPrimary = File.ReadAllText(store.StateFilePath);
+            var originalBackup = File.ReadAllText(store.BackupStateFilePath);
+
+            var loaded = store.Load();
+            var replacement = CreateState("Replacement");
+            var serializedReplacement = store.Serialize(replacement);
+
+            Assert.Equal(CopilotChatStateLoadSource.FutureVersion, store.LastLoadStatus.Source);
+            Assert.Equal(CopilotChatState.CurrentSchemaVersion + 1, store.LastLoadStatus.SchemaVersion);
+            Assert.True(store.IsStatePersistenceBlocked);
+            Assert.Empty(loaded.Conversations);
+            Assert.Throws<CopilotChatStateFutureVersionException>(() => store.Save(replacement));
+            await Assert.ThrowsAsync<CopilotChatStateFutureVersionException>(
+                () => store.SaveSerializedAsync(serializedReplacement));
+            Assert.Equal(originalPrimary, File.ReadAllText(store.StateFilePath));
+            Assert.Equal(originalBackup, File.ReadAllText(store.BackupStateFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SaveStopsWhenAnotherProcessWritesAFutureSchema()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            store.Save(CreateState("Original"));
+            var loaded = store.Load();
+            Assert.Equal("Original", Assert.Single(loaded.Conversations).Title);
+
+            var futureDocument = CreateStateDocument(CopilotChatState.CurrentSchemaVersion + 1, "Newer process");
+            File.WriteAllText(store.StateFilePath, futureDocument.ToString(Formatting.None));
+            var originalPrimary = File.ReadAllText(store.StateFilePath);
+
+            var exception = Assert.Throws<CopilotChatStateFutureVersionException>(
+                () => store.Save(CreateState("Older process")));
+
+            Assert.Equal(CopilotChatState.CurrentSchemaVersion + 1, exception.SchemaVersion);
+            Assert.True(store.IsStatePersistenceBlocked);
+            Assert.Equal(originalPrimary, File.ReadAllText(store.StateFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SavesCreateThrottledRecoverySnapshots()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+
+            store.Save(CreateState("First"));
+            store.Save(CreateState("Second"));
+            store.Save(CreateState("Third"));
+
+            var recoveryFiles = Directory.GetFiles(
+                store.RecoveryStateDirectoryPath,
+                "chat-state-backup-*.json",
+                SearchOption.TopDirectoryOnly);
+            var recoveryDocument = JObject.Parse(File.ReadAllText(Assert.Single(recoveryFiles)));
+            var recoveryConversation = Assert.IsType<JObject>(
+                Assert.IsType<JArray>(recoveryDocument[nameof(CopilotChatState.Conversations)])[0]);
+
+            Assert.Equal("First", recoveryConversation[nameof(CopilotConversationRecord.Title)]!.Value<string>());
+            Assert.Equal("Third", Assert.Single(store.Load().Conversations).Title);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LoadFallsBackToARecoverySnapshotAfterPrimaryAndBackupFail()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            store.Save(CreateState("Recover me"));
+            store.Save(CreateState("Latest"));
+            File.WriteAllText(store.StateFilePath, "{broken-primary");
+            File.WriteAllText(store.BackupStateFilePath, "{broken-backup");
+
+            var recoveryStore = new CopilotChatStateStore(root);
+            var recovered = recoveryStore.Load();
+
+            Assert.Equal(CopilotChatStateLoadSource.RecoverySnapshot, recoveryStore.LastLoadStatus.Source);
+            Assert.Equal("Recover me", Assert.Single(recovered.Conversations).Title);
+
+            var verificationStore = new CopilotChatStateStore(root);
+            var verified = verificationStore.Load();
+            Assert.Equal(CopilotChatStateLoadSource.Primary, verificationStore.LastLoadStatus.Source);
+            Assert.Equal("Recover me", Assert.Single(verified.Conversations).Title);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static CopilotChatState CreateState(string title)
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Title = title;
+        return new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = "profile",
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+    }
+
+    private static JObject CreateStateDocument(int schemaVersion, string title)
+    {
+        return new JObject
+        {
+            [nameof(CopilotChatState.SchemaVersion)] = schemaVersion,
+            [nameof(CopilotChatState.ActiveConversationId)] = "conversation",
+            [nameof(CopilotChatState.ActiveProfileId)] = "profile",
+            [nameof(CopilotChatState.Conversations)] = new JArray
+            {
+                new JObject
+                {
+                    [nameof(CopilotConversationRecord.Id)] = "conversation",
+                    [nameof(CopilotConversationRecord.Title)] = title,
+                    [nameof(CopilotConversationRecord.Messages)] = new JArray(),
+                    [nameof(CopilotConversationRecord.Attachments)] = new JArray(),
+                },
+            },
+        };
+    }
 }

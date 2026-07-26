@@ -83,7 +83,7 @@ namespace ColorVision.Copilot
             });
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)

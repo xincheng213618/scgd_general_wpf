@@ -74,6 +74,8 @@ namespace ColorVision.Copilot
             CopilotAgentRunControl? runControl,
             CopilotAgentDefaultsConfig agentDefaults,
             IEnumerable<CopilotMcpClientServerConfig>? externalMcpServers,
+            string? conversationId,
+            string? taskId,
             CopilotAgentAccessContext? accessContext = null)
         {
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
@@ -88,6 +90,8 @@ namespace ColorVision.Copilot
             Recovery = recovery;
             RunControl = runControl;
             AgentDefaults = (agentDefaults ?? throw new ArgumentNullException(nameof(agentDefaults))).Clone();
+            ConversationId = (conversationId ?? string.Empty).Trim();
+            TaskId = (taskId ?? string.Empty).Trim();
             AccessContext = accessContext ?? new CopilotAgentAccessContext();
             ExternalMcpServers = (externalMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
                 .Where(server => server != null)
@@ -118,6 +122,10 @@ namespace ColorVision.Copilot
         public CopilotAgentRunControl? RunControl { get; }
 
         public CopilotAgentDefaultsConfig AgentDefaults { get; }
+
+        public string ConversationId { get; }
+
+        public string TaskId { get; }
 
         public CopilotAgentAccessContext AccessContext { get; }
 

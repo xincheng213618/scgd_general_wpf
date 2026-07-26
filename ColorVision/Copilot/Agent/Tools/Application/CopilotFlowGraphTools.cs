@@ -92,6 +92,7 @@ namespace ColorVision.Copilot
             ExecutionTimeout = TimeSpan.FromSeconds(30),
             AuditArgumentMode = CopilotToolAuditArgumentMode.NamesOnly,
             EvidenceMode = CopilotToolEvidenceMode.None,
+            AllowsTemporaryFullAccess = true,
         };
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
@@ -100,12 +101,12 @@ namespace ColorVision.Copilot
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: false, cancellationToken);
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: true, cancellationToken);
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)
@@ -122,11 +123,17 @@ namespace ColorVision.Copilot
             return new CopilotToolApprovalPresentation("应用 Flow 图修改", $"操作：{operation}\n{detail}\n不会自动保存或运行流程。");
         }
 
-        private async Task<CopilotToolResult> ExecuteCoreAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CopilotApplicationCapabilityCaller caller, CancellationToken cancellationToken)
+        private async Task<CopilotToolResult> ExecuteCoreAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, bool frameworkApprovalGranted, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             var arguments = CopilotFlowReadToolBase.ToJsonArguments(toolInput);
-            var result = await _capabilityInvoker.InvokeAsync("apply_flow_patch", arguments, caller, cancellationToken);
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                "apply_flow_patch",
+                arguments,
+                request,
+                frameworkApprovalGranted,
+                cancellationToken);
             var waitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {

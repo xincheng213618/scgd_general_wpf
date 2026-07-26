@@ -177,7 +177,10 @@ namespace ColorVision.Copilot
             var shellLabel = GetShellLabel(execution.Shell);
             return new CopilotToolApprovalPresentation(
                 $"Run {shellLabel} command",
-                $"Shell: {shellLabel}\nWorking directory: {execution.WorkingDirectory}\nTimeout: {execution.TimeoutSeconds} seconds\nCommand:\n{execution.CommandText}");
+                $"Shell: {shellLabel}\nWorking directory: {execution.WorkingDirectory}\nTimeout: {execution.TimeoutSeconds} seconds\nCommand:\n{execution.CommandText}",
+                ImpactSummary: $"将在工作目录 {execution.WorkingDirectory} 中执行一条 {shellLabel} 命令；其影响取决于命令内容。",
+                Reversibility: CopilotApprovalReversibility.NotReversible,
+                ReversibilitySummary: "Copilot 不会自动撤销命令产生的文件、进程、网络或系统状态变化。");
         }
 
         internal static CopilotShellKind ResolveShell(CopilotShellKind requested, CopilotShellKind preferred)

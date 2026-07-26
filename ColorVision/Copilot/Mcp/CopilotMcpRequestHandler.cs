@@ -151,7 +151,11 @@ namespace ColorVision.Copilot.Mcp
                 return JsonRpcError(id, -32602, "The tools/call method requires a non-empty tool name.");
 
             var arguments = ReadArguments(paramsElement);
-            var result = await _toolDispatcher.CallAsync(toolName, arguments, cancellationToken, callerSource);
+            var result = await _toolDispatcher.CallExternalAsync(
+                toolName,
+                arguments,
+                callerSource,
+                cancellationToken);
             return JsonRpcResult(id, new
             {
                 content = new[]

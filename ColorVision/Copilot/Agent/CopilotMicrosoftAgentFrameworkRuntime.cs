@@ -2,6 +2,7 @@
 #pragma warning disable CA1859
 using Anthropic;
 using Anthropic.Core;
+using ColorVision.Solution;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
@@ -611,11 +612,15 @@ namespace ColorVision.Copilot
                         }
 
                         CopilotFrameworkApprovalDecision decision;
-                        if (CopilotAgentAccessPolicy.CanAutoApprove(request, reservation.Tool))
+                        if (CopilotAgentAccessPolicy.CanAutoApprove(
+                            request,
+                            reservation.Tool,
+                            GetCurrentWorkspacePath()))
                         {
                             decision = CopilotFrameworkApprovalDecision.ApprovedByFullAccess();
+                            reservation.ApprovedByFullAccess = true;
                             bridge.Approve(reservation);
-                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by Full access for this ColorVision conversation."));
+                            emit(CopilotAgentEvent.Status($"{reservation.Tool.Name} was approved by the temporary structured-workspace grant for this ColorVision task."));
                         }
                         else
                         {
@@ -2535,8 +2540,7 @@ namespace ColorVision.Copilot
                         ToolCall = CreateToolCall(tool, toolInput),
                     }
                     : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
-                if (approvalReservation != null
-                    && !_approvalCoordinator.BeginIfRequired(approvalReservation.ApprovalActionId))
+                if (approvalReservation != null && !CanBeginApprovedExecution(approvalReservation))
                 {
                     var decision = CopilotFrameworkApprovalDecision.PolicyDenied(
                         "The approved Agent Framework action is no longer executable.");
@@ -2578,6 +2582,20 @@ namespace ColorVision.Copilot
                     _recordDelegatedRunUsage?.Invoke(outcome.Result.DelegatedRunUsage);
 
                 return CopilotFrameworkToolResultFormatter.Format(outcome);
+            }
+
+            private bool CanBeginApprovedExecution(FrameworkApprovalReservation reservation)
+            {
+                var currentWorkspacePath = GetCurrentWorkspacePath();
+                return reservation.ApprovedByFullAccess
+                    ? CopilotAgentAccessPolicy.CanAutoApprove(
+                        _request,
+                        reservation.Tool,
+                        currentWorkspacePath)
+                    : _approvalCoordinator.BeginIfRequired(
+                        reservation.ApprovalActionId,
+                        _request,
+                        currentWorkspacePath);
             }
 
             private CopilotToolInvocation CreateInvocation(FrameworkApprovalReservation reservation, bool frameworkApprovalGranted)
@@ -2839,6 +2857,8 @@ namespace ColorVision.Copilot
                 public DateTimeOffset StartedAtUtc { get; init; }
 
                 public string ApprovalActionId { get; set; } = string.Empty;
+
+                public bool ApprovedByFullAccess { get; set; }
             }
 
             private sealed class ToolAttemptState
@@ -2882,6 +2902,11 @@ namespace ColorVision.Copilot
                 }
             }
 
+        }
+
+        private static string GetCurrentWorkspacePath()
+        {
+            return SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
         }
 
         private sealed record ActiveSteeringContext(

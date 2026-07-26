@@ -653,6 +653,24 @@ namespace ColorVision.Copilot
         {
             stopwatch.Stop();
             var completedAt = _utcNow();
+            if (result.Approval != null
+                && !CopilotMcpConfirmationStore.Instance.LinkAgentCall(
+                    result.Approval.ActionId,
+                    invocation.CallId,
+                    invocation.AgentRequest))
+            {
+                result = new CopilotToolResult
+                {
+                    ToolName = invocation.Tool.Name,
+                    Success = false,
+                    Summary = "The protected action could not be linked to this Copilot task.",
+                    ErrorMessage = "ColorVision rejected an approval action whose source or task scope did not match the active tool call.",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    FailureCode = "approval_scope_link_failed",
+                };
+                state = CopilotToolExecutionState.Denied;
+            }
+
             var outcome = new CopilotToolExecutionOutcome
             {
                 Invocation = invocation,
@@ -669,9 +687,6 @@ namespace ColorVision.Copilot
                     CopilotToolRetryPolicy.IsRetryEligible(invocation, result, state),
                     queueDurationMs),
             };
-
-            if (result.Approval != null)
-                CopilotMcpConfirmationStore.Instance.LinkAgentCall(result.Approval.ActionId, invocation.CallId);
 
             return outcome;
         }

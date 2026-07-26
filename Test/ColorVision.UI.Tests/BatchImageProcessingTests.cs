@@ -226,9 +226,10 @@ public class BatchImageProcessingTests
             Assert.False(denied.Success);
             Assert.Equal(CopilotToolFailureKind.Authorization, denied.FailureKind);
 
-            CopilotToolResult first = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+            var approvedTool = (ICopilotFrameworkApprovedTool)tool;
+            CopilotToolResult first = await approvedTool.ExecuteApprovedAsync(request, input, CancellationToken.None);
             var progress = new CopilotToolProgressContext();
-            CopilotToolResult second = await tool.ExecuteApprovedWithProgressAsync(
+            CopilotToolResult second = await ((ICopilotFrameworkApprovedProgressReportingTool)tool).ExecuteApprovedWithProgressAsync(
                 request,
                 input,
                 progress,
@@ -287,7 +288,10 @@ public class BatchImageProcessingTests
                 out CopilotAgentToolInput input,
                 out string bindError), bindError);
 
-            CopilotToolResult result = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(
+                request,
+                input,
+                CancellationToken.None);
 
             Assert.True(result.Success, result.ErrorMessage);
             Assert.Contains("skipped 1", result.Summary, StringComparison.OrdinalIgnoreCase);
@@ -335,7 +339,10 @@ public class BatchImageProcessingTests
                 out CopilotAgentToolInput input,
                 out string bindError), bindError);
 
-            CopilotToolResult result = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+            CopilotToolResult result = await ((ICopilotFrameworkApprovedTool)tool).ExecuteApprovedAsync(
+                request,
+                input,
+                CancellationToken.None);
 
             Assert.False(result.Success);
             Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);

@@ -145,6 +145,9 @@ namespace ColorVision.Copilot
             contextItems = AppendImageUnderstandingContext(contextItems, imageUnderstanding);
             var agentRequest = CopilotAgentRequestFactory.Create(requestPlan, new CopilotAgentRequestBuildInput
             {
+                ConversationId = request.ConversationId,
+                TaskId = request.TaskId,
+                WorkspacePath = request.HostContext.SolutionDirectoryPath,
                 Profile = request.Profile,
                 History = CopilotConversationRequestBuilder.BuildVisibleHistory(
                     request.HostContext.ConversationHistory,

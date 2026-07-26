@@ -33,6 +33,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
 
+        public bool AllowsTemporaryFullAccess => true;
+
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("JSON object containing the preview_id to apply.", required: true);
 
         public bool CanHandle(CopilotAgentRequest request)
@@ -47,18 +49,18 @@ namespace ColorVision.Copilot
 
         public Task<CopilotToolResult> ExecuteAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: false, cancellationToken);
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(CopilotAgentRequest request, CopilotAgentToolInput toolInput, CancellationToken cancellationToken)
         {
-            return ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
+            return ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: true, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            CopilotApplicationCapabilityCaller caller,
+            bool frameworkApprovalGranted,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -74,7 +76,13 @@ namespace ColorVision.Copilot
             {
                 ["preview_id"] = JsonSerializer.SerializeToElement(previewId),
             };
-            var result = await _capabilityInvoker.InvokeAsync("apply_template_patch", arguments, caller, cancellationToken);
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                "apply_template_patch",
+                arguments,
+                request,
+                frameworkApprovalGranted,
+                cancellationToken);
             var isWaitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {

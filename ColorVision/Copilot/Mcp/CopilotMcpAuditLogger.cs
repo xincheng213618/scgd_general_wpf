@@ -24,6 +24,12 @@ namespace ColorVision.Copilot.Mcp
         public string CallerSource { get; init; } = string.Empty;
 
         public string ActionId { get; init; } = string.Empty;
+
+        public string ConversationId { get; init; } = string.Empty;
+
+        public string TaskId { get; init; } = string.Empty;
+
+        public string WorkspacePath { get; init; } = string.Empty;
     }
 
     public static class CopilotMcpAuditLogger
@@ -125,8 +131,13 @@ namespace ColorVision.Copilot.Mcp
                 Success = success,
                 DurationMs = 0,
                 ErrorMessage = success ? string.Empty : Sanitize(message),
-                CallerSource = "colorvision-ui",
+                CallerSource = Sanitize(string.IsNullOrWhiteSpace(action.RequestContext.RequestSource)
+                    ? "colorvision-ui"
+                    : action.RequestContext.RequestSource),
                 ActionId = Sanitize(action.ActionId),
+                ConversationId = Sanitize(action.RequestContext.ConversationId),
+                TaskId = Sanitize(action.RequestContext.TaskId),
+                WorkspacePath = Sanitize(action.RequestContext.WorkspacePath),
             };
 
             lock (SyncRoot)
@@ -136,7 +147,7 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Workspace={EmptyLabel(entry.WorkspacePath)} Caller={EmptyLabel(entry.CallerSource)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
         }
 
         public static IReadOnlyList<CopilotMcpAuditEntry> GetRecentEntries(int maxEntries)

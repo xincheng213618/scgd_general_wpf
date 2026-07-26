@@ -207,7 +207,9 @@ namespace ColorVision.Copilot.Mcp
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(30));
                 var stream = client.GetStream();
-                var callerSource = client.Client.RemoteEndPoint?.ToString() ?? string.Empty;
+                var callerSource = client.Client.RemoteEndPoint is IPEndPoint remoteEndpoint
+                    ? $"tcp://{remoteEndpoint.Address}"
+                    : "tcp://local";
                 var request = await ReadRequestAsync(stream, callerSource, linkedCts.Token);
                 var response = request == null
                     ? new CopilotMcpHttpResponse { StatusCode = 400, Body = "{\"error\":\"Invalid HTTP request.\"}" }

@@ -78,7 +78,7 @@ namespace ColorVision.Copilot
         {
             return new CopilotFrameworkApprovalDecision(
                 CopilotFrameworkApprovalDecisionKind.Approved,
-                "Approved by the current ColorVision conversation's Full access mode.");
+                "Approved by the current ColorVision task's temporary structured-workspace grant.");
         }
     }
 
@@ -160,6 +160,10 @@ namespace ColorVision.Copilot
                     tool.Name,
                     argumentsSummary,
                     callId,
+                    CopilotConfirmationRequestContext.ForAgent(
+                        request,
+                        presentation,
+                        "in-app-agent-framework"),
                     createdAction => action = createdAction);
 
                 if (cancellationToken.IsCancellationRequested)
@@ -195,8 +199,12 @@ namespace ColorVision.Copilot
                 _confirmationStore.Cancel(actionId, out _, reason);
         }
 
-        public bool BeginIfRequired(string? actionId) =>
-            string.IsNullOrWhiteSpace(actionId) || _confirmationStore.BeginAgentFrameworkAction(actionId);
+        public bool BeginIfRequired(
+            string? actionId,
+            CopilotAgentRequest request,
+            string currentWorkspacePath) =>
+            !string.IsNullOrWhiteSpace(actionId)
+            && _confirmationStore.BeginAgentFrameworkAction(actionId, request, currentWorkspacePath);
 
         public void Complete(string? actionId, CopilotToolResult result)
         {

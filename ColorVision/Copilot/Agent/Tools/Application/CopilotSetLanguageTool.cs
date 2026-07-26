@@ -48,21 +48,21 @@ namespace ColorVision.Copilot
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgent, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: false, cancellationToken);
         }
 
-        public async Task<CopilotToolResult> ExecuteApprovedAsync(
+        async Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
-            return await ExecuteCoreAsync(request, toolInput, CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved, cancellationToken);
+            return await ExecuteCoreAsync(request, toolInput, frameworkApprovalGranted: true, cancellationToken);
         }
 
         private async Task<CopilotToolResult> ExecuteCoreAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
-            CopilotApplicationCapabilityCaller caller,
+            bool frameworkApprovalGranted,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -75,7 +75,13 @@ namespace ColorVision.Copilot
             {
                 ["language"] = JsonSerializer.SerializeToElement(sourceText),
             };
-            var result = await _capabilityInvoker.InvokeAsync("set_language", arguments, caller, cancellationToken);
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                "set_language",
+                arguments,
+                request,
+                frameworkApprovalGranted,
+                cancellationToken);
             var isWaitingForApproval = result.IsApprovalRequired;
             return new CopilotToolResult
             {

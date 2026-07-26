@@ -151,6 +151,14 @@ namespace ColorVision.FloatingBall
             ConfirmationToolText.Text = string.IsNullOrWhiteSpace(action.ToolName)
                 ? "工具 · 未知"
                 : $"工具 · {action.ToolName}";
+            ConfirmationContextText.Text =
+                $"来源 · {action.RequesterLabel}\n任务 · {action.TaskScopeLabel}\n工作区 · {action.WorkspaceLabel}";
+            ConfirmationContextText.ToolTip =
+                $"来源：{action.RequesterLabel}\n任务：{action.TaskScopeLabel}\n工作区：{action.WorkspaceLabel}";
+            ConfirmationImpactText.Text =
+                $"影响 · {action.ImpactLabel}\n撤销 · {action.ReversibilityLabel}";
+            ConfirmationImpactText.ToolTip =
+                $"影响：{action.ImpactLabel}\n撤销：{action.ReversibilityLabel}";
             ConfirmationExpiryText.Text = BuildConfirmationExpiryText(action);
             ConfirmationCountText.Text = totalPending > 1
                 ? $"需确认 · {totalPending}"

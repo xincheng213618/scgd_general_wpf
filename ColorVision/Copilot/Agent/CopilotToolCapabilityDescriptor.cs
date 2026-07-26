@@ -42,6 +42,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolEvidenceMode EvidenceMode { get; init; }
 
+        public bool AllowsTemporaryFullAccess { get; init; }
+
         public CopilotToolConcurrencyMode EffectiveConcurrencyMode => Access == CopilotToolAccess.Write
             || Idempotency != CopilotToolIdempotency.Idempotent
                 ? CopilotToolConcurrencyMode.Exclusive
@@ -74,7 +76,8 @@ namespace ColorVision.Copilot
         public static CopilotToolCapabilityDescriptor ProtectedWrite(
             CopilotToolIdempotency idempotency,
             TimeSpan? executionTimeout = null,
-            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary)
+            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary,
+            bool allowsTemporaryFullAccess = false)
         {
             return new CopilotToolCapabilityDescriptor
             {
@@ -86,6 +89,7 @@ namespace ColorVision.Copilot
                 ExecutionTimeout = executionTimeout ?? DefaultExecutionTimeout,
                 AuditArgumentMode = auditArgumentMode,
                 EvidenceMode = CopilotToolEvidenceMode.None,
+                AllowsTemporaryFullAccess = allowsTemporaryFullAccess,
             };
         }
 

@@ -225,8 +225,8 @@ namespace ColorVision.Copilot
             ApprovePendingActionCommand = new RelayCommand<ConfirmableAction>(action => RunUiOperation(
                 () => ApprovePendingActionAsync(action),
                 "执行已批准操作",
-                message => SetPendingActionFeedback("执行失败：" + message)), action => action?.IsPending == true);
-            RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, action => action?.IsPending == true);
+                message => SetPendingActionFeedback("执行失败：" + message)), CanReviewPendingAction);
+            RejectPendingActionCommand = new RelayCommand<ConfirmableAction>(RejectPendingAction, CanReviewPendingAction);
             DismissLocalCommandResultCommand = new RelayCommand(_ => DismissLocalCommandResult(), _ => HasLocalCommandResult);
             CancelSideQuestionCommand = new RelayCommand(_ => CancelSideQuestion(), _ => IsSideQuestionRunning);
             DismissSideQuestionCommand = new RelayCommand(_ => DismissSideQuestion(), _ => CanDismissSideQuestion);
@@ -246,7 +246,7 @@ namespace ColorVision.Copilot
             {
                 Interval = TimeSpan.FromSeconds(5),
             };
-            _pendingActionExpiryTimer.Tick += (_, _) => RefreshPendingActions();
+            _pendingActionExpiryTimer.Tick += (_, _) => RefreshTimedAccessAndPendingActions();
             _pendingActionExpiryTimer.Start();
 
             RefreshPendingActions();
@@ -349,11 +349,11 @@ namespace ColorVision.Copilot
             {
                 var count = _pendingActions.Count;
                 if (count == 0)
-                    return "Action review";
+                    return "受保护操作";
 
                 return count == 1
-                    ? "Review 1 protected action"
-                    : $"Review {count} protected actions";
+                    ? "等待确认的受保护操作"
+                    : $"{count} 个受保护操作等待确认";
             }
         }
 
@@ -362,18 +362,18 @@ namespace ColorVision.Copilot
             get
             {
                 if (_pendingActions.Count == 0)
-                    return "No protected actions are waiting for approval.";
+                    return "当前没有等待确认的受保护操作。";
 
                 var nextDeadline = _pendingActions
                     .OrderBy(action => action.ExpiresAt)
                     .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
 
                 var actionBehavior = _pendingActions.Any(action => action.ResumesAgentOnApproval)
-                    ? "Protected Agent Framework calls resume in the same session after approval."
+                    ? "批准后，Agent 将在同一任务中继续执行。"
                     : _pendingActions.Any(action => action.ExecuteOnApproval)
-                        ? "In-app template actions apply to the editor immediately after approval; you still decide when to save."
-                        : "External MCP actions still require confirm_action after approval.";
-                return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} Next {nextDeadline}.";
+                        ? "批准后将立即在应用内执行；是否保存仍由你决定。"
+                        : "外部 MCP 操作批准后，调用方仍需提交 confirm_action。";
+                return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} 最近一项{nextDeadline}。";
             }
         }
 
@@ -385,7 +385,7 @@ namespace ColorVision.Copilot
                     return PendingActionPanelSummary;
 
                 return string.Join(Environment.NewLine, _pendingActions.Select(action =>
-                    $"{action.Title} | tool={action.ToolName} | risk={action.RiskLevel} | deadline={action.ReviewDeadlineLabel}"));
+                    $"{action.Title}｜来源：{action.RequesterLabel}｜任务：{action.TaskScopeLabel}｜风险：{action.RiskDisplayLabel}｜{action.ReviewDeadlineLabel}"));
             }
         }
 
@@ -714,17 +714,21 @@ namespace ColorVision.Copilot
         }
 
         public CopilotAgentAccessMode ComposerAccessMode =>
-            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.FullAccess;
+            SelectedConversation?.AccessMode ?? CopilotAgentAccessMode.ConfirmProtectedActions;
 
         public bool IsComposerFullAccess => ComposerAccessMode == CopilotAgentAccessMode.FullAccess;
 
         public bool IsComposerConfirmAccess => !IsComposerFullAccess;
 
-        public string ComposerAccessModeLabel => IsComposerFullAccess ? "完全访问" : "按需确认";
+        public string ComposerAccessModeLabel => !IsComposerFullAccess
+            ? "按需确认"
+            : SelectedConversation?.IsFullAccessPreparedForNextTask == true
+                ? "临时自动批准 · 下一任务"
+                : "临时自动批准 · 本任务";
 
         public string ComposerAccessModeToolTip => IsComposerFullAccess
-            ? "当前会话已启用完全访问：受保护操作无需逐次确认；用户意图、工作区范围和审计仍然生效。"
-            : "当前会话按需确认受保护操作。点击可切换为完全访问。";
+            ? BuildFullAccessToolTip()
+            : "受保护操作执行前逐次确认。可为下一任务临时授权；已有待审批操作始终需要单独决定。";
 
         internal bool TrySelectConversation(string? conversationId)
         {
@@ -1250,7 +1254,7 @@ namespace ColorVision.Copilot
                 if (!_config.McpEnabled)
                     return string.Empty;
 
-                return CopilotMcpServer.Instance.IsRunning ? "完全访问" : "控制停止";
+                return CopilotMcpServer.Instance.IsRunning ? "控制运行中" : "控制停止";
             }
         }
 
@@ -1982,6 +1986,8 @@ namespace ColorVision.Copilot
 
         private void FinalizeCancelledQueuedRun(CopilotConversationRecord conversation, CopilotChatMessage assistantMessage)
         {
+            if (conversation.RevokeFullAccessGrant())
+                OnComposerAccessModeChanged();
             CopilotHostedTurnCompletion.CompleteBeforeStartCancellation(assistantMessage);
             UpdateConversationMetadata(conversation, touch: true);
             PersistState(immediate: true);
@@ -2036,6 +2042,15 @@ namespace ColorVision.Copilot
             }
             finally
             {
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    if (conversation.RevokeFullAccessGrant(hostedRun.Id)
+                        && ReferenceEquals(SelectedConversation, conversation))
+                    {
+                        OnComposerAccessModeChanged();
+                        SetPendingActionFeedback("本任务的临时自动批准已结束，后续受保护操作恢复按需确认。");
+                    }
+                });
                 RefreshAgentTasks();
             }
         }
@@ -2050,6 +2065,21 @@ namespace ColorVision.Copilot
             bool refreshExternalContext)
         {
             var cancellationToken = hostedRun.CancellationToken;
+            if (hostedRun.IsAgent)
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                {
+                    var previousMode = conversation.AccessMode;
+                    var previousTaskId = conversation.FullAccessTaskId;
+                    conversation.BindFullAccessGrantToTask(hostedRun.Id, turnSnapshot.SolutionDirectoryPath);
+                    if (ReferenceEquals(SelectedConversation, conversation)
+                        && (previousMode != conversation.AccessMode
+                            || !string.Equals(previousTaskId, conversation.FullAccessTaskId, StringComparison.Ordinal)))
+                    {
+                        OnComposerAccessModeChanged();
+                    }
+                });
+            }
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
                 conversation.AgentSessionCheckpoint = null;
@@ -2092,6 +2122,8 @@ namespace ColorVision.Copilot
                 hostedRun.RunControl,
                 _config.AgentDefaults,
                 _config.ExternalMcpServers,
+                conversation.Id,
+                hostedRun.Id,
                 conversation.AccessContext);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode);
             try
@@ -2401,9 +2433,13 @@ namespace ColorVision.Copilot
 
             var loadNotice = stateStore.LastLoadStatus.Source switch
             {
+                CopilotChatStateLoadSource.FutureVersion =>
+                    $"会话记录由更高版本创建（Schema {stateStore.LastLoadStatus.SchemaVersion ?? 0}，当前支持 {CopilotChatState.CurrentSchemaVersion}）；"
+                    + "当前版本已停止写入以保护历史记录，请更新应用后重新打开。",
                 _ when stateStore.IsManagedAttachmentCleanupProtected => "此前的会话状态无法完整恢复；托管附件已保护，自动清理暂停。",
                 CopilotChatStateLoadSource.Temporary => "已从写入中断前的临时快照恢复会话。",
                 CopilotChatStateLoadSource.Backup => "主会话状态不可用，已从可信备份恢复。",
+                CopilotChatStateLoadSource.RecoverySnapshot => "主会话状态和即时备份均不可用，已从较早的恢复快照恢复。",
                 CopilotChatStateLoadSource.Unrecoverable => "会话状态无法读取，已打开空会话；可恢复的托管附件不会被自动删除。",
                 _ => string.Empty,
             };
@@ -2448,8 +2484,11 @@ namespace ColorVision.Copilot
         private void RefreshPendingActions()
         {
             _pendingActions.Clear();
-            foreach (var action in CopilotMcpConfirmationStore.Instance.GetPendingActions())
+            foreach (var action in CopilotMcpConfirmationStore.Instance.GetPendingActionsForConversation(
+                SelectedConversation?.Id))
+            {
                 _pendingActions.Add(action);
+            }
 
             OnPropertyChanged(nameof(HasPendingActions));
             OnPropertyChanged(nameof(HasPendingActionPanel));
@@ -2458,6 +2497,27 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(PendingActionPanelToolTip));
             RefreshMcpStatus();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private void RefreshTimedAccessAndPendingActions()
+        {
+            var conversation = SelectedConversation;
+            if (conversation?.ExpireFullAccessGrantIfNeeded() == true)
+            {
+                OnComposerAccessModeChanged();
+                SetPendingActionFeedback("临时自动批准已到期，受保护操作恢复按需确认。");
+            }
+            else if (conversation?.AccessMode == CopilotAgentAccessMode.FullAccess)
+            {
+                var currentWorkspacePath = CaptureHostedTurnSnapshot(conversation.Attachments).SolutionDirectoryPath;
+                if (!AccessWorkspacePathsMatch(conversation.FullAccessWorkspacePath, currentWorkspacePath)
+                    && conversation.RevokeFullAccessGrant())
+                {
+                    OnComposerAccessModeChanged();
+                    SetPendingActionFeedback("工作区已变化，临时自动批准已撤销。");
+                }
+            }
+            RefreshPendingActions();
         }
 
         private void CopyPendingActionId(ConfirmableAction? action)
@@ -2494,23 +2554,28 @@ namespace ColorVision.Copilot
 
         private async Task ApprovePendingActionAsync(ConfirmableAction? action)
         {
-            if (action == null)
+            if (!CanReviewPendingAction(action))
+            {
+                SetPendingActionFeedback("当前会话、任务或工作区与这条审批请求不匹配，已拒绝代为批准。");
+                RefreshPendingActions();
                 return;
+            }
 
             var result = MessageBox.Show(
                 Application.Current.GetActiveWindow(),
-                CopilotMcpConfirmationDecision.BuildApprovalPrompt(action),
-                "Approve Copilot action",
+                CopilotMcpConfirmationDecision.BuildApprovalPrompt(action!),
+                "确认受保护操作",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
             if (result != MessageBoxResult.Yes)
             {
-                SetPendingActionFeedback($"Approval cancelled for {action.ActionId}.");
+                SetPendingActionFeedback($"未批准操作 {action!.ActionId}。");
                 return;
             }
 
-            if (action.ExecuteOnApproval)
+            var reviewContext = CreateConfirmationReviewContext();
+            if (action!.ExecuteOnApproval)
             {
                 var cancellation = BeginAuxiliaryOperation();
                 try
@@ -2518,6 +2583,7 @@ namespace ColorVision.Copilot
                     var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
                         CopilotMcpConfirmationStore.Instance,
                         action,
+                        reviewContext,
                         cancellation.Token);
                     SetPendingActionFeedback(approvalResult.Message);
                 }
@@ -2531,6 +2597,7 @@ namespace ColorVision.Copilot
                 var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
                     CopilotMcpConfirmationStore.Instance,
                     action,
+                    reviewContext,
                     CancellationToken.None);
                 SetPendingActionFeedback(approvalResult.Message);
             }
@@ -2540,58 +2607,129 @@ namespace ColorVision.Copilot
         private void SetComposerAccessMode(CopilotAgentAccessMode mode)
         {
             var conversation = SelectedConversation;
-            if (conversation == null || !Enum.IsDefined(mode) || conversation.AccessMode == mode)
+            if (conversation == null || !Enum.IsDefined(mode))
                 return;
 
-            conversation.AccessMode = mode;
-            OnComposerAccessModeChanged();
-            if (mode == CopilotAgentAccessMode.FullAccess)
+            if (mode == CopilotAgentAccessMode.ConfirmProtectedActions)
             {
-                var approvedCount = ApprovePendingAgentActionsForConversation(conversation);
-                SetPendingActionFeedback(approvedCount == 0
-                    ? "已为当前会话启用完全访问。后续受保护操作无需逐次确认。"
-                    : $"已为当前会话启用完全访问，并继续执行 {approvedCount} 个等待确认的操作。");
+                if (!conversation.RevokeFullAccessGrant())
+                    return;
+
+                OnComposerAccessModeChanged();
+                SetPendingActionFeedback("已恢复按需确认。已有待审批操作保持原状态。");
+                PersistState(immediate: true);
+                return;
             }
+
+            if (conversation.AccessMode == CopilotAgentAccessMode.FullAccess)
+                return;
+
+            var turnSnapshot = CaptureHostedTurnSnapshot(conversation.Attachments);
+            if (string.IsNullOrWhiteSpace(turnSnapshot.SolutionDirectoryPath))
+            {
+                SetPendingActionFeedback("请先打开一个项目工作区，再启用临时自动批准。");
+                return;
+            }
+
+            var activeRun = ActiveHostedRun;
+            var taskId = activeRun?.IsAgent == true
+                && string.Equals(activeRun.ConversationId, conversation.Id, StringComparison.Ordinal)
+                ? activeRun?.Id ?? string.Empty
+                : string.Empty;
+            conversation.PrepareFullAccessGrant(
+                turnSnapshot.SolutionDirectoryPath,
+                taskId,
+                DateTimeOffset.UtcNow.Add(CopilotAgentAccessContext.MaximumFullAccessLifetime));
+            OnComposerAccessModeChanged();
+            SetPendingActionFeedback(string.IsNullOrWhiteSpace(taskId)
+                ? "已为下一任务启用临时自动批准（最长 15 分钟）。仅支持的工作区结构化操作可自动执行；已有待审批操作仍需单独决定。"
+                : "已为本任务启用临时自动批准（最长 15 分钟）。仅支持的工作区结构化操作可自动执行；已有待审批操作仍需单独决定。");
             PersistState(immediate: true);
         }
 
-        private int ApprovePendingAgentActionsForConversation(CopilotConversationRecord conversation)
+        private bool CanReviewPendingAction(ConfirmableAction? action)
         {
-            var traceCallIds = conversation.Messages
-                .SelectMany(message => message.AgentTraceEntries)
-                .Where(trace => trace != null)
-                .Select(trace => trace.CallId)
-                .Where(callId => !string.IsNullOrWhiteSpace(callId))
-                .ToHashSet(StringComparer.Ordinal);
-            var traceActionIds = conversation.Messages
-                .SelectMany(message => message.AgentTraceEntries)
-                .Where(trace => trace != null)
-                .Select(trace => trace.ApprovalActionId)
-                .Where(actionId => !string.IsNullOrWhiteSpace(actionId))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var pendingFrameworkActions = CopilotMcpConfirmationStore.Instance.GetPendingActions()
-                .Where(action => action.ResumesAgentOnApproval)
-                .ToArray();
-            var matchingActions = pendingFrameworkActions
-                .Where(action => traceActionIds.Contains(action.ActionId)
-                    || traceCallIds.Contains(action.AgentCallId))
-                .ToArray();
-
-            if (matchingActions.Length == 0
-                && string.Equals(ActiveHostedRun?.ConversationId, conversation.Id, StringComparison.Ordinal)
-                && pendingFrameworkActions.Length == 1)
+            if (action?.Status != ConfirmableActionStatus.Pending
+                || !action.CanReviewFromConversation(SelectedConversation?.Id))
             {
-                matchingActions = pendingFrameworkActions;
+                return false;
             }
 
-            var approvedCount = 0;
-            foreach (var action in matchingActions)
+            var requestContext = action.RequestContext;
+            if (requestContext.SourceKind == CopilotApprovalSourceKind.InAppAgent)
             {
-                if (CopilotMcpConfirmationStore.Instance.Approve(action.ActionId, out _))
-                    approvedCount++;
+                var activeRun = ActiveHostedRun;
+                if (activeRun == null
+                    || !string.Equals(activeRun.ConversationId, requestContext.ConversationId, StringComparison.Ordinal)
+                    || !string.Equals(activeRun.Id, requestContext.TaskId, StringComparison.Ordinal))
+                {
+                    return false;
+                }
             }
-            RefreshPendingActions();
-            return approvedCount;
+
+            var currentWorkspacePath = CaptureHostedTurnSnapshot(
+                SelectedConversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
+            return requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ExternalMcp
+                ? AccessWorkspacePathsMatch(requestContext.WorkspacePath, currentWorkspacePath)
+                : WorkspacePathsMatch(requestContext.WorkspacePath, currentWorkspacePath);
+        }
+
+        private CopilotConfirmationReviewContext CreateConfirmationReviewContext()
+        {
+            var conversation = SelectedConversation;
+            var activeRun = ActiveHostedRun;
+            var taskId = activeRun?.IsAgent == true
+                && string.Equals(activeRun.ConversationId, conversation?.Id, StringComparison.Ordinal)
+                ? activeRun?.Id ?? string.Empty
+                : string.Empty;
+            var workspacePath = CaptureHostedTurnSnapshot(
+                conversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
+            return new CopilotConfirmationReviewContext(
+                conversation?.Id ?? string.Empty,
+                taskId,
+                workspacePath);
+        }
+
+        private string BuildFullAccessToolTip()
+        {
+            var conversation = SelectedConversation;
+            var scope = conversation?.IsFullAccessPreparedForNextTask == true ? "下一任务" : "本任务";
+            var workspace = string.IsNullOrWhiteSpace(conversation?.FullAccessWorkspacePath)
+                ? "当前 ColorVision 应用"
+                : conversation.FullAccessWorkspacePath;
+            var expires = conversation?.FullAccessExpiresAtUtc?.ToLocalTime().ToString("HH:mm:ss") ?? "15 分钟内";
+            return $"临时自动批准仅对{scope}及工作区“{workspace}”有效，最晚 {expires} 失效。仅自动批准声明支持且写入范围完全位于当前工作区的结构化操作；Shell、菜单、数据库和范围不可界定的操作仍逐项确认。任务结束、工作区变化或应用重启后恢复按需确认。";
+        }
+
+        private static bool WorkspacePathsMatch(string expectedPath, string currentPath)
+        {
+            if (string.IsNullOrWhiteSpace(expectedPath))
+                return true;
+            if (string.IsNullOrWhiteSpace(currentPath))
+                return false;
+
+            try
+            {
+                return string.Equals(
+                    Path.TrimEndingDirectorySeparator(Path.GetFullPath(expectedPath)),
+                    Path.TrimEndingDirectorySeparator(Path.GetFullPath(currentPath)),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool AccessWorkspacePathsMatch(string grantedPath, string currentPath)
+        {
+            if (string.IsNullOrWhiteSpace(grantedPath) || string.IsNullOrWhiteSpace(currentPath))
+            {
+                return string.IsNullOrWhiteSpace(grantedPath)
+                    && string.IsNullOrWhiteSpace(currentPath);
+            }
+
+            return WorkspacePathsMatch(grantedPath, currentPath);
         }
 
         private void OnComposerAccessModeChanged()
@@ -2616,8 +2754,15 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(action.AgentCallId))
                 return;
 
+            var owningConversations = action.RequestContext.SourceKind == CopilotApprovalSourceKind.InAppAgent
+                && !string.IsNullOrWhiteSpace(action.RequestContext.ConversationId)
+                ? Conversations.Where(conversation => string.Equals(
+                    conversation.Id,
+                    action.RequestContext.ConversationId,
+                    StringComparison.Ordinal))
+                : Conversations;
             var changed = false;
-            foreach (var message in Conversations.SelectMany(conversation => conversation.Messages))
+            foreach (var message in owningConversations.SelectMany(conversation => conversation.Messages))
             {
                 var trace = message.AgentTraceEntries.FirstOrDefault(entry =>
                     string.Equals(entry.CallId, action.AgentCallId, StringComparison.Ordinal)
@@ -2689,10 +2834,17 @@ namespace ColorVision.Copilot
 
         private void RejectPendingAction(ConfirmableAction? action)
         {
-            if (action == null)
+            if (!CanReviewPendingAction(action))
+            {
+                SetPendingActionFeedback("当前会话、任务或工作区与这条审批请求不匹配，未执行拒绝操作。");
+                RefreshPendingActions();
                 return;
+            }
 
-            CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out var message);
+            CopilotMcpConfirmationStore.Instance.Reject(
+                action!.ActionId,
+                CreateConfirmationReviewContext(),
+                out var message);
             SetPendingActionFeedback($"{action.ActionId}: {message}");
             RefreshPendingActions();
         }
@@ -3871,6 +4023,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(IsConversationEmpty));
             OnPropertyChanged(nameof(InputPlaceholder));
             OnComposerAccessModeChanged();
+            RefreshPendingActions();
             RefreshCompactHistoryConversations();
             NotifyHostedRunStateChanged();
             PublishSelectedTaskEventJournal();
@@ -5583,6 +5736,9 @@ namespace ColorVision.Copilot
 
         private void PersistState(bool immediate = false)
         {
+            if (_stateStore is CopilotChatStateStore stateStore && stateStore.IsStatePersistenceBlocked)
+                return;
+
             PublishSelectedTaskEventJournal();
             _stateSaveScheduler.RequestSave(immediate);
             OnPropertyChanged(nameof(HasAttachments));
@@ -5686,7 +5842,8 @@ namespace ColorVision.Copilot
             PublishSelectedTaskEventJournal();
             try
             {
-                _stateStore.Save(_state);
+                if (_stateStore is not CopilotChatStateStore stateStore || !stateStore.IsStatePersistenceBlocked)
+                    _stateStore.Save(_state);
             }
             catch (Exception exception)
             {
@@ -5768,6 +5925,15 @@ namespace ColorVision.Copilot
         private void ReportStatePersistenceError(Exception exception)
         {
             System.Diagnostics.Trace.TraceError($"Copilot state persistence failed: {exception}");
+            if (exception is CopilotChatStateFutureVersionException futureVersionException)
+            {
+                var futureVersionTooltip =
+                    $"磁盘上的会话状态 Schema 为 {futureVersionException.SchemaVersion}，当前版本仅支持到 {futureVersionException.SupportedSchemaVersion}。"
+                    + $"{Environment.NewLine}{Environment.NewLine}为避免旧版本覆盖新版本历史记录，本进程已经停止写入会话状态。请更新应用并重新打开。";
+                UpdateStatePersistenceNotice("检测到更高版本的会话记录；已停止保存以保护历史记录。", futureVersionTooltip);
+                return;
+            }
+
             if (exception is CopilotChatStateSizeLimitException sizeLimitException)
             {
                 var actualMegabytes = sizeLimitException.ActualBytes / 1024d / 1024d;

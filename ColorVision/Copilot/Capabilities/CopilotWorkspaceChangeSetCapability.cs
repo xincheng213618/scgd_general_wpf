@@ -146,7 +146,16 @@ namespace ColorVision.Copilot
                     rollback
                         ? $"Rollback {records.Length}-file workspace change set"
                         : $"Apply {records.Length}-file workspace change set",
-                    builder.ToString().TrimEnd());
+                    builder.ToString().TrimEnd(),
+                    ImpactSummary: rollback
+                        ? $"将把当前工作区中的 {records.Length} 个文件恢复到该变更集应用前的内容。"
+                        : $"将以一个受保护变更集写入当前工作区中的 {records.Length} 个文件。",
+                    Reversibility: rollback
+                        ? CopilotApprovalReversibility.ManualOnly
+                        : CopilotApprovalReversibility.AutomaticUntilExpiry,
+                    ReversibilitySummary: rollback
+                        ? "回滚本身不会再生成自动恢复点；如需撤销回滚，需要后续手动修改。"
+                        : $"可在 {changeSet.ExpiresAtUtc.ToLocalTime():HH:mm:ss} 前通过该变更集整体回滚。");
             }
         }
 

@@ -119,6 +119,12 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentRequestBuildInput
     {
+        public string ConversationId { get; init; } = string.Empty;
+
+        public string TaskId { get; init; } = string.Empty;
+
+        public string WorkspacePath { get; init; } = string.Empty;
+
         public CopilotProfileConfig Profile { get; init; } = null!;
 
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
@@ -228,6 +234,9 @@ namespace ColorVision.Copilot
             var agentDefaults = input.AgentDefaults.Clone();
             return new CopilotAgentRequest
             {
+                ConversationId = (input.ConversationId ?? string.Empty).Trim(),
+                TaskId = (input.TaskId ?? string.Empty).Trim(),
+                WorkspacePath = (input.WorkspacePath ?? string.Empty).Trim(),
                 UserText = plan.UserText,
                 TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
                     ? plan.UserText

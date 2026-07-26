@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
+using ColorVision.Solution;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -56,7 +57,7 @@ namespace ColorVision.FloatingBall
                     return;
                 }
 
-                var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
+                var pendingActions = GetVisiblePendingActions();
                 _lastPendingActionCount = pendingActions.Count;
                 ReconcileAndApply(pendingActions);
             });
@@ -102,7 +103,7 @@ namespace ColorVision.FloatingBall
                 if (!DesktopPetConfig.Instance.EnableCopilotIntegration)
                     return;
 
-                var pendingActions = CopilotMcpConfirmationStore.Instance.GetPendingActions();
+                var pendingActions = GetVisiblePendingActions();
                 var pendingCount = pendingActions.Count;
                 ReconcileAndApply(pendingActions);
                 if (pendingCount > _lastPendingActionCount && DesktopPetConfig.Instance.ShowCopilotNotifications)
@@ -170,7 +171,7 @@ namespace ColorVision.FloatingBall
         private void ReconcileAndApply(IReadOnlyList<ConfirmableAction>? pendingActions = null)
         {
             var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
-            var actions = pendingActions ?? CopilotMcpConfirmationStore.Instance.GetPendingActions();
+            var actions = pendingActions ?? GetVisiblePendingActions();
             var activeNeedsInput = activeRun != null && actions.Count > 0;
             _activityTracker.ReconcileActive(activeRun?.ConversationId, activeNeedsInput);
 
@@ -203,12 +204,35 @@ namespace ColorVision.FloatingBall
             return CopilotMcpConfirmationDecision.ApproveAsync(
                 CopilotMcpConfirmationStore.Instance,
                 action,
+                CreateReviewContext(action),
                 cancellationToken);
         }
 
         public static bool Reject(ConfirmableAction action, out string message)
         {
-            return CopilotMcpConfirmationStore.Instance.Reject(action.ActionId, out message);
+            return CopilotMcpConfirmationStore.Instance.Reject(
+                action.ActionId,
+                CreateReviewContext(action),
+                out message);
+        }
+
+        private static IReadOnlyList<ConfirmableAction> GetVisiblePendingActions()
+        {
+            return CopilotMcpConfirmationStore.Instance.GetPendingActionsForConversation(
+                CopilotAgentTaskHost.Shared.ActiveRun?.ConversationId);
+        }
+
+        private static CopilotConfirmationReviewContext CreateReviewContext(ConfirmableAction action)
+        {
+            var activeRun = CopilotAgentTaskHost.Shared.ActiveRun;
+            var isOwningRun = activeRun != null
+                && action.RequestContext.SourceKind == CopilotApprovalSourceKind.InAppAgent
+                && string.Equals(activeRun.ConversationId, action.RequestContext.ConversationId, StringComparison.Ordinal)
+                && string.Equals(activeRun.Id, action.RequestContext.TaskId, StringComparison.Ordinal);
+            return new CopilotConfirmationReviewContext(
+                isOwningRun ? activeRun!.ConversationId : string.Empty,
+                isOwningRun ? activeRun!.Id : string.Empty,
+                SolutionManager.GetInstance().CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty);
         }
 
         private void PublishPendingAction(System.Collections.Generic.IReadOnlyList<ConfirmableAction> pendingActions)

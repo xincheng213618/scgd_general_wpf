@@ -395,6 +395,9 @@ namespace ColorVision.Copilot
 
             return new CopilotAgentRequest
             {
+                ConversationId = explorationRequest.ConversationId,
+                TaskId = explorationRequest.TaskId,
+                WorkspacePath = explorationRequest.WorkspacePath,
                 UserText = finalizationPrompt,
                 TaskIntentText = explorationRequest.UserText,
                 Profile = finalizationProfile,
@@ -711,6 +714,9 @@ namespace ColorVision.Copilot
 
             return new CopilotAgentRequest
             {
+                ConversationId = parentRequest.ConversationId,
+                TaskId = parentRequest.TaskId,
+                WorkspacePath = parentRequest.WorkspacePath,
                 UserText = runRequest.Task.Trim(),
                 TaskIntentText = string.IsNullOrWhiteSpace(parentRequest.TaskIntentText)
                     ? parentRequest.UserText.Trim()

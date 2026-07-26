@@ -60,6 +60,8 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <Grid>
@@ -103,14 +105,34 @@
                                    FontSize="10.5"
                                    TextTrimming="CharacterEllipsis" />
 
-                        <TextBlock x:Name="ConfirmationExpiryText"
+                        <TextBlock x:Name="ConfirmationContextText"
                                    Grid.Row="3"
+                                   Margin="0,3,0,0"
+                                   MaxHeight="48"
+                                   Foreground="#5D6878"
+                                   FontSize="10.5"
+                                   LineHeight="15"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock x:Name="ConfirmationImpactText"
+                                   Grid.Row="4"
+                                   Margin="0,3,0,0"
+                                   MaxHeight="33"
+                                   Foreground="#5D6878"
+                                   FontSize="10.5"
+                                   LineHeight="15"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock x:Name="ConfirmationExpiryText"
+                                   Grid.Row="5"
                                    Margin="0,3,0,0"
                                    Foreground="#7A8492"
                                    FontSize="10.5"
                                    TextTrimming="CharacterEllipsis" />
 
-                        <Grid Grid.Row="4"
+                        <Grid Grid.Row="6"
                               Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

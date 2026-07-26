@@ -27,47 +27,213 @@ public sealed class CopilotComposerAccessAndReferenceTests
     }
 
     [Fact]
-    public void ConversationAccessModeUpdatesLiveAgentContextAndRoundTrips()
+    public void ConversationDefaultsToConfirmAndTemporaryGrantDoesNotRoundTrip()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-access-workspace");
+
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+        Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
+
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            taskId: null,
+            DateTimeOffset.UtcNow.AddMinutes(15));
 
         Assert.Equal(CopilotAgentAccessMode.FullAccess, conversation.AccessMode);
-        Assert.True(conversation.AccessContext.AllowsUnattendedProtectedActions);
-
-        conversation.AccessMode = CopilotAgentAccessMode.ConfirmProtectedActions;
-
+        Assert.True(conversation.IsFullAccessPreparedForNextTask);
         Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
-        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(
-            JsonConvert.SerializeObject(conversation));
+        var serialized = JsonConvert.SerializeObject(conversation);
+        Assert.DoesNotContain("\"AccessMode\"", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"FullAccessTaskId\"", serialized, StringComparison.Ordinal);
+
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(serialized);
         Assert.NotNull(restored);
         Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, restored.AccessMode);
         Assert.False(restored.AccessContext.AllowsUnattendedProtectedActions);
     }
 
     [Fact]
-    public void FullAccessApprovalDoesNotRequireAConfirmationStoreAction()
+    public void LegacyPersistedFullAccessRestoresAsConfirm()
     {
-        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var serialized = JsonConvert.SerializeObject(conversation);
+        var legacyDocument = serialized.TrimEnd('}') + ",\"AccessMode\":\"FullAccess\"}";
 
-        Assert.True(coordinator.BeginIfRequired(string.Empty));
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(legacyDocument);
+
+        Assert.NotNull(restored);
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, restored.AccessMode);
+        Assert.False(restored.AccessContext.AllowsUnattendedProtectedActions);
+        Assert.True(restored.EnsureValid());
     }
 
     [Fact]
-    public void FullAccessAutoApprovesProtectedToolsOutsideReviewMode()
+    public void PreparedFullAccessOnlyAutoApprovesAnExactlyBoundTaskScope()
     {
-        var access = new CopilotAgentAccessContext(CopilotAgentAccessMode.FullAccess);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-access-workspace");
         var protectedTool = new TestTool(CopilotToolAccess.Write, CopilotToolApprovalMode.Always);
         var readTool = new TestTool(CopilotToolAccess.ReadOnly, CopilotToolApprovalMode.Never);
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            taskId: null,
+            DateTimeOffset.UtcNow.AddMinutes(15));
+
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-1", workspacePath),
+            protectedTool,
+            workspacePath));
+        Assert.True(conversation.BindFullAccessGrantToTask("task-1", workspacePath));
 
         Assert.True(CopilotAgentAccessPolicy.CanAutoApprove(
-            new CopilotAgentRequest { Mode = CopilotAgentMode.Auto, AccessContext = access },
-            protectedTool));
+            CreateRequest(conversation, "task-1", workspacePath),
+            protectedTool,
+            workspacePath));
         Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
-            new CopilotAgentRequest { Mode = CopilotAgentMode.Review, AccessContext = access },
-            protectedTool));
+            CreateRequest(conversation, "task-1", workspacePath, CopilotAgentMode.Review),
+            protectedTool,
+            workspacePath));
         Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
-            new CopilotAgentRequest { Mode = CopilotAgentMode.Auto, AccessContext = access },
-            readTool));
+            CreateRequest(conversation, "task-1", workspacePath),
+            readTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-2", workspacePath),
+            protectedTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-1", workspacePath + "-other"),
+            protectedTool,
+            workspacePath));
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(
+                conversation,
+                "task-1",
+                workspacePath,
+                conversationId: "another-conversation"),
+            protectedTool,
+            workspacePath));
+    }
+
+    [Fact]
+    public void TemporaryGrantUsesLiveWorkspaceAndRevokesAfterWorkspaceChanges()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-access-live-workspace");
+        var otherWorkspacePath = Path.Combine(Path.GetTempPath(), "copilot-access-other-workspace");
+        var protectedTool = new TestTool(
+            CopilotToolAccess.Write,
+            CopilotToolApprovalMode.Always,
+            allowsTemporaryFullAccess: true);
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            "task-live-workspace",
+            DateTimeOffset.UtcNow.AddMinutes(15));
+        var staleRequest = CreateRequest(conversation, "task-live-workspace", workspacePath);
+
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            staleRequest,
+            protectedTool,
+            otherWorkspacePath));
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+        Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
+    }
+
+    [Fact]
+    public void TemporaryGrantOnlyAllowsExplicitlySupportedToolsWithinWorkspace()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(
+            Path.GetTempPath(),
+            $"copilot-access-contained-workspace-{Guid.NewGuid():N}");
+        var containedPath = Path.Combine(workspacePath, "result", "change.json");
+        var outsidePath = Path.Combine(Path.GetTempPath(), "copilot-access-outside", "change.json");
+        Directory.CreateDirectory(workspacePath);
+        try
+        {
+            conversation.PrepareFullAccessGrant(
+                workspacePath,
+                "task-contained-workspace",
+                DateTimeOffset.UtcNow.AddMinutes(15));
+            var supportedTool = new TestTool(
+                CopilotToolAccess.Write,
+                CopilotToolApprovalMode.Always,
+                allowsTemporaryFullAccess: true);
+            var unsupportedTool = new TestTool(
+                CopilotToolAccess.Write,
+                CopilotToolApprovalMode.Always,
+                allowsTemporaryFullAccess: false);
+
+            Assert.True(CopilotAgentAccessPolicy.CanAutoApprove(
+                CreateRequest(
+                    conversation,
+                    "task-contained-workspace",
+                    workspacePath,
+                    writableLocalFilePaths: [containedPath]),
+                supportedTool,
+                workspacePath));
+            Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+                CreateRequest(
+                    conversation,
+                    "task-contained-workspace",
+                    workspacePath,
+                    writableLocalFilePaths: [containedPath]),
+                unsupportedTool,
+                workspacePath));
+            Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+                CreateRequest(
+                    conversation,
+                    "task-contained-workspace",
+                    workspacePath,
+                    writableLocalFilePaths: [outsidePath]),
+                supportedTool,
+                workspacePath));
+        }
+        finally
+        {
+            Directory.Delete(workspacePath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TemporaryGrantLifetimeIsClampedToSafetyMaximum()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var beforeGrant = DateTimeOffset.UtcNow;
+
+        conversation.PrepareFullAccessGrant(
+            Path.Combine(Path.GetTempPath(), "copilot-access-lifetime-workspace"),
+            "task-lifetime",
+            beforeGrant.AddDays(1));
+
+        Assert.NotNull(conversation.FullAccessExpiresAtUtc);
+        Assert.InRange(
+            conversation.FullAccessExpiresAtUtc!.Value,
+            beforeGrant.AddMinutes(14),
+            beforeGrant.Add(CopilotAgentAccessContext.MaximumFullAccessLifetime).AddSeconds(1));
+    }
+
+    [Fact]
+    public void ExpiredFullAccessRestoresConfirmAndCannotAutoApprove()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Model");
+        var workspacePath = Path.Combine(Path.GetTempPath(), "copilot-expired-access-workspace");
+
+        conversation.PrepareFullAccessGrant(
+            workspacePath,
+            "task-expired",
+            DateTimeOffset.UtcNow);
+
+        Assert.Equal(CopilotAgentAccessMode.ConfirmProtectedActions, conversation.AccessMode);
+        Assert.False(conversation.AccessContext.AllowsUnattendedProtectedActions);
+        Assert.False(CopilotAgentAccessPolicy.CanAutoApprove(
+            CreateRequest(conversation, "task-expired", workspacePath),
+            new TestTool(
+                CopilotToolAccess.Write,
+                CopilotToolApprovalMode.Always,
+                allowsTemporaryFullAccess: true),
+            workspacePath));
     }
 
     [Theory]
@@ -229,7 +395,8 @@ public sealed class CopilotComposerAccessAndReferenceTests
 
     private sealed class TestTool(
         CopilotToolAccess access,
-        CopilotToolApprovalMode approvalMode) : ICopilotTool
+        CopilotToolApprovalMode approvalMode,
+        bool allowsTemporaryFullAccess = true) : ICopilotTool
     {
         public string Name => "TestTool";
 
@@ -239,6 +406,8 @@ public sealed class CopilotComposerAccessAndReferenceTests
 
         public CopilotToolApprovalMode ApprovalMode => approvalMode;
 
+        public bool AllowsTemporaryFullAccess => allowsTemporaryFullAccess;
+
         public bool CanHandle(CopilotAgentRequest request) => true;
 
         public Task<CopilotToolResult> ExecuteAsync(
@@ -246,5 +415,26 @@ public sealed class CopilotComposerAccessAndReferenceTests
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken) =>
             Task.FromResult(new CopilotToolResult { ToolName = Name, Success = true });
+    }
+
+    private static CopilotAgentRequest CreateRequest(
+        CopilotConversationRecord conversation,
+        string taskId,
+        string workspacePath,
+        CopilotAgentMode mode = CopilotAgentMode.Auto,
+        string? conversationId = null,
+        IReadOnlyList<string>? writableLocalRootPaths = null,
+        IReadOnlyList<string>? writableLocalFilePaths = null)
+    {
+        return new CopilotAgentRequest
+        {
+            ConversationId = conversationId ?? conversation.Id,
+            TaskId = taskId,
+            WorkspacePath = workspacePath,
+            Mode = mode,
+            AccessContext = conversation.AccessContext,
+            WritableLocalRootPaths = writableLocalRootPaths ?? Array.Empty<string>(),
+            WritableLocalFilePaths = writableLocalFilePaths ?? Array.Empty<string>(),
+        };
     }
 }

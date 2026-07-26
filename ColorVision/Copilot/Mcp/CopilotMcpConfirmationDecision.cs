@@ -14,52 +14,65 @@ namespace ColorVision.Copilot.Mcp
         public static string BuildApprovalPrompt(ConfirmableAction action)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("Approve this Copilot action?");
+            builder.AppendLine("是否批准这个受保护操作？");
             builder.AppendLine();
             builder.AppendLine(action.Title);
-            builder.AppendLine($"Tool: {action.ToolName}");
-            builder.AppendLine($"Risk: {action.RiskLevel}");
-            builder.AppendLine($"Expires: {action.ExpiresAtLabel}");
-
-            if (!string.IsNullOrWhiteSpace(action.ArgumentsSummary))
-                builder.AppendLine($"Params: {action.ArgumentsSummary}");
+            builder.AppendLine($"来源：{action.RequesterLabel}");
+            builder.AppendLine($"任务：{action.TaskScopeLabel}");
+            builder.AppendLine($"工作区：{action.WorkspaceLabel}");
+            builder.AppendLine($"影响：{action.ImpactLabel}");
+            builder.AppendLine($"撤销：{action.ReversibilityLabel}");
+            builder.AppendLine($"时限：{action.ReviewDeadlineLabel}");
 
             builder.AppendLine();
-            builder.AppendLine("Only approve if the requested operation matches your intent.");
+            builder.AppendLine("请仅在来源、任务、工作区和影响都符合你的意图时批准。");
             builder.Append(action.ExecuteOnApproval
-                ? "This in-app action will execute immediately after approval."
-                : "The requesting MCP client must still call confirm_action after approval.");
+                ? "批准后，这个应用内操作会立即执行。"
+                : action.ResumesAgentOnApproval
+                    ? "批准后，Agent 会在同一任务中继续执行。"
+                    : "批准后，外部 MCP 调用方仍需提交 confirm_action 才会执行。");
+            builder.AppendLine();
+            builder.AppendLine();
+            builder.AppendLine("技术详情");
+            builder.AppendLine($"工具：{action.ToolName}");
+            builder.AppendLine($"操作 ID：{action.ActionId}");
+            if (!string.IsNullOrWhiteSpace(action.ArgumentsSummary))
+                builder.Append($"参数：{action.ArgumentsSummary}");
             return builder.ToString();
         }
 
         public static async Task<CopilotConfirmationApprovalResult> ApproveAsync(
             CopilotMcpConfirmationStore store,
             ConfirmableAction action,
+            CopilotConfirmationReviewContext reviewContext,
             CancellationToken cancellationToken)
         {
             if (action.ResumesAgentOnApproval)
             {
-                var approved = store.Approve(action.ActionId, out var message);
+                var approved = store.Approve(action.ActionId, reviewContext, out var message);
                 return new CopilotConfirmationApprovalResult(
                     approved,
                     ExecutedImmediately: false,
                     approved
-                        ? $"{action.ActionId}: {message} The agent will resume in the same session."
+                        ? $"{action.ActionId}：已批准，Agent 将在同一任务中继续执行。"
                         : $"{action.ActionId}: {message}");
             }
 
             if (action.ExecuteOnApproval)
             {
-                var executionResult = await store.ApproveAndExecuteAsync(action.ActionId, cancellationToken);
+                var executionResult = await store.ApproveAndExecuteAsync(
+                    action.ActionId,
+                    reviewContext,
+                    cancellationToken);
                 return new CopilotConfirmationApprovalResult(
                     executionResult.Success,
                     ExecutedImmediately: true,
                     executionResult.Success
-                        ? $"{action.ActionId}: approved and executed."
+                        ? $"{action.ActionId}：已批准并执行。"
                         : $"{action.ActionId}: {executionResult.Text}");
             }
 
-            var success = store.Approve(action.ActionId, out var approvalMessage);
+            var success = store.Approve(action.ActionId, reviewContext, out var approvalMessage);
             return new CopilotConfirmationApprovalResult(
                 success,
                 ExecutedImmediately: false,

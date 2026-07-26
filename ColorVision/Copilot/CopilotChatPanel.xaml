@@ -740,8 +740,8 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
-                    Margin="12,8,12,0"
-                    Padding="0,0,0,8"
+                    MinHeight="28"
+                    Margin="12,0"
                     BorderBrush="{DynamicResource ButtonBorderBrush}"
                     BorderThickness="0,0,0,1">
                 <Grid>
@@ -750,7 +750,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel MaxWidth="560" VerticalAlignment="Center">
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock FontSize="14"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -885,11 +885,11 @@
                                                                 MaxWidth="150"
                                                                 Style="{StaticResource McpActionMetaPillBorderStyle}">
                                                             <TextBlock Style="{StaticResource McpActionMetaTextStyle}"
-                                                                       Text="{Binding RiskLevel}" />
+                                                                       Text="{Binding RiskDisplayLabel}" />
                                                         </Border>
                                                         <Border MaxWidth="170"
                                                                 Style="{StaticResource McpActionDeadlinePillBorderStyle}"
-                                                                ToolTip="{Binding ExpiresAtLabel, StringFormat=Expires at {0}}">
+                                                                ToolTip="{Binding ExpiresAtLabel, StringFormat={}{0} 到期}">
                                                             <TextBlock Style="{StaticResource McpActionDeadlineTextStyle}"
                                                                        Text="{Binding ReviewDeadlineLabel}" />
                                                         </Border>
@@ -899,28 +899,35 @@
                                                                Text="{Binding Title}"
                                                                TextTrimming="CharacterEllipsis" />
                                                 </DockPanel>
-                                                <WrapPanel Margin="0,4,0,0">
+                                                <WrapPanel Margin="0,6,0,0">
                                                     <TextBlock FontSize="11"
                                                                FontWeight="SemiBold"
                                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                                Opacity="0.68"
-                                                               Text="action_id:" />
-                                                    <TextBlock Margin="4,0,10,0"
+                                                               Text="来源：" />
+                                                    <TextBlock Margin="0,0,12,0"
                                                                FontSize="11"
                                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                                Opacity="0.72"
-                                                               Text="{Binding ActionId}" />
+                                                               Text="{Binding RequesterLabel}" />
                                                     <TextBlock FontSize="11"
                                                                FontWeight="SemiBold"
                                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                                Opacity="0.68"
-                                                               Text="tool_name:" />
-                                                    <TextBlock Margin="4,0,10,0"
+                                                               Text="任务：" />
+                                                    <TextBlock Margin="0,0,12,0"
                                                                FontSize="11"
                                                                Foreground="{DynamicResource GlobalTextBrush}"
                                                                Opacity="0.72"
-                                                               Text="{Binding ToolName}" />
+                                                               Text="{Binding TaskScopeLabel}" />
                                                 </WrapPanel>
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.64"
+                                                           Text="{Binding WorkspaceLabel, StringFormat=工作区：{0}}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding WorkspaceLabel}" />
                                                 <TextBlock Margin="0,3,0,0"
                                                            Foreground="{DynamicResource GlobalTextBrush}"
                                                            Opacity="0.74"
@@ -929,9 +936,44 @@
                                                 <TextBlock Margin="0,3,0,0"
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GlobalTextBrush}"
-                                                           Opacity="0.58"
-                                                           Text="{Binding ArgumentsSummary, StringFormat=params: {0}}"
-                                                           TextTrimming="CharacterEllipsis" />
+                                                           Opacity="0.68"
+                                                           Text="{Binding ImpactLabel, StringFormat=影响：{0}}"
+                                                           TextWrapping="Wrap" />
+                                                <TextBlock Margin="0,3,0,0"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource GlobalTextBrush}"
+                                                           Opacity="0.68"
+                                                           Text="{Binding ReversibilityLabel, StringFormat=撤销：{0}}"
+                                                           TextWrapping="Wrap" />
+                                                <Expander Margin="0,5,0,0"
+                                                          Header="技术详情"
+                                                          FontSize="11"
+                                                          Foreground="{DynamicResource GlobalTextBrush}">
+                                                    <StackPanel Margin="10,4,0,0">
+                                                        <TextBlock Opacity="0.58"
+                                                                   Text="{Binding ToolName, StringFormat=工具：{0}}"
+                                                                   TextWrapping="Wrap" />
+                                                        <TextBlock Margin="0,2,0,0"
+                                                                   Opacity="0.58"
+                                                                   Text="{Binding ActionId, StringFormat=操作 ID：{0}}"
+                                                                   TextWrapping="Wrap" />
+                                                        <TextBlock Margin="0,2,0,0"
+                                                                   Opacity="0.58"
+                                                                   Text="{Binding ArgumentsSummary, StringFormat=参数：{0}}"
+                                                                   TextWrapping="Wrap" />
+                                                        <WrapPanel Margin="0,5,0,0">
+                                                            <Button Margin="0,0,6,0"
+                                                                    Padding="8,3"
+                                                                    Command="{Binding DataContext.CopyPendingActionIdCommand, Source={x:Reference Root}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Content="复制 ID" />
+                                                            <Button Padding="8,3"
+                                                                    Command="{Binding DataContext.CopyPendingActionPayloadCommand, Source={x:Reference Root}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Content="复制确认载荷" />
+                                                        </WrapPanel>
+                                                    </StackPanel>
+                                                </Expander>
                                             </StackPanel>
 
                                             <WrapPanel Grid.Row="1"
@@ -939,26 +981,16 @@
                                                        HorizontalAlignment="Right">
                                                 <Button Margin="0,0,6,6"
                                                         Padding="10,4"
-                                                        Command="{Binding DataContext.ApprovePendingActionCommand, Source={x:Reference Root}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Review &amp; Approve"
-                                                        ToolTip="Review the protected action summary before approving." />
+                                                         Command="{Binding DataContext.ApprovePendingActionCommand, Source={x:Reference Root}}"
+                                                         CommandParameter="{Binding}"
+                                                         Content="审查并批准"
+                                                         ToolTip="先核对来源、任务、工作区、影响和撤销方式，再批准操作。" />
                                                 <Button Margin="0,0,6,6"
                                                         Padding="10,4"
-                                                        Command="{Binding DataContext.RejectPendingActionCommand, Source={x:Reference Root}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Reject"
-                                                        ToolTip="Reject this pending protected action." />
-                                                <Button Margin="0,0,6,6"
-                                                        Padding="10,4"
-                                                        Command="{Binding DataContext.CopyPendingActionIdCommand, Source={x:Reference Root}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Copy ID" />
-                                                <Button Margin="0,0,0,6"
-                                                        Padding="10,4"
-                                                        Command="{Binding DataContext.CopyPendingActionPayloadCommand, Source={x:Reference Root}}"
-                                                        CommandParameter="{Binding}"
-                                                        Content="Copy Payload" />
+                                                         Command="{Binding DataContext.RejectPendingActionCommand, Source={x:Reference Root}}"
+                                                         CommandParameter="{Binding}"
+                                                         Content="拒绝"
+                                                         ToolTip="拒绝这个受保护操作。" />
                                             </WrapPanel>
                                         </Grid>
                                     </Border>
@@ -2090,7 +2122,7 @@
                         <Button x:Name="AccessModeButton"
                                 Grid.Row="0"
                                 Grid.Column="1"
-                                Height="28"
+                                Height="30"
                                 Margin="4,0,0,0"
                                 Padding="6,0"
                                 HorizontalAlignment="Left"
@@ -2105,12 +2137,12 @@
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.ConfirmProtectedActions}"
                                               ToolTip="受保护操作执行前逐次确认。" />
-                                    <MenuItem Header="完全访问"
+                                    <MenuItem Header="临时自动批准（仅下一任务/本任务）"
                                               IsCheckable="True"
                                               IsChecked="{Binding IsComposerFullAccess, Mode=OneWay}"
                                               Command="{Binding SetComposerAccessModeCommand}"
                                               CommandParameter="{x:Static local:CopilotAgentAccessMode.FullAccess}"
-                                              ToolTip="当前会话的受保护操作无需逐次确认；范围和审计仍然生效。" />
+                                              ToolTip="最长 15 分钟，仅自动批准明确支持且写入范围完全位于当前工作区的结构化操作；Shell、菜单、数据库和范围不可界定的操作仍逐项确认。" />
                                 </ContextMenu>
                             </Button.ContextMenu>
                             <StackPanel Orientation="Horizontal">

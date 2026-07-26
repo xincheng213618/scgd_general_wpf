@@ -73,7 +73,8 @@ namespace ColorVision.Copilot
         public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ProtectedWrite(
             CopilotToolIdempotency.NonIdempotent,
             executionTimeout: TimeSpan.FromMinutes(10),
-            auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly);
+            auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
+            allowsTemporaryFullAccess: true);
 
         public CopilotToolInputSchema InputSchema => Schema;
 
@@ -95,7 +96,7 @@ namespace ColorVision.Copilot
                 CopilotToolFailureKind.Authorization));
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
@@ -103,7 +104,7 @@ namespace ColorVision.Copilot
             return ExecuteApprovedCoreAsync(request, toolInput, progress: null, cancellationToken);
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedWithProgressAsync(
+        Task<CopilotToolResult> ICopilotFrameworkApprovedProgressReportingTool.ExecuteApprovedWithProgressAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CopilotToolProgressContext progress,

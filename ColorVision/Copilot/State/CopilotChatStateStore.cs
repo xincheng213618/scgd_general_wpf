@@ -21,14 +21,22 @@ namespace ColorVision.Copilot
         Primary,
         Temporary,
         Backup,
+        RecoverySnapshot,
+        FutureVersion,
         Unrecoverable,
     }
 
-    public readonly record struct CopilotChatStateLoadStatus(CopilotChatStateLoadSource Source)
+    public readonly record struct CopilotChatStateLoadStatus(CopilotChatStateLoadSource Source, int? SchemaVersion = null)
     {
-        public bool IsRecovery => Source is CopilotChatStateLoadSource.Temporary or CopilotChatStateLoadSource.Backup;
+        public bool IsRecovery => Source is CopilotChatStateLoadSource.Temporary
+            or CopilotChatStateLoadSource.Backup
+            or CopilotChatStateLoadSource.RecoverySnapshot;
 
         public bool IsUnrecoverable => Source == CopilotChatStateLoadSource.Unrecoverable;
+
+        public bool IsFutureVersion => Source == CopilotChatStateLoadSource.FutureVersion;
+
+        public bool RequiresRecoveryProtection => IsUnrecoverable || IsFutureVersion;
     }
 
     public sealed class CopilotChatStateSizeLimitException : IOException
@@ -42,6 +50,20 @@ namespace ColorVision.Copilot
         {
             ActualBytes = actualBytes;
             MaximumBytes = maximumBytes;
+        }
+    }
+
+    public sealed class CopilotChatStateFutureVersionException : IOException
+    {
+        public int SchemaVersion { get; }
+
+        public int SupportedSchemaVersion { get; }
+
+        public CopilotChatStateFutureVersionException(int schemaVersion, int supportedSchemaVersion)
+            : base($"Copilot state schema {schemaVersion} was created by a newer application version; this version supports schema {supportedSchemaVersion}.")
+        {
+            SchemaVersion = schemaVersion;
+            SupportedSchemaVersion = supportedSchemaVersion;
         }
     }
 
@@ -165,7 +187,17 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotChatStateStore : IIncrementalCopilotChatStateStore
     {
+        private enum StateFileReadStatus
+        {
+            Missing,
+            Valid,
+            FutureVersion,
+            Invalid,
+        }
+
         private const long MaximumStateFileBytes = 64L * 1024 * 1024;
+        private const int MaximumRecoverySnapshots = 12;
+        private static readonly TimeSpan RecoverySnapshotInterval = TimeSpan.FromMinutes(30);
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
         private static readonly JsonSerializerSettings SerializerSettings = new()
         {
@@ -186,11 +218,15 @@ namespace ColorVision.Copilot
 
         public string TemporaryStateFilePath { get; }
 
+        public string RecoveryStateDirectoryPath { get; }
+
         public string AttachmentProtectionMarkerPath { get; }
 
         public string AttachmentDirectoryPath { get; }
 
         public CopilotChatStateLoadStatus LastLoadStatus { get; private set; } = new(CopilotChatStateLoadSource.NotAttempted);
+
+        public bool IsStatePersistenceBlocked => LastLoadStatus.IsFutureVersion;
 
         public bool IsManagedAttachmentCleanupProtected => File.Exists(AttachmentProtectionMarkerPath);
 
@@ -209,6 +245,7 @@ namespace ColorVision.Copilot
             StateFilePath = Path.Combine(StateDirectoryPath, "chat-state.json");
             BackupStateFilePath = StateFilePath + ".bak";
             TemporaryStateFilePath = StateFilePath + ".tmp";
+            RecoveryStateDirectoryPath = Path.Combine(StateDirectoryPath, "Recovery");
             AttachmentProtectionMarkerPath = Path.Combine(StateDirectoryPath, "attachments-recovery.protected");
             AttachmentDirectoryPath = Path.Combine(StateDirectoryPath, "Attachments");
         }
@@ -219,31 +256,84 @@ namespace ColorVision.Copilot
             try
             {
                 EnsureDirectory();
+                LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.NotAttempted);
+                var recoveryStateFiles = EnumerateRecoveryStateFiles();
                 var hadStateCandidate = File.Exists(StateFilePath)
                     || File.Exists(BackupStateFilePath)
-                    || File.Exists(TemporaryStateFilePath);
+                    || File.Exists(TemporaryStateFilePath)
+                    || recoveryStateFiles.Length > 0;
 
-                if (TryRecoverTemporaryState(out var temporaryState))
+                var temporaryStatus = ReadStateFile(TemporaryStateFilePath, out var temporaryState, out var temporarySchemaVersion);
+                if (temporaryStatus == StateFileReadStatus.FutureVersion)
+                    return BlockForFutureVersion(temporarySchemaVersion);
+                if (temporaryStatus == StateFileReadStatus.Valid)
                 {
+                    var primaryStatus = ReadStateFile(StateFilePath, out _, out var primarySchemaVersion);
+                    if (primaryStatus == StateFileReadStatus.FutureVersion)
+                        return BlockForFutureVersion(primarySchemaVersion);
+                    if (primaryStatus == StateFileReadStatus.Valid
+                        && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
+                    {
+                        TryDeleteFile(TemporaryStateFilePath);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            ReplaceStateFile(TemporaryStateFilePath);
+                        }
+                        catch (CopilotChatStateFutureVersionException ex)
+                        {
+                            return BlockForFutureVersion(ex.SchemaVersion);
+                        }
+                        catch
+                        {
+                            // The validated snapshot is still safe to use for this process even if disk promotion fails.
+                        }
+                    }
+
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Temporary);
                     return temporaryState;
                 }
+                if (temporaryStatus == StateFileReadStatus.Invalid)
+                    TryDeleteFile(TemporaryStateFilePath);
 
-                if (TryLoad(StateFilePath, out var state))
+                var primaryReadStatus = ReadStateFile(StateFilePath, out var state, out var stateSchemaVersion);
+                if (primaryReadStatus == StateFileReadStatus.FutureVersion)
+                    return BlockForFutureVersion(stateSchemaVersion);
+                if (primaryReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Primary);
                     return state;
                 }
 
-                if (TryLoad(BackupStateFilePath, out state))
+                var backupReadStatus = ReadStateFile(BackupStateFilePath, out state, out stateSchemaVersion);
+                if (backupReadStatus == StateFileReadStatus.FutureVersion)
+                    return BlockForFutureVersion(stateSchemaVersion);
+                if (backupReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
                     TryRestorePrimaryState(state);
                     return state;
                 }
 
+                foreach (var recoveryStateFile in recoveryStateFiles)
+                {
+                    var recoveryReadStatus = ReadStateFile(recoveryStateFile, out state, out stateSchemaVersion);
+                    if (recoveryReadStatus == StateFileReadStatus.FutureVersion)
+                        return BlockForFutureVersion(stateSchemaVersion);
+                    if (recoveryReadStatus != StateFileReadStatus.Valid)
+                        continue;
+
+                    PreserveUnreadableStateCandidate(BackupStateFilePath, "backup");
+                    LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.RecoverySnapshot);
+                    TryRestorePrimaryState(state);
+                    return state;
+                }
+
                 if (hadStateCandidate || EnumerateManagedAttachmentFiles(AttachmentDirectoryPath).Length > 0)
                 {
+                    PreserveUnreadableStateCandidate(BackupStateFilePath, "backup");
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Unrecoverable);
                     ProtectManagedAttachments();
                 }
@@ -265,6 +355,7 @@ namespace ColorVision.Copilot
             _fileGate.Wait();
             try
             {
+                ThrowIfStatePersistenceBlocked();
                 WriteSerializedState(serializedState);
             }
             finally
@@ -309,6 +400,7 @@ namespace ColorVision.Copilot
             await _fileGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                ThrowIfStatePersistenceBlocked();
                 EnsureDirectory();
 
                 try
@@ -357,47 +449,128 @@ namespace ColorVision.Copilot
             }
         }
 
-        private bool TryRecoverTemporaryState(out CopilotChatState state)
+        private CopilotChatState BlockForFutureVersion(int schemaVersion)
         {
-            if (!TryLoad(TemporaryStateFilePath, out state))
-            {
-                TryDeleteFile(TemporaryStateFilePath);
-                return false;
-            }
+            LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.FutureVersion, schemaVersion);
+            ProtectManagedAttachments();
+            return new CopilotChatState();
+        }
 
-            var currentIsValid = TryLoad(StateFilePath, out _);
-            if (currentIsValid
-                && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
-            {
-                TryDeleteFile(TemporaryStateFilePath);
-                return false;
-            }
-
-            try
-            {
-                ReplaceStateFile(TemporaryStateFilePath);
-            }
-            catch
-            {
-                // The validated snapshot is still safe to use for this process even if disk promotion fails.
-            }
-            return true;
+        private void ThrowIfStatePersistenceBlocked()
+        {
+            if (LastLoadStatus.IsFutureVersion)
+                throw new CopilotChatStateFutureVersionException(
+                    LastLoadStatus.SchemaVersion ?? CopilotChatState.CurrentSchemaVersion + 1,
+                    CopilotChatState.CurrentSchemaVersion);
         }
 
         private void ReplaceStateFile(string tempFilePath)
         {
-            if (TryLoad(StateFilePath, out _))
+            var currentStatus = ReadStateFile(StateFilePath, out _, out var currentSchemaVersion);
+            if (currentStatus == StateFileReadStatus.FutureVersion)
             {
+                BlockForFutureVersion(currentSchemaVersion);
+                throw new CopilotChatStateFutureVersionException(currentSchemaVersion, CopilotChatState.CurrentSchemaVersion);
+            }
+
+            if (currentStatus == StateFileReadStatus.Valid)
+            {
+                CreateRecoverySnapshotIfNeeded();
                 File.Replace(tempFilePath, StateFilePath, BackupStateFilePath, ignoreMetadataErrors: true);
                 return;
             }
 
+            if (currentStatus == StateFileReadStatus.Invalid)
+                PreserveUnreadableStateCandidate(StateFilePath, "primary");
             File.Move(tempFilePath, StateFilePath, overwrite: true);
+        }
+
+        private void CreateRecoverySnapshotIfNeeded()
+        {
+            try
+            {
+                Directory.CreateDirectory(RecoveryStateDirectoryPath);
+                var recoveryFiles = EnumerateRecoveryStateFiles();
+                if (recoveryFiles.Length > 0
+                    && DateTime.UtcNow - File.GetLastWriteTimeUtc(recoveryFiles[0]) < RecoverySnapshotInterval)
+                {
+                    return;
+                }
+
+                var snapshotPath = CreateUniqueRecoveryFilePath(
+                    $"chat-state-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss-fffffff}",
+                    ".json");
+                File.Copy(StateFilePath, snapshotPath, overwrite: false);
+                File.SetLastWriteTimeUtc(snapshotPath, DateTime.UtcNow);
+                TrimRecoveryFiles("chat-state-backup-*.json", MaximumRecoverySnapshots);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not create a recovery state snapshot: {ex.Message}");
+            }
+        }
+
+        private string[] EnumerateRecoveryStateFiles()
+        {
+            try
+            {
+                if (!Directory.Exists(RecoveryStateDirectoryPath))
+                    return [];
+
+                return Directory.GetFiles(RecoveryStateDirectoryPath, "chat-state-backup-*.json", SearchOption.TopDirectoryOnly)
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .ThenByDescending(path => path, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not enumerate recovery state snapshots: {ex.Message}");
+                return [];
+            }
+        }
+
+        private void PreserveUnreadableStateCandidate(string filePath, string label)
+        {
+            if (ReadStateFile(filePath, out _, out _) != StateFileReadStatus.Invalid)
+                return;
+
+            try
+            {
+                Directory.CreateDirectory(RecoveryStateDirectoryPath);
+                var snapshotPath = CreateUniqueRecoveryFilePath(
+                    $"chat-state-unreadable-{label}-{DateTime.UtcNow:yyyyMMdd-HHmmss-fffffff}",
+                    ".json");
+                File.Copy(filePath, snapshotPath, overwrite: false);
+                TrimRecoveryFiles("chat-state-unreadable-*.json", 4);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Copilot could not preserve an unreadable {label} state file: {ex.Message}");
+            }
+        }
+
+        private string CreateUniqueRecoveryFilePath(string fileNameWithoutExtension, string extension)
+        {
+            var candidate = Path.Combine(RecoveryStateDirectoryPath, fileNameWithoutExtension + extension);
+            for (var suffix = 1; File.Exists(candidate); suffix++)
+                candidate = Path.Combine(RecoveryStateDirectoryPath, $"{fileNameWithoutExtension}-{suffix}{extension}");
+            return candidate;
+        }
+
+        private void TrimRecoveryFiles(string searchPattern, int maximumFiles)
+        {
+            var files = Directory.GetFiles(RecoveryStateDirectoryPath, searchPattern, SearchOption.TopDirectoryOnly)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .ThenByDescending(path => path, StringComparer.OrdinalIgnoreCase)
+                .Skip(maximumFiles)
+                .ToArray();
+            foreach (var file in files)
+                TryDeleteFile(file);
         }
 
         private static void ValidateStateFile(string filePath)
         {
-            if (!TryLoad(filePath, out _))
+            if (ReadStateFile(filePath, out _, out _) != StateFileReadStatus.Valid)
                 throw new InvalidDataException("Copilot state serialization did not produce a valid state document.");
         }
 
@@ -439,7 +612,7 @@ namespace ColorVision.Copilot
             }
 
             var managedFiles = EnumerateManagedAttachmentFiles(attachmentRoot);
-            if (IsManagedAttachmentCleanupProtected || LastLoadStatus.IsUnrecoverable)
+            if (IsManagedAttachmentCleanupProtected || LastLoadStatus.RequiresRecoveryProtection)
             {
                 if (managedFiles.Any(filePath => !referencedPaths.Contains(Path.GetFullPath(filePath))))
                 {
@@ -535,11 +708,15 @@ namespace ColorVision.Copilot
                 Directory.CreateDirectory(AttachmentDirectoryPath);
         }
 
-        private static bool TryLoad(string filePath, out CopilotChatState state)
+        private static StateFileReadStatus ReadStateFile(
+            string filePath,
+            out CopilotChatState state,
+            out int schemaVersion)
         {
             state = new CopilotChatState();
+            schemaVersion = 0;
             if (!File.Exists(filePath))
-                return false;
+                return StateFileReadStatus.Missing;
 
             try
             {
@@ -551,7 +728,7 @@ namespace ColorVision.Copilot
                     bufferSize: 8192,
                     FileOptions.SequentialScan);
                 if (stream.Length > MaximumStateFileBytes)
-                    return false;
+                    return StateFileReadStatus.Invalid;
 
                 using var textReader = new StreamReader(
                     stream,
@@ -560,24 +737,36 @@ namespace ColorVision.Copilot
                     bufferSize: 8192,
                     leaveOpen: false);
                 using var jsonReader = new JsonTextReader(textReader) { CloseInput = false };
-                if (JToken.Load(jsonReader) is not JObject document
-                    || jsonReader.Read()
-                    || !HasTrustedDocumentShape(document))
+                if (JToken.Load(jsonReader) is not JObject document || jsonReader.Read())
+                    return StateFileReadStatus.Invalid;
+
+                var schemaToken = document.GetValue(nameof(CopilotChatState.SchemaVersion), StringComparison.OrdinalIgnoreCase);
+                if (schemaToken != null)
                 {
-                    return false;
+                    if (schemaToken.Type != JTokenType.Integer)
+                        return StateFileReadStatus.Invalid;
+
+                    schemaVersion = schemaToken.Value<int>();
+                    if (schemaVersion > CopilotChatState.CurrentSchemaVersion)
+                        return StateFileReadStatus.FutureVersion;
+                    if (schemaVersion < 1)
+                        return StateFileReadStatus.Invalid;
                 }
+
+                if (!HasTrustedDocumentShape(document))
+                    return StateFileReadStatus.Invalid;
 
                 var deserializedState = document.ToObject<CopilotChatState>(JsonSerializer.Create(SerializerSettings));
                 if (deserializedState == null)
-                    return false;
+                    return StateFileReadStatus.Invalid;
 
                 state = deserializedState;
                 state.SchemaVersion = CopilotChatState.CurrentSchemaVersion;
-                return true;
+                return StateFileReadStatus.Valid;
             }
             catch
             {
-                return false;
+                return StateFileReadStatus.Invalid;
             }
         }
 
@@ -592,17 +781,6 @@ namespace ColorVision.Copilot
 
         private static bool HasTrustedDocumentShape(JObject document)
         {
-            var schemaToken = document.GetValue(nameof(CopilotChatState.SchemaVersion), StringComparison.OrdinalIgnoreCase);
-            if (schemaToken != null)
-            {
-                if (schemaToken.Type != JTokenType.Integer)
-                    return false;
-
-                var schemaVersion = schemaToken.Value<int>();
-                if (schemaVersion < 1 || schemaVersion > CopilotChatState.CurrentSchemaVersion)
-                    return false;
-            }
-
             if (!IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveConversationId), StringComparison.OrdinalIgnoreCase))
                 || !IsStringOrNull(document.GetValue(nameof(CopilotChatState.ActiveProfileId), StringComparison.OrdinalIgnoreCase))
                 || document.GetValue(nameof(CopilotChatState.Conversations), StringComparison.OrdinalIgnoreCase) is not JArray conversations)

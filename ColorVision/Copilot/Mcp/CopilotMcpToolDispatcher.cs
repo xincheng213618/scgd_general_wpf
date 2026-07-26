@@ -20,7 +20,9 @@ using System.Windows;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpToolDispatcher : ICopilotApplicationCapabilityInvoker
+    public sealed class CopilotMcpToolDispatcher :
+        ICopilotApplicationCapabilityInvoker,
+        ICopilotApprovedApplicationCapabilityInvoker
     {
         private const int MaxSearchResults = 30;
         private const int MaxGrepMatches = 40;
@@ -420,7 +422,28 @@ namespace ColorVision.Copilot.Mcp
             return true;
         }
 
-        public async Task<CopilotMcpToolCallResult> CallAsync(string toolName, IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken, string callerSource = "")
+        public Task<CopilotMcpToolCallResult> CallAsync(
+            string toolName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CancellationToken cancellationToken)
+        {
+            return CallCoreAsync(toolName, arguments, cancellationToken, "in-process-external");
+        }
+
+        internal Task<CopilotMcpToolCallResult> CallExternalAsync(
+            string toolName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            string callerSource,
+            CancellationToken cancellationToken)
+        {
+            return CallCoreAsync(toolName, arguments, cancellationToken, callerSource);
+        }
+
+        private async Task<CopilotMcpToolCallResult> CallCoreAsync(
+            string toolName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CancellationToken cancellationToken,
+            string callerSource)
         {
             var normalizedToolName = NormalizeToolName(toolName);
             var stopwatch = Stopwatch.StartNew();
@@ -454,10 +477,44 @@ namespace ColorVision.Copilot.Mcp
             var callerSource = caller switch
             {
                 CopilotApplicationCapabilityCaller.InAppAgent => InAppAgentCallerSource,
-                CopilotApplicationCapabilityCaller.InAppAgentFrameworkApproved => InAppAgentFrameworkApprovedCallerSource,
                 _ => throw new ArgumentOutOfRangeException(nameof(caller)),
             };
-            var result = await CallAsync(capabilityName, arguments, cancellationToken, callerSource);
+            var result = await CallCoreAsync(capabilityName, arguments, cancellationToken, callerSource);
+            return ToApplicationCapabilityResult(result);
+        }
+
+        async Task<CopilotApplicationCapabilityCallResult> ICopilotApprovedApplicationCapabilityInvoker.InvokeApprovedAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var currentWorkspacePath = GetWorkspaceSnapshot().SolutionDirectoryPath;
+            if (string.IsNullOrWhiteSpace(request.ConversationId)
+                || string.IsNullOrWhiteSpace(request.TaskId)
+                || !WorkspaceScopeMatches(request.WorkspacePath, currentWorkspacePath))
+            {
+                return new CopilotApplicationCapabilityCallResult
+                {
+                    Success = false,
+                    ErrorCode = "approved_capability_scope_mismatch",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    Content = "The approved application capability no longer matches the active Copilot task or workspace.",
+                };
+            }
+
+            var result = await CallCoreAsync(
+                capabilityName,
+                arguments,
+                cancellationToken,
+                InAppAgentFrameworkApprovedCallerSource);
+            return ToApplicationCapabilityResult(result);
+        }
+
+        private static CopilotApplicationCapabilityCallResult ToApplicationCapabilityResult(
+            CopilotMcpToolCallResult result)
+        {
             return new CopilotApplicationCapabilityCallResult
             {
                 Success = result.Success,
@@ -508,7 +565,7 @@ namespace ColorVision.Copilot.Mcp
                 .Register("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
                 .Register("execute_menu", (arguments, caller, token) => ExecuteMenuAsync(arguments, caller, token))
                 .Register("create_flow", (arguments, caller, token) => CreateFlowAsync(arguments, caller, token))
-                .Register("confirm_action", (arguments, _, token) => ConfirmActionAsync(arguments, token))
+                .Register("confirm_action", ConfirmActionAsync)
                 .Register("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
                 .Register("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
                 .Register("apply_template_patch", (arguments, caller, token) => ApplyTemplatePatchAsync(arguments, caller, token))
@@ -1106,7 +1163,8 @@ namespace ColorVision.Copilot.Mcp
                 normalizedArguments,
                 preview.Text + Environment.NewLine + "Does not save or run the flow.",
                 token => _environment.ApplyFlowPatchHandler(request, token),
-                executeOnApproval: IsInAppAgent(callerSource));
+                executeOnApproval: IsInAppAgent(callerSource),
+                callerSource: callerSource);
         }
 
         private static bool TryBuildFlowPatchRequest(
@@ -1391,7 +1449,8 @@ namespace ColorVision.Copilot.Mcp
                         arguments,
                         handlerPreview.Text,
                         token => _environment.ExecuteMenuHandler(query, false, token),
-                        executeOnApproval: true);
+                        executeOnApproval: true,
+                        callerSource: callerSource);
                 }
 
                 if (Application.Current == null)
@@ -1408,7 +1467,8 @@ namespace ColorVision.Copilot.Mcp
                     arguments,
                     string.Join(Environment.NewLine, new[] { applicationPreview.Summary, applicationPreview.Content }.Where(value => !string.IsNullOrWhiteSpace(value))),
                     async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),
-                    executeOnApproval: true);
+                    executeOnApproval: true,
+                    callerSource: callerSource);
             }
 
             if (_environment.ExecuteMenuHandler != null)
@@ -1426,7 +1486,8 @@ namespace ColorVision.Copilot.Mcp
                         arguments,
                         handlerResult.Text,
                         token => _environment.ExecuteMenuHandler(query, false, token),
-                        executeOnApproval: IsInAppAgent(callerSource));
+                        executeOnApproval: IsInAppAgent(callerSource),
+                        callerSource: callerSource);
                 }
 
                 return handlerResult;
@@ -1445,7 +1506,8 @@ namespace ColorVision.Copilot.Mcp
                     arguments,
                     string.Join(Environment.NewLine, new[] { result.Summary, result.Content, result.ErrorMessage }.Where(value => !string.IsNullOrWhiteSpace(value))),
                     async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),
-                    executeOnApproval: IsInAppAgent(callerSource));
+                    executeOnApproval: IsInAppAgent(callerSource),
+                    callerSource: callerSource);
             }
 
             return ToMcpResult(result, "menu_execution_failed");
@@ -1472,10 +1534,14 @@ namespace ColorVision.Copilot.Mcp
                 normalizedArguments,
                 $"Flow name: {flowName}{Environment.NewLine}The flow will be created but will not be opened or executed automatically.",
                 token => _environment.CreateFlowHandler(flowName, token),
-                executeOnApproval: IsInAppAgent(callerSource));
+                executeOnApproval: IsInAppAgent(callerSource),
+                callerSource: callerSource);
         }
 
-        private async Task<CopilotMcpToolCallResult> ConfirmActionAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private async Task<CopilotMcpToolCallResult> ConfirmActionAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            string callerSource,
+            CancellationToken cancellationToken)
         {
             var actionId = GetString(arguments, "action_id");
             var toolName = NormalizeToolName(GetString(arguments, "tool_name"));
@@ -1490,7 +1556,13 @@ namespace ColorVision.Copilot.Mcp
             if (string.IsNullOrWhiteSpace(argumentsSummary))
                 return CopilotMcpToolCallResult.Fail("missing_arguments_summary", "The confirm_action tool requires the original arguments_summary.");
 
-            return await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(actionId, toolName, argumentsSummary, cancellationToken);
+            return await CopilotMcpConfirmationStore.Instance.ExecuteApprovedAsync(
+                actionId,
+                toolName,
+                argumentsSummary,
+                callerSource,
+                GetWorkspaceSnapshot().SolutionDirectoryPath,
+                cancellationToken);
         }
 
         private CopilotMcpToolCallResult PreviewTemplatePatch(IReadOnlyDictionary<string, JsonElement>? arguments)
@@ -1649,7 +1721,8 @@ namespace ColorVision.Copilot.Mcp
                 arguments,
                 BuildTemplatePatchConfirmationPreview(preview),
                 token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token),
-                executeOnApproval: string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase));
+                executeOnApproval: string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase),
+                callerSource: callerSource);
         }
 
         private async Task<CopilotMcpToolCallResult> ExecuteTemplatePatchPreviewAsync(string previewId, CancellationToken cancellationToken)
@@ -1799,7 +1872,8 @@ namespace ColorVision.Copilot.Mcp
                     arguments,
                     "Changing language may affect UI state and can trigger the existing restart confirmation flow.",
                     token => _environment.SetLanguageHandler(languageQuery, token),
-                    executeOnApproval: IsInAppAgent(callerSource));
+                    executeOnApproval: IsInAppAgent(callerSource),
+                    callerSource: callerSource);
             }
 
             return CreateConfirmableActionResult(
@@ -1809,7 +1883,8 @@ namespace ColorVision.Copilot.Mcp
                 arguments,
                 "Changing language may affect UI state and can trigger the existing restart confirmation flow.",
                 async token => ToMcpResult(await CopilotApplicationCapability.SetLanguageAsync(languageQuery, token), "language_change_failed"),
-                executeOnApproval: IsInAppAgent(callerSource));
+                executeOnApproval: IsInAppAgent(callerSource),
+                callerSource: callerSource);
         }
 
         private CopilotMcpToolCallResult CreateConfirmableActionResult(
@@ -1819,20 +1894,28 @@ namespace ColorVision.Copilot.Mcp
             IReadOnlyDictionary<string, JsonElement>? arguments,
             string previewText,
             Func<CancellationToken, Task<CopilotMcpToolCallResult>> executor,
-            bool executeOnApproval = false)
+            bool executeOnApproval = false,
+            string callerSource = "")
         {
             if (ContainsSensitiveArgumentValues(arguments))
                 return CopilotMcpToolCallResult.Fail("sensitive_arguments_not_allowed", "ColorVision MCP refuses to create confirmable actions that contain token, api key, password, authorization, or bearer secret values.");
 
             var argumentsSummary = BuildArgumentSummary(arguments);
+            var normalizedToolName = NormalizeToolName(toolName);
+            var requestContext = CreateConfirmationRequestContext(
+                normalizedToolName,
+                title,
+                previewText,
+                callerSource);
             var action = CopilotMcpConfirmationStore.Instance.Create(
                 title,
                 description,
                 "confirmation-required",
-                NormalizeToolName(toolName),
+                normalizedToolName,
                 argumentsSummary,
                 executor,
-                executeOnApproval);
+                executeOnApproval,
+                requestContext: requestContext);
 
             var builder = new StringBuilder();
             builder.AppendLine("confirmation_required");
@@ -1858,6 +1941,53 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.ApprovalRequired(builder.ToString().TrimEnd(), action);
         }
 
+        private CopilotConfirmationRequestContext CreateConfirmationRequestContext(
+            string toolName,
+            string title,
+            string impactSummary,
+            string callerSource)
+        {
+            var inAppAgent = IsInAppAgent(callerSource);
+            var workspace = GetWorkspaceSnapshot().SolutionDirectoryPath;
+            var reversibility = ResolveApprovalReversibility(toolName, out var reversibilitySummary);
+            return new CopilotConfirmationRequestContext
+            {
+                SourceKind = inAppAgent
+                    ? CopilotApprovalSourceKind.InAppAgent
+                    : CopilotApprovalSourceKind.ExternalMcp,
+                RequestSource = callerSource,
+                TaskLabel = inAppAgent ? "当前 Copilot 任务" : title,
+                WorkspacePath = workspace,
+                ImpactSummary = impactSummary,
+                Reversibility = reversibility,
+                ReversibilitySummary = reversibilitySummary,
+            };
+        }
+
+        private static CopilotApprovalReversibility ResolveApprovalReversibility(
+            string toolName,
+            out string summary)
+        {
+            switch (NormalizeToolName(toolName))
+            {
+                case "apply_template_patch":
+                    summary = "修改只应用到当前编辑器；保存前可通过重新加载模板手动恢复。";
+                    return CopilotApprovalReversibility.ManualOnly;
+                case "apply_flow_patch":
+                    summary = "修改不会自动保存或运行流程；如需恢复，必须在编辑器中手动撤销。";
+                    return CopilotApprovalReversibility.ManualOnly;
+                case "set_language":
+                    summary = "可在设置中再次切换语言，但本操作没有自动回滚步骤。";
+                    return CopilotApprovalReversibility.ManualOnly;
+                case "create_flow":
+                    summary = "新建流程不会自动删除；如需恢复，必须手动关闭或移除。";
+                    return CopilotApprovalReversibility.ManualOnly;
+                default:
+                    summary = "所选命令未声明自动撤销能力；请在批准前核对影响。";
+                    return CopilotApprovalReversibility.Unknown;
+            }
+        }
+
         private static bool IsConfirmationRequiredResult(CopilotMcpToolCallResult result)
         {
             return !result.Success
@@ -1879,6 +2009,29 @@ namespace ColorVision.Copilot.Mcp
         private static bool IsInAppAgent(string callerSource)
         {
             return string.Equals(callerSource, InAppAgentCallerSource, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool WorkspaceScopeMatches(string expectedPath, string currentPath)
+        {
+            var expected = NormalizeWorkspaceScope(expectedPath);
+            var current = NormalizeWorkspaceScope(currentPath);
+            return string.Equals(expected, current, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeWorkspaceScope(string? workspacePath)
+        {
+            var normalized = (workspacePath ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                return string.Empty;
+            try
+            {
+                return Path.GetFullPath(normalized)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch
+            {
+                return normalized.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
         }
 
         private static bool IsInAppAgentFrameworkApproved(string callerSource)

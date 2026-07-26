@@ -201,7 +201,7 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
     }
 
-    public interface ICopilotFrameworkApprovedProgressReportingTool : ICopilotFrameworkApprovedTool
+    internal interface ICopilotFrameworkApprovedProgressReportingTool : ICopilotFrameworkApprovedTool
     {
         Task<CopilotToolResult> ExecuteApprovedWithProgressAsync(
             CopilotAgentRequest request,
