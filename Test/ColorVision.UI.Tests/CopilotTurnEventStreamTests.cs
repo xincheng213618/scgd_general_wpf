@@ -204,6 +204,69 @@ public sealed class CopilotTurnEventStreamTests
         await producerFinished.Task.WaitAsync(TimeSpan.FromSeconds(2));
     }
 
+    [Fact]
+    public async Task ProducerSynchronousPrefixDoesNotBlockEnumeratorThread()
+    {
+        using var producerStarted = new ManualResetEventSlim();
+        using var releaseProducer = new ManualResetEventSlim();
+        var enumeratorThreadId = 0;
+        var producerThreadId = 0;
+        var stream = CopilotTurnEventStream.RunAsync(
+            (_, _) =>
+            {
+                producerThreadId = Environment.CurrentManagedThreadId;
+                producerStarted.Set();
+                releaseProducer.Wait(CancellationToken.None);
+                return Task.FromResult(CreateResult());
+            },
+            CancellationToken.None);
+        await using var enumerator = stream.GetAsyncEnumerator();
+        var invocation = Task.Factory.StartNew(
+            () =>
+            {
+                enumeratorThreadId = Environment.CurrentManagedThreadId;
+                return enumerator.MoveNextAsync().AsTask();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+        Task<bool>? pendingMove = null;
+
+        try
+        {
+            Assert.True(producerStarted.Wait(TimeSpan.FromSeconds(1)));
+            pendingMove = await invocation.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.NotEqual(enumeratorThreadId, producerThreadId);
+            Assert.False(pendingMove.IsCompleted);
+        }
+        finally
+        {
+            releaseProducer.Set();
+            if (pendingMove == null)
+            {
+                try
+                {
+                    pendingMove = await invocation.WaitAsync(TimeSpan.FromSeconds(2));
+                }
+                catch
+                {
+                }
+            }
+
+            if (pendingMove != null)
+            {
+                try
+                {
+                    _ = await pendingMove.WaitAsync(TimeSpan.FromSeconds(2));
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+
     private static CopilotTurnResult CreateResult()
     {
         var usage = new CopilotTokenUsage(4, 2, 6);

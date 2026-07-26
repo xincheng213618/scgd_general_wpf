@@ -31,7 +31,12 @@ namespace ColorVision.Copilot
                 AllowSynchronousContinuations = false,
             });
             var sink = new CopilotTurnEventSink(turnEvent => channel.Writer.TryWrite(turnEvent));
-            var producer = ProduceAsync(runTurn, sink, channel.Writer, lifetime.Token);
+            // Async delegates execute synchronously until their first incomplete await. Start the
+            // entire turn on the thread pool so provider setup and extension code cannot occupy
+            // the WPF thread before yielding.
+            var producer = Task.Run(
+                () => ProduceAsync(runTurn, sink, channel.Writer, lifetime.Token),
+                CancellationToken.None);
             var cancellationDrain = EnforceCancellationDeadlineAsync(
                 producer,
                 channel.Writer,
