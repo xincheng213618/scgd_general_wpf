@@ -18,6 +18,9 @@ public sealed class CopilotDelegateSubagentToolTests
             {
                 ToolCalls = 1,
                 PeakEstimatedInputTokens = 12_000,
+                ContextRecoveryCount = 2,
+                ContextRecoveryEstimatedInputTokensBefore = 40_000,
+                ContextRecoveryEstimatedInputTokensAfter = 18_000,
                 RegisteredToolCount = 48,
                 AvailableToolCount = 3,
                 AvailableToolDefinitionCharacters = 2_048,
@@ -33,6 +36,9 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
         Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
+        Assert.Equal(2, result.DelegatedRunUsage?.ContextRecoveryCount);
+        Assert.Equal(40_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(18_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensAfter);
         Assert.Equal(48, result.DelegatedRunUsage?.RegisteredToolCount);
         Assert.Equal(3, result.DelegatedRunUsage?.AvailableToolCount);
         Assert.Equal(2_048, result.DelegatedRunUsage?.AvailableToolDefinitionCharacters);

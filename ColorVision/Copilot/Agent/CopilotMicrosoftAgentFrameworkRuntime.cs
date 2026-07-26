@@ -331,7 +331,11 @@ namespace ColorVision.Copilot
             var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
-                recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
+                recoveryInfo =>
+                {
+                    chatClient.RecordContextRecovery(recoveryInfo);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText()));
+                });
             var usedDelegatedDirectAnswer = false;
             var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
                 contextRecoveryChatClient,
@@ -1058,7 +1062,11 @@ namespace ColorVision.Copilot
             using var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
-                recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
+                recoveryInfo =>
+                {
+                    chatClient.RecordContextRecovery(recoveryInfo);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText()));
+                });
 
             var usage = CopilotTokenUsage.Empty;
             var finalAnswer = string.Empty;

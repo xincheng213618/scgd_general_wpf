@@ -28,6 +28,9 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                     RequestTokenBudget = 16_384,
                     ConsumedTokens = 2_048,
                     PeakEstimatedInputTokens = 6_000,
+                    ContextRecoveryCount = 1,
+                    ContextRecoveryEstimatedInputTokensBefore = 8_000,
+                    ContextRecoveryEstimatedInputTokensAfter = 3_000,
                 },
                 Usage = new CopilotTokenUsage(1_800, 248, 2_048, 1_200),
                 UsedPreselectedEvidence = true,
@@ -52,6 +55,9 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(0, provider.CallCount);
         Assert.Equal(1, result.Budget.ProviderCalls);
         Assert.Equal(6_000, result.Budget.PeakEstimatedInputTokens);
+        Assert.Equal(1, result.Budget.ContextRecoveryCount);
+        Assert.Equal(8_000, result.Budget.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(3_000, result.Budget.ContextRecoveryEstimatedInputTokensAfter);
         Assert.Equal(1_800, result.Budget.ReportedInputTokens);
         Assert.Equal(248, result.Budget.ReportedOutputTokens);
         Assert.Equal(2_048, result.Budget.ReportedTotalTokens);

@@ -594,6 +594,7 @@ namespace ColorVision.Copilot
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
                 || AgentRunBudget.PeakEstimatedInputTokens > 0
+                || AgentRunBudget.ContextRecoveryCount > 0
                 || AgentRunBudget.ReportedTotalTokens > 0
                 || AgentRunBudget.ElapsedMs > 0
                 || AgentRunBudget.UsedDelegatedDirectAnswer
@@ -705,6 +706,31 @@ namespace ColorVision.Copilot
                     {
                         builder.Append(" / ")
                             .Append(AgentRunBudget.InputBudgetTokens.ToString("N0"));
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ContextRecoveryCount > 0)
+                {
+                    builder.Append("窗口恢复：")
+                        .Append(AgentRunBudget.ContextRecoveryCount.ToString("N0"))
+                        .Append(" 次");
+                    var recoveryInputTokensBefore = Math.Max(
+                        0,
+                        AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
+                    if (recoveryInputTokensBefore > 0)
+                    {
+                        var recoveryInputTokensAfter = Math.Clamp(
+                            AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter,
+                            0,
+                            recoveryInputTokensBefore);
+                        builder.Append(" · 累计输入（估算）")
+                            .Append(recoveryInputTokensBefore.ToString("N0"))
+                            .Append(" → ")
+                            .Append(recoveryInputTokensAfter.ToString("N0"))
+                            .Append(" tokens（缩减 ")
+                            .Append(((recoveryInputTokensBefore - recoveryInputTokensAfter) * 100d
+                                / recoveryInputTokensBefore).ToString("0.#"))
+                            .Append("%）");
                     }
                     builder.AppendLine();
                 }
@@ -1732,6 +1758,9 @@ namespace ColorVision.Copilot
                     (long)reportedInputTokens + reportedOutputTokens),
                 0,
                 int.MaxValue);
+            var contextRecoveryEstimatedInputTokensBefore = Math.Max(
+                0,
+                budget.ContextRecoveryEstimatedInputTokensBefore);
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1742,6 +1771,12 @@ namespace ColorVision.Copilot
                 ConsumedTokens = Math.Max(0, budget.ConsumedTokens),
                 ProviderCalls = Math.Max(0, budget.ProviderCalls),
                 PeakEstimatedInputTokens = Math.Max(0, budget.PeakEstimatedInputTokens),
+                ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    budget.ContextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    contextRecoveryEstimatedInputTokensBefore),
                 ReportedInputTokens = reportedInputTokens,
                 ReportedOutputTokens = reportedOutputTokens,
                 ReportedTotalTokens = reportedTotalTokens,
@@ -1787,6 +1822,9 @@ namespace ColorVision.Copilot
                 && left.ConsumedTokens == right.ConsumedTokens
                 && left.ProviderCalls == right.ProviderCalls
                 && left.PeakEstimatedInputTokens == right.PeakEstimatedInputTokens
+                && left.ContextRecoveryCount == right.ContextRecoveryCount
+                && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
+                && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter
                 && left.ReportedInputTokens == right.ReportedInputTokens
                 && left.ReportedOutputTokens == right.ReportedOutputTokens
                 && left.ReportedTotalTokens == right.ReportedTotalTokens

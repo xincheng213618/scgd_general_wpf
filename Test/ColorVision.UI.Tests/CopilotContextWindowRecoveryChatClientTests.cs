@@ -9,14 +9,73 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotContextWindowRecoveryChatClientTests
 {
     [Fact]
+    public async Task AgentRuntimeReturnsRecoveredTurnMetrics()
+    {
+        using var provider = new ContextLimitChatClient(call => call == 1);
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(),
+            _ => provider,
+            EmptyExternalToolProvider.Instance,
+            new CopilotCapabilityCatalog());
+        var events = new List<CopilotAgentEvent>();
+
+        var result = await runtime.RunAsync(
+            new CopilotAgentRequest
+            {
+                UserText = "Summarize the conversation.",
+                History = CreateLargeRequestHistory(),
+                Profile = new CopilotProfileConfig
+                {
+                    ProviderType = CopilotProviderType.OpenAICompatible,
+                    BaseUrl = "https://example.com/v1",
+                    ApiKey = "test",
+                    Model = "test-model",
+                    MaxTokens = 4_096,
+                },
+                RunBudgetOverride = new CopilotAgentRunBudgetOverride
+                {
+                    ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                },
+                Mode = CopilotAgentMode.Chat,
+            },
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
+        Assert.Equal(2, provider.CallCount);
+        Assert.Equal(1, result.Budget.ContextRecoveryCount);
+        Assert.True(result.Budget.ContextRecoveryEstimatedInputTokensBefore > 0);
+        Assert.True(
+            result.Budget.ContextRecoveryEstimatedInputTokensBefore
+            > result.Budget.ContextRecoveryEstimatedInputTokensAfter);
+        Assert.Contains(events, agentEvent =>
+            agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
+            && agentEvent.Text.Contains("estimated input", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task SeparateModelTurnsCanEachRecoverOnce()
     {
-        using var provider = new ContextLimitChatClient(call => call % 2 == 1);
+        var provider = new ContextLimitChatClient(call => call % 2 == 1);
+        var budgetClient = new CopilotTokenBudgetChatClient(
+            provider,
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 16_000,
+                MaxOutputTokens = 4_000,
+                RequestTokenBudget = 128_000,
+            });
         var recoveries = new List<CopilotContextWindowRecoveryInfo>();
         using var client = new CopilotContextWindowRecoveryChatClient(
-            provider,
+            budgetClient,
             inputBudgetTokens: 8_000,
-            recoveries.Add);
+            recovery =>
+            {
+                budgetClient.RecordContextRecovery(recovery);
+                recoveries.Add(recovery);
+            });
         var messages = CreateLargeConversation();
 
         await client.GetResponseAsync(messages);
@@ -28,6 +87,14 @@ public sealed class CopilotContextWindowRecoveryChatClientTests
         Assert.Equal(messages.Length, provider.MessageCounts[2]);
         Assert.True(provider.MessageCounts[3] < messages.Length);
         Assert.Equal(2, recoveries.Count);
+        var budget = budgetClient.Snapshot;
+        Assert.Equal(2, budget.ContextRecoveryCount);
+        Assert.Equal(
+            recoveries.Sum(recovery => (long)recovery.EstimatedInputTokensBefore),
+            budget.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(
+            recoveries.Sum(recovery => (long)recovery.EstimatedInputTokensAfter),
+            budget.ContextRecoveryEstimatedInputTokensAfter);
         Assert.All(recoveries, recovery =>
         {
             Assert.True(recovery.EstimatedInputTokensBefore > recovery.EstimatedInputTokensAfter);
@@ -96,6 +163,15 @@ public sealed class CopilotContextWindowRecoveryChatClientTests
         return messages.ToArray();
     }
 
+    private static CopilotRequestMessage[] CreateLargeRequestHistory()
+    {
+        return CreateLargeConversation()
+            .Select(message => new CopilotRequestMessage(
+                message.Role == ChatRole.User ? "user" : "assistant",
+                message.Text))
+            .ToArray();
+    }
+
     private static async Task DrainAsync(IAsyncEnumerable<ChatResponseUpdate> updates)
     {
         await foreach (var _ in updates)
@@ -162,5 +238,15 @@ public sealed class CopilotContextWindowRecoveryChatClientTests
                 inner: null,
                 HttpStatusCode.BadRequest);
         }
+    }
+
+    private sealed class EmptyExternalToolProvider : ICopilotExternalToolProvider
+    {
+        public static EmptyExternalToolProvider Instance { get; } = new();
+
+        public Task<CopilotExternalToolLease> DiscoverAsync(
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new CopilotExternalToolLease());
     }
 }

@@ -459,6 +459,17 @@ namespace ColorVision.Copilot
             {
                 return (int)Math.Clamp((long)Math.Max(0, left) + Math.Max(0, right), 0, int.MaxValue);
             }
+            static long AddClampedLong(long left, long right)
+            {
+                var normalizedLeft = Math.Max(0, left);
+                var normalizedRight = Math.Max(0, right);
+                return normalizedLeft > long.MaxValue - normalizedRight
+                    ? long.MaxValue
+                    : normalizedLeft + normalizedRight;
+            }
+            var contextRecoveryEstimatedInputTokensBefore = AddClampedLong(
+                exploration.ContextRecoveryEstimatedInputTokensBefore,
+                finalization.ContextRecoveryEstimatedInputTokensBefore);
             var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
             var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
             var reportedTotalTokens = Math.Max(
@@ -484,6 +495,15 @@ namespace ColorVision.Copilot
                 PeakEstimatedInputTokens = Math.Max(
                     Math.Max(0, exploration.PeakEstimatedInputTokens),
                     Math.Max(0, finalization.PeakEstimatedInputTokens)),
+                ContextRecoveryCount = AddClamped(
+                    exploration.ContextRecoveryCount,
+                    finalization.ContextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = Math.Min(
+                    contextRecoveryEstimatedInputTokensBefore,
+                    AddClampedLong(
+                        exploration.ContextRecoveryEstimatedInputTokensAfter,
+                        finalization.ContextRecoveryEstimatedInputTokensAfter)),
                 ReportedInputTokens = reportedInputTokens,
                 ReportedOutputTokens = reportedOutputTokens,
                 ReportedTotalTokens = reportedTotalTokens,
@@ -981,6 +1001,9 @@ namespace ColorVision.Copilot
                     StopReason = result.StopReason,
                     ToolCalls = result.Budget.ToolCalls,
                     PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
+                    ContextRecoveryCount = result.Budget.ContextRecoveryCount,
+                    ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
+                    ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,
                     Usage = result.Usage,
                     ConsumedTokens = result.Budget.ConsumedTokens,
                     ProviderCalls = result.Budget.ProviderCalls,

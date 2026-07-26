@@ -638,6 +638,9 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             ConsumedTokens = 3_100,
             ProviderCalls = 1,
             PeakEstimatedInputTokens = 9_000,
+            ContextRecoveryCount = 1,
+            ContextRecoveryEstimatedInputTokensBefore = 9_000,
+            ContextRecoveryEstimatedInputTokensAfter = 4_000,
             ReportedInputTokens = 2_800,
             ReportedOutputTokens = 300,
             ReportedTotalTokens = 3_100,
@@ -663,6 +666,9 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(11_653, combined.ConsumedTokens);
         Assert.Equal(3, combined.ProviderCalls);
         Assert.Equal(12_000, combined.PeakEstimatedInputTokens);
+        Assert.Equal(3, combined.ContextRecoveryCount);
+        Assert.Equal(39_000, combined.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(14_000, combined.ContextRecoveryEstimatedInputTokensAfter);
         Assert.Equal(10_800, combined.ReportedInputTokens);
         Assert.Equal(853, combined.ReportedOutputTokens);
         Assert.Equal(11_653, combined.ReportedTotalTokens);
@@ -716,6 +722,9 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 ConsumedTokens = consumedTokens,
                 ProviderCalls = 2,
                 PeakEstimatedInputTokens = 12_000,
+                ContextRecoveryCount = 2,
+                ContextRecoveryEstimatedInputTokensBefore = 30_000,
+                ContextRecoveryEstimatedInputTokensAfter = 10_000,
                 ReportedInputTokens = reportedInputTokens,
                 ReportedOutputTokens = reportedOutputTokens,
                 ReportedTotalTokens = reportedTotalTokens,

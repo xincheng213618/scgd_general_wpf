@@ -24,6 +24,9 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         {
             ProviderCalls = 1,
             PeakEstimatedInputTokens = 50_000,
+            ContextRecoveryCount = 2,
+            ContextRecoveryEstimatedInputTokensBefore = 90_000,
+            ContextRecoveryEstimatedInputTokensAfter = 35_000,
             ConsumedTokens = 60,
             Usage = new CopilotTokenUsage(50, 10, 60, 30),
         });
@@ -33,6 +36,9 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.Equal(2, snapshot.ProviderCalls);
         Assert.Equal(180, snapshot.ConsumedTokens);
         Assert.Equal(50_000, snapshot.PeakEstimatedInputTokens);
+        Assert.Equal(2, snapshot.ContextRecoveryCount);
+        Assert.Equal(90_000, snapshot.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(35_000, snapshot.ContextRecoveryEstimatedInputTokensAfter);
         Assert.Equal(150, snapshot.ReportedInputTokens);
         Assert.Equal(30, snapshot.ReportedOutputTokens);
         Assert.Equal(180, snapshot.ReportedTotalTokens);

@@ -67,6 +67,9 @@ namespace ColorVision.Copilot
         private CopilotTokenUsage _usage;
         private int _providerCalls;
         private int _peakEstimatedInputTokens;
+        private int _contextRecoveryCount;
+        private long _contextRecoveryEstimatedInputTokensBefore;
+        private long _contextRecoveryEstimatedInputTokensAfter;
         private long _consumedTokens;
         private bool _usedEstimatedUsage;
         private bool _budgetExhausted;
@@ -101,10 +104,41 @@ namespace ColorVision.Copilot
                 _peakEstimatedInputTokens = Math.Max(
                     _peakEstimatedInputTokens,
                     Math.Max(0, delegatedRun.PeakEstimatedInputTokens));
+                _contextRecoveryCount = AddClamped(
+                    _contextRecoveryCount,
+                    delegatedRun.ContextRecoveryCount);
+                _contextRecoveryEstimatedInputTokensBefore = AddClamped(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    delegatedRun.ContextRecoveryEstimatedInputTokensBefore);
+                _contextRecoveryEstimatedInputTokensAfter = Math.Min(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    AddClamped(
+                        _contextRecoveryEstimatedInputTokensAfter,
+                        delegatedRun.ContextRecoveryEstimatedInputTokensAfter));
                 _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
+            }
+        }
+
+        internal void RecordContextRecovery(CopilotContextWindowRecoveryInfo recovery)
+        {
+            ArgumentNullException.ThrowIfNull(recovery);
+            lock (_syncRoot)
+            {
+                var estimatedInputTokensBefore = Math.Max(0, recovery.EstimatedInputTokensBefore);
+                var estimatedInputTokensAfter = Math.Clamp(
+                    recovery.EstimatedInputTokensAfter,
+                    0,
+                    estimatedInputTokensBefore);
+                _contextRecoveryCount = AddClamped(_contextRecoveryCount, 1);
+                _contextRecoveryEstimatedInputTokensBefore = AddClamped(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    estimatedInputTokensBefore);
+                _contextRecoveryEstimatedInputTokensAfter = AddClamped(
+                    _contextRecoveryEstimatedInputTokensAfter,
+                    estimatedInputTokensAfter);
             }
         }
 
@@ -313,6 +347,14 @@ namespace ColorVision.Copilot
                 ConsumedTokens = Math.Max(0, _consumedTokens),
                 ProviderCalls = Math.Max(0, _providerCalls),
                 PeakEstimatedInputTokens = Math.Max(0, _peakEstimatedInputTokens),
+                ContextRecoveryCount = Math.Max(0, _contextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = Math.Max(
+                    0,
+                    _contextRecoveryEstimatedInputTokensBefore),
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    _contextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    Math.Max(0, _contextRecoveryEstimatedInputTokensBefore)),
                 ReportedInputTokens = reportedInputTokens,
                 ReportedOutputTokens = reportedOutputTokens,
                 ReportedTotalTokens = reportedTotalTokens,
@@ -342,6 +384,20 @@ namespace ColorVision.Copilot
             }
 
             return usage;
+        }
+
+        private static int AddClamped(int left, int right)
+        {
+            return (int)Math.Clamp((long)Math.Max(0, left) + Math.Max(0, right), 0, int.MaxValue);
+        }
+
+        private static long AddClamped(long left, long right)
+        {
+            var normalizedLeft = Math.Max(0, left);
+            var normalizedRight = Math.Max(0, right);
+            return normalizedLeft > long.MaxValue - normalizedRight
+                ? long.MaxValue
+                : normalizedLeft + normalizedRight;
         }
 
         private static int EstimateTokens(
