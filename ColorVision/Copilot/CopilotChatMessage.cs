@@ -166,6 +166,8 @@ namespace ColorVision.Copilot
         }
         private string _assistantName = string.Empty;
 
+        public bool ShouldSerializeAssistantName() => !string.IsNullOrEmpty(AssistantName);
+
         public DateTime CreatedAt
         {
             get => _createdAt;
@@ -201,6 +203,8 @@ namespace ColorVision.Copilot
             set => SetProperty(ref _requestContent, value ?? string.Empty);
         }
         private string _requestContent = string.Empty;
+
+        public bool ShouldSerializeRequestContent() => !string.IsNullOrEmpty(RequestContent);
 
         public bool IsContentDisplayOnly
         {
@@ -243,6 +247,8 @@ namespace ColorVision.Copilot
         }
         private CopilotAgentMode _requestMode = CopilotAgentMode.Chat;
 
+        public bool ShouldSerializeRequestMode() => RequestMode != CopilotAgentMode.Chat;
+
         [JsonIgnore]
         public string RetryActionLabel => RequestMode == CopilotAgentMode.Chat
             ? Properties.Resources.CopilotRetry
@@ -277,6 +283,8 @@ namespace ColorVision.Copilot
         }
         private bool _isResponsePending;
 
+        public bool ShouldSerializeIsResponsePending() => IsResponsePending;
+
         public bool WasResponseInterrupted
         {
             get => _wasResponseInterrupted;
@@ -290,6 +298,8 @@ namespace ColorVision.Copilot
             }
         }
         private bool _wasResponseInterrupted;
+
+        public bool ShouldSerializeWasResponseInterrupted() => WasResponseInterrupted;
 
         public string ResponseInterruptionDetail
         {
@@ -352,9 +362,17 @@ namespace ColorVision.Copilot
         }
         private string _executionContent = string.Empty;
 
+        public bool ShouldSerializeExecutionContent() =>
+            !string.IsNullOrEmpty(ExecutionContent) && (AgentTraceEntries?.Count ?? 0) == 0;
+
         public ObservableCollection<CopilotAgentTraceEntry> AgentTraceEntries { get; set; } = new();
 
+        public bool ShouldSerializeAgentTraceEntries() => AgentTraceEntries?.Count > 0;
+
         public ObservableCollection<CopilotResponseTimelineEvent> ResponseTimelineEvents { get; set; } = new();
+
+        public bool ShouldSerializeResponseTimelineEvents() =>
+            UsesResponseTimeline && ResponseTimelineEvents?.Count > 0;
 
         private readonly ObservableCollection<CopilotResponseTimelineItem> _visibleResponseTimelineItems = new();
 
@@ -369,6 +387,8 @@ namespace ColorVision.Copilot
         }
         private bool _usesResponseTimeline;
 
+        public bool ShouldSerializeUsesResponseTimeline() => UsesResponseTimeline;
+
         public CopilotAgentTaskLedgerSnapshot AgentTaskLedger
         {
             get => _agentTaskLedger;
@@ -382,6 +402,8 @@ namespace ColorVision.Copilot
         }
         private CopilotAgentTaskLedgerSnapshot _agentTaskLedger = new();
 
+        public bool ShouldSerializeAgentTaskLedger() => AgentTaskLedger?.TotalCount > 0;
+
         public CopilotAgentStopReason AgentStopReason
         {
             get => _agentStopReason;
@@ -393,6 +415,8 @@ namespace ColorVision.Copilot
             }
         }
         private CopilotAgentStopReason _agentStopReason;
+
+        public bool ShouldSerializeAgentStopReason() => AgentStopReason != CopilotAgentStopReason.None;
 
         public IReadOnlyList<CopilotAgentBlockerSnapshot> AgentBlockers
         {
@@ -408,6 +432,8 @@ namespace ColorVision.Copilot
             }
         }
         private IReadOnlyList<CopilotAgentBlockerSnapshot> _agentBlockers = Array.Empty<CopilotAgentBlockerSnapshot>();
+
+        public bool ShouldSerializeAgentBlockers() => AgentBlockers?.Count > 0;
 
         [JsonIgnore]
         public CopilotAgentRecoveryRequest? RecoveryRequest { get; set; }
@@ -519,6 +545,8 @@ namespace ColorVision.Copilot
         }
         private bool _isExecutionExpanded = true;
 
+        public bool ShouldSerializeIsExecutionExpanded() => !IsExecutionExpanded;
+
         public bool IsExecutionInProgress
         {
             get => _isExecutionInProgress;
@@ -541,6 +569,8 @@ namespace ColorVision.Copilot
             }
         }
         private bool _isExecutionInProgress;
+
+        public bool ShouldSerializeIsExecutionInProgress() => IsExecutionInProgress;
 
         [JsonIgnore]
         public string ExecutionHeader => IsExecutionInProgress ? CopilotUiText.ExecutionInProgressHeader : CopilotUiText.ExecutionHeader;
@@ -590,6 +620,8 @@ namespace ColorVision.Copilot
         }
         private string _reasoningContent = string.Empty;
 
+        public bool ShouldSerializeReasoningContent() => !string.IsNullOrEmpty(ReasoningContent);
+
         public bool IsReasoningContentTruncated { get; set; }
 
         public bool ShouldSerializeIsReasoningContentTruncated() => IsReasoningContentTruncated;
@@ -604,12 +636,16 @@ namespace ColorVision.Copilot
         }
         private bool _isReasoningExpanded = true;
 
+        public bool ShouldSerializeIsReasoningExpanded() => !IsReasoningExpanded;
+
         public bool IsThinkingExpanded
         {
             get => _isThinkingExpanded;
             set => SetProperty(ref _isThinkingExpanded, value);
         }
         private bool _isThinkingExpanded;
+
+        public bool ShouldSerializeIsThinkingExpanded() => IsThinkingExpanded;
 
         public bool IsReasoningInProgress
         {
@@ -630,6 +666,8 @@ namespace ColorVision.Copilot
         }
         private bool _isReasoningInProgress;
 
+        public bool ShouldSerializeIsReasoningInProgress() => IsReasoningInProgress;
+
         [JsonIgnore]
         public string ReasoningHeader => IsReasoningInProgress ? CopilotUiText.ReasoningInProgressHeader : CopilotUiText.ReasoningHeader;
 
@@ -647,6 +685,8 @@ namespace ColorVision.Copilot
         }
         private DateTime _thinkingStartedAt;
 
+        public bool ShouldSerializeThinkingStartedAt() => ThinkingStartedAt != default;
+
         public DateTime ThinkingCompletedAt
         {
             get => _thinkingCompletedAt;
@@ -660,6 +700,8 @@ namespace ColorVision.Copilot
             }
         }
         private DateTime _thinkingCompletedAt;
+
+        public bool ShouldSerializeThinkingCompletedAt() => ThinkingCompletedAt != default;
 
         [JsonIgnore]
         public bool IsThinkingInProgress => _isProcessingInProgress || IsResponsePending || IsExecutionInProgress || IsReasoningInProgress;

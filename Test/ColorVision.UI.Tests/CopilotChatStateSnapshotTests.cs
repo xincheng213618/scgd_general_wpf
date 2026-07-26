@@ -148,4 +148,97 @@ public class CopilotChatStateSnapshotTests
                 Directory.Delete(root, recursive: true);
         }
     }
+
+    [Fact]
+    public void MessageSnapshotsOmitDefaultsAndDerivedExecutionWithoutLosingRecoveryState()
+    {
+        var user = new CopilotChatMessage(CopilotChatRole.User, "Inspect the workspace.")
+        {
+            RequestContent = "Prepared request with captured context.",
+            RequestMode = CopilotAgentMode.Auto,
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            AssistantName = "test-model",
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Completed,
+            IsExecutionExpanded = false,
+            IsReasoningExpanded = false,
+        };
+        assistant.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "call-1",
+            Round = 1,
+            RuntimeName = "test-runtime",
+            ToolName = "ReadLocalFile",
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddMilliseconds(-10),
+            CompletedAtUtc = DateTimeOffset.UtcNow,
+            DurationMs = 10,
+            ResultSummary = "Read the requested file.",
+        });
+        assistant.RecordResponseTimelineTool("call-1");
+        assistant.AppendResponseTimelineText("The file was inspected.");
+        var derivedExecutionContent = assistant.ExecutionContent;
+        var diagnosticOnlyAssistant = new CopilotChatMessage(CopilotChatRole.Assistant, "The run paused.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            AgentStopReason = CopilotAgentStopReason.Paused,
+            ExecutionContent = "Agent pause requested; preserving the current checkpoint.",
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(user);
+        conversation.Messages.Add(assistant);
+        conversation.Messages.Add(diagnosticOnlyAssistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = "profile",
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+
+        var serialized = store.Serialize(state);
+        var document = JObject.Parse(serialized);
+        var conversationDocument = Assert.IsType<JObject>(
+            Assert.IsType<JArray>(document[nameof(CopilotChatState.Conversations)])[0]);
+        var messageDocuments = Assert.IsType<JArray>(
+            conversationDocument[nameof(CopilotConversationRecord.Messages)]);
+        var userDocument = Assert.IsType<JObject>(messageDocuments[0]);
+        var assistantDocument = Assert.IsType<JObject>(messageDocuments[1]);
+        var diagnosticDocument = Assert.IsType<JObject>(messageDocuments[2]);
+
+        Assert.NotNull(userDocument[nameof(CopilotChatMessage.RequestContent)]);
+        Assert.NotNull(userDocument[nameof(CopilotChatMessage.RequestMode)]);
+        Assert.Null(userDocument[nameof(CopilotChatMessage.ExecutionContent)]);
+        Assert.Null(userDocument[nameof(CopilotChatMessage.AgentTraceEntries)]);
+        Assert.Null(userDocument[nameof(CopilotChatMessage.AgentTaskLedger)]);
+        Assert.Null(userDocument[nameof(CopilotChatMessage.IsExecutionExpanded)]);
+        Assert.Null(userDocument[nameof(CopilotChatMessage.ThinkingStartedAt)]);
+
+        Assert.Null(assistantDocument[nameof(CopilotChatMessage.RequestContent)]);
+        Assert.Null(assistantDocument[nameof(CopilotChatMessage.ExecutionContent)]);
+        Assert.NotNull(assistantDocument[nameof(CopilotChatMessage.AgentTraceEntries)]);
+        Assert.NotNull(assistantDocument[nameof(CopilotChatMessage.ResponseTimelineEvents)]);
+        Assert.NotNull(assistantDocument[nameof(CopilotChatMessage.UsesResponseTimeline)]);
+        Assert.NotNull(assistantDocument[nameof(CopilotChatMessage.AgentStopReason)]);
+        Assert.False(assistantDocument[nameof(CopilotChatMessage.IsExecutionExpanded)]!.Value<bool>());
+        Assert.False(assistantDocument[nameof(CopilotChatMessage.IsReasoningExpanded)]!.Value<bool>());
+
+        Assert.Equal(
+            diagnosticOnlyAssistant.ExecutionContent,
+            diagnosticDocument[nameof(CopilotChatMessage.ExecutionContent)]!.Value<string>());
+
+        var restored = JsonConvert.DeserializeObject<CopilotChatState>(serialized);
+        Assert.NotNull(restored);
+        var restoredConversation = Assert.Single(restored.Conversations);
+        Assert.True(restoredConversation.EnsureValid());
+        Assert.Equal(CopilotAgentMode.Auto, restoredConversation.Messages[1].RequestMode);
+        Assert.Equal(derivedExecutionContent, restoredConversation.Messages[1].ExecutionContent);
+        Assert.False(restoredConversation.Messages[1].IsExecutionExpanded);
+        Assert.False(restoredConversation.Messages[1].IsReasoningExpanded);
+        Assert.Equal(
+            diagnosticOnlyAssistant.ExecutionContent,
+            restoredConversation.Messages[2].ExecutionContent);
+    }
 }
