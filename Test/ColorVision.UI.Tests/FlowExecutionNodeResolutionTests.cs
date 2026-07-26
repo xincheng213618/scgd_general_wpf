@@ -12,7 +12,7 @@ public class FlowExecutionNodeResolutionTests
         CVCommonNode first = CreateNode("PG.GECS", "SVR.PG.Default");
         CVCommonNode failed = CreateNode("PG.GECS", "SVR.PG.Default");
 
-        CVCommonNode? resolved = STNodeEditorHelper.ResolveExecutionNode(
+        CVCommonNode? resolved = FlowExecutionNavigator.ResolveExecutionNode(
             new[] { first, failed },
             "PG.GECS.SVR.PG.Default",
             failed);
@@ -26,7 +26,7 @@ public class FlowExecutionNodeResolutionTests
         CVCommonNode first = CreateNode("PG.GECS", "SVR.PG.Default");
         CVCommonNode second = CreateNode("PG.GECS", "SVR.PG.Default");
 
-        CVCommonNode? resolved = STNodeEditorHelper.ResolveExecutionNode(
+        CVCommonNode? resolved = FlowExecutionNavigator.ResolveExecutionNode(
             new[] { first, second },
             "PG.GECS.SVR.PG.Default");
 
@@ -38,7 +38,7 @@ public class FlowExecutionNodeResolutionTests
     {
         CVCommonNode node = CreateNode("PG.GECS", "SVR.PG.Default");
 
-        CVCommonNode? resolved = STNodeEditorHelper.ResolveExecutionNode(
+        CVCommonNode? resolved = FlowExecutionNavigator.ResolveExecutionNode(
             new[] { node },
             node.NodeID);
 
@@ -51,7 +51,7 @@ public class FlowExecutionNodeResolutionTests
         CVCommonNode first = CreateNode("PG.GECS", "SVR.PG.Default");
         CVCommonNode failed = CreateNode("PG.GECS", "SVR.PG.Default");
 
-        CVCommonNode? resolved = STNodeEditorHelper.ResolveExecutionNode(
+        CVCommonNode? resolved = FlowExecutionNavigator.ResolveExecutionNode(
             new[] { first, failed },
             failed.NodeID);
 

@@ -27,6 +27,7 @@ Engine 开发要先确认你改的是哪条业务链。不要把设备、模板�
 - [模板系统开发](./templates.md)
 - [MQTT 消息处理](./mqtt.md)
 - [OpenCV 集成开发](./opencv-integration.md)
+- [本地相机内存帧预览方案（待实施）](./local-camera-memory-preview.md)
 
 ## 开发验证
 

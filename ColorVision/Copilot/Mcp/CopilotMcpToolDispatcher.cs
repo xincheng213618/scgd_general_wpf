@@ -1,5 +1,4 @@
 #pragma warning disable CA1822,CA1826,CA1859,CA1861
-using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
@@ -55,7 +54,6 @@ namespace ColorVision.Copilot.Mcp
             "config",
             "solution",
             "template",
-            "flow",
             "device",
         };
 
@@ -230,7 +228,7 @@ namespace ColorVision.Copilot.Mcp
                 }), "context", "read-only", "Call diagnose_flow_failure with { \"node_name\": \"Camera\", \"query\": \"timeout\" } before suggesting template edits."),
                 Tool("open_panel", "Open a low-risk ColorVision panel. Optional argument: panel. Defaults to copilot.", Schema(new Dictionary<string, object>
                 {
-                    ["panel"] = StringProperty("Panel id or alias. Supported aliases: copilot, log, config, solution, template, flow, device."),
+                    ["panel"] = StringProperty("Panel id or alias. Supported aliases: copilot, log, config, solution, template, device."),
                 }), "app-control", "low-risk-action", "Call open_panel with { \"panel\": \"copilot\" }."),
                 Tool("execute_menu", "Execute a visible main-window menu command by menu name or path. Required argument: query.", Schema(new Dictionary<string, object>
                 {
@@ -1411,7 +1409,6 @@ namespace ColorVision.Copilot.Mcp
                 "solution" => "ProjectPanel",
                 "config" => "ProjectPanel",
                 "template" => "ProjectPanel",
-                "flow" => FlowNodePropertyPanel.PanelId,
                 "device" => "AcquirePanel",
                 _ => string.Empty,
             };

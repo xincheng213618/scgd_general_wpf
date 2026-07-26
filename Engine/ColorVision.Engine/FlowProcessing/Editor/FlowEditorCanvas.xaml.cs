@@ -1,4 +1,6 @@
+using ColorVision.Engine.FlowProcessing.Editor.NodeConfiguration;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -18,8 +20,10 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         internal const double PropertyPanelNodeGap = 10;
 
         private bool _forwardingEditCommand;
+        private bool _hidePropertyEditorUntilNextSelection;
         private bool _propertyPanelPositionUpdatePending;
         private bool _disposed;
+        private readonly StackPanel _generatedPropertyPanel = new();
         private readonly List<(UIElement Host, CommandBinding Binding)> _editCommandForwarders = [];
 
         public static readonly DependencyProperty ToolbarContentProperty = DependencyProperty.Register(
@@ -60,6 +64,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             PropertyEditorPanel.SizeChanged += PropertyEditorPanel_SizeChanged;
             STNodeEditorMain.ActiveChanged += STNodeEditorMain_SelectionChanged;
             STNodeEditorMain.SelectedChanged += STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.NodeLocationChanged += STNodeEditorMain_NodeLocationChanged;
+            STNodeEditorMain.PreviewMouseLeftButtonDown += STNodeEditorMain_PreviewMouseLeftButtonDown;
             STNodeEditorMain.CanvasMoved += STNodeEditorMain_CanvasChanged;
             STNodeEditorMain.CanvasScaled += STNodeEditorMain_CanvasChanged;
 
@@ -94,12 +100,97 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         private void STNodeEditorMain_SelectionChanged(object? sender, EventArgs e)
         {
+            _hidePropertyEditorUntilNextSelection = false;
+            RefreshNodePropertyPanel();
             QueuePropertyPanelPositionUpdate();
+        }
+
+        private void STNodeEditorMain_NodeLocationChanged(object? sender, EventArgs e)
+        {
+            _hidePropertyEditorUntilNextSelection = true;
+            HideNodePropertyPanel();
+        }
+
+        private void STNodeEditorMain_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!_hidePropertyEditorUntilNextSelection)
+                return;
+
+            System.Windows.Point mousePosition = e.GetPosition(STNodeEditorMain);
+            var canvasPosition = STNodeEditorMain.ControlToCanvas(new PointF(
+                (float)mousePosition.X,
+                (float)mousePosition.Y));
+            if (STNodeEditorMain.FindNodeFromPoint(canvasPosition).Node == null)
+                return;
+
+            _hidePropertyEditorUntilNextSelection = false;
+            _ = Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(RefreshNodePropertyPanel));
         }
 
         private void STNodeEditorMain_CanvasChanged(object? sender, EventArgs e)
         {
             QueuePropertyPanelPositionUpdate();
+        }
+
+        internal static bool ShouldShowPropertyEditor(STNodeEditor nodeEditor)
+        {
+            STNode? activeNode = nodeEditor.ActiveNode;
+            if (activeNode == null || !activeNode.IsSelected)
+                return false;
+
+            STNode[] selectedNodes = nodeEditor.GetSelectedNode();
+            return selectedNodes.Length == 1 && ReferenceEquals(selectedNodes[0], activeNode);
+        }
+
+        public void RefreshNodePropertyPanel()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(new Action(RefreshNodePropertyPanel));
+                return;
+            }
+
+            StackPanel signPanel = InlineNodePropertyPanel.SignStackPanel;
+            signPanel.Children.Clear();
+
+            STNode? activeNode = STNodeEditorMain.ActiveNode;
+            if (_hidePropertyEditorUntilNextSelection || !ShouldShowPropertyEditor(STNodeEditorMain))
+            {
+                signPanel.Visibility = Visibility.Collapsed;
+                PropertyEditorPanel.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var configurator = NodeConfiguratorRegistry.GetConfigurator(activeNode!.GetType());
+            if (configurator != null)
+            {
+                var context = new NodeConfiguratorContext
+                {
+                    Node = activeNode,
+                    SignStackPanel = signPanel,
+                    STNodeEditor = STNodeEditorMain,
+                    Refresh = RefreshNodePropertyPanel
+                };
+                configurator.Configure(context);
+            }
+
+            _generatedPropertyPanel.Children.Clear();
+            var resourceManager = PropertyEditorHelper.GetResourceManager(activeNode);
+            _generatedPropertyPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                activeNode,
+                resourceManager,
+                metadataProvider: FlowNodePropertyMetadataProvider.Instance,
+                advancedOptions: FlowNodePropertyMetadataProvider.AdvancedOptions));
+            signPanel.Children.Add(_generatedPropertyPanel);
+            signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            PropertyEditorPanel.Visibility = signPanel.Visibility;
+        }
+
+        public void HideNodePropertyPanel()
+        {
+            PropertyEditorPanel.Visibility = Visibility.Collapsed;
         }
 
         private void UpdatePropertyPanelSizeLimit()
@@ -337,6 +428,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             PropertyEditorPanel.SizeChanged -= PropertyEditorPanel_SizeChanged;
             STNodeEditorMain.ActiveChanged -= STNodeEditorMain_SelectionChanged;
             STNodeEditorMain.SelectedChanged -= STNodeEditorMain_SelectionChanged;
+            STNodeEditorMain.NodeLocationChanged -= STNodeEditorMain_NodeLocationChanged;
+            STNodeEditorMain.PreviewMouseLeftButtonDown -= STNodeEditorMain_PreviewMouseLeftButtonDown;
             STNodeEditorMain.CanvasMoved -= STNodeEditorMain_CanvasChanged;
             STNodeEditorMain.CanvasScaled -= STNodeEditorMain_CanvasChanged;
             foreach ((UIElement host, CommandBinding binding) in _editCommandForwarders)

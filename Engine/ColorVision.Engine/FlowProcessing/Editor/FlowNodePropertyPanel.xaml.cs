@@ -4,13 +4,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 {
     public partial class FlowNodePropertyPanel : UserControl
     {
-        public static FlowNodePropertyPanel Instance { get; private set; }
-
-        public const string PanelId = "FlowNodePropertyPanel";
-
         public FlowNodePropertyPanel()
         {
-            Instance = this;
             InitializeComponent();
         }
 

@@ -46,7 +46,6 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             Closed += (_, _) =>
             {
-                View.STNodeEditorHelper?.HidePropertyEditor();
                 View.Dispose();
             };
         }

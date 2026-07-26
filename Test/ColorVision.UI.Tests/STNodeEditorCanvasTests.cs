@@ -170,17 +170,17 @@ namespace ColorVision.UI.Tests
                 editor.Nodes.Add(first);
                 editor.Nodes.Add(second);
 
-                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+                Assert.False(FlowEditorCanvas.ShouldShowPropertyEditor(editor));
 
                 editor.SetActiveNode(first);
-                Assert.True(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+                Assert.True(FlowEditorCanvas.ShouldShowPropertyEditor(editor));
 
                 second.SetSelected(bSelected: true, bRedraw: false);
-                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+                Assert.False(FlowEditorCanvas.ShouldShowPropertyEditor(editor));
 
                 second.SetSelected(bSelected: false, bRedraw: false);
                 editor.SetActiveNode(null);
-                Assert.False(STNodeEditorHelper.ShouldShowPropertyEditor(editor));
+                Assert.False(FlowEditorCanvas.ShouldShowPropertyEditor(editor));
             });
         }
 
@@ -215,25 +215,18 @@ namespace ColorVision.UI.Tests
         {
             RunInSta(() =>
             {
-                using var editor = new STNodeEditor();
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
                 var node = new TrackingNode();
                 node.Create();
                 editor.Nodes.Add(node);
-                editor.SetActiveNode(node);
-                var propertyPanel = new System.Windows.Controls.Grid
-                {
-                    Visibility = System.Windows.Visibility.Visible
-                };
-                using var helper = new STNodeEditorHelper(editor)
-                {
-                    UseDockPanel = false,
-                    SignStackPanel = new System.Windows.Controls.StackPanel(),
-                    PropertyEditorPanel = propertyPanel
-                };
+                canvas.NodePropertyPanelContainer.Visibility = System.Windows.Visibility.Visible;
 
                 node.Location = new System.Drawing.Point(30, 40);
 
-                Assert.Equal(System.Windows.Visibility.Collapsed, propertyPanel.Visibility);
+                Assert.Equal(
+                    System.Windows.Visibility.Collapsed,
+                    canvas.NodePropertyPanelContainer.Visibility);
             });
         }
 
@@ -242,22 +235,17 @@ namespace ColorVision.UI.Tests
         {
             RunInSta(() =>
             {
-                using var editor = new STNodeEditor();
-                var signPanel = new System.Windows.Controls.StackPanel();
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
+                var signPanel = canvas.NodePropertyPanel.SignStackPanel;
                 signPanel.Children.Add(new System.Windows.Controls.Border());
-                using var helper = new STNodeEditorHelper(editor)
-                {
-                    UseDockPanel = false,
-                    SignStackPanel = signPanel,
-                    PropertyEditorPanel = new System.Windows.Controls.Grid()
-                };
 
                 Exception? workerException = null;
                 var worker = new Thread(() =>
                 {
                     try
                     {
-                        helper.RefreshActiveNodePropertyPanel();
+                        canvas.RefreshNodePropertyPanel();
                     }
                     catch (Exception ex)
                     {
@@ -285,27 +273,21 @@ namespace ColorVision.UI.Tests
         {
             RunInSta(() =>
             {
-                using var editor = new STNodeEditor();
+                using var canvas = new FlowEditorCanvas();
+                STNodeEditor editor = canvas.NodeEditor;
                 var node = new TrackingNode();
                 node.Create();
                 editor.Nodes.Add(node);
-                editor.SetActiveNode(node);
-                var propertyPanel = new System.Windows.Controls.Grid
-                {
-                    Visibility = System.Windows.Visibility.Visible
-                };
-                using var helper = new STNodeEditorHelper(editor)
-                {
-                    UseDockPanel = false,
-                    SignStackPanel = new System.Windows.Controls.StackPanel(),
-                    PropertyEditorPanel = propertyPanel
-                };
+                node.SetSelected(bSelected: true, bRedraw: false);
+                canvas.NodePropertyPanelContainer.Visibility = System.Windows.Visibility.Visible;
 
-                helper.ClearSelection();
+                FlowEditorOperations.ClearSelection(editor);
 
                 Assert.Null(editor.ActiveNode);
                 Assert.Empty(editor.GetSelectedNode());
-                Assert.Equal(System.Windows.Visibility.Collapsed, propertyPanel.Visibility);
+                Assert.Equal(
+                    System.Windows.Visibility.Collapsed,
+                    canvas.NodePropertyPanelContainer.Visibility);
             });
         }
 

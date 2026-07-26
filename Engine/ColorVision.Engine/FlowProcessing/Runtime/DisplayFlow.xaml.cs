@@ -97,7 +97,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             Unselected += (s, e) =>
             {
-                View.STNodeEditorHelper.HidePropertyEditor();
+                View.EditorCanvas.HideNodePropertyPanel();
             };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
@@ -356,7 +356,7 @@ namespace ColorVision.Engine.FlowProcessing
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
                 }
-                View.STNodeEditorHelper.AddNodeContext();
+                View.STNodeEditorMain.Invalidate();
                 FlowEngineManager.Copilot.PublishContext();
             }
             catch (Exception ex)
@@ -388,7 +388,7 @@ namespace ColorVision.Engine.FlowProcessing
             FlowEngineManager.SelectedFlowParam = flowParam;
             if (flowParam == null)
                 FlowEngineManager.TemplateFlowParamsIndex = -1;
-            View.STNodeEditorHelper.AddNodeContext();
+            View.STNodeEditorMain.Invalidate();
             FlowEngineManager.Copilot.PublishContext();
         }
 
@@ -536,7 +536,7 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 View.ShowExecutionSummary(msg);
                 if (failedNode != null
-                    && STNodeEditorHelper.IsExecutionNodeNameMatch(failedNode, completedErrorNodeKey))
+                    && FlowExecutionNavigator.IsExecutionNodeNameMatch(failedNode, completedErrorNodeKey))
                 {
                     _ = ShowExecutionSummaryAfterNodeWritesAsync(
                         failedNode,
@@ -799,8 +799,8 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     isCurrent = generation == Volatile.Read(ref _executionGeneration)
                         && string.Equals(_completedSummaryMessage, completedSummaryMessage, StringComparison.Ordinal)
-                        && STNodeEditorHelper.IsExecutionNodeNameMatch(node, _completedErrorNodeKey)
-                        && STNodeEditorHelper.IsExecutionNodeNameMatch(node, completedErrorNodeKey);
+                        && FlowExecutionNavigator.IsExecutionNodeNameMatch(node, _completedErrorNodeKey)
+                        && FlowExecutionNavigator.IsExecutionNodeNameMatch(node, completedErrorNodeKey);
                 }
                 if (isCurrent)
                 {
@@ -825,7 +825,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (generation != Volatile.Read(ref _executionGeneration)
                     || (_lastFailedNode != null
-                        && STNodeEditorHelper.IsExecutionNodeNameMatch(_lastFailedNode, errorNodeKey)))
+                        && FlowExecutionNavigator.IsExecutionNodeNameMatch(_lastFailedNode, errorNodeKey)))
                 {
                     return;
                 }
@@ -981,7 +981,7 @@ namespace ColorVision.Engine.FlowProcessing
                         _lastFailedNode = algorithmNode;
                         completedErrorNodeKey = _completedErrorNodeKey;
                         completedSummaryMessage = _completedSummaryMessage;
-                        matchesCompletedFailure = STNodeEditorHelper.IsExecutionNodeNameMatch(
+                        matchesCompletedFailure = FlowExecutionNavigator.IsExecutionNodeNameMatch(
                             algorithmNode,
                             completedErrorNodeKey);
                         if (matchesCompletedFailure)
@@ -1169,7 +1169,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _flowStartCts = flowStartCts;
             }
 
-            View.STNodeEditorHelper.ClearSelection();
+            FlowEditorOperations.ClearSelection(View.STNodeEditorMain);
 
             bool started = false;
             MeasureBatchModel? preparedBatch = null;

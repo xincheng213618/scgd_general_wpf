@@ -73,6 +73,9 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly FlowControl? _standaloneFlowControl;
         private readonly FlowNodeManager? _standaloneNodeManager;
         private readonly Stopwatch _standaloneStopwatch = new();
+        private readonly FlowNodeContextMenuService _nodeContextMenuService;
+        private readonly FlowExecutionNavigator _executionNavigator;
+        private readonly FlowGraphLayoutService _layoutService;
         private FlowParam? _standaloneFlowParam;
         private string? _standaloneFilePath;
         private string _standaloneDocumentName = string.Empty;
@@ -106,8 +109,11 @@ namespace ColorVision.Engine.FlowProcessing
             InitializeComponent();
             EditorCanvas.PropertyPanelMargin = new Thickness(0, 54, 10, 108);
             EditorCanvas.AttachEditCommandRouting(this);
+            _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
+            _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
+            _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
 
-            AutoSizeCommand = new RelayCommand(a => STNodeEditorHelper.AutoSize());
+            AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
             NewDocumentCommand = new RelayCommand(a => NewDocument(), a => _isStandalone);
             RefreshCommand = new RelayCommand(a => Refresh());
@@ -121,7 +127,7 @@ namespace ColorVision.Engine.FlowProcessing
             ImportFlowCommand = new RelayCommand(a => ImportFlow(), a => !_isStandalone);
             ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
 
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = true; }));
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) =>
             {
@@ -260,7 +266,7 @@ namespace ColorVision.Engine.FlowProcessing
                 try
                 {
                     byte[] canvasData = Convert.FromBase64String(base64);
-                    STNodeEditorHelper.ImportCanvasAsModule(canvasData);
+                    FlowEditorOperations.ImportCanvasAsModule(STNodeEditorMain, canvasData);
                 }
                 catch (Exception ex)
                 {
@@ -272,8 +278,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         public void AutoAlignment()
         {
-            STNodeEditorHelper.ApplyTreeLayout();
-            STNodeEditorHelper.AutoSize();
+            _layoutService.Apply();
+            _layoutService.FitToViewport();
         }
 
         public void Save()
@@ -295,7 +301,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             try
             {
-                if (!STNodeEditorHelper.CheckFlow())
+                if (!FlowValidator.Validate(STNodeEditorMain))
                 {
                     log.Warn("Save: CheckFlow验证失败, 取消保存");
                     return false;
@@ -503,7 +509,7 @@ namespace ColorVision.Engine.FlowProcessing
         {
             Keyboard.ClearFocus();
             Focus();
-            if (!STNodeEditorHelper.CheckFlow())
+            if (!FlowValidator.Validate(STNodeEditorMain))
                 return false;
 
             byte[] canvasData = STNodeEditorMain.GetCanvasData();
@@ -597,12 +603,9 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        public STNodeEditorHelper STNodeEditorHelper { get; set; }
-
-        
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this;            
+            DataContext = this;
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
@@ -611,13 +614,6 @@ namespace ColorVision.Engine.FlowProcessing
                     e.Handled = true;
                 }
             };
-
-            STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain);
-
-            // Keep node properties in the ViewFlow right-side overlay instead of AvalonDock.
-            STNodeEditorHelper.UseDockPanel = false;
-            STNodeEditorHelper.SignStackPanel = EditorCanvas.NodePropertyPanel.SignStackPanel;
-            STNodeEditorHelper.PropertyEditorPanel = EditorCanvas.NodePropertyPanelContainer;
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
@@ -659,7 +655,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (activeView == this)
             {
                 FlowEngineManager.Copilot.PublishContext();
-                STNodeEditorHelper?.RefreshActiveNodePropertyPanel();
+                EditorCanvas.RefreshNodePropertyPanel();
                 return;
             }
 
@@ -668,7 +664,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (activeView != null && activeView != this)
             {
                 CopilotLiveContextRegistry.Clear(CopilotFlowAgentExtension.SourceId);
-                STNodeEditorHelper?.HidePropertyEditor();
+                EditorCanvas.HideNodePropertyPanel();
             }
         }
 
@@ -718,7 +714,7 @@ namespace ColorVision.Engine.FlowProcessing
                     FlowEngineManager.FlowControl.Stop();
                 FlowEngineControl.DetachNodeEditor(STNodeEditorMain);
             }
-            STNodeEditorHelper?.Dispose();
+            _nodeContextMenuService.Dispose();
             EditorCanvas.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -799,7 +795,7 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 startCts.Token.ThrowIfCancellationRequested();
 
-                STNodeEditorHelper.ClearSelection();
+                FlowEditorOperations.ClearSelection(STNodeEditorMain);
 
                 foreach (STNode node in STNodeEditorMain.Nodes)
                 {
@@ -891,7 +887,7 @@ namespace ColorVision.Engine.FlowProcessing
             logTextBox.Text = message;
             _executionDetailsNode = _isStandalone
                 ? null
-                : STNodeEditorHelper.ResolveExecutionNode(
+                : FlowExecutionNavigator.ResolveExecutionNode(
                     STNodeEditorMain,
                     executionNodeName,
                     preferredNode);
@@ -906,7 +902,7 @@ namespace ColorVision.Engine.FlowProcessing
         private void ErrorNodeDetailsButton_Click(object sender, RoutedEventArgs e)
         {
             if (_executionDetailsNode != null)
-                STNodeEditorHelper.OpenNodeExecutionDetails(_executionDetailsNode, focusNode: true);
+                _executionNavigator.OpenNodeExecutionDetails(_executionDetailsNode, focusNode: true);
         }
 
         private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)
@@ -914,7 +910,7 @@ namespace ColorVision.Engine.FlowProcessing
             bool FocusFlowNode(FlowNodeRecord record)
             {
                 DockViewManager.GetInstance().ActiveView(this);
-                return STNodeEditorHelper.TryFocusExecutionNode(record.NodeId, record.NodeName);
+                return _executionNavigator.TryFocusExecutionNode(record.NodeId, record.NodeName);
             }
 
             if (FlowEngineManager.Batch != null)
