@@ -50,6 +50,42 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.True(ExploreRole().IsAvailable(request));
     }
 
+    [Theory]
+    [InlineData("Report the latest market news.")]
+    [InlineData("The source is already available.")]
+    [InlineData("The file is ready.")]
+    [InlineData("Classical error theory is statistical.")]
+    public void EmbeddedEnglishMarkerFragmentsDoNotRequestLocalEvidence(string userText)
+    {
+        var request = Request(
+            userText,
+            searchRoots: [@"C:\workspace"]);
+
+        Assert.False(CopilotToolIntentPolicy.NeedsLocalEvidence(request));
+        Assert.False(new CopilotSearchFilesTool().IsAvailable(request));
+        Assert.False(new CopilotGrepTextTool().IsAvailable(request));
+        Assert.False(new CopilotReadLocalFileTool().IsAvailable(request));
+        Assert.False(new CopilotListDirectoryTool().IsAvailable(request));
+        Assert.False(ExploreRole().IsAvailable(request));
+    }
+
+    [Theory]
+    [InlineData("Read files.")]
+    [InlineData("Inspect classes.")]
+    [InlineData("Search methods.")]
+    [InlineData("Review implementations.")]
+    [InlineData("Find directories.")]
+    [InlineData("Inspect repositories.")]
+    [InlineData("Reading files.")]
+    [InlineData("Reviewed classes.")]
+    [InlineData("Found files.")]
+    [InlineData("Inspect MyClass.")]
+    [InlineData("Review className.")]
+    public void EnglishLocalEvidenceMarkersRetainCommonInflections(string userText)
+    {
+        Assert.True(CopilotToolIntentPolicy.NeedsLocalEvidence(Request(userText)));
+    }
+
     [Fact]
     public void ExplicitFileOnlyRequestUsesFocusedWorkspaceEvidenceSurface()
     {
