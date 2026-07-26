@@ -49,6 +49,7 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.Equal(1, provider.CallCount);
         Assert.Equal(2, result.Budget.ProviderCalls);
+        Assert.True(result.Budget.UsedDelegatedDirectAnswer);
         Assert.Single(result.StepRecords);
         Assert.Equal(answer, string.Concat(events
             .Where(agentEvent => agentEvent.Type == CopilotAgentEventType.AnswerDelta)

@@ -2171,6 +2171,7 @@ namespace ColorVision.Copilot
             userMessage.RequestContent = agentResult.PreparedUserMessageContent;
             assistantMessage.AgentTaskLedger = agentResult.TaskLedger;
             assistantMessage.AgentStopReason = agentResult.StopReason;
+            assistantMessage.AgentRunBudget = agentResult.Budget;
             assistantMessage.AgentBlockers = agentResult.Blockers;
             conversation.AgentSessionCheckpoint = agentResult.SessionCheckpoint;
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))

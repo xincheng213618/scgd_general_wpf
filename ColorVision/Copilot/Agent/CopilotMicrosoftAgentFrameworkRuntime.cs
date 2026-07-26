@@ -327,13 +327,18 @@ namespace ColorVision.Copilot
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
                 recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
+            var usedDelegatedDirectAnswer = false;
             var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
                 contextRecoveryChatClient,
                 request,
                 () => bridge.StepRecords,
                 taskLedgerEnabled,
-                () => emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The explicit completed DelegateExplore result was returned directly without a second parent provider call.")));
+                () =>
+                {
+                    usedDelegatedDirectAnswer = true;
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The explicit completed DelegateExplore result was returned directly without a second parent provider call."));
+                });
             using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(delegatedDirectAnswerChatClient, bridge.RecordUnknownToolCall);
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
@@ -794,7 +799,8 @@ namespace ColorVision.Copilot
                 stopwatch.Elapsed,
                 bridge.StepRecords.Count,
                 timeBudgetExhausted,
-                bridge.ToolBudgetExhausted);
+                bridge.ToolBudgetExhausted,
+                usedDelegatedDirectAnswer);
             var skillSelectionDiagnostic = agentSkills.BuildSelectionDiagnostic();
             if (!string.IsNullOrWhiteSpace(skillSelectionDiagnostic))
                 emit(CopilotAgentEvent.RuntimeDiagnostic(skillSelectionDiagnostic));

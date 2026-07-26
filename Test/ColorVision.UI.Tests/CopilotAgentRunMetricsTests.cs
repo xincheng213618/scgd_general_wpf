@@ -1,0 +1,108 @@
+using ColorVision.Copilot;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Collections.ObjectModel;
+using System.IO;
+
+namespace ColorVision.UI.Tests;
+
+public sealed class CopilotAgentRunMetricsTests
+{
+    [Fact]
+    public void DelegatedRunMetricsSeparateParentAndChildCallsAndRoundTrip()
+    {
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Grounded answer.")
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            ThinkingStartedAt = new DateTime(2026, 7, 26, 20, 16, 3),
+            ThinkingCompletedAt = new DateTime(2026, 7, 26, 20, 16, 28),
+        };
+        assistant.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "call-delegate",
+            Round = 1,
+            RuntimeName = "agent-framework",
+            ToolName = "DelegateExplore",
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = DateTimeOffset.Parse("2026-07-26T12:16:12+00:00"),
+            CompletedAtUtc = DateTimeOffset.Parse("2026-07-26T12:16:28+00:00"),
+            DelegatedRunId = "explore-test",
+            DelegatedProviderCalls = 1,
+            DelegatedConsumedTokens = 6_982,
+            DelegatedToolCalls = 1,
+        });
+        assistant.AgentRunBudget = new CopilotAgentBudgetSnapshot
+        {
+            RequestTokenBudget = 512 * 1024,
+            ConsumedTokens = 11_185,
+            ProviderCalls = 2,
+            UsedDelegatedDirectAnswer = true,
+            MaxToolCalls = 16,
+            ToolCalls = 1,
+            TotalDurationMs = 120_000,
+            ElapsedMs = 25_395,
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = "profile",
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+
+        Assert.Equal("父 1 / 子 1 · 11.2k tokens · 委派直返", assistant.AgentRunCompactLabel);
+        Assert.Contains("已处理 25s · 父 1 / 子 1 · 11.2k tokens · 委派直返", assistant.ThinkingHeader, StringComparison.Ordinal);
+        Assert.Contains("模型调用：2（父 1 / 子 1）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("令牌：11,185（父 4,203 / 子 6,982）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("委派直返：是（省略第二次父级模型调用）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+
+        var serialized = store.Serialize(state);
+        var document = JObject.Parse(serialized);
+        var budgetDocument = Assert.IsType<JObject>(
+            document[nameof(CopilotChatState.Conversations)]![0]!
+                [nameof(CopilotConversationRecord.Messages)]![0]!
+                [nameof(CopilotChatMessage.AgentRunBudget)]);
+        var restored = JsonConvert.DeserializeObject<CopilotChatState>(serialized);
+
+        Assert.Equal(CopilotChatState.CurrentSchemaVersion, document[nameof(CopilotChatState.SchemaVersion)]!.Value<int>());
+        Assert.True(budgetDocument[nameof(CopilotAgentBudgetSnapshot.UsedDelegatedDirectAnswer)]!.Value<bool>());
+        Assert.NotNull(restored);
+        var restoredConversation = Assert.Single(restored.Conversations);
+        restoredConversation.EnsureValid();
+        var restoredMessage = Assert.Single(restoredConversation.Messages);
+        Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderCalls);
+        Assert.Equal(11_185, restoredMessage.AgentRunBudget.ConsumedTokens);
+        Assert.True(restoredMessage.AgentRunBudget.UsedDelegatedDirectAnswer);
+        Assert.Equal(assistant.AgentRunCompactLabel, restoredMessage.AgentRunCompactLabel);
+        Assert.Equal(assistant.AgentRunMetricsToolTip, restoredMessage.AgentRunMetricsToolTip);
+    }
+
+    [Fact]
+    public void EmptyOrInvalidRunMetricsAreNormalizedAndOmitted()
+    {
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, "Answer.")
+        {
+            AgentRunBudget = new CopilotAgentBudgetSnapshot
+            {
+                ConsumedTokens = -1,
+                ProviderCalls = -2,
+                MaxToolCalls = -1,
+                ToolCalls = -3,
+                ElapsedMs = -4,
+            },
+        };
+
+        var serialized = JsonConvert.SerializeObject(assistant, Formatting.None);
+        var document = JObject.Parse(serialized);
+
+        Assert.False(assistant.HasAgentRunMetrics);
+        Assert.Equal(0, assistant.AgentRunBudget.ConsumedTokens);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderCalls);
+        Assert.Equal(0, assistant.AgentRunBudget.ToolCalls);
+        Assert.Equal(0, assistant.AgentRunBudget.ElapsedMs);
+        Assert.Null(document[nameof(CopilotChatMessage.AgentRunBudget)]);
+    }
+}

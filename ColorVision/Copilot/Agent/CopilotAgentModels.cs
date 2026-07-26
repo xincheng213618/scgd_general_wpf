@@ -666,6 +666,8 @@ namespace ColorVision.Copilot
 
         public bool UsedEstimatedUsage { get; init; }
 
+        public bool UsedDelegatedDirectAnswer { get; init; }
+
         public bool BudgetExhausted { get; init; }
 
         public bool RequestTokenBudgetExhausted { get; init; }
