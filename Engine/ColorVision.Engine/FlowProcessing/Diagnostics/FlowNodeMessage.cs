@@ -32,6 +32,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         [SugarColumn(ColumnName = "serial_number", IsNullable = true)]
         public string SerialNumber { get; set; }
 
+        [SugarColumn(ColumnName = "node_record_id", IsNullable = true)]
+        public int? NodeRecordId { get; set; }
+
         [SugarColumn(ColumnName = "node_id", IsNullable = true)]
         public string NodeId { get; set; }
 

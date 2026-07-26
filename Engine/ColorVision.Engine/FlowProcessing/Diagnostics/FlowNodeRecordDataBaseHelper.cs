@@ -20,7 +20,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         // Shared persistent connection for the write queue
         private static SqlSugarClient _sharedDb;
         private static readonly BlockingCollection<Action<SqlSugarClient>> _writeQueue = new BlockingCollection<Action<SqlSugarClient>>();
+        private static readonly ConcurrentDictionary<long, Task> _pendingWriteProducers = new ConcurrentDictionary<long, Task>();
         private static Thread _writerThread;
+        private static long _pendingWriteProducerId;
 
         private static SqlSugarClient CreateDb()
         {
@@ -94,9 +96,52 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (!_initialized)
                 return false;
 
+            TimeSpan effectiveTimeout = timeout ?? TimeSpan.FromSeconds(2);
+            DateTime deadline = DateTime.UtcNow + effectiveTimeout;
+            while (true)
+            {
+                Task[] pending = _pendingWriteProducers.Values
+                    .Where(task => !task.IsCompleted)
+                    .ToArray();
+                if (pending.Length == 0)
+                    break;
+
+                TimeSpan remaining = deadline - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                    return false;
+
+                try
+                {
+                    if (!Task.WhenAll(pending).Wait(remaining))
+                        return false;
+                }
+                catch (AggregateException ex)
+                {
+                    log.Warn("等待流程节点写入任务完成时发生异常。", ex.Flatten());
+                }
+            }
+
+            TimeSpan barrierTimeout = deadline - DateTime.UtcNow;
+            if (barrierTimeout <= TimeSpan.Zero)
+                return false;
+
             var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             _writeQueue.Add(_ => completion.TrySetResult(true));
-            return completion.Task.Wait(timeout ?? TimeSpan.FromSeconds(2));
+            return completion.Task.Wait(barrierTimeout);
+        }
+
+        public static void TrackPendingWrite(Task writeTask)
+        {
+            if (writeTask == null)
+                return;
+
+            long id = Interlocked.Increment(ref _pendingWriteProducerId);
+            _pendingWriteProducers[id] = writeTask;
+            _ = writeTask.ContinueWith(
+                completedTask => _pendingWriteProducers.TryRemove(id, out _),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         }
 
         public static int Insert(FlowNodeRecord item)
@@ -171,6 +216,41 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 log.Error("查询FlowNodeRecord失败", ex);
                 return new List<FlowNodeRecord>();
+            }
+        }
+
+        public static List<FlowNodeRecord> GetByRun(int batchId, string? serialNumber)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                var query = db.Queryable<FlowNodeRecord>().Where(item => item.BatchId == batchId);
+                if (!string.IsNullOrWhiteSpace(serialNumber))
+                    query = query.Where(item => item.SerialNumber == serialNumber);
+                return query.OrderBy(item => item.StartTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程执行节点记录失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
+        public static FlowNodeRecord? GetLatestRecord()
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeRecord>()
+                    .OrderByDescending(item => item.StartTime)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询最近流程节点记录失败", ex);
+                return null;
             }
         }
 
@@ -330,6 +410,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             catch (Exception ex)
             {
                 log.Error("查询FlowNodeMessage失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
+        public static List<FlowNodeMessage> GetMessagesByRun(int batchId, string? serialNumber)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                var query = db.Queryable<FlowNodeMessage>().Where(item => item.BatchId == batchId);
+                if (!string.IsNullOrWhiteSpace(serialNumber))
+                    query = query.Where(item => item.SerialNumber == serialNumber);
+                return query.OrderBy(item => item.SendTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程执行消息记录失败", ex);
                 return new List<FlowNodeMessage>();
             }
         }

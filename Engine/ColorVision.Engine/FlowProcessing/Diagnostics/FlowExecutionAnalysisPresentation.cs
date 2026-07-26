@@ -7,27 +7,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     internal sealed class FlowNodeDurationAnalysis
     {
         internal FlowNodeDurationAnalysis(
-            IReadOnlyList<FlowNodeRecord> records,
-            long averageElapsedMs,
-            long minimumElapsedMs,
-            long maximumElapsedMs,
+            FlowNodeRecord record,
+            long elapsedMs,
             bool isRunning,
             bool isWarning)
         {
-            Records = records;
-            Record = records.OrderByDescending(item => item.StartTime).First();
-            AverageElapsedMs = averageElapsedMs;
-            MinimumElapsedMs = minimumElapsedMs;
-            MaximumElapsedMs = maximumElapsedMs;
+            Record = record;
+            ElapsedMs = elapsedMs;
             IsRunning = isRunning;
             IsWarning = isWarning;
         }
 
-        public IReadOnlyList<FlowNodeRecord> Records { get; }
-
         public FlowNodeRecord Record { get; }
-
-        public int Rank { get; internal set; }
 
         public string NodeName => string.IsNullOrWhiteSpace(Record.NodeName) ? "Unknown" : Record.NodeName;
 
@@ -35,13 +26,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public string NodeId => Record.NodeId ?? string.Empty;
 
-        public int SampleCount => Records.Count;
-
-        public long AverageElapsedMs { get; }
-
-        public long MinimumElapsedMs { get; }
-
-        public long MaximumElapsedMs { get; }
+        public long ElapsedMs { get; }
 
         public double RelativeToSlowestPercent { get; internal set; }
 
@@ -51,23 +36,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public bool IsWarning { get; }
 
-        public bool IsComparison => Records.Select(item => item.BatchId).Distinct().Skip(1).Any();
-
-        public string DurationText => $"{AverageElapsedMs:N0} ms";
+        public string DurationText => FlowExecutionAnalysisPresentation.FormatDuration(ElapsedMs);
 
         public string ShareText => $"{ShareOfNodeWorkPercent:N1}%";
 
-        public string SampleText => IsComparison
-            ? $"{SampleCount} 次 · {MinimumElapsedMs:N0}–{MaximumElapsedMs:N0} ms"
-            : $"{NodeType}";
+        public string DetailText => string.IsNullOrWhiteSpace(NodeType)
+            ? Record.StartTime.ToString("HH:mm:ss.fff")
+            : $"{NodeType} · {Record.StartTime:HH:mm:ss.fff}";
     }
 
     internal readonly record struct FlowExecutionAnalysisSummary(
-        long AverageWallClockMs,
-        long AverageActiveMs,
-        long AverageIdleMs,
-        long AverageOverlapMs,
-        long AverageNodeWorkMs,
+        long WallClockMs,
+        long ActiveMs,
+        long IdleMs,
+        long OverlapMs,
+        long NodeWorkMs,
         int NodeCount,
         int RunningCount,
         int WarningCount,
@@ -76,36 +59,42 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
     internal static class FlowExecutionAnalysisPresentation
     {
+        private static readonly TimeSpan LegacyMessageMatchTolerance = TimeSpan.FromMilliseconds(250);
+
         internal static IReadOnlyList<FlowNodeDurationAnalysis> BuildDurationItems(
             IEnumerable<FlowNodeRecord> source,
             DateTime now,
             long warningThresholdMs)
         {
-            List<FlowNodeRecord> records = source?.OrderBy(item => item.StartTime).ToList()
-                ?? new List<FlowNodeRecord>();
-            bool isSingleBatch = records.Select(item => item.BatchId).Distinct().Take(2).Count() <= 1;
+            List<FlowNodeRecord> records = source?
+                .OrderBy(item => item.StartTime)
+                .ThenBy(item => item.Id)
+                .ToList() ?? new List<FlowNodeRecord>();
 
-            IEnumerable<IGrouping<string, FlowNodeRecord>> groups = isSingleBatch
-                ? records.GroupBy(item => $"record:{item.Id}:{item.StartTime.Ticks}")
-                : records.GroupBy(GetStableNodeKey);
-
-            List<FlowNodeDurationAnalysis> items = groups
-                .Select(group => CreateDurationItem(group.ToList(), now, warningThresholdMs))
-                .OrderByDescending(item => item.AverageElapsedMs)
-                .ThenBy(item => item.NodeName, StringComparer.CurrentCulture)
+            List<FlowNodeDurationAnalysis> items = records
+                .Select(record =>
+                {
+                    long elapsedMs = GetEffectiveElapsedMs(record, now);
+                    return new FlowNodeDurationAnalysis(
+                        record,
+                        elapsedMs,
+                        !record.EndTime.HasValue,
+                        elapsedMs > warningThresholdMs);
+                })
+                .OrderByDescending(item => item.ElapsedMs)
+                .ThenBy(item => item.Record.StartTime)
+                .ThenBy(item => item.Record.Id)
                 .ToList();
 
-            long totalNodeWorkMs = items.Sum(item => item.AverageElapsedMs);
-            long slowestMs = items.FirstOrDefault()?.AverageElapsedMs ?? 0;
-            for (int index = 0; index < items.Count; index++)
+            long totalNodeWorkMs = items.Sum(item => item.ElapsedMs);
+            long slowestMs = items.FirstOrDefault()?.ElapsedMs ?? 0;
+            foreach (FlowNodeDurationAnalysis item in items)
             {
-                FlowNodeDurationAnalysis item = items[index];
-                item.Rank = index + 1;
                 item.RelativeToSlowestPercent = slowestMs > 0
-                    ? item.AverageElapsedMs * 100d / slowestMs
+                    ? item.ElapsedMs * 100d / slowestMs
                     : 0;
                 item.ShareOfNodeWorkPercent = totalNodeWorkMs > 0
-                    ? item.AverageElapsedMs * 100d / totalNodeWorkMs
+                    ? item.ElapsedMs * 100d / totalNodeWorkMs
                     : 0;
             }
 
@@ -118,49 +107,87 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             DateTime now)
         {
             List<FlowNodeRecord> records = source?.ToList() ?? new List<FlowNodeRecord>();
-            var batchTimings = records
-                .GroupBy(item => item.BatchId)
-                .Select(group =>
-                {
-                    DateTime start = group.Min(item => item.StartTime);
-                    DateTime end = group.Max(item => item.EndTime ?? now);
-                    long wallClockMs = Math.Max(0, (long)(end - start).TotalMilliseconds);
-                    long activeMs = CalculateActiveTimeMs(group, now);
-                    long nodeWorkMs = group.Sum(item => GetEffectiveElapsedMs(item, now));
-                    return (
-                        WallClockMs: wallClockMs,
-                        ActiveMs: activeMs,
-                        IdleMs: Math.Max(0, wallClockMs - activeMs),
-                        OverlapMs: Math.Max(0, nodeWorkMs - activeMs));
-                })
-                .ToList();
+            if (records.Count == 0)
+            {
+                return new FlowExecutionAnalysisSummary(
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    "—",
+                    0);
+            }
 
-            long averageWallClockMs = batchTimings.Count == 0
-                ? 0
-                : Convert.ToInt64(batchTimings.Average(item => item.WallClockMs));
-            long averageActiveMs = batchTimings.Count == 0
-                ? 0
-                : Convert.ToInt64(batchTimings.Average(item => item.ActiveMs));
-            long averageIdleMs = batchTimings.Count == 0
-                ? 0
-                : Convert.ToInt64(batchTimings.Average(item => item.IdleMs));
-            long averageOverlapMs = batchTimings.Count == 0
-                ? 0
-                : Convert.ToInt64(batchTimings.Average(item => item.OverlapMs));
-            long averageNodeWorkMs = durationItems.Sum(item => item.AverageElapsedMs);
+            DateTime start = records.Min(item => item.StartTime);
+            DateTime end = records.Max(item => item.EndTime ?? now);
+            long wallClockMs = Math.Max(0, (long)(end - start).TotalMilliseconds);
+            long activeMs = CalculateActiveTimeMs(records, now);
+            long nodeWorkMs = records.Sum(item => GetEffectiveElapsedMs(item, now));
             FlowNodeDurationAnalysis? slowest = durationItems.Count > 0 ? durationItems[0] : null;
 
             return new FlowExecutionAnalysisSummary(
-                averageWallClockMs,
-                averageActiveMs,
-                averageIdleMs,
-                averageOverlapMs,
-                averageNodeWorkMs,
+                wallClockMs,
+                activeMs,
+                Math.Max(0, wallClockMs - activeMs),
+                Math.Max(0, nodeWorkMs - activeMs),
+                nodeWorkMs,
                 durationItems.Count,
                 durationItems.Count(item => item.IsRunning),
                 durationItems.Count(item => item.IsWarning),
                 slowest?.NodeName ?? "—",
-                slowest?.AverageElapsedMs ?? 0);
+                slowest?.ElapsedMs ?? 0);
+        }
+
+        internal static IReadOnlyList<FlowNodeMessage> GetMessagesForNodeExecution(
+            FlowNodeRecord record,
+            IEnumerable<FlowNodeMessage> source,
+            IEnumerable<FlowNodeRecord>? runRecords = null)
+        {
+            List<FlowNodeMessage> runMessages = source?
+                .Where(message => message.BatchId == record.BatchId
+                    && IsSameRun(record, message))
+                .OrderBy(message => message.SendTime)
+                .ToList() ?? new List<FlowNodeMessage>();
+            if (runMessages.Count == 0)
+                return runMessages;
+
+            if (record.Id > 0)
+            {
+                List<FlowNodeMessage> exact = runMessages
+                    .Where(message => message.NodeRecordId == record.Id)
+                    .ToList();
+                if (exact.Count > 0)
+                    return exact;
+            }
+
+            List<FlowNodeMessage> legacyMessages = runMessages
+                .Where(message => !message.NodeRecordId.HasValue
+                    && IsSameNode(record, message))
+                .ToList();
+            if (legacyMessages.Count == 0)
+                return legacyMessages;
+
+            List<FlowNodeRecord> candidateRecords = (runRecords ?? new[] { record })
+                .Where(candidate => candidate.BatchId == record.BatchId
+                    && IsSameRun(record, candidate)
+                    && IsSameNode(record, candidate))
+                .OrderBy(candidate => candidate.StartTime)
+                .ThenBy(candidate => candidate.Id)
+                .ToList();
+            if (!candidateRecords.Any(candidate => IsSameRecord(candidate, record)))
+                candidateRecords.Add(record);
+
+            return legacyMessages
+                .Where(message =>
+                {
+                    FlowNodeRecord? owner = FindLegacyMessageOwner(message, candidateRecords);
+                    return owner != null && IsSameRecord(owner, record);
+                })
+                .ToList();
         }
 
         internal static long GetEffectiveElapsedMs(FlowNodeRecord record, DateTime now)
@@ -171,24 +198,88 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             return Math.Max(0, (long)(now - record.StartTime).TotalMilliseconds);
         }
 
-        private static FlowNodeDurationAnalysis CreateDurationItem(
-            IReadOnlyList<FlowNodeRecord> records,
-            DateTime now,
-            long warningThresholdMs)
+        internal static string FormatDuration(long milliseconds)
         {
-            long[] elapsedValues = records.Select(item => GetEffectiveElapsedMs(item, now)).ToArray();
-            long averageElapsedMs = elapsedValues.Length == 0
-                ? 0
-                : Convert.ToInt64(elapsedValues.Average());
-            bool isRunning = records.Any(item => !item.EndTime.HasValue);
-            bool isWarning = elapsedValues.Any(value => value > warningThresholdMs);
-            return new FlowNodeDurationAnalysis(
-                records,
-                averageElapsedMs,
-                elapsedValues.DefaultIfEmpty().Min(),
-                elapsedValues.DefaultIfEmpty().Max(),
-                isRunning,
-                isWarning);
+            if (milliseconds < 1000)
+                return $"{milliseconds:N0} ms";
+            if (milliseconds < 60000)
+                return $"{milliseconds / 1000d:N2} s";
+
+            TimeSpan duration = TimeSpan.FromMilliseconds(milliseconds);
+            return duration.TotalHours >= 1
+                ? $"{(int)duration.TotalHours}:{duration.Minutes:00}:{duration.Seconds:00}"
+                : $"{duration.Minutes}:{duration.Seconds:00}.{duration.Milliseconds / 100:0}";
+        }
+
+        private static bool IsSameNode(FlowNodeRecord record, FlowNodeMessage message)
+        {
+            if (!string.IsNullOrWhiteSpace(record.NodeId) && !string.IsNullOrWhiteSpace(message.NodeId))
+                return string.Equals(record.NodeId, message.NodeId, StringComparison.Ordinal);
+
+            return string.Equals(record.NodeName, message.NodeName, StringComparison.Ordinal);
+        }
+
+        private static bool IsSameNode(FlowNodeRecord left, FlowNodeRecord right)
+        {
+            if (!string.IsNullOrWhiteSpace(left.NodeId) && !string.IsNullOrWhiteSpace(right.NodeId))
+                return string.Equals(left.NodeId, right.NodeId, StringComparison.Ordinal);
+
+            return string.Equals(left.NodeName, right.NodeName, StringComparison.Ordinal);
+        }
+
+        private static bool IsSameRun(FlowNodeRecord record, FlowNodeMessage message)
+        {
+            if (string.IsNullOrWhiteSpace(record.SerialNumber)
+                || string.IsNullOrWhiteSpace(message.SerialNumber))
+            {
+                return true;
+            }
+
+            return string.Equals(record.SerialNumber, message.SerialNumber, StringComparison.Ordinal);
+        }
+
+        private static bool IsSameRun(FlowNodeRecord left, FlowNodeRecord right)
+        {
+            if (string.IsNullOrWhiteSpace(left.SerialNumber)
+                || string.IsNullOrWhiteSpace(right.SerialNumber))
+            {
+                return true;
+            }
+
+            return string.Equals(left.SerialNumber, right.SerialNumber, StringComparison.Ordinal);
+        }
+
+        private static FlowNodeRecord? FindLegacyMessageOwner(
+            FlowNodeMessage message,
+            IEnumerable<FlowNodeRecord> candidates)
+        {
+            return candidates
+                .Where(candidate => IsWithinLegacyMatchWindow(candidate, message.SendTime))
+                .OrderBy(candidate => Math.Abs((message.SendTime - candidate.StartTime).Ticks))
+                .ThenBy(candidate => candidate.StartTime)
+                .ThenBy(candidate => candidate.Id)
+                .FirstOrDefault();
+        }
+
+        private static bool IsWithinLegacyMatchWindow(FlowNodeRecord record, DateTime sendTime)
+        {
+            DateTime lowerBound = record.StartTime - LegacyMessageMatchTolerance;
+            DateTime upperBound = record.EndTime ?? DateTime.MaxValue;
+            if (upperBound != DateTime.MaxValue)
+                upperBound += LegacyMessageMatchTolerance;
+
+            return sendTime >= lowerBound && sendTime <= upperBound;
+        }
+
+        private static bool IsSameRecord(FlowNodeRecord left, FlowNodeRecord right)
+        {
+            if (left.Id > 0 && right.Id > 0)
+                return left.Id == right.Id;
+
+            return left.BatchId == right.BatchId
+                && left.StartTime == right.StartTime
+                && string.Equals(left.NodeId, right.NodeId, StringComparison.Ordinal)
+                && string.Equals(left.SerialNumber, right.SerialNumber, StringComparison.Ordinal);
         }
 
         private static long CalculateActiveTimeMs(IEnumerable<FlowNodeRecord> source, DateTime now)
@@ -221,14 +312,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             activeMs += Math.Max(0, (long)(currentEnd - currentStart).TotalMilliseconds);
             return activeMs;
-        }
-
-        private static string GetStableNodeKey(FlowNodeRecord record)
-        {
-            if (!string.IsNullOrWhiteSpace(record.NodeId))
-                return $"id:{record.NodeId}";
-
-            return $"name:{record.NodeName}|type:{record.NodeType}";
         }
     }
 }

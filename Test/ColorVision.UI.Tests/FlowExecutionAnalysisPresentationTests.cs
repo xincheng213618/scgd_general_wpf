@@ -6,11 +6,11 @@ namespace ColorVision.UI.Tests;
 public class FlowExecutionAnalysisPresentationTests
 {
     [Fact]
-    public void BuildDurationItems_RanksSingleBatchExecutionsByElapsedTime()
+    public void BuildDurationItems_RanksRecordsByDuration()
     {
-        DateTime start = new DateTime(2026, 7, 26, 10, 0, 0);
-        FlowNodeRecord fast = CreateRecord(1, 10, "fast", "同名节点", start, 100);
-        FlowNodeRecord slow = CreateRecord(2, 10, "slow", "同名节点", start.AddMilliseconds(100), 300);
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord fast = CreateRecord(1, 260, "run-a", "node-a", "取图", start, 100);
+        FlowNodeRecord slow = CreateRecord(2, 260, "run-a", "node-b", "校正", start.AddMilliseconds(100), 300);
 
         IReadOnlyList<FlowNodeDurationAnalysis> items =
             FlowExecutionAnalysisPresentation.BuildDurationItems(
@@ -20,40 +20,36 @@ public class FlowExecutionAnalysisPresentationTests
 
         Assert.Equal(2, items.Count);
         Assert.Same(slow, items[0].Record);
-        Assert.Equal(1, items[0].Rank);
+        Assert.Equal(300, items[0].ElapsedMs);
         Assert.Equal(75d, items[0].ShareOfNodeWorkPercent, 5);
         Assert.Same(fast, items[1].Record);
     }
 
     [Fact]
-    public void BuildDurationItems_UsesStableNodeIdAcrossBatchComparison()
+    public void BuildDurationItems_KeepsRepeatedNodeRecordsSeparate()
     {
-        DateTime start = new DateTime(2026, 7, 26, 10, 0, 0);
-        FlowNodeRecord firstNodeBatch1 = CreateRecord(1, 10, "node-a", "同名节点", start, 100);
-        FlowNodeRecord firstNodeBatch2 = CreateRecord(2, 11, "node-a", "同名节点", start, 300);
-        FlowNodeRecord secondNodeBatch1 = CreateRecord(3, 10, "node-b", "同名节点", start, 600);
-        FlowNodeRecord secondNodeBatch2 = CreateRecord(4, 11, "node-b", "同名节点", start, 800);
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord first = CreateRecord(1, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeRecord second = CreateRecord(2, 260, "run-a", "same-node", "循环节点", start.AddSeconds(1), 250);
 
         IReadOnlyList<FlowNodeDurationAnalysis> items =
             FlowExecutionAnalysisPresentation.BuildDurationItems(
-                new[] { firstNodeBatch1, firstNodeBatch2, secondNodeBatch1, secondNodeBatch2 },
+                new[] { first, second },
                 start.AddSeconds(2),
-                warningThresholdMs: 5000);
+                warningThresholdMs: 1000);
 
         Assert.Equal(2, items.Count);
-        Assert.Equal("node-b", items[0].NodeId);
-        Assert.Equal(700, items[0].AverageElapsedMs);
-        Assert.Equal("node-a", items[1].NodeId);
-        Assert.Equal(200, items[1].AverageElapsedMs);
+        Assert.Same(second, items[0].Record);
+        Assert.Same(first, items[1].Record);
     }
 
     [Fact]
     public void BuildSummary_SeparatesActiveIdleAndParallelTime()
     {
-        DateTime start = new DateTime(2026, 7, 26, 10, 0, 0);
-        FlowNodeRecord first = CreateRecord(1, 10, "node-a", "A", start, 600);
-        FlowNodeRecord parallel = CreateRecord(2, 10, "node-b", "B", start.AddMilliseconds(200), 600);
-        FlowNodeRecord afterGap = CreateRecord(3, 10, "node-c", "C", start.AddMilliseconds(1000), 200);
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord first = CreateRecord(1, 260, "run-a", "node-a", "A", start, 600);
+        FlowNodeRecord parallel = CreateRecord(2, 260, "run-a", "node-b", "B", start.AddMilliseconds(200), 600);
+        FlowNodeRecord afterGap = CreateRecord(3, 260, "run-a", "node-c", "C", start.AddMilliseconds(1000), 200);
         IReadOnlyList<FlowNodeRecord> records = new[] { first, parallel, afterGap };
         IReadOnlyList<FlowNodeDurationAnalysis> items =
             FlowExecutionAnalysisPresentation.BuildDurationItems(records, start.AddSeconds(2), 5000);
@@ -61,21 +57,22 @@ public class FlowExecutionAnalysisPresentationTests
         FlowExecutionAnalysisSummary summary =
             FlowExecutionAnalysisPresentation.BuildSummary(records, items, start.AddSeconds(2));
 
-        Assert.Equal(1200, summary.AverageWallClockMs);
-        Assert.Equal(1000, summary.AverageActiveMs);
-        Assert.Equal(200, summary.AverageIdleMs);
-        Assert.Equal(400, summary.AverageOverlapMs);
-        Assert.Equal(1400, summary.AverageNodeWorkMs);
+        Assert.Equal(1200, summary.WallClockMs);
+        Assert.Equal(1000, summary.ActiveMs);
+        Assert.Equal(200, summary.IdleMs);
+        Assert.Equal(400, summary.OverlapMs);
+        Assert.Equal(1400, summary.NodeWorkMs);
     }
 
     [Fact]
     public void BuildDurationItems_RunningSlowNodeRetainsBothSignals()
     {
-        DateTime start = new DateTime(2026, 7, 26, 10, 0, 0);
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
         var running = new FlowNodeRecord
         {
             Id = 1,
-            BatchId = 10,
+            BatchId = 260,
+            SerialNumber = "run-a",
             NodeId = "running",
             NodeName = "运行节点",
             StartTime = start
@@ -89,12 +86,87 @@ public class FlowExecutionAnalysisPresentationTests
 
         Assert.True(item.IsRunning);
         Assert.True(item.IsWarning);
-        Assert.Equal(31000, item.AverageElapsedMs);
+        Assert.Equal(31000, item.ElapsedMs);
+    }
+
+    [Fact]
+    public void GetMessagesForNodeExecution_PrefersRecordIdAssociation()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(10, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeMessage exact = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        exact.NodeRecordId = record.Id;
+        FlowNodeMessage otherInvocation = CreateMessage(2, 260, "run-a", "same-node", start.AddMilliseconds(20));
+        otherInvocation.NodeRecordId = 11;
+
+        IReadOnlyList<FlowNodeMessage> result =
+            FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(
+                record,
+                new[] { otherInvocation, exact });
+
+        Assert.Single(result);
+        Assert.Same(exact, result[0]);
+    }
+
+    [Fact]
+    public void GetMessagesForNodeExecution_LegacyFallbackUsesRunAndTimeWindow()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(10, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeMessage matching = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        FlowNodeMessage wrongRun = CreateMessage(2, 260, "run-b", "same-node", start.AddMilliseconds(20));
+        FlowNodeMessage wrongInvocation = CreateMessage(3, 260, "run-a", "same-node", start.AddSeconds(2));
+
+        IReadOnlyList<FlowNodeMessage> result =
+            FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(
+                record,
+                new[] { matching, wrongRun, wrongInvocation });
+
+        Assert.Single(result);
+        Assert.Same(matching, result[0]);
+    }
+
+    [Fact]
+    public void GetMessagesForNodeExecution_LegacyFallbackAssignsRepeatedNodeMessageOnce()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord first = CreateRecord(10, 260, "run-a", "same-node", "循环节点", start, 400);
+        FlowNodeRecord second = CreateRecord(
+            11,
+            260,
+            "run-a",
+            "same-node",
+            "循环节点",
+            start.AddMilliseconds(300),
+            400);
+        FlowNodeMessage message = CreateMessage(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            start.AddMilliseconds(310));
+        IReadOnlyList<FlowNodeRecord> records = new[] { first, second };
+
+        IReadOnlyList<FlowNodeMessage> firstMessages =
+            FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(
+                first,
+                new[] { message },
+                records);
+        IReadOnlyList<FlowNodeMessage> secondMessages =
+            FlowExecutionAnalysisPresentation.GetMessagesForNodeExecution(
+                second,
+                new[] { message },
+                records);
+
+        Assert.Empty(firstMessages);
+        Assert.Single(secondMessages);
+        Assert.Same(message, secondMessages[0]);
     }
 
     private static FlowNodeRecord CreateRecord(
         int id,
         int batchId,
+        string serialNumber,
         string nodeId,
         string nodeName,
         DateTime start,
@@ -104,11 +176,31 @@ public class FlowExecutionAnalysisPresentationTests
         {
             Id = id,
             BatchId = batchId,
+            SerialNumber = serialNumber,
             NodeId = nodeId,
             NodeName = nodeName,
             StartTime = start,
             EndTime = start.AddMilliseconds(elapsedMs),
             ElapsedMs = elapsedMs
+        };
+    }
+
+    private static FlowNodeMessage CreateMessage(
+        int id,
+        int batchId,
+        string serialNumber,
+        string nodeId,
+        DateTime sendTime)
+    {
+        return new FlowNodeMessage
+        {
+            Id = id,
+            BatchId = batchId,
+            SerialNumber = serialNumber,
+            NodeId = nodeId,
+            NodeName = "循环节点",
+            SendTime = sendTime,
+            State = FlowMessageState.Sent
         };
     }
 }

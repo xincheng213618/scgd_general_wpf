@@ -1,0 +1,482 @@
+<Page x:Class="ColorVision.Engine.FlowProcessing.Diagnostics.FlowMessageAnalysisPage"
+      x:ClassModifier="internal"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      d:DesignHeight="760"
+      d:DesignWidth="1280"
+      Background="{DynamicResource GlobalBackground}">
+    <Page.Resources>
+        <SolidColorBrush x:Key="MessageSuccessBrush" Color="#2E9D66"/>
+        <SolidColorBrush x:Key="MessagePendingBrush" Color="#D99000"/>
+        <SolidColorBrush x:Key="MessageFailureBrush" Color="#D84A4A"/>
+
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="MessageCardStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+
+        <Style x:Key="MessageMetricLabelStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="MessageMetricValueStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+
+        <Style x:Key="MessageSectionTitleStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="MessagePrimaryButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Padding" Value="13,5"/>
+            <Setter Property="MinHeight" Value="30"/>
+        </Style>
+
+        <Style x:Key="PayloadTextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Content="← 返回概览"
+                    Click="ShowOverviewButton_Click"
+                    Padding="12,5"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"/>
+
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="消息追踪" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PageScopeText"
+                           Margin="0,4,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="—"/>
+            </StackPanel>
+
+            <Button x:Name="OpenNodeButton"
+                    Grid.Column="2"
+                    Content="跳到关联节点"
+                    Click="OpenNodeButton_Click"
+                    Style="{StaticResource MessagePrimaryButtonStyle}"
+                    IsEnabled="False"
+                    ToolTip="打开当前消息所属的节点执行分析"/>
+        </Grid>
+
+        <Border x:Name="NodeScopePanel"
+                Grid.Row="1"
+                Style="{StaticResource MessageCardStyle}"
+                Margin="0,0,0,10"
+                BorderBrush="{DynamicResource PrimaryBrush}"
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="8"
+                        Height="8"
+                        CornerRadius="4"
+                        Background="{DynamicResource PrimaryBrush}"
+                        Margin="2,0,10,0"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="已固定到这一次节点执行" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="NodeScopeDescriptionText"
+                               Margin="0,4,0,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <UniformGrid Grid.Row="0" Columns="4">
+                <Border Style="{StaticResource MessageCardStyle}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock x:Name="TotalMetricLabelText"
+                                   Text="本运行消息"
+                                   Style="{StaticResource MessageMetricLabelStyle}"/>
+                        <TextBlock x:Name="TotalMessageCountText"
+                                   Text="0"
+                                   Style="{StaticResource MessageMetricValueStyle}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource MessageCardStyle}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="失败 / 超时" Style="{StaticResource MessageMetricLabelStyle}"/>
+                        <TextBlock x:Name="IssueMessageCountText"
+                                   Text="0"
+                                   Style="{StaticResource MessageMetricValueStyle}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource MessageCardStyle}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock x:Name="FilteredMetricLabelText"
+                                   Text="当前匹配"
+                                   Style="{StaticResource MessageMetricLabelStyle}"/>
+                        <TextBlock x:Name="FilteredMessageCountText"
+                                   Text="0"
+                                   Style="{StaticResource MessageMetricValueStyle}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource MessageCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="列表显示" Style="{StaticResource MessageMetricLabelStyle}"/>
+                        <TextBlock x:Name="DisplayedMessageCountText"
+                                   Text="0"
+                                   Style="{StaticResource MessageMetricValueStyle}"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Border x:Name="OverviewFilterPanel"
+                    Grid.Row="1"
+                    Style="{StaticResource MessageCardStyle}"
+                    Margin="0,10,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="节点" Margin="0,0,7,0"/>
+                    <ComboBox x:Name="NodeFilterComboBox"
+                              Grid.Column="1"
+                              DisplayMemberPath="Label"
+                              SelectionChanged="FilterComboBox_SelectionChanged"/>
+                    <TextBlock Grid.Column="2" Text="状态" Margin="16,0,7,0"/>
+                    <ComboBox x:Name="StateFilterComboBox"
+                              Grid.Column="3"
+                              DisplayMemberPath="Label"
+                              SelectionChanged="FilterComboBox_SelectionChanged"/>
+                    <TextBlock Grid.Column="4"
+                               Margin="16,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="筛选只影响列表；上方总量与异常统计始终基于本运行的全部消息。"
+                               TextWrapping="Wrap"/>
+                    <Button Grid.Column="5"
+                            Content="重置筛选"
+                            Click="ResetFiltersButton_Click"
+                            Padding="11,4"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" MinWidth="460"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="2*" MinWidth="360"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource MessageCardStyle}" Padding="6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="6,4,6,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="消息列表" Style="{StaticResource MessageSectionTitleStyle}"/>
+                        <TextBlock x:Name="ListScopeSummaryText"
+                                   Grid.Column="1"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="—"/>
+                    </Grid>
+
+                    <Border x:Name="LimitNoticePanel"
+                            Grid.Row="1"
+                            Margin="6,0,6,8"
+                            Padding="9,6"
+                            CornerRadius="5"
+                            Background="{DynamicResource GlobalBorderBrush1}"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="LimitNoticeText"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Grid Grid.Row="2">
+                        <ListView x:Name="MessageListView"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True"
+                                  SelectionChanged="MessageListView_SelectionChanged"
+                                  MouseDoubleClick="MessageListView_MouseDoubleClick">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}"
+                                       BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="节点" Width="140">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Text" Value="{Binding NodeName}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding NodeName}" Value="{x:Null}">
+                                                                    <Setter Property="Text" Value="{Binding NodeId, TargetNullValue=未知节点}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding NodeName}" Value="">
+                                                                    <Setter Property="Text" Value="{Binding NodeId, TargetNullValue=未知节点}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="事件" Width="115">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding EventName}" TextTrimming="CharacterEllipsis"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="发送时间" Width="105">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding SendTime, StringFormat=HH:mm:ss.fff}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="耗时(ms)" Width="78">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Text" Value="{Binding ElapsedMs, StringFormat={}{0:N0}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElapsedMs}" Value="-1">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="状态" Width="75">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Text" Value="{Binding State}"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding State}" Value="Initial">
+                                                                    <Setter Property="Text" Value="初始"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Success">
+                                                                    <Setter Property="Text" Value="成功"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource MessageSuccessBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Fail">
+                                                                    <Setter Property="Text" Value="失败"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource MessageFailureBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Timeout">
+                                                                    <Setter Property="Text" Value="超时"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource MessageFailureBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Sent">
+                                                                    <Setter Property="Text" Value="已发送"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource MessagePendingBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+
+                        <Border x:Name="EmptyStatePanel"
+                                Margin="18"
+                                Padding="24"
+                                CornerRadius="8"
+                                Background="{DynamicResource ButtonBackground}"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                BorderThickness="1"
+                                Visibility="Collapsed">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="460">
+                                <TextBlock x:Name="EmptyStateTitleText"
+                                           Text="没有消息"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="EmptyStateDescriptionText"
+                                           Margin="0,8,0,0"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Width="8"
+                          HorizontalAlignment="Stretch"
+                          Background="Transparent"/>
+
+            <Border Grid.Column="2" Style="{StaticResource MessageCardStyle}" Padding="10">
+                <Grid>
+                    <Grid x:Name="MessageDetailsPanel">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Margin="2,0,2,10">
+                            <TextBlock x:Name="SelectedMessageTitleText"
+                                       Text="消息详情"
+                                       Style="{StaticResource MessageSectionTitleStyle}"/>
+                            <TextBlock x:Name="SelectedMessageMetaText"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="SelectedMessageStatusText"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="1"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="2,10,2,8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="发送（Send）" FontWeight="SemiBold"/>
+                                <TextBox x:Name="SendTopicTextBox"
+                                         Grid.Row="1"
+                                         Margin="0,6,0,6"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <TextBox x:Name="SendPayloadTextBox"
+                                         Grid.Row="2"
+                                         Style="{StaticResource PayloadTextBoxStyle}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="2"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="2,10,2,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="接收（Receive）" FontWeight="SemiBold"/>
+                                <TextBox x:Name="ReceiveTopicTextBox"
+                                         Grid.Row="1"
+                                         Margin="0,6,0,6"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <TextBox x:Name="ReceivePayloadTextBox"
+                                         Grid.Row="2"
+                                         Style="{StaticResource PayloadTextBoxStyle}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel x:Name="NoSelectionPanel"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                MaxWidth="300">
+                        <TextBlock Text="选择一条消息查看详情"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Margin="0,7,0,0"
+                                   Text="右侧会显示发送与接收 Topic，并自动格式化 JSON Payload。"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

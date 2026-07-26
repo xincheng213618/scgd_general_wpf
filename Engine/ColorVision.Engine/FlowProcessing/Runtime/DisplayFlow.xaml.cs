@@ -540,6 +540,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     _ = ShowExecutionSummaryAfterNodeWritesAsync(
                         failedNode,
+                        null,
                         completedErrorNodeKey,
                         msg,
                         completedGeneration);
@@ -698,14 +699,36 @@ namespace ColorVision.Engine.FlowProcessing
 
         public CVCommonNode LastNode { get; set; }
 
-        private readonly ConcurrentDictionary<string, FlowNodeRecord> _nodeRecords = new ConcurrentDictionary<string, FlowNodeRecord>();
+        private sealed class PendingNodeExecution
+        {
+            public PendingNodeExecution(
+                string writeKey,
+                FlowNodeRecord record,
+                FlowNodeMessage? message,
+                long generation)
+            {
+                WriteKey = writeKey;
+                Record = record;
+                Message = message;
+                Generation = generation;
+            }
+
+            public string WriteKey { get; }
+
+            public FlowNodeRecord Record { get; }
+
+            public FlowNodeMessage? Message { get; }
+
+            public long Generation { get; }
+        }
+
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>> _pendingNodeExecutions = new ConcurrentDictionary<string, ConcurrentQueue<PendingNodeExecution>>();
         private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
-        private readonly ConcurrentDictionary<string, FlowNodeMessage> _nodeMessages = new ConcurrentDictionary<string, FlowNodeMessage>();
+        private readonly ConcurrentDictionary<string, int> _runningNodeCounts = new ConcurrentDictionary<string, int>();
         private readonly ConcurrentDictionary<string, long> _nodeExpectedDurations = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, long> _nodeStartedAt = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, CVCommonNode> _runningNodes = new ConcurrentDictionary<string, CVCommonNode>();
         private readonly ConcurrentDictionary<string, Task> _nodeWriteTasks = new ConcurrentDictionary<string, Task>();
-        private readonly ConcurrentDictionary<string, long> _nodeExecutionGenerations = new ConcurrentDictionary<string, long>();
         private readonly object _nodeWriteSync = new object();
         private readonly object _executionStateSync = new object();
         private CVCommonNode? _lastFailedNode;
@@ -714,28 +737,46 @@ namespace ColorVision.Engine.FlowProcessing
         private TaskCompletionSource<bool>? _terminalNodeEndCompletion;
         private long _executionGeneration;
 
-        private void QueueNodeWrite(string nodeId, Action write)
+        private void QueueNodeWrite(string writeKey, Action write)
         {
             lock (_nodeWriteSync)
             {
-                Task nextWrite = _nodeWriteTasks.TryGetValue(nodeId, out Task? previous)
+                Task nextWrite = _nodeWriteTasks.TryGetValue(writeKey, out Task? previous)
                     ? previous.ContinueWith(
                     _ => write(),
                     CancellationToken.None,
                     TaskContinuationOptions.None,
                     TaskScheduler.Default)
                     : Task.Run(write);
-                _nodeWriteTasks[nodeId] = nextWrite;
+                _nodeWriteTasks[writeKey] = nextWrite;
+                FlowNodeRecordDataBaseHelper.TrackPendingWrite(nextWrite);
+                _ = nextWrite.ContinueWith(
+                    completedTask =>
+                    {
+                        lock (_nodeWriteSync)
+                        {
+                            if (_nodeWriteTasks.TryGetValue(writeKey, out Task? current)
+                                && ReferenceEquals(current, nextWrite))
+                            {
+                                _nodeWriteTasks.TryRemove(writeKey, out _);
+                            }
+                        }
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
             }
         }
 
         private async Task ShowExecutionSummaryAfterNodeWritesAsync(
             CVCommonNode node,
+            string? writeKey,
             string? completedErrorNodeKey,
             string? completedSummaryMessage,
             long generation)
         {
-            if (_nodeWriteTasks.TryGetValue(node.NodeID, out Task? pendingWrite))
+            if (!string.IsNullOrWhiteSpace(writeKey)
+                && _nodeWriteTasks.TryGetValue(writeKey, out Task? pendingWrite))
             {
                 try
                 {
@@ -804,7 +845,6 @@ namespace ColorVision.Engine.FlowProcessing
         private void InvalidateExecutionPresentation()
         {
             Interlocked.Increment(ref _executionGeneration);
-            _nodeExecutionGenerations.Clear();
             lock (_executionStateSync)
             {
                 _lastFailedNode = null;
@@ -856,6 +896,7 @@ namespace ColorVision.Engine.FlowProcessing
                 node.TitleProgress = -1f;
 
             _runningNodes.Clear();
+            _runningNodeCounts.Clear();
             _nodeStartedAt.Clear();
         }
 
@@ -866,21 +907,27 @@ namespace ColorVision.Engine.FlowProcessing
 
             if (sender is CVCommonNode algorithmNode)
             {
-                if (!_nodeExecutionGenerations.TryRemove(algorithmNode.NodeID, out long generation)
-                    || generation != Volatile.Read(ref _executionGeneration))
-                {
+                string writeKey = GetNodeExecutionKey(algorithmNode, e.RecvMsgId, e.SerialNumber);
+                if (!TryTakePendingNodeExecution(writeKey, algorithmNode, e.SerialNumber, out PendingNodeExecution? execution))
                     return;
-                }
 
-                algorithmNode.TitleProgress = -1f;
-                _runningNodes.TryRemove(algorithmNode.NodeID, out _);
+                long generation = execution.Generation;
+                int runningCount = _runningNodeCounts.AddOrUpdate(
+                    algorithmNode.NodeID,
+                    0,
+                    (_, current) => Math.Max(0, current - 1));
+                bool nodeStillRunning = runningCount > 0;
+                if (!nodeStillRunning)
+                    _runningNodes.TryRemove(algorithmNode.NodeID, out _);
                 long elapsedFromClock = 0;
-                if (_nodeStartedAt.TryRemove(algorithmNode.NodeID, out long startedAt))
+                if (!nodeStillRunning && _nodeStartedAt.TryRemove(algorithmNode.NodeID, out long startedAt))
                     elapsedFromClock = Math.Max(0, Environment.TickCount64 - startedAt);
+                if (!nodeStillRunning)
+                    algorithmNode.TitleProgress = -1f;
 
                 if (e != null)
                 {
-                    algorithmNode.IsSelected = false;
+                    algorithmNode.IsSelected = nodeStillRunning;
 
                     if (e.RecvStatusCode == 0)
                     {
@@ -892,24 +939,20 @@ namespace ColorVision.Engine.FlowProcessing
                     }
                 }
 
-                _runningNodeNames.TryRemove(algorithmNode.NodeID, out _);
+                if (!nodeStillRunning)
+                    _runningNodeNames.TryRemove(algorithmNode.NodeID, out _);
 
-                string nodeKey = algorithmNode.NodeID;
-                if (_nodeRecords.TryRemove(nodeKey, out FlowNodeRecord record))
-                {
-                    record.EndTime = DateTime.Now;
-                    record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
-                    if (record.ElapsedMs > 0)
-                        _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
-                    QueueNodeWrite(algorithmNode.NodeID, () => FlowNodeRecordDataBaseHelper.Update(record));
-                }
+                FlowNodeRecord record = execution.Record;
+                record.EndTime = DateTime.Now;
+                record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
+                if (record.ElapsedMs > 0)
+                    _nodeExpectedDurations[algorithmNode.NodeID] = record.ElapsedMs;
                 else if (elapsedFromClock > 0)
-                {
                     _nodeExpectedDurations[algorithmNode.NodeID] = elapsedFromClock;
-                }
+                QueueNodeWrite(execution.WriteKey, () => FlowNodeRecordDataBaseHelper.Update(record));
 
                 // Update the existing message with received MQTT response
-                if (_nodeMessages.TryRemove(algorithmNode.NodeID, out FlowNodeMessage nodeMsg))
+                if (execution.Message is FlowNodeMessage nodeMsg)
                 {
                     nodeMsg.RecvTime = DateTime.Now;
                     if (e != null && !string.IsNullOrEmpty(e.RecvMsgId))
@@ -925,7 +968,7 @@ namespace ColorVision.Engine.FlowProcessing
                     {
                         nodeMsg.State = FlowMessageState.Timeout;
                     }
-                    QueueNodeWrite(algorithmNode.NodeID, () => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
+                    QueueNodeWrite(execution.WriteKey, () => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
                 }
 
                 if (e?.RecvStatusCode != 0)
@@ -949,6 +992,7 @@ namespace ColorVision.Engine.FlowProcessing
                     {
                         _ = ShowExecutionSummaryAfterNodeWritesAsync(
                             algorithmNode,
+                            execution.WriteKey,
                             completedErrorNodeKey,
                             completedSummaryMessage,
                             generation);
@@ -964,9 +1008,10 @@ namespace ColorVision.Engine.FlowProcessing
 
             if (sender is CVCommonNode algorithmNode)
             {
- 
+                string writeKey = GetNodeExecutionKey(algorithmNode, e.SendMsgId, e.SerialNumber);
                 LastNode = algorithmNode;
-                _nodeExecutionGenerations[algorithmNode.NodeID] = Volatile.Read(ref _executionGeneration);
+                long generation = Volatile.Read(ref _executionGeneration);
+                _runningNodeCounts.AddOrUpdate(algorithmNode.NodeID, 1, (_, current) => current + 1);
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
                 _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
@@ -981,27 +1026,20 @@ namespace ColorVision.Engine.FlowProcessing
                 var record = new FlowNodeRecord
                 {
                     BatchId = batchId,
-                    SerialNumber = FlowControl.SerialNumber,
+                    SerialNumber = e.SerialNumber,
                     NodeId = algorithmNode.NodeID,
                     NodeName = algorithmNode.OnGetDrawTitle(),
                     NodeType = algorithmNode.NodeType,
                     StartTime = DateTime.Now,
                 };
-                _nodeRecords[algorithmNode.NodeID] = record;
-                QueueNodeWrite(algorithmNode.NodeID, () =>
-                {
-                    int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
-                    if (insertId <= 0)
-                        _nodeRecords.TryRemove(algorithmNode.NodeID, out _);
-                });
-
                 // Record sent MQTT message (combined send/recv record)
+                FlowNodeMessage? msg = null;
                 if (e != null && !string.IsNullOrEmpty(e.SendMsgId))
                 {
-                    var msg = new FlowNodeMessage
+                    msg = new FlowNodeMessage
                     {
                         BatchId = batchId,
-                        SerialNumber = FlowControl.SerialNumber,
+                        SerialNumber = e.SerialNumber,
                         NodeId = algorithmNode.NodeID,
                         NodeName = algorithmNode.OnGetDrawTitle(),
                         MsgId = e.SendMsgId,
@@ -1011,15 +1049,57 @@ namespace ColorVision.Engine.FlowProcessing
                         SendTime = DateTime.Now,
                         State = FlowMessageState.Sent
                     };
-                    _nodeMessages[algorithmNode.NodeID] = msg;
-                    QueueNodeWrite(algorithmNode.NodeID, () =>
-                    {
-                        int id = FlowNodeRecordDataBaseHelper.InsertMessage(msg);
-                        if (id <= 0)
-                            _nodeMessages.TryRemove(algorithmNode.NodeID, out _);
-                    });
                 }
+
+                var execution = new PendingNodeExecution(writeKey, record, msg, generation);
+                _pendingNodeExecutions
+                    .GetOrAdd(writeKey, _ => new ConcurrentQueue<PendingNodeExecution>())
+                    .Enqueue(execution);
+                QueueNodeWrite(writeKey, () =>
+                {
+                    int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
+                    if (insertId > 0 && msg != null)
+                    {
+                        msg.NodeRecordId = record.Id;
+                        FlowNodeRecordDataBaseHelper.InsertMessage(msg);
+                    }
+                });
             }
+        }
+
+        private bool TryTakePendingNodeExecution(
+            string writeKey,
+            CVCommonNode node,
+            string? serialNumber,
+            out PendingNodeExecution? execution)
+        {
+            if (_pendingNodeExecutions.TryGetValue(writeKey, out ConcurrentQueue<PendingNodeExecution>? exactQueue)
+                && exactQueue.TryDequeue(out execution))
+            {
+                return true;
+            }
+
+            string prefix = $"{serialNumber}|{node.NodeID}|";
+            foreach (KeyValuePair<string, ConcurrentQueue<PendingNodeExecution>> item in _pendingNodeExecutions
+                         .Where(item => item.Key.StartsWith(prefix, StringComparison.Ordinal))
+                         .OrderBy(item => item.Value.TryPeek(out PendingNodeExecution? pending)
+                             ? pending.Record.StartTime
+                             : DateTime.MaxValue))
+            {
+                if (item.Value.TryDequeue(out execution))
+                    return true;
+            }
+
+            execution = null;
+            return false;
+        }
+
+        private static string GetNodeExecutionKey(
+            CVCommonNode node,
+            string? messageId,
+            string? serialNumber)
+        {
+            return $"{serialNumber}|{node.NodeID}|{messageId}";
         }
 
 
@@ -1130,9 +1210,9 @@ namespace ColorVision.Engine.FlowProcessing
                 View.ShowExecutionSummary("Run " + flowName);
                 FlowEngineManager.BatchProgress = 0;
 
-                _nodeRecords.Clear();
+                _pendingNodeExecutions.Clear();
                 _runningNodeNames.Clear();
-                _nodeMessages.Clear();
+                _runningNodeCounts.Clear();
                 lock (_nodeWriteSync)
                     _nodeWriteTasks.Clear();
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
