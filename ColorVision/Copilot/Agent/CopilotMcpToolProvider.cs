@@ -103,7 +103,7 @@ namespace ColorVision.Copilot
                 var remaining = disposalTimeout - stopwatch.Elapsed;
                 if (remaining <= TimeSpan.Zero)
                 {
-                    ObserveLateFault(disposeTask);
+                    CopilotCancellationBoundary.ObserveLateFault(disposeTask);
                     continue;
                 }
 
@@ -116,7 +116,7 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
-                    ObserveLateFault(disposeTask);
+                    CopilotCancellationBoundary.ObserveLateFault(disposeTask);
                     Trace.TraceWarning(
                         "Copilot external resource disposal exceeded {0}; detaching late cleanup for {1}.",
                         waitTimeout,
@@ -127,23 +127,6 @@ namespace ColorVision.Copilot
                     TraceDisposalFailure(resource, ex);
                 }
             }
-        }
-
-        internal static void ObserveLateFault(Task task)
-        {
-            if (task.IsCompletedSuccessfully || task.IsCanceled)
-                return;
-            if (task.IsFaulted)
-            {
-                _ = task.Exception;
-                return;
-            }
-
-            _ = task.ContinueWith(
-                static completedTask => _ = completedTask.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
         }
 
         private static TimeSpan ValidateTimeout(TimeSpan timeout, string parameterName)
@@ -481,7 +464,7 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    CopilotExternalToolLease.ObserveLateFault(pageTask);
+                    CopilotCancellationBoundary.ObserveLateFault(pageTask);
                     throw;
                 }
                 pageCount++;

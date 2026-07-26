@@ -76,41 +76,21 @@ namespace ColorVision.Copilot
             var providers = _extensionBridge == null
                 ? _providers
                 : _providers.Concat(_extensionBridge.GetSnapshot().ContextProviders).OrderBy(provider => provider.Order).ToArray();
-            var candidates = new List<(int Index, ICopilotContextProvider Provider)>();
-            var results = new List<ProviderCaptureResult>();
-            for (var index = 0; index < providers.Count; index++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var provider = providers[index];
-                try
-                {
-                    if (provider.CanProvide(request.Scope))
-                        candidates.Add((index, provider));
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    results.Add(ProviderCaptureResult.Failure(index, provider, CopilotUserFacingErrorFormatter.Sanitize(exception.Message)));
-                }
-            }
-
             using var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             requestCancellation.CancelAfter(_requestCaptureTimeout);
             using var concurrencyGate = new SemaphoreSlim(_maximumConcurrentProviders, _maximumConcurrentProviders);
-            var captureTasks = candidates
-                .Select(candidate => CaptureProviderAsync(
-                    candidate.Index,
-                    candidate.Provider,
+            var captureTasks = providers
+                .Select((provider, index) => CaptureProviderAsync(
+                    index,
+                    provider,
                     request,
                     concurrencyGate,
                     requestCancellation.Token,
                     cancellationToken))
                 .ToArray();
-            if (captureTasks.Length > 0)
-                results.AddRange(await Task.WhenAll(captureTasks).ConfigureAwait(false));
+            var results = captureTasks.Length == 0
+                ? Array.Empty<ProviderCaptureResult>()
+                : await Task.WhenAll(captureTasks).ConfigureAwait(false);
 
             var items = new List<CopilotContextItem>();
             var failedProviderCount = 0;
@@ -155,7 +135,14 @@ namespace ColorVision.Copilot
                 await concurrencyGate.WaitAsync(requestCancellationToken).ConfigureAwait(false);
                 gateEntered = true;
                 providerCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestCancellationToken);
-                captureTask = provider.CaptureAsync(request, providerCancellation.Token);
+                var providerCancellationToken = providerCancellation.Token;
+                captureTask = Task.Run(async () =>
+                {
+                    if (!provider.CanProvide(request.Scope))
+                        return null;
+                    providerCancellationToken.ThrowIfCancellationRequested();
+                    return await provider.CaptureAsync(request, providerCancellationToken).ConfigureAwait(false);
+                }, providerCancellationToken);
                 var item = await captureTask
                     .WaitAsync(_providerCaptureTimeout, requestCancellationToken)
                     .ConfigureAwait(false);
@@ -165,13 +152,14 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException) when (callerCancellationToken.IsCancellationRequested)
             {
+                TryCancel(providerCancellation);
+                CopilotCancellationBoundary.ObserveLateFault(captureTask);
                 throw;
             }
             catch (OperationCanceledException) when (requestCancellationToken.IsCancellationRequested)
             {
                 TryCancel(providerCancellation);
-                if (captureTask != null)
-                    ObserveFault(captureTask);
+                CopilotCancellationBoundary.ObserveLateFault(captureTask);
                 return ProviderCaptureResult.Failure(
                     index,
                     provider,
@@ -180,8 +168,7 @@ namespace ColorVision.Copilot
             catch (TimeoutException)
             {
                 TryCancel(providerCancellation);
-                if (captureTask != null)
-                    ObserveFault(captureTask);
+                CopilotCancellationBoundary.ObserveLateFault(captureTask);
                 return ProviderCaptureResult.Failure(
                     index,
                     provider,
@@ -190,8 +177,7 @@ namespace ColorVision.Copilot
             catch (Exception exception)
             {
                 TryCancel(providerCancellation);
-                if (captureTask != null)
-                    ObserveFault(captureTask);
+                CopilotCancellationBoundary.ObserveLateFault(captureTask);
                 return ProviderCaptureResult.Failure(
                     index,
                     provider,
@@ -236,15 +222,6 @@ namespace ColorVision.Copilot
             {
                 Trace.TraceWarning($"Copilot context provider cancellation callback failed: {CopilotUserFacingErrorFormatter.Sanitize(exception.Message)}");
             }
-        }
-
-        private static void ObserveFault(Task task)
-        {
-            _ = task.ContinueWith(
-                completed => _ = completed.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
         }
 
         private sealed record ProviderCaptureResult(

@@ -42,7 +42,7 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                ObserveLateFault(responseTask);
+                CopilotCancellationBoundary.ObserveLateFault(responseTask);
                 throw;
             }
         }
@@ -60,23 +60,6 @@ namespace ColorVision.Copilot
                 _enumeratorDisposalTimeout);
             while (await lease.MoveNextAsync(cancellationToken).ConfigureAwait(false))
                 yield return lease.Current;
-        }
-
-        private static void ObserveLateFault(Task task)
-        {
-            if (task.IsCompletedSuccessfully || task.IsCanceled)
-                return;
-            if (task.IsFaulted)
-            {
-                _ = task.Exception;
-                return;
-            }
-
-            _ = task.ContinueWith(
-                static completedTask => _ = completedTask.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
         }
 
         private sealed class CancellationGuardEnumerator : IAsyncDisposable
@@ -112,7 +95,7 @@ namespace ColorVision.Copilot
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     _cancellationInterrupted = true;
-                    ObserveLateFault(pendingMove);
+                    CopilotCancellationBoundary.ObserveLateFault(pendingMove);
                     throw;
                 }
                 finally
@@ -131,7 +114,7 @@ namespace ColorVision.Copilot
                 var pendingMove = Interlocked.Exchange(ref _pendingMove, null);
                 if (pendingMove is { IsCompleted: false })
                 {
-                    ObserveLateFault(pendingMove);
+                    CopilotCancellationBoundary.ObserveLateFault(pendingMove);
                     _ = DisposeAfterMoveCompletesAsync(pendingMove, enumerator, _disposalTimeout);
                     return ValueTask.CompletedTask;
                 }
@@ -185,7 +168,7 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
-                    ObserveLateFault(disposeTask);
+                    CopilotCancellationBoundary.ObserveLateFault(disposeTask);
                     Trace.TraceWarning(
                         "Copilot provider stream disposal exceeded {0}; detaching the late cleanup.",
                         disposalTimeout);

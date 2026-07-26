@@ -164,7 +164,7 @@ namespace ColorVision.Copilot
             return BuildAttachmentContextBlockCoreAsync(
                     attachments,
                     maximumWeight,
-                    static (attachment, _) => new ValueTask<string>(BuildAttachmentBlock(attachment)),
+                    BuildAttachmentBlockAsync,
                     CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
@@ -337,7 +337,10 @@ namespace ColorVision.Copilot
         {
             try
             {
-                var page = await _loadWebPage(url, cancellationToken).ConfigureAwait(false);
+                var page = await CopilotCancellationBoundary.RunTaskAsync(
+                        token => _loadWebPage(url, token),
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 return CopilotWebPageToolSupport.BuildFetchedWebPageContextBlock(page);
             }
             catch (OperationCanceledException)
@@ -350,21 +353,6 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string BuildFileAttachmentBlock(CopilotAttachmentItem attachment)
-        {
-            try
-            {
-                if (!File.Exists(attachment.Value))
-                    return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
-
-                return FormatFileAttachmentBlock(attachment, ReadBoundedTextFile(attachment.Value));
-            }
-            catch (Exception ex)
-            {
-                return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nRead failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}\n";
-            }
-        }
-
         private static async ValueTask<string> BuildAttachmentBlockAsync(
             CopilotAttachmentItem attachment,
             CancellationToken cancellationToken)
@@ -372,18 +360,7 @@ namespace ColorVision.Copilot
             return attachment.Type switch
             {
                 CopilotAttachmentType.File => await BuildFileAttachmentBlockAsync(attachment, cancellationToken).ConfigureAwait(false),
-                CopilotAttachmentType.Image => BuildImageAttachmentBlock(attachment),
-                CopilotAttachmentType.WebPage => BuildWebPageAttachmentBlock(attachment),
-                _ => BuildContextAttachmentBlock(attachment),
-            };
-        }
-
-        private static string BuildAttachmentBlock(CopilotAttachmentItem attachment)
-        {
-            return attachment.Type switch
-            {
-                CopilotAttachmentType.File => BuildFileAttachmentBlock(attachment),
-                CopilotAttachmentType.Image => BuildImageAttachmentBlock(attachment),
+                CopilotAttachmentType.Image => await BuildImageAttachmentBlockAsync(attachment, cancellationToken).ConfigureAwait(false),
                 CopilotAttachmentType.WebPage => BuildWebPageAttachmentBlock(attachment),
                 _ => BuildContextAttachmentBlock(attachment),
             };
@@ -393,9 +370,10 @@ namespace ColorVision.Copilot
             CopilotAttachmentItem attachment,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             // Opening a file can block before asynchronous reads begin, especially for UNC paths.
-            return Task.Run(() => BuildFileAttachmentBlockCoreAsync(attachment, cancellationToken), cancellationToken);
+            return CopilotCancellationBoundary.RunTaskAsync(
+                token => BuildFileAttachmentBlockCoreAsync(attachment, token),
+                cancellationToken);
         }
 
         private static async Task<string> BuildFileAttachmentBlockCoreAsync(
@@ -407,6 +385,7 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!File.Exists(attachment.Value))
                     return $"[{CopilotUiText.FileBadge}] {attachment.Value}\nThe file does not exist and cannot be read.\n";
+                cancellationToken.ThrowIfCancellationRequested();
 
                 var content = await ReadBoundedTextFileAsync(attachment.Value, cancellationToken).ConfigureAwait(false);
                 return FormatFileAttachmentBlock(attachment, content);
@@ -421,10 +400,14 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static string BuildImageAttachmentBlock(CopilotAttachmentItem attachment)
+        private static string BuildImageAttachmentBlock(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!File.Exists(attachment.Value))
                 return $"[{CopilotUiText.ImageBadge}] {attachment.DisplayLabel}\nThe image attachment does not exist and cannot be analyzed.\n";
+            cancellationToken.ThrowIfCancellationRequested();
 
             return string.Join(Environment.NewLine,
             [
@@ -432,6 +415,16 @@ namespace ColorVision.Copilot
                 "The actual pixels were analyzed in a separate bounded model pass; its untrusted visual observation is included with this request.",
                 string.Empty,
             ]);
+        }
+
+        private static Task<string> BuildImageAttachmentBlockAsync(
+            CopilotAttachmentItem attachment,
+            CancellationToken cancellationToken)
+        {
+            // File existence checks can block on disconnected network locations.
+            return CopilotCancellationBoundary.RunSynchronousAsync(
+                token => BuildImageAttachmentBlock(attachment, token),
+                cancellationToken);
         }
 
         private static string BuildWebPageAttachmentBlock(CopilotAttachmentItem attachment)
@@ -548,33 +541,6 @@ namespace ColorVision.Copilot
             return $"[{CopilotUiText.FileBadge}] {attachment.Value}\n~~~{fence}\n{content}\n~~~\n";
         }
 
-        private static CopilotBoundedTextFileContent ReadBoundedTextFile(string filePath)
-        {
-            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            var prefix = new byte[BinaryInspectionBytes];
-            var prefixLength = ReadPrefix(stream, prefix);
-            if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
-                return new CopilotBoundedTextFileContent(string.Empty, WasTruncated: false, IsBinary: true);
-
-            stream.Position = 0;
-            using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
-            var buffer = new char[AttachmentContentLimit + 1];
-            var totalRead = 0;
-            while (totalRead < buffer.Length)
-            {
-                var read = reader.ReadBlock(buffer, totalRead, buffer.Length - totalRead);
-                if (read == 0)
-                    break;
-                totalRead += read;
-            }
-
-            var content = new string(buffer, 0, Math.Min(totalRead, AttachmentContentLimit));
-            return new CopilotBoundedTextFileContent(
-                content,
-                totalRead > AttachmentContentLimit || reader.Peek() >= 0,
-                IsBinaryText(content));
-        }
-
         private static async Task<CopilotBoundedTextFileContent> ReadBoundedTextFileAsync(
             string filePath,
             CancellationToken cancellationToken)
@@ -586,6 +552,7 @@ namespace ColorVision.Copilot
                 FileShare.ReadWrite,
                 bufferSize: 4096,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
+            cancellationToken.ThrowIfCancellationRequested();
             var prefix = new byte[BinaryInspectionBytes];
             var prefixLength = await ReadPrefixAsync(stream, prefix, cancellationToken).ConfigureAwait(false);
             if (IsBinaryFilePrefix(prefix.AsSpan(0, prefixLength)))
@@ -611,19 +578,6 @@ namespace ColorVision.Copilot
                 content,
                 totalRead > AttachmentContentLimit,
                 IsBinaryText(content));
-        }
-
-        private static int ReadPrefix(FileStream stream, byte[] buffer)
-        {
-            var totalRead = 0;
-            while (totalRead < buffer.Length)
-            {
-                var read = stream.Read(buffer, totalRead, buffer.Length - totalRead);
-                if (read == 0)
-                    break;
-                totalRead += read;
-            }
-            return totalRead;
         }
 
         private static async Task<int> ReadPrefixAsync(

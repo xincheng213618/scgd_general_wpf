@@ -300,7 +300,7 @@ namespace ColorVision.Copilot
                 {
                     linkedCancellation.Cancel();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
-                    ObserveLateFault(executionTask);
+                    CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
                     var outcome = CreateOutcome(
                         invocation,
@@ -328,7 +328,7 @@ namespace ColorVision.Copilot
                 catch (OperationCanceledException)
                 {
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
-                    ObserveLateFault(executionTask);
+                    CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var outcome = CreateOutcome(
                         invocation,
                         CopilotToolExecutionState.Cancelled,
@@ -420,13 +420,13 @@ namespace ColorVision.Copilot
                 catch (TimeoutException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     return CreateBeforeHookTimeoutDecision();
                 }
                 catch (OperationCanceledException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     throw;
                 }
                 catch (Exception ex)
@@ -465,7 +465,7 @@ namespace ColorVision.Copilot
                 catch (TimeoutException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
                     break;
                 }
@@ -640,24 +640,6 @@ namespace ColorVision.Copilot
             return elapsedMs < 1000
                 ? $"{Math.Max(0, elapsedMs)} ms"
                 : $"{elapsedMs / 1000d:0.#} s";
-        }
-
-        private static void ObserveLateFault(Task? task)
-        {
-            if (task == null || task.IsCanceled || task.IsCompletedSuccessfully)
-                return;
-
-            if (task.IsFaulted)
-            {
-                _ = task.Exception;
-                return;
-            }
-
-            _ = task.ContinueWith(
-                static completedTask => _ = completedTask.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
         }
 
         private static void CancelAndDisposeWithoutWaiting(ref CancellationTokenSource? cancellation)
