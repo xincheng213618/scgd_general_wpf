@@ -484,6 +484,26 @@ namespace ColorVision.Copilot
             var providerRetryCount = AddClamped(
                 explorationProviderRetryCount,
                 finalizationProviderRetryCount);
+            var explorationFirstContentTimeoutCount = Math.Clamp(
+                exploration.ProviderFirstContentTimeoutCount,
+                0,
+                explorationProviderCalls);
+            var finalizationFirstContentTimeoutCount = Math.Clamp(
+                finalization.ProviderFirstContentTimeoutCount,
+                0,
+                finalizationProviderCalls);
+            var providerFirstContentTimeoutCount = AddClamped(
+                explorationFirstContentTimeoutCount,
+                finalizationFirstContentTimeoutCount);
+            var providerStreamInactivityTimeoutCount = AddClamped(
+                Math.Clamp(
+                    exploration.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    explorationProviderCalls - explorationFirstContentTimeoutCount),
+                Math.Clamp(
+                    finalization.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    finalizationProviderCalls - finalizationFirstContentTimeoutCount));
             var explorationProviderResponseCount = Math.Clamp(
                 exploration.ProviderResponseCount,
                 0,
@@ -579,6 +599,10 @@ namespace ColorVision.Copilot
                     finalizationProviderRetryCount > 0
                         ? finalization.ProviderRetryDelayMs
                         : 0),
+                ProviderFirstContentTimeoutCount =
+                    providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
                 ProviderResponseCount = providerResponseCount,
                 ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
                 ProviderFirstResponseLatencyMaxMs = Math.Min(
@@ -1124,6 +1148,10 @@ namespace ColorVision.Copilot
                     ProviderRetryCount = result.Budget.ProviderRetryCount,
                     ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,
                     ProviderRetryDelayMs = result.Budget.ProviderRetryDelayMs,
+                    ProviderFirstContentTimeoutCount =
+                        result.Budget.ProviderFirstContentTimeoutCount,
+                    ProviderStreamInactivityTimeoutCount =
+                        result.Budget.ProviderStreamInactivityTimeoutCount,
                     ProviderResponseCount = result.Budget.ProviderResponseCount,
                     ProviderFirstResponseLatencyTotalMs = result.Budget.ProviderFirstResponseLatencyTotalMs,
                     ProviderFirstResponseLatencyMaxMs = result.Budget.ProviderFirstResponseLatencyMaxMs,

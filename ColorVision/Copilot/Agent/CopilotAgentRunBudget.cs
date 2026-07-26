@@ -173,6 +173,14 @@ namespace ColorVision.Copilot
                 tokenSnapshot.ProviderRetryCount,
                 0,
                 providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
             var providerResponseCount = Math.Clamp(
                 tokenSnapshot.ProviderResponseCount,
                 0,
@@ -207,6 +215,9 @@ namespace ColorVision.Copilot
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, tokenSnapshot.ProviderRetryDelayMs)
                     : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
                 ProviderResponseCount = providerResponseCount,
                 ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
                 ProviderFirstResponseLatencyMaxMs = Math.Clamp(

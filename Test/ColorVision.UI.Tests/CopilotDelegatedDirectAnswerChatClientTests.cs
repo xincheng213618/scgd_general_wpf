@@ -31,6 +31,8 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                     ProviderRetryCount = 2,
                     ProviderRateLimitRetryCount = 1,
                     ProviderRetryDelayMs = 1_500,
+                    ProviderFirstContentTimeoutCount = 1,
+                    ProviderStreamInactivityTimeoutCount = 1,
                     ProviderResponseCount = 2,
                     ProviderFirstResponseLatencyTotalMs = 900,
                     ProviderFirstResponseLatencyMaxMs = 550,
@@ -69,6 +71,8 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(2, result.Budget.ProviderRetryCount);
         Assert.Equal(1, result.Budget.ProviderRateLimitRetryCount);
         Assert.Equal(1_500, result.Budget.ProviderRetryDelayMs);
+        Assert.Equal(1, result.Budget.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, result.Budget.ProviderStreamInactivityTimeoutCount);
         Assert.Equal(2, result.Budget.ProviderResponseCount);
         Assert.Equal(900, result.Budget.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(550, result.Budget.ProviderFirstResponseLatencyMaxMs);

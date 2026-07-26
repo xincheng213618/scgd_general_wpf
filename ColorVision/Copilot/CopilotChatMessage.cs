@@ -717,6 +717,26 @@ namespace ColorVision.Copilot
                     }
                     builder.AppendLine();
                 }
+                if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0
+                    || AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
+                {
+                    builder.Append("模型停顿中止：");
+                    if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
+                    {
+                        builder.Append("首内容 ")
+                            .Append(AgentRunBudget.ProviderFirstContentTimeoutCount.ToString("N0"))
+                            .Append(" 次");
+                    }
+                    if (AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
+                    {
+                        if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
+                            builder.Append(" · ");
+                        builder.Append("流式输出 ")
+                            .Append(AgentRunBudget.ProviderStreamInactivityTimeoutCount.ToString("N0"))
+                            .Append(" 次");
+                    }
+                    builder.AppendLine();
+                }
                 if (AgentRunBudget.ProviderResponseCount > 0
                     || AgentRunBudget.ProviderCallDurationTotalMs > 0)
                 {
@@ -1834,6 +1854,14 @@ namespace ColorVision.Copilot
                 budget.ProviderRetryCount,
                 0,
                 providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                budget.ProviderFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                budget.ProviderStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
             var providerResponseCount = Math.Clamp(
                 budget.ProviderResponseCount,
                 0,
@@ -1869,6 +1897,9 @@ namespace ColorVision.Copilot
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, budget.ProviderRetryDelayMs)
                     : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
                 ProviderResponseCount = providerResponseCount,
                 ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
                 ProviderFirstResponseLatencyMaxMs = Math.Clamp(
@@ -1941,6 +1972,8 @@ namespace ColorVision.Copilot
                 && left.ProviderRetryCount == right.ProviderRetryCount
                 && left.ProviderRateLimitRetryCount == right.ProviderRateLimitRetryCount
                 && left.ProviderRetryDelayMs == right.ProviderRetryDelayMs
+                && left.ProviderFirstContentTimeoutCount == right.ProviderFirstContentTimeoutCount
+                && left.ProviderStreamInactivityTimeoutCount == right.ProviderStreamInactivityTimeoutCount
                 && left.ProviderResponseCount == right.ProviderResponseCount
                 && left.ProviderFirstResponseLatencyTotalMs == right.ProviderFirstResponseLatencyTotalMs
                 && left.ProviderFirstResponseLatencyMaxMs == right.ProviderFirstResponseLatencyMaxMs

@@ -641,6 +641,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             ProviderRetryCount = 1,
             ProviderRateLimitRetryCount = 1,
             ProviderRetryDelayMs = 500,
+            ProviderStreamInactivityTimeoutCount = 1,
             ProviderResponseCount = 2,
             ProviderFirstResponseLatencyTotalMs = 700,
             ProviderFirstResponseLatencyMaxMs = 500,
@@ -680,6 +681,8 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(3, combined.ProviderRetryCount);
         Assert.Equal(2, combined.ProviderRateLimitRetryCount);
         Assert.Equal(1_700, combined.ProviderRetryDelayMs);
+        Assert.Equal(1, combined.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, combined.ProviderStreamInactivityTimeoutCount);
         Assert.Equal(4, combined.ProviderResponseCount);
         Assert.Equal(1_600, combined.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(600, combined.ProviderFirstResponseLatencyMaxMs);
@@ -747,6 +750,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 ProviderRetryCount = 2,
                 ProviderRateLimitRetryCount = 1,
                 ProviderRetryDelayMs = 1_200,
+                ProviderFirstContentTimeoutCount = 1,
                 ProviderResponseCount = 2,
                 ProviderFirstResponseLatencyTotalMs = 900,
                 ProviderFirstResponseLatencyMaxMs = 600,

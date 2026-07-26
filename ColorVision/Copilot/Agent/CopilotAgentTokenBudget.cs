@@ -71,6 +71,8 @@ namespace ColorVision.Copilot
         private int _providerRetryCount;
         private int _providerRateLimitRetryCount;
         private long _providerRetryDelayMs;
+        private int _providerFirstContentTimeoutCount;
+        private int _providerStreamInactivityTimeoutCount;
         private int _providerResponseCount;
         private long _providerFirstResponseLatencyTotalMs;
         private long _providerFirstResponseLatencyMaxMs;
@@ -138,6 +140,24 @@ namespace ColorVision.Copilot
                         _providerRetryDelayMs,
                         delegatedRun.ProviderRetryDelayMs);
                 }
+                var delegatedFirstContentTimeoutCount = Math.Clamp(
+                    delegatedRun.ProviderFirstContentTimeoutCount,
+                    0,
+                    delegatedProviderCalls);
+                var delegatedStreamInactivityTimeoutCount = Math.Clamp(
+                    delegatedRun.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    delegatedProviderCalls - delegatedFirstContentTimeoutCount);
+                _providerFirstContentTimeoutCount = Math.Min(
+                    _providerCalls,
+                    AddClamped(
+                        _providerFirstContentTimeoutCount,
+                        delegatedFirstContentTimeoutCount));
+                _providerStreamInactivityTimeoutCount = Math.Min(
+                    Math.Max(0, _providerCalls - _providerFirstContentTimeoutCount),
+                    AddClamped(
+                        _providerStreamInactivityTimeoutCount,
+                        delegatedStreamInactivityTimeoutCount));
                 var delegatedProviderResponseCount = Math.Clamp(
                     delegatedRun.ProviderResponseCount,
                     0,
@@ -219,6 +239,32 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void RecordProviderInactivity(Exception exception)
+        {
+            if (!CopilotProviderInactivityException.TryFind(
+                exception,
+                out var inactivity))
+            {
+                return;
+            }
+
+            lock (_syncRoot)
+            {
+                if (inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse)
+                {
+                    _providerFirstContentTimeoutCount = AddClamped(
+                        _providerFirstContentTimeoutCount,
+                        1);
+                }
+                else
+                {
+                    _providerStreamInactivityTimeoutCount = AddClamped(
+                        _providerStreamInactivityTimeoutCount,
+                        1);
+                }
+            }
+        }
+
         internal void RecordContextRecovery(CopilotContextWindowRecoveryInfo recovery)
         {
             ArgumentNullException.ThrowIfNull(recovery);
@@ -262,9 +308,10 @@ namespace ColorVision.Copilot
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
-            catch
+            catch (Exception exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                RecordProviderInactivity(exception);
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
@@ -305,9 +352,10 @@ namespace ColorVision.Copilot
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
-            catch
+            catch (Exception exception)
             {
                 RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                RecordProviderInactivity(exception);
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
@@ -352,6 +400,11 @@ namespace ColorVision.Copilot
                         try
                         {
                             hasNext = await enumerator.MoveNextAsync();
+                        }
+                        catch (Exception exception)
+                        {
+                            RecordProviderInactivity(exception);
+                            throw;
                         }
                         finally
                         {
@@ -531,6 +584,14 @@ namespace ColorVision.Copilot
                 int.MaxValue);
             var providerCalls = Math.Max(0, _providerCalls);
             var providerRetryCount = Math.Clamp(_providerRetryCount, 0, providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                _providerFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                _providerStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
             var providerResponseCount = Math.Clamp(_providerResponseCount, 0, providerCalls);
             var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
                 ? Math.Max(0, _providerFirstResponseLatencyTotalMs)
@@ -562,6 +623,9 @@ namespace ColorVision.Copilot
                 ProviderRetryDelayMs = providerRetryCount > 0
                     ? Math.Max(0, _providerRetryDelayMs)
                     : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
                 ProviderResponseCount = providerResponseCount,
                 ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
                 ProviderFirstResponseLatencyMaxMs = Math.Clamp(

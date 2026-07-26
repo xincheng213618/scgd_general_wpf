@@ -32,6 +32,23 @@ namespace ColorVision.Copilot
 
         public TimeSpan TimeoutDuration { get; }
 
+        public static bool TryFind(
+            Exception? exception,
+            out CopilotProviderInactivityException inactivity)
+        {
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                if (current is not CopilotProviderInactivityException candidate)
+                    continue;
+
+                inactivity = candidate;
+                return true;
+            }
+
+            inactivity = null!;
+            return false;
+        }
+
         private static string BuildMessage(
             CopilotProviderInactivityPhase phase,
             TimeSpan timeout)

@@ -22,6 +22,8 @@ public sealed class CopilotDelegateSubagentToolTests
                 ProviderRetryCount = 2,
                 ProviderRateLimitRetryCount = 1,
                 ProviderRetryDelayMs = 1_500,
+                ProviderFirstContentTimeoutCount = 1,
+                ProviderStreamInactivityTimeoutCount = 1,
                 ProviderResponseCount = 2,
                 ProviderFirstResponseLatencyTotalMs = 900,
                 ProviderFirstResponseLatencyMaxMs = 550,
@@ -52,6 +54,8 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(2, result.DelegatedRunUsage?.ProviderRetryCount);
         Assert.Equal(1, result.DelegatedRunUsage?.ProviderRateLimitRetryCount);
         Assert.Equal(1_500, result.DelegatedRunUsage?.ProviderRetryDelayMs);
+        Assert.Equal(1, result.DelegatedRunUsage?.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, result.DelegatedRunUsage?.ProviderStreamInactivityTimeoutCount);
         Assert.Equal(2, result.DelegatedRunUsage?.ProviderResponseCount);
         Assert.Equal(900, result.DelegatedRunUsage?.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(550, result.DelegatedRunUsage?.ProviderFirstResponseLatencyMaxMs);

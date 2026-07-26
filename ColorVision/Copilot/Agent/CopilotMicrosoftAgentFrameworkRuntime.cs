@@ -711,8 +711,22 @@ namespace ColorVision.Copilot
                     throw;
 
                 providerInterrupted = true;
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                if (CopilotProviderInactivityException.TryFind(
+                    ex,
+                    out var inactivity))
+                {
+                    var inactivityDescription =
+                        inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse
+                            ? "returned no content"
+                            : "returned no new stream content";
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"The provider {inactivityDescription} for {FormatDuration(inactivity.TimeoutDuration)} after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                }
+                else
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                }
                 if (answerText.Length == 0)
                 {
                     emit(CopilotAgentEvent.AnswerDelta(
@@ -870,6 +884,10 @@ namespace ColorVision.Copilot
                             ? $", inter-chunk avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyTotalMs / budgetSnapshot.ProviderStreamInterChunkLatencyCount))}"
                                 + $", max {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyMaxMs))}"
                             : string.Empty)
+                    : string.Empty)
+                + (budgetSnapshot.ProviderFirstContentTimeoutCount > 0
+                    || budgetSnapshot.ProviderStreamInactivityTimeoutCount > 0
+                    ? $" · inactivity timeouts first-content {budgetSnapshot.ProviderFirstContentTimeoutCount:N0}, stream {budgetSnapshot.ProviderStreamInactivityTimeoutCount:N0}"
                     : string.Empty)
                 + (usage.CachedInputTokens.HasValue
                     ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"

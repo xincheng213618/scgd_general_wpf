@@ -18,7 +18,10 @@ public sealed class CopilotProviderInactivityTests
     {
         using var provider = new MetadataThenStallChatClient();
         var retries = new List<CopilotProviderRetryInfo>();
-        using var client = CreateRetryingAgentClient(provider, retries);
+        using var client = CreateRetryingAgentClient(
+            provider,
+            retries,
+            out var metrics);
         var updates = new List<ChatResponseUpdate>();
 
         await foreach (var update in client.GetStreamingResponseAsync(
@@ -34,6 +37,8 @@ public sealed class CopilotProviderInactivityTests
             content => content is UsageContent);
         var retry = Assert.Single(retries);
         Assert.Equal("first-content timeout", retry.FailureKind);
+        Assert.Equal(1, metrics.Snapshot.ProviderFirstContentTimeoutCount);
+        Assert.Equal(0, metrics.Snapshot.ProviderStreamInactivityTimeoutCount);
     }
 
     [Fact]
@@ -41,7 +46,10 @@ public sealed class CopilotProviderInactivityTests
     {
         using var provider = new PartialThenStallChatClient();
         var retries = new List<CopilotProviderRetryInfo>();
-        using var client = CreateRetryingAgentClient(provider, retries);
+        using var client = CreateRetryingAgentClient(
+            provider,
+            retries,
+            out var metrics);
         var updates = new List<ChatResponseUpdate>();
 
         var exception = await Assert.ThrowsAsync<CopilotProviderInactivityException>(
@@ -54,6 +62,8 @@ public sealed class CopilotProviderInactivityTests
         Assert.Equal(1, provider.CallCount);
         Assert.Equal("Partial.", string.Concat(updates.Select(update => update.Text)));
         Assert.Empty(retries);
+        Assert.Equal(0, metrics.Snapshot.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, metrics.Snapshot.ProviderStreamInactivityTimeoutCount);
     }
 
     [Fact]
@@ -158,13 +168,22 @@ public sealed class CopilotProviderInactivityTests
 
     private static CopilotProviderRetryChatClient CreateRetryingAgentClient(
         IChatClient provider,
-        ICollection<CopilotProviderRetryInfo> retries)
+        ICollection<CopilotProviderRetryInfo> retries,
+        out CopilotTokenBudgetChatClient metrics)
     {
-        return new CopilotProviderRetryChatClient(
+        metrics = new CopilotTokenBudgetChatClient(
             new CopilotProviderInactivityChatClient(
                 new CopilotCancellationGuardChatClient(provider),
                 TestInactivityTimeout,
                 TestInactivityTimeout),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            });
+        return new CopilotProviderRetryChatClient(
+            metrics,
             retries.Add,
             maximumAttempts: 2,
             _ => TimeSpan.Zero,

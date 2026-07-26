@@ -28,6 +28,8 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             ProviderRetryCount = 2,
             ProviderRateLimitRetryCount = 1,
             ProviderRetryDelayMs = 1_250,
+            ProviderFirstContentTimeoutCount = 1,
+            ProviderStreamInactivityTimeoutCount = 1,
             ProviderResponseCount = 2,
             ProviderFirstResponseLatencyTotalMs = 700,
             ProviderFirstResponseLatencyMaxMs = 450,
@@ -51,6 +53,8 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.Equal(2, snapshot.ProviderRetryCount);
         Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
         Assert.Equal(1_250, snapshot.ProviderRetryDelayMs);
+        Assert.Equal(1, snapshot.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, snapshot.ProviderStreamInactivityTimeoutCount);
         Assert.Equal(3, snapshot.ProviderResponseCount);
         Assert.True(snapshot.ProviderFirstResponseLatencyTotalMs >= 700);
         Assert.True(snapshot.ProviderFirstResponseLatencyMaxMs >= 450);
