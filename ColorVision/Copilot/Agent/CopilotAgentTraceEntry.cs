@@ -100,11 +100,49 @@ namespace ColorVision.Copilot
 
         public List<CopilotWorkspaceChangeFile> WorkspaceChangedFiles { get; set; } = new();
 
+        public bool ShouldSerializeCallId() => !string.IsNullOrEmpty(CallId);
+
+        public bool ShouldSerializeAttempt() => Attempt != 1;
+
+        public bool ShouldSerializeMaxAttempts() => MaxAttempts != 1;
+
+        public bool ShouldSerializeRuntimeName() => !string.IsNullOrEmpty(RuntimeName);
+
+        public bool ShouldSerializeToolName() => !string.IsNullOrEmpty(ToolName);
+
+        public bool ShouldSerializeAccess() => Access != CopilotToolAccess.ReadOnly;
+
+        public bool ShouldSerializeRiskLevel() => RiskLevel != CopilotToolRiskLevel.Low;
+
+        public bool ShouldSerializeApprovalMode() => ApprovalMode != CopilotToolApprovalMode.Never;
+
+        public bool ShouldSerializeIdempotency() => Idempotency != CopilotToolIdempotency.Unknown;
+
+        public bool ShouldSerializeConcurrencyMode() => ConcurrencyMode != CopilotToolConcurrencyMode.SharedRead;
+
+        public bool ShouldSerializeConcurrencyKey() => !string.IsNullOrEmpty(ConcurrencyKey);
+
+        public bool ShouldSerializeApprovalActionId() => !string.IsNullOrEmpty(ApprovalActionId);
+
+        public bool ShouldSerializeState() => State != CopilotToolExecutionState.Pending;
+
+        public bool ShouldSerializeFailureKind() => FailureKind != CopilotToolFailureKind.None;
+
         public bool ShouldSerializeWorkspaceChangeSetRolledBack() => WorkspaceChangeSetRolledBack;
 
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
 
         public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
+
+        public bool ShouldSerializeRetryEligible() => RetryEligible;
+
+        public bool ShouldSerializeStartedAtUtc() => StartedAtUtc != default;
+
+        public bool ShouldSerializeDurationMs() => DurationMs != 0;
+
+        public bool ShouldSerializeQueueDurationMs() => QueueDurationMs != 0;
+
+        public bool ShouldSerializeTimeoutMs() => TimeoutMs != 0;
 
         public bool ShouldSerializeProgressMessage() => !string.IsNullOrWhiteSpace(ProgressMessage);
 
@@ -113,6 +151,28 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeProgressTotal() => ProgressTotal.HasValue;
 
         public bool ShouldSerializeProgressUnit() => !string.IsNullOrWhiteSpace(ProgressUnit);
+
+        public bool ShouldSerializeArgumentSummary() => !string.IsNullOrEmpty(ArgumentSummary);
+
+        public bool ShouldSerializeResultSummary() => !string.IsNullOrEmpty(ResultSummary);
+
+        public bool ShouldSerializeErrorMessage() => !string.IsNullOrEmpty(ErrorMessage);
+
+        public bool ShouldSerializeDelegatedRunId() => !string.IsNullOrEmpty(DelegatedRunId);
+
+        public bool ShouldSerializeDelegatedRoleId() => !string.IsNullOrEmpty(DelegatedRoleId);
+
+        public bool ShouldSerializeDelegatedStopReason() => DelegatedStopReason != CopilotAgentStopReason.None;
+
+        public bool ShouldSerializeDelegatedRequestTokenBudget() => DelegatedRequestTokenBudget != 0;
+
+        public bool ShouldSerializeDelegatedConsumedTokens() => DelegatedConsumedTokens != 0;
+
+        public bool ShouldSerializeDelegatedProviderCalls() => DelegatedProviderCalls != 0;
+
+        public bool ShouldSerializeDelegatedToolCalls() => DelegatedToolCalls != 0;
+
+        public bool ShouldSerializeDelegatedQueueDurationMs() => DelegatedQueueDurationMs != 0;
 
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;

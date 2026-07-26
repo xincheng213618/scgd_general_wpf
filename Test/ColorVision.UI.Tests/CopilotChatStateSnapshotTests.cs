@@ -243,6 +243,106 @@ public class CopilotChatStateSnapshotTests
     }
 
     [Fact]
+    public void TraceAndTimelineSnapshotsOmitDefaultsWithoutChangingRoundTrip()
+    {
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        assistant.UpsertAgentTrace(new CopilotAgentTraceEntry
+        {
+            CallId = "call-1",
+            Round = 1,
+            RuntimeName = "test-runtime",
+            ToolName = "ReadLocalFile",
+            Idempotency = CopilotToolIdempotency.Idempotent,
+            State = CopilotToolExecutionState.Completed,
+            StartedAtUtc = DateTimeOffset.Parse("2026-07-26T01:02:03+00:00"),
+            CompletedAtUtc = DateTimeOffset.Parse("2026-07-26T01:02:04+00:00"),
+            TimeoutMs = 30_000,
+            ResultSummary = "Read the requested file.",
+        });
+        assistant.RecordResponseTimelineTool("call-1");
+        assistant.AppendResponseTimelineText("The file was inspected.");
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = "profile",
+            Conversations = new ObservableCollection<CopilotConversationRecord> { conversation },
+        };
+        var store = new CopilotChatStateStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+
+        var serialized = store.Serialize(state);
+        var document = JObject.Parse(serialized);
+        var messageDocument = Assert.IsType<JObject>(
+            document[nameof(CopilotChatState.Conversations)]![0]![nameof(CopilotConversationRecord.Messages)]![0]);
+        var traceDocument = Assert.IsType<JObject>(
+            messageDocument[nameof(CopilotChatMessage.AgentTraceEntries)]![0]);
+        var timelineDocuments = Assert.IsType<JArray>(
+            messageDocument[nameof(CopilotChatMessage.ResponseTimelineEvents)]);
+        var toolTimelineDocument = Assert.IsType<JObject>(timelineDocuments[0]);
+        var markdownTimelineDocument = Assert.IsType<JObject>(timelineDocuments[1]);
+
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.SchemaVersion)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.CallId)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.Round)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.Idempotency)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.State)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.StartedAtUtc)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.CompletedAtUtc)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.TimeoutMs)]);
+        Assert.NotNull(traceDocument[nameof(CopilotAgentTraceEntry.ResultSummary)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Attempt)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.MaxAttempts)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.Access)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.RiskLevel)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.ApprovalMode)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.ConcurrencyMode)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.ApprovalActionId)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.FailureKind)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.RetryEligible)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.DurationMs)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.QueueDurationMs)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.ErrorMessage)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.DelegatedRunId)]);
+        Assert.Null(traceDocument[nameof(CopilotAgentTraceEntry.DelegatedRequestTokenBudget)]);
+
+        Assert.NotNull(toolTimelineDocument[nameof(CopilotResponseTimelineEvent.SchemaVersion)]);
+        Assert.NotNull(toolTimelineDocument[nameof(CopilotResponseTimelineEvent.Kind)]);
+        Assert.NotNull(toolTimelineDocument[nameof(CopilotResponseTimelineEvent.CallId)]);
+        Assert.Null(toolTimelineDocument[nameof(CopilotResponseTimelineEvent.ContentStart)]);
+        Assert.Null(toolTimelineDocument[nameof(CopilotResponseTimelineEvent.ContentLength)]);
+        Assert.NotNull(markdownTimelineDocument[nameof(CopilotResponseTimelineEvent.SchemaVersion)]);
+        Assert.Null(markdownTimelineDocument[nameof(CopilotResponseTimelineEvent.Kind)]);
+        Assert.Null(markdownTimelineDocument[nameof(CopilotResponseTimelineEvent.ContentStart)]);
+        Assert.NotNull(markdownTimelineDocument[nameof(CopilotResponseTimelineEvent.ContentLength)]);
+        Assert.Null(markdownTimelineDocument[nameof(CopilotResponseTimelineEvent.CallId)]);
+
+        var restored = JsonConvert.DeserializeObject<CopilotChatState>(serialized);
+
+        Assert.NotNull(restored);
+        var restoredConversation = Assert.Single(restored.Conversations);
+        Assert.True(restoredConversation.EnsureValid());
+        var restoredMessage = Assert.Single(restoredConversation.Messages);
+        var restoredTrace = Assert.Single(restoredMessage.AgentTraceEntries);
+        Assert.Equal(1, restoredTrace.Attempt);
+        Assert.Equal(1, restoredTrace.MaxAttempts);
+        Assert.Equal(CopilotToolAccess.ReadOnly, restoredTrace.Access);
+        Assert.Equal(CopilotToolRiskLevel.Low, restoredTrace.RiskLevel);
+        Assert.Equal(CopilotToolApprovalMode.Never, restoredTrace.ApprovalMode);
+        Assert.Equal(CopilotToolConcurrencyMode.SharedRead, restoredTrace.ConcurrencyMode);
+        Assert.Equal(CopilotToolIdempotency.Idempotent, restoredTrace.Idempotency);
+        Assert.Equal(CopilotToolExecutionState.Completed, restoredTrace.State);
+        Assert.Equal(30_000, restoredTrace.TimeoutMs);
+        Assert.Equal("Read the requested file.", restoredTrace.ResultSummary);
+        Assert.Equal(2, restoredMessage.ResponseTimelineEvents.Count);
+        Assert.Equal(CopilotResponseTimelineEventKind.ToolCall, restoredMessage.ResponseTimelineEvents[0].Kind);
+        Assert.Equal("call-1", restoredMessage.ResponseTimelineEvents[0].CallId);
+        Assert.Equal(CopilotResponseTimelineEventKind.Markdown, restoredMessage.ResponseTimelineEvents[1].Kind);
+        Assert.Equal(0, restoredMessage.ResponseTimelineEvents[1].ContentStart);
+        Assert.Equal("The file was inspected.".Length, restoredMessage.ResponseTimelineEvents[1].ContentLength);
+    }
+
+    [Fact]
     public void MessageSnapshotCompressesLargeRequestContentWithoutChangingRuntimeContracts()
     {
         var requestContent = "# Captured context\n" + new string('x', 32_000);
