@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.ClientModel;
 using System.ClientModel.Primitives;
+using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
@@ -532,6 +533,7 @@ namespace ColorVision.Copilot
             var providerInterrupted = false;
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
+            AIChatFinishReason? providerFinishReason = null;
             try
             {
                 while (true)
@@ -543,6 +545,8 @@ namespace ColorVision.Copilot
 
                         foreach (var usageContent in update.Contents.OfType<UsageContent>())
                             usage = usage.Add(ToCopilotUsage(usageContent.Details));
+                        if (update.FinishReason.HasValue)
+                            providerFinishReason = update.FinishReason;
 
                         approvalRequests.AddRange(update.Contents.OfType<ToolApprovalRequestContent>());
                         if (!string.IsNullOrEmpty(update.Text))
@@ -679,7 +683,15 @@ namespace ColorVision.Copilot
 
             if (controlIntent == CopilotAgentControlIntent.None)
                 timeBudgetExhausted |= timeBudgetCancellation.IsCancellationRequested && !callerCancellationToken.IsCancellationRequested;
-            var hasModelFinalAnswer = !providerInterrupted && !string.IsNullOrWhiteSpace(answerText.ToString());
+            var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
+            if (outputLengthLimitReached)
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "The provider reached its maximum output length before completing the Agent answer; starting one bounded no-tools finalization call instead of accepting partial text."));
+            }
+            var hasModelFinalAnswer = !providerInterrupted
+                && !outputLengthLimitReached
+                && !string.IsNullOrWhiteSpace(answerText.ToString());
             if (controlIntent == CopilotAgentControlIntent.None
                 && !timeBudgetExhausted
                 && !providerInterrupted
@@ -709,10 +721,16 @@ namespace ColorVision.Copilot
                         cancellationToken);
                     foreach (var usageContent in repairResponse.Messages.SelectMany(message => message.Contents).OfType<UsageContent>())
                         usage = usage.Add(ToCopilotUsage(usageContent.Details));
-                    var repairedText = ExtractFinalAnswerText(repairResponse);
+                    var repairLengthLimited = IsLengthLimitedOutput(repairResponse.FinishReason);
+                    var repairedText = repairLengthLimited ? string.Empty : ExtractFinalAnswerText(repairResponse);
+                    if (repairLengthLimited)
+                    {
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "The bounded no-tools finalization call also reached its maximum output length; partial replacement text was rejected."));
+                    }
                     if (!string.IsNullOrWhiteSpace(repairedText))
                     {
-                        if (hasModelFinalAnswer)
+                        if (answerText.Length > 0)
                             emit(CopilotAgentEvent.AnswerReset());
                         emit(CopilotAgentEvent.AnswerDelta(repairedText));
                         hasModelFinalAnswer = true;
@@ -1436,6 +1454,11 @@ namespace ColorVision.Copilot
                 && eventType is CopilotAgentEventType.ToolStarted
                     or CopilotAgentEventType.ToolProgress
                     or CopilotAgentEventType.ToolResult;
+        }
+
+        internal static bool IsLengthLimitedOutput(AIChatFinishReason? finishReason)
+        {
+            return finishReason.HasValue && finishReason.Value == AIChatFinishReason.Length;
         }
 
         internal static string BuildHarnessInstructions(

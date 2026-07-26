@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
 
 namespace ColorVision.UI.Tests;
 
@@ -206,6 +207,14 @@ public sealed class CopilotAgentRunBudgetTests
             shouldReset,
             CopilotMicrosoftAgentFrameworkRuntime.ShouldResetAnswerBeforeEvent(eventType, answerLength: 12));
         Assert.False(CopilotMicrosoftAgentFrameworkRuntime.ShouldResetAnswerBeforeEvent(eventType, answerLength: 0));
+    }
+
+    [Fact]
+    public void OutputLengthFinishReasonCannotBeAcceptedAsACompleteAgentAnswer()
+    {
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(ChatFinishReason.Length));
+        Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(ChatFinishReason.Stop));
+        Assert.False(CopilotMicrosoftAgentFrameworkRuntime.IsLengthLimitedOutput(null));
     }
 
     private static CopilotAgentRequest Request(

@@ -3,9 +3,11 @@ using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -62,7 +64,9 @@ namespace ColorVision.Copilot
     {
         internal const int MaximumTaskCharacters = 4_000;
         internal const int MaximumExplorationOutputTokens = 2_048;
-        internal const int MaximumFinalizationOutputTokens = 1_024;
+        internal const int MaximumFinalizationOutputTokens = 2_048;
+        internal const int MaximumWorkspaceReadCharactersPerCall = 8_000;
+        internal const int MaximumPreselectedWorkspaceFiles = 3;
         internal const int PhasedFinalizationTokenReserve = 6_144;
         private const int MaximumFinalizationEvidenceCharacters = 12_000;
         private const int MinimumFinalizationEvidenceCharacters = 2_000;
@@ -70,6 +74,9 @@ namespace ColorVision.Copilot
         private const int MinimumPhasedFinalizationTotalTokens = 16_384;
         private static readonly TimeSpan MinimumFinalizationDuration = TimeSpan.FromSeconds(5);
         private const int MaximumSearchRoots = 4;
+        private static readonly Regex NamedTaskFileRegex = new(
+            @"(?<![\p{L}\p{N}_@+.\-])(?<name>[\p{L}\p{N}_@+\-]+(?:\.[\p{L}\p{N}_@+\-]+)+)(?![\p{L}\p{N}_@+.\-])",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
 
         public CopilotSubagentRunner()
@@ -268,7 +275,7 @@ namespace ColorVision.Copilot
             var perObservationCharacters = Math.Clamp(
                 evidenceCharacterBudget / Math.Max(1, explorationResult.StepRecords.Count),
                 800,
-                3_000);
+                evidenceCharacterBudget);
             var observations = new CopilotAgentContextBuilder().BuildObservationSummary(
                 explorationResult.StepRecords,
                 role.MaximumToolCalls,
@@ -288,7 +295,7 @@ namespace ColorVision.Copilot
                 .AppendLine(observations)
                 .AppendLine()
                 .AppendLine("# Finalization requirements")
-                .AppendLine("Return only a concise evidence-backed result for the parent Agent. Tools are unavailable in this stage. Cite exact paths and line numbers or exact public URLs only when present in the evidence. For workspace findings, directory listings and search hits are discovery only; cite a source file only when a successful ReadLocalFile observation contains that exact file. Do not invent missing evidence, continue the investigation, or call a candidate verified when its causal path remains uninspected.")
+                .AppendLine("Return only a concise evidence-backed result for the parent Agent. Tools are unavailable in this stage. Keep the whole result under 2,500 characters: omit headings, tables, code blocks, and task restatement; use at most one finding bullet per named file followed by one `complete: yes|no — reason` line. Cite exact paths and line numbers or exact public URLs only when present in the evidence. Treat each L<number>: prefix in a successful ReadLocalFile observation as the authoritative source line; never recount lines from raw text. Every workspace finding bullet must use exactly `- <full-path>:<line-or-range> — <claim>` so the cited range remains machine-checkable; do not put the path and line range in separate fields. For workspace findings, directory listings and search hits are discovery only; cite a source file only when a successful ReadLocalFile observation contains that exact file and cited line range. Do not invent missing evidence, continue the investigation, or call a candidate verified when its causal path remains uninspected. A request to read named files requires successful source evidence from each named file, not full-file traversal, unless the task explicitly asks for exhaustive or full-file analysis. For a bounded or narrow task, omitted unrelated file text alone does not make the task incomplete once every requested claim, item, and file scope is supported by retained evidence; report partial only when a required claim, item, file, or causal step remains unverified.")
                 .ToString()
                 .TrimEnd();
 
@@ -326,7 +333,7 @@ namespace ColorVision.Copilot
                 ExternalMcpServers = Array.Empty<CopilotMcpClientServerConfig>(),
                 ForceExternalMcpToolRefresh = false,
                 RuntimeRoleInstructions =
-                    "You are the no-tools finalization stage of a bounded delegated investigation. Use only the supplied task and collected observations. Return a concise evidence-backed result to the parent Agent; clearly state when the evidence does not establish a verified finding.",
+                    "You are the no-tools finalization stage of a bounded delegated investigation. Use only the supplied task and collected observations. Return a compact evidence-backed result to the parent Agent using the exact requested finding-bullet and complete-line format; clearly state when required evidence is missing, but do not mark a bounded task partial merely because unrelated text outside the retained read scopes was omitted.",
                 HarnessFeatures = CopilotAgentHarnessFeatures.None,
             };
         }
@@ -395,6 +402,9 @@ namespace ColorVision.Copilot
                     .Take(CopilotAgentProjectInstructions.MaxDocuments)
                     .ToArray()
                 : Array.Empty<CopilotProjectInstructionDocument>();
+            var preselectedFiles = usesWorkspaceContext
+                ? ResolveNamedTaskFiles(runRequest.Task, roots)
+                : Array.Empty<string>();
             var parentBudget = CopilotAgentRunBudget.Resolve(parentRequest);
             var childProfile = parentRequest.Profile.Clone();
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
@@ -414,11 +424,11 @@ namespace ColorVision.Copilot
                     : Array.Empty<string>(),
                 ActiveDocumentPath = activeDocumentPath,
                 ProjectInstructions = projectInstructions,
-                ReadableLocalFilePaths = Array.Empty<string>(),
+                ReadableLocalFilePaths = preselectedFiles,
                 ReadableLocalDirectoryPaths = Array.Empty<string>(),
                 WritableLocalRootPaths = Array.Empty<string>(),
                 WritableLocalFilePaths = Array.Empty<string>(),
-                PreferBatchReadLocalFiles = usesWorkspaceContext,
+                PreferBatchReadLocalFiles = preselectedFiles.Length > 1,
                 PreferredShell = CopilotShellKind.Auto,
                 Mode = role.ChildMode,
                 SessionCheckpoint = null,
@@ -436,8 +446,64 @@ namespace ColorVision.Copilot
                 ForceExternalMcpToolRefresh = false,
                 RuntimeRoleInstructions = role.RuntimeInstructions,
                 HarnessFeatures = CopilotAgentHarnessFeatures.None,
-                RequiredSuccessfulToolNames = GetRequiredEvidenceToolNames(role),
+                RequiredSuccessfulToolNames = preselectedFiles.Length == 0
+                    ? GetRequiredEvidenceToolNames(role)
+                    : Array.Empty<string>(),
             };
+        }
+
+        internal static string[] ResolveNamedTaskFiles(string? task, IEnumerable<string>? roots)
+        {
+            var normalizedRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(roots);
+            if (string.IsNullOrWhiteSpace(task) || normalizedRoots.Count == 0)
+                return Array.Empty<string>();
+
+            var resolvedFiles = new List<string>();
+            foreach (var explicitPath in CopilotLocalFileToolSupport.ExtractExplicitLocalFilePaths(task))
+            {
+                if (File.Exists(explicitPath)
+                    && CopilotWorkspaceSearchSupport.IsPathWithinRoots(explicitPath, normalizedRoots))
+                {
+                    resolvedFiles.Add(Path.GetFullPath(explicitPath));
+                }
+            }
+
+            foreach (Match match in NamedTaskFileRegex.Matches(task))
+            {
+                var fileName = match.Groups["name"].Value;
+                if (string.IsNullOrWhiteSpace(fileName)
+                    || !string.Equals(fileName, Path.GetFileName(fileName), StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                foreach (var root in normalizedRoots)
+                {
+                    string candidate;
+                    try
+                    {
+                        candidate = Path.GetFullPath(Path.Combine(root, fileName));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (!File.Exists(candidate)
+                        || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(candidate, normalizedRoots))
+                    {
+                        continue;
+                    }
+
+                    resolvedFiles.Add(candidate);
+                    break;
+                }
+            }
+
+            return resolvedFiles
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(MaximumPreselectedWorkspaceFiles)
+                .ToArray();
         }
 
         internal static int ResolveExplorationRequestTokenBudget(int totalTokenBudget)

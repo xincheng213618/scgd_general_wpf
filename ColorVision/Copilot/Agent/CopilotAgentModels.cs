@@ -207,7 +207,28 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
+
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
+    }
+
+    public sealed class CopilotLocalFileReadScope
+    {
+        public string Path { get; init; } = string.Empty;
+
+        public int StartLine { get; init; }
+
+        public int StartColumn { get; init; }
+
+        public int EndLine { get; init; }
+
+        public int EndColumn { get; init; }
+
+        public bool WasTruncated { get; init; }
+
+        public int ContinuationStartLine { get; init; }
+
+        public int ContinuationStartColumn { get; init; }
     }
 
     public sealed class CopilotToolApprovalInfo
@@ -256,6 +277,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
+
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
 
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
@@ -272,6 +295,7 @@ namespace ColorVision.Copilot
                 SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
                 AttemptedLocalFilePaths = result?.AttemptedLocalFilePaths ?? Array.Empty<string>(),
                 SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
+                LocalFileReadScopes = result?.LocalFileReadScopes ?? Array.Empty<CopilotLocalFileReadScope>(),
                 DelegatedRunUsage = result?.DelegatedRunUsage,
             };
         }

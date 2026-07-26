@@ -25,6 +25,7 @@ namespace ColorVision.Copilot
     public static class CopilotLocalFileToolSupport
     {
         private const int BinaryPreviewBytes = 4096;
+        internal const int MinimumReadCharacters = 1_000;
         public const int MaxReadCharacters = 20000;
 
         private static readonly Regex QuotedWindowsPathRegex = new("[\"\\u201C](?<path>[A-Za-z]:[\\\\/][^\"\\u201D\r\n]+)[\"\\u201D]", RegexOptions.Compiled);
@@ -58,13 +59,33 @@ namespace ColorVision.Copilot
             return ReadTextFileAsync(path, startLine, startColumn: null, endLine, cancellationToken);
         }
 
-        public static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(
+        public static Task<CopilotLocalFileReadResult> ReadTextFileAsync(
             string path,
             int? startLine,
             int? startColumn,
             int? endLine,
             CancellationToken cancellationToken)
         {
+            return ReadTextFileAsync(
+                path,
+                startLine,
+                startColumn,
+                endLine,
+                MaxReadCharacters,
+                cancellationToken);
+        }
+
+        internal static async Task<CopilotLocalFileReadResult> ReadTextFileAsync(
+            string path,
+            int? startLine,
+            int? startColumn,
+            int? endLine,
+            int maximumReadCharacters,
+            CancellationToken cancellationToken)
+        {
+            if (maximumReadCharacters is < MinimumReadCharacters or > MaxReadCharacters)
+                throw new ArgumentOutOfRangeException(nameof(maximumReadCharacters));
+
             if (string.IsNullOrWhiteSpace(path))
             {
                 return new CopilotLocalFileReadResult(
@@ -169,6 +190,7 @@ namespace ColorVision.Copilot
                     normalizedStartLine,
                     normalizedStartColumn,
                     normalizedEndLine,
+                    maximumReadCharacters,
                     cancellationToken);
 
                 if (range.ActualStartLine == 0 && range.TotalLineCount < normalizedStartLine)
@@ -207,7 +229,7 @@ namespace ColorVision.Copilot
 
                 if (range.WasTruncated)
                 {
-                    content += Environment.NewLine + $"...<content truncated; kept the first {MaxReadCharacters} characters.>";
+                    content += Environment.NewLine + $"...<content truncated; kept the first {maximumReadCharacters} characters.>";
                 }
 
                 return new CopilotLocalFileReadResult(
@@ -249,9 +271,10 @@ namespace ColorVision.Copilot
             int startLine,
             int startColumn,
             int endLine,
+            int maximumReadCharacters,
             CancellationToken cancellationToken)
         {
-            var builder = new System.Text.StringBuilder(MaxReadCharacters);
+            var builder = new System.Text.StringBuilder(maximumReadCharacters);
             var buffer = new char[4096];
             var currentLine = 1;
             var currentColumn = 1;
@@ -281,7 +304,7 @@ namespace ColorVision.Copilot
                         && (currentLine > startLine || currentColumn >= startColumn);
                     if (isWithinRequestedRange)
                     {
-                        if (builder.Length >= MaxReadCharacters)
+                        if (builder.Length >= maximumReadCharacters)
                         {
                             wasTruncated = true;
                             continuationStartLine = currentLine;
