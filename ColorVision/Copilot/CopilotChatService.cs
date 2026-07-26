@@ -58,8 +58,8 @@ namespace ColorVision.Copilot
         private readonly int _maximumAttempts;
         private readonly Func<int, TimeSpan> _retryDelayFactory;
         private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
-        private readonly TimeSpan _firstResponseTimeout;
-        private readonly TimeSpan _streamingUpdateTimeout;
+        private readonly TimeSpan? _firstResponseTimeoutOverride;
+        private readonly TimeSpan? _streamingUpdateTimeoutOverride;
 
         public CopilotChatService()
             : this(SharedHttpClient)
@@ -88,18 +88,20 @@ namespace ColorVision.Copilot
             _maximumAttempts = maximumAttempts;
             _retryDelayFactory = retryDelayFactory ?? throw new ArgumentNullException(nameof(retryDelayFactory));
             _delayAsync = delayAsync ?? throw new ArgumentNullException(nameof(delayAsync));
-            _firstResponseTimeout =
-                firstResponseTimeout
-                ?? CopilotProviderInactivityPolicy.DefaultFirstResponseTimeout;
-            _streamingUpdateTimeout =
-                streamingUpdateTimeout
-                ?? CopilotProviderInactivityPolicy.DefaultStreamingUpdateTimeout;
-            CopilotProviderInactivityPolicy.ValidateTimeout(
-                _firstResponseTimeout,
-                nameof(firstResponseTimeout));
-            CopilotProviderInactivityPolicy.ValidateTimeout(
-                _streamingUpdateTimeout,
-                nameof(streamingUpdateTimeout));
+            _firstResponseTimeoutOverride = firstResponseTimeout;
+            _streamingUpdateTimeoutOverride = streamingUpdateTimeout;
+            if (firstResponseTimeout.HasValue)
+            {
+                CopilotProviderInactivityPolicy.ValidateTimeout(
+                    firstResponseTimeout.Value,
+                    nameof(firstResponseTimeout));
+            }
+            if (streamingUpdateTimeout.HasValue)
+            {
+                CopilotProviderInactivityPolicy.ValidateTimeout(
+                    streamingUpdateTimeout.Value,
+                    nameof(streamingUpdateTimeout));
+            }
         }
 
         public async Task<CopilotChatReply> CompleteReplyAsync(
@@ -230,6 +232,10 @@ namespace ColorVision.Copilot
             if (requestMessages.Length == 0)
                 throw new InvalidOperationException("At least one non-empty user or assistant message is required.");
             var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
+            var inactivityTimeouts = CopilotProviderInactivityPolicy.Resolve(
+                config,
+                _firstResponseTimeoutOverride,
+                _streamingUpdateTimeoutOverride);
 
             for (var attempt = 1; ; attempt++)
             {
@@ -245,6 +251,7 @@ namespace ColorVision.Copilot
                             responseStarted = true;
                             onDelta(delta);
                         },
+                        inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
@@ -260,15 +267,17 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
             Action<CopilotStreamDelta> onDelta,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             using var request = CreateRequest(config, messages, imagePayloads);
             var firstResponseStopwatch = Stopwatch.StartNew();
             using var response = await SendResponseHeadersAsync(
                 request,
+                inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
             var remainingFirstResponseTimeout = SubtractElapsed(
-                _firstResponseTimeout,
+                inactivityTimeouts.FirstResponseTimeout,
                 firstResponseStopwatch.Elapsed);
 
             var statusCode = (int)response.StatusCode;
@@ -291,6 +300,7 @@ namespace ColorVision.Copilot
                         "Provider error response",
                         remainingFirstResponseTimeout,
                         CopilotProviderInactivityPhase.FirstResponse,
+                        inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (CopilotHttpContentSizeLimitException exception)
@@ -321,6 +331,7 @@ namespace ColorVision.Copilot
                     response,
                     onDelta,
                     remainingFirstResponseTimeout,
+                    inactivityTimeouts,
                     cancellationToken).ConfigureAwait(false);
             }
 
@@ -330,6 +341,7 @@ namespace ColorVision.Copilot
                 "Non-streaming provider response",
                 remainingFirstResponseTimeout,
                 CopilotProviderInactivityPhase.FirstResponse,
+                inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
@@ -342,11 +354,12 @@ namespace ColorVision.Copilot
 
         private async Task<HttpResponseMessage> SendResponseHeadersAsync(
             HttpRequestMessage request,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             using var timeoutCancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCancellation.CancelAfter(_firstResponseTimeout);
+            timeoutCancellation.CancelAfter(inactivityTimeouts.FirstResponseTimeout);
             try
             {
                 return await _httpClient.SendAsync(
@@ -360,7 +373,7 @@ namespace ColorVision.Copilot
             {
                 throw new CopilotProviderInactivityException(
                     CopilotProviderInactivityPhase.FirstResponse,
-                    _firstResponseTimeout);
+                    inactivityTimeouts.FirstResponseTimeout);
             }
         }
 
@@ -370,10 +383,11 @@ namespace ColorVision.Copilot
             string contentLabel,
             TimeSpan timeout,
             CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             if (timeout <= TimeSpan.Zero)
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
 
             using var timeoutCancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -393,14 +407,14 @@ namespace ColorVision.Copilot
                 when (!cancellationToken.IsCancellationRequested
                     && timeoutCancellation.IsCancellationRequested)
             {
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
             catch (Exception exception)
                 when ((exception is ObjectDisposedException or IOException or HttpRequestException)
                     && timeoutCancellation.IsCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
         }
 
@@ -408,10 +422,11 @@ namespace ColorVision.Copilot
             HttpResponseMessage response,
             TimeSpan timeout,
             CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             if (timeout <= TimeSpan.Zero)
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
 
             using var timeoutCancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -428,14 +443,14 @@ namespace ColorVision.Copilot
                 when (!cancellationToken.IsCancellationRequested
                     && timeoutCancellation.IsCancellationRequested)
             {
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
             catch (Exception exception)
                 when ((exception is ObjectDisposedException or IOException or HttpRequestException)
                     && timeoutCancellation.IsCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
         }
 
@@ -444,10 +459,11 @@ namespace ColorVision.Copilot
             HttpResponseMessage response,
             TimeSpan timeout,
             CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             if (timeout <= TimeSpan.Zero)
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
 
             using var timeoutCancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -464,23 +480,24 @@ namespace ColorVision.Copilot
                 when (!cancellationToken.IsCancellationRequested
                     && timeoutCancellation.IsCancellationRequested)
             {
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
             catch (Exception exception)
                 when ((exception is ObjectDisposedException or IOException)
                     && timeoutCancellation.IsCancellationRequested)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                throw CreateInactivityTimeout(phase);
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
             }
         }
 
         private CopilotProviderInactivityException CreateInactivityTimeout(
-            CopilotProviderInactivityPhase phase)
+            CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts)
         {
-            return phase == CopilotProviderInactivityPhase.FirstResponse
-                ? new CopilotProviderInactivityException(phase, _firstResponseTimeout)
-                : new CopilotProviderInactivityException(phase, _streamingUpdateTimeout);
+            return new CopilotProviderInactivityException(
+                phase,
+                inactivityTimeouts.GetTimeout(phase));
         }
 
         private static TimeSpan SubtractElapsed(TimeSpan timeout, TimeSpan elapsed)
@@ -684,6 +701,7 @@ namespace ColorVision.Copilot
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
             TimeSpan remainingFirstResponseTimeout,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             using var cancellationRegistration = cancellationToken.Register(static state =>
@@ -697,6 +715,7 @@ namespace ColorVision.Copilot
                 response,
                 remainingFirstResponseTimeout,
                 CopilotProviderInactivityPhase.FirstResponse,
+                inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
             var remainingInactivityTimeout = SubtractElapsed(
                 remainingFirstResponseTimeout,
@@ -728,7 +747,8 @@ namespace ColorVision.Copilot
                     ref receivedDisplayableText,
                     ref finishReason);
                 if (emittedContent)
-                    remainingInactivityTimeout = _streamingUpdateTimeout;
+                    remainingInactivityTimeout =
+                        inactivityTimeouts.StreamingUpdateTimeout;
                 return completed;
             }
 
@@ -746,6 +766,7 @@ namespace ColorVision.Copilot
                         response,
                         remainingInactivityTimeout,
                         inactivityPhase,
+                        inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)

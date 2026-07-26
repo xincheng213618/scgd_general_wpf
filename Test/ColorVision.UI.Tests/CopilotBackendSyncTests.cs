@@ -45,6 +45,8 @@ public sealed class CopilotBackendSyncTests
             ApiKey = "old-key",
             BaseUrl = "https://old.example/v1",
             Model = "old-model",
+            FirstContentTimeoutSeconds = 900,
+            StreamingInactivityTimeoutSeconds = 600,
             SyncSource = "http://xc213618.ddns.me:9998",
             SyncProfileId = "remote-one",
         };
@@ -84,7 +86,11 @@ public sealed class CopilotBackendSyncTests
         Assert.Equal("existing-local-id", updated.Id);
         Assert.Equal("Updated remote", updated.Name);
         Assert.Equal("new-provider-key", updated.ApiKey);
+        Assert.Equal(900, updated.FirstContentTimeoutSeconds);
+        Assert.Equal(600, updated.StreamingInactivityTimeoutSeconds);
         var added = Assert.Single(profiles, profile => profile.SyncProfileId == "remote-two");
+        Assert.Equal(CopilotProfileConfig.DefaultFirstContentTimeoutSeconds, added.FirstContentTimeoutSeconds);
+        Assert.Equal(CopilotProfileConfig.DefaultStreamingInactivityTimeoutSeconds, added.StreamingInactivityTimeoutSeconds);
         Assert.Equal(added.Id, result.DefaultLocalProfileId);
     }
 

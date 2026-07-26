@@ -64,9 +64,30 @@ namespace ColorVision.Copilot
 
     internal static class CopilotProviderInactivityPolicy
     {
-        public static readonly TimeSpan DefaultFirstResponseTimeout = TimeSpan.FromMinutes(3);
+        public static readonly TimeSpan DefaultFirstResponseTimeout =
+            TimeSpan.FromSeconds(CopilotProfileConfig.DefaultFirstContentTimeoutSeconds);
 
-        public static readonly TimeSpan DefaultStreamingUpdateTimeout = TimeSpan.FromMinutes(2);
+        public static readonly TimeSpan DefaultStreamingUpdateTimeout =
+            TimeSpan.FromSeconds(CopilotProfileConfig.DefaultStreamingInactivityTimeoutSeconds);
+
+        public static CopilotProviderInactivityTimeouts Resolve(
+            CopilotProfileConfig profile,
+            TimeSpan? firstResponseTimeoutOverride = null,
+            TimeSpan? streamingUpdateTimeoutOverride = null)
+        {
+            ArgumentNullException.ThrowIfNull(profile);
+            var firstResponseTimeout =
+                firstResponseTimeoutOverride
+                ?? profile.EffectiveFirstContentTimeout;
+            var streamingUpdateTimeout =
+                streamingUpdateTimeoutOverride
+                ?? profile.EffectiveStreamingInactivityTimeout;
+            ValidateTimeout(firstResponseTimeout, nameof(firstResponseTimeoutOverride));
+            ValidateTimeout(streamingUpdateTimeout, nameof(streamingUpdateTimeoutOverride));
+            return new CopilotProviderInactivityTimeouts(
+                firstResponseTimeout,
+                streamingUpdateTimeout);
+        }
 
         public static void ValidateTimeout(TimeSpan timeout, string parameterName)
         {
@@ -76,6 +97,18 @@ namespace ColorVision.Copilot
                     parameterName,
                     "Provider inactivity timeouts must be finite and positive.");
             }
+        }
+    }
+
+    internal readonly record struct CopilotProviderInactivityTimeouts(
+        TimeSpan FirstResponseTimeout,
+        TimeSpan StreamingUpdateTimeout)
+    {
+        public TimeSpan GetTimeout(CopilotProviderInactivityPhase phase)
+        {
+            return phase == CopilotProviderInactivityPhase.FirstResponse
+                ? FirstResponseTimeout
+                : StreamingUpdateTimeout;
         }
     }
 
