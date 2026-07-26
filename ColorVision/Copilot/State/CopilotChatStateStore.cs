@@ -417,6 +417,8 @@ namespace ColorVision.Copilot
                 var candidatePath = Path.GetFullPath(filePath);
                 if (!IsPathUnderRoot(candidatePath, attachmentRoot) || !File.Exists(candidatePath))
                     return false;
+                if (ContainsReparsePoint(attachmentRoot, candidatePath))
+                    return false;
 
                 File.Delete(candidatePath);
                 return true;
@@ -555,6 +557,23 @@ namespace ColorVision.Copilot
             return !relativePath.Equals("..", StringComparison.Ordinal)
                 && !relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
                 && !Path.IsPathRooted(relativePath);
+        }
+
+        private static bool ContainsReparsePoint(string root, string target)
+        {
+            var current = root;
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                return true;
+
+            foreach (var segment in Path.GetRelativePath(root, target)
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+            {
+                current = Path.Combine(current, segment);
+                if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
