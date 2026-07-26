@@ -65,10 +65,10 @@ public class FlowExecutionAnalysisPresentationTests
     }
 
     [Fact]
-    public void BuildDurationItems_RunningSlowNodeRetainsBothSignals()
+    public void BuildDurationItems_IncompleteNodeIsTimeoutWithoutDuration()
     {
         DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
-        var running = new FlowNodeRecord
+        var incomplete = new FlowNodeRecord
         {
             Id = 1,
             BatchId = 260,
@@ -80,13 +80,202 @@ public class FlowExecutionAnalysisPresentationTests
 
         FlowNodeDurationAnalysis item =
             FlowExecutionAnalysisPresentation.BuildDurationItems(
-                new[] { running },
+                new[] { incomplete },
                 start.AddSeconds(31),
                 warningThresholdMs: 30000)[0];
 
-        Assert.True(item.IsRunning);
-        Assert.True(item.IsWarning);
-        Assert.Equal(31000, item.ElapsedMs);
+        Assert.True(item.IsTimedOut);
+        Assert.False(item.IsWarning);
+        Assert.Equal(0, item.ElapsedMs);
+        Assert.Equal("—", item.DurationText);
+        Assert.Equal("—", item.ShareText);
+
+        FlowExecutionAnalysisSummary summary =
+            FlowExecutionAnalysisPresentation.BuildSummary(
+                new[] { incomplete },
+                new[] { item },
+                start.AddDays(1));
+        Assert.Equal(1, summary.TimeoutCount);
+        Assert.Equal(0, summary.WallClockMs);
+        Assert.Equal(0, summary.NodeWorkMs);
+        Assert.Equal("—", summary.SlowestNodeName);
+    }
+
+    [Fact]
+    public void BuildDurationItems_ExplicitTimeoutDoesNotEnterTimingDistribution()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            "循环节点",
+            start,
+            5000);
+        FlowNodeMessage timeout = CreateMessage(
+            1,
+            260,
+            "run-a",
+            "same-node",
+            start.AddMilliseconds(10));
+        timeout.NodeRecordId = record.Id;
+        timeout.State = FlowMessageState.Timeout;
+        timeout.StatusCode = -2;
+
+        FlowNodeDurationAnalysis item =
+            FlowExecutionAnalysisPresentation.BuildDurationItems(
+                new[] { record },
+                start.AddSeconds(6),
+                warningThresholdMs: 30000,
+                messages: new[] { timeout })[0];
+
+        Assert.True(item.IsTimedOut);
+        Assert.Equal(0, item.ElapsedMs);
+        Assert.Equal("—", item.DurationText);
+
+        FlowExecutionAnalysisSummary summary =
+            FlowExecutionAnalysisPresentation.BuildSummary(
+                new[] { record },
+                new[] { item },
+                start.AddSeconds(6));
+        Assert.Equal(1, summary.TimeoutCount);
+        Assert.Equal(0, summary.ActiveMs);
+        Assert.Equal(0, summary.NodeWorkMs);
+        Assert.Equal("—", summary.SlowestNodeName);
+    }
+
+    [Fact]
+    public void BuildNodeHistorySummary_SeparatesResultsAndTimingBaselines()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord fastSuccess = CreateRecord(1, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeRecord slowSuccess = CreateRecord(2, 260, "run-a", "same-node", "循环节点", start.AddSeconds(1), 300);
+        FlowNodeRecord failure = CreateRecord(3, 260, "run-a", "same-node", "循环节点", start.AddSeconds(2), 10000);
+        var timedOut = new FlowNodeRecord
+        {
+            Id = 4,
+            BatchId = 260,
+            SerialNumber = "run-a",
+            NodeId = "same-node",
+            NodeName = "循环节点",
+            StartTime = start.AddSeconds(3)
+        };
+        FlowNodeRecord unknown = CreateRecord(5, 260, "run-a", "same-node", "循环节点", start.AddSeconds(4), 500);
+
+        FlowNodeMessage fastMessage = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        fastMessage.NodeRecordId = fastSuccess.Id;
+        fastMessage.State = FlowMessageState.Success;
+        fastMessage.StatusCode = 0;
+        FlowNodeMessage slowMessage = CreateMessage(2, 260, "run-a", "same-node", start.AddSeconds(1).AddMilliseconds(10));
+        slowMessage.NodeRecordId = slowSuccess.Id;
+        slowMessage.State = FlowMessageState.Success;
+        slowMessage.StatusCode = 0;
+        FlowNodeMessage failureMessage = CreateMessage(3, 260, "run-a", "same-node", start.AddSeconds(2).AddMilliseconds(10));
+        failureMessage.NodeRecordId = failure.Id;
+        failureMessage.State = FlowMessageState.Fail;
+        failureMessage.StatusCode = 12;
+        FlowNodeMessage timedOutMessage = CreateMessage(4, 260, "run-a", "same-node", start.AddSeconds(3).AddMilliseconds(10));
+        timedOutMessage.NodeRecordId = timedOut.Id;
+
+        IReadOnlyList<FlowNodeHistoryAnalysis> items =
+            FlowExecutionAnalysisPresentation.BuildNodeHistoryItems(
+                new[] { fastSuccess, slowSuccess, failure, timedOut, unknown },
+                new[] { fastMessage, slowMessage, failureMessage, timedOutMessage },
+                start.AddSeconds(5));
+        FlowNodeHistorySummary summary =
+            FlowExecutionAnalysisPresentation.BuildNodeHistorySummary(items);
+
+        Assert.Equal(5, summary.TotalCount);
+        Assert.Equal(2, summary.SuccessCount);
+        Assert.Equal(2, summary.FailureCount);
+        Assert.Equal(1, summary.TimeoutCount);
+        Assert.Equal(1, summary.CompletedCount);
+        Assert.Equal(200, summary.SuccessAverageMs);
+        Assert.Equal(300, summary.SuccessP95Ms);
+        Assert.Equal(10000, summary.FailureAverageMs);
+        Assert.Equal(10000, summary.FailureP95Ms);
+        Assert.Equal(50d, summary.SuccessRatePercent);
+        FlowNodeHistoryAnalysis timeoutItem =
+            items.Single(item => item.Record.Id == timedOut.Id);
+        Assert.Equal("超时", timeoutItem.StatusText);
+        Assert.Null(timeoutItem.ElapsedMs);
+        Assert.Equal("—", timeoutItem.ElapsedText);
+    }
+
+    [Fact]
+    public void GetNodeExecutionOutcome_RequiresAllMessagesToSucceed()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(1, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeMessage success = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        success.State = FlowMessageState.Success;
+        success.StatusCode = 0;
+        FlowNodeMessage pending = CreateMessage(2, 260, "run-a", "same-node", start.AddMilliseconds(20));
+
+        FlowNodeExecutionOutcome outcome =
+            FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(
+                record,
+                new[] { success, pending });
+
+        Assert.Equal(FlowNodeExecutionOutcome.Completed, outcome);
+    }
+
+    [Fact]
+    public void BuildNodeHistoryItems_LabelsTimeoutAsFailure()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        FlowNodeRecord record = CreateRecord(1, 260, "run-a", "same-node", "循环节点", start, 100);
+        FlowNodeMessage timeout = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        timeout.NodeRecordId = record.Id;
+        timeout.State = FlowMessageState.Fail;
+        timeout.StatusCode = -2;
+
+        FlowNodeHistoryAnalysis item =
+            FlowExecutionAnalysisPresentation.BuildNodeHistoryItems(
+                new[] { record },
+                new[] { timeout },
+                start.AddSeconds(1))[0];
+
+        Assert.Equal(FlowNodeExecutionOutcome.Failed, item.Outcome);
+        Assert.True(item.IsTimedOut);
+        Assert.Equal("超时", item.StatusText);
+        Assert.Null(item.ElapsedMs);
+        Assert.Equal("—", item.ElapsedText);
+    }
+
+    [Fact]
+    public void GetNodeExecutionOutcome_TreatsMissingEndAsTimeoutDespiteSuccessMessage()
+    {
+        DateTime start = new DateTime(2026, 7, 27, 10, 0, 0);
+        var record = new FlowNodeRecord
+        {
+            Id = 1,
+            BatchId = 260,
+            SerialNumber = "run-a",
+            NodeId = "same-node",
+            NodeName = "循环节点",
+            StartTime = start
+        };
+        FlowNodeMessage success = CreateMessage(1, 260, "run-a", "same-node", start.AddMilliseconds(10));
+        success.NodeRecordId = record.Id;
+        success.State = FlowMessageState.Success;
+        success.StatusCode = 0;
+
+        FlowNodeExecutionOutcome outcome =
+            FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(
+                record,
+                new[] { success });
+
+        Assert.Equal(FlowNodeExecutionOutcome.Failed, outcome);
+
+        FlowNodeHistoryAnalysis item =
+            FlowExecutionAnalysisPresentation.BuildNodeHistoryItems(
+                new[] { record },
+                new[] { success },
+                start.AddSeconds(1))[0];
+        Assert.True(item.IsTimedOut);
+        Assert.Null(item.ElapsedMs);
     }
 
     [Fact]

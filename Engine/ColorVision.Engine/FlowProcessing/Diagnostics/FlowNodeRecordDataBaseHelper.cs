@@ -11,6 +11,8 @@ using ColorVision.Database;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
+    internal readonly record struct FlowAnalysisDeleteResult(int RecordCount, int MessageCount);
+
     public static class FlowNodeRecordDataBaseHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowNodeRecordDataBaseHelper));
@@ -469,6 +471,37 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static List<FlowNodeMessage> GetHistoryMessagesByNodeId(
+            string nodeId,
+            IEnumerable<int> batchIds)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+                return new List<FlowNodeMessage>();
+
+            int[] selectedBatchIds = batchIds?
+                .Distinct()
+                .ToArray() ?? Array.Empty<int>();
+            if (selectedBatchIds.Length == 0)
+                return new List<FlowNodeMessage>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeMessage>()
+                    .Where(item =>
+                        item.NodeId == nodeId
+                        && selectedBatchIds.Contains(item.BatchId))
+                    .OrderByDescending(item => item.SendTime)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询节点历史执行对应消息失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
         public static List<FlowNodeMessage> GetAllMessages(int limit = 500)
         {
             EnsureInitialized();
@@ -482,6 +515,85 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 log.Error("查询FlowNodeMessage失败", ex);
                 return new List<FlowNodeMessage>();
             }
+        }
+
+        internal static FlowAnalysisDeleteResult DeleteAnalysisForNodeId(string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+                return default;
+
+            return DeleteAnalysisForNodeIds(new[] { nodeId });
+        }
+
+        internal static FlowAnalysisDeleteResult DeleteAnalysisForNodeIds(IEnumerable<string> nodeIds)
+        {
+            string[] selectedNodeIds = nodeIds?
+                .Where(nodeId => !string.IsNullOrWhiteSpace(nodeId))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<string>();
+            if (selectedNodeIds.Length == 0)
+                return default;
+
+            return ExecuteDelete(db =>
+            {
+                int messageCount = db.Deleteable<FlowNodeMessage>()
+                    .Where(item => selectedNodeIds.Contains(item.NodeId))
+                    .ExecuteCommand();
+                int recordCount = db.Deleteable<FlowNodeRecord>()
+                    .Where(item => selectedNodeIds.Contains(item.NodeId))
+                    .ExecuteCommand();
+                return new FlowAnalysisDeleteResult(recordCount, messageCount);
+            });
+        }
+
+        internal static FlowAnalysisDeleteResult DeleteAllAnalysis()
+        {
+            return ExecuteDelete(db =>
+            {
+                int messageCount = db.Deleteable<FlowNodeMessage>().ExecuteCommand();
+                int recordCount = db.Deleteable<FlowNodeRecord>().ExecuteCommand();
+                return new FlowAnalysisDeleteResult(recordCount, messageCount);
+            });
+        }
+
+        private static FlowAnalysisDeleteResult ExecuteDelete(
+            Func<SqlSugarClient, FlowAnalysisDeleteResult> deleteAction)
+        {
+            ArgumentNullException.ThrowIfNull(deleteAction);
+            EnsureInitialized();
+            if (!_initialized)
+                throw new InvalidOperationException("流程分析数据库尚未初始化。");
+            if (!FlushPendingWrites(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("等待流程分析记录写入完成超时，请稍后重试。");
+
+            var completion =
+                new TaskCompletionSource<FlowAnalysisDeleteResult>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    db.Ado.BeginTran();
+                    FlowAnalysisDeleteResult result = deleteAction(db);
+                    db.Ado.CommitTran();
+                    completion.TrySetResult(result);
+                }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        db.Ado.RollbackTran();
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        log.Warn("回滚流程分析记录清理事务失败", rollbackException);
+                    }
+
+                    log.Error("清理流程分析记录失败", ex);
+                    completion.TrySetException(ex);
+                }
+            });
+            return completion.Task.GetAwaiter().GetResult();
         }
 
         public static void DeleteAllMessages()

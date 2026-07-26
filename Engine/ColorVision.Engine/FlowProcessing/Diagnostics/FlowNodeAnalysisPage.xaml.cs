@@ -16,28 +16,37 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private readonly FlowExecutionAnalysisSession _session;
         private readonly FlowNodeRecord _record;
         private readonly Action<FlowNodeRecord> _navigateNode;
+        private readonly Action<FlowNodeRecord> _navigateHistoryRecord;
         private readonly Action<FlowNodeRecord> _locateNode;
         private readonly Action<FlowNodeRecord?, int?> _openMessages;
         private readonly Action _showOverview;
+        private readonly Action<FlowNodeRecord> _clearCurrentNode;
         private readonly IReadOnlyList<FlowNodeMessage> _messages;
         private CancellationTokenSource? _historyLoadCts;
         private int _historyLoadVersion;
+        private bool _suppressHistorySelection;
 
         internal FlowNodeAnalysisPage(
             FlowExecutionAnalysisSession session,
             FlowNodeRecord record,
             bool canLocate,
             Action<FlowNodeRecord> navigateNode,
+            Action<FlowNodeRecord> navigateHistoryRecord,
             Action<FlowNodeRecord> locateNode,
             Action<FlowNodeRecord?, int?> openMessages,
-            Action showOverview)
+            Action showOverview,
+            Action<FlowNodeRecord> clearCurrentNode)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _record = record ?? throw new ArgumentNullException(nameof(record));
             _navigateNode = navigateNode ?? throw new ArgumentNullException(nameof(navigateNode));
+            _navigateHistoryRecord = navigateHistoryRecord
+                ?? throw new ArgumentNullException(nameof(navigateHistoryRecord));
             _locateNode = locateNode ?? throw new ArgumentNullException(nameof(locateNode));
             _openMessages = openMessages ?? throw new ArgumentNullException(nameof(openMessages));
             _showOverview = showOverview ?? throw new ArgumentNullException(nameof(showOverview));
+            _clearCurrentNode =
+                clearCurrentNode ?? throw new ArgumentNullException(nameof(clearCurrentNode));
             _messages = _session.GetMessages(_record);
 
             InitializeComponent();
@@ -52,13 +61,26 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private void PopulateExecution()
         {
             FlowNodeDurationAnalysis? duration = _session.FindDuration(_record);
-            long elapsedMs = duration?.ElapsedMs
-                ?? FlowExecutionAnalysisPresentation.GetEffectiveElapsedMs(_record, _session.CapturedAt);
+            bool timedOut = _messages.Any(message =>
+                    message.State == FlowMessageState.Timeout
+                    || message.StatusCode == -2)
+                || !_record.EndTime.HasValue;
+            MessageListView.Tag = timedOut;
+            long? elapsedMs = timedOut
+                ? null
+                : duration?.ElapsedMs
+                    ?? FlowExecutionAnalysisPresentation.GetEffectiveElapsedMs(
+                        _record,
+                        _session.CapturedAt);
 
             NodeTitleText.Text = string.IsNullOrWhiteSpace(_record.NodeName) ? "未知节点" : _record.NodeName;
             NodeSubtitleText.Text = $"Batch {_record.BatchId} · {_record.NodeType ?? "未知类型"} · {_record.StartTime:yyyy/MM/dd HH:mm:ss.fff}";
-            NodeElapsedText.Text = FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs);
-            NodeShareText.Text = duration == null ? "—" : $"{duration.ShareOfNodeWorkPercent:N1}%";
+            NodeElapsedText.Text = elapsedMs.HasValue
+                ? FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs.Value)
+                : "—";
+            NodeShareText.Text = timedOut || duration == null
+                ? "—"
+                : $"{duration.ShareOfNodeWorkPercent:N1}%";
             NodeBatchText.Text = _record.BatchId.ToString();
             NodeTypeText.Text = string.IsNullOrWhiteSpace(_record.NodeType) ? "—" : _record.NodeType;
             NodeStartTimeText.Text = _record.StartTime.ToString("HH:mm:ss.fff");
@@ -66,20 +88,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             NodeSerialNumberText.Text = string.IsNullOrWhiteSpace(_record.SerialNumber) ? "—" : _record.SerialNumber;
             NodeIdText.Text = string.IsNullOrWhiteSpace(_record.NodeId) ? "—" : _record.NodeId;
 
-            if (!_record.EndTime.HasValue)
+            FlowNodeExecutionOutcome outcome =
+                FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(_record, _messages);
+            if (outcome == FlowNodeExecutionOutcome.Failed)
             {
-                NodeStateText.Text = duration?.IsWarning == true ? "运行中 · 已超慢节点阈值" : "运行中";
-                NodeStateText.Foreground = (Brush)FindResource("AnalysisRunningBrush");
+                NodeStateText.Text = timedOut ? "失败 · 超时" : "失败";
+                NodeStateText.Foreground = (Brush)FindResource("AnalysisFailureBrush");
             }
-            else if (duration?.IsWarning == true)
+            else if (outcome == FlowNodeExecutionOutcome.Succeeded)
             {
-                NodeStateText.Text = "已完成 · 慢节点";
-                NodeStateText.Foreground = (Brush)FindResource("AnalysisWarningBrush");
+                NodeStateText.Text = duration?.IsWarning == true ? "成功 · 慢节点" : "成功";
+                NodeStateText.Foreground = (Brush)FindResource("AnalysisSuccessBrush");
             }
             else
             {
-                NodeStateText.Text = "已完成";
-                NodeStateText.Foreground = (Brush)FindResource("AnalysisSuccessBrush");
+                NodeStateText.Text = duration?.IsWarning == true
+                    ? "已完成 · 未记录结果 · 慢节点"
+                    : "已完成 · 未记录结果";
+                NodeStateText.Foreground = (Brush)FindResource("AnalysisCompletedBrush");
             }
         }
 
@@ -121,13 +147,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int loadVersion = Interlocked.Increment(ref _historyLoadVersion);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
-            NodeHistoryAverageText.Text = "加载中…";
-            NodeHistoryP95Text.Text = "加载中…";
+            SetHistoryStatisticsLoading();
             NodeHistoryHintText.Text = "正在加载该节点最近的执行记录…";
 
             try
             {
                 List<FlowNodeRecord> history;
+                List<FlowNodeMessage> historyMessages;
                 if (string.IsNullOrWhiteSpace(_record.NodeId))
                 {
                     history = _session.Records
@@ -135,41 +161,65 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             && string.Equals(item.NodeType, _record.NodeType, StringComparison.Ordinal))
                         .OrderByDescending(item => item.StartTime)
                         .ToList();
+                    historyMessages = _session.Messages.ToList();
                 }
                 else
                 {
                     string nodeId = _record.NodeId;
-                    history = await Task.Run(
-                        () => FlowNodeRecordDataBaseHelper.GetByNodeId(nodeId, 50),
+                    var result = await Task.Run(
+                        () =>
+                        {
+                            List<FlowNodeRecord> records =
+                                FlowNodeRecordDataBaseHelper.GetByNodeId(nodeId, 50);
+                            int[] batchIds = records
+                                .Select(item => item.BatchId)
+                                .Append(_record.BatchId)
+                                .Distinct()
+                                .ToArray();
+                            List<FlowNodeMessage> messages =
+                                FlowNodeRecordDataBaseHelper.GetHistoryMessagesByNodeId(
+                                    nodeId,
+                                    batchIds);
+                            return (Records: records, Messages: messages);
+                        },
                         cancellationToken);
+                    history = result.Records;
+                    historyMessages = result.Messages;
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (loadVersion != Volatile.Read(ref _historyLoadVersion) || !IsLoaded)
                     return;
 
-                NodeHistoryListView.ItemsSource = history;
-                long[] completedElapsed = history
-                    .Where(item => item.EndTime.HasValue)
-                    .Select(item => Math.Max(0, item.ElapsedMs))
-                    .OrderBy(item => item)
-                    .ToArray();
-                if (completedElapsed.Length == 0)
+                if (!history.Any(item => IsSameRecord(item, _record)))
+                    history.Insert(0, _record);
+
+                IReadOnlyList<FlowNodeHistoryAnalysis> historyItems =
+                    FlowExecutionAnalysisPresentation.BuildNodeHistoryItems(
+                        history,
+                        historyMessages,
+                        DateTime.Now);
+                FlowNodeHistorySummary summary =
+                    FlowExecutionAnalysisPresentation.BuildNodeHistorySummary(historyItems);
+
+                _suppressHistorySelection = true;
+                try
                 {
-                    NodeHistoryAverageText.Text = "—";
-                    NodeHistoryP95Text.Text = "—";
-                    NodeHistoryHintText.Text = "暂时没有已完成的历史记录";
-                    return;
+                    NodeHistoryListView.ItemsSource = historyItems;
+                    NodeHistoryListView.SelectedItem = historyItems
+                        .FirstOrDefault(item => IsSameRecord(item.Record, _record));
+                    if (NodeHistoryListView.SelectedItem != null)
+                        NodeHistoryListView.ScrollIntoView(NodeHistoryListView.SelectedItem);
+                }
+                finally
+                {
+                    _suppressHistorySelection = false;
                 }
 
-                long average = Convert.ToInt64(completedElapsed.Average());
-                int p95Index = Math.Clamp(
-                    (int)Math.Ceiling(completedElapsed.Length * 0.95) - 1,
-                    0,
-                    completedElapsed.Length - 1);
-                NodeHistoryAverageText.Text = FlowExecutionAnalysisPresentation.FormatDuration(average);
-                NodeHistoryP95Text.Text = FlowExecutionAnalysisPresentation.FormatDuration(completedElapsed[p95Index]);
-                NodeHistoryHintText.Text = $"最近 {completedElapsed.Length} 次已完成执行，用于识别偶发抖动与长期瓶颈";
+                UpdateHistoryStatistics(summary);
+                NodeHistoryHintText.Text = summary.TotalCount == 0
+                    ? "暂时没有该节点的历史记录"
+                    : $"最近 {summary.TotalCount} 次执行 · 单击一行切换；失败包含超时，超时不统计耗时";
             }
             catch (OperationCanceledException)
             {
@@ -179,8 +229,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (loadVersion != Volatile.Read(ref _historyLoadVersion) || !IsLoaded)
                     return;
 
-                NodeHistoryAverageText.Text = "—";
-                NodeHistoryP95Text.Text = "—";
+                ClearHistoryStatistics();
                 NodeHistoryHintText.Text = $"历史记录加载失败：{ex.Message}";
             }
             finally
@@ -192,6 +241,73 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     cancellationTokenSource.Dispose();
                 }
             }
+        }
+
+        private void SetHistoryStatisticsLoading()
+        {
+            NodeHistorySuccessAverageText.Text = "加载中…";
+            NodeHistorySuccessP95Text.Text = "P95 —";
+            NodeHistoryFailureAverageText.Text = "加载中…";
+            NodeHistoryFailureP95Text.Text = "P95 —";
+            NodeHistorySuccessCountText.Text = "—";
+            NodeHistoryFailureCountText.Text = "—";
+            NodeHistoryOtherCountText.Text = "其中超时 — · 未判定 —";
+        }
+
+        private void ClearHistoryStatistics()
+        {
+            NodeHistorySuccessAverageText.Text = "—";
+            NodeHistorySuccessP95Text.Text = "P95 —";
+            NodeHistoryFailureAverageText.Text = "—";
+            NodeHistoryFailureP95Text.Text = "P95 —";
+            NodeHistorySuccessCountText.Text = "0";
+            NodeHistoryFailureCountText.Text = "0";
+            NodeHistoryOtherCountText.Text = "其中超时 0 · 未判定 0";
+        }
+
+        private void UpdateHistoryStatistics(FlowNodeHistorySummary summary)
+        {
+            NodeHistorySuccessAverageText.Text = FormatHistoryDuration(summary.SuccessAverageMs);
+            NodeHistorySuccessP95Text.Text = $"P95 {FormatHistoryDuration(summary.SuccessP95Ms)}";
+            NodeHistoryFailureAverageText.Text = FormatHistoryDuration(summary.FailureAverageMs);
+            NodeHistoryFailureP95Text.Text = $"P95 {FormatHistoryDuration(summary.FailureP95Ms)}";
+            NodeHistorySuccessCountText.Text = summary.SuccessCount.ToString();
+            NodeHistoryFailureCountText.Text = summary.FailureCount.ToString();
+            string successRate = summary.SuccessRatePercent.HasValue
+                ? $"{summary.SuccessRatePercent.Value:N1}%"
+                : "—";
+            NodeHistoryOtherCountText.Text =
+                $"其中超时 {summary.TimeoutCount} · 未判定 {summary.CompletedCount} · 成功率 {successRate}";
+        }
+
+        private static string FormatHistoryDuration(long? elapsedMs)
+        {
+            return elapsedMs.HasValue
+                ? FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs.Value)
+                : "—";
+        }
+
+        private static bool IsSameRecord(FlowNodeRecord left, FlowNodeRecord right)
+        {
+            if (left.Id > 0 && right.Id > 0)
+                return left.Id == right.Id;
+
+            return left.BatchId == right.BatchId
+                && left.StartTime == right.StartTime
+                && string.Equals(left.NodeId, right.NodeId, StringComparison.Ordinal)
+                && string.Equals(left.SerialNumber, right.SerialNumber, StringComparison.Ordinal);
+        }
+
+        private void NodeHistoryListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressHistorySelection
+                || NodeHistoryListView.SelectedItem is not FlowNodeHistoryAnalysis historyItem
+                || IsSameRecord(historyItem.Record, _record))
+            {
+                return;
+            }
+
+            _navigateHistoryRecord(historyItem.Record);
         }
 
         private void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -261,6 +377,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private void LocateFlowNodeButton_Click(object sender, RoutedEventArgs e)
         {
             _locateNode(_record);
+        }
+
+        private void ClearCurrentNodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            _clearCurrentNode(_record);
         }
 
         private void OpenMessagesButton_Click(object sender, RoutedEventArgs e)

@@ -92,6 +92,7 @@ public class NodeConfiguratorBindingTests
                 try
                 {
                     var localCameraNode = new LocalCameraNode { CamTempName = cameraTemplateName };
+                    Assert.True(localCameraNode.AutoConnect);
                     FlowNodePropertyEditorRegistration.EnsureRegistered();
                     var cameraTemplateProperty = typeof(LocalCameraNode).GetProperty(nameof(LocalCameraNode.CamTempName));
                     Assert.NotNull(cameraTemplateProperty);

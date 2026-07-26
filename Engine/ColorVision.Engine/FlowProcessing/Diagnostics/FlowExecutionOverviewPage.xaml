@@ -14,8 +14,8 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         <SolidColorBrush x:Key="OverviewCompletedBrush" Color="#4D8DFF"/>
-        <SolidColorBrush x:Key="OverviewRunningBrush" Color="#D99000"/>
-        <SolidColorBrush x:Key="OverviewWarningBrush" Color="#D84A4A"/>
+        <SolidColorBrush x:Key="OverviewTimeoutBrush" Color="#D84A4A"/>
+        <SolidColorBrush x:Key="OverviewWarningBrush" Color="#D99000"/>
 
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -95,8 +95,8 @@
             <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
             <Setter Property="Height" Value="10"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsRunning, Mode=OneWay}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource OverviewRunningBrush}"/>
+                <DataTrigger Binding="{Binding IsTimedOut, Mode=OneWay}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource OverviewTimeoutBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsWarning, Mode=OneWay}" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource OverviewWarningBrush}"/>
@@ -126,12 +126,19 @@
                            FontSize="12"/>
             </StackPanel>
 
-            <Button x:Name="OpenMessagesButton"
-                    Grid.Column="1"
-                    Content="查看本批消息"
-                    Click="OpenMessagesButton_Click"
-                    Style="{StaticResource OverviewPrimaryButtonStyle}"
-                    VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button Content="清理当前流程"
+                        ToolTip="清空当前流程所含节点的全部本地分析历史"
+                        Padding="12,5"
+                        Margin="0,0,8,0"
+                        Click="ClearCurrentFlowButton_Click"/>
+                <Button x:Name="OpenMessagesButton"
+                        Content="查看本批消息"
+                        Click="OpenMessagesButton_Click"
+                        Style="{StaticResource OverviewPrimaryButtonStyle}"/>
+            </StackPanel>
         </Grid>
 
         <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,12">
@@ -320,8 +327,8 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
                             <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewCompletedBrush}" Margin="0,0,4,0"/>
                             <TextBlock Text="完成" FontSize="10" Margin="0,0,8,0"/>
-                            <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewRunningBrush}" Margin="0,0,4,0"/>
-                            <TextBlock Text="运行" FontSize="10" Margin="0,0,8,0"/>
+                            <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewTimeoutBrush}" Margin="0,0,4,0"/>
+                            <TextBlock Text="超时" FontSize="10" Margin="0,0,8,0"/>
                             <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewWarningBrush}" Margin="0,0,4,0"/>
                             <TextBlock Text="慢节点" FontSize="10"/>
                         </StackPanel>

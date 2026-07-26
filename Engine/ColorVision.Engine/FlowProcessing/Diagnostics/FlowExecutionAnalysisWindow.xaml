@@ -82,6 +82,11 @@
                             ToolTip="重新读取本次流程的节点与消息记录"
                             Click="RefreshButton_Click"
                             Style="{StaticResource ShellActionButtonStyle}"/>
+                    <Button x:Name="ClearAllRecordsButton"
+                            Content="清空全部记录"
+                            ToolTip="清空所有流程的本地分析节点记录与消息记录"
+                            Click="ClearAllRecordsButton_Click"
+                            Style="{StaticResource ShellActionButtonStyle}"/>
                     <Button Content="导出"
                             Click="ExportButton_Click"
                             Style="{StaticResource ShellActionButtonStyle}"/>
@@ -90,7 +95,9 @@
         </Border>
 
         <Grid Grid.Row="1">
-            <ContentControl x:Name="AnalysisContent" Margin="14"/>
+            <Frame x:Name="AnalysisFrame"
+                   Margin="14"
+                   NavigationUIVisibility="Hidden"/>
 
             <Border x:Name="LoadingOverlay"
                     Visibility="Collapsed"

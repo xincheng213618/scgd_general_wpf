@@ -44,7 +44,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             DurationItems = FlowExecutionAnalysisPresentation.BuildDurationItems(
                 Records,
                 capturedAt,
-                slowNodeThresholdMs);
+                slowNodeThresholdMs,
+                Messages);
             Summary = FlowExecutionAnalysisPresentation.BuildSummary(
                 Records,
                 DurationItems,

@@ -5,6 +5,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using cvColorVision;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
 using Newtonsoft.Json;
@@ -36,6 +37,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private const int CameraMasterResultType = 100;
         private string _CamTempName = string.Empty;
         private string _CalibTempName = string.Empty;
+        private bool _AutoConnect = true;
         private bool _IsAutoExp;
         private bool _SaveFiles;
 
@@ -46,6 +48,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Category("本地相机")]
         [STNodeProperty("校正模板", "取图时使用的校正模板；为空时只输出 CVRAW", true)]
         public string CalibTempName { get => _CalibTempName; set { _CalibTempName = value ?? string.Empty; OnPropertyChanged(); } }
+
+        [Category("本地相机")]
+        [STNodeProperty("自动连接", "执行取图前，相机未连接时按设备当前配置自动尝试连接", true)]
+        public bool AutoConnect { get => _AutoConnect; set { _AutoConnect = value; OnPropertyChanged(); } }
 
         [Category("本地相机")]
         [STNodeProperty("自动曝光", "启用相机本地自动曝光", true)]
@@ -66,6 +72,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ?? throw new InvalidOperationException($"找不到本地相机设备：{DeviceCode}");
             CameraRunParam? cameraParameters = ResolveCameraParameters();
             CalibrationParam? calibration = ResolveCalibration(device);
+            if (AutoConnect)
+                EnsureCameraConnected(device);
             LocalCameraCaptureResult capture = LocalCameraCaptureService.Capture(new LocalCameraCaptureRequest
             {
                 Device = device,
@@ -104,7 +112,39 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = operatorCode, action.SerialNumber, CamTempName, CalibTempName, IsAutoExp, SaveFiles });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = operatorCode, action.SerialNumber, CamTempName, CalibTempName, AutoConnect, IsAutoExp, SaveFiles });
+        }
+
+        private static void EnsureCameraConnected(DeviceCamera device)
+        {
+            if (device.LocalCameraSession.IsOpen)
+                return;
+            if (device.Config.TakeImageMode == TakeImageMode.Live)
+            {
+                throw new InvalidOperationException(
+                    "本地取图结点不能使用 Live 模式，请将设备切换为测量模式后重试。");
+            }
+
+            string cameraId = device.Config.CameraID?.Trim() ?? string.Empty;
+            if (cameraId.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"本地相机“{device.Code}”未配置 Camera ID，无法自动连接。");
+            }
+
+            int errorCode = device.LocalCameraSession.Open(
+                cameraId,
+                device.Config.TakeImageMode,
+                device.Config.ImageBpp == ImageBpp.bpp16 ? 16 : 8);
+            if (errorCode == cvErrorDefine.CV_ERR_SUCCESS)
+                return;
+
+            string errorMessage = string.Empty;
+            cvCameraCSLib.CM_GetErrorMessage(errorCode, ref errorMessage);
+            if (string.IsNullOrWhiteSpace(errorMessage))
+                errorMessage = "未知相机错误";
+            throw new InvalidOperationException(
+                $"本地相机“{device.Code}”自动连接失败：{errorMessage} ({errorCode})");
         }
 
         private CameraRunParam? ResolveCameraParameters()

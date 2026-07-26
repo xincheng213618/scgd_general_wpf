@@ -12,8 +12,8 @@
       Unloaded="Page_Unloaded">
     <Page.Resources>
         <SolidColorBrush x:Key="AnalysisSuccessBrush" Color="#2E9D66"/>
-        <SolidColorBrush x:Key="AnalysisRunningBrush" Color="#D99000"/>
-        <SolidColorBrush x:Key="AnalysisWarningBrush" Color="#D84A4A"/>
+        <SolidColorBrush x:Key="AnalysisFailureBrush" Color="#D84A4A"/>
+        <SolidColorBrush x:Key="AnalysisCompletedBrush" Color="#4D8DFF"/>
 
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -37,6 +37,12 @@
             <Setter Property="FontSize" Value="22"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+
+        <Style x:Key="MetricDetailStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
         </Style>
 
         <Style x:Key="SectionTitleStyle" TargetType="{x:Type TextBlock}">
@@ -118,13 +124,18 @@
                         Padding="10,5"
                         Margin="0,0,6,0"
                         Click="LocateFlowNodeButton_Click"/>
+                <Button Content="清理当前节点"
+                        ToolTip="清空该节点的全部本地分析历史与消息"
+                        Padding="10,5"
+                        Margin="0,0,6,0"
+                        Click="ClearCurrentNodeButton_Click"/>
                 <Button Content="返回执行概览"
                         Style="{StaticResource PrimaryActionButtonStyle}"
                         Click="ShowOverviewButton_Click"/>
             </StackPanel>
         </Grid>
 
-        <UniformGrid Grid.Row="1" Columns="4" Margin="0,14,0,12">
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0,14,0,12">
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
                     <TextBlock Text="本次耗时" Style="{StaticResource MetricLabelStyle}"/>
@@ -139,14 +150,48 @@
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="最近平均" Style="{StaticResource MetricLabelStyle}"/>
-                    <TextBlock x:Name="NodeHistoryAverageText" Text="加载中…" Style="{StaticResource MetricValueStyle}"/>
+                    <TextBlock Text="成功平均耗时" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock x:Name="NodeHistorySuccessAverageText"
+                               Text="加载中…"
+                               Foreground="{StaticResource AnalysisSuccessBrush}"
+                               Style="{StaticResource MetricValueStyle}"/>
+                    <TextBlock x:Name="NodeHistorySuccessP95Text"
+                               Text="P95 —"
+                               Style="{StaticResource MetricDetailStyle}"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="失败平均耗时" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock x:Name="NodeHistoryFailureAverageText"
+                               Text="加载中…"
+                               Foreground="{StaticResource AnalysisFailureBrush}"
+                               Style="{StaticResource MetricValueStyle}"/>
+                    <TextBlock x:Name="NodeHistoryFailureP95Text"
+                               Text="P95 —"
+                               Style="{StaticResource MetricDetailStyle}"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}">
                 <StackPanel>
-                    <TextBlock Text="最近 P95" Style="{StaticResource MetricLabelStyle}"/>
-                    <TextBlock x:Name="NodeHistoryP95Text" Text="加载中…" Style="{StaticResource MetricValueStyle}"/>
+                    <TextBlock Text="最近执行结果" Style="{StaticResource MetricLabelStyle}"/>
+                    <WrapPanel Margin="0,6,0,0">
+                        <TextBlock Text="成功 " Style="{StaticResource MetricLabelStyle}"/>
+                        <TextBlock x:Name="NodeHistorySuccessCountText"
+                                   Text="0"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AnalysisSuccessBrush}"/>
+                        <TextBlock Text="   失败 " Style="{StaticResource MetricLabelStyle}"/>
+                        <TextBlock x:Name="NodeHistoryFailureCountText"
+                                   Text="0"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AnalysisFailureBrush}"/>
+                    </WrapPanel>
+                    <TextBlock x:Name="NodeHistoryOtherCountText"
+                               Text="其中超时 0 · 未判定 0"
+                               Style="{StaticResource MetricDetailStyle}"/>
                 </StackPanel>
             </Border>
         </UniformGrid>
@@ -268,8 +313,73 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="耗时(ms)" Width="90" DisplayMemberBinding="{Binding ElapsedMs}"/>
-                                    <GridViewColumn Header="状态" Width="90" DisplayMemberBinding="{Binding State}"/>
+                                    <GridViewColumn Header="耗时(ms)" Width="90">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Text" Value="{Binding ElapsedMs, StringFormat={}{0:N0}}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElapsedMs}" Value="-1">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Timeout">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding StatusCode}" Value="-2">
+                                                                    <Setter Property="Text" Value="—"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="状态" Width="90">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="{x:Type TextBlock}">
+                                                            <Setter Property="Text" Value="{Binding State}"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding State}" Value="Sent">
+                                                                    <Setter Property="Text" Value="已发送"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Success">
+                                                                    <Setter Property="Text" Value="成功"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource AnalysisSuccessBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Fail">
+                                                                    <Setter Property="Text" Value="失败"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource AnalysisFailureBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="Timeout">
+                                                                    <Setter Property="Text" Value="超时"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource AnalysisFailureBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding StatusCode}" Value="-2">
+                                                                    <Setter Property="Text" Value="超时"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource AnalysisFailureBrush}"/>
+                                                                </DataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding State}" Value="Sent"/>
+                                                                        <Condition Binding="{Binding Tag, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}" Value="True"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Text" Value="超时"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource AnalysisFailureBrush}"/>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                     <GridViewColumn Header="状态消息" Width="220" DisplayMemberBinding="{Binding StatusMessage}"/>
                                 </GridView>
                             </ListView.View>
@@ -372,21 +482,52 @@
                     <ListView x:Name="NodeHistoryListView"
                               Grid.Row="2"
                               Background="Transparent"
-                              BorderThickness="0">
+                              BorderThickness="0"
+                              ToolTip="单击切换到该次节点执行"
+                              SelectionChanged="NodeHistoryListView_SelectionChanged">
                         <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Batch" Width="62" DisplayMemberBinding="{Binding BatchId}"/>
-                                <GridViewColumn Header="开始时间" Width="142">
+                                <GridViewColumn Header="Batch" Width="50" DisplayMemberBinding="{Binding BatchId}"/>
+                                <GridViewColumn Header="开始时间" Width="124">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding StartTime, StringFormat=MM/dd HH:mm:ss.fff}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="耗时(ms)" Width="82" DisplayMemberBinding="{Binding ElapsedMs}"/>
+                                <GridViewColumn Header="耗时" Width="72">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ElapsedText}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="结果" Width="62">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Setter Property="Foreground" Value="{StaticResource AnalysisCompletedBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource AnalysisSuccessBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsFailed}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource AnalysisFailureBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>

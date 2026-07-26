@@ -14,6 +14,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private readonly Action<FlowNodeRecord> _openNode;
         private readonly Action<FlowNodeRecord> _locateNode;
         private readonly Action _openMessages;
+        private readonly Action _clearCurrentFlow;
         private bool _isTimelineRendered;
 
         internal FlowExecutionOverviewPage(
@@ -21,12 +22,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             Action<FlowNodeRecord> openNode,
             Action<FlowNodeRecord> locateNode,
             Action openMessages,
+            Action clearCurrentFlow,
             bool canLocate)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _openNode = openNode ?? throw new ArgumentNullException(nameof(openNode));
             _locateNode = locateNode ?? throw new ArgumentNullException(nameof(locateNode));
             _openMessages = openMessages ?? throw new ArgumentNullException(nameof(openMessages));
+            _clearCurrentFlow =
+                clearCurrentFlow ?? throw new ArgumentNullException(nameof(clearCurrentFlow));
             CanLocate = canLocate;
 
             InitializeComponent();
@@ -63,7 +67,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             SummaryNodeCountText.Text = summary.NodeCount.ToString();
             SummaryNodeStateText.Text = BuildNodeStateSummary(summary);
             SummarySlowestNodeText.Text = summary.SlowestNodeName;
-            SummarySlowestTimeText.Text = summary.NodeCount == 0
+            SummarySlowestTimeText.Text = summary.SlowestNodeName == "—"
                 ? "—"
                 : FlowExecutionAnalysisPresentation.FormatDuration(summary.SlowestNodeElapsedMs);
 
@@ -80,11 +84,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private static string BuildNodeStateSummary(FlowExecutionAnalysisSummary summary)
         {
             var parts = new List<string>();
-            int completedCount = summary.NodeCount - summary.RunningCount;
+            int completedCount = summary.NodeCount - summary.TimeoutCount;
             if (completedCount > 0)
                 parts.Add($"{completedCount} 已完成");
-            if (summary.RunningCount > 0)
-                parts.Add($"{summary.RunningCount} 运行中");
+            if (summary.TimeoutCount > 0)
+                parts.Add($"{summary.TimeoutCount} 超时");
             if (summary.WarningCount > 0)
                 parts.Add($"{summary.WarningCount} 个慢节点");
             return parts.Count == 0 ? "等待执行记录" : string.Join(" · ", parts);
@@ -109,6 +113,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private void OpenMessagesButton_Click(object sender, RoutedEventArgs e)
         {
             _openMessages();
+        }
+
+        private void ClearCurrentFlowButton_Click(object sender, RoutedEventArgs e)
+        {
+            _clearCurrentFlow();
         }
 
         private void OpenNodeButton_Click(object sender, RoutedEventArgs e)
@@ -192,12 +201,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             SetupChineseFonts();
             DateTime baseTime = _session.Records.Min(item => item.StartTime);
             double totalMs = _session.Records.Max(item =>
-                ((item.EndTime ?? _session.CapturedAt) - baseTime).TotalMilliseconds);
+                ((item.EndTime ?? item.StartTime) - baseTime).TotalMilliseconds);
             totalMs = Math.Max(1, totalMs);
 
             ScottPlot.Color completedColor = ScottPlot.Color.FromHex("#4D8DFF");
-            ScottPlot.Color runningColor = ScottPlot.Color.FromHex("#D99000");
-            ScottPlot.Color warningColor = ScottPlot.Color.FromHex("#D84A4A");
+            ScottPlot.Color timeoutColor = ScottPlot.Color.FromHex("#D84A4A");
+            ScottPlot.Color warningColor = ScottPlot.Color.FromHex("#D99000");
             var bars = new List<ScottPlot.Bar>(_session.Records.Count);
             var ticks = new List<ScottPlot.Tick>(_session.Records.Count);
             var durations = _session.DurationItems.ToDictionary(item => item.Record);
@@ -209,12 +218,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 double startOffset = Math.Max(0, (record.StartTime - baseTime).TotalMilliseconds);
                 double endOffset = Math.Max(
                     startOffset,
-                    ((record.EndTime ?? _session.CapturedAt) - baseTime).TotalMilliseconds);
+                    ((record.EndTime ?? record.StartTime) - baseTime).TotalMilliseconds);
                 double yPosition = _session.Records.Count - 1 - index;
-                ScottPlot.Color color = duration.IsWarning
-                    ? warningColor
-                    : duration.IsRunning
-                        ? runningColor
+                ScottPlot.Color color = duration.IsTimedOut
+                    ? timeoutColor
+                    : duration.IsWarning
+                        ? warningColor
                         : completedColor;
 
                 bars.Add(new ScottPlot.Bar
