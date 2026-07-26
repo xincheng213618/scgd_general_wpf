@@ -335,7 +335,7 @@ namespace ColorVision.Copilot
                 retry =>
                 {
                     chatClient.RecordProviderRetry(retry);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+                    emit(CopilotAgentEvent.FromProviderRetry(retry));
                 });
             var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
@@ -1107,7 +1107,7 @@ namespace ColorVision.Copilot
                 retry =>
                 {
                     chatClient.RecordProviderRetry(retry);
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+                    emit(CopilotAgentEvent.FromProviderRetry(retry));
                 });
             using var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,

@@ -483,6 +483,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
 
+        internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
+
         public static CopilotAgentEvent Status(string text)
         {
             return new CopilotAgentEvent
@@ -523,6 +525,17 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.RuntimeDiagnostic,
                 Text = text ?? string.Empty,
+            };
+        }
+
+        internal static CopilotAgentEvent FromProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.RuntimeDiagnostic,
+                Text = retry.ToDiagnosticText(),
+                ProviderRetry = retry,
             };
         }
 
