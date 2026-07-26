@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using ColorVision.Copilot;
 
 namespace ColorVision.UI.Tests;
@@ -70,6 +71,94 @@ public sealed class CopilotToolExecutionProgressTests
             tool.Release.TrySetResult();
             await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
         }
+    }
+
+    [Fact]
+    public async Task ApprovedShellOutputFlowsThroughStructuredProgress()
+    {
+        var runner = new ReportingShellRunner();
+        var executablePath = Environment.ProcessPath
+            ?? typeof(CopilotToolExecutionProgressTests).Assembly.Location;
+        var tool = new CopilotShellCommandTool(
+            new CopilotShellCommandService(runner, _ => executablePath));
+        var executor = new CopilotToolExecutor(
+            hooks: null,
+            utcNow: null,
+            hookPhaseTimeout: null,
+            progressInterval: TimeSpan.FromMilliseconds(20));
+        var reported = new TaskCompletionSource<CopilotAgentEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var executionTask = executor.ExecuteAsync(
+            new CopilotToolInvocation
+            {
+                CallId = "shell-progress-call",
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = tool,
+                ToolInput = new CopilotAgentToolInput
+                {
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["command"] = "Write-Output ready",
+                        ["shell"] = "powershell",
+                    },
+                },
+                AgentRequest = new CopilotAgentRequest
+                {
+                    Mode = CopilotAgentMode.Auto,
+                    UserText = "run command: Write-Output ready",
+                },
+                FrameworkApprovalGranted = true,
+            },
+            agentEvent =>
+            {
+                if (agentEvent.Type == CopilotAgentEventType.ToolProgress
+                    && agentEvent.Progress?.Message.Contains("compiling sample.cs", StringComparison.Ordinal) == true)
+                {
+                    reported.TrySetResult(agentEvent);
+                }
+            },
+            CancellationToken.None);
+
+        try
+        {
+            await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var progressEvent = await reported.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(CopilotToolExecutionState.Running, progressEvent.ToolExecution?.State);
+            Assert.Equal(
+                "PowerShell 输出: compiling sample.cs token=<redacted>",
+                progressEvent.Progress!.Message);
+            Assert.DoesNotContain('\0', progressEvent.Progress.Message);
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+            var outcome = await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(CopilotToolExecutionState.Completed, outcome.Execution.State);
+        }
+    }
+
+    [Fact]
+    public async Task BoundedProcessReaderPublishesCapturedChunks()
+    {
+        const string content = "first line\r\nsecond line";
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+        var chunks = new List<string>();
+
+        var captured = await CopilotProcessExecutionSupport.ReadBoundedAsync(
+            reader,
+            maxCharacters: 100,
+            headCharacters: 50,
+            truncationMarker: "<truncated>",
+            cancellationToken: CancellationToken.None,
+            onChunk: chunks.Add);
+
+        Assert.Equal(content, captured);
+        Assert.Equal(content, string.Concat(chunks));
     }
 
     [Fact]
@@ -239,6 +328,31 @@ public sealed class CopilotToolExecutionProgressTests
                 Success = true,
                 Summary = "completed",
             };
+        }
+    }
+
+    private sealed class ReportingShellRunner : ICopilotShellProcessRunner
+    {
+        public TaskCompletionSource Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotShellProcessResult> RunAsync(
+            CopilotShellProcessCommand command,
+            CancellationToken cancellationToken)
+        {
+            command.StandardOutputReceived?.Invoke(
+                "restore complete\r\ncompiling sample.cs token=super-secret\0");
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotShellProcessResult(
+                ExitCode: 0,
+                TimedOut: false,
+                StandardOutput: "ready",
+                StandardError: string.Empty,
+                Duration: TimeSpan.FromMilliseconds(100));
         }
     }
 }

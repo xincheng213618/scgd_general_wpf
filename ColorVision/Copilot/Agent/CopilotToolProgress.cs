@@ -106,7 +106,14 @@ namespace ColorVision.Copilot
 
         private static string CollapseWhitespace(string? value)
         {
-            return string.Join(" ", (value ?? string.Empty)
+            var characters = (value ?? string.Empty).ToCharArray();
+            for (var index = 0; index < characters.Length; index++)
+            {
+                if (char.IsControl(characters[index]) && !char.IsWhiteSpace(characters[index]))
+                    characters[index] = ' ';
+            }
+
+            return string.Join(" ", new string(characters)
                 .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
     }

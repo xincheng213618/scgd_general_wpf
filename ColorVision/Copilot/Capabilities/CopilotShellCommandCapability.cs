@@ -21,6 +21,10 @@ namespace ColorVision.Copilot
         TimeSpan Timeout)
     {
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
+
+        public Action<string>? StandardOutputReceived { get; init; }
+
+        public Action<string>? StandardErrorReceived { get; init; }
     }
 
     public sealed record CopilotShellProcessResult(
@@ -60,9 +64,28 @@ namespace ColorVision.Copilot
             _executablePathProvider = executablePathProvider ?? FindTrustedShellExecutable;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(
+        public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
+            CancellationToken cancellationToken)
+        {
+            return ExecuteCoreAsync(request, input, progress: null, cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(request, input, progress, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext? progress,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -81,12 +104,18 @@ namespace ColorVision.Copilot
             CopilotShellProcessResult processResult;
             try
             {
+                var shellLabel = GetShellLabel(execution.Shell);
+                progress?.Report($"正在启动 {shellLabel} 命令");
                 processResult = await _runner.RunAsync(new CopilotShellProcessCommand(
                     execution.Shell,
                     Path.GetFullPath(executablePath),
                     BuildArguments(execution.Shell, execution.CommandText),
                     execution.WorkingDirectory,
-                    TimeSpan.FromSeconds(execution.TimeoutSeconds)), cancellationToken);
+                    TimeSpan.FromSeconds(execution.TimeoutSeconds))
+                {
+                    StandardOutputReceived = chunk => ReportProcessOutput(progress, shellLabel, chunk, isError: false),
+                    StandardErrorReceived = chunk => ReportProcessOutput(progress, shellLabel, chunk, isError: true),
+                }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -318,6 +347,41 @@ namespace ColorVision.Copilot
             return builder.ToString().TrimEnd();
         }
 
+        private static void ReportProcessOutput(
+            CopilotToolProgressContext? progress,
+            string shellLabel,
+            string chunk,
+            bool isError)
+        {
+            if (progress == null)
+                return;
+
+            var latestLine = ExtractLatestOutputLine(chunk);
+            if (string.IsNullOrWhiteSpace(latestLine))
+                return;
+
+            progress.Report($"{shellLabel} {(isError ? "错误输出" : "输出")}: {latestLine}");
+        }
+
+        private static string ExtractLatestOutputLine(string? chunk)
+        {
+            if (string.IsNullOrWhiteSpace(chunk))
+                return string.Empty;
+
+            var end = chunk.Length;
+            while (end > 0 && char.IsWhiteSpace(chunk[end - 1]))
+                end--;
+            if (end == 0)
+                return string.Empty;
+
+            var start = end - 1;
+            while (start >= 0 && chunk[start] is not ('\r' or '\n'))
+                start--;
+            var line = chunk[(start + 1)..end].Trim();
+            const int maximumLineLength = 512;
+            return line.Length <= maximumLineLength ? line : line[..maximumLineLength];
+        }
+
         private static bool TryGetString(CopilotAgentToolInput input, string name, out string value)
         {
             value = string.Empty;
@@ -444,9 +508,19 @@ namespace ColorVision.Copilot
 
             using var outputReadSource = new CancellationTokenSource();
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
+                process.StandardOutput,
+                MaxStreamCharacters,
+                16_384,
+                "\n...<shell output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardOutputReceived);
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
+                process.StandardError,
+                MaxStreamCharacters,
+                16_384,
+                "\n...<shell output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardErrorReceived);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;

@@ -79,7 +79,8 @@ namespace ColorVision.Copilot
             int maxCharacters,
             int headCharacters,
             string truncationMarker,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string>? onChunk = null)
         {
             ArgumentNullException.ThrowIfNull(reader);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCharacters);
@@ -97,6 +98,7 @@ namespace ColorVision.Copilot
                     var count = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
                     if (count == 0)
                         break;
+                    TryPublishChunk(onChunk, buffer, count);
                     var offset = 0;
                     if (head.Length < headCharacters)
                     {
@@ -126,6 +128,20 @@ namespace ColorVision.Copilot
             return truncated
                 ? head.Append(truncationMarker).Append(tail).ToString()
                 : head.Append(tail).ToString();
+        }
+
+        private static void TryPublishChunk(Action<string>? onChunk, char[] buffer, int count)
+        {
+            if (onChunk == null)
+                return;
+
+            try
+            {
+                onChunk(new string(buffer, 0, count));
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+            }
         }
 
         private static async Task TryWaitForExitAsync(Process process, TimeSpan timeout)
