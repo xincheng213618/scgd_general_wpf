@@ -177,11 +177,6 @@ namespace ColorVision.Copilot
         private static readonly Regex SensitiveErrorRegex = new(
             "(Bearer\\s+)[^,;\\s]+|(?<name>token|api[_-]?key|authorization)\\s*[:=]\\s*[^,;\\s]+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static readonly CopilotRequestMessage[] ModelConnectionTestMessages =
-        {
-            new("user", "Reply with OK."),
-        };
-        private const string ModelConnectionTestSystemPrompt = "You are validating a model connection. Reply with OK.";
         private static readonly IReadOnlyList<CopilotConnectProviderOption> ConnectProviderOptionCatalog =
             new ReadOnlyCollection<CopilotConnectProviderOption>(new[]
             {
@@ -278,9 +273,10 @@ namespace ColorVision.Copilot
                 },
             });
 
-        private readonly CopilotChatService _chatService = new();
+        private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic = new();
         private readonly CopilotBackendSyncClient _backendSyncClient = new();
         private readonly CancellationTokenSource _lifetimeCancellation = new();
+        private CancellationTokenSource? _modelConnectionTestCancellation;
         private bool _isApplyingPreset;
         private bool _isReadyForUserChanges;
         private bool _isSavingSettings;
@@ -350,7 +346,7 @@ namespace ColorVision.Copilot
             RefreshExternalMcpClientsCommand = new RelayCommand(_ => RunUiOperation(RefreshExternalMcpClientsAsync, "刷新外部 MCP"), _ => !IsRefreshingExternalMcpClients);
             CopyExternalMcpClientsStatusCommand = new RelayCommand(_ => CopyExternalMcpClientsStatus());
             CopyMcpDiagnosticsCommand = new RelayCommand(_ => CopyMcpDiagnostics());
-            TestSelectedProfileCommand = new RelayCommand(_ => RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接"), _ => CanTestSelectedProfile);
+            TestSelectedProfileCommand = new RelayCommand(_ => ToggleSelectedProfileConnectionTest(), _ => CanTestSelectedProfile);
             UseSelectedProfileInChatCommand = new RelayCommand(_ => UseSelectedProfileInChat(), _ => CanUseSelectedProfileInChat);
             ToggleNewProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsNewProfileApiKeyVisible = !IsNewProfileApiKeyVisible);
             ToggleSelectedProfileApiKeyVisibilityCommand = new RelayCommand(_ => IsSelectedProfileApiKeyVisible = !IsSelectedProfileApiKeyVisible);
@@ -837,13 +833,18 @@ namespace ColorVision.Copilot
                 if (SetProperty(ref _isTestingSelectedProfileConnection, value))
                 {
                     OnPropertyChanged(nameof(CanTestSelectedProfile));
+                    OnPropertyChanged(nameof(SelectedProfileConnectionTestActionText));
                     CommandManager.InvalidateRequerySuggested();
                 }
             }
         }
         private bool _isTestingSelectedProfileConnection;
 
-        public bool CanTestSelectedProfile => !_disposed && SelectedProfile?.IsConfigured == true && !IsTestingSelectedProfileConnection;
+        public bool CanTestSelectedProfile => !_disposed
+            && (IsTestingSelectedProfileConnection || SelectedProfile?.IsConfigured == true);
+
+        public string SelectedProfileConnectionTestActionText =>
+            IsTestingSelectedProfileConnection ? "Cancel Test" : "Test Model";
 
         public bool IsSelectedProfileActiveInChat => SelectedProfile != null
             && string.Equals(SelectedProfile.Id, _activeProfileId, StringComparison.Ordinal);
@@ -1481,6 +1482,23 @@ namespace ColorVision.Copilot
                 : "Complete API key, endpoint, and model before testing.";
         }
 
+        private void ToggleSelectedProfileConnectionTest()
+        {
+            if (IsTestingSelectedProfileConnection)
+            {
+                var cancellation = _modelConnectionTestCancellation;
+                if (cancellation == null || cancellation.IsCancellationRequested)
+                    return;
+
+                cancellation.Cancel();
+                SelectedProfileConnectionTestText = "Cancelling model connection test...";
+                SetSettingsNotice(SelectedProfileConnectionTestText);
+                return;
+            }
+
+            RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接");
+        }
+
         private async Task TestSelectedProfileConnectionAsync()
         {
             if (_disposed || IsTestingSelectedProfileConnection)
@@ -1494,9 +1512,7 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var profile = sourceProfile.Clone();
-            profile.EnsureValid();
-            if (!profile.IsConfigured)
+            if (!sourceProfile.IsConfigured)
             {
                 SelectedProfileConnectionTestText = "Complete API key, endpoint, and model before testing.";
                 SetSettingsNotice("Model test skipped: profile is incomplete.");
@@ -1504,32 +1520,31 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            profile.UseSystemPromptOverride(ModelConnectionTestSystemPrompt);
-            profile.MaxTokens = 128;
-            profile.Temperature = 0;
-
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                _lifetimeCancellation.Token);
+            _modelConnectionTestCancellation = cancellation;
             IsTestingSelectedProfileConnection = true;
             SelectedProfileConnectionTestText = "Testing model connection...";
-            SetSettingsNotice($"Testing {profile.DisplayLabel}...");
+            SetSettingsNotice($"Testing {sourceProfile.DisplayLabel}...");
             try
             {
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
-                timeout.CancelAfter(TimeSpan.FromSeconds(30));
-                await _chatService.StreamReplyAsync(
-                    profile,
-                    ModelConnectionTestMessages,
-                    _ => { },
-                    timeout.Token);
-
-                SelectedProfileConnectionTestText = "Connected. The model returned a response.";
-                SetSettingsNotice($"Model test succeeded for {profile.DisplayLabel}.");
+                var result = await _modelConnectionDiagnostic.TestAsync(
+                    sourceProfile,
+                    cancellation.Token);
+                SelectedProfileConnectionTestText = result.FormatStatus();
+                SetSettingsNotice($"Model test succeeded for {sourceProfile.DisplayLabel}. {SelectedProfileConnectionTestText}");
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
             {
             }
             catch (OperationCanceledException)
             {
-                SelectedProfileConnectionTestText = "Connection failed: request timed out after 30 seconds.";
+                SelectedProfileConnectionTestText = "Connection test cancelled.";
+                SetSettingsNotice(SelectedProfileConnectionTestText);
+            }
+            catch (CopilotModelConnectionDiagnosticException exception)
+            {
+                SelectedProfileConnectionTestText = FormatModelConnectionDiagnosticFailure(exception);
                 SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (Exception ex)
@@ -1539,8 +1554,34 @@ namespace ColorVision.Copilot
             }
             finally
             {
+                if (ReferenceEquals(_modelConnectionTestCancellation, cancellation))
+                    _modelConnectionTestCancellation = null;
                 IsTestingSelectedProfileConnection = false;
             }
+        }
+
+        internal static string FormatModelConnectionDiagnosticFailure(
+            CopilotModelConnectionDiagnosticException exception)
+        {
+            var elapsed = CopilotModelConnectionDiagnosticResult.FormatDuration(exception.Elapsed);
+            var retrySummary = exception.RetryCount switch
+            {
+                <= 0 => string.Empty,
+                1 => " after 1 automatic retry",
+                _ => $" after {exception.RetryCount.ToString("N0", CultureInfo.InvariantCulture)} automatic retries",
+            };
+            if (CopilotProviderInactivityException.TryFind(exception.InnerException, out var inactivity))
+            {
+                var phase = inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse
+                    ? "no displayable content arrived"
+                    : "the provider stream stopped updating";
+                var timeout = CopilotModelConnectionDiagnosticResult.FormatDuration(
+                    inactivity.TimeoutDuration);
+                return $"Connection failed in {elapsed}{retrySummary}: {phase} for {timeout}.";
+            }
+
+            var message = exception.InnerException?.Message ?? exception.Message;
+            return $"Connection failed in {elapsed}{retrySummary}: {SanitizeError(message)}";
         }
 
         private void RegenerateMcpToken()
