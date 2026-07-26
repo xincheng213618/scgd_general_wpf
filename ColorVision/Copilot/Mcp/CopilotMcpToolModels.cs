@@ -391,10 +391,9 @@ namespace ColorVision.Copilot.Mcp
         {
             try
             {
-                if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
-                    return Application.Current.Dispatcher.Invoke(CreateDefaultWorkspaceSnapshotOnCurrentThread);
-
-                return CreateDefaultWorkspaceSnapshotOnCurrentThread();
+                return CopilotMcpWorkspaceSnapshotCapture.Capture(
+                    Application.Current?.Dispatcher,
+                    CreateDefaultWorkspaceSnapshotOnCurrentThread);
             }
             catch
             {
