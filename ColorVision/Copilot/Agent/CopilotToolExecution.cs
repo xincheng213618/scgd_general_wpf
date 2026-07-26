@@ -256,8 +256,7 @@ namespace ColorVision.Copilot
             {
                 onEvent(CopilotAgentEvent.ToolStarted(CreateExecutionInfo(invocation, CopilotToolExecutionState.Running, startedAt, null, 0, timeout, queueDurationMs: queueDurationMs)));
 
-                using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCancellation.CancelAfter(timeout);
+                using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
                 using var progressCancellation = new CancellationTokenSource();
                 var progressTask = PublishToolProgressAsync(
@@ -287,9 +286,14 @@ namespace ColorVision.Copilot
 
                 try
                 {
-                    executionTask = invocation.FrameworkApprovalGranted && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool
-                        ? approvedTool.ExecuteApprovedAsync(invocation.AgentRequest, invocation.ToolInput, linkedCancellation.Token)
-                        : invocation.Tool.ExecuteAsync(invocation.AgentRequest, invocation.ToolInput, linkedCancellation.Token);
+                    // Keep third-party synchronous prefixes and cancellation callbacks outside
+                    // the runtime loop. The independent source is cancelled only after the
+                    // caller/timeout boundary has already released this invocation.
+                    executionTask = Task.Run(
+                        () => invocation.FrameworkApprovalGranted && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool
+                            ? approvedTool.ExecuteApprovedAsync(invocation.AgentRequest, invocation.ToolInput, executionCancellation.Token)
+                            : invocation.Tool.ExecuteAsync(invocation.AgentRequest, invocation.ToolInput, executionCancellation.Token),
+                        executionCancellation.Token);
                     var result = await executionTask.WaitAsync(timeout, cancellationToken) ?? Failure(invocation.Tool.Name, $"{invocation.Tool.Name} returned no result.", "The tool returned a null result.", CopilotToolFailureKind.Internal);
                     var state = result.Approval != null
                         ? CopilotToolExecutionState.AwaitingApproval
@@ -298,7 +302,7 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
-                    linkedCancellation.Cancel();
+                    executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
                     CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
@@ -312,21 +316,9 @@ namespace ColorVision.Copilot
                         queueDurationMs);
                     return await PublishExecutionOutcomeAsync(outcome);
                 }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && linkedCancellation.IsCancellationRequested)
-                {
-                    var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
-                    var outcome = CreateOutcome(
-                        invocation,
-                        CopilotToolExecutionState.TimedOut,
-                        startedAt,
-                        timeout,
-                        stopwatch,
-                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} timed out.", message, CopilotToolFailureKind.Transient),
-                        queueDurationMs);
-                    return await PublishExecutionOutcomeAsync(outcome);
-                }
                 catch (OperationCanceledException)
                 {
+                    executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
                     CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var outcome = CreateOutcome(
