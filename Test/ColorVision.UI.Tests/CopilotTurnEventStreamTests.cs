@@ -93,6 +93,38 @@ public sealed class CopilotTurnEventStreamTests
         Assert.Empty(events.OfType<CopilotTurnCompletedEvent>());
     }
 
+    [Fact]
+    public async Task DisposingEnumeratorEarlyCancelsProducer()
+    {
+        var producerCancelled = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var stream = CopilotTurnEventStream.RunAsync(
+            async (sink, cancellationToken) =>
+            {
+                sink.OnChatDelta(new CopilotStreamDelta(string.Empty, "partial"));
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    producerCancelled.TrySetResult();
+                    throw;
+                }
+
+                return CreateResult();
+            },
+            CancellationToken.None);
+
+        await using (var enumerator = stream.GetAsyncEnumerator())
+        {
+            Assert.True(await enumerator.MoveNextAsync());
+            Assert.IsType<CopilotTurnChatDeltaEvent>(enumerator.Current);
+        }
+
+        await producerCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
     private static CopilotTurnResult CreateResult()
     {
         var usage = new CopilotTokenUsage(4, 2, 6);

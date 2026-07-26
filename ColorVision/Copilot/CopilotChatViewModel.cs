@@ -2050,15 +2050,14 @@ namespace ColorVision.Copilot
                 _config.AgentDefaults,
                 _config.ExternalMcpServers,
                 conversation.AccessContext);
-            CopilotTurnResult? result = null;
+            var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode);
             try
             {
                 try
                 {
                     await foreach (var turnEvent in _turnRuntime.RunAsync(turnRequest, cancellationToken))
                     {
-                        if (result != null)
-                            throw new InvalidOperationException("Copilot turn emitted an event after completion.");
+                        eventProtocol.Observe(turnEvent);
 
                         switch (turnEvent)
                         {
@@ -2074,12 +2073,8 @@ namespace ColorVision.Copilot
                             case CopilotTurnAgentEvent agent:
                                 eventBuffer?.Enqueue(agent.Event);
                                 break;
-                            case CopilotTurnCompletedEvent completed:
-                                result = completed.Result;
+                            case CopilotTurnCompletedEvent:
                                 break;
-                            default:
-                                throw new InvalidOperationException(
-                                    $"Unsupported Copilot turn event: {turnEvent.GetType().Name}.");
                         }
                     }
                 }
@@ -2116,8 +2111,7 @@ namespace ColorVision.Copilot
                 throw;
             }
 
-            if (result == null)
-                throw new InvalidOperationException("Copilot turn ended without a completion event.");
+            var result = eventProtocol.RequireCompletion();
             if (result.Mode == CopilotAgentMode.Chat)
             {
                 userMessage.RequestContent = result.PreparedUserMessageContent;
