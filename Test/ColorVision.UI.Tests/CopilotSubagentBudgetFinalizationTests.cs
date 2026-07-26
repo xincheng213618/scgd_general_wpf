@@ -637,6 +637,11 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             RequestTokenBudget = 7_831,
             ConsumedTokens = 3_100,
             ProviderCalls = 1,
+            PeakEstimatedInputTokens = 9_000,
+            ReportedInputTokens = 2_800,
+            ReportedOutputTokens = 300,
+            ReportedTotalTokens = 3_100,
+            ReportedCachedInputTokens = 2_500,
             BudgetExhausted = false,
             RequestTokenBudgetExhausted = false,
             MaxToolCalls = 1,
@@ -657,6 +662,11 @@ public sealed class CopilotSubagentBudgetFinalizationTests
 
         Assert.Equal(11_653, combined.ConsumedTokens);
         Assert.Equal(3, combined.ProviderCalls);
+        Assert.Equal(12_000, combined.PeakEstimatedInputTokens);
+        Assert.Equal(10_800, combined.ReportedInputTokens);
+        Assert.Equal(853, combined.ReportedOutputTokens);
+        Assert.Equal(11_653, combined.ReportedTotalTokens);
+        Assert.Equal(8_500, combined.ReportedCachedInputTokens);
         Assert.Equal(16_384, combined.RequestTokenBudget);
         Assert.Equal(4, combined.ToolCalls);
         Assert.Equal(48, combined.RegisteredToolCount);
@@ -694,6 +704,9 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         string toolName = "ReadLocalFile",
         CopilotToolObservation? observation = null)
     {
+        var reportedTotalTokens = (int)Math.Clamp(consumedTokens, 0, int.MaxValue);
+        var reportedOutputTokens = Math.Min(553, reportedTotalTokens);
+        var reportedInputTokens = reportedTotalTokens - reportedOutputTokens;
         return new CopilotAgentRunResult
         {
             StopReason = CopilotAgentStopReason.BudgetExhausted,
@@ -702,6 +715,11 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 RequestTokenBudget = 16_384,
                 ConsumedTokens = consumedTokens,
                 ProviderCalls = 2,
+                PeakEstimatedInputTokens = 12_000,
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = Math.Min(6_000, reportedInputTokens),
                 BudgetExhausted = true,
                 RequestTokenBudgetExhausted = true,
                 MaxToolCalls = 8,

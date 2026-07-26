@@ -455,6 +455,24 @@ namespace ColorVision.Copilot
             var registeredToolCount = Math.Max(
                 Math.Max(0, exploration.RegisteredToolCount),
                 Math.Max(0, finalization.RegisteredToolCount));
+            static int AddClamped(int left, int right)
+            {
+                return (int)Math.Clamp((long)Math.Max(0, left) + Math.Max(0, right), 0, int.MaxValue);
+            }
+            var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
+            var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
+            var reportedTotalTokens = Math.Max(
+                AddClamped(exploration.ReportedTotalTokens, finalization.ReportedTotalTokens),
+                AddClamped(reportedInputTokens, reportedOutputTokens));
+            int? reportedCachedInputTokens = reportedInputTokens > 0
+                && (exploration.ReportedCachedInputTokens.HasValue
+                    || finalization.ReportedCachedInputTokens.HasValue)
+                    ? Math.Min(
+                        reportedInputTokens,
+                        AddClamped(
+                            exploration.ReportedCachedInputTokens ?? 0,
+                            finalization.ReportedCachedInputTokens ?? 0))
+                    : null;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = exploration.CompactionEnabled || finalization.CompactionEnabled,
@@ -463,6 +481,13 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = normalizedTotalTokenBudget,
                 ConsumedTokens = consumedTokens,
                 ProviderCalls = Math.Max(0, exploration.ProviderCalls) + Math.Max(0, finalization.ProviderCalls),
+                PeakEstimatedInputTokens = Math.Max(
+                    Math.Max(0, exploration.PeakEstimatedInputTokens),
+                    Math.Max(0, finalization.PeakEstimatedInputTokens)),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedCachedInputTokens,
                 UsedEstimatedUsage = exploration.UsedEstimatedUsage || finalization.UsedEstimatedUsage,
                 BudgetExhausted = totalRequestBudgetExhausted
                     || (!finalizationCompleted && (exploration.BudgetExhausted || finalization.BudgetExhausted)),
@@ -955,6 +980,7 @@ namespace ColorVision.Copilot
                     QueueDurationMs = childRun.QueueDurationMs,
                     StopReason = result.StopReason,
                     ToolCalls = result.Budget.ToolCalls,
+                    PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
                     Usage = result.Usage,
                     ConsumedTokens = result.Budget.ConsumedTokens,
                     ProviderCalls = result.Budget.ProviderCalls,

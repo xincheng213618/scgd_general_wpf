@@ -66,6 +66,7 @@ namespace ColorVision.Copilot
         private readonly object _syncRoot = new();
         private CopilotTokenUsage _usage;
         private int _providerCalls;
+        private int _peakEstimatedInputTokens;
         private long _consumedTokens;
         private bool _usedEstimatedUsage;
         private bool _budgetExhausted;
@@ -97,6 +98,9 @@ namespace ColorVision.Copilot
             {
                 _usage = _usage.Add(delegatedRun.Usage);
                 _providerCalls += Math.Max(0, delegatedRun.ProviderCalls);
+                _peakEstimatedInputTokens = Math.Max(
+                    _peakEstimatedInputTokens,
+                    Math.Max(0, delegatedRun.PeakEstimatedInputTokens));
                 _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
@@ -228,11 +232,13 @@ namespace ColorVision.Copilot
 
         private void EnsureWithinContextWindow(int estimatedInputTokens)
         {
-            if (estimatedInputTokens <= _budget.InputBudgetTokens)
-                return;
-
             lock (_syncRoot)
+            {
+                _peakEstimatedInputTokens = Math.Max(_peakEstimatedInputTokens, Math.Max(0, estimatedInputTokens));
+                if (estimatedInputTokens <= _budget.InputBudgetTokens)
+                    return;
                 _usedEstimatedUsage = true;
+            }
             throw new CopilotAgentContextWindowExceededException(estimatedInputTokens, _budget.InputBudgetTokens);
         }
 
@@ -290,6 +296,14 @@ namespace ColorVision.Copilot
 
         private CopilotAgentBudgetSnapshot CreateSnapshot()
         {
+            var reportedInputTokens = Math.Max(0, _usage.InputTokens);
+            var reportedOutputTokens = Math.Max(0, _usage.OutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, _usage.EffectiveTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = true,
@@ -298,6 +312,14 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = _budget.RequestTokenBudget,
                 ConsumedTokens = Math.Max(0, _consumedTokens),
                 ProviderCalls = Math.Max(0, _providerCalls),
+                PeakEstimatedInputTokens = Math.Max(0, _peakEstimatedInputTokens),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && _usage.CachedInputTokens.HasValue
+                    ? _usage.EffectiveCachedInputTokens
+                    : null,
                 UsedEstimatedUsage = _usedEstimatedUsage,
                 BudgetExhausted = _budgetExhausted,
             };

@@ -182,6 +182,8 @@ namespace ColorVision.Copilot
 
         public int ToolCalls { get; init; }
 
+        public int PeakEstimatedInputTokens { get; init; }
+
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
 
         public long ConsumedTokens { get; init; }
@@ -695,6 +697,16 @@ namespace ColorVision.Copilot
         public long ConsumedTokens { get; init; }
 
         public int ProviderCalls { get; init; }
+
+        public int PeakEstimatedInputTokens { get; init; }
+
+        public int ReportedInputTokens { get; init; }
+
+        public int ReportedOutputTokens { get; init; }
+
+        public int ReportedTotalTokens { get; init; }
+
+        public int? ReportedCachedInputTokens { get; init; }
 
         public bool UsedEstimatedUsage { get; init; }
 

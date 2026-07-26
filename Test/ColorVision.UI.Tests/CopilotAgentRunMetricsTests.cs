@@ -77,6 +77,12 @@ public sealed class CopilotAgentRunMetricsTests
             RequestTokenBudget = 512 * 1024,
             ConsumedTokens = 11_185,
             ProviderCalls = 2,
+            InputBudgetTokens = 1_000_000,
+            PeakEstimatedInputTokens = 8_192,
+            ReportedInputTokens = 10_000,
+            ReportedOutputTokens = 1_185,
+            ReportedTotalTokens = 11_185,
+            ReportedCachedInputTokens = 7_500,
             UsedDelegatedDirectAnswer = true,
             MaxToolCalls = 16,
             ToolCalls = 1,
@@ -101,6 +107,8 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Contains("已处理 25s · 父 1 / 子 1 · 11.2k tokens · 委派直返", assistant.ThinkingHeader, StringComparison.Ordinal);
         Assert.Contains("模型调用：2（父 1 / 子 1）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("令牌：11,185（父 4,203 / 子 6,982）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("提供商用量：输入 10,000 · 输出 1,185 · 总计 11,185 · 缓存输入 7,500（75%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("峰值输入（估算）：8,192 / 1,000,000", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("父工具面：2 / 48 · 定义 1,284 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("子工具面（峰值）：5 / 48 · 定义 4,396 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
@@ -124,6 +132,11 @@ public sealed class CopilotAgentRunMetricsTests
         var restoredMessage = Assert.Single(restoredConversation.Messages);
         Assert.Equal(2, restoredMessage.AgentRunBudget.ProviderCalls);
         Assert.Equal(11_185, restoredMessage.AgentRunBudget.ConsumedTokens);
+        Assert.Equal(8_192, restoredMessage.AgentRunBudget.PeakEstimatedInputTokens);
+        Assert.Equal(10_000, restoredMessage.AgentRunBudget.ReportedInputTokens);
+        Assert.Equal(1_185, restoredMessage.AgentRunBudget.ReportedOutputTokens);
+        Assert.Equal(11_185, restoredMessage.AgentRunBudget.ReportedTotalTokens);
+        Assert.Equal(7_500, restoredMessage.AgentRunBudget.ReportedCachedInputTokens);
         Assert.True(restoredMessage.AgentRunBudget.UsedDelegatedDirectAnswer);
         Assert.Equal(48, restoredMessage.AgentRunBudget.RegisteredToolCount);
         Assert.Equal(2, restoredMessage.AgentRunBudget.AvailableToolCount);
@@ -148,6 +161,11 @@ public sealed class CopilotAgentRunMetricsTests
             {
                 ConsumedTokens = -1,
                 ProviderCalls = -2,
+                PeakEstimatedInputTokens = -8,
+                ReportedInputTokens = -9,
+                ReportedOutputTokens = -10,
+                ReportedTotalTokens = -11,
+                ReportedCachedInputTokens = 99,
                 MaxToolCalls = -1,
                 ToolCalls = -3,
                 RegisteredToolCount = -5,
@@ -164,6 +182,11 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.False(assistant.HasAgentRunMetrics);
         Assert.Equal(0, assistant.AgentRunBudget.ConsumedTokens);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderCalls);
+        Assert.Equal(0, assistant.AgentRunBudget.PeakEstimatedInputTokens);
+        Assert.Equal(0, assistant.AgentRunBudget.ReportedInputTokens);
+        Assert.Equal(0, assistant.AgentRunBudget.ReportedOutputTokens);
+        Assert.Equal(0, assistant.AgentRunBudget.ReportedTotalTokens);
+        Assert.Null(assistant.AgentRunBudget.ReportedCachedInputTokens);
         Assert.Equal(0, assistant.AgentRunBudget.ToolCalls);
         Assert.Equal(0, assistant.AgentRunBudget.RegisteredToolCount);
         Assert.Equal(0, assistant.AgentRunBudget.AvailableToolCount);

@@ -27,7 +27,9 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                     ToolCalls = 1,
                     RequestTokenBudget = 16_384,
                     ConsumedTokens = 2_048,
+                    PeakEstimatedInputTokens = 6_000,
                 },
+                Usage = new CopilotTokenUsage(1_800, 248, 2_048, 1_200),
                 UsedPreselectedEvidence = true,
                 HasSuccessfulEvidence = true,
             })),
@@ -49,6 +51,11 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.Equal(0, provider.CallCount);
         Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Equal(6_000, result.Budget.PeakEstimatedInputTokens);
+        Assert.Equal(1_800, result.Budget.ReportedInputTokens);
+        Assert.Equal(248, result.Budget.ReportedOutputTokens);
+        Assert.Equal(2_048, result.Budget.ReportedTotalTokens);
+        Assert.Equal(1_200, result.Budget.ReportedCachedInputTokens);
         Assert.True(result.Budget.UsedDelegatedDirectAnswer);
         Assert.Equal(1, result.Budget.RegisteredToolCount);
         Assert.Equal(1, result.Budget.AvailableToolCount);

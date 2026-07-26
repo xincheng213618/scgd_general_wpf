@@ -593,6 +593,8 @@ namespace ColorVision.Copilot
             && (AgentRunBudget.ProviderCalls > 0
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
+                || AgentRunBudget.PeakEstimatedInputTokens > 0
+                || AgentRunBudget.ReportedTotalTokens > 0
                 || AgentRunBudget.ElapsedMs > 0
                 || AgentRunBudget.UsedDelegatedDirectAnswer
                 || AgentRunBudget.RegisteredToolCount > 0
@@ -664,6 +666,48 @@ namespace ColorVision.Copilot
                 if (AgentRunBudget.UsedEstimatedUsage)
                     builder.Append("（包含估算）");
                 builder.AppendLine();
+                if (AgentRunBudget.ReportedInputTokens > 0
+                    || AgentRunBudget.ReportedOutputTokens > 0
+                    || AgentRunBudget.ReportedTotalTokens > 0)
+                {
+                    builder.Append("提供商用量：输入 ")
+                        .Append(AgentRunBudget.ReportedInputTokens.ToString("N0"))
+                        .Append(" · 输出 ")
+                        .Append(AgentRunBudget.ReportedOutputTokens.ToString("N0"))
+                        .Append(" · 总计 ")
+                        .Append(AgentRunBudget.ReportedTotalTokens.ToString("N0"));
+                    if (AgentRunBudget.ReportedCachedInputTokens.HasValue)
+                    {
+                        var cachedInputTokens = Math.Clamp(
+                            AgentRunBudget.ReportedCachedInputTokens.Value,
+                            0,
+                            AgentRunBudget.ReportedInputTokens);
+                        builder.Append(" · 缓存输入 ")
+                            .Append(cachedInputTokens.ToString("N0"));
+                        if (AgentRunBudget.ReportedInputTokens > 0)
+                        {
+                            builder.Append('（')
+                                .Append((cachedInputTokens * 100d / AgentRunBudget.ReportedInputTokens).ToString("0.#"))
+                                .Append("%）");
+                        }
+                    }
+                    else
+                    {
+                        builder.Append(" · 缓存未上报");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.PeakEstimatedInputTokens > 0)
+                {
+                    builder.Append("峰值输入（估算）：")
+                        .Append(AgentRunBudget.PeakEstimatedInputTokens.ToString("N0"));
+                    if (AgentRunBudget.InputBudgetTokens > 0)
+                    {
+                        builder.Append(" / ")
+                            .Append(AgentRunBudget.InputBudgetTokens.ToString("N0"));
+                    }
+                    builder.AppendLine();
+                }
                 var delegatedToolCalls = GetDelegatedToolCalls();
                 builder.Append("工具调用：");
                 if (delegatedToolCalls > 0)
@@ -1680,6 +1724,14 @@ namespace ColorVision.Copilot
             var toolCalls = Math.Max(0, budget.ToolCalls);
             if (maxToolCalls > 0)
                 toolCalls = Math.Min(toolCalls, maxToolCalls);
+            var reportedInputTokens = Math.Max(0, budget.ReportedInputTokens);
+            var reportedOutputTokens = Math.Max(0, budget.ReportedOutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, budget.ReportedTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1689,6 +1741,14 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = Math.Max(0, budget.RequestTokenBudget),
                 ConsumedTokens = Math.Max(0, budget.ConsumedTokens),
                 ProviderCalls = Math.Max(0, budget.ProviderCalls),
+                PeakEstimatedInputTokens = Math.Max(0, budget.PeakEstimatedInputTokens),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && budget.ReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(budget.ReportedCachedInputTokens.Value, 0, reportedInputTokens)
+                    : null,
                 UsedEstimatedUsage = budget.UsedEstimatedUsage,
                 UsedDelegatedDirectAnswer = budget.UsedDelegatedDirectAnswer,
                 BudgetExhausted = budget.BudgetExhausted,
@@ -1726,6 +1786,11 @@ namespace ColorVision.Copilot
                 && left.RequestTokenBudget == right.RequestTokenBudget
                 && left.ConsumedTokens == right.ConsumedTokens
                 && left.ProviderCalls == right.ProviderCalls
+                && left.PeakEstimatedInputTokens == right.PeakEstimatedInputTokens
+                && left.ReportedInputTokens == right.ReportedInputTokens
+                && left.ReportedOutputTokens == right.ReportedOutputTokens
+                && left.ReportedTotalTokens == right.ReportedTotalTokens
+                && left.ReportedCachedInputTokens == right.ReportedCachedInputTokens
                 && left.UsedEstimatedUsage == right.UsedEstimatedUsage
                 && left.UsedDelegatedDirectAnswer == right.UsedDelegatedDirectAnswer
                 && left.BudgetExhausted == right.BudgetExhausted

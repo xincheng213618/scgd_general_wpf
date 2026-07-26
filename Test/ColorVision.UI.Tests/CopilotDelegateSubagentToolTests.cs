@@ -17,6 +17,7 @@ public sealed class CopilotDelegateSubagentToolTests
             Budget = new CopilotAgentBudgetSnapshot
             {
                 ToolCalls = 1,
+                PeakEstimatedInputTokens = 12_000,
                 RegisteredToolCount = 48,
                 AvailableToolCount = 3,
                 AvailableToolDefinitionCharacters = 2_048,
@@ -31,6 +32,7 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
         Assert.Equal(48, result.DelegatedRunUsage?.RegisteredToolCount);
         Assert.Equal(3, result.DelegatedRunUsage?.AvailableToolCount);
         Assert.Equal(2_048, result.DelegatedRunUsage?.AvailableToolDefinitionCharacters);

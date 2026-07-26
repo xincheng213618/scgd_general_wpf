@@ -157,6 +157,14 @@ namespace ColorVision.Copilot
             CopilotAgentToolSurfaceMetrics toolSurface = default)
         {
             tokenSnapshot ??= new CopilotAgentBudgetSnapshot();
+            var reportedInputTokens = Math.Max(0, tokenSnapshot.ReportedInputTokens);
+            var reportedOutputTokens = Math.Max(0, tokenSnapshot.ReportedOutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, tokenSnapshot.ReportedTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -165,6 +173,17 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = RequestTokenBudget,
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
                 ProviderCalls = tokenSnapshot.ProviderCalls,
+                PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && tokenSnapshot.ReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(
+                        tokenSnapshot.ReportedCachedInputTokens.Value,
+                        0,
+                        reportedInputTokens)
+                    : null,
                 UsedEstimatedUsage = tokenSnapshot.UsedEstimatedUsage,
                 UsedDelegatedDirectAnswer = usedDelegatedDirectAnswer,
                 BudgetExhausted = tokenSnapshot.BudgetExhausted || timeBudgetExhausted || toolBudgetExhausted,
