@@ -88,6 +88,41 @@ public sealed class CopilotContextRegistryCancellationTests
         }
     }
 
+    [Fact]
+    public async Task TimedOutProviderKeepsItsConcurrencySlotUntilInvocationCompletes()
+    {
+        using var blockingProvider = new BlockingContextProvider(blockCanProvide: false);
+        using var queuedProvider = new BlockingContextProvider(blockCanProvide: false);
+        var registry = new CopilotContextRegistry(
+            [blockingProvider, queuedProvider],
+            extensionBridge: null,
+            providerCaptureTimeout: TimeSpan.FromMilliseconds(50),
+            requestCaptureTimeout: TimeSpan.FromMilliseconds(200),
+            maximumConcurrentProviders: 1);
+        var request = new CopilotContextRequest
+        {
+            Scope = CopilotContextScope.Agent,
+            UserText = "inspect the current application",
+        };
+        var captureTask = registry.CaptureAsync(request, CancellationToken.None);
+
+        try
+        {
+            Assert.True(blockingProvider.Started.Wait(TimeSpan.FromSeconds(1)));
+            var items = await captureTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.Contains(items, item => item.Id == "copilot:context-capture-warning");
+            Assert.False(queuedProvider.Started.IsSet);
+        }
+        finally
+        {
+            blockingProvider.Release.Set();
+            queuedProvider.Release.Set();
+            _ = blockingProvider.Completed.Wait(TimeSpan.FromSeconds(2));
+            _ = queuedProvider.Completed.Wait(TimeSpan.FromSeconds(2));
+        }
+    }
+
     private sealed class BlockingContextProvider : ICopilotContextProvider, IDisposable
     {
         private readonly bool _blockCanProvide;

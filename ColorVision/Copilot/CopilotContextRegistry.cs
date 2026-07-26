@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1001 // The provider gate intentionally matches the registry lifetime and contains late extension work across requests.
+
 namespace ColorVision.Copilot
 {
     public sealed class CopilotContextRegistry
@@ -17,7 +19,7 @@ namespace ColorVision.Copilot
         private readonly CopilotAgentExtensionBridge? _extensionBridge;
         private readonly TimeSpan _providerCaptureTimeout;
         private readonly TimeSpan _requestCaptureTimeout;
-        private readonly int _maximumConcurrentProviders;
+        private readonly SemaphoreSlim _providerConcurrencyGate;
 
         public CopilotContextRegistry(IEnumerable<ICopilotContextProvider> providers)
             : this(
@@ -57,7 +59,7 @@ namespace ColorVision.Copilot
             _extensionBridge = extensionBridge;
             _providerCaptureTimeout = providerCaptureTimeout;
             _requestCaptureTimeout = requestCaptureTimeout;
-            _maximumConcurrentProviders = maximumConcurrentProviders;
+            _providerConcurrencyGate = new SemaphoreSlim(maximumConcurrentProviders, maximumConcurrentProviders);
         }
 
         public static CopilotContextRegistry CreateDefault()
@@ -78,13 +80,12 @@ namespace ColorVision.Copilot
                 : _providers.Concat(_extensionBridge.GetSnapshot().ContextProviders).OrderBy(provider => provider.Order).ToArray();
             using var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             requestCancellation.CancelAfter(_requestCaptureTimeout);
-            using var concurrencyGate = new SemaphoreSlim(_maximumConcurrentProviders, _maximumConcurrentProviders);
             var captureTasks = providers
                 .Select((provider, index) => CaptureProviderAsync(
                     index,
                     provider,
                     request,
-                    concurrencyGate,
+                    _providerConcurrencyGate,
                     requestCancellation.Token,
                     cancellationToken))
                 .ToArray();
@@ -187,7 +188,35 @@ namespace ColorVision.Copilot
             {
                 providerCancellation?.Dispose();
                 if (gateEntered)
-                    concurrencyGate.Release();
+                    ReleaseProviderSlot(concurrencyGate, captureTask);
+            }
+        }
+
+        private static void ReleaseProviderSlot(SemaphoreSlim concurrencyGate, Task? captureTask)
+        {
+            if (captureTask == null || captureTask.IsCompleted)
+            {
+                concurrencyGate.Release();
+                return;
+            }
+
+            _ = ReleaseProviderSlotWhenCompletedAsync(concurrencyGate, captureTask);
+        }
+
+        private static async Task ReleaseProviderSlotWhenCompletedAsync(
+            SemaphoreSlim concurrencyGate,
+            Task captureTask)
+        {
+            try
+            {
+                await captureTask.ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+            finally
+            {
+                concurrencyGate.Release();
             }
         }
 
