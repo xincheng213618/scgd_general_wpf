@@ -145,7 +145,7 @@ namespace ColorVision.Copilot
             string? cursor,
             CancellationToken cancellationToken)
         {
-            var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchScopes(searchRootPaths);
             var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
             var displayRootMap = searchRoots.ToDictionary(
                 root => root,

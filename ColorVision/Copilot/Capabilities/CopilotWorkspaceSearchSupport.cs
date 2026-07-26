@@ -94,13 +94,53 @@ namespace ColorVision.Copilot
             return normalized;
         }
 
+        public static IReadOnlyList<string> NormalizeSearchScopes(IEnumerable<string>? paths)
+        {
+            var normalized = new List<string>();
+
+            foreach (var path in paths ?? Array.Empty<string>())
+            {
+                string candidate;
+                try
+                {
+                    candidate = Path.GetFullPath(path);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                var isDirectory = Directory.Exists(candidate);
+                if (!isDirectory && !File.Exists(candidate))
+                    continue;
+                if (normalized.Any(existing => string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                if (normalized.Any(existing => Directory.Exists(existing) && IsSubPathOf(candidate, existing)))
+                    continue;
+
+                if (isDirectory)
+                    normalized.RemoveAll(existing => IsSubPathOf(existing, candidate));
+                normalized.Add(candidate);
+            }
+
+            return normalized;
+        }
+
         public static IEnumerable<CopilotSearchFileEntry> EnumerateFiles(
             IEnumerable<string>? roots,
             bool textFilesOnly,
             CancellationToken cancellationToken)
         {
-            foreach (var root in NormalizeSearchRoots(roots))
+            foreach (var root in NormalizeSearchScopes(roots))
             {
+                if (File.Exists(root))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!textFilesOnly || IsSearchableTextFile(root))
+                        yield return new CopilotSearchFileEntry(root, root);
+                    continue;
+                }
+
                 foreach (var file in EnumerateFilesUnderRoot(root, textFilesOnly, cancellationToken))
                 {
                     yield return new CopilotSearchFileEntry(root, file);
@@ -197,6 +237,30 @@ namespace ColorVision.Copilot
             }
 
             scopedRoots = Array.Empty<string>();
+            return false;
+        }
+
+        public static bool TryResolveFileOrDirectoryScope(
+            string? path,
+            IEnumerable<string>? roots,
+            out IReadOnlyList<string> scopedPaths,
+            out string errorMessage)
+        {
+            var normalizedRoots = NormalizeSearchRoots(roots);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                scopedPaths = normalizedRoots;
+                errorMessage = normalizedRoots.Count == 0 ? "No searchable workspace root is available." : string.Empty;
+                return normalizedRoots.Count > 0;
+            }
+
+            if (TryResolveExistingPathWithinRoots(path, normalizedRoots, out var fullPath, out errorMessage))
+            {
+                scopedPaths = [fullPath];
+                return true;
+            }
+
+            scopedPaths = Array.Empty<string>();
             return false;
         }
 

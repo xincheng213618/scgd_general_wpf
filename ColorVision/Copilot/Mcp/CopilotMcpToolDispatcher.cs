@@ -150,10 +150,10 @@ namespace ColorVision.Copilot.Mcp
                     ["path"] = StringProperty("Optional directory relative to an allowed root, or an absolute allowed directory."),
                     ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it."),
                 }, "query"), "search", "read-only", "Call search_files with { \"query\": \"DeviceCamera\", \"path\": \"ColorVision\" }; pass its next_cursor unchanged for another page."),
-                Tool("grep_text", "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. Required argument: query. Optional: path, cursor.", Schema(new Dictionary<string, object>
+                Tool("grep_text", "Search one stable bounded page of text matches under allowed ColorVision workspace roots using a literal case-insensitive query. The optional path may identify one file or directory. Required argument: query. Optional: path, cursor.", Schema(new Dictionary<string, object>
                 {
                     ["query"] = StringProperty("Literal text to search for."),
-                    ["path"] = StringProperty("Optional directory relative to an allowed root, or an absolute allowed directory."),
+                    ["path"] = StringProperty("Optional file or directory relative to an allowed root, or an absolute allowed file or directory."),
                     ["cursor"] = StringProperty("Opaque next_cursor returned by the preceding page for the same query and path. Never invent or modify it."),
                 }, "query"), "search", "read-only", "Call grep_text with { \"query\": \"FlowEngineManager\", \"path\": \"ColorVision/Copilot\" }; pass its next_cursor unchanged for another page."),
                 Tool("read_allowed_file", "Read a text file only if it is under an allowed ColorVision workspace root. Required argument: path. Optional: start_line, start_column, end_line.", Schema(new Dictionary<string, object>
@@ -879,8 +879,8 @@ namespace ColorVision.Copilot.Mcp
             {
                 if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
                     return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
-                if (!Directory.Exists(fullPath))
-                    return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
+                if (!Directory.Exists(fullPath) && !File.Exists(fullPath))
+                    return CopilotMcpToolCallResult.Fail("path_not_found", $"The search file or directory does not exist: {fullPath}");
                 searchRoots = [fullPath];
             }
 

@@ -56,6 +56,43 @@ public sealed class CopilotSearchEmptyResultTests
     }
 
     [Fact]
+    public async Task GrepTextAcceptsAnExactFileScopeWithoutSearchingSiblingFiles()
+    {
+        var workspaceRoot = CreateWorkspace();
+        try
+        {
+            var targetPath = Path.Combine(workspaceRoot, "Target.cs");
+            var siblingPath = Path.Combine(workspaceRoot, "Sibling.cs");
+            File.WriteAllText(targetPath, "public sealed class Target { private const string Marker = \"exact-scope\"; }");
+            File.WriteAllText(siblingPath, "public sealed class Sibling { private const string Marker = \"exact-scope\"; }");
+            var request = new CopilotAgentRequest
+            {
+                Mode = CopilotAgentMode.Auto,
+                UserText = "find exact-scope",
+                SearchRootPaths = [workspaceRoot],
+            };
+
+            var result = await new CopilotGrepTextTool().ExecuteAsync(
+                request,
+                new CopilotAgentToolInput
+                {
+                    Query = "exact-scope",
+                    Path = targetPath,
+                },
+                CancellationToken.None);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Contains("[Scanned Text Files] 1", result.Content, StringComparison.Ordinal);
+            Assert.Contains("Target.cs:1", result.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain("Sibling.cs", result.Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workspaceRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void InvalidSearchQueriesRemainFailures()
     {
         var workspaceRoot = CreateWorkspace();
