@@ -16,6 +16,12 @@ namespace ColorVision.Copilot
         Full = TaskLedger | AgentMode | Skills,
     }
 
+    internal enum CopilotAgentRuntimePurpose
+    {
+        Standard,
+        DelegatedEvidenceFinalization,
+    }
+
     public enum CopilotAgentMode
     {
         Chat,
@@ -154,6 +160,8 @@ namespace ColorVision.Copilot
         internal string RuntimeRoleInstructions { get; init; } = string.Empty;
 
         internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;
+
+        internal CopilotAgentRuntimePurpose RuntimePurpose { get; init; }
 
         internal IReadOnlyList<string> RequiredSuccessfulToolNames { get; init; } = Array.Empty<string>();
 
