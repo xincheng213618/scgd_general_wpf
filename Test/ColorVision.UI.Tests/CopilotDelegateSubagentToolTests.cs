@@ -14,7 +14,14 @@ public sealed class CopilotDelegateSubagentToolTests
             HasSuccessfulEvidence = true,
             UsedPreselectedEvidence = true,
             ToolNames = ["ReadLocalFile"],
-            Budget = new CopilotAgentBudgetSnapshot { ToolCalls = 1 },
+            Budget = new CopilotAgentBudgetSnapshot
+            {
+                ToolCalls = 1,
+                RegisteredToolCount = 48,
+                AvailableToolCount = 3,
+                AvailableToolDefinitionCharacters = 2_048,
+                HarnessInstructionCharacters = 6_144,
+            },
         }));
 
         var result = await tool.ExecuteAsync(Request(), Input(), CancellationToken.None);
@@ -24,6 +31,10 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(48, result.DelegatedRunUsage?.RegisteredToolCount);
+        Assert.Equal(3, result.DelegatedRunUsage?.AvailableToolCount);
+        Assert.Equal(2_048, result.DelegatedRunUsage?.AvailableToolDefinitionCharacters);
+        Assert.Equal(6_144, result.DelegatedRunUsage?.HarnessInstructionCharacters);
         var delegatedAnswer = Assert.IsType<CopilotDelegatedAnswer>(result.DelegatedAnswer);
         Assert.Equal("Verified finding.", delegatedAnswer.Text);
         Assert.Equal(CopilotAgentStopReason.Completed, delegatedAnswer.StopReason);

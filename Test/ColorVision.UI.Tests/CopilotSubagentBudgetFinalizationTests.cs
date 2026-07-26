@@ -640,6 +640,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             BudgetExhausted = false,
             RequestTokenBudgetExhausted = false,
             MaxToolCalls = 1,
+            RegisteredToolCount = 48,
+            AvailableToolCount = 0,
+            AvailableToolDefinitionCharacters = 0,
+            HarnessInstructionCharacters = 7_200,
             MaxAgentPasses = 1,
             TotalDurationMs = 80_000,
         };
@@ -655,6 +659,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(3, combined.ProviderCalls);
         Assert.Equal(16_384, combined.RequestTokenBudget);
         Assert.Equal(4, combined.ToolCalls);
+        Assert.Equal(48, combined.RegisteredToolCount);
+        Assert.Equal(3, combined.AvailableToolCount);
+        Assert.Equal(2_048, combined.AvailableToolDefinitionCharacters);
+        Assert.Equal(7_200, combined.HarnessInstructionCharacters);
         Assert.False(combined.BudgetExhausted);
         Assert.False(combined.RequestTokenBudgetExhausted);
         Assert.Equal(14_000, combined.ElapsedMs);
@@ -698,6 +706,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 RequestTokenBudgetExhausted = true,
                 MaxToolCalls = 8,
                 ToolCalls = 4,
+                RegisteredToolCount = 48,
+                AvailableToolCount = 3,
+                AvailableToolDefinitionCharacters = 2_048,
+                HarnessInstructionCharacters = 6_400,
                 MaxAgentPasses = 2,
                 TotalDurationMs = 90_000,
             },

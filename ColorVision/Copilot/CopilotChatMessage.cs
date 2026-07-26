@@ -640,6 +640,11 @@ namespace ColorVision.Copilot
                 var delegatedTokens = GetDelegatedConsumedTokens();
                 var totalTokens = Math.Max(AgentRunBudget.ConsumedTokens, delegatedTokens);
                 var parentTokens = Math.Max(0, totalTokens - delegatedTokens);
+                var delegatedToolSurface = GetDelegatedToolSurfacePeak();
+                var hasDelegatedToolSurface = delegatedToolSurface.RegisteredToolCount > 0
+                    || delegatedToolSurface.AvailableToolCount > 0
+                    || delegatedToolSurface.AvailableToolDefinitionCharacters > 0
+                    || delegatedToolSurface.HarnessInstructionCharacters > 0;
                 var builder = new StringBuilder();
                 builder.Append("模型调用：").Append(totalProviderCalls);
                 if (delegatedProviderCalls > 0)
@@ -673,7 +678,7 @@ namespace ColorVision.Copilot
                     || AgentRunBudget.AvailableToolDefinitionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append("工具面：")
+                    builder.Append(hasDelegatedToolSurface ? "父工具面：" : "工具面：")
                         .Append(AgentRunBudget.AvailableToolCount)
                         .Append(" / ")
                         .Append(AgentRunBudget.RegisteredToolCount);
@@ -684,11 +689,34 @@ namespace ColorVision.Copilot
                             .Append(" 字符");
                     }
                 }
+                if (delegatedToolSurface.RegisteredToolCount > 0
+                    || delegatedToolSurface.AvailableToolCount > 0
+                    || delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("子工具面（峰值）：")
+                        .Append(delegatedToolSurface.AvailableToolCount)
+                        .Append(" / ")
+                        .Append(delegatedToolSurface.RegisteredToolCount);
+                    if (delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
+                    {
+                        builder.Append(" · 定义 ")
+                            .Append(delegatedToolSurface.AvailableToolDefinitionCharacters.ToString("N0"))
+                            .Append(" 字符");
+                    }
+                }
                 if (AgentRunBudget.HarnessInstructionCharacters > 0)
                 {
                     builder.AppendLine();
-                    builder.Append("运行指令：")
+                    builder.Append(hasDelegatedToolSurface ? "父运行指令：" : "运行指令：")
                         .Append(AgentRunBudget.HarnessInstructionCharacters.ToString("N0"))
+                        .Append(" 字符");
+                }
+                if (delegatedToolSurface.HarnessInstructionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("子运行指令（峰值）：")
+                        .Append(delegatedToolSurface.HarnessInstructionCharacters.ToString("N0"))
                         .Append(" 字符");
                 }
                 if (AgentRunBudget.ElapsedMs > 0)
@@ -1603,6 +1631,36 @@ namespace ColorVision.Copilot
                 total = Math.Min(int.MaxValue, total + Math.Max(0, entry.DelegatedToolCalls));
             }
             return (int)total;
+        }
+
+        private CopilotAgentToolSurfaceMetrics GetDelegatedToolSurfacePeak()
+        {
+            var registeredToolCount = 0;
+            var availableToolCount = 0;
+            var definitionCharacters = 0;
+            var harnessInstructionCharacters = 0;
+            foreach (var entry in AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+            {
+                if (entry == null)
+                    continue;
+
+                registeredToolCount = Math.Max(registeredToolCount, entry.DelegatedRegisteredToolCount);
+                availableToolCount = Math.Max(availableToolCount, entry.DelegatedAvailableToolCount);
+                definitionCharacters = Math.Max(
+                    definitionCharacters,
+                    entry.DelegatedAvailableToolDefinitionCharacters);
+                harnessInstructionCharacters = Math.Max(
+                    harnessInstructionCharacters,
+                    entry.DelegatedHarnessInstructionCharacters);
+            }
+
+            availableToolCount = Math.Max(0, availableToolCount);
+            registeredToolCount = Math.Max(Math.Max(0, registeredToolCount), availableToolCount);
+            return new CopilotAgentToolSurfaceMetrics(
+                registeredToolCount,
+                availableToolCount,
+                Math.Max(0, definitionCharacters),
+                Math.Max(0, harnessInstructionCharacters));
         }
 
         private static string FormatTokenCount(long value)

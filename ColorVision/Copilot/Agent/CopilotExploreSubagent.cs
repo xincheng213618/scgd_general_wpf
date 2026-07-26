@@ -452,6 +452,9 @@ namespace ColorVision.Copilot
                 CopilotAgentRunBudget.MaximumRequestTokenBudget);
             var consumedTokens = Math.Max(0, exploration.ConsumedTokens) + Math.Max(0, finalization.ConsumedTokens);
             var totalRequestBudgetExhausted = consumedTokens >= normalizedTotalTokenBudget;
+            var registeredToolCount = Math.Max(
+                Math.Max(0, exploration.RegisteredToolCount),
+                Math.Max(0, finalization.RegisteredToolCount));
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = exploration.CompactionEnabled || finalization.CompactionEnabled,
@@ -469,6 +472,17 @@ namespace ColorVision.Copilot
                 MaxToolCalls = exploration.MaxToolCalls,
                 ToolCalls = exploration.ToolCalls,
                 ToolBudgetExhausted = exploration.ToolBudgetExhausted,
+                RegisteredToolCount = registeredToolCount,
+                AvailableToolCount = Math.Clamp(
+                    Math.Max(exploration.AvailableToolCount, finalization.AvailableToolCount),
+                    0,
+                    registeredToolCount),
+                AvailableToolDefinitionCharacters = Math.Max(
+                    Math.Max(0, exploration.AvailableToolDefinitionCharacters),
+                    Math.Max(0, finalization.AvailableToolDefinitionCharacters)),
+                HarnessInstructionCharacters = Math.Max(
+                    Math.Max(0, exploration.HarnessInstructionCharacters),
+                    Math.Max(0, finalization.HarnessInstructionCharacters)),
                 NarrowEvidenceResultLimit = exploration.NarrowEvidenceResultLimit,
                 MaxAgentPasses = exploration.MaxAgentPasses,
                 TotalDurationMs = Math.Max(exploration.TotalDurationMs, finalization.TotalDurationMs),
@@ -945,6 +959,10 @@ namespace ColorVision.Copilot
                     ConsumedTokens = result.Budget.ConsumedTokens,
                     ProviderCalls = result.Budget.ProviderCalls,
                     UsedEstimatedUsage = result.Budget.UsedEstimatedUsage,
+                    RegisteredToolCount = result.Budget.RegisteredToolCount,
+                    AvailableToolCount = result.Budget.AvailableToolCount,
+                    AvailableToolDefinitionCharacters = result.Budget.AvailableToolDefinitionCharacters,
+                    HarnessInstructionCharacters = result.Budget.HarnessInstructionCharacters,
                 },
                 DelegatedAnswer = new CopilotDelegatedAnswer
                 {

@@ -189,6 +189,14 @@ namespace ColorVision.Copilot
         public int ProviderCalls { get; init; }
 
         public bool UsedEstimatedUsage { get; init; }
+
+        public int RegisteredToolCount { get; init; }
+
+        public int AvailableToolCount { get; init; }
+
+        public int AvailableToolDefinitionCharacters { get; init; }
+
+        public int HarnessInstructionCharacters { get; init; }
     }
 
     public sealed class CopilotDelegatedAnswer

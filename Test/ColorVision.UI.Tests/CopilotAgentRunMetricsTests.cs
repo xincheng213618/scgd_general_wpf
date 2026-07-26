@@ -67,6 +67,10 @@ public sealed class CopilotAgentRunMetricsTests
             DelegatedProviderCalls = 1,
             DelegatedConsumedTokens = 6_982,
             DelegatedToolCalls = 1,
+            DelegatedRegisteredToolCount = 48,
+            DelegatedAvailableToolCount = 5,
+            DelegatedAvailableToolDefinitionCharacters = 4_396,
+            DelegatedHarnessInstructionCharacters = 7_228,
         });
         assistant.AgentRunBudget = new CopilotAgentBudgetSnapshot
         {
@@ -98,8 +102,10 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Contains("模型调用：2（父 1 / 子 1）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("令牌：11,185（父 4,203 / 子 6,982）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
-        Assert.Contains("工具面：2 / 48 · 定义 1,284 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
-        Assert.Contains("运行指令：6,394 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("父工具面：2 / 48 · 定义 1,284 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("子工具面（峰值）：5 / 48 · 定义 4,396 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("父运行指令：6,394 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("子运行指令（峰值）：7,228 字符", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("委派直返：是（省略第二次父级模型调用）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
 
         var serialized = store.Serialize(state);
@@ -123,6 +129,12 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(2, restoredMessage.AgentRunBudget.AvailableToolCount);
         Assert.Equal(1_284, restoredMessage.AgentRunBudget.AvailableToolDefinitionCharacters);
         Assert.Equal(6_394, restoredMessage.AgentRunBudget.HarnessInstructionCharacters);
+        var restoredTrace = Assert.Single(restoredMessage.AgentTraceEntries);
+        Assert.Equal(CopilotAgentTraceEntry.CurrentSchemaVersion, restoredTrace.SchemaVersion);
+        Assert.Equal(48, restoredTrace.DelegatedRegisteredToolCount);
+        Assert.Equal(5, restoredTrace.DelegatedAvailableToolCount);
+        Assert.Equal(4_396, restoredTrace.DelegatedAvailableToolDefinitionCharacters);
+        Assert.Equal(7_228, restoredTrace.DelegatedHarnessInstructionCharacters);
         Assert.Equal(assistant.AgentRunCompactLabel, restoredMessage.AgentRunCompactLabel);
         Assert.Equal(assistant.AgentRunMetricsToolTip, restoredMessage.AgentRunMetricsToolTip);
     }
@@ -159,5 +171,20 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(0, assistant.AgentRunBudget.HarnessInstructionCharacters);
         Assert.Equal(0, assistant.AgentRunBudget.ElapsedMs);
         Assert.Null(document[nameof(CopilotChatMessage.AgentRunBudget)]);
+
+        var delegatedTrace = new CopilotAgentTraceEntry
+        {
+            Round = 1,
+            DelegatedRegisteredToolCount = -5,
+            DelegatedAvailableToolCount = 99,
+            DelegatedAvailableToolDefinitionCharacters = -6,
+            DelegatedHarnessInstructionCharacters = -7,
+        };
+
+        Assert.True(delegatedTrace.EnsureValid(DateTimeOffset.UtcNow));
+        Assert.Equal(0, delegatedTrace.DelegatedRegisteredToolCount);
+        Assert.Equal(0, delegatedTrace.DelegatedAvailableToolCount);
+        Assert.Equal(0, delegatedTrace.DelegatedAvailableToolDefinitionCharacters);
+        Assert.Equal(0, delegatedTrace.DelegatedHarnessInstructionCharacters);
     }
 }
