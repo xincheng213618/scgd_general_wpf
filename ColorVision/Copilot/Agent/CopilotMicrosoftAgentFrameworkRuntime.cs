@@ -318,8 +318,9 @@ namespace ColorVision.Copilot
             if (projectInstructionCount > 0)
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
 
-            var providerChatClient = new CopilotCancellationGuardChatClient(
-                _chatClientFactory(request.Profile));
+            var providerChatClient = new CopilotProviderInactivityChatClient(
+                new CopilotCancellationGuardChatClient(
+                    _chatClientFactory(request.Profile)));
             chatClient = new CopilotTokenBudgetChatClient(
                 providerChatClient,
                 tokenBudget,
@@ -1067,8 +1068,9 @@ namespace ColorVision.Copilot
                 .ToArray();
 
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
-            var providerChatClient = new CopilotCancellationGuardChatClient(
-                _chatClientFactory(request.Profile));
+            var providerChatClient = new CopilotProviderInactivityChatClient(
+                new CopilotCancellationGuardChatClient(
+                    _chatClientFactory(request.Profile)));
             var chatClient = new CopilotTokenBudgetChatClient(
                 providerChatClient,
                 tokenBudget,

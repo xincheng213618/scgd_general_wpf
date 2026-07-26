@@ -331,7 +331,7 @@ namespace ColorVision.Copilot
                         var update = enumerator.Current;
                         responseWeight += EstimateContentWeight(update.Contents);
                         usage = usage.MergeProgress(ExtractUsage(update.Contents));
-                        if (HasResponseContent(update.Contents))
+                        if (CopilotProviderResponseContent.HasAny(update.Contents))
                         {
                             if (!providerResponseStarted)
                             {
@@ -615,19 +615,6 @@ namespace ColorVision.Copilot
             }
 
             return usage;
-        }
-
-        private static bool HasResponseContent(IEnumerable<AIContent>? contents)
-        {
-            return (contents ?? Enumerable.Empty<AIContent>()).Any(content => content switch
-            {
-                UsageContent => false,
-                TextContent text => !string.IsNullOrEmpty(text.Text),
-                TextReasoningContent reasoning =>
-                    !string.IsNullOrEmpty(reasoning.Text)
-                    || !string.IsNullOrEmpty(reasoning.ProtectedData),
-                _ => true,
-            });
         }
 
         private static int AddClamped(int left, int right)
