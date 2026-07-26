@@ -1310,7 +1310,8 @@ namespace ColorVision.Copilot
             var activeRun = ActiveHostedRun;
             return CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
             {
-                ApplicationVersion = typeof(CopilotChatViewModel).Assembly.GetName().Version?.ToString(3) ?? "unknown",
+                ApplicationVersion = CopilotStatusDiagnostics.FormatApplicationVersion(
+                    typeof(CopilotChatViewModel).Assembly.GetName().Version),
                 ProfileLabel = profile?.DisplayLabel ?? string.Empty,
                 ProfileDetails = profile?.SecondaryLabel ?? string.Empty,
                 ProfileConfigured = profile?.IsConfigured == true,

@@ -59,6 +59,11 @@ namespace ColorVision.Copilot
 
     public static class CopilotStatusDiagnostics
     {
+        internal static string FormatApplicationVersion(Version? version)
+        {
+            return version?.ToString() ?? "unknown";
+        }
+
         public static string Format(CopilotStatusDiagnosticSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
