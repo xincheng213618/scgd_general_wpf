@@ -57,6 +57,13 @@ namespace ColorVision.Copilot
         public CopilotHostedAgentRun Run { get; }
     }
 
+    internal sealed record CopilotHostedProviderRetrySnapshot(
+        int Count,
+        CopilotProviderRetryInfo? Latest)
+    {
+        public static CopilotHostedProviderRetrySnapshot Empty { get; } = new(0, null);
+    }
+
     public sealed class CopilotHostedAgentRun : IDisposable
     {
         private readonly CopilotNonBlockingCancellationSource _cancellation = new();
@@ -66,6 +73,8 @@ namespace ColorVision.Copilot
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
+        private CopilotHostedProviderRetrySnapshot _providerRetrySnapshot =
+            CopilotHostedProviderRetrySnapshot.Empty;
 
         internal CopilotHostedAgentRun(string conversationId, CopilotAgentMode mode)
         {
@@ -110,6 +119,9 @@ namespace ColorVision.Copilot
 
         public Task Completion => _completion.Task;
 
+        internal CopilotHostedProviderRetrySnapshot ProviderRetrySnapshot =>
+            Volatile.Read(ref _providerRetrySnapshot);
+
         internal bool TryStart()
         {
             StartedAtUtc = DateTimeOffset.UtcNow;
@@ -136,6 +148,24 @@ namespace ColorVision.Copilot
                 return;
 
             Volatile.Write(ref _agentStopReason, (int)stopReason);
+        }
+
+        internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            while (true)
+            {
+                var current = Volatile.Read(ref _providerRetrySnapshot);
+                var updated = new CopilotHostedProviderRetrySnapshot(
+                    current.Count == int.MaxValue ? int.MaxValue : current.Count + 1,
+                    retry);
+                if (ReferenceEquals(
+                    Interlocked.CompareExchange(ref _providerRetrySnapshot, updated, current),
+                    current))
+                {
+                    return;
+                }
+            }
         }
 
         internal bool TryRequestPause()

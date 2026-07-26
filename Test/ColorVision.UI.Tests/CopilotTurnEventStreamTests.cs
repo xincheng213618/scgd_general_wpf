@@ -267,6 +267,191 @@ public sealed class CopilotTurnEventStreamTests
         }
     }
 
+    [Fact]
+    public async Task BoundedBufferCoalescesStreamingBurstWithoutChangingTextOrder()
+    {
+        var buffer = new CopilotTurnEventBuffer(maximumPendingEvents: 4);
+        var expectedResult = CreateResult();
+
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnRequestPreparedEvent(
+                new CopilotPreparedTurnRequest("prepared", true))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnChatDeltaEvent(
+                new CopilotStreamDelta(string.Empty, "A"))));
+        foreach (var text in new[] { "B", "C", "D", "E" })
+        {
+            Assert.True(buffer.TryWrite(
+                new CopilotTurnChatDeltaEvent(
+                    new CopilotStreamDelta(string.Empty, text))));
+        }
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnProviderRetryEvent(
+                new CopilotProviderRetryInfo(
+                    1,
+                    2,
+                    3,
+                    TimeSpan.Zero,
+                    "connection failure",
+                    null))));
+        Assert.True(buffer.TryWrite(new CopilotTurnCompletedEvent(expectedResult)));
+        Assert.True(buffer.TryComplete());
+
+        var events = await DrainAsync(buffer);
+
+        Assert.Equal(4, events.Count);
+        Assert.Equal("prepared", Assert.IsType<CopilotTurnRequestPreparedEvent>(events[0]).Request.Content);
+        Assert.Equal("ABCDE", Assert.IsType<CopilotTurnChatDeltaEvent>(events[1]).Delta.Content);
+        Assert.IsType<CopilotTurnProviderRetryEvent>(events[2]);
+        Assert.Same(expectedResult, Assert.IsType<CopilotTurnCompletedEvent>(events[3]).Result);
+    }
+
+    [Fact]
+    public async Task TurnStreamKeepsLargeStreamingBurstLosslessWithSmallBacklog()
+    {
+        const int chunkCount = 20_000;
+        var expectedResult = CreateResult();
+        var events = new List<CopilotTurnEvent>();
+
+        await foreach (var turnEvent in CopilotTurnEventStream.RunAsync(
+            (sink, _) =>
+            {
+                sink.OnRequestPrepared(
+                    new CopilotPreparedTurnRequest("prepared", true));
+                for (var index = 0; index < chunkCount; index++)
+                {
+                    sink.OnChatDelta(
+                        new CopilotStreamDelta(
+                            string.Empty,
+                            ((char)('0' + index % 10)).ToString()));
+                }
+                return Task.FromResult(expectedResult);
+            },
+            CancellationToken.None,
+            maximumPendingEvents: 4))
+        {
+            events.Add(turnEvent);
+        }
+
+        var streamedText = string.Concat(
+            events
+                .OfType<CopilotTurnChatDeltaEvent>()
+                .Select(item => item.Delta.Content));
+        Assert.Equal(chunkCount, streamedText.Length);
+        for (var index = 0; index < chunkCount; index++)
+            Assert.Equal((char)('0' + index % 10), streamedText[index]);
+        Assert.Single(events.OfType<CopilotTurnCompletedEvent>());
+    }
+
+    [Fact]
+    public async Task BoundedBufferPreservesReasoningToAnswerBoundary()
+    {
+        var buffer = new CopilotTurnEventBuffer(maximumPendingEvents: 4);
+        var expectedResult = CreateResult();
+
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnRequestPreparedEvent(
+                new CopilotPreparedTurnRequest("prepared", true))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.ReasoningDelta("reason-1"))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.ReasoningDelta("+reason-2"))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("answer-1"))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnAgentEvent(CopilotAgentEvent.AnswerDelta("+answer-2"))));
+        Assert.True(buffer.TryWrite(new CopilotTurnCompletedEvent(expectedResult)));
+        Assert.True(buffer.TryComplete());
+
+        var events = await DrainAsync(buffer);
+
+        Assert.Collection(
+            events,
+            item => Assert.IsType<CopilotTurnRequestPreparedEvent>(item),
+            item =>
+            {
+                var agentEvent = Assert.IsType<CopilotTurnAgentEvent>(item).Event;
+                Assert.Equal(CopilotAgentEventType.ReasoningDelta, agentEvent.Type);
+                Assert.Equal("reason-1+reason-2", agentEvent.Text);
+            },
+            item =>
+            {
+                var agentEvent = Assert.IsType<CopilotTurnAgentEvent>(item).Event;
+                Assert.Equal(CopilotAgentEventType.AnswerDelta, agentEvent.Type);
+                Assert.Equal("answer-1+answer-2", agentEvent.Text);
+            },
+            item => Assert.Same(expectedResult, Assert.IsType<CopilotTurnCompletedEvent>(item).Result));
+    }
+
+    [Fact]
+    public async Task BoundedBufferWakesReaderAcrossSeparateIdlePeriods()
+    {
+        var buffer = new CopilotTurnEventBuffer(maximumPendingEvents: 4);
+        await using var reader = buffer.ReadAllAsync().GetAsyncEnumerator();
+
+        var firstMove = reader.MoveNextAsync().AsTask();
+        Assert.False(firstMove.IsCompleted);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnChatDeltaEvent(
+                new CopilotStreamDelta(string.Empty, "first"))));
+        Assert.True(await firstMove.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(
+            "first",
+            Assert.IsType<CopilotTurnChatDeltaEvent>(reader.Current).Delta.Content);
+
+        var secondMove = reader.MoveNextAsync().AsTask();
+        Assert.False(secondMove.IsCompleted);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnChatDeltaEvent(
+                new CopilotStreamDelta(string.Empty, "second"))));
+        Assert.True(await secondMove.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(
+            "second",
+            Assert.IsType<CopilotTurnChatDeltaEvent>(reader.Current).Delta.Content);
+
+        var completionMove = reader.MoveNextAsync().AsTask();
+        Assert.False(completionMove.IsCompleted);
+        Assert.True(buffer.TryComplete());
+        Assert.False(await completionMove.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
+    public async Task BoundedBufferFailsExplicitlyBeforeNonStreamingEventsCanGrowWithoutLimit()
+    {
+        var buffer = new CopilotTurnEventBuffer(maximumPendingEvents: 2);
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnRequestPreparedEvent(
+                new CopilotPreparedTurnRequest("prepared", true))));
+        Assert.True(buffer.TryWrite(
+            new CopilotTurnProviderRetryEvent(
+                new CopilotProviderRetryInfo(
+                    1,
+                    2,
+                    3,
+                    TimeSpan.Zero,
+                    "connection failure",
+                    null))));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            buffer.TryWrite(
+                new CopilotTurnAgentEvent(
+                    CopilotAgentEvent.RuntimeDiagnostic("must not be dropped"))));
+
+        Assert.Contains("2-event safety limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, buffer.PendingCount);
+        Assert.True(buffer.TryComplete());
+        Assert.Equal(2, (await DrainAsync(buffer)).Count);
+    }
+
+    private static async Task<List<CopilotTurnEvent>> DrainAsync(
+        CopilotTurnEventBuffer buffer)
+    {
+        var events = new List<CopilotTurnEvent>();
+        await foreach (var turnEvent in buffer.ReadAllAsync())
+            events.Add(turnEvent);
+        return events;
+    }
+
     private static CopilotTurnResult CreateResult()
     {
         var usage = new CopilotTokenUsage(4, 2, 6);

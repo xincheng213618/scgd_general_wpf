@@ -1334,6 +1334,9 @@ namespace ColorVision.Copilot
             var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
             var skillUsage = CopilotAgentSkillUsageStore.Shared.GetSnapshot();
             var activeRun = ActiveHostedRun;
+            var providerRetrySnapshot = activeRun?.ProviderRetrySnapshot
+                ?? CopilotHostedProviderRetrySnapshot.Empty;
+            var latestProviderRetry = providerRetrySnapshot.Latest;
             return CopilotStatusDiagnostics.Format(new CopilotStatusDiagnosticSnapshot
             {
                 ApplicationVersion = CopilotStatusDiagnostics.FormatApplicationVersion(
@@ -1341,6 +1344,18 @@ namespace ColorVision.Copilot
                 ProfileLabel = profile?.DisplayLabel ?? string.Empty,
                 ProfileDetails = profile?.SecondaryLabel ?? string.Empty,
                 ProfileConfigured = profile?.IsConfigured == true,
+                ProviderFirstContentTimeoutSeconds = profile?.FirstContentTimeoutSeconds
+                    ?? CopilotProfileConfig.DefaultFirstContentTimeoutSeconds,
+                ProviderStreamingInactivityTimeoutSeconds = profile?.StreamingInactivityTimeoutSeconds
+                    ?? CopilotProfileConfig.DefaultStreamingInactivityTimeoutSeconds,
+                ProviderMaximumAttempts = CopilotProviderRetryChatClient.DefaultMaximumAttempts,
+                ActiveProviderRetryCount = providerRetrySnapshot.Count,
+                ActiveProviderRetryNextAttempt = latestProviderRetry?.NextAttempt ?? 0,
+                ActiveProviderRetryMaximumAttempts = latestProviderRetry?.MaximumAttempts ?? 0,
+                ActiveProviderRetryDelayMilliseconds = latestProviderRetry == null
+                    ? 0
+                    : (long)Math.Clamp(latestProviderRetry.Delay.TotalMilliseconds, 0, long.MaxValue),
+                ActiveProviderRetryFailureKind = latestProviderRetry?.FailureKind ?? string.Empty,
                 ReasoningLabel = profile?.ReasoningLabel ?? "默认",
                 Mode = ResolveComposerRequestMode(),
                 AgentState = activeRun?.State.ToString() ?? "Idle",
@@ -2095,9 +2110,12 @@ namespace ColorVision.Copilot
                                 deltaBuffer?.Enqueue(chatDelta.Delta);
                                 break;
                             case CopilotTurnProviderRetryEvent providerRetry:
+                                hostedRun.RecordProviderRetry(providerRetry.Retry);
                                 ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);
                                 break;
                             case CopilotTurnAgentEvent agent:
+                                if (agent.Event.ProviderRetry != null)
+                                    hostedRun.RecordProviderRetry(agent.Event.ProviderRetry);
                                 eventBuffer?.Enqueue(agent.Event);
                                 break;
                             case CopilotTurnCompletedEvent:

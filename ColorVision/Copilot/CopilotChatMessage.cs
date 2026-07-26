@@ -594,6 +594,7 @@ namespace ColorVision.Copilot
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
                 || AgentRunBudget.PeakEstimatedInputTokens > 0
+                || AgentRunBudget.ProviderRetryCount > 0
                 || AgentRunBudget.ContextRecoveryCount > 0
                 || AgentRunBudget.ReportedTotalTokens > 0
                 || AgentRunBudget.ElapsedMs > 0
@@ -695,6 +696,93 @@ namespace ColorVision.Copilot
                     else
                     {
                         builder.Append(" · 缓存未上报");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ProviderRetryCount > 0)
+                {
+                    builder.Append("提供商重试：")
+                        .Append(AgentRunBudget.ProviderRetryCount.ToString("N0"))
+                        .Append(" 次");
+                    if (AgentRunBudget.ProviderRetryDelayMs > 0)
+                    {
+                        builder.Append(" · 计划等待 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderRetryDelayMs));
+                    }
+                    if (AgentRunBudget.ProviderRateLimitRetryCount > 0)
+                    {
+                        builder.Append(" · 限流 ")
+                            .Append(AgentRunBudget.ProviderRateLimitRetryCount.ToString("N0"))
+                            .Append(" 次");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0
+                    || AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
+                {
+                    builder.Append("模型停顿中止：");
+                    if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
+                    {
+                        builder.Append("首内容 ")
+                            .Append(AgentRunBudget.ProviderFirstContentTimeoutCount.ToString("N0"))
+                            .Append(" 次");
+                    }
+                    if (AgentRunBudget.ProviderStreamInactivityTimeoutCount > 0)
+                    {
+                        if (AgentRunBudget.ProviderFirstContentTimeoutCount > 0)
+                            builder.Append(" · ");
+                        builder.Append("流式输出 ")
+                            .Append(AgentRunBudget.ProviderStreamInactivityTimeoutCount.ToString("N0"))
+                            .Append(" 次");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ProviderResponseCount > 0
+                    || AgentRunBudget.ProviderCallDurationTotalMs > 0)
+                {
+                    builder.Append("模型延迟：");
+                    var hasLatencyValue = false;
+                    if (AgentRunBudget.ProviderResponseCount > 0)
+                    {
+                        var averageFirstResponseLatencyMs =
+                            AgentRunBudget.ProviderFirstResponseLatencyTotalMs
+                            / AgentRunBudget.ProviderResponseCount;
+                        builder.Append("首响应平均 ")
+                            .Append(FormatTraceDuration(averageFirstResponseLatencyMs))
+                            .Append(" · 最慢 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderFirstResponseLatencyMaxMs));
+                        hasLatencyValue = true;
+                        if (AgentRunBudget.ProviderResponseCount < totalProviderCalls)
+                        {
+                            builder.Append(" · 有效响应 ")
+                                .Append(AgentRunBudget.ProviderResponseCount)
+                                .Append(" / ")
+                                .Append(totalProviderCalls);
+                        }
+                    }
+                    if (AgentRunBudget.ProviderCallDurationTotalMs > 0)
+                    {
+                        if (hasLatencyValue)
+                            builder.Append(" · ");
+                        builder.Append("调用累计 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderCallDurationTotalMs));
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ProviderStreamChunkCount > 0)
+                {
+                    builder.Append("流式输出：")
+                        .Append(AgentRunBudget.ProviderStreamChunkCount.ToString("N0"))
+                        .Append(" 个内容片段");
+                    if (AgentRunBudget.ProviderStreamInterChunkLatencyCount > 0)
+                    {
+                        var averageInterChunkLatencyMs =
+                            AgentRunBudget.ProviderStreamInterChunkLatencyTotalMs
+                            / AgentRunBudget.ProviderStreamInterChunkLatencyCount;
+                        builder.Append(" · 片段间平均 ")
+                            .Append(FormatTraceDuration(averageInterChunkLatencyMs))
+                            .Append(" · 最慢 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderStreamInterChunkLatencyMaxMs));
                     }
                     builder.AppendLine();
                 }
@@ -1761,6 +1849,36 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = Math.Max(
                 0,
                 budget.ContextRecoveryEstimatedInputTokensBefore);
+            var providerCalls = Math.Max(0, budget.ProviderCalls);
+            var providerRetryCount = Math.Clamp(
+                budget.ProviderRetryCount,
+                0,
+                providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                budget.ProviderFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                budget.ProviderStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
+            var providerResponseCount = Math.Clamp(
+                budget.ProviderResponseCount,
+                0,
+                providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, budget.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, budget.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                budget.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, budget.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1769,8 +1887,37 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = Math.Max(0, budget.InputBudgetTokens),
                 RequestTokenBudget = Math.Max(0, budget.RequestTokenBudget),
                 ConsumedTokens = Math.Max(0, budget.ConsumedTokens),
-                ProviderCalls = Math.Max(0, budget.ProviderCalls),
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, budget.PeakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    budget.ProviderRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, budget.ProviderRetryDelayMs)
+                    : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    budget.ProviderFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? Math.Max(
+                        providerFirstResponseLatencyTotalMs,
+                        budget.ProviderCallDurationTotalMs)
+                    : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    budget.ProviderStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
                 ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
@@ -1822,6 +1969,19 @@ namespace ColorVision.Copilot
                 && left.ConsumedTokens == right.ConsumedTokens
                 && left.ProviderCalls == right.ProviderCalls
                 && left.PeakEstimatedInputTokens == right.PeakEstimatedInputTokens
+                && left.ProviderRetryCount == right.ProviderRetryCount
+                && left.ProviderRateLimitRetryCount == right.ProviderRateLimitRetryCount
+                && left.ProviderRetryDelayMs == right.ProviderRetryDelayMs
+                && left.ProviderFirstContentTimeoutCount == right.ProviderFirstContentTimeoutCount
+                && left.ProviderStreamInactivityTimeoutCount == right.ProviderStreamInactivityTimeoutCount
+                && left.ProviderResponseCount == right.ProviderResponseCount
+                && left.ProviderFirstResponseLatencyTotalMs == right.ProviderFirstResponseLatencyTotalMs
+                && left.ProviderFirstResponseLatencyMaxMs == right.ProviderFirstResponseLatencyMaxMs
+                && left.ProviderCallDurationTotalMs == right.ProviderCallDurationTotalMs
+                && left.ProviderStreamChunkCount == right.ProviderStreamChunkCount
+                && left.ProviderStreamInterChunkLatencyCount == right.ProviderStreamInterChunkLatencyCount
+                && left.ProviderStreamInterChunkLatencyTotalMs == right.ProviderStreamInterChunkLatencyTotalMs
+                && left.ProviderStreamInterChunkLatencyMaxMs == right.ProviderStreamInterChunkLatencyMaxMs
                 && left.ContextRecoveryCount == right.ContextRecoveryCount
                 && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
                 && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter

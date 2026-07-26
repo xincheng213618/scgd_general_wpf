@@ -318,8 +318,13 @@ namespace ColorVision.Copilot
             if (projectInstructionCount > 0)
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
 
-            var providerChatClient = new CopilotCancellationGuardChatClient(
-                _chatClientFactory(request.Profile));
+            var providerInactivityTimeouts =
+                CopilotProviderInactivityPolicy.Resolve(request.Profile);
+            var providerChatClient = new CopilotProviderInactivityChatClient(
+                new CopilotCancellationGuardChatClient(
+                    _chatClientFactory(request.Profile)),
+                providerInactivityTimeouts.FirstResponseTimeout,
+                providerInactivityTimeouts.StreamingUpdateTimeout);
             chatClient = new CopilotTokenBudgetChatClient(
                 providerChatClient,
                 tokenBudget,
@@ -327,7 +332,11 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); the model loop was stopped without replaying tools.")));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
+                retry =>
+                {
+                    chatClient.RecordProviderRetry(retry);
+                    emit(CopilotAgentEvent.FromProviderRetry(retry));
+                });
             var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
@@ -706,8 +715,22 @@ namespace ColorVision.Copilot
                     throw;
 
                 providerInterrupted = true;
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                if (CopilotProviderInactivityException.TryFind(
+                    ex,
+                    out var inactivity))
+                {
+                    var inactivityDescription =
+                        inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse
+                            ? "returned no content"
+                            : "returned no new stream content";
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"The provider {inactivityDescription} for {FormatDuration(inactivity.TimeoutDuration)} after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                }
+                else
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The provider stream was interrupted after material Agent progress. The current Harness session will be checkpointed without replaying tools."));
+                }
                 if (answerText.Length == 0)
                 {
                     emit(CopilotAgentEvent.AnswerDelta(
@@ -852,6 +875,24 @@ namespace ColorVision.Copilot
             emit(CopilotAgentEvent.RuntimeDiagnostic(
                 $"Agent budget used {budgetSnapshot.ConsumedTokens:N0}/{budgetSnapshot.RequestTokenBudget:N0} tokens across {budgetSnapshot.ProviderCalls} provider call(s)"
                 + $" · tools {budgetSnapshot.ToolCalls}/{budgetSnapshot.MaxToolCalls} · elapsed {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ElapsedMs))}/{FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.TotalDurationMs))}"
+                + (budgetSnapshot.ProviderResponseCount > 0
+                    ? $" · first response avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderFirstResponseLatencyTotalMs / budgetSnapshot.ProviderResponseCount))}"
+                        + $", max {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderFirstResponseLatencyMaxMs))}"
+                    : string.Empty)
+                + (budgetSnapshot.ProviderCallDurationTotalMs > 0
+                    ? $" · cumulative provider wait {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderCallDurationTotalMs))}"
+                    : string.Empty)
+                + (budgetSnapshot.ProviderStreamChunkCount > 0
+                    ? $" · stream chunks {budgetSnapshot.ProviderStreamChunkCount:N0}"
+                        + (budgetSnapshot.ProviderStreamInterChunkLatencyCount > 0
+                            ? $", inter-chunk avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyTotalMs / budgetSnapshot.ProviderStreamInterChunkLatencyCount))}"
+                                + $", max {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyMaxMs))}"
+                            : string.Empty)
+                    : string.Empty)
+                + (budgetSnapshot.ProviderFirstContentTimeoutCount > 0
+                    || budgetSnapshot.ProviderStreamInactivityTimeoutCount > 0
+                    ? $" · inactivity timeouts first-content {budgetSnapshot.ProviderFirstContentTimeoutCount:N0}, stream {budgetSnapshot.ProviderStreamInactivityTimeoutCount:N0}"
+                    : string.Empty)
                 + (usage.CachedInputTokens.HasValue
                     ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"
                     : " · cache reads unavailable")
@@ -1049,8 +1090,13 @@ namespace ColorVision.Copilot
                 .ToArray();
 
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
-            var providerChatClient = new CopilotCancellationGuardChatClient(
-                _chatClientFactory(request.Profile));
+            var providerInactivityTimeouts =
+                CopilotProviderInactivityPolicy.Resolve(request.Profile);
+            var providerChatClient = new CopilotProviderInactivityChatClient(
+                new CopilotCancellationGuardChatClient(
+                    _chatClientFactory(request.Profile)),
+                providerInactivityTimeouts.FirstResponseTimeout,
+                providerInactivityTimeouts.StreamingUpdateTimeout);
             var chatClient = new CopilotTokenBudgetChatClient(
                 providerChatClient,
                 tokenBudget,
@@ -1058,7 +1104,11 @@ namespace ColorVision.Copilot
                     $"Agent token budget exhausted after {snapshot.ProviderCalls} provider call(s); final-answer-only recovery stopped without invoking tools.")));
             var retryChatClient = new CopilotProviderRetryChatClient(
                 chatClient,
-                retry => emit(CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText())));
+                retry =>
+                {
+                    chatClient.RecordProviderRetry(retry);
+                    emit(CopilotAgentEvent.FromProviderRetry(retry));
+                });
             using var contextRecoveryChatClient = new CopilotContextWindowRecoveryChatClient(
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,

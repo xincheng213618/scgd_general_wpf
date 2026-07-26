@@ -184,6 +184,32 @@ namespace ColorVision.Copilot
 
         public int PeakEstimatedInputTokens { get; init; }
 
+        public int ProviderRetryCount { get; init; }
+
+        public int ProviderRateLimitRetryCount { get; init; }
+
+        public long ProviderRetryDelayMs { get; init; }
+
+        public int ProviderFirstContentTimeoutCount { get; init; }
+
+        public int ProviderStreamInactivityTimeoutCount { get; init; }
+
+        public int ProviderResponseCount { get; init; }
+
+        public long ProviderFirstResponseLatencyTotalMs { get; init; }
+
+        public long ProviderFirstResponseLatencyMaxMs { get; init; }
+
+        public long ProviderCallDurationTotalMs { get; init; }
+
+        public int ProviderStreamChunkCount { get; init; }
+
+        public int ProviderStreamInterChunkLatencyCount { get; init; }
+
+        public long ProviderStreamInterChunkLatencyTotalMs { get; init; }
+
+        public long ProviderStreamInterChunkLatencyMaxMs { get; init; }
+
         public int ContextRecoveryCount { get; init; }
 
         public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
@@ -457,6 +483,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
 
+        internal CopilotProviderRetryInfo? ProviderRetry { get; init; }
+
         public static CopilotAgentEvent Status(string text)
         {
             return new CopilotAgentEvent
@@ -497,6 +525,17 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.RuntimeDiagnostic,
                 Text = text ?? string.Empty,
+            };
+        }
+
+        internal static CopilotAgentEvent FromProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            return new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.RuntimeDiagnostic,
+                Text = retry.ToDiagnosticText(),
+                ProviderRetry = retry,
             };
         }
 
@@ -705,6 +744,32 @@ namespace ColorVision.Copilot
         public int ProviderCalls { get; init; }
 
         public int PeakEstimatedInputTokens { get; init; }
+
+        public int ProviderRetryCount { get; init; }
+
+        public int ProviderRateLimitRetryCount { get; init; }
+
+        public long ProviderRetryDelayMs { get; init; }
+
+        public int ProviderFirstContentTimeoutCount { get; init; }
+
+        public int ProviderStreamInactivityTimeoutCount { get; init; }
+
+        public int ProviderResponseCount { get; init; }
+
+        public long ProviderFirstResponseLatencyTotalMs { get; init; }
+
+        public long ProviderFirstResponseLatencyMaxMs { get; init; }
+
+        public long ProviderCallDurationTotalMs { get; init; }
+
+        public int ProviderStreamChunkCount { get; init; }
+
+        public int ProviderStreamInterChunkLatencyCount { get; init; }
+
+        public long ProviderStreamInterChunkLatencyTotalMs { get; init; }
+
+        public long ProviderStreamInterChunkLatencyMaxMs { get; init; }
 
         public int ContextRecoveryCount { get; init; }
 

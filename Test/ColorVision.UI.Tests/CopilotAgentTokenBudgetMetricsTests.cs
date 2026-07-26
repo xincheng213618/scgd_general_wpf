@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Tests;
@@ -22,8 +23,21 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             new ChatOptions { Instructions = "Use only verified evidence." });
         client.RecordDelegatedRunUsage(new CopilotDelegatedRunUsage
         {
-            ProviderCalls = 1,
+            ProviderCalls = 3,
             PeakEstimatedInputTokens = 50_000,
+            ProviderRetryCount = 2,
+            ProviderRateLimitRetryCount = 1,
+            ProviderRetryDelayMs = 1_250,
+            ProviderFirstContentTimeoutCount = 1,
+            ProviderStreamInactivityTimeoutCount = 1,
+            ProviderResponseCount = 2,
+            ProviderFirstResponseLatencyTotalMs = 700,
+            ProviderFirstResponseLatencyMaxMs = 450,
+            ProviderCallDurationTotalMs = 1_600,
+            ProviderStreamChunkCount = 5,
+            ProviderStreamInterChunkLatencyCount = 3,
+            ProviderStreamInterChunkLatencyTotalMs = 240,
+            ProviderStreamInterChunkLatencyMaxMs = 120,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 90_000,
             ContextRecoveryEstimatedInputTokensAfter = 35_000,
@@ -33,9 +47,22 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
 
         var snapshot = client.Snapshot;
 
-        Assert.Equal(2, snapshot.ProviderCalls);
+        Assert.Equal(4, snapshot.ProviderCalls);
         Assert.Equal(180, snapshot.ConsumedTokens);
         Assert.Equal(50_000, snapshot.PeakEstimatedInputTokens);
+        Assert.Equal(2, snapshot.ProviderRetryCount);
+        Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
+        Assert.Equal(1_250, snapshot.ProviderRetryDelayMs);
+        Assert.Equal(1, snapshot.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, snapshot.ProviderStreamInactivityTimeoutCount);
+        Assert.Equal(3, snapshot.ProviderResponseCount);
+        Assert.True(snapshot.ProviderFirstResponseLatencyTotalMs >= 700);
+        Assert.True(snapshot.ProviderFirstResponseLatencyMaxMs >= 450);
+        Assert.True(snapshot.ProviderCallDurationTotalMs >= 1_600);
+        Assert.Equal(5, snapshot.ProviderStreamChunkCount);
+        Assert.Equal(3, snapshot.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(240, snapshot.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(120, snapshot.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(2, snapshot.ContextRecoveryCount);
         Assert.Equal(90_000, snapshot.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(35_000, snapshot.ContextRecoveryEstimatedInputTokensAfter);
@@ -44,6 +71,84 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.Equal(180, snapshot.ReportedTotalTokens);
         Assert.Equal(110, snapshot.ReportedCachedInputTokens);
         Assert.False(snapshot.UsedEstimatedUsage);
+    }
+
+    [Fact]
+    public async Task SnapshotSeparatesStreamingFirstResponseFromProviderWait()
+    {
+        using var client = new CopilotTokenBudgetChatClient(
+            new DelayedStreamingChatClient(),
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = 64_000,
+                MaxOutputTokens = 4_096,
+                RequestTokenBudget = 128_000,
+            });
+
+        var updates = new List<ChatResponseUpdate>();
+        var wallClock = Stopwatch.StartNew();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "Stream the answer.")]))
+        {
+            updates.Add(update);
+            if (updates.Count == 1)
+            {
+                Assert.Equal(0, client.Snapshot.ProviderResponseCount);
+                Assert.Equal(0, client.Snapshot.ProviderStreamChunkCount);
+                await Task.Delay(100);
+            }
+        }
+
+        var snapshot = client.Snapshot;
+
+        Assert.Equal(3, updates.Count);
+        Assert.Equal(1, snapshot.ProviderCalls);
+        Assert.Equal(1, snapshot.ProviderResponseCount);
+        Assert.InRange(snapshot.ProviderFirstResponseLatencyTotalMs, 10, 30_000);
+        Assert.Equal(
+            snapshot.ProviderFirstResponseLatencyTotalMs,
+            snapshot.ProviderFirstResponseLatencyMaxMs);
+        Assert.True(
+            snapshot.ProviderCallDurationTotalMs
+            >= snapshot.ProviderFirstResponseLatencyTotalMs + 10);
+        Assert.Equal(2, snapshot.ProviderStreamChunkCount);
+        Assert.Equal(1, snapshot.ProviderStreamInterChunkLatencyCount);
+        Assert.InRange(snapshot.ProviderStreamInterChunkLatencyTotalMs, 10, 30_000);
+        Assert.Equal(
+            snapshot.ProviderStreamInterChunkLatencyTotalMs,
+            snapshot.ProviderStreamInterChunkLatencyMaxMs);
+        Assert.True(
+            wallClock.ElapsedMilliseconds
+            >= snapshot.ProviderCallDurationTotalMs + 75);
+    }
+
+    [Fact]
+    public async Task SnapshotTracksProviderRetryKindAndPlannedDelay()
+    {
+        using var client = CreateClient(usage: null);
+
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "First attempt.")]);
+        client.RecordProviderRetry(new CopilotProviderRetryInfo(
+            1,
+            2,
+            3,
+            TimeSpan.FromMilliseconds(250),
+            "HTTP 429",
+            429));
+        await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Second attempt.")]);
+        client.RecordProviderRetry(new CopilotProviderRetryInfo(
+            2,
+            3,
+            3,
+            TimeSpan.FromSeconds(1),
+            "HTTP 503",
+            503));
+
+        var snapshot = client.Snapshot;
+
+        Assert.Equal(2, snapshot.ProviderRetryCount);
+        Assert.Equal(1, snapshot.ProviderRateLimitRetryCount);
+        Assert.Equal(1_250, snapshot.ProviderRetryDelayMs);
     }
 
     [Fact]
@@ -125,6 +230,39 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             cancellationToken.ThrowIfCancellationRequested();
             await Task.CompletedTask;
             yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) =>
+            serviceType.IsInstanceOfType(this) ? this : null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class DelayedStreamingChatClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(15, cancellationToken);
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                [new UsageContent(new UsageDetails { TotalTokenCount = 1 })]);
+            await Task.Delay(25, cancellationToken);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "First.");
+            await Task.Delay(25, cancellationToken);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "Second.");
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) =>

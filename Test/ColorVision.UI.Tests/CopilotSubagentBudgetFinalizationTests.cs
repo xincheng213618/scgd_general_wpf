@@ -636,8 +636,20 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         {
             RequestTokenBudget = 7_831,
             ConsumedTokens = 3_100,
-            ProviderCalls = 1,
+            ProviderCalls = 2,
             PeakEstimatedInputTokens = 9_000,
+            ProviderRetryCount = 1,
+            ProviderRateLimitRetryCount = 1,
+            ProviderRetryDelayMs = 500,
+            ProviderStreamInactivityTimeoutCount = 1,
+            ProviderResponseCount = 2,
+            ProviderFirstResponseLatencyTotalMs = 700,
+            ProviderFirstResponseLatencyMaxMs = 500,
+            ProviderCallDurationTotalMs = 1_500,
+            ProviderStreamChunkCount = 4,
+            ProviderStreamInterChunkLatencyCount = 3,
+            ProviderStreamInterChunkLatencyTotalMs = 300,
+            ProviderStreamInterChunkLatencyMaxMs = 180,
             ContextRecoveryCount = 1,
             ContextRecoveryEstimatedInputTokensBefore = 9_000,
             ContextRecoveryEstimatedInputTokensAfter = 4_000,
@@ -664,8 +676,21 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             finalizationCompleted: true);
 
         Assert.Equal(11_653, combined.ConsumedTokens);
-        Assert.Equal(3, combined.ProviderCalls);
+        Assert.Equal(5, combined.ProviderCalls);
         Assert.Equal(12_000, combined.PeakEstimatedInputTokens);
+        Assert.Equal(3, combined.ProviderRetryCount);
+        Assert.Equal(2, combined.ProviderRateLimitRetryCount);
+        Assert.Equal(1_700, combined.ProviderRetryDelayMs);
+        Assert.Equal(1, combined.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, combined.ProviderStreamInactivityTimeoutCount);
+        Assert.Equal(4, combined.ProviderResponseCount);
+        Assert.Equal(1_600, combined.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(600, combined.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(4_000, combined.ProviderCallDurationTotalMs);
+        Assert.Equal(9, combined.ProviderStreamChunkCount);
+        Assert.Equal(6, combined.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(540, combined.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(180, combined.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(3, combined.ContextRecoveryCount);
         Assert.Equal(39_000, combined.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(14_000, combined.ContextRecoveryEstimatedInputTokensAfter);
@@ -720,8 +745,20 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             {
                 RequestTokenBudget = 16_384,
                 ConsumedTokens = consumedTokens,
-                ProviderCalls = 2,
+                ProviderCalls = 3,
                 PeakEstimatedInputTokens = 12_000,
+                ProviderRetryCount = 2,
+                ProviderRateLimitRetryCount = 1,
+                ProviderRetryDelayMs = 1_200,
+                ProviderFirstContentTimeoutCount = 1,
+                ProviderResponseCount = 2,
+                ProviderFirstResponseLatencyTotalMs = 900,
+                ProviderFirstResponseLatencyMaxMs = 600,
+                ProviderCallDurationTotalMs = 2_500,
+                ProviderStreamChunkCount = 5,
+                ProviderStreamInterChunkLatencyCount = 3,
+                ProviderStreamInterChunkLatencyTotalMs = 240,
+                ProviderStreamInterChunkLatencyMaxMs = 120,
                 ContextRecoveryCount = 2,
                 ContextRecoveryEstimatedInputTokensBefore = 30_000,
                 ContextRecoveryEstimatedInputTokensAfter = 10_000,

@@ -23,11 +23,24 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
                 ToolNames = ["ReadLocalFile"],
                 Budget = new CopilotAgentBudgetSnapshot
                 {
-                    ProviderCalls = 1,
+                    ProviderCalls = 3,
                     ToolCalls = 1,
                     RequestTokenBudget = 16_384,
                     ConsumedTokens = 2_048,
                     PeakEstimatedInputTokens = 6_000,
+                    ProviderRetryCount = 2,
+                    ProviderRateLimitRetryCount = 1,
+                    ProviderRetryDelayMs = 1_500,
+                    ProviderFirstContentTimeoutCount = 1,
+                    ProviderStreamInactivityTimeoutCount = 1,
+                    ProviderResponseCount = 2,
+                    ProviderFirstResponseLatencyTotalMs = 900,
+                    ProviderFirstResponseLatencyMaxMs = 550,
+                    ProviderCallDurationTotalMs = 2_800,
+                    ProviderStreamChunkCount = 5,
+                    ProviderStreamInterChunkLatencyCount = 3,
+                    ProviderStreamInterChunkLatencyTotalMs = 240,
+                    ProviderStreamInterChunkLatencyMaxMs = 120,
                     ContextRecoveryCount = 1,
                     ContextRecoveryEstimatedInputTokensBefore = 8_000,
                     ContextRecoveryEstimatedInputTokensAfter = 3_000,
@@ -53,8 +66,21 @@ public sealed class CopilotDelegatedDirectAnswerChatClientTests
 
         Assert.Equal(CopilotAgentStopReason.Completed, result.StopReason);
         Assert.Equal(0, provider.CallCount);
-        Assert.Equal(1, result.Budget.ProviderCalls);
+        Assert.Equal(3, result.Budget.ProviderCalls);
         Assert.Equal(6_000, result.Budget.PeakEstimatedInputTokens);
+        Assert.Equal(2, result.Budget.ProviderRetryCount);
+        Assert.Equal(1, result.Budget.ProviderRateLimitRetryCount);
+        Assert.Equal(1_500, result.Budget.ProviderRetryDelayMs);
+        Assert.Equal(1, result.Budget.ProviderFirstContentTimeoutCount);
+        Assert.Equal(1, result.Budget.ProviderStreamInactivityTimeoutCount);
+        Assert.Equal(2, result.Budget.ProviderResponseCount);
+        Assert.Equal(900, result.Budget.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(550, result.Budget.ProviderFirstResponseLatencyMaxMs);
+        Assert.Equal(2_800, result.Budget.ProviderCallDurationTotalMs);
+        Assert.Equal(5, result.Budget.ProviderStreamChunkCount);
+        Assert.Equal(3, result.Budget.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(240, result.Budget.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(120, result.Budget.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(1, result.Budget.ContextRecoveryCount);
         Assert.Equal(8_000, result.Budget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(3_000, result.Budget.ContextRecoveryEstimatedInputTokensAfter);

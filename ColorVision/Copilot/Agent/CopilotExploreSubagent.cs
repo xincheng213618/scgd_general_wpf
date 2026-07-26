@@ -470,6 +470,91 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = AddClampedLong(
                 exploration.ContextRecoveryEstimatedInputTokensBefore,
                 finalization.ContextRecoveryEstimatedInputTokensBefore);
+            var explorationProviderCalls = Math.Max(0, exploration.ProviderCalls);
+            var finalizationProviderCalls = Math.Max(0, finalization.ProviderCalls);
+            var providerCalls = AddClamped(explorationProviderCalls, finalizationProviderCalls);
+            var explorationProviderRetryCount = Math.Clamp(
+                exploration.ProviderRetryCount,
+                0,
+                explorationProviderCalls);
+            var finalizationProviderRetryCount = Math.Clamp(
+                finalization.ProviderRetryCount,
+                0,
+                finalizationProviderCalls);
+            var providerRetryCount = AddClamped(
+                explorationProviderRetryCount,
+                finalizationProviderRetryCount);
+            var explorationFirstContentTimeoutCount = Math.Clamp(
+                exploration.ProviderFirstContentTimeoutCount,
+                0,
+                explorationProviderCalls);
+            var finalizationFirstContentTimeoutCount = Math.Clamp(
+                finalization.ProviderFirstContentTimeoutCount,
+                0,
+                finalizationProviderCalls);
+            var providerFirstContentTimeoutCount = AddClamped(
+                explorationFirstContentTimeoutCount,
+                finalizationFirstContentTimeoutCount);
+            var providerStreamInactivityTimeoutCount = AddClamped(
+                Math.Clamp(
+                    exploration.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    explorationProviderCalls - explorationFirstContentTimeoutCount),
+                Math.Clamp(
+                    finalization.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    finalizationProviderCalls - finalizationFirstContentTimeoutCount));
+            var explorationProviderResponseCount = Math.Clamp(
+                exploration.ProviderResponseCount,
+                0,
+                explorationProviderCalls);
+            var finalizationProviderResponseCount = Math.Clamp(
+                finalization.ProviderResponseCount,
+                0,
+                finalizationProviderCalls);
+            var providerResponseCount = Math.Min(
+                providerCalls,
+                AddClamped(
+                    explorationProviderResponseCount,
+                    finalizationProviderResponseCount));
+            var explorationFirstResponseLatencyTotalMs = explorationProviderResponseCount > 0
+                ? Math.Max(0, exploration.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var finalizationFirstResponseLatencyTotalMs = finalizationProviderResponseCount > 0
+                ? Math.Max(0, finalization.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var providerFirstResponseLatencyTotalMs = AddClampedLong(
+                explorationFirstResponseLatencyTotalMs,
+                finalizationFirstResponseLatencyTotalMs);
+            var explorationStreamChunkCount = explorationProviderResponseCount > 0
+                ? Math.Max(0, exploration.ProviderStreamChunkCount)
+                : 0;
+            var finalizationStreamChunkCount = finalizationProviderResponseCount > 0
+                ? Math.Max(0, finalization.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamChunkCount = AddClamped(
+                explorationStreamChunkCount,
+                finalizationStreamChunkCount);
+            var explorationStreamInterChunkLatencyCount = Math.Clamp(
+                exploration.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, explorationStreamChunkCount - 1));
+            var finalizationStreamInterChunkLatencyCount = Math.Clamp(
+                finalization.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, finalizationStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyCount = AddClamped(
+                explorationStreamInterChunkLatencyCount,
+                finalizationStreamInterChunkLatencyCount);
+            var explorationStreamInterChunkLatencyTotalMs = explorationStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, exploration.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
+            var finalizationStreamInterChunkLatencyTotalMs = finalizationStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, finalization.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
+            var providerStreamInterChunkLatencyTotalMs = AddClampedLong(
+                explorationStreamInterChunkLatencyTotalMs,
+                finalizationStreamInterChunkLatencyTotalMs);
             var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
             var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
             var reportedTotalTokens = Math.Max(
@@ -491,10 +576,69 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = Math.Max(exploration.InputBudgetTokens, finalization.InputBudgetTokens),
                 RequestTokenBudget = normalizedTotalTokenBudget,
                 ConsumedTokens = consumedTokens,
-                ProviderCalls = Math.Max(0, exploration.ProviderCalls) + Math.Max(0, finalization.ProviderCalls),
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(
                     Math.Max(0, exploration.PeakEstimatedInputTokens),
                     Math.Max(0, finalization.PeakEstimatedInputTokens)),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Min(
+                    providerRetryCount,
+                    AddClamped(
+                        Math.Clamp(
+                            exploration.ProviderRateLimitRetryCount,
+                            0,
+                            explorationProviderRetryCount),
+                        Math.Clamp(
+                            finalization.ProviderRateLimitRetryCount,
+                            0,
+                            finalizationProviderRetryCount))),
+                ProviderRetryDelayMs = AddClampedLong(
+                    explorationProviderRetryCount > 0
+                        ? exploration.ProviderRetryDelayMs
+                        : 0,
+                    finalizationProviderRetryCount > 0
+                        ? finalization.ProviderRetryDelayMs
+                        : 0),
+                ProviderFirstContentTimeoutCount =
+                    providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Min(
+                    providerFirstResponseLatencyTotalMs,
+                    Math.Max(
+                        Math.Clamp(
+                            exploration.ProviderFirstResponseLatencyMaxMs,
+                            0,
+                            explorationFirstResponseLatencyTotalMs),
+                        Math.Clamp(
+                            finalization.ProviderFirstResponseLatencyMaxMs,
+                            0,
+                            finalizationFirstResponseLatencyTotalMs))),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? AddClampedLong(
+                        Math.Max(
+                            explorationFirstResponseLatencyTotalMs,
+                            exploration.ProviderCallDurationTotalMs),
+                        Math.Max(
+                            finalizationFirstResponseLatencyTotalMs,
+                            finalization.ProviderCallDurationTotalMs))
+                    : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Min(
+                    providerStreamInterChunkLatencyTotalMs,
+                    Math.Max(
+                        Math.Clamp(
+                            exploration.ProviderStreamInterChunkLatencyMaxMs,
+                            0,
+                            explorationStreamInterChunkLatencyTotalMs),
+                        Math.Clamp(
+                            finalization.ProviderStreamInterChunkLatencyMaxMs,
+                            0,
+                            finalizationStreamInterChunkLatencyTotalMs))),
                 ContextRecoveryCount = AddClamped(
                     exploration.ContextRecoveryCount,
                     finalization.ContextRecoveryCount),
@@ -1001,6 +1145,21 @@ namespace ColorVision.Copilot
                     StopReason = result.StopReason,
                     ToolCalls = result.Budget.ToolCalls,
                     PeakEstimatedInputTokens = result.Budget.PeakEstimatedInputTokens,
+                    ProviderRetryCount = result.Budget.ProviderRetryCount,
+                    ProviderRateLimitRetryCount = result.Budget.ProviderRateLimitRetryCount,
+                    ProviderRetryDelayMs = result.Budget.ProviderRetryDelayMs,
+                    ProviderFirstContentTimeoutCount =
+                        result.Budget.ProviderFirstContentTimeoutCount,
+                    ProviderStreamInactivityTimeoutCount =
+                        result.Budget.ProviderStreamInactivityTimeoutCount,
+                    ProviderResponseCount = result.Budget.ProviderResponseCount,
+                    ProviderFirstResponseLatencyTotalMs = result.Budget.ProviderFirstResponseLatencyTotalMs,
+                    ProviderFirstResponseLatencyMaxMs = result.Budget.ProviderFirstResponseLatencyMaxMs,
+                    ProviderCallDurationTotalMs = result.Budget.ProviderCallDurationTotalMs,
+                    ProviderStreamChunkCount = result.Budget.ProviderStreamChunkCount,
+                    ProviderStreamInterChunkLatencyCount = result.Budget.ProviderStreamInterChunkLatencyCount,
+                    ProviderStreamInterChunkLatencyTotalMs = result.Budget.ProviderStreamInterChunkLatencyTotalMs,
+                    ProviderStreamInterChunkLatencyMaxMs = result.Budget.ProviderStreamInterChunkLatencyMaxMs,
                     ContextRecoveryCount = result.Budget.ContextRecoveryCount,
                     ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
                     ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,

@@ -10,6 +10,10 @@ namespace ColorVision.Copilot
     {
         public const int DefaultMaxTokens = 8192;
         public const double DefaultTemperature = 0.2;
+        public const int DefaultFirstContentTimeoutSeconds = 180;
+        public const int DefaultStreamingInactivityTimeoutSeconds = 120;
+        public const int MinimumProviderInactivityTimeoutSeconds = 15;
+        public const int MaximumProviderInactivityTimeoutSeconds = 3600;
 
         public const string DefaultSystemPrompt = "You are ColorVision Copilot, the general-purpose assistant built into ColorVision. You can help with general knowledge, writing, programming, analysis, translation, and ColorVision usage. For ColorVision software, project code, devices, flows, algorithms, plugins, WPF/C# engineering, or app-provided context, prioritize the ColorVision context that the app provides. Rules: 1. Treat local files, web pages, logs, devices, or execution results as known facts only when the app explicitly provides them. 2. Use all available context and tool observations first; if ColorVision-specific context is incomplete, answer only the parts that are supported. Do not guess or invent project-specific implementation details, and do not create a visible section about missing context or say that context was not found. 3. Do not ask the user to provide files, source code, configuration, or documentation unless they explicitly ask what to attach next. 4. Answer conceptual and general questions directly without searching the workspace unless the user asks about local implementation or current evidence. For local work, prefer targeted searches and file reads over broad scans. 5. For device control, file deletion, configuration mutation, or flow execution, explain the risk and impact first. 6. Do not claim that you performed an operation unless the app context explicitly shows that it happened. 7. Keep internal tool arguments and instructions concise and in one language; prefer English unless exact user text, paths, commands, or localized UI labels must be preserved. Answer in the user's language.";
 
@@ -177,6 +181,40 @@ namespace ColorVision.Copilot
             set => SetProperty(ref _temperature, Math.Clamp(value, 0, 2));
         }
         private double _temperature = DefaultTemperature;
+
+        [Browsable(false)]
+        public int FirstContentTimeoutSeconds
+        {
+            get => _firstContentTimeoutSeconds;
+            set => SetProperty(
+                ref _firstContentTimeoutSeconds,
+                NormalizeProviderInactivityTimeoutSeconds(
+                    value,
+                    DefaultFirstContentTimeoutSeconds));
+        }
+        private int _firstContentTimeoutSeconds = DefaultFirstContentTimeoutSeconds;
+
+        [Browsable(false)]
+        public int StreamingInactivityTimeoutSeconds
+        {
+            get => _streamingInactivityTimeoutSeconds;
+            set => SetProperty(
+                ref _streamingInactivityTimeoutSeconds,
+                NormalizeProviderInactivityTimeoutSeconds(
+                    value,
+                    DefaultStreamingInactivityTimeoutSeconds));
+        }
+        private int _streamingInactivityTimeoutSeconds = DefaultStreamingInactivityTimeoutSeconds;
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public TimeSpan EffectiveFirstContentTimeout =>
+            TimeSpan.FromSeconds(FirstContentTimeoutSeconds);
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public TimeSpan EffectiveStreamingInactivityTimeout =>
+            TimeSpan.FromSeconds(StreamingInactivityTimeoutSeconds);
 
         [DisplayName("Reasoning")]
         [Description("Provider-aware thinking mode or reasoning effort")]
@@ -365,6 +403,8 @@ namespace ColorVision.Copilot
                 Model = Model,
                 MaxTokens = MaxTokens,
                 Temperature = Temperature,
+                FirstContentTimeoutSeconds = FirstContentTimeoutSeconds,
+                StreamingInactivityTimeoutSeconds = StreamingInactivityTimeoutSeconds,
                 ReasoningMode = ReasoningMode,
                 SyncSource = SyncSource,
                 SyncProfileId = SyncProfileId,
@@ -399,6 +439,18 @@ namespace ColorVision.Copilot
         }
 
         private static string NormalizeText(string? value) => value?.Trim() ?? string.Empty;
+
+        private static int NormalizeProviderInactivityTimeoutSeconds(
+            int value,
+            int defaultValue)
+        {
+            return value <= 0
+                ? defaultValue
+                : Math.Clamp(
+                    value,
+                    MinimumProviderInactivityTimeoutSeconds,
+                    MaximumProviderInactivityTimeoutSeconds);
+        }
 
         private void OnEffectiveSystemPromptChanged()
         {

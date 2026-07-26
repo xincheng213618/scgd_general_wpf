@@ -1,6 +1,7 @@
 #pragma warning disable CA1822,CA1861
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -57,6 +58,8 @@ namespace ColorVision.Copilot
         private readonly int _maximumAttempts;
         private readonly Func<int, TimeSpan> _retryDelayFactory;
         private readonly Func<TimeSpan, CancellationToken, Task> _delayAsync;
+        private readonly TimeSpan? _firstResponseTimeoutOverride;
+        private readonly TimeSpan? _streamingUpdateTimeoutOverride;
 
         public CopilotChatService()
             : this(SharedHttpClient)
@@ -76,13 +79,29 @@ namespace ColorVision.Copilot
             HttpClient httpClient,
             int maximumAttempts,
             Func<int, TimeSpan> retryDelayFactory,
-            Func<TimeSpan, CancellationToken, Task> delayAsync)
+            Func<TimeSpan, CancellationToken, Task> delayAsync,
+            TimeSpan? firstResponseTimeout = null,
+            TimeSpan? streamingUpdateTimeout = null)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             ArgumentOutOfRangeException.ThrowIfLessThan(maximumAttempts, 1);
             _maximumAttempts = maximumAttempts;
             _retryDelayFactory = retryDelayFactory ?? throw new ArgumentNullException(nameof(retryDelayFactory));
             _delayAsync = delayAsync ?? throw new ArgumentNullException(nameof(delayAsync));
+            _firstResponseTimeoutOverride = firstResponseTimeout;
+            _streamingUpdateTimeoutOverride = streamingUpdateTimeout;
+            if (firstResponseTimeout.HasValue)
+            {
+                CopilotProviderInactivityPolicy.ValidateTimeout(
+                    firstResponseTimeout.Value,
+                    nameof(firstResponseTimeout));
+            }
+            if (streamingUpdateTimeout.HasValue)
+            {
+                CopilotProviderInactivityPolicy.ValidateTimeout(
+                    streamingUpdateTimeout.Value,
+                    nameof(streamingUpdateTimeout));
+            }
         }
 
         public async Task<CopilotChatReply> CompleteReplyAsync(
@@ -213,6 +232,10 @@ namespace ColorVision.Copilot
             if (requestMessages.Length == 0)
                 throw new InvalidOperationException("At least one non-empty user or assistant message is required.");
             var imagePayloads = await CopilotImagePayloadLoader.LoadAsync(imageAttachments, cancellationToken).ConfigureAwait(false);
+            var inactivityTimeouts = CopilotProviderInactivityPolicy.Resolve(
+                config,
+                _firstResponseTimeoutOverride,
+                _streamingUpdateTimeoutOverride);
 
             for (var attempt = 1; ; attempt++)
             {
@@ -228,6 +251,7 @@ namespace ColorVision.Copilot
                             responseStarted = true;
                             onDelta(delta);
                         },
+                        inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
@@ -243,10 +267,18 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage> messages,
             IReadOnlyList<CopilotImagePayload> imagePayloads,
             Action<CopilotStreamDelta> onDelta,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             using var request = CreateRequest(config, messages, imagePayloads);
-            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            var firstResponseStopwatch = Stopwatch.StartNew();
+            using var response = await SendResponseHeadersAsync(
+                request,
+                inactivityTimeouts,
+                cancellationToken).ConfigureAwait(false);
+            var remainingFirstResponseTimeout = SubtractElapsed(
+                inactivityTimeouts.FirstResponseTimeout,
+                firstResponseStopwatch.Elapsed);
 
             var statusCode = (int)response.StatusCode;
             if (statusCode is >= 300 and < 400)
@@ -262,10 +294,13 @@ namespace ColorVision.Copilot
                 string errorBody;
                 try
                 {
-                    errorBody = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
-                        response.Content,
+                    errorBody = await ReadBoundedContentWithTimeoutAsync(
+                        response,
                         MaximumProviderErrorResponseBytes,
                         "Provider error response",
+                        remainingFirstResponseTimeout,
+                        CopilotProviderInactivityPhase.FirstResponse,
+                        inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (CopilotHttpContentSizeLimitException exception)
@@ -274,6 +309,12 @@ namespace ColorVision.Copilot
                     oversizedResponseException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
                     CopilotProviderRetryChatClient.PreserveRetryAfter(response, oversizedResponseException);
                     throw oversizedResponseException;
+                }
+                catch (CopilotProviderInactivityException exception)
+                {
+                    exception.Data[ProviderStatusCodeDataKey] = statusCode;
+                    CopilotProviderRetryChatClient.PreserveRetryAfter(response, exception);
+                    throw;
                 }
 
                 var providerException = new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode, config.ApiKey));
@@ -284,12 +325,23 @@ namespace ColorVision.Copilot
 
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
-                return await ReadStreamingResponseAsync(config, response, onDelta, cancellationToken).ConfigureAwait(false);
+            {
+                return await ReadStreamingResponseAsync(
+                    config,
+                    response,
+                    onDelta,
+                    remainingFirstResponseTimeout,
+                    inactivityTimeouts,
+                    cancellationToken).ConfigureAwait(false);
+            }
 
-            var body = await CopilotBoundedHttpContentReader.ReadAsStringAsync(
-                response.Content,
+            var body = await ReadBoundedContentWithTimeoutAsync(
+                response,
                 MaximumNonStreamingResponseBytes,
                 "Non-streaming provider response",
+                remainingFirstResponseTimeout,
+                CopilotProviderInactivityPhase.FirstResponse,
+                inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
@@ -298,6 +350,159 @@ namespace ColorVision.Copilot
             onDelta(reply.Delta);
             var finishReason = ExtractProviderFinishReason(config.ProviderType, body);
             return CreateStreamResult(reply.Usage, finishReason);
+        }
+
+        private async Task<HttpResponseMessage> SendResponseHeadersAsync(
+            HttpRequestMessage request,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
+            CancellationToken cancellationToken)
+        {
+            using var timeoutCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCancellation.CancelAfter(inactivityTimeouts.FirstResponseTimeout);
+            try
+            {
+                return await _httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    timeoutCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (!cancellationToken.IsCancellationRequested
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                throw new CopilotProviderInactivityException(
+                    CopilotProviderInactivityPhase.FirstResponse,
+                    inactivityTimeouts.FirstResponseTimeout);
+            }
+        }
+
+        private async Task<string> ReadBoundedContentWithTimeoutAsync(
+            HttpResponseMessage response,
+            int maximumBytes,
+            string contentLabel,
+            TimeSpan timeout,
+            CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
+            CancellationToken cancellationToken)
+        {
+            if (timeout <= TimeSpan.Zero)
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+
+            using var timeoutCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCancellation.CancelAfter(timeout);
+            using var cancellationRegistration = timeoutCancellation.Token.Register(
+                static state => ((HttpResponseMessage)state!).Dispose(),
+                response);
+            try
+            {
+                return await CopilotBoundedHttpContentReader.ReadAsStringAsync(
+                    response.Content,
+                    maximumBytes,
+                    contentLabel,
+                    timeoutCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (!cancellationToken.IsCancellationRequested
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+            catch (Exception exception)
+                when ((exception is ObjectDisposedException or IOException or HttpRequestException)
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+        }
+
+        private async Task<Stream> ReadResponseStreamWithTimeoutAsync(
+            HttpResponseMessage response,
+            TimeSpan timeout,
+            CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
+            CancellationToken cancellationToken)
+        {
+            if (timeout <= TimeSpan.Zero)
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+
+            using var timeoutCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCancellation.CancelAfter(timeout);
+            using var cancellationRegistration = timeoutCancellation.Token.Register(
+                static state => ((HttpResponseMessage)state!).Dispose(),
+                response);
+            try
+            {
+                return await response.Content.ReadAsStreamAsync(
+                    timeoutCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (!cancellationToken.IsCancellationRequested
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+            catch (Exception exception)
+                when ((exception is ObjectDisposedException or IOException or HttpRequestException)
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+        }
+
+        private async Task<string?> ReadProviderLineWithTimeoutAsync(
+            CopilotBoundedTextLineReader reader,
+            HttpResponseMessage response,
+            TimeSpan timeout,
+            CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
+            CancellationToken cancellationToken)
+        {
+            if (timeout <= TimeSpan.Zero)
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+
+            using var timeoutCancellation =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCancellation.CancelAfter(timeout);
+            using var cancellationRegistration = timeoutCancellation.Token.Register(
+                static state => ((HttpResponseMessage)state!).Dispose(),
+                response);
+            try
+            {
+                return await reader.ReadLineAsync(
+                    timeoutCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (!cancellationToken.IsCancellationRequested
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+            catch (Exception exception)
+                when ((exception is ObjectDisposedException or IOException)
+                    && timeoutCancellation.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw CreateInactivityTimeout(phase, inactivityTimeouts);
+            }
+        }
+
+        private CopilotProviderInactivityException CreateInactivityTimeout(
+            CopilotProviderInactivityPhase phase,
+            CopilotProviderInactivityTimeouts inactivityTimeouts)
+        {
+            return new CopilotProviderInactivityException(
+                phase,
+                inactivityTimeouts.GetTimeout(phase));
+        }
+
+        private static TimeSpan SubtractElapsed(TimeSpan timeout, TimeSpan elapsed)
+        {
+            return timeout > elapsed ? timeout - elapsed : TimeSpan.Zero;
         }
 
         private bool TryCreateRetry(
@@ -491,10 +696,12 @@ namespace ColorVision.Copilot
             return content;
         }
 
-        private static async Task<CopilotChatStreamResult> ReadStreamingResponseAsync(
+        private async Task<CopilotChatStreamResult> ReadStreamingResponseAsync(
             CopilotProfileConfig config,
             HttpResponseMessage response,
             Action<CopilotStreamDelta> onDelta,
+            TimeSpan remainingFirstResponseTimeout,
+            CopilotProviderInactivityTimeouts inactivityTimeouts,
             CancellationToken cancellationToken)
         {
             using var cancellationRegistration = cancellationToken.Register(static state =>
@@ -503,7 +710,16 @@ namespace ColorVision.Copilot
                     message.Dispose();
             }, response);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            var streamOpenStopwatch = Stopwatch.StartNew();
+            await using var stream = await ReadResponseStreamWithTimeoutAsync(
+                response,
+                remainingFirstResponseTimeout,
+                CopilotProviderInactivityPhase.FirstResponse,
+                inactivityTimeouts,
+                cancellationToken).ConfigureAwait(false);
+            var remainingInactivityTimeout = SubtractElapsed(
+                remainingFirstResponseTimeout,
+                streamOpenStopwatch.Elapsed);
             using var reader = new CopilotBoundedTextLineReader(
                 stream,
                 Encoding.UTF8,
@@ -516,12 +732,42 @@ namespace ColorVision.Copilot
             var streamCompleted = false;
             var finishReason = string.Empty;
 
+            bool ProcessPendingEvent()
+            {
+                var emittedContent = false;
+                var completed = ProcessStreamingEventData(
+                    config,
+                    eventData,
+                    delta =>
+                    {
+                        emittedContent = true;
+                        onDelta(delta);
+                    },
+                    ref usage,
+                    ref receivedDisplayableText,
+                    ref finishReason);
+                if (emittedContent)
+                    remainingInactivityTimeout =
+                        inactivityTimeouts.StreamingUpdateTimeout;
+                return completed;
+            }
+
             while (!streamCompleted)
             {
+                var inactivityPhase = receivedDisplayableText
+                    ? CopilotProviderInactivityPhase.StreamingUpdate
+                    : CopilotProviderInactivityPhase.FirstResponse;
+                var readStopwatch = Stopwatch.StartNew();
                 string? line;
                 try
                 {
-                    line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    line = await ReadProviderLineWithTimeoutAsync(
+                        reader,
+                        response,
+                        remainingInactivityTimeout,
+                        inactivityPhase,
+                        inactivityTimeouts,
+                        cancellationToken).ConfigureAwait(false);
                 }
                 catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -531,28 +777,19 @@ namespace ColorVision.Copilot
                 {
                     throw new OperationCanceledException(cancellationToken);
                 }
+                remainingInactivityTimeout = SubtractElapsed(
+                    remainingInactivityTimeout,
+                    readStopwatch.Elapsed);
 
                 if (line is null)
                 {
-                    streamCompleted = ProcessStreamingEventData(
-                        config,
-                        eventData,
-                        onDelta,
-                        ref usage,
-                        ref receivedDisplayableText,
-                        ref finishReason);
+                    streamCompleted = ProcessPendingEvent();
                     break;
                 }
 
                 if (line.Length == 0)
                 {
-                    streamCompleted = ProcessStreamingEventData(
-                        config,
-                        eventData,
-                        onDelta,
-                        ref usage,
-                        ref receivedDisplayableText,
-                        ref finishReason);
+                    streamCompleted = ProcessPendingEvent();
                     continue;
                 }
 

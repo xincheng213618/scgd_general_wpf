@@ -168,6 +168,36 @@ namespace ColorVision.Copilot
             var contextRecoveryEstimatedInputTokensBefore = Math.Max(
                 0,
                 tokenSnapshot.ContextRecoveryEstimatedInputTokensBefore);
+            var providerCalls = Math.Max(0, tokenSnapshot.ProviderCalls);
+            var providerRetryCount = Math.Clamp(
+                tokenSnapshot.ProviderRetryCount,
+                0,
+                providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
+            var providerResponseCount = Math.Clamp(
+                tokenSnapshot.ProviderResponseCount,
+                0,
+                providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -175,8 +205,37 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = tokenSnapshot.InputBudgetTokens,
                 RequestTokenBudget = RequestTokenBudget,
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
-                ProviderCalls = tokenSnapshot.ProviderCalls,
+                ProviderCalls = providerCalls,
                 PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    tokenSnapshot.ProviderRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, tokenSnapshot.ProviderRetryDelayMs)
+                    : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? Math.Max(
+                        providerFirstResponseLatencyTotalMs,
+                        tokenSnapshot.ProviderCallDurationTotalMs)
+                    : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
                 ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
