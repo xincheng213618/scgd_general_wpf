@@ -50,6 +50,246 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.True(ExploreRole().IsAvailable(request));
     }
 
+    [Theory]
+    [InlineData("Report the latest market news.")]
+    [InlineData("The source is already available.")]
+    [InlineData("The file is ready.")]
+    [InlineData("Classical error theory is statistical.")]
+    public void EmbeddedEnglishMarkerFragmentsDoNotRequestLocalEvidence(string userText)
+    {
+        var request = Request(
+            userText,
+            searchRoots: [@"C:\workspace"]);
+
+        Assert.False(CopilotToolIntentPolicy.NeedsLocalEvidence(request));
+        Assert.False(new CopilotSearchFilesTool().IsAvailable(request));
+        Assert.False(new CopilotGrepTextTool().IsAvailable(request));
+        Assert.False(new CopilotReadLocalFileTool().IsAvailable(request));
+        Assert.False(new CopilotListDirectoryTool().IsAvailable(request));
+        Assert.False(ExploreRole().IsAvailable(request));
+    }
+
+    [Theory]
+    [InlineData("Read files.")]
+    [InlineData("Inspect classes.")]
+    [InlineData("Search methods.")]
+    [InlineData("Review implementations.")]
+    [InlineData("Find directories.")]
+    [InlineData("Inspect repositories.")]
+    [InlineData("Reading files.")]
+    [InlineData("Reviewed classes.")]
+    [InlineData("Found files.")]
+    [InlineData("Inspect MyClass.")]
+    [InlineData("Review className.")]
+    public void EnglishLocalEvidenceMarkersRetainCommonInflections(string userText)
+    {
+        Assert.True(CopilotToolIntentPolicy.NeedsLocalEvidence(Request(userText)));
+    }
+
+    [Fact]
+    public void ExplicitFileOnlyRequestUsesFocusedWorkspaceEvidenceSurface()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-focused-file-{Guid.NewGuid():N}");
+        var workspaceRoot = Path.Combine(root, "workspace");
+        Directory.CreateDirectory(workspaceRoot);
+        var sourcePath = Path.Combine(workspaceRoot, "Git changes-DelegateExplore-search_files.cs");
+        File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            var request = CreatePreparedRequest(
+                $"只读检查文件 \"{sourcePath}\"，不要修改任何文件。",
+                root);
+            var toolNames = new CopilotToolRegistry(CopilotToolRegistry.CreateBuiltInCatalogTools())
+                .FindTools(request)
+                .Select(tool => tool.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            Assert.Equal(
+                ["GrepText", "ReadLocalFile"],
+                toolNames.OrderBy(name => name, StringComparer.OrdinalIgnoreCase));
+            Assert.Contains("GrepText", toolNames);
+            Assert.Contains("ReadLocalFile", toolNames);
+            Assert.DoesNotContain("SearchFiles", toolNames);
+            Assert.DoesNotContain("ListDirectory", toolNames);
+            Assert.DoesNotContain("DelegateExplore", toolNames);
+            Assert.DoesNotContain("InspectGitWorkingTree", toolNames);
+            Assert.DoesNotContain("InspectGitDiff", toolNames);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExplicitFileRequestWithWorkspaceReferencesKeepsDiscoverySurface()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-file-references-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "Target.cs");
+        File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            var request = CreatePreparedRequest(
+                $"只读检查 {sourcePath}，并查找它在当前项目其他文件中的所有引用；不要修改任何文件。",
+                root);
+            var toolNames = new CopilotToolRegistry(CopilotToolRegistry.CreateBuiltInCatalogTools())
+                .FindTools(request)
+                .Select(tool => tool.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            Assert.Contains("SearchFiles", toolNames);
+            Assert.Contains("GrepText", toolNames);
+            Assert.Contains("ReadLocalFile", toolNames);
+            Assert.Contains("ListDirectory", toolNames);
+            Assert.Contains("DelegateExplore", toolNames);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExplicitFileScopeFallsBackWhenExecutionOrDelegationNeedsArePresent()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-file-fallback-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "Target.cs");
+        File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            string[] prompts =
+            [
+                $"修改文件 {sourcePath}。",
+                $"构建项目并检查文件 {sourcePath}。",
+                $"使用 PowerShell 读取文件 {sourcePath}。",
+                $"请使用 DelegateExplore 检查文件 {sourcePath}。",
+            ];
+
+            foreach (var prompt in prompts)
+                Assert.False(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(CreatePreparedRequest(prompt, root)));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExplicitFileScopeRequiresOneToThreeExistingFilesAndNoDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-file-bounds-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var sourcePaths = Enumerable.Range(1, 4)
+            .Select(index => Path.Combine(root, $"Target{index}.cs"))
+            .ToArray();
+        foreach (var sourcePath in sourcePaths)
+            File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            var threeFiles = CreatePreparedRequest(
+                $"只读检查 {string.Join("、", sourcePaths.Take(3))}，不要修改任何文件。",
+                root);
+            var fourFiles = CreatePreparedRequest(
+                $"只读检查 {string.Join("、", sourcePaths)}，不要修改任何文件。",
+                root);
+            var missingFile = CreatePreparedRequest(
+                $"只读检查 {Path.Combine(root, "Missing.cs")}，不要修改任何文件。",
+                root);
+            var directory = CreatePreparedRequest(
+                $"只读检查目录 {root}，不要修改任何文件。",
+                root);
+
+            Assert.Equal(3, threeFiles.ReadableLocalFilePaths.Count);
+            Assert.True(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(threeFiles));
+            Assert.Equal(4, fourFiles.ReadableLocalFilePaths.Count);
+            Assert.False(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(fourFiles));
+            Assert.False(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(missingFile));
+            Assert.False(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(directory));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FocusedFileScopeAlsoSuppressesExternalWorkspaceSearchTools()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-external-file-search-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "Target.cs");
+        File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            var focusedRequest = CreatePreparedRequest(
+                $"Report two verified issues in {sourcePath}; do not modify any file.",
+                root);
+            var discoveryRequest = CreatePreparedRequest(
+                $"Find references to {sourcePath} across the workspace; do not modify any file.",
+                root);
+
+            Assert.True(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(focusedRequest));
+            Assert.False(CopilotToolIntentPolicy.CanExposeExternalTool(
+                focusedRequest,
+                "search_files",
+                "Search local files."));
+            Assert.False(CopilotToolIntentPolicy.CanExposeExternalTool(
+                focusedRequest,
+                "read_file",
+                "Read a local file."));
+            Assert.False(CopilotToolIntentPolicy.CanExposeExternalTool(
+                focusedRequest,
+                "list_directory",
+                "List a local directory."));
+            Assert.False(CopilotToolIntentPolicy.HasBoundedExplicitFileScope(discoveryRequest));
+            Assert.True(CopilotToolIntentPolicy.CanExposeExternalTool(
+                discoveryRequest,
+                "search_files",
+                "Search local files."));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GitInspectionToolsRequireReviewMutationOrExplicitGitIntent()
+    {
+        var idle = Request(
+            "解释这个概念",
+            searchRoots: [@"C:\workspace"]);
+        var branch = Request(
+            "检查当前 Git 分支和上游状态",
+            searchRoots: [@"C:\workspace"]);
+        var diff = Request(
+            "检查当前 Git diff 里改了什么",
+            searchRoots: [@"C:\workspace"]);
+        var mutation = Request(
+            "请修改当前项目代码",
+            writableRoots: [@"C:\workspace"],
+            searchRoots: [@"C:\workspace"]);
+        var review = Request(
+            "评审当前改动",
+            searchRoots: [@"C:\workspace"],
+            mode: CopilotAgentMode.Review);
+        var workingTreeTool = new CopilotInspectGitWorkingTreeTool();
+        var diffTool = new CopilotInspectGitDiffTool();
+
+        Assert.False(workingTreeTool.IsAvailable(idle));
+        Assert.False(diffTool.IsAvailable(idle));
+        Assert.True(workingTreeTool.IsAvailable(branch));
+        Assert.False(diffTool.IsAvailable(branch));
+        Assert.True(workingTreeTool.IsAvailable(diff));
+        Assert.True(diffTool.IsAvailable(diff));
+        Assert.True(workingTreeTool.IsAvailable(mutation));
+        Assert.True(diffTool.IsAvailable(mutation));
+        Assert.True(workingTreeTool.IsAvailable(review));
+        Assert.True(diffTool.IsAvailable(review));
+    }
+
     [Fact]
     public void ParentDelegationOptOutKeepsExploreAndRemovesDirectWorkspaceTools()
     {
@@ -184,6 +424,8 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.DoesNotContain("ReadLocalFile", toolNames);
         Assert.DoesNotContain("ListDirectory", toolNames);
         Assert.DoesNotContain("DelegateExplore", toolNames);
+        Assert.DoesNotContain("InspectGitWorkingTree", toolNames);
+        Assert.DoesNotContain("InspectGitDiff", toolNames);
     }
 
     [Theory]
@@ -660,6 +902,83 @@ public sealed class CopilotToolIntentPolicyTests
     }
 
     [Fact]
+    public void RuntimeInstructionsScaleWithTheAvailableCapabilityFamilies()
+    {
+        var request = Request(
+            "检查当前项目的实现",
+            writableRoots: [Environment.CurrentDirectory],
+            searchRoots: [Environment.CurrentDirectory]);
+        var environment = CopilotAgentEnvironmentContext.Capture(request);
+        var localInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("SearchFiles"), new NamedTool("ReadLocalFile")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var webInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("FetchUrl"), new NamedTool("WebSearch")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var writeInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("PreviewWorkspacePatchEnvelope", CopilotToolAccess.Write)],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var fullInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [
+                new NamedTool("SearchFiles"),
+                new NamedTool("ReadLocalFile"),
+                new NamedTool("FetchUrl"),
+                new NamedTool("WebSearch"),
+                new NamedTool("PreviewWorkspacePatchEnvelope", CopilotToolAccess.Write),
+            ],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        var publicCodeReviewInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            new CopilotAgentRequest
+            {
+                UserText = "Review the implementation at the supplied public URL.",
+                Mode = CopilotAgentMode.Review,
+            },
+            [new NamedTool("WebSearch")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+
+        Assert.Contains("SearchFiles and GrepText", localInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("FetchUrl processes", localInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("Write-capable tools", localInstructions, StringComparison.Ordinal);
+        Assert.Contains("FetchUrl processes", webInstructions, StringComparison.Ordinal);
+        Assert.Contains("WebSearch already deep-reads", webInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("For local evidence", webInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("Write-capable tools", webInstructions, StringComparison.Ordinal);
+        Assert.Contains(
+            "A constant or limit, style preference, missing optional feature, hypothetical scenario",
+            publicCodeReviewInstructions,
+            StringComparison.Ordinal);
+        Assert.Contains("Write-capable tools", writeInstructions, StringComparison.Ordinal);
+        Assert.Contains("PreviewWorkspacePatchEnvelope", writeInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("FetchUrl processes", writeInstructions, StringComparison.Ordinal);
+        Assert.Contains("SearchFiles and GrepText", fullInstructions, StringComparison.Ordinal);
+        Assert.Contains("FetchUrl processes", fullInstructions, StringComparison.Ordinal);
+        Assert.Contains("Write-capable tools", fullInstructions, StringComparison.Ordinal);
+        Assert.True(
+            fullInstructions.Length - localInstructions.Length > 1_500,
+            $"Local-only instructions retained too much unrelated context ({localInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+        Assert.True(
+            fullInstructions.Length - webInstructions.Length > 2_500,
+            $"Web-only instructions retained too much unrelated context ({webInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+        Assert.True(
+            fullInstructions.Length - writeInstructions.Length > 2_500,
+            $"Write-only instructions retained too much unrelated context ({writeInstructions.Length:N0}/{fullInstructions.Length:N0} characters).");
+    }
+
+    [Fact]
     public void TokenUsageAggregatesCacheReadsWithoutDoubleCountingTotals()
     {
         var usage = new CopilotTokenUsage(100, 20, 120, 80)
@@ -889,17 +1208,33 @@ public sealed class CopilotToolIntentPolicyTests
         IReadOnlyList<string>? writableRoots = null,
         IReadOnlyList<string>? searchRoots = null,
         IReadOnlyList<string>? readableFiles = null,
-        IReadOnlyList<CopilotContextItem>? contextItems = null)
+        IReadOnlyList<CopilotContextItem>? contextItems = null,
+        CopilotAgentMode mode = CopilotAgentMode.Auto)
     {
         return new CopilotAgentRequest
         {
             UserText = userText,
-            Mode = CopilotAgentMode.Auto,
+            Mode = mode,
             WritableLocalRootPaths = writableRoots ?? Array.Empty<string>(),
             SearchRootPaths = searchRoots ?? Array.Empty<string>(),
             ReadableLocalFilePaths = readableFiles ?? Array.Empty<string>(),
             ContextItems = contextItems ?? Array.Empty<CopilotContextItem>(),
         };
+    }
+
+    private static CopilotAgentRequest CreatePreparedRequest(string userText, string solutionDirectoryPath)
+    {
+        var plan = CopilotAgentRequestFactory.Prepare(
+            userText,
+            CopilotAgentMode.Auto,
+            new CopilotAgentHostContextSnapshot(null, solutionDirectoryPath, null));
+        return CopilotAgentRequestFactory.Create(
+            plan,
+            new CopilotAgentRequestBuildInput
+            {
+                Profile = new CopilotProfileConfig(),
+                AgentDefaults = new CopilotAgentDefaultsConfig(),
+            });
     }
 
     private static CopilotSubagentRoleDescriptor ExploreRole()

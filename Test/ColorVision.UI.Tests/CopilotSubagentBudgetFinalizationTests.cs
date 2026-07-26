@@ -241,9 +241,21 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             Assert.Equal(["ReadLocalFile"], result.ToolNames);
             Assert.Equal(1, result.Budget.ToolCalls);
             Assert.Equal(1, result.Budget.ProviderCalls);
+            Assert.True(
+                result.Budget.ConsumedTokens < 4_000,
+                $"Minimal finalization consumed an estimated {result.Budget.ConsumedTokens} tokens.");
             Assert.Equal(1, chatClient.CallCount);
             Assert.Contains("[Selection] Task-focused evidence window", chatClient.LastPrompt, StringComparison.Ordinal);
             Assert.All(fileNames, fileName => Assert.Contains(fileName, chatClient.LastPrompt, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains("no-tools finalization stage", chatClient.LastInstructions, StringComparison.Ordinal);
+            Assert.DoesNotContain("FetchUrl processes", chatClient.LastInstructions, StringComparison.Ordinal);
+            Assert.DoesNotContain("<runtime_environment>", chatClient.LastInstructions, StringComparison.Ordinal);
+            Assert.True(
+                chatClient.LastInstructions.Length < 2_000,
+                $"Minimal finalization instructions were {chatClient.LastInstructions.Length} characters.");
+            Assert.True(
+                chatClient.LastPrompt.Length < 9_000,
+                $"Minimal finalization prompt was {chatClient.LastPrompt.Length} characters.");
         }
         finally
         {
@@ -474,9 +486,11 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.NotNull(finalization);
         Assert.Equal(7_831, finalization.RunBudgetOverride?.RequestTokenBudget);
         Assert.Equal(CopilotSubagentRunner.MaximumFinalizationOutputTokens, finalization.Profile.MaxTokens);
+        Assert.Equal(CopilotSubagentRunner.DelegatedFinalizationSystemPrompt, finalization.Profile.EffectiveSystemPrompt);
         Assert.Empty(finalization.SearchRootPaths);
         Assert.Empty(finalization.WritableLocalRootPaths);
         Assert.Equal(CopilotAgentHarnessFeatures.None, finalization.HarnessFeatures);
+        Assert.Equal(CopilotAgentRuntimePurpose.DelegatedEvidenceFinalization, finalization.RuntimePurpose);
         Assert.Contains("# Delegated task", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("ReadLocalFile", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("line 42", finalization.UserText, StringComparison.Ordinal);
@@ -487,6 +501,54 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Contains("complete: yes|no", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("omitted unrelated file text alone does not make the task incomplete", finalization.UserText, StringComparison.Ordinal);
         Assert.Contains("Copy a code identifier only with the exact spelling shown", finalization.UserText, StringComparison.Ordinal);
+
+        var harnessInstructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            finalization,
+            Array.Empty<ICopilotTool>(),
+            CopilotAgentEnvironmentContext.Capture(finalization),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        Assert.True(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
+            finalization,
+            Array.Empty<ICopilotTool>(),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false));
+        Assert.Contains("no-tools finalization stage", harnessInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("FetchUrl", harnessInstructions, StringComparison.Ordinal);
+        Assert.DoesNotContain("<runtime_environment>", harnessInstructions, StringComparison.Ordinal);
+        Assert.True(
+            harnessInstructions.Length < 2_000,
+            $"Minimal harness instructions were {harnessInstructions.Length} characters.");
+    }
+
+    [Fact]
+    public void DelegatedFinalizationMarkerCannotMinimizeARuntimeWithTools()
+    {
+        var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+        var childRequest = CreateChildRequest(role);
+        var explorationResult = CreateExplorationResult(consumedTokens: 8_553);
+        var finalization = Assert.IsType<CopilotAgentRequest>(
+            CopilotSubagentRunner.CreateBudgetFinalizationRequest(
+                childRequest,
+                role,
+                explorationResult,
+                totalTokenBudget: 16_384,
+                elapsed: TimeSpan.FromSeconds(5)));
+        ICopilotTool[] tools = [new CopilotSearchFilesTool()];
+
+        Assert.False(CopilotMicrosoftAgentFrameworkRuntime.CanUseMinimalDelegatedFinalizationInstructions(
+            finalization,
+            tools,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false));
+        var instructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            finalization,
+            tools,
+            CopilotAgentEnvironmentContext.Capture(finalization),
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+        Assert.Contains("SearchFiles and GrepText", instructions, StringComparison.Ordinal);
+        Assert.Contains("<runtime_environment>", instructions, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -575,9 +637,21 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             RequestTokenBudget = 7_831,
             ConsumedTokens = 3_100,
             ProviderCalls = 1,
+            PeakEstimatedInputTokens = 9_000,
+            ContextRecoveryCount = 1,
+            ContextRecoveryEstimatedInputTokensBefore = 9_000,
+            ContextRecoveryEstimatedInputTokensAfter = 4_000,
+            ReportedInputTokens = 2_800,
+            ReportedOutputTokens = 300,
+            ReportedTotalTokens = 3_100,
+            ReportedCachedInputTokens = 2_500,
             BudgetExhausted = false,
             RequestTokenBudgetExhausted = false,
             MaxToolCalls = 1,
+            RegisteredToolCount = 48,
+            AvailableToolCount = 0,
+            AvailableToolDefinitionCharacters = 0,
+            HarnessInstructionCharacters = 7_200,
             MaxAgentPasses = 1,
             TotalDurationMs = 80_000,
         };
@@ -591,8 +665,20 @@ public sealed class CopilotSubagentBudgetFinalizationTests
 
         Assert.Equal(11_653, combined.ConsumedTokens);
         Assert.Equal(3, combined.ProviderCalls);
+        Assert.Equal(12_000, combined.PeakEstimatedInputTokens);
+        Assert.Equal(3, combined.ContextRecoveryCount);
+        Assert.Equal(39_000, combined.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(14_000, combined.ContextRecoveryEstimatedInputTokensAfter);
+        Assert.Equal(10_800, combined.ReportedInputTokens);
+        Assert.Equal(853, combined.ReportedOutputTokens);
+        Assert.Equal(11_653, combined.ReportedTotalTokens);
+        Assert.Equal(8_500, combined.ReportedCachedInputTokens);
         Assert.Equal(16_384, combined.RequestTokenBudget);
         Assert.Equal(4, combined.ToolCalls);
+        Assert.Equal(48, combined.RegisteredToolCount);
+        Assert.Equal(3, combined.AvailableToolCount);
+        Assert.Equal(2_048, combined.AvailableToolDefinitionCharacters);
+        Assert.Equal(7_200, combined.HarnessInstructionCharacters);
         Assert.False(combined.BudgetExhausted);
         Assert.False(combined.RequestTokenBudgetExhausted);
         Assert.Equal(14_000, combined.ElapsedMs);
@@ -624,6 +710,9 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         string toolName = "ReadLocalFile",
         CopilotToolObservation? observation = null)
     {
+        var reportedTotalTokens = (int)Math.Clamp(consumedTokens, 0, int.MaxValue);
+        var reportedOutputTokens = Math.Min(553, reportedTotalTokens);
+        var reportedInputTokens = reportedTotalTokens - reportedOutputTokens;
         return new CopilotAgentRunResult
         {
             StopReason = CopilotAgentStopReason.BudgetExhausted,
@@ -632,10 +721,22 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 RequestTokenBudget = 16_384,
                 ConsumedTokens = consumedTokens,
                 ProviderCalls = 2,
+                PeakEstimatedInputTokens = 12_000,
+                ContextRecoveryCount = 2,
+                ContextRecoveryEstimatedInputTokensBefore = 30_000,
+                ContextRecoveryEstimatedInputTokensAfter = 10_000,
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = Math.Min(6_000, reportedInputTokens),
                 BudgetExhausted = true,
                 RequestTokenBudgetExhausted = true,
                 MaxToolCalls = 8,
                 ToolCalls = 4,
+                RegisteredToolCount = 48,
+                AvailableToolCount = 3,
+                AvailableToolDefinitionCharacters = 2_048,
+                HarnessInstructionCharacters = 6_400,
                 MaxAgentPasses = 2,
                 TotalDurationMs = 90_000,
             },
@@ -697,13 +798,15 @@ public sealed class CopilotSubagentBudgetFinalizationTests
 
         public string LastPrompt { get; private set; } = string.Empty;
 
+        public string LastInstructions { get; private set; } = string.Empty;
+
         public Task<ChatResponse> GetResponseAsync(
             IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Record(messages);
+            Record(messages, options);
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, answer)));
         }
 
@@ -713,7 +816,7 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Record(messages);
+            Record(messages, options);
             yield return new ChatResponseUpdate(ChatRole.Assistant, answer)
             {
                 FinishReason = ChatFinishReason.Stop,
@@ -728,9 +831,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         {
         }
 
-        private void Record(IEnumerable<ChatMessage> messages)
+        private void Record(IEnumerable<ChatMessage> messages, ChatOptions? options)
         {
             CallCount++;
+            LastInstructions = options?.Instructions ?? string.Empty;
             LastPrompt = string.Join(
                 Environment.NewLine,
                 messages

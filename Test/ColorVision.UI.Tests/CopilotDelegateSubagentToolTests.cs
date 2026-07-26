@@ -14,7 +14,18 @@ public sealed class CopilotDelegateSubagentToolTests
             HasSuccessfulEvidence = true,
             UsedPreselectedEvidence = true,
             ToolNames = ["ReadLocalFile"],
-            Budget = new CopilotAgentBudgetSnapshot { ToolCalls = 1 },
+            Budget = new CopilotAgentBudgetSnapshot
+            {
+                ToolCalls = 1,
+                PeakEstimatedInputTokens = 12_000,
+                ContextRecoveryCount = 2,
+                ContextRecoveryEstimatedInputTokensBefore = 40_000,
+                ContextRecoveryEstimatedInputTokensAfter = 18_000,
+                RegisteredToolCount = 48,
+                AvailableToolCount = 3,
+                AvailableToolDefinitionCharacters = 2_048,
+                HarnessInstructionCharacters = 6_144,
+            },
         }));
 
         var result = await tool.ExecuteAsync(Request(), Input(), CancellationToken.None);
@@ -24,6 +35,19 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Verified finding.", result.Content, StringComparison.Ordinal);
         Assert.Contains("preselected_evidence: true", result.Content, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.Completed, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(12_000, result.DelegatedRunUsage?.PeakEstimatedInputTokens);
+        Assert.Equal(2, result.DelegatedRunUsage?.ContextRecoveryCount);
+        Assert.Equal(40_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensBefore);
+        Assert.Equal(18_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensAfter);
+        Assert.Equal(48, result.DelegatedRunUsage?.RegisteredToolCount);
+        Assert.Equal(3, result.DelegatedRunUsage?.AvailableToolCount);
+        Assert.Equal(2_048, result.DelegatedRunUsage?.AvailableToolDefinitionCharacters);
+        Assert.Equal(6_144, result.DelegatedRunUsage?.HarnessInstructionCharacters);
+        var delegatedAnswer = Assert.IsType<CopilotDelegatedAnswer>(result.DelegatedAnswer);
+        Assert.Equal("Verified finding.", delegatedAnswer.Text);
+        Assert.Equal(CopilotAgentStopReason.Completed, delegatedAnswer.StopReason);
+        Assert.True(delegatedAnswer.HasSuccessfulEvidence);
+        Assert.False(delegatedAnswer.WasTruncated);
     }
 
     [Fact]
@@ -60,6 +84,7 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Contains("Partial observation.", result.Content, StringComparison.Ordinal);
         Assert.Contains("evidence only", result.ErrorMessage, StringComparison.Ordinal);
         Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.DelegatedRunUsage?.StopReason);
+        Assert.Equal(CopilotAgentStopReason.BudgetExhausted, result.DelegatedAnswer?.StopReason);
     }
 
     [Fact]

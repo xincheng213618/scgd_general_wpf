@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 8;
+        public const int CurrentSchemaVersion = 9;
         private const int MaxSummaryLength = 800;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -87,6 +87,14 @@ namespace ColorVision.Copilot
         public int DelegatedProviderCalls { get; set; }
 
         public int DelegatedToolCalls { get; set; }
+
+        public int DelegatedRegisteredToolCount { get; set; }
+
+        public int DelegatedAvailableToolCount { get; set; }
+
+        public int DelegatedAvailableToolDefinitionCharacters { get; set; }
+
+        public int DelegatedHarnessInstructionCharacters { get; set; }
 
         public long DelegatedQueueDurationMs { get; set; }
 
@@ -171,6 +179,14 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedProviderCalls() => DelegatedProviderCalls != 0;
 
         public bool ShouldSerializeDelegatedToolCalls() => DelegatedToolCalls != 0;
+
+        public bool ShouldSerializeDelegatedRegisteredToolCount() => DelegatedRegisteredToolCount != 0;
+
+        public bool ShouldSerializeDelegatedAvailableToolCount() => DelegatedAvailableToolCount != 0;
+
+        public bool ShouldSerializeDelegatedAvailableToolDefinitionCharacters() => DelegatedAvailableToolDefinitionCharacters != 0;
+
+        public bool ShouldSerializeDelegatedHarnessInstructionCharacters() => DelegatedHarnessInstructionCharacters != 0;
 
         public bool ShouldSerializeDelegatedQueueDurationMs() => DelegatedQueueDurationMs != 0;
 
@@ -289,6 +305,21 @@ namespace ColorVision.Copilot
                         .Append('/').Append(DelegatedRequestTokenBudget).Append(" tokens");
                     if (DelegatedQueueDurationMs > 0)
                         builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
+                    if (DelegatedRegisteredToolCount > 0
+                        || DelegatedAvailableToolCount > 0
+                        || DelegatedAvailableToolDefinitionCharacters > 0
+                        || DelegatedHarnessInstructionCharacters > 0)
+                    {
+                        builder.AppendLine().Append("Child prompt surface: ")
+                            .Append(DelegatedAvailableToolCount)
+                            .Append('/')
+                            .Append(DelegatedRegisteredToolCount)
+                            .Append(" tools");
+                        if (DelegatedAvailableToolDefinitionCharacters > 0)
+                            builder.Append(" · definitions ").Append(DelegatedAvailableToolDefinitionCharacters).Append(" chars");
+                        if (DelegatedHarnessInstructionCharacters > 0)
+                            builder.Append(" · harness ").Append(DelegatedHarnessInstructionCharacters).Append(" chars");
+                    }
                 }
                 if (FailureKind != CopilotToolFailureKind.None)
                 {
@@ -357,6 +388,17 @@ namespace ColorVision.Copilot
                     entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
+                    entry.DelegatedRegisteredToolCount = Math.Max(0, result.DelegatedRunUsage.RegisteredToolCount);
+                    entry.DelegatedAvailableToolCount = Math.Clamp(
+                        result.DelegatedRunUsage.AvailableToolCount,
+                        0,
+                        entry.DelegatedRegisteredToolCount);
+                    entry.DelegatedAvailableToolDefinitionCharacters = Math.Max(
+                        0,
+                        result.DelegatedRunUsage.AvailableToolDefinitionCharacters);
+                    entry.DelegatedHarnessInstructionCharacters = Math.Max(
+                        0,
+                        result.DelegatedRunUsage.HarnessInstructionCharacters);
                     entry.DelegatedQueueDurationMs = Math.Max(0, result.DelegatedRunUsage.QueueDurationMs);
                 }
                 entry.CaptureWorkspaceChangeSetMetadata(result.Content);
@@ -488,6 +530,10 @@ namespace ColorVision.Copilot
             var originalDelegatedConsumedTokens = DelegatedConsumedTokens;
             var originalDelegatedProviderCalls = DelegatedProviderCalls;
             var originalDelegatedToolCalls = DelegatedToolCalls;
+            var originalDelegatedRegisteredToolCount = DelegatedRegisteredToolCount;
+            var originalDelegatedAvailableToolCount = DelegatedAvailableToolCount;
+            var originalDelegatedAvailableToolDefinitionCharacters = DelegatedAvailableToolDefinitionCharacters;
+            var originalDelegatedHarnessInstructionCharacters = DelegatedHarnessInstructionCharacters;
             var originalDelegatedQueueDurationMs = DelegatedQueueDurationMs;
             var originalRound = Round;
             var originalAttempt = Attempt;
@@ -517,6 +563,13 @@ namespace ColorVision.Copilot
             DelegatedConsumedTokens = Math.Max(0, DelegatedConsumedTokens);
             DelegatedProviderCalls = Math.Max(0, DelegatedProviderCalls);
             DelegatedToolCalls = Math.Max(0, DelegatedToolCalls);
+            DelegatedRegisteredToolCount = Math.Max(0, DelegatedRegisteredToolCount);
+            DelegatedAvailableToolCount = Math.Clamp(
+                DelegatedAvailableToolCount,
+                0,
+                DelegatedRegisteredToolCount);
+            DelegatedAvailableToolDefinitionCharacters = Math.Max(0, DelegatedAvailableToolDefinitionCharacters);
+            DelegatedHarnessInstructionCharacters = Math.Max(0, DelegatedHarnessInstructionCharacters);
             DelegatedQueueDurationMs = Math.Max(0, DelegatedQueueDurationMs);
             Round = Math.Max(1, Round);
             Attempt = Math.Max(1, Attempt);
@@ -555,6 +608,10 @@ namespace ColorVision.Copilot
                 || originalDelegatedConsumedTokens != DelegatedConsumedTokens
                 || originalDelegatedProviderCalls != DelegatedProviderCalls
                 || originalDelegatedToolCalls != DelegatedToolCalls
+                || originalDelegatedRegisteredToolCount != DelegatedRegisteredToolCount
+                || originalDelegatedAvailableToolCount != DelegatedAvailableToolCount
+                || originalDelegatedAvailableToolDefinitionCharacters != DelegatedAvailableToolDefinitionCharacters
+                || originalDelegatedHarnessInstructionCharacters != DelegatedHarnessInstructionCharacters
                 || originalDelegatedQueueDurationMs != DelegatedQueueDurationMs
                 || originalRound != Round
                 || originalAttempt != Attempt

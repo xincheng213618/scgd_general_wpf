@@ -459,6 +459,24 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeAgentStopReason() => AgentStopReason != CopilotAgentStopReason.None;
 
+        public CopilotAgentBudgetSnapshot AgentRunBudget
+        {
+            get => _agentRunBudget;
+            set
+            {
+                var normalized = NormalizeAgentRunBudget(value);
+                if (AgentRunBudgetsEqual(_agentRunBudget, normalized))
+                    return;
+
+                _agentRunBudget = normalized;
+                OnPropertyChanged();
+                OnAgentRunMetricsChanged();
+            }
+        }
+        private CopilotAgentBudgetSnapshot _agentRunBudget = new();
+
+        public bool ShouldSerializeAgentRunBudget() => HasAgentRunMetrics;
+
         public IReadOnlyList<CopilotAgentBlockerSnapshot> AgentBlockers
         {
             get => _agentBlockers;
@@ -569,6 +587,220 @@ namespace ColorVision.Copilot
 
         [JsonIgnore]
         public string AgentTaskSummaryToolTip => $"Agent 任务 · {AgentTaskModeLabel} · {AgentTaskProgressLabel}{Environment.NewLine}{AgentStopReasonLabel}";
+
+        [JsonIgnore]
+        public bool HasAgentRunMetrics => !IsUser
+            && (AgentRunBudget.ProviderCalls > 0
+                || AgentRunBudget.ToolCalls > 0
+                || AgentRunBudget.ConsumedTokens > 0
+                || AgentRunBudget.PeakEstimatedInputTokens > 0
+                || AgentRunBudget.ContextRecoveryCount > 0
+                || AgentRunBudget.ReportedTotalTokens > 0
+                || AgentRunBudget.ElapsedMs > 0
+                || AgentRunBudget.UsedDelegatedDirectAnswer
+                || AgentRunBudget.RegisteredToolCount > 0
+                || AgentRunBudget.AvailableToolCount > 0
+                || AgentRunBudget.AvailableToolDefinitionCharacters > 0
+                || AgentRunBudget.HarnessInstructionCharacters > 0);
+
+        [JsonIgnore]
+        public string AgentRunCompactLabel
+        {
+            get
+            {
+                if (!HasAgentRunMetrics)
+                    return string.Empty;
+
+                var parts = new List<string>();
+                var delegatedProviderCalls = GetDelegatedProviderCalls();
+                var totalProviderCalls = Math.Max(AgentRunBudget.ProviderCalls, delegatedProviderCalls);
+                if (totalProviderCalls > 0)
+                {
+                    parts.Add(delegatedProviderCalls > 0
+                        ? $"父 {Math.Max(0, totalProviderCalls - delegatedProviderCalls)} / 子 {delegatedProviderCalls}"
+                        : $"模型 {totalProviderCalls}");
+                }
+                var totalTokens = Math.Max(AgentRunBudget.ConsumedTokens, GetDelegatedConsumedTokens());
+                if (totalTokens > 0)
+                    parts.Add($"{FormatTokenCount(totalTokens)} tokens");
+                if (AgentRunBudget.UsedDelegatedDirectAnswer)
+                    parts.Add("委派直返");
+                return string.Join(" · ", parts);
+            }
+        }
+
+        [JsonIgnore]
+        public string AgentRunMetricsToolTip
+        {
+            get
+            {
+                if (!HasAgentRunMetrics)
+                    return string.Empty;
+
+                var delegatedProviderCalls = GetDelegatedProviderCalls();
+                var totalProviderCalls = Math.Max(AgentRunBudget.ProviderCalls, delegatedProviderCalls);
+                var parentProviderCalls = Math.Max(0, totalProviderCalls - delegatedProviderCalls);
+                var delegatedTokens = GetDelegatedConsumedTokens();
+                var totalTokens = Math.Max(AgentRunBudget.ConsumedTokens, delegatedTokens);
+                var parentTokens = Math.Max(0, totalTokens - delegatedTokens);
+                var delegatedToolSurface = GetDelegatedToolSurfacePeak();
+                var hasDelegatedToolSurface = delegatedToolSurface.RegisteredToolCount > 0
+                    || delegatedToolSurface.AvailableToolCount > 0
+                    || delegatedToolSurface.AvailableToolDefinitionCharacters > 0
+                    || delegatedToolSurface.HarnessInstructionCharacters > 0;
+                var builder = new StringBuilder();
+                builder.Append("模型调用：").Append(totalProviderCalls);
+                if (delegatedProviderCalls > 0)
+                {
+                    builder.Append("（父 ").Append(parentProviderCalls)
+                        .Append(" / 子 ").Append(delegatedProviderCalls).Append('）');
+                }
+                builder.AppendLine();
+                builder.Append("令牌：").Append(totalTokens.ToString("N0"));
+                if (delegatedTokens > 0)
+                {
+                    builder.Append("（父 ").Append(parentTokens.ToString("N0"))
+                        .Append(" / 子 ").Append(delegatedTokens.ToString("N0")).Append('）');
+                }
+                if (AgentRunBudget.RequestTokenBudget > 0)
+                    builder.Append(" / ").Append(AgentRunBudget.RequestTokenBudget.ToString("N0"));
+                if (AgentRunBudget.UsedEstimatedUsage)
+                    builder.Append("（包含估算）");
+                builder.AppendLine();
+                if (AgentRunBudget.ReportedInputTokens > 0
+                    || AgentRunBudget.ReportedOutputTokens > 0
+                    || AgentRunBudget.ReportedTotalTokens > 0)
+                {
+                    builder.Append("提供商用量：输入 ")
+                        .Append(AgentRunBudget.ReportedInputTokens.ToString("N0"))
+                        .Append(" · 输出 ")
+                        .Append(AgentRunBudget.ReportedOutputTokens.ToString("N0"))
+                        .Append(" · 总计 ")
+                        .Append(AgentRunBudget.ReportedTotalTokens.ToString("N0"));
+                    if (AgentRunBudget.ReportedCachedInputTokens.HasValue)
+                    {
+                        var cachedInputTokens = Math.Clamp(
+                            AgentRunBudget.ReportedCachedInputTokens.Value,
+                            0,
+                            AgentRunBudget.ReportedInputTokens);
+                        builder.Append(" · 缓存输入 ")
+                            .Append(cachedInputTokens.ToString("N0"));
+                        if (AgentRunBudget.ReportedInputTokens > 0)
+                        {
+                            builder.Append('（')
+                                .Append((cachedInputTokens * 100d / AgentRunBudget.ReportedInputTokens).ToString("0.#"))
+                                .Append("%）");
+                        }
+                    }
+                    else
+                    {
+                        builder.Append(" · 缓存未上报");
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.PeakEstimatedInputTokens > 0)
+                {
+                    builder.Append("峰值输入（估算）：")
+                        .Append(AgentRunBudget.PeakEstimatedInputTokens.ToString("N0"));
+                    if (AgentRunBudget.InputBudgetTokens > 0)
+                    {
+                        builder.Append(" / ")
+                            .Append(AgentRunBudget.InputBudgetTokens.ToString("N0"));
+                    }
+                    builder.AppendLine();
+                }
+                if (AgentRunBudget.ContextRecoveryCount > 0)
+                {
+                    builder.Append("窗口恢复：")
+                        .Append(AgentRunBudget.ContextRecoveryCount.ToString("N0"))
+                        .Append(" 次");
+                    var recoveryInputTokensBefore = Math.Max(
+                        0,
+                        AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
+                    if (recoveryInputTokensBefore > 0)
+                    {
+                        var recoveryInputTokensAfter = Math.Clamp(
+                            AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter,
+                            0,
+                            recoveryInputTokensBefore);
+                        builder.Append(" · 累计输入（估算）")
+                            .Append(recoveryInputTokensBefore.ToString("N0"))
+                            .Append(" → ")
+                            .Append(recoveryInputTokensAfter.ToString("N0"))
+                            .Append(" tokens（缩减 ")
+                            .Append(((recoveryInputTokensBefore - recoveryInputTokensAfter) * 100d
+                                / recoveryInputTokensBefore).ToString("0.#"))
+                            .Append("%）");
+                    }
+                    builder.AppendLine();
+                }
+                var delegatedToolCalls = GetDelegatedToolCalls();
+                builder.Append("工具调用：");
+                if (delegatedToolCalls > 0)
+                    builder.Append("父 ");
+                builder.Append(AgentRunBudget.ToolCalls);
+                if (AgentRunBudget.MaxToolCalls > 0)
+                    builder.Append(" / ").Append(AgentRunBudget.MaxToolCalls);
+                if (delegatedToolCalls > 0)
+                    builder.Append(" · 子 ").Append(delegatedToolCalls);
+                if (AgentRunBudget.RegisteredToolCount > 0
+                    || AgentRunBudget.AvailableToolCount > 0
+                    || AgentRunBudget.AvailableToolDefinitionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append(hasDelegatedToolSurface ? "父工具面：" : "工具面：")
+                        .Append(AgentRunBudget.AvailableToolCount)
+                        .Append(" / ")
+                        .Append(AgentRunBudget.RegisteredToolCount);
+                    if (AgentRunBudget.AvailableToolDefinitionCharacters > 0)
+                    {
+                        builder.Append(" · 定义 ")
+                            .Append(AgentRunBudget.AvailableToolDefinitionCharacters.ToString("N0"))
+                            .Append(" 字符");
+                    }
+                }
+                if (delegatedToolSurface.RegisteredToolCount > 0
+                    || delegatedToolSurface.AvailableToolCount > 0
+                    || delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("子工具面（峰值）：")
+                        .Append(delegatedToolSurface.AvailableToolCount)
+                        .Append(" / ")
+                        .Append(delegatedToolSurface.RegisteredToolCount);
+                    if (delegatedToolSurface.AvailableToolDefinitionCharacters > 0)
+                    {
+                        builder.Append(" · 定义 ")
+                            .Append(delegatedToolSurface.AvailableToolDefinitionCharacters.ToString("N0"))
+                            .Append(" 字符");
+                    }
+                }
+                if (AgentRunBudget.HarnessInstructionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append(hasDelegatedToolSurface ? "父运行指令：" : "运行指令：")
+                        .Append(AgentRunBudget.HarnessInstructionCharacters.ToString("N0"))
+                        .Append(" 字符");
+                }
+                if (delegatedToolSurface.HarnessInstructionCharacters > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("子运行指令（峰值）：")
+                        .Append(delegatedToolSurface.HarnessInstructionCharacters.ToString("N0"))
+                        .Append(" 字符");
+                }
+                if (AgentRunBudget.ElapsedMs > 0)
+                {
+                    builder.AppendLine();
+                    builder.Append("运行耗时：").Append(FormatTraceDuration(AgentRunBudget.ElapsedMs));
+                    if (AgentRunBudget.TotalDurationMs > 0)
+                        builder.Append(" / ").Append(FormatTraceDuration(AgentRunBudget.TotalDurationMs));
+                }
+                if (AgentRunBudget.UsedDelegatedDirectAnswer)
+                    builder.AppendLine().Append("委派直返：是（省略第二次父级模型调用）");
+                return builder.ToString();
+            }
+        }
 
         [JsonIgnore]
         public bool HasExecutionTrace => !string.IsNullOrWhiteSpace(ExecutionContent);
@@ -796,9 +1028,12 @@ namespace ColorVision.Copilot
                     return CopilotUiText.ProcessingHeader;
 
                 var elapsed = FormatCompletedProcessingElapsed();
-                return string.IsNullOrWhiteSpace(elapsed)
+                var header = string.IsNullOrWhiteSpace(elapsed)
                     ? CopilotUiText.ProcessedHeader
                     : $"{CopilotUiText.ProcessedHeader} {elapsed}";
+                return string.IsNullOrWhiteSpace(AgentRunCompactLabel)
+                    ? header
+                    : $"{header} · {AgentRunCompactLabel}";
             }
         }
 
@@ -808,7 +1043,9 @@ namespace ColorVision.Copilot
             : LegacyThinkingContent;
 
         [JsonIgnore]
-        public string ThinkingSummaryToolTip => ThinkingHeader;
+        public string ThinkingSummaryToolTip => string.IsNullOrWhiteSpace(AgentRunMetricsToolTip)
+            ? ThinkingHeader
+            : $"{ThinkingHeader}{Environment.NewLine}{AgentRunMetricsToolTip}";
 
         public void MarkThinkingStarted()
         {
@@ -973,6 +1210,14 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var normalizedAgentRunBudget = NormalizeAgentRunBudget(_agentRunBudget);
+            if (!AgentRunBudgetsEqual(_agentRunBudget, normalizedAgentRunBudget))
+            {
+                _agentRunBudget = normalizedAgentRunBudget;
+                OnAgentRunMetricsChanged();
+                changed = true;
+            }
+
             var validBlockers = (_agentBlockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
                 .Where(item => item?.IsStructurallyValid() == true)
                 .Take(8)
@@ -1108,6 +1353,15 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(AgentTaskProgressLabel));
             OnPropertyChanged(nameof(AgentStopReasonLabel));
             OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
+        }
+
+        private void OnAgentRunMetricsChanged()
+        {
+            OnPropertyChanged(nameof(HasAgentRunMetrics));
+            OnPropertyChanged(nameof(AgentRunCompactLabel));
+            OnPropertyChanged(nameof(AgentRunMetricsToolTip));
+            OnPropertyChanged(nameof(ThinkingHeader));
+            OnPropertyChanged(nameof(ThinkingSummaryToolTip));
         }
 
         public void BeginResponseTimeline()
@@ -1249,6 +1503,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(HasExecutionFailures));
             OnPropertyChanged(nameof(ExecutionSummary));
             OnPropertyChanged(nameof(ExecutionSummaryToolTip));
+            OnAgentRunMetricsChanged();
         }
 
         private void OnResponseTimelineChanged()
@@ -1407,6 +1662,189 @@ namespace ColorVision.Copilot
                 return $"{Math.Max(0, durationMs)}ms";
 
             return $"{durationMs / 1000d:0.#}s";
+        }
+
+        private int GetDelegatedProviderCalls()
+        {
+            long total = 0;
+            foreach (var entry in AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+            {
+                if (entry == null)
+                    continue;
+                total = Math.Min(int.MaxValue, total + Math.Max(0, entry.DelegatedProviderCalls));
+            }
+            return (int)total;
+        }
+
+        private long GetDelegatedConsumedTokens()
+        {
+            long total = 0;
+            foreach (var entry in AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+            {
+                if (entry == null)
+                    continue;
+                var value = Math.Max(0, entry.DelegatedConsumedTokens);
+                if (long.MaxValue - total < value)
+                    return long.MaxValue;
+                total += value;
+            }
+            return total;
+        }
+
+        private int GetDelegatedToolCalls()
+        {
+            long total = 0;
+            foreach (var entry in AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+            {
+                if (entry == null)
+                    continue;
+                total = Math.Min(int.MaxValue, total + Math.Max(0, entry.DelegatedToolCalls));
+            }
+            return (int)total;
+        }
+
+        private CopilotAgentToolSurfaceMetrics GetDelegatedToolSurfacePeak()
+        {
+            var registeredToolCount = 0;
+            var availableToolCount = 0;
+            var definitionCharacters = 0;
+            var harnessInstructionCharacters = 0;
+            foreach (var entry in AgentTraceEntries ?? new ObservableCollection<CopilotAgentTraceEntry>())
+            {
+                if (entry == null)
+                    continue;
+
+                registeredToolCount = Math.Max(registeredToolCount, entry.DelegatedRegisteredToolCount);
+                availableToolCount = Math.Max(availableToolCount, entry.DelegatedAvailableToolCount);
+                definitionCharacters = Math.Max(
+                    definitionCharacters,
+                    entry.DelegatedAvailableToolDefinitionCharacters);
+                harnessInstructionCharacters = Math.Max(
+                    harnessInstructionCharacters,
+                    entry.DelegatedHarnessInstructionCharacters);
+            }
+
+            availableToolCount = Math.Max(0, availableToolCount);
+            registeredToolCount = Math.Max(Math.Max(0, registeredToolCount), availableToolCount);
+            return new CopilotAgentToolSurfaceMetrics(
+                registeredToolCount,
+                availableToolCount,
+                Math.Max(0, definitionCharacters),
+                Math.Max(0, harnessInstructionCharacters));
+        }
+
+        private static string FormatTokenCount(long value)
+        {
+            var normalized = Math.Max(0, value);
+            return normalized >= 1_000_000
+                ? $"{normalized / 1_000_000d:0.#}m"
+                : normalized >= 1000
+                    ? $"{normalized / 1000d:0.#}k"
+                    : normalized.ToString();
+        }
+
+        private static CopilotAgentBudgetSnapshot NormalizeAgentRunBudget(CopilotAgentBudgetSnapshot? budget)
+        {
+            budget ??= new CopilotAgentBudgetSnapshot();
+            var maxToolCalls = Math.Max(0, budget.MaxToolCalls);
+            var toolCalls = Math.Max(0, budget.ToolCalls);
+            if (maxToolCalls > 0)
+                toolCalls = Math.Min(toolCalls, maxToolCalls);
+            var reportedInputTokens = Math.Max(0, budget.ReportedInputTokens);
+            var reportedOutputTokens = Math.Max(0, budget.ReportedOutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, budget.ReportedTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
+            var contextRecoveryEstimatedInputTokensBefore = Math.Max(
+                0,
+                budget.ContextRecoveryEstimatedInputTokensBefore);
+
+            return new CopilotAgentBudgetSnapshot
+            {
+                CompactionEnabled = budget.CompactionEnabled,
+                ContextWindowTokens = Math.Max(0, budget.ContextWindowTokens),
+                InputBudgetTokens = Math.Max(0, budget.InputBudgetTokens),
+                RequestTokenBudget = Math.Max(0, budget.RequestTokenBudget),
+                ConsumedTokens = Math.Max(0, budget.ConsumedTokens),
+                ProviderCalls = Math.Max(0, budget.ProviderCalls),
+                PeakEstimatedInputTokens = Math.Max(0, budget.PeakEstimatedInputTokens),
+                ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    budget.ContextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    contextRecoveryEstimatedInputTokensBefore),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && budget.ReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(budget.ReportedCachedInputTokens.Value, 0, reportedInputTokens)
+                    : null,
+                UsedEstimatedUsage = budget.UsedEstimatedUsage,
+                UsedDelegatedDirectAnswer = budget.UsedDelegatedDirectAnswer,
+                BudgetExhausted = budget.BudgetExhausted,
+                RequestTokenBudgetExhausted = budget.RequestTokenBudgetExhausted,
+                MaxToolCalls = maxToolCalls,
+                ToolCalls = toolCalls,
+                ToolBudgetExhausted = budget.ToolBudgetExhausted,
+                RegisteredToolCount = Math.Max(0, budget.RegisteredToolCount),
+                AvailableToolCount = Math.Clamp(
+                    budget.AvailableToolCount,
+                    0,
+                    Math.Max(0, budget.RegisteredToolCount)),
+                AvailableToolDefinitionCharacters = Math.Max(0, budget.AvailableToolDefinitionCharacters),
+                HarnessInstructionCharacters = Math.Max(0, budget.HarnessInstructionCharacters),
+                NarrowEvidenceResultLimit = Math.Max(0, budget.NarrowEvidenceResultLimit),
+                MaxAgentPasses = Math.Max(0, budget.MaxAgentPasses),
+                TotalDurationMs = Math.Max(0, budget.TotalDurationMs),
+                ElapsedMs = Math.Max(0, budget.ElapsedMs),
+                TimeBudgetExhausted = budget.TimeBudgetExhausted,
+            };
+        }
+
+        private static bool AgentRunBudgetsEqual(
+            CopilotAgentBudgetSnapshot? left,
+            CopilotAgentBudgetSnapshot? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left == null || right == null)
+                return false;
+
+            return left.CompactionEnabled == right.CompactionEnabled
+                && left.ContextWindowTokens == right.ContextWindowTokens
+                && left.InputBudgetTokens == right.InputBudgetTokens
+                && left.RequestTokenBudget == right.RequestTokenBudget
+                && left.ConsumedTokens == right.ConsumedTokens
+                && left.ProviderCalls == right.ProviderCalls
+                && left.PeakEstimatedInputTokens == right.PeakEstimatedInputTokens
+                && left.ContextRecoveryCount == right.ContextRecoveryCount
+                && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
+                && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter
+                && left.ReportedInputTokens == right.ReportedInputTokens
+                && left.ReportedOutputTokens == right.ReportedOutputTokens
+                && left.ReportedTotalTokens == right.ReportedTotalTokens
+                && left.ReportedCachedInputTokens == right.ReportedCachedInputTokens
+                && left.UsedEstimatedUsage == right.UsedEstimatedUsage
+                && left.UsedDelegatedDirectAnswer == right.UsedDelegatedDirectAnswer
+                && left.BudgetExhausted == right.BudgetExhausted
+                && left.RequestTokenBudgetExhausted == right.RequestTokenBudgetExhausted
+                && left.MaxToolCalls == right.MaxToolCalls
+                && left.ToolCalls == right.ToolCalls
+                && left.ToolBudgetExhausted == right.ToolBudgetExhausted
+                && left.RegisteredToolCount == right.RegisteredToolCount
+                && left.AvailableToolCount == right.AvailableToolCount
+                && left.AvailableToolDefinitionCharacters == right.AvailableToolDefinitionCharacters
+                && left.HarnessInstructionCharacters == right.HarnessInstructionCharacters
+                && left.NarrowEvidenceResultLimit == right.NarrowEvidenceResultLimit
+                && left.MaxAgentPasses == right.MaxAgentPasses
+                && left.TotalDurationMs == right.TotalDurationMs
+                && left.ElapsedMs == right.ElapsedMs
+                && left.TimeBudgetExhausted == right.TimeBudgetExhausted;
         }
 
         private static string BuildThinkingContent(string? executionContent, string? reasoningContent)

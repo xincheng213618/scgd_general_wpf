@@ -16,6 +16,12 @@ namespace ColorVision.Copilot
         Full = TaskLedger | AgentMode | Skills,
     }
 
+    internal enum CopilotAgentRuntimePurpose
+    {
+        Standard,
+        DelegatedEvidenceFinalization,
+    }
+
     public enum CopilotAgentMode
     {
         Chat,
@@ -155,6 +161,8 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentHarnessFeatures HarnessFeatures { get; init; } = CopilotAgentHarnessFeatures.Full;
 
+        internal CopilotAgentRuntimePurpose RuntimePurpose { get; init; }
+
         internal IReadOnlyList<string> RequiredSuccessfulToolNames { get; init; } = Array.Empty<string>();
 
         internal bool RequiresDelegatedWorkspaceEvidence { get; init; }
@@ -174,6 +182,14 @@ namespace ColorVision.Copilot
 
         public int ToolCalls { get; init; }
 
+        public int PeakEstimatedInputTokens { get; init; }
+
+        public int ContextRecoveryCount { get; init; }
+
+        public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
+
+        public long ContextRecoveryEstimatedInputTokensAfter { get; init; }
+
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
 
         public long ConsumedTokens { get; init; }
@@ -181,6 +197,25 @@ namespace ColorVision.Copilot
         public int ProviderCalls { get; init; }
 
         public bool UsedEstimatedUsage { get; init; }
+
+        public int RegisteredToolCount { get; init; }
+
+        public int AvailableToolCount { get; init; }
+
+        public int AvailableToolDefinitionCharacters { get; init; }
+
+        public int HarnessInstructionCharacters { get; init; }
+    }
+
+    public sealed class CopilotDelegatedAnswer
+    {
+        public string Text { get; init; } = string.Empty;
+
+        public CopilotAgentStopReason StopReason { get; init; }
+
+        public bool HasSuccessfulEvidence { get; init; }
+
+        public bool WasTruncated { get; init; }
     }
 
     public sealed class CopilotToolResult
@@ -210,6 +245,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
 
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
+
+        public CopilotDelegatedAnswer? DelegatedAnswer { get; init; }
     }
 
     public sealed class CopilotLocalFileReadScope
@@ -281,6 +318,8 @@ namespace ColorVision.Copilot
 
         public CopilotDelegatedRunUsage? DelegatedRunUsage { get; init; }
 
+        public CopilotDelegatedAnswer? DelegatedAnswer { get; init; }
+
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
             return new CopilotToolObservation
@@ -297,6 +336,7 @@ namespace ColorVision.Copilot
                 SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
                 LocalFileReadScopes = result?.LocalFileReadScopes ?? Array.Empty<CopilotLocalFileReadScope>(),
                 DelegatedRunUsage = result?.DelegatedRunUsage,
+                DelegatedAnswer = result?.DelegatedAnswer,
             };
         }
     }
@@ -664,7 +704,25 @@ namespace ColorVision.Copilot
 
         public int ProviderCalls { get; init; }
 
+        public int PeakEstimatedInputTokens { get; init; }
+
+        public int ContextRecoveryCount { get; init; }
+
+        public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
+
+        public long ContextRecoveryEstimatedInputTokensAfter { get; init; }
+
+        public int ReportedInputTokens { get; init; }
+
+        public int ReportedOutputTokens { get; init; }
+
+        public int ReportedTotalTokens { get; init; }
+
+        public int? ReportedCachedInputTokens { get; init; }
+
         public bool UsedEstimatedUsage { get; init; }
+
+        public bool UsedDelegatedDirectAnswer { get; init; }
 
         public bool BudgetExhausted { get; init; }
 
@@ -675,6 +733,14 @@ namespace ColorVision.Copilot
         public int ToolCalls { get; init; }
 
         public bool ToolBudgetExhausted { get; init; }
+
+        public int RegisteredToolCount { get; init; }
+
+        public int AvailableToolCount { get; init; }
+
+        public int AvailableToolDefinitionCharacters { get; init; }
+
+        public int HarnessInstructionCharacters { get; init; }
 
         public int NarrowEvidenceResultLimit { get; init; }
 

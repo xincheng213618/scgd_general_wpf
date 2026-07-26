@@ -30,6 +30,33 @@ namespace ColorVision.Copilot
             "inspect", "read", "find", "search", "audit", "review", "examine", "locate", "where is", "error", "exception",
         };
 
+        private static readonly string[] WorkspaceDiscoveryMarkers =
+        {
+            "当前项目", "这个项目", "本项目", "项目里", "项目中", "工程里", "工程中", "工作区", "仓库", "代码库",
+            "其他文件", "其它文件", "其余文件", "所有文件", "全部文件", "相关文件", "相关代码", "同名文件",
+            "查找引用", "搜索引用", "所有引用", "引用位置", "引用处", "调用方", "调用位置", "使用位置", "影响范围",
+            "current project", "this project", "workspace", "repository", "codebase",
+            "other file", "all files", "related files", "related code", "same-named file", "same named file",
+            "find references", "search references", "all references", "references to", "usages", "callers", "call sites",
+            "elsewhere", "across the project", "across this project", "across the workspace", "impact scope",
+        };
+
+        private static readonly string[] GitWorkingTreeMarkers =
+        {
+            "Git 状态", "Git状态", "Git 工作树", "Git工作树", "当前分支", "Git 分支", "Git分支",
+            "上游分支", "领先上游", "落后上游", "未跟踪文件", "冲突文件",
+            "git status", "git working tree", "git worktree", "current git branch", "git branch",
+            "git upstream", "ahead of upstream", "behind upstream", "untracked files", "conflicted files",
+        };
+
+        private static readonly string[] GitDiffMarkers =
+        {
+            "Git 差异", "Git差异", "Git 修改", "Git修改", "代码差异", "文件差异", "当前改动",
+            "当前修改", "待提交修改", "改了什么", "修改了什么", "有哪些修改", "变更内容", "补丁内容",
+            "git diff", "git changes", "current changes", "pending changes", "what changed",
+            "changes made", "staged changes", "unstaged changes", "patch contents",
+        };
+
         private static readonly string[] ConceptualQuestionMarkers =
         {
             "是什么", "什么是", "原理", "概念", "区别", "介绍", "解释", "为什么", "如何", "怎么", "怎样",
@@ -140,7 +167,7 @@ namespace ColorVision.Copilot
 
         private static readonly string[] DelegatedWorkspaceEvidenceMarkers =
         {
-            "DelegateExplore", "Explore 子代理", "Explore子代理", "工作区子代理", "源码子代理",
+            "Delegate", "Explore 子代理", "Explore子代理", "工作区子代理", "源码子代理",
             "workspace subagent", "workspace sub-agent", "explore subagent", "explore sub-agent",
         };
 
@@ -376,7 +403,7 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            if (ContainsAny(request.UserText, LocalScopeMarkers)
+            if (ContainsAnyEnglishWordForm(request.UserText, LocalScopeMarkers)
                 || ContainsAny(request.UserText, WorkspaceEditMarkers)
                     && !ContainsAny(request.UserText, WorkspaceEditExplanationMarkers)
                 || ContainsAny(request.UserText, WorkspaceCreateMarkers)
@@ -386,9 +413,37 @@ namespace ColorVision.Copilot
                 return true;
             }
 
-            return ContainsAny(request.UserText, LocalArtifactMarkers)
-                && ContainsAny(request.UserText, LocalInspectionMarkers)
+            return ContainsAnyEnglishWordForm(request.UserText, LocalArtifactMarkers)
+                && ContainsAnyEnglishWordForm(request.UserText, LocalInspectionMarkers, includeVerbForms: true)
                 && !ContainsAny(request.UserText, ConceptualQuestionMarkers);
+        }
+
+        internal static bool NeedsWorkspaceDiscovery(CopilotAgentRequest? request)
+        {
+            return NeedsLocalEvidence(request) && !HasBoundedExplicitFileScope(request);
+        }
+
+        internal static bool HasBoundedExplicitFileScope(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request)
+                || request!.ReadableLocalFilePaths.Count is < 1 or > 3
+                || request.ReadableLocalDirectoryPaths.Count > 0
+                || request.RequiresDelegatedWorkspaceEvidence
+                || request.ReadableLocalFilePaths.Any(path => string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                || NeedsWorkspaceEdit(request)
+                || NeedsWorkspaceCreate(request)
+                || NeedsWorkspaceRollback(request)
+                || NeedsWorkspaceValidation(request)
+                || NeedsShellExecution(request)
+                || NeedsBatchImageProcessing(request))
+            {
+                return false;
+            }
+
+            var intentText = RemoveExplicitFilePaths(request);
+            return !ContainsAny(intentText, WorkspaceDiscoveryMarkers)
+                && !ContainsAny(intentText, DelegatedWorkspaceEvidenceMarkers)
+                && !ContainsAny(intentText, ExternalLocalSearchMarkers);
         }
 
         public static bool NeedsWorkspaceEdit(CopilotAgentRequest? request)
@@ -583,6 +638,35 @@ namespace ColorVision.Copilot
                     || MatchesCurrentOrContinuation(request, TcpPortMarkers, "InspectTcpPort"));
         }
 
+        public static bool NeedsGitWorkingTreeInspection(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request))
+                return false;
+
+            var activeRequest = request!;
+            var intentText = RemoveExplicitFilePaths(activeRequest);
+            return activeRequest.Mode == CopilotAgentMode.Review
+                || NeedsWorkspaceEdit(activeRequest)
+                || NeedsWorkspaceCreate(activeRequest)
+                || NeedsWorkspaceRollback(activeRequest)
+                || ContainsAny(intentText, GitWorkingTreeMarkers)
+                || ContainsAny(intentText, GitDiffMarkers);
+        }
+
+        public static bool NeedsGitDiffInspection(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request))
+                return false;
+
+            var activeRequest = request!;
+            var intentText = RemoveExplicitFilePaths(activeRequest);
+            return activeRequest.Mode == CopilotAgentMode.Review
+                || NeedsWorkspaceEdit(activeRequest)
+                || NeedsWorkspaceCreate(activeRequest)
+                || NeedsWorkspaceRollback(activeRequest)
+                || ContainsAny(intentText, GitDiffMarkers);
+        }
+
         public static bool NeedsShellExecution(CopilotAgentRequest? request)
         {
             if (!IsAgentRequest(request)
@@ -765,7 +849,7 @@ namespace ColorVision.Copilot
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
-            if (request.RequiresDelegatedWorkspaceEvidence
+            if ((request.RequiresDelegatedWorkspaceEvidence || HasBoundedExplicitFileScope(request))
                 && IsDirectWorkspaceEvidenceIdentity(toolName, description))
             {
                 return false;
@@ -777,7 +861,7 @@ namespace ColorVision.Copilot
             if (ContainsAny(identity, ExternalUrlFetchMarkers))
                 return NeedsUrlFetch(request);
             if (ContainsAny(identity, ExternalLocalSearchMarkers))
-                return NeedsLocalEvidence(request);
+                return NeedsWorkspaceDiscovery(request);
 
             return true;
         }
@@ -792,9 +876,9 @@ namespace ColorVision.Copilot
                 return false;
 
             if (ContainsAny(request.UserText, NewTopicMarkers)
-                || ContainsAny(request.UserText, LocalScopeMarkers)
-                || ContainsAny(request.UserText, LocalArtifactMarkers)
-                    && ContainsAny(request.UserText, LocalInspectionMarkers))
+                || ContainsAnyEnglishWordForm(request.UserText, LocalScopeMarkers)
+                || ContainsAnyEnglishWordForm(request.UserText, LocalArtifactMarkers)
+                    && ContainsAnyEnglishWordForm(request.UserText, LocalInspectionMarkers, includeVerbForms: true))
                 return false;
             var capability = tool.Capability;
             if (capability.Access != CopilotToolAccess.ReadOnly
@@ -937,6 +1021,156 @@ namespace ColorVision.Copilot
         {
             var value = text ?? string.Empty;
             return markers.Any(marker => value.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ContainsAnyEnglishWordForm(
+            string? text,
+            string[] markers,
+            bool includeVerbForms = false)
+        {
+            var value = text ?? string.Empty;
+            return markers.Any(marker => ContainsEnglishWordForm(value, marker, includeVerbForms));
+        }
+
+        private static bool ContainsEnglishWordForm(
+            string value,
+            string marker,
+            bool includeVerbForms)
+        {
+            if (string.IsNullOrWhiteSpace(marker))
+                return false;
+
+            if (!IsAsciiLetterOrDigit(marker[0]) || !IsAsciiLetterOrDigit(marker[^1]))
+                return value.Contains(marker, StringComparison.OrdinalIgnoreCase);
+
+            if (ContainsBoundedAsciiText(value, marker)
+                || ContainsBoundedAsciiText(value, CreatePluralForm(marker)))
+            {
+                return true;
+            }
+
+            return includeVerbForms
+                && (ContainsBoundedAsciiText(value, CreatePastTenseForm(marker))
+                    || ContainsBoundedAsciiText(value, CreateGerundForm(marker))
+                    || ContainsIrregularEnglishVerbForm(value, marker));
+        }
+
+        private static bool ContainsBoundedAsciiText(string value, string candidate)
+        {
+            var searchStart = 0;
+            while (searchStart <= value.Length - candidate.Length)
+            {
+                var index = value.IndexOf(
+                    candidate,
+                    searchStart,
+                    StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    return false;
+
+                var end = index + candidate.Length;
+                if (IsAsciiTokenStart(value, index)
+                    && IsAsciiTokenEnd(value, end))
+                {
+                    return true;
+                }
+
+                searchStart = index + 1;
+            }
+
+            return false;
+        }
+
+        private static bool ContainsIrregularEnglishVerbForm(string value, string marker)
+        {
+            return marker.Equals("find", StringComparison.OrdinalIgnoreCase)
+                && ContainsBoundedAsciiText(value, "found");
+        }
+
+        private static bool IsAsciiTokenStart(string value, int index)
+        {
+            if (index == 0 || !IsAsciiLetterOrDigit(value[index - 1]))
+                return true;
+
+            return IsAsciiLetter(value[index - 1])
+                && value[index] is >= 'A' and <= 'Z';
+        }
+
+        private static bool IsAsciiTokenEnd(string value, int end)
+        {
+            if (end == value.Length || !IsAsciiLetterOrDigit(value[end]))
+                return true;
+
+            return value[end - 1] is >= 'a' and <= 'z'
+                && value[end] is >= 'A' and <= 'Z';
+        }
+
+        private static string CreatePluralForm(string marker)
+        {
+            if (EndsWithConsonantY(marker))
+                return marker[..^1] + "ies";
+            if (marker.EndsWith("s", StringComparison.OrdinalIgnoreCase)
+                || marker.EndsWith("x", StringComparison.OrdinalIgnoreCase)
+                || marker.EndsWith("z", StringComparison.OrdinalIgnoreCase)
+                || marker.EndsWith("ch", StringComparison.OrdinalIgnoreCase)
+                || marker.EndsWith("sh", StringComparison.OrdinalIgnoreCase))
+            {
+                return marker + "es";
+            }
+
+            return marker + "s";
+        }
+
+        private static string CreatePastTenseForm(string marker)
+        {
+            if (EndsWithConsonantY(marker))
+                return marker[..^1] + "ied";
+            return marker.EndsWith("e", StringComparison.OrdinalIgnoreCase)
+                ? marker + "d"
+                : marker + "ed";
+        }
+
+        private static string CreateGerundForm(string marker)
+        {
+            if (marker.EndsWith("ie", StringComparison.OrdinalIgnoreCase))
+                return marker[..^2] + "ying";
+            if (marker.EndsWith("e", StringComparison.OrdinalIgnoreCase)
+                && !marker.EndsWith("ee", StringComparison.OrdinalIgnoreCase))
+            {
+                return marker[..^1] + "ing";
+            }
+
+            return marker + "ing";
+        }
+
+        private static bool EndsWithConsonantY(string value)
+        {
+            return value.Length > 1
+                && value.EndsWith("y", StringComparison.OrdinalIgnoreCase)
+                && IsAsciiLetter(value[^2])
+                && !"aeiou".Contains(char.ToLowerInvariant(value[^2]));
+        }
+
+        private static bool IsAsciiLetterOrDigit(char value)
+        {
+            return IsAsciiLetter(value) || value is >= '0' and <= '9';
+        }
+
+        private static bool IsAsciiLetter(char value)
+        {
+            return value is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
+        }
+
+        private static string RemoveExplicitFilePaths(CopilotAgentRequest request)
+        {
+            var result = request.UserText ?? string.Empty;
+            foreach (var path in request.ReadableLocalFilePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+            {
+                result = result.Replace(path, string.Empty, StringComparison.OrdinalIgnoreCase);
+                var alternatePath = path.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                if (!string.Equals(alternatePath, path, StringComparison.Ordinal))
+                    result = result.Replace(alternatePath, string.Empty, StringComparison.OrdinalIgnoreCase);
+            }
+            return result;
         }
 
     }

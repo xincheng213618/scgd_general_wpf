@@ -152,9 +152,22 @@ namespace ColorVision.Copilot
             TimeSpan elapsed,
             int toolCalls,
             bool timeBudgetExhausted,
-            bool toolBudgetExhausted = false)
+            bool toolBudgetExhausted = false,
+            bool usedDelegatedDirectAnswer = false,
+            CopilotAgentToolSurfaceMetrics toolSurface = default)
         {
             tokenSnapshot ??= new CopilotAgentBudgetSnapshot();
+            var reportedInputTokens = Math.Max(0, tokenSnapshot.ReportedInputTokens);
+            var reportedOutputTokens = Math.Max(0, tokenSnapshot.ReportedOutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, tokenSnapshot.ReportedTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
+            var contextRecoveryEstimatedInputTokensBefore = Math.Max(
+                0,
+                tokenSnapshot.ContextRecoveryEstimatedInputTokensBefore);
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -163,12 +176,37 @@ namespace ColorVision.Copilot
                 RequestTokenBudget = RequestTokenBudget,
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
                 ProviderCalls = tokenSnapshot.ProviderCalls,
+                PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
+                ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    tokenSnapshot.ContextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    contextRecoveryEstimatedInputTokensBefore),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && tokenSnapshot.ReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(
+                        tokenSnapshot.ReportedCachedInputTokens.Value,
+                        0,
+                        reportedInputTokens)
+                    : null,
                 UsedEstimatedUsage = tokenSnapshot.UsedEstimatedUsage,
+                UsedDelegatedDirectAnswer = usedDelegatedDirectAnswer,
                 BudgetExhausted = tokenSnapshot.BudgetExhausted || timeBudgetExhausted || toolBudgetExhausted,
                 RequestTokenBudgetExhausted = tokenSnapshot.BudgetExhausted || tokenSnapshot.RequestTokenBudgetExhausted,
                 MaxToolCalls = MaxToolCalls,
                 ToolCalls = Math.Clamp(toolCalls, 0, MaxToolCalls),
                 ToolBudgetExhausted = toolBudgetExhausted,
+                RegisteredToolCount = Math.Max(0, toolSurface.RegisteredToolCount),
+                AvailableToolCount = Math.Clamp(
+                    toolSurface.AvailableToolCount,
+                    0,
+                    Math.Max(0, toolSurface.RegisteredToolCount)),
+                AvailableToolDefinitionCharacters = Math.Max(0, toolSurface.AvailableToolDefinitionCharacters),
+                HarnessInstructionCharacters = Math.Max(0, toolSurface.HarnessInstructionCharacters),
                 NarrowEvidenceResultLimit = NarrowEvidenceResultLimit,
                 MaxAgentPasses = MaxAgentPasses,
                 TotalDurationMs = Math.Max(1, (long)TotalDuration.TotalMilliseconds),
