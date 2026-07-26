@@ -163,19 +163,12 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 var templateFlow = new TemplateFlow();
                 templateFlow.Load();
-                string baseName = $"Flow_{DateTime.Now:yyyyMMdd_HHmmss}";
-                string name = baseName;
-                int suffix = 2;
-                while (templateFlow.ExitsTemplateName(name))
-                    name = $"{baseName}_{suffix++}";
-
-                var existingIds = templateFlow.TemplateParams.Select(item => item.Id).ToHashSet();
-                templateFlow.Create(name);
-                TemplateModel<FlowParam>? createdFlow = templateFlow.TemplateParams
-                    .LastOrDefault(item => !existingIds.Contains(item.Id));
-                if (createdFlow == null)
+                int oldCount = templateFlow.Count;
+                templateFlow.OpenCreate();
+                if (templateFlow.Count == oldCount)
                     return;
 
+                TemplateModel<FlowParam> createdFlow = templateFlow.TemplateParams[^1];
                 if (DisplayFlow != null)
                     await DisplayFlow.SelectCreatedFlowTemplateAsync(createdFlow);
                 else
