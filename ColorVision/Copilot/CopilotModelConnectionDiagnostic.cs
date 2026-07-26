@@ -38,8 +38,22 @@ namespace ColorVision.Copilot
                 builder.Append(" Recovered after ")
                     .Append(RetryCount.ToString("N0", CultureInfo.InvariantCulture))
                     .Append(RetryCount == 1 ? " retry" : " retries");
-                if (!string.IsNullOrWhiteSpace(LatestRetry?.FailureKind))
-                    builder.Append(" (last: ").Append(LatestRetry.FailureKind.Trim()).Append(')');
+                var failureKind = LatestRetry?.FailureKind?.Trim() ?? string.Empty;
+                var requestId = CopilotProviderRequestId.Normalize(
+                    LatestRetry?.RequestId);
+                if (failureKind.Length > 0 || requestId.Length > 0)
+                {
+                    builder.Append(" (");
+                    if (failureKind.Length > 0)
+                        builder.Append("last: ").Append(failureKind);
+                    if (requestId.Length > 0)
+                    {
+                        if (failureKind.Length > 0)
+                            builder.Append(", ");
+                        builder.Append("request ").Append(requestId);
+                    }
+                    builder.Append(')');
+                }
                 builder.Append('.');
             }
             if (StreamResult.IsIncomplete)

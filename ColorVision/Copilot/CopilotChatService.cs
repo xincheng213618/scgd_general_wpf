@@ -51,16 +51,21 @@ namespace ColorVision.Copilot
         public CopilotProviderPayloadException(
             string message,
             string errorCode,
-            bool isTransient)
+            bool isTransient,
+            string requestId)
             : base(message)
         {
             ErrorCode = errorCode ?? string.Empty;
             IsTransient = isTransient;
+            RequestId = CopilotProviderRequestId.Normalize(requestId);
+            CopilotProviderRequestId.Preserve(this, RequestId);
         }
 
         public string ErrorCode { get; }
 
         public bool IsTransient { get; }
+
+        public string RequestId { get; }
     }
 
     public sealed class CopilotChatService
@@ -296,13 +301,21 @@ namespace ColorVision.Copilot
             var remainingFirstResponseTimeout = SubtractElapsed(
                 inactivityTimeouts.FirstResponseTimeout,
                 firstResponseStopwatch.Elapsed);
+            var providerRequestId = CopilotProviderRequestId.Redact(
+                CopilotProviderRequestId.Extract(response),
+                config.ApiKey);
 
             var statusCode = (int)response.StatusCode;
             if (statusCode is >= 300 and < 400)
             {
                 var redirectException = new InvalidOperationException(
-                    $"HTTP {statusCode}: The provider redirected the request. Redirects are disabled to prevent sending API keys or prompt content to another location. Configure the final API base URL directly.");
+                    CopilotProviderRequestId.AppendToMessage(
+                        $"HTTP {statusCode}: The provider redirected the request. Redirects are disabled to prevent sending API keys or prompt content to another location. Configure the final API base URL directly.",
+                        providerRequestId));
                 redirectException.Data[ProviderStatusCodeDataKey] = statusCode;
+                CopilotProviderRequestId.Preserve(
+                    redirectException,
+                    providerRequestId);
                 throw redirectException;
             }
 
@@ -322,20 +335,38 @@ namespace ColorVision.Copilot
                 }
                 catch (CopilotHttpContentSizeLimitException exception)
                 {
-                    var oversizedResponseException = new InvalidOperationException($"{(int)response.StatusCode}: {exception.Message}", exception);
+                    var oversizedResponseException = new InvalidOperationException(
+                        CopilotProviderRequestId.AppendToMessage(
+                            $"{(int)response.StatusCode}: {exception.Message}",
+                            providerRequestId),
+                        exception);
                     oversizedResponseException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                    CopilotProviderRequestId.Preserve(
+                        oversizedResponseException,
+                        providerRequestId);
                     CopilotProviderRetryChatClient.PreserveRetryAfter(response, oversizedResponseException);
                     throw oversizedResponseException;
                 }
                 catch (CopilotProviderInactivityException exception)
                 {
                     exception.Data[ProviderStatusCodeDataKey] = statusCode;
+                    CopilotProviderRequestId.Preserve(
+                        exception,
+                        providerRequestId);
                     CopilotProviderRetryChatClient.PreserveRetryAfter(response, exception);
                     throw;
                 }
 
-                var providerException = new InvalidOperationException(ParseErrorMessage(errorBody, (int)response.StatusCode, config.ApiKey));
+                var providerException = new InvalidOperationException(ParseErrorMessage(
+                    errorBody,
+                    (int)response.StatusCode,
+                    config.ApiKey,
+                    providerRequestId,
+                    out var errorRequestId));
                 providerException.Data[ProviderStatusCodeDataKey] = (int)response.StatusCode;
+                CopilotProviderRequestId.Preserve(
+                    providerException,
+                    errorRequestId);
                 CopilotProviderRetryChatClient.PreserveRetryAfter(response, providerException);
                 throw providerException;
             }
@@ -343,27 +374,50 @@ namespace ColorVision.Copilot
             var mediaType = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
             if (mediaType.Contains("event-stream", StringComparison.OrdinalIgnoreCase))
             {
-                return await ReadStreamingResponseAsync(
-                    config,
+                try
+                {
+                    return await ReadStreamingResponseAsync(
+                        config,
+                        response,
+                        onDelta,
+                        remainingFirstResponseTimeout,
+                        inactivityTimeouts,
+                        providerRequestId,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    CopilotProviderRequestId.Preserve(
+                        exception,
+                        providerRequestId);
+                    throw;
+                }
+            }
+
+            string body;
+            try
+            {
+                body = await ReadBoundedContentWithTimeoutAsync(
                     response,
-                    onDelta,
+                    MaximumNonStreamingResponseBytes,
+                    "Non-streaming provider response",
                     remainingFirstResponseTimeout,
+                    CopilotProviderInactivityPhase.FirstResponse,
                     inactivityTimeouts,
                     cancellationToken).ConfigureAwait(false);
             }
-
-            var body = await ReadBoundedContentWithTimeoutAsync(
-                response,
-                MaximumNonStreamingResponseBytes,
-                "Non-streaming provider response",
-                remainingFirstResponseTimeout,
-                CopilotProviderInactivityPhase.FirstResponse,
-                inactivityTimeouts,
-                cancellationToken).ConfigureAwait(false);
+            catch (Exception exception)
+            {
+                CopilotProviderRequestId.Preserve(
+                    exception,
+                    providerRequestId);
+                throw;
+            }
             if (TryCreateProviderPayloadException(
                 body,
                 "Provider response",
                 config.ApiKey,
+                providerRequestId,
                 out var payloadException))
             {
                 throw payloadException;
@@ -371,7 +425,12 @@ namespace ColorVision.Copilot
 
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
-                throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
+            {
+                throw new InvalidOperationException(
+                    CopilotProviderRequestId.AppendToMessage(
+                        "The API returned successfully, but no displayable text was found.",
+                        providerRequestId));
+            }
 
             onDelta(reply.Delta);
             var finishReason = ExtractProviderFinishReason(config.ProviderType, body);
@@ -575,7 +634,8 @@ namespace ColorVision.Copilot
                 _maximumAttempts,
                 CopilotProviderRetryChatClient.ResolveRetryDelay(exception, _retryDelayFactory(failedAttempt)),
                 failureKind,
-                statusCode);
+                statusCode,
+                CopilotProviderRequestId.Find(exception));
             return true;
         }
 
@@ -754,6 +814,7 @@ namespace ColorVision.Copilot
             Action<CopilotStreamDelta> onDelta,
             TimeSpan remainingFirstResponseTimeout,
             CopilotProviderInactivityTimeouts inactivityTimeouts,
+            string providerRequestId,
             CancellationToken cancellationToken)
         {
             using var cancellationRegistration = cancellationToken.Register(static state =>
@@ -790,6 +851,7 @@ namespace ColorVision.Copilot
                 var completed = ProcessStreamingEventData(
                     config,
                     eventData,
+                    providerRequestId,
                     delta =>
                     {
                         emittedContent = true;
@@ -858,9 +920,23 @@ namespace ColorVision.Copilot
 
             cancellationToken.ThrowIfCancellationRequested();
             if (!receivedDisplayableText)
-                throw new InvalidOperationException("The API stream completed successfully, but no displayable text was found.");
+            {
+                throw new InvalidOperationException(
+                    CopilotProviderRequestId.AppendToMessage(
+                        "The API stream completed successfully, but no displayable text was found.",
+                        providerRequestId));
+            }
             if (!streamCompleted && string.IsNullOrWhiteSpace(finishReason))
-                throw new IOException("The provider stream ended before a completion event or finish reason was received.");
+            {
+                var exception = new IOException(
+                    CopilotProviderRequestId.AppendToMessage(
+                        "The provider stream ended before a completion event or finish reason was received.",
+                        providerRequestId));
+                CopilotProviderRequestId.Preserve(
+                    exception,
+                    providerRequestId);
+                throw exception;
+            }
 
             return CreateStreamResult(usage, finishReason);
         }
@@ -868,6 +944,7 @@ namespace ColorVision.Copilot
         private static bool ProcessStreamingEventData(
             CopilotProfileConfig config,
             StringBuilder eventData,
+            string providerRequestId,
             Action<CopilotStreamDelta> onDelta,
             ref CopilotTokenUsage usage,
             ref bool receivedDisplayableText,
@@ -886,6 +963,7 @@ namespace ColorVision.Copilot
                 payload,
                 "Provider stream",
                 config.ApiKey,
+                providerRequestId,
                 out var payloadException))
             {
                 throw payloadException;
@@ -1061,6 +1139,7 @@ namespace ColorVision.Copilot
             string payload,
             string sourceLabel,
             string? apiKey,
+            string fallbackRequestId,
             out CopilotProviderPayloadException exception)
         {
             exception = null!;
@@ -1075,13 +1154,21 @@ namespace ColorVision.Copilot
                 var codeSuffix = string.IsNullOrWhiteSpace(errorCode)
                     ? string.Empty
                     : $" ({errorCode})";
+                var requestId = CopilotProviderRequestId.Redact(
+                    CopilotProviderRequestId.Prefer(
+                        providerError.RequestId,
+                        fallbackRequestId),
+                    apiKey);
                 var message = CopilotUserFacingErrorFormatter.Sanitize(
-                    $"{sourceLabel} error{codeSuffix}: {providerError.Message}",
+                    CopilotProviderRequestId.AppendToMessage(
+                        $"{sourceLabel} error{codeSuffix}: {providerError.Message}",
+                        requestId),
                     apiKey);
                 exception = new CopilotProviderPayloadException(
                     message,
                     errorCode,
-                    IsTransientProviderErrorCode(errorCode));
+                    IsTransientProviderErrorCode(errorCode),
+                    requestId);
                 return true;
             }
             catch (JsonException)
@@ -1461,18 +1548,33 @@ namespace ColorVision.Copilot
             return builder.ToString();
         }
 
-        private static string ParseErrorMessage(string errorBody, int statusCode, string? apiKey)
+        private static string ParseErrorMessage(
+            string errorBody,
+            int statusCode,
+            string? apiKey,
+            string fallbackRequestId,
+            out string requestId)
         {
             string? detail = null;
+            requestId = CopilotProviderRequestId.Redact(
+                fallbackRequestId,
+                apiKey);
             if (!string.IsNullOrWhiteSpace(errorBody))
             {
                 try
                 {
                     using var document = JsonDocument.Parse(errorBody);
                     var root = document.RootElement;
+                    requestId = CopilotProviderRequestId.Redact(
+                        CopilotProviderRequestId.Prefer(
+                            CopilotProviderRequestId.Extract(root),
+                            requestId),
+                        apiKey);
 
                     if (TryExtractProviderPayloadError(root, out var providerError))
+                    {
                         detail = providerError.Message;
+                    }
                     else if (root.ValueKind == JsonValueKind.Object
                         && root.TryGetProperty("message", out var topLevelMessage)
                         && topLevelMessage.ValueKind == JsonValueKind.String)
@@ -1490,7 +1592,11 @@ namespace ColorVision.Copilot
             var messageText = string.IsNullOrWhiteSpace(detail)
                 ? $"Request failed, HTTP {statusCode}"
                 : $"{statusCode}: {detail}";
-            return CopilotUserFacingErrorFormatter.Sanitize(messageText, apiKey);
+            return CopilotUserFacingErrorFormatter.Sanitize(
+                CopilotProviderRequestId.AppendToMessage(
+                    messageText,
+                    requestId),
+                apiKey);
         }
 
         private static bool TryExtractProviderPayloadError(
@@ -1500,10 +1606,12 @@ namespace ColorVision.Copilot
             providerError = default;
             if (root.ValueKind != JsonValueKind.Object)
                 return false;
+            var requestId = CopilotProviderRequestId.Extract(root);
 
             if (root.TryGetProperty("error", out var error)
                 && TryReadProviderErrorElement(error, out providerError))
             {
+                providerError = providerError with { RequestId = requestId };
                 return true;
             }
 
@@ -1512,7 +1620,10 @@ namespace ColorVision.Copilot
                 && TryGetString(root, "message", out var eventMessage))
             {
                 TryGetString(root, "code", out var eventCode);
-                providerError = new ProviderPayloadError(eventCode, eventMessage);
+                providerError = new ProviderPayloadError(
+                    eventCode,
+                    eventMessage,
+                    requestId);
                 return true;
             }
 
@@ -1523,6 +1634,7 @@ namespace ColorVision.Copilot
                 && response.TryGetProperty("error", out error)
                 && TryReadProviderErrorElement(error, out providerError))
             {
+                providerError = providerError with { RequestId = requestId };
                 return true;
             }
 
@@ -1542,7 +1654,8 @@ namespace ColorVision.Copilot
 
                 providerError = new ProviderPayloadError(
                     string.Empty,
-                    stringErrorMessage);
+                    stringErrorMessage,
+                    string.Empty);
                 return true;
             }
 
@@ -1557,7 +1670,10 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(message))
                 return false;
 
-            providerError = new ProviderPayloadError(code, message);
+            providerError = new ProviderPayloadError(
+                code,
+                message,
+                string.Empty);
             return true;
         }
 
@@ -1610,7 +1726,10 @@ namespace ColorVision.Copilot
                 or "service_unavailable";
         }
 
-        private readonly record struct ProviderPayloadError(string Code, string Message);
+        private readonly record struct ProviderPayloadError(
+            string Code,
+            string Message,
+            string RequestId);
 
     }
 }

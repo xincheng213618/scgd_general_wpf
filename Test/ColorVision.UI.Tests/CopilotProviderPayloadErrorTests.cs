@@ -14,7 +14,9 @@ public sealed class CopilotProviderPayloadErrorTests
         using var handler = new SequentialHandler(call => call == 1
             ? CreateStreamingResponse(
                 "event: error\n"
-                + "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n")
+                + "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"},"
+                + "\"request_id\":\"req_anthropic_overload\"}\n\n",
+                "req_header_fallback")
             : CreateStreamingResponse(CreateCompletedAnthropicStream("Recovered.")));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2);
@@ -33,6 +35,11 @@ public sealed class CopilotProviderPayloadErrorTests
         var retry = Assert.Single(retries);
         Assert.Equal("overloaded_error", retry.FailureKind);
         Assert.Null(retry.StatusCode);
+        Assert.Equal("req_anthropic_overload", retry.RequestId);
+        Assert.Contains(
+            "request req_anthropic_overload",
+            retry.ToDiagnosticText(),
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -42,7 +49,8 @@ public sealed class CopilotProviderPayloadErrorTests
             _ => CreateStreamingResponse(
                 "data: {\"choices\":[{\"delta\":{\"content\":\"Partial.\"}}]}\n\n"
                 + "event: error\n"
-                + "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n"));
+                + "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n",
+                "req_partial_overload"));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2);
         var deltas = new List<CopilotStreamDelta>();
@@ -60,6 +68,7 @@ public sealed class CopilotProviderPayloadErrorTests
         Assert.Equal("Partial.", string.Concat(deltas.Select(delta => delta.Content)));
         Assert.Equal("overloaded_error", failure.ErrorCode);
         Assert.True(failure.IsTransient);
+        Assert.Equal("req_partial_overload", failure.RequestId);
         Assert.Empty(retries);
     }
 
@@ -70,7 +79,8 @@ public sealed class CopilotProviderPayloadErrorTests
             _ => CreateStreamingResponse(
                 "event: error\n"
                 + "data: {\"type\":\"error\",\"code\":\"invalid_request_error\","
-                + "\"message\":\"Unsupported model for test-key\",\"param\":\"model\"}\n\n"));
+                + "\"message\":\"Unsupported model for test-key\",\"param\":\"model\"}\n\n",
+                "req_openai_invalid"));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2);
         var retries = new List<CopilotProviderRetryInfo>();
@@ -86,8 +96,13 @@ public sealed class CopilotProviderPayloadErrorTests
         Assert.Equal(1, handler.CallCount);
         Assert.Equal("invalid_request_error", failure.ErrorCode);
         Assert.False(failure.IsTransient);
+        Assert.Equal("req_openai_invalid", failure.RequestId);
         Assert.Contains("Unsupported model", failure.Message, StringComparison.Ordinal);
         Assert.Contains("<redacted>", failure.Message, StringComparison.Ordinal);
+        Assert.Contains(
+            "[request req_openai_invalid]",
+            failure.Message,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("test-key", failure.Message, StringComparison.Ordinal);
         Assert.Empty(retries);
     }
@@ -98,7 +113,8 @@ public sealed class CopilotProviderPayloadErrorTests
         using var handler = new SequentialHandler(call => call == 1
             ? CreateStreamingResponse(
                 "data: {\"type\":\"response.failed\",\"response\":{\"status\":\"failed\","
-                + "\"error\":{\"code\":\"server_error\",\"message\":\"Generation failed.\"}}}\n\n")
+                + "\"error\":{\"code\":\"server_error\",\"message\":\"Generation failed.\"}}}\n\n",
+                "req_response_failed")
             : CreateStreamingResponse(CreateCompletedOpenAiStream("Recovered.")));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2);
@@ -114,7 +130,9 @@ public sealed class CopilotProviderPayloadErrorTests
 
         Assert.Equal(2, handler.CallCount);
         Assert.Equal("Recovered.", string.Concat(deltas.Select(delta => delta.Content)));
-        Assert.Equal("server_error", Assert.Single(retries).FailureKind);
+        var retry = Assert.Single(retries);
+        Assert.Equal("server_error", retry.FailureKind);
+        Assert.Equal("req_response_failed", retry.RequestId);
     }
 
     [Fact]
@@ -123,7 +141,9 @@ public sealed class CopilotProviderPayloadErrorTests
         using var handler = new SequentialHandler(
             _ => CreateJsonResponse(
                 "{\"error\":{\"type\":\"authentication_error\","
-                + "\"message\":\"Credential test-key was rejected.\"}}"));
+                + "\"message\":\"Credential test-key was rejected.\"},"
+                + "\"request_id\":\"req_json_auth\"}",
+                "req_header_fallback"));
         using var httpClient = new HttpClient(handler);
         var service = CreateService(httpClient, maximumAttempts: 2);
         var retries = new List<CopilotProviderRetryInfo>();
@@ -138,9 +158,51 @@ public sealed class CopilotProviderPayloadErrorTests
 
         Assert.Equal(1, handler.CallCount);
         Assert.Equal("authentication_error", failure.ErrorCode);
+        Assert.Equal("req_json_auth", failure.RequestId);
         Assert.Contains("Credential <redacted> was rejected.", failure.Message, StringComparison.Ordinal);
+        Assert.Contains("[request req_json_auth]", failure.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("no displayable text", failure.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(retries);
+    }
+
+    [Fact]
+    public async Task HttpErrorPreservesHeaderRequestId()
+    {
+        using var handler = new SequentialHandler(
+            _ => CreateJsonResponse(
+                "{\"error\":{\"type\":\"authentication_error\","
+                + "\"message\":\"Credential rejected.\"}}",
+                "req_http_401",
+                HttpStatusCode.Unauthorized,
+                "request-id"));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 1);
+
+        var failure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.StreamReplyAsync(
+                CreateProfile(CopilotProviderType.AnthropicCompatible),
+                [new CopilotRequestMessage("user", "Keep the provider request ID.")],
+                _ => { },
+                CancellationToken.None));
+
+        Assert.Equal("req_http_401", CopilotProviderRequestId.Find(failure));
+        Assert.Contains("[request req_http_401]", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RequestIdNormalizationBoundsUntrustedValues()
+    {
+        var oversized = new string('a', 200);
+
+        Assert.Equal(
+            "req_bad_value_script",
+            CopilotProviderRequestId.Normalize(" req_bad value<script> "));
+        Assert.Equal(
+            "req_redacted_suffix",
+            CopilotProviderRequestId.Redact(
+                "req_test-key_suffix",
+                "test-key"));
+        Assert.Equal(128, CopilotProviderRequestId.Normalize(oversized).Length);
     }
 
     private static CopilotChatService CreateService(
@@ -171,7 +233,9 @@ public sealed class CopilotProviderPayloadErrorTests
         };
     }
 
-    private static HttpResponseMessage CreateStreamingResponse(string eventStream)
+    private static HttpResponseMessage CreateStreamingResponse(
+        string eventStream,
+        string? requestId = null)
     {
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -180,15 +244,28 @@ public sealed class CopilotProviderPayloadErrorTests
         };
         response.Content.Headers.ContentType =
             new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
+        if (!string.IsNullOrWhiteSpace(requestId))
+            response.Headers.TryAddWithoutValidation("x-request-id", requestId);
         return response;
     }
 
-    private static HttpResponseMessage CreateJsonResponse(string json)
+    private static HttpResponseMessage CreateJsonResponse(
+        string json,
+        string? requestId = null,
+        HttpStatusCode statusCode = HttpStatusCode.OK,
+        string requestIdHeaderName = "x-request-id")
     {
-        return new HttpResponseMessage(HttpStatusCode.OK)
+        var response = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+        if (!string.IsNullOrWhiteSpace(requestId))
+        {
+            response.Headers.TryAddWithoutValidation(
+                requestIdHeaderName,
+                requestId);
+        }
+        return response;
     }
 
     private static string CreateCompletedOpenAiStream(string content)

@@ -14,7 +14,10 @@ public sealed class CopilotModelConnectionDiagnosticTests
     public async Task SuccessfulDiagnosticReportsDisplayableContentAndRetry()
     {
         using var handler = new SequentialHandler(call => call == 1
-            ? CreateJsonResponse(HttpStatusCode.ServiceUnavailable, "provider busy")
+            ? CreateJsonResponse(
+                HttpStatusCode.ServiceUnavailable,
+                "provider busy",
+                "req_connection_retry")
             : CreateStreamingResponse(CreateCompletedEventStream("OK")));
         using var httpClient = new HttpClient(handler);
         var diagnostic = CreateDiagnostic(httpClient, maximumAttempts: 2);
@@ -28,11 +31,15 @@ public sealed class CopilotModelConnectionDiagnosticTests
         Assert.Equal(2, result.DisplayableCharacters);
         Assert.Equal(1, result.RetryCount);
         Assert.Equal(503, result.LatestRetry?.StatusCode);
+        Assert.Equal("req_connection_retry", result.LatestRetry?.RequestId);
         Assert.Equal("Keep this prompt.", sourceProfile.EffectiveSystemPrompt);
         Assert.Equal(4_096, sourceProfile.MaxTokens);
         Assert.Equal(0.75, sourceProfile.Temperature);
         Assert.Contains("Received 2 displayable characters.", result.FormatStatus(), StringComparison.Ordinal);
-        Assert.Contains("Recovered after 1 retry (last: HTTP 503).", result.FormatStatus(), StringComparison.Ordinal);
+        Assert.Contains(
+            "Recovered after 1 retry (last: HTTP 503, request req_connection_retry).",
+            result.FormatStatus(),
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -163,15 +170,19 @@ public sealed class CopilotModelConnectionDiagnosticTests
 
     private static HttpResponseMessage CreateJsonResponse(
         HttpStatusCode statusCode,
-        string message)
+        string message,
+        string? requestId = null)
     {
-        return new HttpResponseMessage(statusCode)
+        var response = new HttpResponseMessage(statusCode)
         {
             Content = new StringContent(
                 $"{{\"error\":{{\"message\":\"{message}\"}}}}",
                 Encoding.UTF8,
                 "application/json"),
         };
+        if (!string.IsNullOrWhiteSpace(requestId))
+            response.Headers.TryAddWithoutValidation("x-request-id", requestId);
+        return response;
     }
 
     private static HttpResponseMessage CreateStreamingResponse(string eventStream) =>
