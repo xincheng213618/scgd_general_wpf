@@ -227,7 +227,12 @@ public class BatchImageProcessingTests
             Assert.Equal(CopilotToolFailureKind.Authorization, denied.FailureKind);
 
             CopilotToolResult first = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
-            CopilotToolResult second = await tool.ExecuteApprovedAsync(request, input, CancellationToken.None);
+            var progress = new CopilotToolProgressContext();
+            CopilotToolResult second = await tool.ExecuteApprovedWithProgressAsync(
+                request,
+                input,
+                progress,
+                CancellationToken.None);
 
             Assert.True(first.Success, first.ErrorMessage);
             Assert.True(second.Success, second.ErrorMessage);
@@ -245,6 +250,9 @@ public class BatchImageProcessingTests
             Assert.Equal(1, evidence.RootElement.GetProperty("processed").GetInt32());
             Assert.True(evidence.RootElement.GetProperty("results")[0].GetProperty("source_read").GetBoolean());
             Assert.Equal(firstOutput, evidence.RootElement.GetProperty("results")[0].GetProperty("output").GetString());
+            Assert.Equal(1, progress.LatestSnapshot?.Completed);
+            Assert.Equal(1, progress.LatestSnapshot?.Total);
+            Assert.Equal("files", progress.LatestSnapshot?.Unit);
         }
         finally
         {

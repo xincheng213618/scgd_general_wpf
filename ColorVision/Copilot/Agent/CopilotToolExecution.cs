@@ -280,6 +280,7 @@ namespace ColorVision.Copilot
 
                 using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
+                var executionProgress = new CopilotToolProgressContext();
                 using var progressCancellation = new CancellationTokenSource();
                 var progressTask = PublishToolProgressAsync(
                     invocation,
@@ -287,6 +288,7 @@ namespace ColorVision.Copilot
                     timeout,
                     queueDurationMs,
                     stopwatch,
+                    executionProgress,
                     onEvent,
                     progressCancellation.Token);
                 var progressStopped = 0;
@@ -302,6 +304,7 @@ namespace ColorVision.Copilot
 
                 async Task<CopilotToolExecutionOutcome> PublishExecutionOutcomeAsync(CopilotToolExecutionOutcome outcome)
                 {
+                    executionProgress.Complete();
                     await StopProgressAsync();
                     return await PublishOutcomeAsync(outcome, onEvent);
                 }
@@ -312,9 +315,7 @@ namespace ColorVision.Copilot
                     // the runtime loop. The independent source is cancelled only after the
                     // caller/timeout boundary has already released this invocation.
                     executionTask = Task.Run(
-                        () => invocation.FrameworkApprovalGranted && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool
-                            ? approvedTool.ExecuteApprovedAsync(invocation.AgentRequest, invocation.ToolInput, executionCancellation.Token)
-                            : invocation.Tool.ExecuteAsync(invocation.AgentRequest, invocation.ToolInput, executionCancellation.Token),
+                        () => ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token),
                         executionCancellation.Token);
                     var result = await executionTask.WaitAsync(timeout, cancellationToken) ?? Failure(invocation.Tool.Name, $"{invocation.Tool.Name} returned no result.", "The tool returned a null result.", CopilotToolFailureKind.Internal);
                     var state = result.Approval != null
@@ -368,6 +369,7 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
+                    executionProgress.Complete();
                     await StopProgressAsync();
                 }
             }
@@ -416,6 +418,7 @@ namespace ColorVision.Copilot
             TimeSpan timeout,
             long queueDurationMs,
             Stopwatch stopwatch,
+            CopilotToolProgressContext progressContext,
             Action<CopilotAgentEvent> onEvent,
             CancellationToken cancellationToken)
         {
@@ -436,9 +439,14 @@ namespace ColorVision.Copilot
                         elapsedMs,
                         timeout,
                         queueDurationMs: queueDurationMs);
+                    var reportedProgress = progressContext.LatestSnapshot;
+                    var progressText = FormatReportedProgress(reportedProgress);
                     onEvent(CopilotAgentEvent.ToolProgress(
                         execution,
-                        $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."));
+                        string.IsNullOrWhiteSpace(progressText)
+                            ? $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."
+                            : $"{invocation.Tool.Name} · {progressText} · {FormatElapsed(elapsedMs)} elapsed.",
+                        reportedProgress));
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -448,6 +456,62 @@ namespace ColorVision.Copilot
             {
                 Log.Warn($"Copilot tool progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
             }
+        }
+
+        private static Task<CopilotToolResult> ExecuteToolAsync(
+            CopilotToolInvocation invocation,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            if (invocation.FrameworkApprovalGranted
+                && invocation.Tool is ICopilotFrameworkApprovedProgressReportingTool approvedProgressTool)
+            {
+                return approvedProgressTool.ExecuteApprovedWithProgressAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    progress,
+                    cancellationToken);
+            }
+
+            if (invocation.FrameworkApprovalGranted
+                && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool)
+            {
+                return approvedTool.ExecuteApprovedAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    cancellationToken);
+            }
+
+            if (invocation.Tool is ICopilotProgressReportingTool progressTool)
+            {
+                return progressTool.ExecuteWithProgressAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    progress,
+                    cancellationToken);
+            }
+
+            return invocation.Tool.ExecuteAsync(
+                invocation.AgentRequest,
+                invocation.ToolInput,
+                cancellationToken);
+        }
+
+        private static string FormatReportedProgress(CopilotToolProgressUpdate? progress)
+        {
+            if (progress == null)
+                return string.Empty;
+
+            var count = progress.Completed.HasValue && progress.Total.HasValue
+                ? $"{progress.Completed.Value}/{progress.Total.Value}"
+                : progress.Completed?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(count) && !string.IsNullOrWhiteSpace(progress.Unit))
+                count += " " + progress.Unit;
+            if (string.IsNullOrWhiteSpace(progress.Message))
+                return count;
+            return string.IsNullOrWhiteSpace(count)
+                ? progress.Message
+                : $"{count} · {progress.Message}";
         }
 
         private async Task<CopilotToolExecutionHookDecision> RunBeforeHooksAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)

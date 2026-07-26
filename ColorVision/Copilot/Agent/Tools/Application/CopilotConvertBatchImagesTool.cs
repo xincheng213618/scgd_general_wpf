@@ -13,6 +13,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotConvertBatchImagesTool :
         ICopilotFrameworkApprovedTool,
+        ICopilotFrameworkApprovedProgressReportingTool,
         ICopilotFrameworkApprovalPresentation,
         ICopilotAgentDrivenTool
     {
@@ -94,12 +95,32 @@ namespace ColorVision.Copilot
                 CopilotToolFailureKind.Authorization));
         }
 
-        public async Task<CopilotToolResult> ExecuteApprovedAsync(
+        public Task<CopilotToolResult> ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
+            return ExecuteApprovedCoreAsync(request, toolInput, progress: null, cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ExecuteApprovedWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteApprovedCoreAsync(request, toolInput, progress, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteApprovedCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext? progress,
+            CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(request);
+            progress?.Report("正在检查批量图像输入");
             if (!TryParseOptions(toolInput, out var options, out var parseError))
             {
                 return Failure("Batch image conversion arguments are invalid.", parseError, CopilotToolFailureKind.Validation);
@@ -113,6 +134,11 @@ namespace ColorVision.Copilot
                 return Failure("Batch image conversion output is outside the approved local scope.", outputError, CopilotToolFailureKind.Authorization);
             }
 
+            progress?.Report(
+                $"已准备 {items.Length} 个待转换图像文件",
+                completed: 0,
+                total: items.Length,
+                unit: "files");
             BatchImageRunResult result;
             try
             {
@@ -129,6 +155,7 @@ namespace ColorVision.Copilot
                             PreserveFolderStructure = options.PreserveFolderStructure,
                             AvoidOverwrite = true,
                         },
+                        reportProgress: batchProgress => progress?.Report(CreateProgressUpdate(batchProgress)),
                         cancellationToken: cancellationToken), cancellationToken);
             }
             catch (OperationCanceledException)
@@ -178,6 +205,28 @@ namespace ColorVision.Copilot
                 FailureCode = success ? string.Empty : result.Cancelled ? "batch_image_conversion_cancelled" : "batch_image_conversion_partial_failure",
                 AttemptedLocalFilePaths = result.Files.Select(file => file.SourcePath).ToArray(),
                 SuccessfullyReadLocalFilePaths = result.Files.Where(file => file.SourceRead).Select(file => file.SourcePath).ToArray(),
+            };
+        }
+
+        private static CopilotToolProgressUpdate CreateProgressUpdate(BatchImageProgress progress)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            var fileName = Path.GetFileName(progress.Item?.FilePath ?? string.Empty);
+            var status = progress.Status ?? string.Empty;
+            var message = status switch
+            {
+                "处理中..." when !string.IsNullOrWhiteSpace(fileName) => $"正在转换 {fileName}",
+                "完成" when !string.IsNullOrWhiteSpace(fileName) => $"已转换 {fileName}",
+                "已取消" => "批量图像转换正在取消",
+                _ when status.StartsWith("失败", StringComparison.Ordinal) => "一个图像转换失败，正在继续处理剩余文件",
+                _ => "批量图像转换进行中",
+            };
+            return new CopilotToolProgressUpdate
+            {
+                Message = message,
+                Completed = progress.Completed,
+                Total = progress.Total,
+                Unit = "files",
             };
         }
 

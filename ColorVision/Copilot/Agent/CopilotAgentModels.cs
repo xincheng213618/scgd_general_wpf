@@ -381,6 +381,8 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionInfo? ToolExecution { get; init; }
 
+        public CopilotToolProgressUpdate? Progress { get; init; }
+
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
         public CopilotAgentTaskLedgerSnapshot? TaskLedger { get; init; }
@@ -404,7 +406,10 @@ namespace ColorVision.Copilot
             };
         }
 
-        public static CopilotAgentEvent ToolProgress(CopilotToolExecutionInfo execution, string text)
+        public static CopilotAgentEvent ToolProgress(
+            CopilotToolExecutionInfo execution,
+            string text,
+            CopilotToolProgressUpdate? progress = null)
         {
             ArgumentNullException.ThrowIfNull(execution);
             return new CopilotAgentEvent
@@ -412,6 +417,7 @@ namespace ColorVision.Copilot
                 Type = CopilotAgentEventType.ToolProgress,
                 Text = text ?? string.Empty,
                 ToolExecution = execution,
+                Progress = progress,
             };
         }
 

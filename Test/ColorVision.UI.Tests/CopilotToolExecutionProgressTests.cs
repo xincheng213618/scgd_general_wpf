@@ -6,6 +6,73 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotToolExecutionProgressTests
 {
     [Fact]
+    public void ProgressContextBoundsUpdatesAndIgnoresReportsAfterCompletion()
+    {
+        var progress = new CopilotToolProgressContext();
+        progress.Report(new CopilotToolProgressUpdate
+        {
+            Message = "phase\r\n" + new string('x', 300),
+            Completed = 20,
+            Total = 10,
+            Unit = new string('u', 40),
+        });
+
+        var accepted = Assert.IsType<CopilotToolProgressUpdate>(progress.LatestSnapshot);
+        Assert.DoesNotContain('\r', accepted.Message);
+        Assert.DoesNotContain('\n', accepted.Message);
+        Assert.True(accepted.Message.Length <= 243);
+        Assert.Equal(10, accepted.Completed);
+        Assert.Equal(10, accepted.Total);
+        Assert.Equal(24, accepted.Unit.Length);
+
+        progress.Complete();
+        progress.Report("late update", completed: 1, total: 1);
+
+        Assert.Same(accepted, progress.LatestSnapshot);
+    }
+
+    [Fact]
+    public async Task ReportedToolProgressFlowsThroughHeartbeatEvents()
+    {
+        var tool = new ReportingTool();
+        var executor = new CopilotToolExecutor(
+            hooks: null,
+            utcNow: null,
+            hookPhaseTimeout: null,
+            progressInterval: TimeSpan.FromMilliseconds(20));
+        var reported = new TaskCompletionSource<CopilotAgentEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var executionTask = executor.ExecuteAsync(
+            CreateInvocation(tool, "reported-progress-call"),
+            agentEvent =>
+            {
+                if (agentEvent.Type == CopilotAgentEventType.ToolProgress
+                    && agentEvent.Progress != null)
+                {
+                    reported.TrySetResult(agentEvent);
+                }
+            },
+            CancellationToken.None);
+
+        try
+        {
+            var progressEvent = await reported.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(CopilotToolExecutionState.Running, progressEvent.ToolExecution?.State);
+            Assert.Equal("Converting approved images", progressEvent.Progress!.Message);
+            Assert.Equal(3, progressEvent.Progress.Completed);
+            Assert.Equal(10, progressEvent.Progress.Total);
+            Assert.Equal("files", progressEvent.Progress.Unit);
+            Assert.Contains("3/10 files", progressEvent.Text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            tool.Release.TrySetResult();
+            await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+        }
+    }
+
+    [Fact]
     public async Task WaitingForSharedResourcePublishesPendingProgressBeforeStart()
     {
         using var firstTool = new ResourceTool(block: true);
@@ -133,6 +200,45 @@ public sealed class CopilotToolExecutionProgressTests
             Release.Set();
             Started.Dispose();
             Release.Dispose();
+        }
+    }
+
+    private sealed class ReportingTool : ICopilotProgressReportingTool
+    {
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string Name => "ReportingTool";
+
+        public string Description => "Reports structured progress for executor testing.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ReadOnly(TimeSpan.FromSeconds(5));
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("The progress-aware execution path was not used.");
+        }
+
+        public async Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            progress.Report("Converting approved images", completed: 3, total: 10, unit: "files");
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "completed",
+            };
         }
     }
 }

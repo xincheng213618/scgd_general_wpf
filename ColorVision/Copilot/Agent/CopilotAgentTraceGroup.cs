@@ -91,6 +91,8 @@ namespace ColorVision.Copilot
 
         public string ActivityDurationLabel => IsSingle ? FirstEntry.ActivityDurationLabel : string.Empty;
 
+        public string ActivityProgressLabel => IsSingle ? FirstEntry.ActivityProgressLabel : string.Empty;
+
         public string ActivityDescription => IsSingle
             ? FirstEntry.ActivityDescription
             : $"包含 {Entries.Count} 次调用，展开可查看每次调用的结果和诊断信息。";

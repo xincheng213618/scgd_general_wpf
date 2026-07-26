@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 7;
+        public const int CurrentSchemaVersion = 8;
         private const int MaxSummaryLength = 800;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
@@ -60,6 +60,14 @@ namespace ColorVision.Copilot
 
         public long TimeoutMs { get; set; }
 
+        public string ProgressMessage { get; set; } = string.Empty;
+
+        public long? ProgressCompleted { get; set; }
+
+        public long? ProgressTotal { get; set; }
+
+        public string ProgressUnit { get; set; } = string.Empty;
+
         public string ArgumentSummary { get; set; } = string.Empty;
 
         public string ResultSummary { get; set; } = string.Empty;
@@ -97,6 +105,14 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeWorkspaceChangedFiles() => WorkspaceChangedFiles?.Count > 0;
 
         public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
+
+        public bool ShouldSerializeProgressMessage() => !string.IsNullOrWhiteSpace(ProgressMessage);
+
+        public bool ShouldSerializeProgressCompleted() => ProgressCompleted.HasValue;
+
+        public bool ShouldSerializeProgressTotal() => ProgressTotal.HasValue;
+
+        public bool ShouldSerializeProgressUnit() => !string.IsNullOrWhiteSpace(ProgressUnit);
 
         [JsonIgnore]
         public bool HasWorkspaceChangedFiles => WorkspaceChangedFiles?.Count > 0;
@@ -143,6 +159,25 @@ namespace ColorVision.Copilot
                 : string.Empty;
 
         [JsonIgnore]
+        public string ActivityProgressLabel
+        {
+            get
+            {
+                if (State is not (CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running))
+                    return string.Empty;
+
+                var count = ProgressCompleted.HasValue && ProgressTotal.HasValue
+                    ? $"{ProgressCompleted.Value}/{ProgressTotal.Value}"
+                    : ProgressCompleted?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(count) && !string.IsNullOrWhiteSpace(ProgressUnit))
+                    count += " " + FormatProgressUnit(ProgressUnit);
+                return !string.IsNullOrWhiteSpace(count)
+                    ? count
+                    : TrimForActivity(ProgressMessage, 48);
+            }
+        }
+
+        [JsonIgnore]
         public string ActivityDescription
         {
             get
@@ -167,6 +202,12 @@ namespace ColorVision.Copilot
                     builder.Append(" · ").Append(FormatDuration(DurationMs));
                 if (QueueDurationMs > 0)
                     builder.Append(" · queued ").Append(FormatDuration(QueueDurationMs));
+                if (!string.IsNullOrWhiteSpace(ActivityProgressLabel))
+                {
+                    builder.AppendLine().Append("Progress: ").Append(ActivityProgressLabel);
+                    if (!string.IsNullOrWhiteSpace(ProgressMessage))
+                        builder.Append(" · ").Append(ProgressMessage);
+                }
                 if (!string.IsNullOrWhiteSpace(RuntimeName))
                     builder.AppendLine().Append("Runtime: ").Append(RuntimeName)
                         .Append(" · Access: ").Append(Access)
@@ -218,11 +259,22 @@ namespace ColorVision.Copilot
             return FromExecution(execution);
         }
 
-        public static CopilotAgentTraceEntry FromProgress(CopilotToolExecutionInfo execution, string? progress)
+        public static CopilotAgentTraceEntry FromProgress(
+            CopilotToolExecutionInfo execution,
+            string? progress,
+            CopilotToolProgressUpdate? reportedProgress = null)
         {
             ArgumentNullException.ThrowIfNull(execution);
             var entry = FromExecution(execution);
-            entry.ResultSummary = Sanitize(progress);
+            entry.ProgressMessage = Sanitize(reportedProgress?.Message);
+            entry.ProgressCompleted = NormalizeProgressCount(reportedProgress?.Completed);
+            entry.ProgressTotal = NormalizeProgressCount(reportedProgress?.Total);
+            if (entry.ProgressCompleted.HasValue && entry.ProgressTotal.HasValue)
+                entry.ProgressCompleted = Math.Min(entry.ProgressCompleted.Value, entry.ProgressTotal.Value);
+            entry.ProgressUnit = SanitizeProgressUnit(reportedProgress?.Unit);
+            entry.ResultSummary = !string.IsNullOrWhiteSpace(entry.ProgressMessage)
+                ? entry.ProgressMessage
+                : Sanitize(progress);
             return entry;
         }
 
@@ -383,6 +435,10 @@ namespace ColorVision.Copilot
             var originalDurationMs = DurationMs;
             var originalQueueDurationMs = QueueDurationMs;
             var originalTimeoutMs = TimeoutMs;
+            var originalProgressMessage = ProgressMessage;
+            var originalProgressCompleted = ProgressCompleted;
+            var originalProgressTotal = ProgressTotal;
+            var originalProgressUnit = ProgressUnit;
             SchemaVersion = CurrentSchemaVersion;
             CallId = SanitizeIdentifier(CallId);
             RuntimeName = SanitizeIdentifier(RuntimeName);
@@ -408,6 +464,12 @@ namespace ColorVision.Copilot
             DurationMs = Math.Max(0, DurationMs);
             QueueDurationMs = Math.Max(0, QueueDurationMs);
             TimeoutMs = Math.Max(0, TimeoutMs);
+            ProgressMessage = Sanitize(ProgressMessage);
+            ProgressCompleted = NormalizeProgressCount(ProgressCompleted);
+            ProgressTotal = NormalizeProgressCount(ProgressTotal);
+            if (ProgressCompleted.HasValue && ProgressTotal.HasValue)
+                ProgressCompleted = Math.Min(ProgressCompleted.Value, ProgressTotal.Value);
+            ProgressUnit = SanitizeProgressUnit(ProgressUnit);
             if (originalSchemaVersion < 4)
             {
                 ConcurrencyMode = Access == CopilotToolAccess.Write || Idempotency != CopilotToolIdempotency.Idempotent
@@ -439,7 +501,11 @@ namespace ColorVision.Copilot
                 || originalMaxAttempts != MaxAttempts
                 || originalDurationMs != DurationMs
                 || originalQueueDurationMs != QueueDurationMs
-                || originalTimeoutMs != TimeoutMs;
+                || originalTimeoutMs != TimeoutMs
+                || !string.Equals(originalProgressMessage, ProgressMessage, StringComparison.Ordinal)
+                || originalProgressCompleted != ProgressCompleted
+                || originalProgressTotal != ProgressTotal
+                || !string.Equals(originalProgressUnit, ProgressUnit, StringComparison.Ordinal);
 
             if (!Enum.IsDefined(State))
             {
@@ -540,6 +606,28 @@ namespace ColorVision.Copilot
             return text.Length <= 120 ? text : text[..120];
         }
 
+        private static long? NormalizeProgressCount(long? value)
+        {
+            return value.HasValue ? Math.Clamp(value.Value, 0, 1_000_000_000) : null;
+        }
+
+        private static string SanitizeProgressUnit(string? value)
+        {
+            var text = string.Join(" ", SanitizeIdentifier(value)
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            return text.Length <= 24 ? text : text[..24];
+        }
+
+        private static string FormatProgressUnit(string unit)
+        {
+            return unit switch
+            {
+                "files" => "个文件",
+                "items" => "项",
+                _ => unit,
+            };
+        }
+
         private string BuildActivityLabel()
         {
             var (running, completed) = ToolName switch
@@ -561,6 +649,7 @@ namespace ColorVision.Copilot
                 "InspectGitWorkingTree" => ("正在检查工作树", "检查了工作树"),
                 "InspectGitDiff" => ("正在读取 Git 差异", "读取了 Git 差异"),
                 "RunShellCommand" => ("正在运行命令", "运行了命令"),
+                "ConvertBatchImages" => ("正在转换图像", "转换了图像"),
                 "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
                 "ApplyWorkspacePatchEnvelope" => ("正在修改文件", "修改了文件"),
                 "RollbackWorkspacePatchEnvelope" => ("正在回滚修改", "回滚了修改"),

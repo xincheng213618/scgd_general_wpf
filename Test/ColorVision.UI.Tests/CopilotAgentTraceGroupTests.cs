@@ -31,6 +31,39 @@ public sealed class CopilotAgentTraceGroupTests
     }
 
     [Fact]
+    public void StructuredProgressIsShownBesideRunningActivity()
+    {
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        var execution = new CopilotToolExecutionInfo
+        {
+            CallId = "progress-call",
+            Round = 1,
+            ToolName = "ConvertBatchImages",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+            DurationMs = 1_500,
+        };
+
+        CopilotAssistantMessagePresenter.ApplyAgentEvent(
+            message,
+            CopilotAgentEvent.ToolProgress(
+                execution,
+                "ConvertBatchImages · 3/10 files · 1.5s elapsed.",
+                new CopilotToolProgressUpdate
+                {
+                    Message = "正在转换 sample.cvraw",
+                    Completed = 3,
+                    Total = 10,
+                    Unit = "files",
+                }));
+
+        var trace = Assert.Single(message.AgentTraceEntries);
+        Assert.Equal("3/10 个文件", trace.ActivityProgressLabel);
+        Assert.Equal("正在转换 sample.cvraw", trace.ActivityDescription);
+        Assert.Contains("Progress: 3/10 个文件", trace.DiagnosticDetails, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CancelledWorkspaceApplyIsNotReportedAsMultiplePartialFailures()
     {
         var groups = CopilotAgentTraceGroup.Create(
