@@ -41,11 +41,11 @@ Do not call a generic `--help` path or infer alternate argument names. Paths mus
 Use `colorvision-script-automation` to create and run the saved wrapper. The wrapper must:
 
 1. Use the standard library only and call `subprocess.run([exe, "-e", source, "-o", output_dir, "-q", "-t", format, "-mx", value], shell=False, capture_output=True, text=True, timeout=...)`.
-2. Create a separate output directory, enumerate only the requested `.cvraw` or `.cvcie` files, and recurse only when explicitly requested.
+2. Create a separate output directory, enumerate only the requested `.cvraw` or `.cvcie` files, and recurse only when explicitly requested. Treat that enumeration as the selected execution set. If an earlier search found a different count or broader scope, reconcile the difference before execution and never describe the narrower run as converting every discovered file.
 3. Run sequentially by default. Use a small bounded worker count only when the user explicitly asks for parallelism because every item starts ColorVision.
 4. Snapshot the output directory before each invocation and record new or changed files with the requested extension afterward. Treat exit code `0` plus that output evidence as success; never predict the output name from the source path. Treat a nonzero exit, timeout, or missing output as failure and retain stdout/stderr for the summary.
 5. Preserve every source file. Never delete, truncate, replace, or skip a file merely because it is small. Overwrite output only with explicit authorization.
-6. Report the processed, succeeded, failed, and skipped counts plus failed source paths.
+6. Report the selected, processed, succeeded, failed, and skipped counts plus failed source paths. Exit with a nonzero process code when any selected source failed or was not processed; exit code `0` is reserved for a complete successful run over the selected set.
 
 ## Direct native tool requirements
 

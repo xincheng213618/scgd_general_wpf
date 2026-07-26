@@ -490,6 +490,10 @@ public sealed class CopilotToolIntentPolicyTests
             "An empty successful result with scan_complete=true is definitive evidence",
             instructions,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "reconcile item counts and scope across discovery, execution, and verification",
+            instructions,
+            StringComparison.Ordinal);
         Assert.EndsWith("</runtime_environment>", instructions, StringComparison.Ordinal);
     }
 
