@@ -327,7 +327,14 @@ namespace ColorVision.Copilot
                 retryChatClient,
                 tokenBudget.InputBudgetTokens,
                 recoveryInfo => emit(CopilotAgentEvent.RuntimeDiagnostic(recoveryInfo.ToDiagnosticText())));
-            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(contextRecoveryChatClient, bridge.RecordUnknownToolCall);
+            var delegatedDirectAnswerChatClient = new CopilotDelegatedDirectAnswerChatClient(
+                contextRecoveryChatClient,
+                request,
+                () => bridge.StepRecords,
+                taskLedgerEnabled,
+                () => emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    "The explicit completed DelegateExplore result was returned directly without a second parent provider call.")));
+            using var trackingChatClient = new CopilotUnknownToolCallTrackingChatClient(delegatedDirectAnswerChatClient, bridge.RecordUnknownToolCall);
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
             async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
             {
