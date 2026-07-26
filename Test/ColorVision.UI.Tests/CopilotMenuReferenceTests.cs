@@ -66,6 +66,7 @@ public sealed class CopilotMenuReferenceTests
 
         Assert.True(CopilotExecuteMenuTool.HasReferencedMenu(request));
         Assert.True(result.Success);
+        Assert.Equal("Menu command request accepted by ColorVision.", result.Summary);
         Assert.Equal("execute_menu", invoker.CapabilityName);
         Assert.Equal("MenuOptions", invoker.Arguments["query"].GetString());
         Assert.False(invoker.Arguments["dry_run"].GetBoolean());

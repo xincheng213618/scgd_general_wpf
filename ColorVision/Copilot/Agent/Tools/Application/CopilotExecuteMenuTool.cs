@@ -111,7 +111,7 @@ namespace ColorVision.Copilot
                 Success = result.Success || isWaitingForApproval,
                 Summary = isWaitingForApproval
                     ? "Menu command is waiting for explicit ColorVision approval."
-                    : result.Success ? "Menu command executed." : "Menu command execution failed.",
+                    : result.Success ? "Menu command request accepted by ColorVision." : "Menu command execution failed.",
                 Content = result.Content,
                 ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
                 FailureKind = result.FailureKind,
