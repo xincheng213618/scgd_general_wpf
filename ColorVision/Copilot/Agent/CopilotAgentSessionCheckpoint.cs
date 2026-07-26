@@ -62,6 +62,7 @@ namespace ColorVision.Copilot
         public const int MaxConversationMemoryMessages = 16;
         public const int MaxConversationMemoryContentLength = 8_000;
         public const int MaxConversationMemoryCharacters = 64_000;
+        public const int MaxTaskIntentTextLength = 8_000;
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
 
@@ -84,6 +85,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
         public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
+
+        public string TaskIntentText { get; init; } = string.Empty;
 
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
@@ -201,6 +204,10 @@ namespace ColorVision.Copilot
                     || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
                     || message.Content.Length > MaxConversationMemoryContentLength
                     || message.Content.Contains('\0'))
+                || TaskIntentText == null
+                || TaskIntentText.Length > MaxTaskIntentTextLength
+                || TaskIntentText.Contains('\0')
+                || (TaskIntentText.Length > 0 && !string.Equals(TaskIntentText, TaskIntentText.Trim(), StringComparison.Ordinal))
                 || TaskEventJournal?.IsStructurallyValid() != true)
             {
                 return false;
@@ -225,7 +232,8 @@ namespace ColorVision.Copilot
             CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
             IReadOnlyCollection<string>? availableToolNames = null,
             IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
-            CopilotAgentEnvironmentContext? environmentContext = null)
+            CopilotAgentEnvironmentContext? environmentContext = null,
+            string? taskIntentText = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -255,6 +263,7 @@ namespace ColorVision.Copilot
                 return null;
             }
             var persistedConversationMemory = (conversationMemory ?? Array.Empty<CopilotRequestMessage>()).ToArray();
+            var persistedTaskIntentText = NormalizeTaskIntentText(taskIntentText);
             if (environmentContext?.IsStructurallyValid() == false)
                 return null;
 
@@ -277,6 +286,7 @@ namespace ColorVision.Copilot
                 EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
+                TaskIntentText = persistedTaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
@@ -298,6 +308,7 @@ namespace ColorVision.Copilot
                 EnvironmentFingerprint = EnvironmentFingerprint,
                 EvidenceArtifacts = EvidenceArtifacts,
                 ConversationMemory = ConversationMemory,
+                TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
@@ -338,5 +349,15 @@ namespace ColorVision.Copilot
         }
 
         private static bool IsSha256(string value) => value?.Length == 64 && value.All(Uri.IsHexDigit);
+
+        private static string NormalizeTaskIntentText(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.Length <= MaxTaskIntentTextLength)
+                return normalized;
+
+            const string suffix = "\n...<task intent truncated>";
+            return normalized[..(MaxTaskIntentTextLength - suffix.Length)] + suffix;
+        }
     }
 }

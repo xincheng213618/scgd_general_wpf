@@ -121,7 +121,14 @@ namespace ColorVision.Copilot
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            var requestPlan = CopilotAgentRequestFactory.Prepare(request.UserText, request.Mode, request.HostContext);
+            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+                request.UserText,
+                request.Recovery,
+                request.SessionCheckpoint);
+            var requestPlan = CopilotAgentRequestFactory.Prepare(
+                recoveryTaskContext.EffectiveUserText,
+                request.Mode,
+                request.HostContext);
             var imageUnderstandingTask = _imageUnderstandingService.AnalyzeAsync(
                 request.Profile,
                 request.UserText,
@@ -149,6 +156,7 @@ namespace ColorVision.Copilot
                 AgentDefaults = request.AgentDefaults,
                 AccessContext = request.AccessContext,
                 ExternalMcpServers = request.ExternalMcpServers,
+                TaskIntentText = recoveryTaskContext.TaskIntentText,
             });
             var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);
             return CopilotTurnResult.FromAgent(request.Mode, imageUnderstanding.Usage.Add(result.Usage), result);

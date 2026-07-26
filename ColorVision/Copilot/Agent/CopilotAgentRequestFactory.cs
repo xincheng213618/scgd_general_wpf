@@ -134,6 +134,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
 
         public CopilotAgentAccessContext AccessContext { get; init; } = new();
+
+        public string TaskIntentText { get; init; } = string.Empty;
     }
 
     public static class CopilotAgentRequestFactory
@@ -220,6 +222,9 @@ namespace ColorVision.Copilot
             return new CopilotAgentRequest
             {
                 UserText = plan.UserText,
+                TaskIntentText = string.IsNullOrWhiteSpace(input.TaskIntentText)
+                    ? plan.UserText
+                    : input.TaskIntentText.Trim(),
                 Profile = input.Profile,
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,

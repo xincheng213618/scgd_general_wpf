@@ -56,6 +56,92 @@ public sealed class CopilotAgentRecoveryPolicyTests
         Assert.False(message.HasRecoverableAgentTasks);
     }
 
+    [Fact]
+    public void ReplanRecoveryRetainsOriginalTaskIntentForToolSelection()
+    {
+        const string originalTask = "只读审计 C:\\workspace\\ColorVision\\Copilot，列出至少 30 条可验证的问题；不要修改任何文件。";
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ConversationMemory =
+            [
+                new CopilotRequestMessage("user", originalTask),
+                new CopilotRequestMessage("user", CopilotAgentRecoveryPolicy.ReplanUserMessage),
+            ],
+        };
+        var recovery = new CopilotAgentRecoveryRequest
+        {
+            Mode = CopilotAgentRecoveryMode.Replan,
+            PreviousStopReason = CopilotAgentStopReason.Paused,
+        };
+
+        var context = CopilotAgentRecoveryTaskContext.Resolve(
+            CopilotAgentRecoveryPolicy.ReplanUserMessage,
+            recovery,
+            checkpoint);
+        var request = new CopilotAgentRequest
+        {
+            UserText = context.EffectiveUserText,
+            Mode = CopilotAgentMode.Auto,
+            SearchRootPaths = [@"C:\workspace"],
+        };
+
+        Assert.Equal(originalTask, context.TaskIntentText);
+        Assert.Contains(originalTask, context.EffectiveUserText, StringComparison.Ordinal);
+        Assert.Contains(CopilotAgentRecoveryPolicy.ReplanUserMessage, context.EffectiveUserText, StringComparison.Ordinal);
+        Assert.True(CopilotToolIntentPolicy.NeedsLocalEvidence(request));
+        Assert.True(new CopilotSearchFilesTool().IsAvailable(request));
+    }
+
+    [Fact]
+    public void PersistedTaskIntentWinsAfterRepeatedRecoveryMessages()
+    {
+        const string originalTask = "检查当前项目并验证构建";
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            TaskIntentText = originalTask,
+            ConversationMemory =
+            [
+                new CopilotRequestMessage("user", "Earlier unrelated request"),
+                new CopilotRequestMessage("user", CopilotAgentRecoveryPolicy.ResumeUserMessage),
+                new CopilotRequestMessage("user", CopilotAgentRecoveryPolicy.ReplanUserMessage),
+            ],
+        };
+
+        var context = CopilotAgentRecoveryTaskContext.Resolve(
+            CopilotAgentRecoveryPolicy.ReplanUserMessage,
+            new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Replan,
+                PreviousStopReason = CopilotAgentStopReason.Paused,
+            },
+            checkpoint);
+
+        Assert.Equal(originalTask, context.TaskIntentText);
+        Assert.StartsWith("# Original task to continue", context.EffectiveUserText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FinalAnswerRecoveryDoesNotReopenOriginalToolIntent()
+    {
+        const string originalTask = "检查当前项目并修复构建";
+        var context = CopilotAgentRecoveryTaskContext.Resolve(
+            CopilotAgentRecoveryPolicy.FinalizeUserMessage,
+            new CopilotAgentRecoveryRequest
+            {
+                Mode = CopilotAgentRecoveryMode.Finalize,
+                PreviousStopReason = CopilotAgentStopReason.IncompleteOutput,
+            },
+            new CopilotAgentSessionCheckpoint { TaskIntentText = originalTask });
+
+        Assert.Equal(originalTask, context.TaskIntentText);
+        Assert.Equal(CopilotAgentRecoveryPolicy.FinalizeUserMessage, context.EffectiveUserText);
+        Assert.False(CopilotToolIntentPolicy.NeedsLocalEvidence(new CopilotAgentRequest
+        {
+            UserText = context.EffectiveUserText,
+            Mode = CopilotAgentMode.Auto,
+        }));
+    }
+
     private static CopilotProfileConfig CreateProfile()
     {
         return new CopilotProfileConfig

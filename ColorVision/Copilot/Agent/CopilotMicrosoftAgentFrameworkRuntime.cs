@@ -862,7 +862,8 @@ namespace ColorVision.Copilot
                         taskEventJournal,
                         availableToolNames,
                         conversationMemory,
-                        environmentContext);
+                        environmentContext,
+                        request.TaskIntentText);
                     if (sessionCheckpoint == null)
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }
@@ -1118,8 +1119,11 @@ namespace ColorVision.Copilot
                 Capabilities = (checkpoint.Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
                 ToolSurfaceVersion = checkpoint.ToolSurfaceVersion,
                 AvailableToolNames = (checkpoint.AvailableToolNames ?? Array.Empty<string>()).ToArray(),
+                EnvironmentVersion = checkpoint.EnvironmentVersion,
+                EnvironmentFingerprint = checkpoint.EnvironmentFingerprint,
                 EvidenceArtifacts = (checkpoint.EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
                 ConversationMemory = conversationMemory.ToArray(),
+                TaskIntentText = checkpoint.TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
@@ -1683,7 +1687,8 @@ namespace ColorVision.Copilot
                         _taskEventJournalBuilder.Snapshot(),
                         _availableToolNames,
                         conversationMemory,
-                        _environmentContext);
+                        _environmentContext,
+                        _request.TaskIntentText);
                     if (checkpoint == null)
                     {
                         _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));

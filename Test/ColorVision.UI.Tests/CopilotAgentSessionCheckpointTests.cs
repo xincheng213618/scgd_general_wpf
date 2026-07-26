@@ -53,6 +53,27 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void CopyWithTaskEventJournalPreservesRecoveryIntentAndEnvironment()
+    {
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            TaskIntentText = "Inspect the current workspace",
+            EnvironmentVersion = CopilotAgentSessionCheckpoint.CurrentEnvironmentVersion,
+            EnvironmentFingerprint = new string('a', 64),
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        };
+
+        var copy = checkpoint.CopyWithTaskEventJournal(new CopilotAgentTaskEventJournalSnapshot());
+
+        Assert.NotNull(copy);
+        Assert.Equal(checkpoint.TaskIntentText, copy.TaskIntentText);
+        Assert.Equal(checkpoint.EnvironmentVersion, copy.EnvironmentVersion);
+        Assert.Equal(checkpoint.EnvironmentFingerprint, copy.EnvironmentFingerprint);
+    }
+
+    [Fact]
     public void ConversationNormalizationDropsCheckpointWithInvalidJournal()
     {
         var conversation = new CopilotConversationRecord
