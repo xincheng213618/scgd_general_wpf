@@ -5,6 +5,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using System;
+using System.Threading;
 using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing
@@ -71,9 +72,10 @@ namespace ColorVision.Engine.FlowProcessing
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
         private FlowEngineControl flowEngine;
+        private readonly object lifecycleLock = new object();
         public event EventHandler<FlowControlData> FlowCompleted;
 
-        public string SerialNumber { get; set; }
+        public string? SerialNumber { get; set; }
 
         public FlowControl(MQTTControl mQTTControl)
         {
@@ -84,64 +86,100 @@ namespace ColorVision.Engine.FlowProcessing
             this.flowEngine = flowEngine;
         }
 
-        private bool _IsFlowRun;
+        private int _isFlowRun;
 
         public bool IsFlowRun
         {
-            get
-            {
-                return _IsFlowRun;
-
-            }
+            get => Volatile.Read(ref _isFlowRun) != 0;
             set
             {
-                _IsFlowRun = value;
-                Application.Current?.Dispatcher.Invoke(() => OnPropertyChanged());
+                int nextValue = value ? 1 : 0;
+                if (Interlocked.Exchange(ref _isFlowRun, nextValue) == nextValue)
+                    return;
+
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null)
+                    OnPropertyChanged();
+                else
+                    dispatcher.BeginInvoke(() => OnPropertyChanged());
             }
         }
         public void Stop()
         {
-            flowEngine.Finished -= FinishedAsync;
-            if (!string.IsNullOrWhiteSpace(SerialNumber))
+            string? serialNumber;
+            lock (lifecycleLock)
             {
-                flowEngine.StopNode(SerialNumber);
+                flowEngine.Finished -= FinishedAsync;
+                serialNumber = SerialNumber;
+                SerialNumber = null;
+                IsFlowRun = false;
             }
-            IsFlowRun = false;
+            if (!string.IsNullOrWhiteSpace(serialNumber))
+                flowEngine.StopNode(serialNumber);
         }
 
         public void Start(string sn)
         {
-            IsFlowRun = true;
-            SerialNumber = sn;
+            if (!TryStart(flowEngine.GetStartNodeName(), sn))
+                log.WarnFormat("Flow start request was rejected => serialNumber={0}", sn);
+        }
 
-            var tol = MqttRCService.GetInstance().ServiceTokens;
-            flowEngine.Finished -= FinishedAsync;
-            flowEngine.Finished += FinishedAsync;
-            try
+        public bool TryStart(string startNodeName, string sn)
+        {
+            lock (lifecycleLock)
             {
-                flowEngine.StartNode(sn, tol);
-            }
-            catch
-            {
+                if (IsFlowRun)
+                    return false;
+                if (!flowEngine.CanStartNode(startNodeName))
+                    return false;
+
+                IsFlowRun = true;
+                SerialNumber = sn;
+
+                var tol = MqttRCService.GetInstance().ServiceTokens;
                 flowEngine.Finished -= FinishedAsync;
-                IsFlowRun = false;
-                throw;
+                flowEngine.Finished += FinishedAsync;
+                try
+                {
+                    if (!flowEngine.TryStartNode(startNodeName, sn, tol))
+                    {
+                        flowEngine.Finished -= FinishedAsync;
+                        SerialNumber = null;
+                        IsFlowRun = false;
+                        return false;
+                    }
+                    return true;
+                }
+                catch
+                {
+                    flowEngine.Finished -= FinishedAsync;
+                    SerialNumber = null;
+                    IsFlowRun = false;
+                    throw;
+                }
             }
         }
 
         public void FinishedAsync(object sender, FlowEngineEventArgs e)
         {
-            if (!string.Equals(e.SerialNumber, SerialNumber, StringComparison.Ordinal))
-                return;
+            FlowControlData data;
+            lock (lifecycleLock)
+            {
+                if (!string.Equals(e.SerialNumber, SerialNumber, StringComparison.Ordinal))
+                    return;
 
-            IsFlowRun = false;
-            FlowControlData data = new FlowControlData() { StartNodeName = e.StartNodeName, ErrorNodeName = e.ErrorNodeName, ErrorNodeId = e.ErrorNodeId, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, TotalTime = e.TotalTime, Message = e.Message, Params = e.Message };
+                flowEngine.Finished -= FinishedAsync;
+                SerialNumber = null;
+                IsFlowRun = false;
+                data = new FlowControlData() { StartNodeName = e.StartNodeName, ErrorNodeName = e.ErrorNodeName, ErrorNodeId = e.ErrorNodeId, SerialNumber = e.SerialNumber, EventName = e.Status.ToString() , Status= e.Status, TotalTime = e.TotalTime, Message = e.Message, Params = e.Message };
+            }
             try
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
                     FlowCompleted?.Invoke(this, data);
-                });
+                else
+                    dispatcher.BeginInvoke(() => FlowCompleted?.Invoke(this, data));
             }
             catch (Exception ex)
             {

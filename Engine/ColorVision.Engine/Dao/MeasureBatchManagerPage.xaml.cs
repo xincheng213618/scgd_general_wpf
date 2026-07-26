@@ -46,10 +46,10 @@ namespace ColorVision.Engine
 
         private void PopulateContextMenu()
         {
-            var nodeAnalysisMenuItem = new MenuItem { Header = Properties.Resources.Flow_NodeTimeAnalysis };
+            var nodeAnalysisMenuItem = new MenuItem { Header = "流程执行分析" };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
-                var window = new FlowNodeAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new FlowExecutionAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             };
             ContextMenu.Items.Add(nodeAnalysisMenuItem);

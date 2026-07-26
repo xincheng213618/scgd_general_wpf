@@ -7,7 +7,9 @@ namespace ColorVision.Engine.FlowProcessing;
 public sealed class FlowInitializer : IInitializer
 {
     public string Name => "Flow";
-    public int Order => 10;
+    // ConfigHandler is initialized before the IInitializer pipeline. Configure
+    // FlowEngineLib before TemplateInitializer can materialize MQTT start nodes.
+    public int Order => 0;
 
     public Task InitializeAsync()
     {

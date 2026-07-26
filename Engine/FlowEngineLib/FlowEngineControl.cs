@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using log4net;
@@ -62,9 +63,73 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		{
 			if (startNodeNames.Count > 0)
 			{
-				return startNodeNames.First().Value.Ready;
+				return startNodeNames.First().Value.IsExecutionReady;
 			}
 			return false;
+		}
+	}
+
+	public bool IsStartNodeReady(string name)
+	{
+		lock (stateLock)
+		{
+			return name != null
+				&& startNodeNames.TryGetValue(name, out BaseStartNode startNode)
+				&& startNode.IsExecutionReady;
+		}
+	}
+
+	public bool CanStartNode(string name)
+	{
+		lock (stateLock)
+		{
+			return !_IsRunning
+				&& name != null
+				&& startNodeNames.TryGetValue(name, out BaseStartNode startNode)
+				&& startNode.IsExecutionReady
+				&& startNode.CanAcceptStart;
+		}
+	}
+
+	public async Task<bool> EnsureStartNodeReadyAsync(string name, TimeSpan timeout, CancellationToken cancellationToken = default)
+	{
+		ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
+
+		BaseStartNode startNode;
+		lock (stateLock)
+		{
+			if (name == null || !startNodeNames.TryGetValue(name, out startNode))
+			{
+				return false;
+			}
+		}
+
+		if (!startNode.RequiresConnectionReady)
+		{
+			return true;
+		}
+
+		using CancellationTokenSource timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+		timeoutSource.CancelAfter(timeout);
+		try
+		{
+			if (!await startNode.EnsureReadyAsync(timeoutSource.Token).ConfigureAwait(false))
+			{
+				return false;
+			}
+		}
+		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+		{
+			logger.WarnFormat("Timed out waiting for start node readiness => {0}, timeout={1}ms", name, timeout.TotalMilliseconds);
+			return false;
+		}
+
+		lock (stateLock)
+		{
+			return attachedStartNodes.Contains(startNode)
+				&& startNodeNames.TryGetValue(name, out BaseStartNode current)
+				&& ReferenceEquals(current, startNode)
+				&& startNode.IsExecutionReady;
 		}
 	}
 
@@ -640,24 +705,51 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		StartNode(GetStartNodeName(), serialNumber);
 	}
 
+	public bool TryStartNode(string serialNumber, List<MQTTServiceInfo> services)
+	{
+		FlowServiceManager.Instance.AddMQTTService(services);
+		return TryStartNode(GetStartNodeName(), serialNumber);
+	}
+
+	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services)
+	{
+		FlowServiceManager.Instance.AddMQTTService(services);
+		return TryStartNode(name, serialNumber);
+	}
+
 	protected void StartNode(string name, string serialNumber)
+	{
+		TryStartNode(name, serialNumber);
+	}
+
+	protected bool TryStartNode(string name, string serialNumber)
 	{
 		BaseStartNode startNode = null;
 		lock (stateLock)
 		{
-			if (!_IsRunning && name != null && startNodeNames.TryGetValue(name, out startNode))
+			if (!_IsRunning
+				&& name != null
+				&& startNodeNames.TryGetValue(name, out startNode)
+				&& startNode.IsExecutionReady
+				&& startNode.CanAcceptStart)
 			{
 				_IsRunning = true;
+			}
+			else
+			{
+				startNode = null;
 			}
 		}
 		if (startNode == null)
 		{
-			return;
+			logger.WarnFormat("Flow start rejected because the start node is missing, busy, or not ready => {0}", name);
+			return false;
 		}
+		bool started = false;
 		try
 		{
 			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
-			startNode.Start(serialNumber);
+			started = startNode.TryStart(serialNumber);
 		}
 		finally
 		{
@@ -672,6 +764,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 				StopStartNode(startNode);
 			}
 		}
+		return started;
 	}
 
 	public void StopNode(string serialNumber)

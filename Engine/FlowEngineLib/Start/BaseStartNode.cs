@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using log4net;
@@ -31,9 +32,27 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected Dictionary<string, List<CVServiceProxy>> topicServerProxy;
 
+	private readonly object topicSubscriptionsLock = new object();
+
+	private int topicSubscriptionVersion;
+
 	protected int LoopNum = 2;
 
-	public bool Ready { get; set; }
+	private bool ready;
+
+	public bool Ready
+	{
+		get => Volatile.Read(ref ready);
+		set => Volatile.Write(ref ready, value);
+	}
+
+	public virtual bool RequiresConnectionReady => false;
+
+	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
+
+	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0;
+
+	protected int TopicSubscriptionVersion => Volatile.Read(ref topicSubscriptionVersion);
 
 	public bool Running
 	{
@@ -344,42 +363,106 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public virtual void DoSubscribe(string topic, CVBaseServerNode serverNode)
 	{
-		if (topicServer.ContainsKey(topic))
+		if (string.IsNullOrWhiteSpace(topic) || serverNode == null)
 		{
-			List<CVBaseServerNode> list = topicServer[topic];
-			foreach (CVBaseServerNode item in list)
-			{
-				if (item == serverNode)
-				{
-					return;
-				}
-			}
-			list.Add(serverNode);
+			return;
 		}
-		else
+		lock (topicSubscriptionsLock)
 		{
+			if (topicServer.ContainsKey(topic))
+			{
+				List<CVBaseServerNode> list = topicServer[topic];
+				foreach (CVBaseServerNode item in list)
+				{
+					if (item == serverNode)
+					{
+						return;
+					}
+				}
+				list.Add(serverNode);
+				return;
+			}
 			List<CVBaseServerNode> list2 = new List<CVBaseServerNode>();
 			list2.Add(serverNode);
 			topicServer.Add(topic, list2);
+			Interlocked.Increment(ref topicSubscriptionVersion);
 		}
 	}
 
-	public void DoSubscribe(string topic, CVServiceProxy serverNodeProxy)
+	public virtual void DoSubscribe(string topic, CVServiceProxy serverNodeProxy)
 	{
-		if (topicServerProxy.ContainsKey(topic))
+		if (string.IsNullOrWhiteSpace(topic) || serverNodeProxy == null)
 		{
-			topicServerProxy[topic].Add(serverNodeProxy);
 			return;
 		}
-		List<CVServiceProxy> list = new List<CVServiceProxy>();
-		list.Add(serverNodeProxy);
-		topicServerProxy.Add(topic, list);
+		lock (topicSubscriptionsLock)
+		{
+			if (topicServerProxy.ContainsKey(topic))
+			{
+				List<CVServiceProxy> list = topicServerProxy[topic];
+				if (!list.Contains(serverNodeProxy))
+				{
+					list.Add(serverNodeProxy);
+				}
+				return;
+			}
+			List<CVServiceProxy> list2 = new List<CVServiceProxy>();
+			list2.Add(serverNodeProxy);
+			topicServerProxy.Add(topic, list2);
+			Interlocked.Increment(ref topicSubscriptionVersion);
+		}
+	}
+
+	protected (int Version, string[] Topics) GetTopicSubscriptionsSnapshot()
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return (
+				topicSubscriptionVersion,
+				topicServer.Keys.Concat(topicServerProxy.Keys).Distinct(StringComparer.Ordinal).ToArray());
+		}
+	}
+
+	protected List<CVBaseServerNode> GetServerSubscribersSnapshot(string topic)
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return topicServer.TryGetValue(topic, out List<CVBaseServerNode> subscribers)
+				? new List<CVBaseServerNode>(subscribers)
+				: null;
+		}
+	}
+
+	protected List<CVServiceProxy> GetServiceProxySubscribersSnapshot(string topic)
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return topicServerProxy.TryGetValue(topic, out List<CVServiceProxy> subscribers)
+				? new List<CVServiceProxy>(subscribers)
+				: null;
+		}
+	}
+
+	public virtual Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default)
+	{
+		return Task.FromResult(IsExecutionReady);
 	}
 
 	public void Start(string serialNumber)
 	{
+		TryStart(serialNumber);
+	}
+
+	public bool TryStart(string serialNumber)
+	{
+		if (!CanAcceptStart)
+		{
+			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
+			return false;
+		}
 		CVStartCFC start = new CVStartCFC(serialNumber);
 		DoDispatch(start);
+		return true;
 	}
 
 	protected void DoDispatch(CVStartCFC start)
@@ -435,7 +518,13 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public virtual void Dispose()
 	{
-		topicServer.Clear();
+		lock (topicSubscriptionsLock)
+		{
+			topicServer.Clear();
+			topicServerProxy.Clear();
+			Interlocked.Increment(ref topicSubscriptionVersion);
+		}
+		Ready = false;
 	}
 
 	public void FireFinished(CVStartCFC startAction)

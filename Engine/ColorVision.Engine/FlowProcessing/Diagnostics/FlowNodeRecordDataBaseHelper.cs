@@ -241,6 +241,28 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        public static List<FlowNodeRecord> GetByNodeId(string nodeId, int limit = 50)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+                return new List<FlowNodeRecord>();
+
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeRecord>()
+                    .Where(item => item.NodeId == nodeId)
+                    .OrderByDescending(item => item.StartTime)
+                    .Take(limit)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程节点历史执行记录失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
         public static List<int> GetDistinctBatchIds(int limit = 100)
         {
             EnsureInitialized();

@@ -75,8 +75,10 @@ namespace ColorVision.Engine.FlowProcessing
         private volatile bool _flowCompletionPending;
         private string? _activeFlowSerialNumber;
         private bool _cancelFlowStartRequested;
+        private CancellationTokenSource? _flowStartCts;
         private readonly object _flowLifecycleSync = new object();
         private static readonly string[] RestartServiceNames = ["RegistrationCenterService", "CVMainService_x64", "CVMainService_dev"];
+        private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -1007,7 +1009,7 @@ namespace ColorVision.Engine.FlowProcessing
                         SendTopic = e.SendTopic,
                         SendPayload = e.SendPayload,
                         SendTime = DateTime.Now,
-                        State = FlowMessageState.Sended
+                        State = FlowMessageState.Sent
                     };
                     _nodeMessages[algorithmNode.NodeID] = msg;
                     QueueNodeWrite(algorithmNode.NodeID, () =>
@@ -1040,13 +1042,14 @@ namespace ColorVision.Engine.FlowProcessing
 
         private async Task<bool> RunFlowCoreAsync(string? requestedSerialNumber = null)
         {
-            if (!MqttRCService.GetInstance().IsConnect)
+            bool requiresServices = View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>().Any();
+            if (requiresServices && !MqttRCService.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.RegistryCenterNotConnected);
                 return false;
             }
 
-            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
                 View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
@@ -1072,6 +1075,7 @@ namespace ColorVision.Engine.FlowProcessing
             string flowName = ComboBoxFlow.Text;
             FlowParam selectedFlowParam = TemplateFlow.Params[selectedIndex].Value;
             string sn = requestedSerialNumber ?? CreateFlowSerialNumber();
+            using CancellationTokenSource flowStartCts = new CancellationTokenSource();
             lock (_flowLifecycleSync)
             {
                 if (_flowCompletionPending || FlowControl.IsFlowRun)
@@ -1082,6 +1086,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _activeFlowSerialNumber = sn;
                 _flowCompletionPending = true;
                 _cancelFlowStartRequested = false;
+                _flowStartCts = flowStartCts;
             }
 
             View.STNodeEditorHelper.ClearSelection();
@@ -1092,6 +1097,21 @@ namespace ColorVision.Engine.FlowProcessing
             string unstartedBatchResult = "Flow start failed";
             try
             {
+                if (!await View.FlowEngineControl.EnsureStartNodeReadyAsync(startNode, TimeSpan.FromSeconds(5), flowStartCts.Token))
+                {
+                    unstartedBatchResult = FlowMqttNotReadyMessage;
+                    View.ShowExecutionSummary(FlowMqttNotReadyMessage);
+                    log.WarnFormat(
+                        "流程启动被拒绝，StartNode MQTT 未就绪 => node={0}, endpoint={1}:{2}",
+                        startNode,
+                        MQTTHelper.GetServerCfg(),
+                        MQTTHelper.GetPortCfg());
+                    MessageBox.Show(Application.Current.GetActiveWindow(), FlowMqttNotReadyMessage, "ColorVision");
+                    return false;
+                }
+                if (!CanContinueFlowStart(sn))
+                    return false;
+
                 FlowName = flowName;
                 LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowName, out long time) ? time : 0;
                 ResetNodeTitleProgress();
@@ -1150,10 +1170,21 @@ namespace ColorVision.Engine.FlowProcessing
                         unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
                         return false;
                     }
-                    FlowControl.Start(sn);
+                    if (!FlowControl.TryStart(startNode, sn))
+                    {
+                        unstartedBatchResult = FlowMqttNotReadyMessage;
+                        View.ShowExecutionSummary(FlowMqttNotReadyMessage);
+                        return false;
+                    }
                     started = true;
                 }
                 return true;
+            }
+            catch (OperationCanceledException) when (flowStartCts.IsCancellationRequested)
+            {
+                unstartedBatchStatus = FlowStatus.Canceled;
+                unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
+                return false;
             }
             catch (Exception ex)
             {
@@ -1162,6 +1193,11 @@ namespace ColorVision.Engine.FlowProcessing
             }
             finally
             {
+                lock (_flowLifecycleSync)
+                {
+                    if (ReferenceEquals(_flowStartCts, flowStartCts))
+                        _flowStartCts = null;
+                }
                 if (!started)
                 {
                     if (preparedBatch?.Id > 0)
@@ -1226,22 +1262,37 @@ namespace ColorVision.Engine.FlowProcessing
         public void StopFlow()
         {
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            bool wasRunning = FlowControl?.IsFlowRun == true;
+            CancellationTokenSource? flowStartCts = null;
             lock (_flowLifecycleSync)
             {
-                _activeFlowSerialNumber = null;
-                _flowCompletionPending = false;
-                _cancelFlowStartRequested = false;
+                if (_flowCompletionPending && !wasRunning)
+                {
+                    _cancelFlowStartRequested = true;
+                    flowStartCts = _flowStartCts;
+                }
+                else
+                {
+                    _activeFlowSerialNumber = null;
+                    _flowCompletionPending = false;
+                    _cancelFlowStartRequested = false;
+                }
             }
+            flowStartCts?.Cancel();
             InvalidateExecutionPresentation();
-            FlowControl?.Stop();
+            if (wasRunning)
+                FlowControl.Stop();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             ResetNodeTitleProgress();
 
-            FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
-            FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            Db.Updateable(FlowEngineManager.Batch).ExecuteCommand();
+            if (wasRunning && FlowEngineManager.Batch?.Id > 0)
+            {
+                FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
+                FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                Db.Updateable(FlowEngineManager.Batch).ExecuteCommand();
+            }
             View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.ExecutionCancelled);
 
         }

@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -78,6 +79,9 @@ namespace ColorVision.Engine.FlowProcessing
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
         private string? _standaloneExpectedSerialNumber;
+        private bool _standaloneStartPending;
+        private CancellationTokenSource? _standaloneStartCts;
+        private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
@@ -745,59 +749,89 @@ namespace ColorVision.Engine.FlowProcessing
 
         }
 
-        private void RunStandaloneFlow()
+        private async void RunStandaloneFlow()
         {
-            if (!MqttRCService.GetInstance().IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.RegistryCenterNotConnected);
-                return;
-            }
-
-            if (FlowControl.IsFlowRun)
+            if (_standaloneStartPending || FlowControl.IsFlowRun)
                 return;
 
-            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
-            {
-                MqttRCService.GetInstance().QueryServices();
-                ShowExecutionSummary(Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                return;
-            }
-
-            _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
-
-            string startNode = FlowEngineControl.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNode))
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
-                return;
-            }
-
-            STNodeEditorHelper.ClearSelection();
-
-            foreach (STNode node in STNodeEditorMain.Nodes)
-            {
-                foreach (STNodeOption option in node.GetAllInputOptions())
-                    option.Data = null;
-                foreach (STNodeOption option in node.GetAllOutputOptions())
-                    option.Data = null;
-
-                if (node is CVBaseServerNode serverNode)
-                    serverNode.TitleColor = System.Drawing.Color.Blue;
-            }
-
-            ShowExecutionSummary(string.Empty);
-
-            string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            _standaloneExpectedSerialNumber = serialNumber;
-            _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-            _standaloneFlowControl.FlowCompleted += StandaloneFlowControl_FlowCompleted;
-            _standaloneStopwatch.Restart();
-            ShowExecutionSummary($"Run {_standaloneDocumentName}");
-
+            _standaloneStartPending = true;
+            using CancellationTokenSource startCts = new CancellationTokenSource();
+            _standaloneStartCts = startCts;
             try
             {
-                _standaloneFlowControl.Start(serialNumber);
+                bool requiresServices = STNodeEditorMain.Nodes.OfType<CVBaseServerNode>().Any();
+                if (requiresServices && !MqttRCService.GetInstance().IsConnect)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.RegistryCenterNotConnected);
+                    return;
+                }
+
+                if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
+                {
+                    MqttRCService.GetInstance().QueryServices();
+                    ShowExecutionSummary(Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
+                    return;
+                }
+
+                if (requiresServices)
+                {
+                    _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
+                }
+
+                string startNode = FlowEngineControl.GetStartNodeName();
+                if (string.IsNullOrWhiteSpace(startNode))
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
+                    return;
+                }
+
+                if (!await FlowEngineControl.EnsureStartNodeReadyAsync(startNode, TimeSpan.FromSeconds(5), startCts.Token))
+                {
+                    ShowExecutionSummary(FlowMqttNotReadyMessage);
+                    log.WarnFormat(
+                        "Standalone flow start rejected because MQTT is not ready => node={0}, endpoint={1}:{2}",
+                        startNode,
+                        MQTTHelper.GetServerCfg(),
+                        MQTTHelper.GetPortCfg());
+                    MessageBox.Show(Application.Current.GetActiveWindow(), FlowMqttNotReadyMessage, "ColorVision");
+                    return;
+                }
+                startCts.Token.ThrowIfCancellationRequested();
+
+                STNodeEditorHelper.ClearSelection();
+
+                foreach (STNode node in STNodeEditorMain.Nodes)
+                {
+                    foreach (STNodeOption option in node.GetAllInputOptions())
+                        option.Data = null;
+                    foreach (STNodeOption option in node.GetAllOutputOptions())
+                        option.Data = null;
+
+                    if (node is CVBaseServerNode serverNode)
+                        serverNode.TitleColor = System.Drawing.Color.Blue;
+                }
+
+                ShowExecutionSummary(string.Empty);
+
+                string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                _standaloneExpectedSerialNumber = serialNumber;
+                _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+                _standaloneFlowControl.FlowCompleted += StandaloneFlowControl_FlowCompleted;
+                _standaloneStopwatch.Restart();
+                ShowExecutionSummary($"Run {_standaloneDocumentName}");
+
+                if (!_standaloneFlowControl.TryStart(startNode, serialNumber))
+                {
+                    _standaloneExpectedSerialNumber = null;
+                    _standaloneStopwatch.Stop();
+                    _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
+                    ShowExecutionSummary(FlowMqttNotReadyMessage);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                ShowExecutionSummary(Properties.Resources.ExecutionCancelled);
             }
             catch (Exception ex)
             {
@@ -809,6 +843,14 @@ namespace ColorVision.Engine.FlowProcessing
                 ShowExecutionSummary(ex.Message);
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
             }
+            finally
+            {
+                if (ReferenceEquals(_standaloneStartCts, startCts))
+                {
+                    _standaloneStartCts = null;
+                }
+                _standaloneStartPending = false;
+            }
         }
 
         private void StopStandaloneFlow(bool updateLog = false)
@@ -816,6 +858,7 @@ namespace ColorVision.Engine.FlowProcessing
             if (_standaloneFlowControl == null)
                 return;
 
+            _standaloneStartCts?.Cancel();
             _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
             _standaloneExpectedSerialNumber = null;
             if (!_standaloneFlowControl.IsFlowRun)
@@ -868,14 +911,20 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)
         {
+            bool FocusFlowNode(FlowNodeRecord record)
+            {
+                DockViewManager.GetInstance().ActiveView(this);
+                return STNodeEditorHelper.TryFocusExecutionNode(record.NodeId, record.NodeName);
+            }
+
             if (FlowEngineManager.Batch != null)
             {
-                var window = new FlowNodeAnalysisWindow(FlowEngineManager.Batch) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new FlowExecutionAnalysisWindow(FlowEngineManager.Batch, FocusFlowNode) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             }
             else
             {
-                var window = new FlowNodeAnalysisWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new FlowExecutionAnalysisWindow(FocusFlowNode) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             }
         }

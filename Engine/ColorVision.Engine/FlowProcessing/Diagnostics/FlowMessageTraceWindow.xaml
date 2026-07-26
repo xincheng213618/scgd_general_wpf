@@ -1,4 +1,4 @@
-<Window x:Class="ColorVision.Engine.FlowProcessing.Diagnostics.FlowMessageListWindow"
+<Window x:Class="ColorVision.Engine.FlowProcessing.Diagnostics.FlowMessageTraceWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.FlowProcessing.Diagnostics"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Flow_MessageList_Title}" Height="720" Width="1280"
+        Title="流程消息追踪" Height="720" Width="1280"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -33,7 +33,7 @@
                     <TextBlock Text="{x:Static properties:Resources.Flow_MessageList_State}" VerticalAlignment="Center" Margin="2,0,2,0"/>
                     <ComboBox x:Name="FilterState" Width="90" VerticalAlignment="Center" Margin="0,0,4,0">
                         <ComboBoxItem Content="{x:Static properties:Resources.Flow_MessageList_All}" Tag="All" IsSelected="True"/>
-                        <ComboBoxItem Content="Sended"/>
+                        <ComboBoxItem Content="Sent"/>
                         <ComboBoxItem Content="Success"/>
                         <ComboBoxItem Content="Fail"/>
                         <ComboBoxItem Content="Timeout"/>
@@ -80,6 +80,9 @@
             <!-- Left: Message list -->
             <ListView x:Name="ListView1" Grid.Column="0" Background="Transparent" BorderThickness="1"
                       Margin="5,0,5,5" SelectionChanged="ListView1_SelectionChanged"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      ScrollViewer.CanContentScroll="True"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>

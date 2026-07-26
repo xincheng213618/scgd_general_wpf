@@ -411,12 +411,26 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (focusNode)
                 FocusNode(node);
 
-            var window = new FlowMessageListWindow(node.NodeID, node.OnGetDrawTitle())
+            var window = new FlowExecutionAnalysisWindow(
+                node.NodeID,
+                node.OnGetDrawTitle(),
+                record => TryFocusExecutionNode(record.NodeId, record.NodeName))
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             window.Show();
+        }
+
+        public bool TryFocusExecutionNode(string? nodeId, string? nodeName = null)
+        {
+            CVCommonNode? node = ResolveExecutionNode(STNodeEditor, nodeId)
+                ?? ResolveExecutionNode(STNodeEditor, nodeName);
+            if (node == null)
+                return false;
+
+            FocusNode(node);
+            return true;
         }
 
         private void FocusNode(STNode node)

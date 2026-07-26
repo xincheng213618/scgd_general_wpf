@@ -9,7 +9,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     public enum FlowMessageState
     {
         Initial = 0,
-        Sended = 1,
+        Sent = 1,
+        [Obsolete("Use Sent.")]
+        Sended = Sent,
         Success = 2,
         Fail = 3,
         Timeout = 4
@@ -76,6 +78,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         public long ElapsedMs => RecvTime.HasValue ? (long)(RecvTime.Value - SendTime).TotalMilliseconds : -1;
 
         [SugarColumn(IsIgnore = true)]
-        public bool IsRecived => State == FlowMessageState.Success || State == FlowMessageState.Fail;
+        public bool IsReceived => State == FlowMessageState.Success || State == FlowMessageState.Fail;
+
+        [Obsolete("Use IsReceived.")]
+        [SugarColumn(IsIgnore = true)]
+        public bool IsRecived => IsReceived;
     }
 }

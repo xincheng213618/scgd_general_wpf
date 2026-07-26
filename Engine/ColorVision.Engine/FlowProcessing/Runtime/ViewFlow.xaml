@@ -139,7 +139,7 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right">
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="{x:Static properties:Resources.FlowResultManagement}" Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
-                                <Button Content="{x:Static properties:Resources.Flow_NodeTimeAnalysis}" Click="Button_Click_NodeAnalysis"/>
+                                <Button Content="执行分析" Click="Button_Click_NodeAnalysis"/>
                             </StackPanel>
 
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>

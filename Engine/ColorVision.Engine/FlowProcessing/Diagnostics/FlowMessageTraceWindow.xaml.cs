@@ -9,20 +9,21 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
-    public partial class FlowMessageListWindow : Window
+    public partial class FlowMessageTraceWindow : Window
     {
         public ObservableCollection<FlowNodeMessage> Messages { get; set; } = new ObservableCollection<FlowNodeMessage>();
         private List<FlowNodeMessage> _allMessages = new List<FlowNodeMessage>();
         private readonly string? _nodeId;
         private readonly string? _nodeName;
+        private int _loadVersion;
         private bool IsNodeScoped => !string.IsNullOrWhiteSpace(_nodeId);
 
-        public FlowMessageListWindow()
+        public FlowMessageTraceWindow()
             : this(null, null)
         {
         }
 
-        public FlowMessageListWindow(string? nodeId, string? nodeName)
+        public FlowMessageTraceWindow(string? nodeId, string? nodeName)
         {
             _nodeId = nodeId;
             _nodeName = nodeName;
@@ -50,6 +51,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private async Task LoadMessagesAsync()
         {
+            int loadVersion = ++_loadVersion;
             int limit = 500;
             if (int.TryParse(LoadCount.Text, out int val) && val > 0)
                 limit = val;
@@ -68,6 +70,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     Messages: FlowNodeRecordDataBaseHelper.GetAllMessages(limit),
                     Record: (FlowNodeRecord?)null);
             });
+
+            if (loadVersion != _loadVersion)
+                return;
 
             _allMessages = result.Messages;
             if (IsNodeScoped)
@@ -112,7 +117,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             FlowNodeExecutionPresentation presentation = FlowNodeExecutionPresentation.FromRecord(record, DateTime.Now);
             string state = presentation.State == FlowNodeExecutionState.NotStarted
                 ? Properties.Resources.Flow_NotStarted
-                : presentation.State.ToString();
+                : presentation.State == FlowNodeExecutionState.Running
+                    ? "运行中"
+                    : "已完成";
             string batch = record == null ? string.Empty : $" · Batch {record.BatchId}";
             string elapsed = presentation.ElapsedMs.HasValue
                 ? $" · {Properties.Resources.Flow_Elapsed} {presentation.ElapsedMs.Value:N0} ms"
@@ -138,6 +145,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (MessageBox.Show(Properties.Resources.Flow_MessageList_ConfirmClearAll, "ColorVision",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
+                _loadVersion++;
                 FlowNodeRecordDataBaseHelper.DeleteAllMessages();
                 _allMessages.Clear();
                 Messages.Clear();

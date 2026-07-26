@@ -1,14 +1,98 @@
 #pragma warning disable CA1707,CA1861
+using ColorVision.Engine.FlowProcessing;
+using ColorVision.Engine.MQTT;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
 namespace ColorVision.UI.Tests;
 
 public class FlowEngineControlLifecycleTests
 {
+    [Fact]
+    public void LocalStartNodeDoesNotRequireConnectionReady()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("Local");
+            var sink = new StartSinkNode();
+            sink.Create();
+            editor.Nodes.Add(start);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
+            Assert.False(start.Ready);
+
+            Assert.True(control.EnsureStartNodeReadyAsync("Local", TimeSpan.FromMilliseconds(100)).GetAwaiter().GetResult());
+            Assert.True(control.TryStartByName("Local", "SN-Local"));
+            Assert.True(start.Running);
+        });
+    }
+
+    [Fact]
+    public void ConnectionStartNodeIsTargetedAndCannotStartUntilReady()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var first = CreateStartNode("First");
+            var selected = CreateStartNode("Selected");
+            var sink = new StartSinkNode();
+            sink.Create();
+            first.RequiresReady = true;
+            first.EnsureReadyHandler = _ => Task.FromResult(false);
+            selected.RequiresReady = true;
+            selected.EnsureReadyHandler = _ =>
+            {
+                selected.Ready = true;
+                return Task.FromResult(true);
+            };
+            editor.Nodes.Add(first);
+            editor.Nodes.Add(selected);
+            editor.Nodes.Add(sink);
+            Assert.Equal(ConnectionStatus.Connected, selected.m_op_start.ConnectOption(sink.Input));
+
+            Assert.False(control.TryStartByName("Selected", "SN-BeforeReady"));
+            Assert.True(control.EnsureStartNodeReadyAsync("Selected", TimeSpan.FromSeconds(1)).GetAwaiter().GetResult());
+            Assert.Equal(0, first.EnsureReadyCallCount);
+            Assert.Equal(1, selected.EnsureReadyCallCount);
+            Assert.True(control.TryStartByName("Selected", "SN-Ready"));
+            Assert.True(selected.Running);
+        });
+    }
+
+    [Fact]
+    public void StartReadinessWaitHasABoundedTimeout()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var control = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var start = CreateStartNode("MQTT");
+            start.RequiresReady = true;
+            start.EnsureReadyHandler = async cancellationToken =>
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return true;
+            };
+            editor.Nodes.Add(start);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool ready = control.EnsureStartNodeReadyAsync("MQTT", TimeSpan.FromMilliseconds(100)).GetAwaiter().GetResult();
+
+            Assert.False(ready);
+            Assert.InRange(stopwatch.ElapsedMilliseconds, 50, 2_000);
+        });
+    }
+
     [Fact]
     public void AttachIsIdempotentAndNodeRemovalUnsubscribesStartNode()
     {
@@ -280,7 +364,7 @@ public class FlowEngineControlLifecycleTests
             editor.Nodes.Add(sink);
             Assert.Equal(ConnectionStatus.Connected, start.m_op_start.ConnectOption(sink.Input));
 
-            control.StartByName("Start", "SN-1");
+            Assert.True(control.TryStartByName("Start", "SN-1"));
             Assert.True(start.Running);
             Assert.True(control.IsRunning);
 
@@ -311,11 +395,14 @@ public class FlowEngineControlLifecycleTests
             var start = CreateStartNode("Start");
             editor.Nodes.Add(start);
 
-            control.StartByName("Start", "SN-1");
+            Assert.False(control.TryStartByName("Start", "SN-1"));
+            var flowControl = new FlowControl(MQTTControl.GetInstance(), control);
+            Assert.False(flowControl.TryStart("Start", "SN-2"));
 
             Assert.Equal(0, start.ActiveCount);
             Assert.False(start.Running);
             Assert.False(control.IsRunning);
+            Assert.False(flowControl.IsFlowRun);
         });
     }
 
@@ -603,6 +690,11 @@ public class FlowEngineControlLifecycleTests
             StartNode(name, serialNumber);
         }
 
+        public bool TryStartByName(string name, string serialNumber)
+        {
+            return TryStartNode(name, serialNumber);
+        }
+
         public int LoadedCanvasCount => loadedCanvas.Count;
 
         public void SeedLoadedCanvasCache()
@@ -627,6 +719,20 @@ public class FlowEngineControlLifecycleTests
         public int ActiveCount => startActions.Count;
 
         public bool ThrowOnPublish { get; set; }
+
+        public bool RequiresReady { get; set; }
+
+        public int EnsureReadyCallCount { get; private set; }
+
+        public Func<CancellationToken, Task<bool>>? EnsureReadyHandler { get; set; }
+
+        public override bool RequiresConnectionReady => RequiresReady;
+
+        public override Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default)
+        {
+            EnsureReadyCallCount++;
+            return EnsureReadyHandler?.Invoke(cancellationToken) ?? base.EnsureReadyAsync(cancellationToken);
+        }
 
         public CVStartCFC AddActive(string serialNumber)
         {
