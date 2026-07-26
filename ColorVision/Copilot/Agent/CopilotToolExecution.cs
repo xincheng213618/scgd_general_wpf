@@ -231,6 +231,20 @@ namespace ColorVision.Copilot
 
             IDisposable executionLease;
             var queueStopwatch = Stopwatch.StartNew();
+            using var queueProgressCancellation = new CancellationTokenSource();
+            var queueProgressTask = PublishToolQueueProgressAsync(
+                invocation,
+                startedAt,
+                timeout,
+                queueStopwatch,
+                stopwatch,
+                onEvent,
+                queueProgressCancellation.Token);
+            async Task StopQueueProgressAsync()
+            {
+                await queueProgressCancellation.CancelAsync();
+                await queueProgressTask;
+            }
             try
             {
                 executionLease = await _executionGate.AcquireAsync(invocation.ConcurrencyMode, invocation.ConcurrencyKey, cancellationToken);
@@ -238,6 +252,7 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException)
             {
                 queueStopwatch.Stop();
+                await StopQueueProgressAsync();
                 var cancelled = CreateOutcome(
                     invocation,
                     CopilotToolExecutionState.Cancelled,
@@ -249,8 +264,15 @@ namespace ColorVision.Copilot
                 await PublishOutcomeAsync(cancelled, onEvent);
                 throw;
             }
+            catch
+            {
+                queueStopwatch.Stop();
+                await StopQueueProgressAsync();
+                throw;
+            }
 
             queueStopwatch.Stop();
+            await StopQueueProgressAsync();
             var queueDurationMs = queueStopwatch.ElapsedMilliseconds;
             using (var executionLeaseGuard = new DeferredExecutionLease(executionLease))
             {
@@ -348,6 +370,43 @@ namespace ColorVision.Copilot
                 {
                     await StopProgressAsync();
                 }
+            }
+        }
+
+        private async Task PublishToolQueueProgressAsync(
+            CopilotToolInvocation invocation,
+            DateTimeOffset startedAt,
+            TimeSpan timeout,
+            Stopwatch queueStopwatch,
+            Stopwatch totalStopwatch,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var timer = new PeriodicTimer(_progressInterval);
+                while (await timer.WaitForNextTickAsync(cancellationToken))
+                {
+                    var queueDurationMs = Math.Max(0, queueStopwatch.ElapsedMilliseconds);
+                    var execution = CreateExecutionInfo(
+                        invocation,
+                        CopilotToolExecutionState.Pending,
+                        startedAt,
+                        completedAt: null,
+                        Math.Max(0, totalStopwatch.ElapsedMilliseconds),
+                        timeout,
+                        queueDurationMs: queueDurationMs);
+                    onEvent(CopilotAgentEvent.ToolProgress(
+                        execution,
+                        $"{invocation.Tool.Name} is waiting for an execution slot · {FormatElapsed(queueDurationMs)} queued."));
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Copilot tool queue progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
             }
         }
 
