@@ -32,6 +32,14 @@ public sealed class CopilotAgentRunBudgetTests
             "reserve answer text for the final response after the last tool observation",
             instructions,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "A constant or limit, style preference, missing optional feature, hypothetical scenario",
+            instructions,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "do not repeat its broad investigation",
+            instructions,
+            StringComparison.Ordinal);
     }
 
     [Theory]

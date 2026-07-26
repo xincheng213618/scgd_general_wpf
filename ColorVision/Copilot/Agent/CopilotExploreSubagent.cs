@@ -321,15 +321,28 @@ namespace ColorVision.Copilot
                 throw;
             }
 
-            var success = !string.IsNullOrWhiteSpace(result.Answer);
+            var hasAnswer = !string.IsNullOrWhiteSpace(result.Answer);
+            var success = hasAnswer && result.StopReason == CopilotAgentStopReason.Completed;
             return new CopilotToolResult
             {
                 ToolName = Name,
                 Success = success,
-                Summary = success ? SuccessSummary() : $"{_role.DisplayName} 子 Agent 没有返回可用结果。",
+                Summary = success
+                    ? SuccessSummary()
+                    : hasAnswer
+                        ? $"{_role.DisplayName} 子 Agent 在 {result.StopReason} 前返回了部分结果；该结果已保留，但不能视为已完成调查。"
+                        : $"{_role.DisplayName} 子 Agent 没有返回可用结果。",
                 Content = FormatResultContent(result, childRun),
-                ErrorMessage = success ? string.Empty : $"{_role.DisplayName} stopped with {result.StopReason} and produced no displayable answer.",
-                FailureKind = success ? CopilotToolFailureKind.None : CopilotToolFailureKind.Internal,
+                ErrorMessage = success
+                    ? string.Empty
+                    : hasAnswer
+                        ? $"{_role.DisplayName} stopped with {result.StopReason}; its partial answer is evidence only and does not complete the delegated task."
+                        : $"{_role.DisplayName} stopped with {result.StopReason} and produced no displayable answer.",
+                FailureKind = success
+                    ? CopilotToolFailureKind.None
+                    : result.StopReason is CopilotAgentStopReason.Cancelled or CopilotAgentStopReason.Paused
+                        ? CopilotToolFailureKind.Cancelled
+                        : CopilotToolFailureKind.Internal,
                 DelegatedRunUsage = new CopilotDelegatedRunUsage
                 {
                     RoleId = _role.Id,

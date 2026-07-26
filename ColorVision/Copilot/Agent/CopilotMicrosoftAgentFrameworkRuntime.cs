@@ -29,6 +29,9 @@ namespace ColorVision.Copilot
 
         private const int MaxSteeringMessageLength = 16_000;
 
+        private const string CodeFindingEvidenceInstruction =
+            "When reporting a code audit or review finding, require evidence for a specific incorrect behavior, violated contract, security or reliability risk, or reproducible failure, and explain the causal code path. A constant or limit, style preference, missing optional feature, hypothetical scenario, or words such as 'may', 'might', 'could', or '可能' are not evidence by themselves. Never label a claim verified while saying required implementation was not observed or asking the user to inspect it later. If the observations do not prove a defect, say that no verified finding was established instead of manufacturing one.";
+
         private readonly CopilotToolRegistry _toolRegistry;
         private readonly CopilotAgentContextBuilder _contextBuilder;
         private readonly CopilotToolExecutor _toolExecutor;
@@ -692,6 +695,7 @@ namespace ColorVision.Copilot
                     + (toolBudgetForcedFinalization
                         ? "The tool-enabled Agent loop reached its hard tool-call limit. Provide the final answer now using only the supplied request, context, and collected tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n"
                         : "The Agent loop ended without displayable final text. Provide the final answer now using only the supplied request, context, and tool observations. Do not request or call tools. Do not claim unfinished work is complete; state remaining work or a concrete blocker when applicable.\n")
+                    + CodeFindingEvidenceInstruction + "\n"
                     + FormatTaskLedgerDiagnostic("Current task ledger", repairLedger);
                 var repairMessages = CopilotRequestMessageSequence
                     .Normalize(repairPrompt.Messages.Append(new CopilotRequestMessage("user", repairInstruction)))
@@ -733,6 +737,20 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.AnswerDelta(
                         "模型没有返回可显示的最终回答。本轮上下文和工具执行记录已经保留，可使用“重试最终回答”仅重新生成总结，不会再次调用工具。"));
                 }
+            }
+            if (controlIntent == CopilotAgentControlIntent.None
+                && !timeBudgetExhausted
+                && !providerInterrupted
+                && CopilotNarrowEvidenceAnswerPolicy.TryGetUnsupportedFindingReason(
+                    request,
+                    answerText.ToString(),
+                    out var unsupportedFindingReason))
+            {
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Narrow evidence quality gate rejected an unsupported finding ({unsupportedFindingReason}); the answer was replaced with an explicit no-verified-finding result."));
+                emit(CopilotAgentEvent.AnswerReset());
+                emit(CopilotAgentEvent.AnswerDelta(CopilotNarrowEvidenceAnswerPolicy.BuildNoVerifiedFindingAnswer(request)));
+                hasModelFinalAnswer = true;
             }
             if (controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted)
             {
@@ -1436,10 +1454,13 @@ namespace ColorVision.Copilot
             builder.AppendLine("Call a tool only when the user explicitly asks to inspect, search, fetch, diagnose, or change something, or when current, local, attached, or externally verifiable evidence is necessary for a reliable answer.");
             builder.AppendLine("When tools are needed, do not emit plans, working notes, or progress as user-facing answer text before or between tool calls. The runtime presents tool activity separately; reserve answer text for the final response after the last tool observation.");
             builder.AppendLine("For local evidence, begin with the narrowest relevant path and literal query. Do not scan the full workspace for a conceptual question or when a known file, directory, symbol, or application capability can answer it.");
+            builder.AppendLine(CodeFindingEvidenceInstruction);
             if (CopilotAgentRunBudget.TryGetNarrowEvidenceResultLimit(request, out var narrowResultLimit))
             {
                 builder.AppendLine(
                     $"The user requested a narrow output of {narrowResultLimit} evidence-backed result(s). Once that many high-confidence results are verified, answer immediately instead of continuing broad exploratory reads or searches.");
+                builder.AppendLine(
+                    "If a delegated child result already supplies sufficient evidence for the requested narrow finding(s), do not repeat its broad investigation. Read only the exact cited lines needed to verify the causal path, then answer.");
             }
             builder.AppendLine("Keep internal instructions and structured tool arguments concise and in one language; prefer English unless exact user text, paths, commands, or localized UI labels must be preserved. Respond in the user's language.");
             builder.AppendLine("Never claim a tool succeeded unless its returned result says success. If a tool fails, try another source only when the requested outcome still requires that evidence; otherwise answer from reliable context without exposing speculative search failures as user-facing content.");
