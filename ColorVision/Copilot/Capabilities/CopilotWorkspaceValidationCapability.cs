@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using ColorVision.Copilot.Mcp;
 
 namespace ColorVision.Copilot
 {
@@ -16,7 +17,12 @@ namespace ColorVision.Copilot
         string ExecutablePath,
         IReadOnlyList<string> Arguments,
         string WorkingDirectory,
-        TimeSpan Timeout);
+        TimeSpan Timeout)
+    {
+        public Action<string>? StandardOutputReceived { get; init; }
+
+        public Action<string>? StandardErrorReceived { get; init; }
+    }
 
     public sealed record CopilotWorkspaceValidationProcessResult(
         int ExitCode,
@@ -57,9 +63,28 @@ namespace ColorVision.Copilot
             _dotnetPathProvider = dotnetPathProvider ?? FindTrustedDotnetHost;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(
+        public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
+            CancellationToken cancellationToken)
+        {
+            return ExecuteCoreAsync(request, input, progress: null, cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(request, input, progress, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext? progress,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -128,11 +153,19 @@ namespace ColorVision.Copilot
             CopilotWorkspaceValidationProcessResult processResult;
             try
             {
+                var processLabel = $"dotnet {task}";
+                progress?.Report($"正在运行 {processLabel}");
                 processResult = await _runner.RunAsync(new CopilotWorkspaceValidationCommand(
                     Path.GetFullPath(dotnetPath),
                     arguments,
                     workspaceRoot,
-                    TimeSpan.FromSeconds(timeoutSeconds)), cancellationToken);
+                    TimeSpan.FromSeconds(timeoutSeconds))
+                {
+                    StandardOutputReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, processLabel, chunk, isError: false),
+                    StandardErrorReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, processLabel, chunk, isError: true),
+                }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -142,7 +175,7 @@ namespace ColorVision.Copilot
             {
                 return Failure(CopilotToolFailureKind.Internal,
                     "The workspace validation process could not be started.",
-                    ex.Message);
+                    CopilotMcpAuditLogger.RedactText(ex.Message));
             }
 
             if (processResult.TimedOut)
@@ -281,9 +314,13 @@ namespace ColorVision.Copilot
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "passed" : "failed")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
             builder.AppendLine("stdout:");
-            builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardOutput) ? "<empty>" : result.StandardOutput.TrimEnd());
+            builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardOutput)
+                ? "<empty>"
+                : CopilotMcpAuditLogger.RedactText(result.StandardOutput).TrimEnd());
             builder.AppendLine("stderr:");
-            builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardError) ? "<empty>" : result.StandardError.TrimEnd());
+            builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardError)
+                ? "<empty>"
+                : CopilotMcpAuditLogger.RedactText(result.StandardError).TrimEnd());
             return builder.ToString().TrimEnd();
         }
 
@@ -410,9 +447,19 @@ namespace ColorVision.Copilot
 
             using var outputReadSource = new CancellationTokenSource();
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput, MaxStreamCharacters, 8_192, "\n...<validation output truncated>...\n", outputReadSource.Token);
+                process.StandardOutput,
+                MaxStreamCharacters,
+                8_192,
+                "\n...<validation output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardOutputReceived);
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError, MaxStreamCharacters, 8_192, "\n...<validation output truncated>...\n", outputReadSource.Token);
+                process.StandardError,
+                MaxStreamCharacters,
+                8_192,
+                "\n...<validation output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardErrorReceived);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;

@@ -162,6 +162,91 @@ public sealed class CopilotToolExecutionProgressTests
     }
 
     [Fact]
+    public async Task ApprovedWorkspaceValidationPublishesOutputAndRedactsFinalEvidence()
+    {
+        var workspaceRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ColorVisionCopilotValidationProgressTests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workspaceRoot);
+        var projectPath = Path.Combine(workspaceRoot, "Sample.csproj");
+        await File.WriteAllTextAsync(projectPath, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+
+        var runner = new ReportingValidationRunner();
+        var executablePath = Environment.ProcessPath
+            ?? typeof(CopilotToolExecutionProgressTests).Assembly.Location;
+        var tool = new CopilotWorkspaceValidationTool(
+            new CopilotWorkspaceValidationService(runner, () => executablePath));
+        var executor = new CopilotToolExecutor(
+            hooks: null,
+            utcNow: null,
+            hookPhaseTimeout: null,
+            progressInterval: TimeSpan.FromMilliseconds(20));
+        var reported = new TaskCompletionSource<CopilotAgentEvent>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var executionTask = executor.ExecuteAsync(
+            new CopilotToolInvocation
+            {
+                CallId = "validation-progress-call",
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = tool,
+                ToolInput = new CopilotAgentToolInput
+                {
+                    Path = projectPath,
+                    Arguments = new Dictionary<string, object?>
+                    {
+                        ["task"] = "build",
+                        ["configuration"] = "Debug",
+                    },
+                },
+                AgentRequest = new CopilotAgentRequest
+                {
+                    Mode = CopilotAgentMode.Auto,
+                    UserText = "build the project",
+                    WritableLocalRootPaths = [workspaceRoot],
+                },
+                FrameworkApprovalGranted = true,
+            },
+            agentEvent =>
+            {
+                if (agentEvent.Type == CopilotAgentEventType.ToolProgress
+                    && agentEvent.Progress?.Message.Contains("Build succeeded.", StringComparison.Ordinal) == true)
+                {
+                    reported.TrySetResult(agentEvent);
+                }
+            },
+            CancellationToken.None);
+
+        try
+        {
+            await runner.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            var progressEvent = await reported.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.Equal("dotnet build 输出: Build succeeded.", progressEvent.Progress!.Message);
+
+            runner.Release.TrySetResult();
+            var outcome = await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(CopilotToolExecutionState.Completed, outcome.Execution.State);
+            Assert.Contains("token=<redacted>", outcome.Result.Content, StringComparison.Ordinal);
+            Assert.DoesNotContain("validation-secret", outcome.Result.Content, StringComparison.Ordinal);
+        }
+        finally
+        {
+            runner.Release.TrySetResult();
+            try
+            {
+                await executionTask.WaitAsync(TimeSpan.FromSeconds(2));
+            }
+            catch
+            {
+            }
+            Directory.Delete(workspaceRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task WaitingForSharedResourcePublishesPendingProgressBeforeStart()
     {
         using var firstTool = new ResourceTool(block: true);
@@ -351,6 +436,30 @@ public sealed class CopilotToolExecutionProgressTests
                 ExitCode: 0,
                 TimedOut: false,
                 StandardOutput: "ready",
+                StandardError: string.Empty,
+                Duration: TimeSpan.FromMilliseconds(100));
+        }
+    }
+
+    private sealed class ReportingValidationRunner : ICopilotWorkspaceValidationRunner
+    {
+        public TaskCompletionSource Started { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotWorkspaceValidationProcessResult> RunAsync(
+            CopilotWorkspaceValidationCommand command,
+            CancellationToken cancellationToken)
+        {
+            command.StandardOutputReceived?.Invoke("Determining projects to restore...\r\nBuild succeeded.");
+            Started.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return new CopilotWorkspaceValidationProcessResult(
+                ExitCode: 0,
+                TimedOut: false,
+                StandardOutput: "Build succeeded.\r\ntoken=validation-secret",
                 StandardError: string.Empty,
                 Duration: TimeSpan.FromMilliseconds(100));
         }

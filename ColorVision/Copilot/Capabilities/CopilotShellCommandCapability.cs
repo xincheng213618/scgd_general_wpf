@@ -113,8 +113,10 @@ namespace ColorVision.Copilot
                     execution.WorkingDirectory,
                     TimeSpan.FromSeconds(execution.TimeoutSeconds))
                 {
-                    StandardOutputReceived = chunk => ReportProcessOutput(progress, shellLabel, chunk, isError: false),
-                    StandardErrorReceived = chunk => ReportProcessOutput(progress, shellLabel, chunk, isError: true),
+                    StandardOutputReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, shellLabel, chunk, isError: false),
+                    StandardErrorReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, shellLabel, chunk, isError: true),
                 }, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -345,41 +347,6 @@ namespace ColorVision.Copilot
             builder.AppendLine("stderr:");
             builder.AppendLine(string.IsNullOrWhiteSpace(result.StandardError) ? "<empty>" : CopilotMcpAuditLogger.RedactText(result.StandardError).TrimEnd());
             return builder.ToString().TrimEnd();
-        }
-
-        private static void ReportProcessOutput(
-            CopilotToolProgressContext? progress,
-            string shellLabel,
-            string chunk,
-            bool isError)
-        {
-            if (progress == null)
-                return;
-
-            var latestLine = ExtractLatestOutputLine(chunk);
-            if (string.IsNullOrWhiteSpace(latestLine))
-                return;
-
-            progress.Report($"{shellLabel} {(isError ? "错误输出" : "输出")}: {latestLine}");
-        }
-
-        private static string ExtractLatestOutputLine(string? chunk)
-        {
-            if (string.IsNullOrWhiteSpace(chunk))
-                return string.Empty;
-
-            var end = chunk.Length;
-            while (end > 0 && char.IsWhiteSpace(chunk[end - 1]))
-                end--;
-            if (end == 0)
-                return string.Empty;
-
-            var start = end - 1;
-            while (start >= 0 && chunk[start] is not ('\r' or '\n'))
-                start--;
-            var line = chunk[(start + 1)..end].Trim();
-            const int maximumLineLength = 512;
-            return line.Length <= maximumLineLength ? line : line[..maximumLineLength];
         }
 
         private static bool TryGetString(CopilotAgentToolInput input, string name, out string value)
