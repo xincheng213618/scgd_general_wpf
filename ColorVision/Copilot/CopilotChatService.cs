@@ -46,6 +46,23 @@ namespace ColorVision.Copilot
         public CopilotTokenUsage Usage => Reply.Usage;
     }
 
+    internal sealed class CopilotProviderPayloadException : InvalidOperationException
+    {
+        public CopilotProviderPayloadException(
+            string message,
+            string errorCode,
+            bool isTransient)
+            : base(message)
+        {
+            ErrorCode = errorCode ?? string.Empty;
+            IsTransient = isTransient;
+        }
+
+        public string ErrorCode { get; }
+
+        public bool IsTransient { get; }
+    }
+
     public sealed class CopilotChatService
     {
         private const int MaximumProviderErrorResponseBytes = 256 * 1024;
@@ -343,6 +360,15 @@ namespace ColorVision.Copilot
                 CopilotProviderInactivityPhase.FirstResponse,
                 inactivityTimeouts,
                 cancellationToken).ConfigureAwait(false);
+            if (TryCreateProviderPayloadException(
+                body,
+                "Provider response",
+                config.ApiKey,
+                out var payloadException))
+            {
+                throw payloadException;
+            }
+
             var reply = ExtractFinalResponseReply(config.ProviderType, body);
             if (!reply.Delta.HasAny)
                 throw new InvalidOperationException("The API returned successfully, but no displayable text was found.");
@@ -518,7 +544,16 @@ namespace ColorVision.Copilot
 
             string failureKind;
             int? statusCode;
-            if (TryGetProviderStatusCode(exception, out var providerStatusCode))
+            if (TryFindProviderPayloadException(exception, out var payloadException))
+            {
+                statusCode = null;
+                failureKind = string.IsNullOrWhiteSpace(payloadException.ErrorCode)
+                    ? "provider error"
+                    : payloadException.ErrorCode;
+                if (!payloadException.IsTransient)
+                    return false;
+            }
+            else if (TryGetProviderStatusCode(exception, out var providerStatusCode))
             {
                 statusCode = providerStatusCode;
                 failureKind = "HTTP " + statusCode.Value;
@@ -542,6 +577,23 @@ namespace ColorVision.Copilot
                 failureKind,
                 statusCode);
             return true;
+        }
+
+        private static bool TryFindProviderPayloadException(
+            Exception exception,
+            out CopilotProviderPayloadException payloadException)
+        {
+            for (var current = exception; current != null; current = current.InnerException)
+            {
+                if (current is CopilotProviderPayloadException candidate)
+                {
+                    payloadException = candidate;
+                    return true;
+                }
+            }
+
+            payloadException = null!;
+            return false;
         }
 
         private static bool TryGetProviderStatusCode(Exception exception, out int statusCode)
@@ -830,8 +882,14 @@ namespace ColorVision.Copilot
                 return false;
             if (string.Equals(payload, "[DONE]", StringComparison.OrdinalIgnoreCase))
                 return true;
-            if (TryParseStreamingError(payload, config.ApiKey, out var streamingError))
-                throw new InvalidOperationException(streamingError);
+            if (TryCreateProviderPayloadException(
+                payload,
+                "Provider stream",
+                config.ApiKey,
+                out var payloadException))
+            {
+                throw payloadException;
+            }
 
             var terminalEvent = IsTerminalStreamingEvent(config.ProviderType, payload);
             var reportedFinishReason = ExtractProviderFinishReason(config.ProviderType, payload);
@@ -999,17 +1057,31 @@ namespace ColorVision.Copilot
             return builder.ToString().Trim();
         }
 
-        private static bool TryParseStreamingError(string payload, string? apiKey, out string errorMessage)
+        private static bool TryCreateProviderPayloadException(
+            string payload,
+            string sourceLabel,
+            string? apiKey,
+            out CopilotProviderPayloadException exception)
         {
-            errorMessage = string.Empty;
+            exception = null!;
             try
             {
                 using var document = JsonDocument.Parse(payload);
                 var root = document.RootElement;
-                if (!TryExtractProviderErrorDetail(root, out var detail))
+                if (!TryExtractProviderPayloadError(root, out var providerError))
                     return false;
 
-                errorMessage = CopilotUserFacingErrorFormatter.Sanitize($"Provider stream error: {detail}", apiKey);
+                var errorCode = NormalizeProviderErrorCode(providerError.Code);
+                var codeSuffix = string.IsNullOrWhiteSpace(errorCode)
+                    ? string.Empty
+                    : $" ({errorCode})";
+                var message = CopilotUserFacingErrorFormatter.Sanitize(
+                    $"{sourceLabel} error{codeSuffix}: {providerError.Message}",
+                    apiKey);
+                exception = new CopilotProviderPayloadException(
+                    message,
+                    errorCode,
+                    IsTransientProviderErrorCode(errorCode));
                 return true;
             }
             catch (JsonException)
@@ -1399,8 +1471,8 @@ namespace ColorVision.Copilot
                     using var document = JsonDocument.Parse(errorBody);
                     var root = document.RootElement;
 
-                    if (TryExtractProviderErrorDetail(root, out var providerDetail))
-                        detail = providerDetail;
+                    if (TryExtractProviderPayloadError(root, out var providerError))
+                        detail = providerError.Message;
                     else if (root.ValueKind == JsonValueKind.Object
                         && root.TryGetProperty("message", out var topLevelMessage)
                         && topLevelMessage.ValueKind == JsonValueKind.String)
@@ -1421,24 +1493,124 @@ namespace ColorVision.Copilot
             return CopilotUserFacingErrorFormatter.Sanitize(messageText, apiKey);
         }
 
-        private static bool TryExtractProviderErrorDetail(JsonElement root, out string detail)
+        private static bool TryExtractProviderPayloadError(
+            JsonElement root,
+            out ProviderPayloadError providerError)
         {
-            detail = string.Empty;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("error", out var error))
+            providerError = default;
+            if (root.ValueKind != JsonValueKind.Object)
                 return false;
 
-            if (error.ValueKind == JsonValueKind.String)
-                detail = error.GetString() ?? string.Empty;
-            else if (error.ValueKind == JsonValueKind.Object)
+            if (root.TryGetProperty("error", out var error)
+                && TryReadProviderErrorElement(error, out providerError))
             {
-                if (error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
-                    detail = message.GetString() ?? string.Empty;
-                else if (error.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String)
-                    detail = type.GetString() ?? string.Empty;
+                return true;
             }
 
-            return !string.IsNullOrWhiteSpace(detail);
+            if (TryGetString(root, "type", out var eventType)
+                && string.Equals(eventType, "error", StringComparison.OrdinalIgnoreCase)
+                && TryGetString(root, "message", out var eventMessage))
+            {
+                TryGetString(root, "code", out var eventCode);
+                providerError = new ProviderPayloadError(eventCode, eventMessage);
+                return true;
+            }
+
+            if (TryGetString(root, "type", out eventType)
+                && string.Equals(eventType, "response.failed", StringComparison.OrdinalIgnoreCase)
+                && root.TryGetProperty("response", out var response)
+                && response.ValueKind == JsonValueKind.Object
+                && response.TryGetProperty("error", out error)
+                && TryReadProviderErrorElement(error, out providerError))
+            {
+                return true;
+            }
+
+            return false;
         }
+
+        private static bool TryReadProviderErrorElement(
+            JsonElement error,
+            out ProviderPayloadError providerError)
+        {
+            providerError = default;
+            if (error.ValueKind == JsonValueKind.String)
+            {
+                var stringErrorMessage = error.GetString();
+                if (string.IsNullOrWhiteSpace(stringErrorMessage))
+                    return false;
+
+                providerError = new ProviderPayloadError(
+                    string.Empty,
+                    stringErrorMessage);
+                return true;
+            }
+
+            if (error.ValueKind != JsonValueKind.Object)
+                return false;
+
+            TryGetString(error, "type", out var errorType);
+            TryGetString(error, "code", out var errorCode);
+            var code = string.IsNullOrWhiteSpace(errorType) ? errorCode : errorType;
+            if (!TryGetString(error, "message", out var message))
+                message = code;
+            if (string.IsNullOrWhiteSpace(message))
+                return false;
+
+            providerError = new ProviderPayloadError(code, message);
+            return true;
+        }
+
+        private static bool TryGetString(
+            JsonElement element,
+            string propertyName,
+            out string value)
+        {
+            value = string.Empty;
+            if (element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty(propertyName, out var property)
+                || property.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(property.GetString()))
+            {
+                return false;
+            }
+
+            value = property.GetString()!;
+            return true;
+        }
+
+        private static string NormalizeProviderErrorCode(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var builder = new StringBuilder(Math.Min(value.Length, 64));
+            foreach (var character in value.Trim())
+            {
+                if (char.IsLetterOrDigit(character) || character is '_' or '-' or '.')
+                    builder.Append(character);
+                if (builder.Length == 64)
+                    break;
+            }
+            return builder.ToString();
+        }
+
+        private static bool IsTransientProviderErrorCode(string errorCode)
+        {
+            var comparable = errorCode
+                .Replace('-', '_')
+                .Replace('.', '_')
+                .ToLowerInvariant();
+            return comparable is "overloaded_error"
+                or "rate_limit_error"
+                or "rate_limit_exceeded"
+                or "api_error"
+                or "server_error"
+                or "timeout_error"
+                or "service_unavailable";
+        }
+
+        private readonly record struct ProviderPayloadError(string Code, string Message);
 
     }
 }
