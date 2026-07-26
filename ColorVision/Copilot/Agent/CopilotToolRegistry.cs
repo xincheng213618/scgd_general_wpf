@@ -85,6 +85,12 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
+            if (request.RequiresDelegatedWorkspaceEvidence
+                && CopilotToolIntentPolicy.IsDirectWorkspaceEvidenceTool(tool))
+            {
+                return false;
+            }
+
             return tool is ICopilotAgentDrivenTool agentDrivenTool
                 ? agentDrivenTool.IsAvailable(request)
                 : tool.CanHandle(request);

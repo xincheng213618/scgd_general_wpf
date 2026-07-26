@@ -113,6 +113,8 @@ namespace ColorVision.Copilot
         public IReadOnlyList<string> WritableLocalFilePaths { get; init; } = Array.Empty<string>();
 
         public bool PreferBatchReadLocalFiles { get; init; }
+
+        internal bool RequiresDelegatedWorkspaceEvidence { get; init; }
     }
 
     public sealed class CopilotAgentRequestBuildInput
@@ -173,6 +175,8 @@ namespace ColorVision.Copilot
                 WritableLocalFilePaths = writableLocalFilePaths,
             };
             var requiresWorkspaceEvidence = CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe);
+            var requiresDelegatedWorkspaceEvidence =
+                CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(intentProbe);
             var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
                 ? requestedWritableLocalRootPaths
@@ -210,6 +214,7 @@ namespace ColorVision.Copilot
                 WritableLocalRootPaths = writableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
                 PreferBatchReadLocalFiles = explicitLocalDirectoryPaths.Length > 0 && explicitLocalFilePaths.Length == 0,
+                RequiresDelegatedWorkspaceEvidence = requiresDelegatedWorkspaceEvidence,
             };
         }
 
@@ -252,6 +257,10 @@ namespace ColorVision.Copilot
                     .Where(server => server?.Enabled == true)
                     .Select(server => server.Clone())
                     .ToArray(),
+                RequiredSuccessfulToolNames = plan.RequiresDelegatedWorkspaceEvidence
+                    ? ["DelegateExplore"]
+                    : Array.Empty<string>(),
+                RequiresDelegatedWorkspaceEvidence = plan.RequiresDelegatedWorkspaceEvidence,
             };
         }
 

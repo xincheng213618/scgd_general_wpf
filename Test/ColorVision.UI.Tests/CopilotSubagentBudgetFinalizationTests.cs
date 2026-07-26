@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using System.IO;
 
 namespace ColorVision.UI.Tests;
 
@@ -27,6 +28,43 @@ public sealed class CopilotSubagentBudgetFinalizationTests
     public void SmallerSubagentBudgetsRemainAvailableToExploration()
     {
         Assert.Equal(12_000, CopilotSubagentRunner.ResolveExplorationRequestTokenBudget(12_000));
+    }
+
+    [Fact]
+    public void ChildRunDoesNotInheritTheParentDirectToolSuppression()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-child-tool-surface-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var role = CopilotSubagentRoleCatalog.Default.GetRequired(CopilotSubagentRoleCatalog.ExploreRoleId);
+            var parentRequest = new CopilotAgentRequest
+            {
+                UserText = "Use only DelegateExplore.",
+                Profile = CreateProfile(),
+                SearchRootPaths = [root],
+                TrustedProjectRootPaths = [root],
+                Mode = CopilotAgentMode.Auto,
+                RequiresDelegatedWorkspaceEvidence = true,
+            };
+
+            var childRequest = CopilotSubagentRunner.CreateChildRequest(
+                parentRequest,
+                role,
+                new CopilotSubagentRunRequest
+                {
+                    RunId = "explore-test",
+                    Task = "Read the requested source file.",
+                    RequestTokenBudget = 16_384,
+                });
+
+            Assert.False(childRequest.RequiresDelegatedWorkspaceEvidence);
+            Assert.True(new CopilotReadLocalFileTool().IsAvailable(childRequest));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

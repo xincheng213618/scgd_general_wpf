@@ -50,6 +50,64 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.True(ExploreRole().IsAvailable(request));
     }
 
+    [Fact]
+    public void ParentDelegationOptOutKeepsExploreAndRemovesDirectWorkspaceTools()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"copilot-delegation-intent-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        var sourcePath = Path.Combine(root, "Target.cs");
+        File.WriteAllText(sourcePath, "namespace Sample;");
+        try
+        {
+            var prompt =
+                $"请必须使用 DelegateExplore 子代理，只读读取 {sourcePath}；不要使用父代理直接文件工具，不要修改任何文件。";
+            var plan = CopilotAgentRequestFactory.Prepare(
+                prompt,
+                CopilotAgentMode.Auto,
+                new CopilotAgentHostContextSnapshot(null, root, null));
+            var request = CopilotAgentRequestFactory.Create(
+                plan,
+                new CopilotAgentRequestBuildInput
+                {
+                    Profile = new CopilotProfileConfig(),
+                    AgentDefaults = new CopilotAgentDefaultsConfig(),
+                });
+            var registry = new CopilotToolRegistry(
+                CopilotToolRegistry.CreateBuiltInCatalogTools()
+                    .Append(new NamedTool("read_file")));
+            var tools = registry.FindTools(request);
+            var toolNames = tools.Select(tool => tool.Name).ToArray();
+
+            Assert.True(plan.RequiresDelegatedWorkspaceEvidence);
+            Assert.True(request.RequiresDelegatedWorkspaceEvidence);
+            Assert.Equal(["DelegateExplore"], request.RequiredSuccessfulToolNames);
+            Assert.Contains("DelegateExplore", toolNames);
+            Assert.DoesNotContain("SearchFiles", toolNames);
+            Assert.DoesNotContain("GrepText", toolNames);
+            Assert.DoesNotContain("ReadLocalFile", toolNames);
+            Assert.DoesNotContain("ListDirectory", toolNames);
+            Assert.DoesNotContain("read_file", toolNames);
+
+            var contract = CopilotAgentExecutionContract.Create(request, tools);
+            var evaluation = contract.Evaluate(Array.Empty<CopilotAgentStepRecord>());
+            Assert.Equal(CopilotAgentExecutionRequirement.SubagentEvidence, contract.Requirement);
+            Assert.Equal(["DelegateExplore"], contract.AcceptedToolNames);
+            Assert.Contains("DelegateExplore", evaluation.Feedback, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RequiringExploreWithoutAParentOptOutKeepsDirectVerificationAvailable()
+    {
+        var request = Request("请必须使用 DelegateExplore 子代理检查当前项目。");
+
+        Assert.False(CopilotToolIntentPolicy.ExplicitlyRequiresDelegatedWorkspaceEvidence(request));
+    }
+
     [Theory]
     [InlineData("全面审计 ColorVision/Copilot 的取消与超时链路，至少检查 40 个相关代码位置。")]
     [InlineData("修改当前项目里的 timeout 实现。")]

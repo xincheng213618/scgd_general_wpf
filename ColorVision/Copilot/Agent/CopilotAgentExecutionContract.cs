@@ -477,6 +477,10 @@ namespace ColorVision.Copilot
                 return "Execution contract: one or more explicit current-turn local files have not been successfully read. Call ReadLocalFile separately with the exact path field for every file still missing below before answering or taking a dependent action. If a read fails, report the concrete blocker instead of claiming the file was inspected.\n"
                     + BuildBoundedPathList(missingLocalFilePaths);
             }
+            if (missingGroup.Any(name => name.StartsWith("Delegate", StringComparison.OrdinalIgnoreCase)))
+            {
+                return $"Execution contract: the user explicitly required delegated evidence and disabled equivalent direct parent tools. Call {preferred} now and base the answer on its successful result. If delegation fails, report that concrete blocker instead of bypassing the user's tool-boundary instruction.";
+            }
             if (missingGroup.Contains("InspectGitWorkingTree", StringComparer.OrdinalIgnoreCase))
             {
                 return "Execution contract: Review mode requires current working-tree evidence before a code-review conclusion. Call InspectGitWorkingTree now and use its bounded status as evidence. If inspection fails or approval is denied, report the concrete blocker instead of claiming the repository state was inspected.";
@@ -671,6 +675,8 @@ namespace ColorVision.Copilot
             {
                 return "required_git_review_evidence_missing";
             }
+            if (evaluation.MissingToolNames.Any(name => name.StartsWith("Delegate", StringComparison.OrdinalIgnoreCase)))
+                return "required_delegated_evidence_missing";
 
             return Requirement switch
             {

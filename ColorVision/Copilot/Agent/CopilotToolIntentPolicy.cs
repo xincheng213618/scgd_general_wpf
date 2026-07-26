@@ -138,6 +138,29 @@ namespace ColorVision.Copilot
             "search_code", "codesearch", "search the workspace", "search local files", "search source code",
         };
 
+        private static readonly string[] DelegatedWorkspaceEvidenceMarkers =
+        {
+            "DelegateExplore", "Explore 子代理", "Explore子代理", "工作区子代理", "源码子代理",
+            "workspace subagent", "workspace sub-agent", "explore subagent", "explore sub-agent",
+        };
+
+        private static readonly string[] ParentWorkspaceEvidenceOptOutMarkers =
+        {
+            "不要使用父代理直接文件工具", "父代理不要使用文件工具",
+            "父代理不要直接读取", "不要由父代理直接读取", "不要让父代理直接读取",
+            "只让子代理读取", "仅让子代理读取", "只使用 DelegateExplore", "仅使用 DelegateExplore",
+            "do not use parent agent file tools", "do not use the parent agent file tools",
+            "parent agent must not read files directly", "do not let the parent agent read files directly",
+            "use only DelegateExplore", "DelegateExplore only",
+        };
+
+        private static readonly HashSet<string> DirectWorkspaceEvidenceToolNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "SearchFiles", "GrepText", "ReadLocalFile", "ListDirectory",
+            "search_files", "find_files", "grep_text", "search_code",
+            "read_file", "read_local_file", "list_directory", "list_files",
+        };
+
         private static readonly string[] ExternalWebSearchMarkers =
         {
             "web_search", "websearch", "search_web", "internet_search", "search_online",
@@ -657,6 +680,29 @@ namespace ColorVision.Copilot
             return request != null && ContainsAny(request.UserText, ExplicitReadOnlyRequestMarkers);
         }
 
+        internal static bool ExplicitlyRequiresDelegatedWorkspaceEvidence(CopilotAgentRequest? request)
+        {
+            return IsAgentRequest(request)
+                && ContainsAny(request!.UserText, DelegatedWorkspaceEvidenceMarkers)
+                && ContainsAny(request.UserText, ParentWorkspaceEvidenceOptOutMarkers);
+        }
+
+        internal static bool IsDirectWorkspaceEvidenceTool(ICopilotTool? tool)
+        {
+            if (tool == null || tool is CopilotDelegateSubagentTool)
+                return false;
+
+            return IsDirectWorkspaceEvidenceIdentity(tool.Name, tool.Description);
+        }
+
+        private static bool IsDirectWorkspaceEvidenceIdentity(string? toolName, string? description)
+        {
+            if (DirectWorkspaceEvidenceToolNames.Contains(toolName ?? string.Empty))
+                return true;
+
+            return ContainsAny($"{toolName} {description}", ExternalLocalSearchMarkers);
+        }
+
         internal static bool IsUrlFetchTool(ICopilotTool? tool)
         {
             if (tool == null)
@@ -719,6 +765,11 @@ namespace ColorVision.Copilot
         {
             if (request == null || request.Mode == CopilotAgentMode.Chat)
                 return false;
+            if (request.RequiresDelegatedWorkspaceEvidence
+                && IsDirectWorkspaceEvidenceIdentity(toolName, description))
+            {
+                return false;
+            }
 
             var identity = $"{toolName} {description}";
             if (ContainsAny(identity, ExternalWebSearchMarkers))
