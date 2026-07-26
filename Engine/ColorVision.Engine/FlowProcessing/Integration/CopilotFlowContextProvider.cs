@@ -19,7 +19,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
             "current", "this", "here", "selected", "active",
             "failed", "failure", "error", "exception", "timeout",
             "当前", "这个", "这里", "选中", "活动", "刚才",
-            "失败", "错误", "异常", "超时", "为什么",
+            "失败", "错误", "异常", "超时",
         ];
         private readonly Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> _snapshotProvider;
         private readonly Func<bool> _isActive;
@@ -84,9 +84,12 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 return true;
 
             var userText = request.UserText ?? string.Empty;
-            return FlowIntentTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase))
-                || _isCurrentSurface()
-                    && CurrentSurfaceReferenceTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase));
+            if (FlowIntentTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            return !request.RequiresWorkspaceEvidence
+                && _isCurrentSurface()
+                && CurrentSurfaceReferenceTerms.Any(term => userText.Contains(term, StringComparison.OrdinalIgnoreCase));
         }
 
         private static async Task<CopilotFlowContextSnapshot?> CaptureSnapshotAsync(

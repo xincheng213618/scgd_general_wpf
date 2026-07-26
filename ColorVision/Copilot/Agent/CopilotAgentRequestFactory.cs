@@ -172,12 +172,13 @@ namespace ColorVision.Copilot
                 WritableLocalRootPaths = requestedWritableLocalRootPaths,
                 WritableLocalFilePaths = writableLocalFilePaths,
             };
+            var requiresWorkspaceEvidence = CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe);
             var writableLocalRootPaths = CopilotToolIntentPolicy.NeedsWorkspaceCreate(intentProbe)
                 || CopilotToolIntentPolicy.NeedsWorkspaceEdit(intentProbe)
                 ? requestedWritableLocalRootPaths
                 : workspaceWritableLocalRootPaths;
             var projectInstructions = mode == CopilotAgentMode.Chat
-                || !CopilotToolIntentPolicy.NeedsLocalEvidence(intentProbe)
+                || !requiresWorkspaceEvidence
                 ? Array.Empty<CopilotProjectInstructionDocument>()
                 : CopilotAgentProjectInstructions.Discover(
                     trustedProjectRootPaths,
@@ -197,6 +198,7 @@ namespace ColorVision.Copilot
                     SolutionDirectoryPath = hostContext.SolutionDirectoryPath,
                     ActiveDocumentPath = hostContext.ActiveDocumentPath,
                     SearchRootPaths = searchRootPaths,
+                    RequiresWorkspaceEvidence = requiresWorkspaceEvidence,
                 },
                 Attachments = hostContext.Attachments,
                 SearchRootPaths = searchRootPaths,

@@ -115,6 +115,8 @@ namespace ColorVision.UI
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
         public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
+
+        public bool RequiresWorkspaceEvidence { get; init; }
     }
 
     public sealed class CopilotContextItem

@@ -26,8 +26,8 @@ namespace ColorVision.Copilot
 
         private static readonly string[] LocalInspectionMarkers =
         {
-            "查看", "读取", "查找", "搜索", "定位", "实现位置", "在哪里实现", "在哪实现", "报错", "异常",
-            "inspect", "read", "find", "search", "locate", "where is", "error", "exception",
+            "查看", "读取", "查找", "搜索", "检查", "审计", "评审", "排查", "定位", "实现位置", "在哪里实现", "在哪实现", "报错", "异常",
+            "inspect", "read", "find", "search", "audit", "review", "examine", "locate", "where is", "error", "exception",
         };
 
         private static readonly string[] ConceptualQuestionMarkers =
@@ -180,6 +180,24 @@ namespace ColorVision.Copilot
         {
             "流程图", "工作流程", "流程节点", "流程里", "流程中", "节点连线", "相机节点", "算法节点", ".stn",
             "flow graph", "flow editor", "workflow", "flow node", "camera node", "algorithm node",
+        };
+
+        private static readonly string[] CurrentSurfaceReferenceMarkers =
+        {
+            "当前", "这个", "这里", "选中", "活动", "刚才",
+            "current", "this", "here", "selected", "active",
+        };
+
+        private static readonly string[] CurrentSurfaceProblemMarkers =
+        {
+            "失败", "错误", "异常", "超时",
+            "failed", "failure", "error", "exception", "timeout",
+        };
+
+        private static readonly string[] DefinitionQuestionMarkers =
+        {
+            "是什么", "什么是", "介绍", "原理", "概念",
+            "what is", "what are", "explain", "concept",
         };
 
         private static readonly string[] SavedTemplateContextMarkers =
@@ -441,9 +459,19 @@ namespace ColorVision.Copilot
             if (NeedsShellExecution(request) && !ContainsAny(request!.UserText, FlowGraphMarkers))
                 return false;
 
-            return HasFlowContext(request!)
-                || MatchesCurrentOrContinuation(request, FlowGraphMarkers,
-                    "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch");
+            if (MatchesCurrentOrContinuation(request!, FlowGraphMarkers,
+                "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"))
+            {
+                return true;
+            }
+
+            if (NeedsLocalEvidence(request))
+                return false;
+
+            return HasFlowContext(request)
+                && (ContainsAny(request.UserText, CurrentSurfaceReferenceMarkers)
+                    || ContainsAny(request.UserText, CurrentSurfaceProblemMarkers)
+                        && !ContainsAny(request.UserText, DefinitionQuestionMarkers));
         }
 
         public static bool NeedsSavedTemplateContext(CopilotAgentRequest? request)
@@ -468,11 +496,10 @@ namespace ColorVision.Copilot
 
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
         {
-            return IsAgentRequest(request)
+            return NeedsFlowGraph(request)
                 && !ExplicitlyDisallowsWriteAccess(request)
                 && ContainsAny(request!.UserText, FlowMutationMarkers)
-                && !ContainsAny(request.UserText, MutationExplanationMarkers)
-                && (HasFlowContext(request) || ContainsAny(request.UserText, FlowGraphMarkers));
+                && !ContainsAny(request.UserText, MutationExplanationMarkers);
         }
 
         public static bool NeedsFlowExecutionStatistics(CopilotAgentRequest? request)

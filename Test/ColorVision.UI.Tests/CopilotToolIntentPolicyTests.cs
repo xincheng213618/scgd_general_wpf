@@ -50,6 +50,67 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.True(ExploreRole().IsAvailable(request));
     }
 
+    [Theory]
+    [InlineData("全面审计 ColorVision/Copilot 的取消与超时链路，至少检查 40 个相关代码位置。")]
+    [InlineData("修改当前项目里的 timeout 实现。")]
+    public void WorkspaceIntentIgnoresUnrelatedActiveFlowContext(string userText)
+    {
+        var request = Request(
+            userText,
+            searchRoots: [@"C:\workspace"],
+            contextItems:
+            [
+                new CopilotContextItem
+                {
+                    Id = "flow-engine-manager:summary",
+                    Title = "Flow context · AOI",
+                    Summary = "Ready · not running · nodes 24",
+                },
+            ]);
+
+        Assert.True(CopilotToolIntentPolicy.NeedsLocalEvidence(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsFlowGraph(request));
+        Assert.False(CopilotToolIntentPolicy.NeedsFlowMutation(request));
+    }
+
+    [Theory]
+    [InlineData("这个流程为什么失败")]
+    [InlineData("刚才为什么超时")]
+    public void FlowSurfaceFollowUpKeepsFlowInspectionTools(string userText)
+    {
+        var request = Request(
+            userText,
+            contextItems:
+            [
+                new CopilotContextItem
+                {
+                    Id = "flow-engine-manager:summary",
+                    Title = "Flow context · AOI",
+                    Summary = "Failed · nodes 24",
+                },
+            ]);
+
+        Assert.True(CopilotToolIntentPolicy.NeedsFlowGraph(request));
+    }
+
+    [Fact]
+    public void GenericTimeoutDefinitionDoesNotExposeFlowToolsFromTheActiveSurface()
+    {
+        var request = Request(
+            "超时是什么？",
+            contextItems:
+            [
+                new CopilotContextItem
+                {
+                    Id = "flow-engine-manager:summary",
+                    Title = "Flow context · AOI",
+                    Summary = "Ready · nodes 24",
+                },
+            ]);
+
+        Assert.False(CopilotToolIntentPolicy.NeedsFlowGraph(request));
+    }
+
     [Fact]
     public void RuntimeCatalogCanBeCreatedAndOmitsLocalToolsForAConceptualQuestion()
     {

@@ -47,6 +47,30 @@ public sealed class CopilotFlowContextProviderTests
         Assert.Equal(1, captureCount);
     }
 
+    [Fact]
+    public async Task WorkspaceAuditOnFlowSurfaceDoesNotCaptureFullFlowSnapshot()
+    {
+        var captureCount = 0;
+        var provider = CreateProvider(
+            () => captureCount++,
+            isCurrentSurface: true);
+        var plan = CopilotAgentRequestFactory.Prepare(
+            "全面审计 ColorVision/Copilot 的取消与超时链路，至少检查 40 个相关代码位置。",
+            CopilotAgentMode.Auto,
+            new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: null,
+                attachments: null));
+
+        var context = await provider.CaptureAsync(
+            plan.ContextRequest,
+            CancellationToken.None);
+
+        Assert.True(plan.ContextRequest.RequiresWorkspaceEvidence);
+        Assert.Null(context);
+        Assert.Equal(0, captureCount);
+    }
+
     private static CopilotFlowContextProvider CreateProvider(
         Action onCapture,
         bool isCurrentSurface)
