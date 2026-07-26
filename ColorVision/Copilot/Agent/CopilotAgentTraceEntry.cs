@@ -580,7 +580,8 @@ namespace ColorVision.Copilot
 
             return State switch
             {
-                CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running => running,
+                CopilotToolExecutionState.Pending => BuildWaitingActivityLabel(running),
+                CopilotToolExecutionState.Running => running,
                 CopilotToolExecutionState.AwaitingApproval => completed + " · 等待批准",
                 CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut => completed + " · 失败",
                 CopilotToolExecutionState.Denied => completed + " · 未批准",
@@ -588,6 +589,14 @@ namespace ColorVision.Copilot
                 CopilotToolExecutionState.Interrupted => completed + " · 已中断",
                 _ => completed,
             };
+        }
+
+        private static string BuildWaitingActivityLabel(string runningLabel)
+        {
+            const string runningPrefix = "正在";
+            return runningLabel.StartsWith(runningPrefix, StringComparison.Ordinal)
+                ? "等待" + runningLabel[runningPrefix.Length..]
+                : "等待运行";
         }
 
         private bool IsFailedSearchAttempt()

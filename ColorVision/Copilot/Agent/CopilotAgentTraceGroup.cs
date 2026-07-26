@@ -61,8 +61,10 @@ namespace ColorVision.Copilot
                     _ => ("正在运行多个工具调用", "运行了多个工具调用"),
                 };
 
-                if (Entries.Any(entry => entry.State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running))
+                if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Running))
                     return running;
+                if (Entries.Any(entry => entry.State == CopilotToolExecutionState.Pending))
+                    return BuildWaitingActivityLabel(running);
                 if (Entries.Any(entry => entry.State == CopilotToolExecutionState.AwaitingApproval))
                     return completed + " · 等待批准";
 
@@ -118,6 +120,14 @@ namespace ColorVision.Copilot
                 groups.Add(new CopilotAgentTraceGroup(currentCategory, currentEntries.ToArray()));
 
             return groups;
+        }
+
+        private static string BuildWaitingActivityLabel(string runningLabel)
+        {
+            const string runningPrefix = "正在";
+            return runningLabel.StartsWith(runningPrefix, StringComparison.Ordinal)
+                ? "等待" + runningLabel[runningPrefix.Length..]
+                : "等待运行";
         }
 
         private static string GetCategory(string toolName)

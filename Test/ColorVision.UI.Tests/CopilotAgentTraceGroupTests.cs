@@ -5,6 +5,32 @@ namespace ColorVision.UI.Tests;
 public sealed class CopilotAgentTraceGroupTests
 {
     [Fact]
+    public void PendingToolIsReportedAsWaitingInsteadOfRunning()
+    {
+        var trace = CreateTrace("RunShellCommand", CopilotToolExecutionState.Pending);
+
+        Assert.Equal("等待运行命令", trace.ActivityLabel);
+    }
+
+    [Fact]
+    public void PendingGroupIsReportedAsWaitingUntilOneCallStarts()
+    {
+        var pendingGroups = CopilotAgentTraceGroup.Create(
+        [
+            CreateTrace("InspectGitDiff", CopilotToolExecutionState.Completed),
+            CreateTrace("RunShellCommand", CopilotToolExecutionState.Pending),
+        ]);
+        var runningGroups = CopilotAgentTraceGroup.Create(
+        [
+            CreateTrace("InspectGitDiff", CopilotToolExecutionState.Completed),
+            CreateTrace("RunShellCommand", CopilotToolExecutionState.Running),
+        ]);
+
+        Assert.Equal("等待运行多个命令", Assert.Single(pendingGroups).ActivityLabel);
+        Assert.Equal("正在运行多个命令", Assert.Single(runningGroups).ActivityLabel);
+    }
+
+    [Fact]
     public void CancelledWorkspaceApplyIsNotReportedAsMultiplePartialFailures()
     {
         var groups = CopilotAgentTraceGroup.Create(
