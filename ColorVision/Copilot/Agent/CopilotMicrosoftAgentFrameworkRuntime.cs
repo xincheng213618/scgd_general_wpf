@@ -690,7 +690,10 @@ namespace ColorVision.Copilot
             {
                 contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Agent context recovery stopped after one bounded compaction attempt ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages; target {ex.TargetInputTokens:N0} input tokens)."));
+                    $"Agent context recovery stopped after one bounded compaction attempt for the current model turn"
+                    + $" ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages"
+                    + $" · estimated input {ex.EstimatedInputTokensBefore:N0} → {ex.EstimatedInputTokensAfter:N0} tokens"
+                    + $" · target {ex.TargetInputTokens:N0})."));
                 emit(CopilotAgentEvent.AnswerDelta(ex.Message));
             }
             catch (Exception ex) when (CopilotProviderRetryChatClient.IsProviderInterruption(ex, cancellationToken))
@@ -1094,7 +1097,10 @@ namespace ColorVision.Copilot
             {
                 contextWindowExceeded = true;
                 emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"Final-answer-only context recovery stopped after one bounded compaction attempt ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages; target {ex.TargetInputTokens:N0} input tokens)."));
+                    $"Final-answer-only context recovery stopped after one bounded compaction attempt"
+                    + $" ({ex.OriginalMessageCount} → {ex.CompactedMessageCount} messages"
+                    + $" · estimated input {ex.EstimatedInputTokensBefore:N0} → {ex.EstimatedInputTokensAfter:N0} tokens"
+                    + $" · target {ex.TargetInputTokens:N0})."));
             }
             catch (Exception ex)
             {
