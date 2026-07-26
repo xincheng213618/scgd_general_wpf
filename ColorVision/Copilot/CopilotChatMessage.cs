@@ -40,13 +40,23 @@ namespace ColorVision.Copilot
         public bool HasAny => HasReasoning || HasContent;
     }
 
-    public readonly record struct CopilotTokenUsage(int InputTokens, int OutputTokens, int TotalTokens)
+    public readonly record struct CopilotTokenUsage(
+        int InputTokens,
+        int OutputTokens,
+        int TotalTokens,
+        int? CachedInputTokens = null)
     {
-        public static CopilotTokenUsage Empty => new(0, 0, 0);
+        public static CopilotTokenUsage Empty => new(0, 0, 0, null);
 
         public bool HasAny => InputTokens > 0 || OutputTokens > 0 || TotalTokens > 0;
 
         public int EffectiveTotalTokens => TotalTokens > 0 ? TotalTokens : Math.Max(0, InputTokens) + Math.Max(0, OutputTokens);
+
+        public int EffectiveCachedInputTokens => Math.Clamp(CachedInputTokens ?? 0, 0, Math.Max(0, InputTokens));
+
+        public double CachedInputPercentage => InputTokens > 0
+            ? EffectiveCachedInputTokens * 100d / InputTokens
+            : 0d;
 
         public CopilotTokenUsage MergeProgress(CopilotTokenUsage other)
         {
@@ -61,8 +71,11 @@ namespace ColorVision.Copilot
             var totalTokens = other.TotalTokens > 0
                 ? Math.Max(EffectiveTotalTokens, other.TotalTokens)
                 : Math.Max(0, inputTokens) + Math.Max(0, outputTokens);
+            var cachedInputTokens = other.CachedInputTokens.HasValue
+                ? Math.Max(EffectiveCachedInputTokens, other.EffectiveCachedInputTokens)
+                : CachedInputTokens;
 
-            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens);
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
         }
 
         public CopilotTokenUsage Add(CopilotTokenUsage other)
@@ -75,7 +88,10 @@ namespace ColorVision.Copilot
 
             var inputTokens = Math.Max(0, InputTokens) + Math.Max(0, other.InputTokens);
             var outputTokens = Math.Max(0, OutputTokens) + Math.Max(0, other.OutputTokens);
-            return new CopilotTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens);
+            int? cachedInputTokens = CachedInputTokens.HasValue || other.CachedInputTokens.HasValue
+                ? EffectiveCachedInputTokens + other.EffectiveCachedInputTokens
+                : null;
+            return new CopilotTokenUsage(inputTokens, outputTokens, inputTokens + outputTokens, cachedInputTokens);
         }
 
         public static string FormatCount(int value)
@@ -1652,6 +1668,13 @@ namespace ColorVision.Copilot
         }
         private int _lastUsageTotalTokens;
 
+        public int? LastUsageCachedInputTokens
+        {
+            get => _lastUsageCachedInputTokens;
+            set => SetProperty(ref _lastUsageCachedInputTokens, value.HasValue ? Math.Max(0, value.Value) : null);
+        }
+        private int? _lastUsageCachedInputTokens;
+
         public DateTime CreatedAt
         {
             get => _createdAt;
@@ -1709,7 +1732,11 @@ namespace ColorVision.Copilot
         public bool HasAgentRunStatus => !string.IsNullOrWhiteSpace(AgentRunStatusLabel);
 
         [JsonIgnore]
-        public CopilotTokenUsage LastUsage => new(LastUsageInputTokens, LastUsageOutputTokens, LastUsageTotalTokens);
+        public CopilotTokenUsage LastUsage => new(
+            LastUsageInputTokens,
+            LastUsageOutputTokens,
+            LastUsageTotalTokens,
+            LastUsageCachedInputTokens);
 
         public bool EnsureValid()
         {
@@ -1846,6 +1873,7 @@ namespace ColorVision.Copilot
             LastUsageInputTokens = usage.InputTokens;
             LastUsageOutputTokens = usage.OutputTokens;
             LastUsageTotalTokens = usage.EffectiveTotalTokens;
+            LastUsageCachedInputTokens = usage.CachedInputTokens;
         }
 
         public void ClearLastUsage()
@@ -1853,6 +1881,7 @@ namespace ColorVision.Copilot
             LastUsageInputTokens = 0;
             LastUsageOutputTokens = 0;
             LastUsageTotalTokens = 0;
+            LastUsageCachedInputTokens = null;
         }
 
         public void RefreshSummary()

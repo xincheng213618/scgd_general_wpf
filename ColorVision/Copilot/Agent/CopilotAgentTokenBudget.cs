@@ -313,7 +313,10 @@ namespace ColorVision.Copilot
                 usage = usage.MergeProgress(new CopilotTokenUsage(
                     ToInt(details.InputTokenCount),
                     ToInt(details.OutputTokenCount),
-                    ToInt(details.TotalTokenCount)));
+                    ToInt(details.TotalTokenCount),
+                    details.CachedInputTokenCount.HasValue
+                        ? ToInt(details.CachedInputTokenCount)
+                        : null));
             }
 
             return usage;

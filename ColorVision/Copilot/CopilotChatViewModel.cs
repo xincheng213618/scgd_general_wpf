@@ -2050,17 +2050,38 @@ namespace ColorVision.Copilot
                 _config.AgentDefaults,
                 _config.ExternalMcpServers,
                 conversation.AccessContext);
-            var eventSink = new CopilotTurnEventSink(
-                preparedRequest => ApplyPreparedTurnRequestOnUiThread(userMessage, preparedRequest),
-                delta => deltaBuffer?.Enqueue(delta),
-                retry => ApplyProviderRetryOnUiThread(assistantMessage, retry),
-                agentEvent => eventBuffer?.Enqueue(agentEvent));
-            CopilotTurnResult result;
+            CopilotTurnResult? result = null;
             try
             {
                 try
                 {
-                    result = await _turnRuntime.RunAsync(turnRequest, eventSink, cancellationToken);
+                    await foreach (var turnEvent in _turnRuntime.RunAsync(turnRequest, cancellationToken))
+                    {
+                        if (result != null)
+                            throw new InvalidOperationException("Copilot turn emitted an event after completion.");
+
+                        switch (turnEvent)
+                        {
+                            case CopilotTurnRequestPreparedEvent prepared:
+                                ApplyPreparedTurnRequestOnUiThread(userMessage, prepared.Request);
+                                break;
+                            case CopilotTurnChatDeltaEvent chatDelta:
+                                deltaBuffer?.Enqueue(chatDelta.Delta);
+                                break;
+                            case CopilotTurnProviderRetryEvent providerRetry:
+                                ApplyProviderRetryOnUiThread(assistantMessage, providerRetry.Retry);
+                                break;
+                            case CopilotTurnAgentEvent agent:
+                                eventBuffer?.Enqueue(agent.Event);
+                                break;
+                            case CopilotTurnCompletedEvent completed:
+                                result = completed.Result;
+                                break;
+                            default:
+                                throw new InvalidOperationException(
+                                    $"Unsupported Copilot turn event: {turnEvent.GetType().Name}.");
+                        }
+                    }
                 }
                 finally
                 {
@@ -2095,6 +2116,8 @@ namespace ColorVision.Copilot
                 throw;
             }
 
+            if (result == null)
+                throw new InvalidOperationException("Copilot turn ended without a completion event.");
             if (result.Mode == CopilotAgentMode.Chat)
             {
                 userMessage.RequestContent = result.PreparedUserMessageContent;
@@ -5277,7 +5300,10 @@ namespace ColorVision.Copilot
 
         private string BuildActualUsageSummary(CopilotTokenUsage usage)
         {
-            return $"Last request: input {CopilotTokenUsage.FormatCount(usage.InputTokens)} · output {CopilotTokenUsage.FormatCount(usage.OutputTokens)} · total {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}";
+            var cacheSummary = usage.CachedInputTokens.HasValue
+                ? $" · cached {CopilotTokenUsage.FormatCount(usage.EffectiveCachedInputTokens)} ({usage.CachedInputPercentage:0.#}%)"
+                : string.Empty;
+            return $"Last request: input {CopilotTokenUsage.FormatCount(usage.InputTokens)} · output {CopilotTokenUsage.FormatCount(usage.OutputTokens)} · total {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}{cacheSummary}";
         }
 
         private string BuildActualUsageDetails(CopilotConversationRecord conversation, CopilotTokenUsage usage)
@@ -5287,8 +5313,11 @@ namespace ColorVision.Copilot
             builder.AppendLine($"Input tokens: {CopilotTokenUsage.FormatCount(usage.InputTokens)}");
             builder.AppendLine($"Output tokens: {CopilotTokenUsage.FormatCount(usage.OutputTokens)}");
             builder.AppendLine($"Total tokens: {CopilotTokenUsage.FormatCount(usage.EffectiveTotalTokens)}");
+            builder.AppendLine(usage.CachedInputTokens.HasValue
+                ? $"Cached input tokens: {CopilotTokenUsage.FormatCount(usage.EffectiveCachedInputTokens)} ({usage.CachedInputPercentage:0.#}% of input)"
+                : "Cached input tokens: unavailable from this provider");
             builder.AppendLine();
-            builder.Append("Note: this shows the most recent usage returned by the API.");
+            builder.Append("Note: cached input is a subset of input tokens and is not added to the total again.");
 
             return builder.ToString().TrimEnd();
         }

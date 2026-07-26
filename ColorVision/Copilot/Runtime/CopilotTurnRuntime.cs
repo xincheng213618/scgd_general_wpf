@@ -27,13 +27,24 @@ namespace ColorVision.Copilot
                 new CopilotToolExecutor());
         }
 
-        public Task<CopilotTurnResult> RunAsync(
+        public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(eventSink);
+            return CopilotTurnEventStream.RunAsync(
+                (eventSink, turnCancellationToken) => RunCoreAsync(
+                    request,
+                    eventSink,
+                    turnCancellationToken),
+                cancellationToken);
+        }
+
+        private Task<CopilotTurnResult> RunCoreAsync(
+            CopilotTurnRequest request,
+            CopilotTurnEventSink eventSink,
+            CancellationToken cancellationToken)
+        {
             return request.Mode == CopilotAgentMode.Chat
                 ? RunChatAsync(request, eventSink, cancellationToken)
                 : RunAgentAsync(request, eventSink, cancellationToken);
@@ -43,7 +54,7 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
+            CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
             var prompt = request.UserText.Trim();
@@ -107,7 +118,7 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunAgentAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
+            CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
             var requestPlan = CopilotAgentRequestFactory.Prepare(request.UserText, request.Mode, request.HostContext);

@@ -2,6 +2,7 @@ using ColorVision.Copilot;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -445,6 +446,100 @@ public sealed class CopilotToolIntentPolicyTests
         Assert.Equal(Environment.ProcessPath, context.ApplicationExecutablePath, ignoreCase: true);
         Assert.Contains("\"application_executable\"", context.BuildPromptDataBlock(), StringComparison.Ordinal);
         Assert.True(context.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void DirectBatchScriptOutcomeDoesNotCreatePlanOnlyProviderTurns()
+    {
+        var request = Request(
+            @"C:\Users\17917\Desktop\work 里面的 cvraw 文件，写一个 python 脚本，运行批量转换成 tif",
+            writableRoots: [@"C:\Users\17917\Desktop\work"],
+            searchRoots: [@"C:\Users\17917\Desktop\work"]);
+
+        Assert.False(CopilotToolIntentPolicy.NeedsTaskLedger(request));
+    }
+
+    [Theory]
+    [InlineData("先制定计划，再检查当前项目并修复编译错误")]
+    [InlineData("Make a plan for fixing and validating this project")]
+    public void ExplicitPlanningRequestsEnableTaskLedger(string userText)
+    {
+        Assert.True(CopilotToolIntentPolicy.NeedsTaskLedger(Request(
+            userText,
+            writableRoots: [@"C:\workspace"],
+            searchRoots: [@"C:\workspace"])));
+    }
+
+    [Fact]
+    public void RuntimeEnvironmentIsTheVariablePromptSuffix()
+    {
+        var request = Request("检查当前项目的实现", searchRoots: [Environment.CurrentDirectory]);
+        var environment = CopilotAgentEnvironmentContext.Capture(request);
+
+        var instructions = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
+            request,
+            [new NamedTool("SearchFiles")],
+            environment,
+            taskLedgerEnabled: false,
+            agentModeEnabled: false);
+
+        Assert.True(
+            instructions.IndexOf("SearchFiles and GrepText", StringComparison.Ordinal)
+            < instructions.IndexOf("<runtime_environment>", StringComparison.Ordinal));
+        Assert.EndsWith("</runtime_environment>", instructions, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TokenUsageAggregatesCacheReadsWithoutDoubleCountingTotals()
+    {
+        var usage = new CopilotTokenUsage(100, 20, 120, 80)
+            .Add(new CopilotTokenUsage(50, 10, 60, 40));
+
+        Assert.Equal(150, usage.InputTokens);
+        Assert.Equal(30, usage.OutputTokens);
+        Assert.Equal(180, usage.EffectiveTotalTokens);
+        Assert.Equal(120, usage.EffectiveCachedInputTokens);
+        Assert.Equal(80d, usage.CachedInputPercentage);
+    }
+
+    [Fact]
+    public void OpenAiUsageReadsCachedTokensAsInputSubset()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 20,
+                "total_tokens": 120,
+                "prompt_tokens_details": { "cached_tokens": 80 }
+              }
+            }
+            """);
+
+        var usage = CopilotChatService.ExtractOpenAiUsage(document.RootElement);
+
+        Assert.Equal(new CopilotTokenUsage(100, 20, 120, 80), usage);
+    }
+
+    [Fact]
+    public void AnthropicUsageSeparatesCacheReadsFromLogicalInput()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "usage": {
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "cache_creation_input_tokens": 20,
+                "cache_read_input_tokens": 70
+              }
+            }
+            """);
+
+        var usage = CopilotChatService.ExtractAnthropicUsage(document.RootElement);
+
+        Assert.Equal(new CopilotTokenUsage(100, 5, 105, 70), usage);
     }
 
     [Fact]

@@ -148,6 +148,18 @@ namespace ColorVision.Copilot
             "again", "check again", "what about", "then", "the previous", "that result",
         };
 
+        private static readonly string[] ExplicitPlanningMarkers =
+        {
+            "先规划", "先计划", "制定计划", "给出计划", "列出计划", "执行计划", "分步骤", "任务清单", "多步骤", "复杂任务",
+            "plan first", "make a plan", "create a plan", "execution plan", "step by step", "task list", "multi-step", "complex task",
+        };
+
+        private static readonly string[] MultiPartTaskMarkers =
+        {
+            "然后", "接着", "同时", "并且", "最后", "分别", "以及", "完成后", "修复后", "验证后",
+            "and then", "then", "also", "finally", "as well as", "after fixing", "after that",
+        };
+
         private static readonly string[] FlowGraphMarkers =
         {
             "流程图", "工作流程", "流程节点", "流程里", "流程中", "节点连线", "相机节点", "算法节点", ".stn",
@@ -526,6 +538,51 @@ namespace ColorVision.Copilot
         {
             return NeedsBatchImageProcessing(request)
                 && ContainsAny(request!.UserText, BatchImageConversionMarkers);
+        }
+
+        public static bool NeedsTaskLedger(CopilotAgentRequest? request)
+        {
+            if (!IsAgentRequest(request)
+                || request!.Mode is CopilotAgentMode.Chat or CopilotAgentMode.Explain
+                || string.IsNullOrWhiteSpace(request.UserText))
+            {
+                return false;
+            }
+
+            if (request.Recovery != null || ContainsAny(request.UserText, ExplicitPlanningMarkers))
+                return true;
+
+            var actionCount = CountDistinctActionIntents(request);
+            if (actionCount < 2)
+                return false;
+
+            var hasExplicitParts = ContainsAny(request.UserText, MultiPartTaskMarkers)
+                || request.UserText.Contains('\n')
+                || request.UserText.Contains("1.", StringComparison.Ordinal)
+                || request.UserText.Contains("1、", StringComparison.Ordinal);
+            return hasExplicitParts && request.UserText.Length >= 80
+                || actionCount >= 3 && request.UserText.Length >= 180;
+        }
+
+        private static int CountDistinctActionIntents(CopilotAgentRequest request)
+        {
+            var actions = new[]
+            {
+                NeedsLocalEvidence(request),
+                NeedsWorkspaceEdit(request) || NeedsWorkspaceCreate(request) || NeedsWorkspaceRollback(request),
+                NeedsWorkspaceValidation(request),
+                NeedsPublicWebSearch(request) || NeedsUrlFetch(request),
+                NeedsFlowMutation(request),
+                NeedsDatabaseRead(request) || NeedsDatabaseWrite(request),
+                NeedsRecentLogs(request)
+                    || NeedsWindowsSystemInspection(request)
+                    || NeedsWindowsProcessInspection(request)
+                    || NeedsWindowsServiceInspection(request)
+                    || NeedsTcpPortInspection(request),
+                NeedsShellExecution(request),
+                NeedsBatchImageProcessing(request),
+            };
+            return actions.Count(value => value);
         }
 
         internal static bool ExplicitlyRequiresPublicWebSearch(CopilotAgentRequest? request)

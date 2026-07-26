@@ -991,25 +991,27 @@ namespace ColorVision.Copilot
             return CopilotStreamDelta.Empty;
         }
 
-        private static CopilotTokenUsage ExtractOpenAiUsage(JsonElement element)
+        internal static CopilotTokenUsage ExtractOpenAiUsage(JsonElement element)
         {
             if (!TryGetUsageElement(element, out var usageElement))
                 return CopilotTokenUsage.Empty;
 
-            return ExtractUsage(
+            var usage = ExtractUsage(
                 usageElement,
                 new[] { "prompt_tokens", "input_tokens" },
                 new[] { "completion_tokens", "output_tokens" });
+            return usage with { CachedInputTokens = ReadOpenAiCachedInputTokens(usageElement) };
         }
 
-        private static CopilotTokenUsage ExtractAnthropicUsage(JsonElement element)
+        internal static CopilotTokenUsage ExtractAnthropicUsage(JsonElement element)
         {
             if (TryGetUsageElement(element, out var usageElement))
                 return ExtractUsage(
                     usageElement,
                     new[] { "input_tokens" },
                     new[] { "output_tokens" },
-                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" });
+                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" },
+                    "cache_read_input_tokens");
 
             if (element.ValueKind == JsonValueKind.Object
                 && element.TryGetProperty("message", out var messageElement)
@@ -1019,7 +1021,8 @@ namespace ColorVision.Copilot
                     usageElement,
                     new[] { "input_tokens" },
                     new[] { "output_tokens" },
-                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" });
+                    new[] { "cache_creation_input_tokens", "cache_read_input_tokens" },
+                    "cache_read_input_tokens");
             }
 
             return CopilotTokenUsage.Empty;
@@ -1037,7 +1040,8 @@ namespace ColorVision.Copilot
             JsonElement usageElement,
             IReadOnlyList<string> inputKeys,
             IReadOnlyList<string> outputKeys,
-            IReadOnlyList<string>? extraInputKeys = null)
+            IReadOnlyList<string>? extraInputKeys = null,
+            string? cachedInputKey = null)
         {
             var inputTokens = ReadFirstInt(usageElement, inputKeys);
             var outputTokens = ReadFirstInt(usageElement, outputKeys);
@@ -1052,7 +1056,28 @@ namespace ColorVision.Copilot
                 ? total
                 : Math.Max(0, inputTokens) + Math.Max(0, outputTokens);
 
-            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens);
+            int? cachedInputTokens = null;
+            if (!string.IsNullOrWhiteSpace(cachedInputKey)
+                && TryReadInt(usageElement, cachedInputKey, out var cached))
+            {
+                cachedInputTokens = cached;
+            }
+
+            return new CopilotTokenUsage(inputTokens, outputTokens, totalTokens, cachedInputTokens);
+        }
+
+        private static int? ReadOpenAiCachedInputTokens(JsonElement usageElement)
+        {
+            foreach (var detailsKey in new[] { "prompt_tokens_details", "input_tokens_details" })
+            {
+                if (usageElement.TryGetProperty(detailsKey, out var details)
+                    && TryReadInt(details, "cached_tokens", out var cachedTokens))
+                {
+                    return cachedTokens;
+                }
+            }
+
+            return null;
         }
 
         private static int ReadFirstInt(JsonElement element, IReadOnlyList<string> keys)
