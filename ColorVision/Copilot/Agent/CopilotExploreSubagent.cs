@@ -506,6 +506,35 @@ namespace ColorVision.Copilot
             var providerFirstResponseLatencyTotalMs = AddClampedLong(
                 explorationFirstResponseLatencyTotalMs,
                 finalizationFirstResponseLatencyTotalMs);
+            var explorationStreamChunkCount = explorationProviderResponseCount > 0
+                ? Math.Max(0, exploration.ProviderStreamChunkCount)
+                : 0;
+            var finalizationStreamChunkCount = finalizationProviderResponseCount > 0
+                ? Math.Max(0, finalization.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamChunkCount = AddClamped(
+                explorationStreamChunkCount,
+                finalizationStreamChunkCount);
+            var explorationStreamInterChunkLatencyCount = Math.Clamp(
+                exploration.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, explorationStreamChunkCount - 1));
+            var finalizationStreamInterChunkLatencyCount = Math.Clamp(
+                finalization.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, finalizationStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyCount = AddClamped(
+                explorationStreamInterChunkLatencyCount,
+                finalizationStreamInterChunkLatencyCount);
+            var explorationStreamInterChunkLatencyTotalMs = explorationStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, exploration.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
+            var finalizationStreamInterChunkLatencyTotalMs = finalizationStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, finalization.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
+            var providerStreamInterChunkLatencyTotalMs = AddClampedLong(
+                explorationStreamInterChunkLatencyTotalMs,
+                finalizationStreamInterChunkLatencyTotalMs);
             var reportedInputTokens = AddClamped(exploration.ReportedInputTokens, finalization.ReportedInputTokens);
             var reportedOutputTokens = AddClamped(exploration.ReportedOutputTokens, finalization.ReportedOutputTokens);
             var reportedTotalTokens = Math.Max(
@@ -572,6 +601,20 @@ namespace ColorVision.Copilot
                             finalizationFirstResponseLatencyTotalMs,
                             finalization.ProviderCallDurationTotalMs))
                     : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Min(
+                    providerStreamInterChunkLatencyTotalMs,
+                    Math.Max(
+                        Math.Clamp(
+                            exploration.ProviderStreamInterChunkLatencyMaxMs,
+                            0,
+                            explorationStreamInterChunkLatencyTotalMs),
+                        Math.Clamp(
+                            finalization.ProviderStreamInterChunkLatencyMaxMs,
+                            0,
+                            finalizationStreamInterChunkLatencyTotalMs))),
                 ContextRecoveryCount = AddClamped(
                     exploration.ContextRecoveryCount,
                     finalization.ContextRecoveryCount),
@@ -1085,6 +1128,10 @@ namespace ColorVision.Copilot
                     ProviderFirstResponseLatencyTotalMs = result.Budget.ProviderFirstResponseLatencyTotalMs,
                     ProviderFirstResponseLatencyMaxMs = result.Budget.ProviderFirstResponseLatencyMaxMs,
                     ProviderCallDurationTotalMs = result.Budget.ProviderCallDurationTotalMs,
+                    ProviderStreamChunkCount = result.Budget.ProviderStreamChunkCount,
+                    ProviderStreamInterChunkLatencyCount = result.Budget.ProviderStreamInterChunkLatencyCount,
+                    ProviderStreamInterChunkLatencyTotalMs = result.Budget.ProviderStreamInterChunkLatencyTotalMs,
+                    ProviderStreamInterChunkLatencyMaxMs = result.Budget.ProviderStreamInterChunkLatencyMaxMs,
                     ContextRecoveryCount = result.Budget.ContextRecoveryCount,
                     ContextRecoveryEstimatedInputTokensBefore = result.Budget.ContextRecoveryEstimatedInputTokensBefore,
                     ContextRecoveryEstimatedInputTokensAfter = result.Budget.ContextRecoveryEstimatedInputTokensAfter,

@@ -863,6 +863,13 @@ namespace ColorVision.Copilot
                 + (budgetSnapshot.ProviderCallDurationTotalMs > 0
                     ? $" · cumulative provider wait {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderCallDurationTotalMs))}"
                     : string.Empty)
+                + (budgetSnapshot.ProviderStreamChunkCount > 0
+                    ? $" · stream chunks {budgetSnapshot.ProviderStreamChunkCount:N0}"
+                        + (budgetSnapshot.ProviderStreamInterChunkLatencyCount > 0
+                            ? $", inter-chunk avg {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyTotalMs / budgetSnapshot.ProviderStreamInterChunkLatencyCount))}"
+                                + $", max {FormatDuration(TimeSpan.FromMilliseconds(budgetSnapshot.ProviderStreamInterChunkLatencyMaxMs))}"
+                            : string.Empty)
+                    : string.Empty)
                 + (usage.CachedInputTokens.HasValue
                     ? $" · cache reads {usage.EffectiveCachedInputTokens:N0}/{usage.InputTokens:N0} input tokens ({usage.CachedInputPercentage:0.#}%)"
                     : " · cache reads unavailable")

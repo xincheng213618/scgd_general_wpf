@@ -99,6 +99,8 @@ public sealed class CopilotProviderRetryChatClientTests
         Assert.True(
             result.Budget.ProviderCallDurationTotalMs
             >= result.Budget.ProviderFirstResponseLatencyTotalMs);
+        Assert.Equal(1, result.Budget.ProviderStreamChunkCount);
+        Assert.Equal(0, result.Budget.ProviderStreamInterChunkLatencyCount);
         Assert.Contains(events, agentEvent =>
             agentEvent.Type == CopilotAgentEventType.RuntimeDiagnostic
             && agentEvent.Text.Contains("Provider request retry 2/3", StringComparison.Ordinal));

@@ -180,6 +180,16 @@ namespace ColorVision.Copilot
             var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
                 ? Math.Max(0, tokenSnapshot.ProviderFirstResponseLatencyTotalMs)
                 : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -208,6 +218,13 @@ namespace ColorVision.Copilot
                         providerFirstResponseLatencyTotalMs,
                         tokenSnapshot.ProviderCallDurationTotalMs)
                     : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
                 ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(

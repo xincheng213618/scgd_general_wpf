@@ -198,6 +198,14 @@ namespace ColorVision.Copilot
 
         public long ProviderCallDurationTotalMs { get; init; }
 
+        public int ProviderStreamChunkCount { get; init; }
+
+        public int ProviderStreamInterChunkLatencyCount { get; init; }
+
+        public long ProviderStreamInterChunkLatencyTotalMs { get; init; }
+
+        public long ProviderStreamInterChunkLatencyMaxMs { get; init; }
+
         public int ContextRecoveryCount { get; init; }
 
         public long ContextRecoveryEstimatedInputTokensBefore { get; init; }
@@ -733,6 +741,14 @@ namespace ColorVision.Copilot
         public long ProviderFirstResponseLatencyMaxMs { get; init; }
 
         public long ProviderCallDurationTotalMs { get; init; }
+
+        public int ProviderStreamChunkCount { get; init; }
+
+        public int ProviderStreamInterChunkLatencyCount { get; init; }
+
+        public long ProviderStreamInterChunkLatencyTotalMs { get; init; }
+
+        public long ProviderStreamInterChunkLatencyMaxMs { get; init; }
 
         public int ContextRecoveryCount { get; init; }
 

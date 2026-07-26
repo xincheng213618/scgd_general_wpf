@@ -645,6 +645,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
             ProviderFirstResponseLatencyTotalMs = 700,
             ProviderFirstResponseLatencyMaxMs = 500,
             ProviderCallDurationTotalMs = 1_500,
+            ProviderStreamChunkCount = 4,
+            ProviderStreamInterChunkLatencyCount = 3,
+            ProviderStreamInterChunkLatencyTotalMs = 300,
+            ProviderStreamInterChunkLatencyMaxMs = 180,
             ContextRecoveryCount = 1,
             ContextRecoveryEstimatedInputTokensBefore = 9_000,
             ContextRecoveryEstimatedInputTokensAfter = 4_000,
@@ -680,6 +684,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
         Assert.Equal(1_600, combined.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(600, combined.ProviderFirstResponseLatencyMaxMs);
         Assert.Equal(4_000, combined.ProviderCallDurationTotalMs);
+        Assert.Equal(9, combined.ProviderStreamChunkCount);
+        Assert.Equal(6, combined.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(540, combined.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(180, combined.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(3, combined.ContextRecoveryCount);
         Assert.Equal(39_000, combined.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(14_000, combined.ContextRecoveryEstimatedInputTokensAfter);
@@ -743,6 +751,10 @@ public sealed class CopilotSubagentBudgetFinalizationTests
                 ProviderFirstResponseLatencyTotalMs = 900,
                 ProviderFirstResponseLatencyMaxMs = 600,
                 ProviderCallDurationTotalMs = 2_500,
+                ProviderStreamChunkCount = 5,
+                ProviderStreamInterChunkLatencyCount = 3,
+                ProviderStreamInterChunkLatencyTotalMs = 240,
+                ProviderStreamInterChunkLatencyMaxMs = 120,
                 ContextRecoveryCount = 2,
                 ContextRecoveryEstimatedInputTokensBefore = 30_000,
                 ContextRecoveryEstimatedInputTokensAfter = 10_000,

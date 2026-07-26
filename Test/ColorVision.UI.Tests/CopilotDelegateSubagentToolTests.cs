@@ -26,6 +26,10 @@ public sealed class CopilotDelegateSubagentToolTests
                 ProviderFirstResponseLatencyTotalMs = 900,
                 ProviderFirstResponseLatencyMaxMs = 550,
                 ProviderCallDurationTotalMs = 2_800,
+                ProviderStreamChunkCount = 5,
+                ProviderStreamInterChunkLatencyCount = 3,
+                ProviderStreamInterChunkLatencyTotalMs = 240,
+                ProviderStreamInterChunkLatencyMaxMs = 120,
                 ContextRecoveryCount = 2,
                 ContextRecoveryEstimatedInputTokensBefore = 40_000,
                 ContextRecoveryEstimatedInputTokensAfter = 18_000,
@@ -52,6 +56,10 @@ public sealed class CopilotDelegateSubagentToolTests
         Assert.Equal(900, result.DelegatedRunUsage?.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(550, result.DelegatedRunUsage?.ProviderFirstResponseLatencyMaxMs);
         Assert.Equal(2_800, result.DelegatedRunUsage?.ProviderCallDurationTotalMs);
+        Assert.Equal(5, result.DelegatedRunUsage?.ProviderStreamChunkCount);
+        Assert.Equal(3, result.DelegatedRunUsage?.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(240, result.DelegatedRunUsage?.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(120, result.DelegatedRunUsage?.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(2, result.DelegatedRunUsage?.ContextRecoveryCount);
         Assert.Equal(40_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(18_000, result.DelegatedRunUsage?.ContextRecoveryEstimatedInputTokensAfter);

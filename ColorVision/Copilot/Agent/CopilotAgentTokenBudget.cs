@@ -75,6 +75,10 @@ namespace ColorVision.Copilot
         private long _providerFirstResponseLatencyTotalMs;
         private long _providerFirstResponseLatencyMaxMs;
         private long _providerCallDurationTotalMs;
+        private int _providerStreamChunkCount;
+        private int _providerStreamInterChunkLatencyCount;
+        private long _providerStreamInterChunkLatencyTotalMs;
+        private long _providerStreamInterChunkLatencyMaxMs;
         private int _contextRecoveryCount;
         private long _contextRecoveryEstimatedInputTokensBefore;
         private long _contextRecoveryEstimatedInputTokensAfter;
@@ -158,6 +162,31 @@ namespace ColorVision.Copilot
                     Math.Max(
                         delegatedFirstResponseLatencyTotalMs,
                         delegatedRun.ProviderCallDurationTotalMs));
+                var delegatedStreamChunkCount = delegatedProviderResponseCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderStreamChunkCount)
+                    : 0;
+                var delegatedStreamInterChunkLatencyCount = Math.Clamp(
+                    delegatedRun.ProviderStreamInterChunkLatencyCount,
+                    0,
+                    Math.Max(0, delegatedStreamChunkCount - 1));
+                var delegatedStreamInterChunkLatencyTotalMs = delegatedStreamInterChunkLatencyCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderStreamInterChunkLatencyTotalMs)
+                    : 0;
+                _providerStreamChunkCount = AddClamped(
+                    _providerStreamChunkCount,
+                    delegatedStreamChunkCount);
+                _providerStreamInterChunkLatencyCount = AddClamped(
+                    _providerStreamInterChunkLatencyCount,
+                    delegatedStreamInterChunkLatencyCount);
+                _providerStreamInterChunkLatencyTotalMs = AddClamped(
+                    _providerStreamInterChunkLatencyTotalMs,
+                    delegatedStreamInterChunkLatencyTotalMs);
+                _providerStreamInterChunkLatencyMaxMs = Math.Max(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    Math.Clamp(
+                        delegatedRun.ProviderStreamInterChunkLatencyMaxMs,
+                        0,
+                        delegatedStreamInterChunkLatencyTotalMs));
                 _contextRecoveryCount = AddClamped(
                     _contextRecoveryCount,
                     delegatedRun.ContextRecoveryCount);
@@ -262,6 +291,8 @@ namespace ColorVision.Copilot
             var usage = CopilotTokenUsage.Empty;
             long responseWeight = 0;
             long providerCallDurationTicks = 0;
+            long providerInterChunkLatencyTicks = 0;
+            var providerResponseStarted = false;
             var completed = false;
             IAsyncEnumerator<ChatResponseUpdate>? enumerator;
             var providerStopwatch = Stopwatch.StartNew();
@@ -291,7 +322,6 @@ namespace ColorVision.Copilot
                 yield break;
             }
 
-            RecordProviderFirstResponse(ToMilliseconds(providerCallDurationTicks));
             await using (enumerator)
             {
                 try
@@ -301,6 +331,21 @@ namespace ColorVision.Copilot
                         var update = enumerator.Current;
                         responseWeight += EstimateContentWeight(update.Contents);
                         usage = usage.MergeProgress(ExtractUsage(update.Contents));
+                        if (HasResponseContent(update.Contents))
+                        {
+                            if (!providerResponseStarted)
+                            {
+                                providerResponseStarted = true;
+                                RecordProviderFirstResponse(ToMilliseconds(providerCallDurationTicks));
+                                RecordProviderStreamChunk(interChunkLatencyMs: null);
+                            }
+                            else
+                            {
+                                RecordProviderStreamChunk(
+                                    ToMilliseconds(providerInterChunkLatencyTicks));
+                            }
+                            providerInterChunkLatencyTicks = 0;
+                        }
                         yield return update;
                         providerStopwatch.Restart();
                         bool hasNext;
@@ -313,6 +358,12 @@ namespace ColorVision.Copilot
                             providerCallDurationTicks = AddClamped(
                                 providerCallDurationTicks,
                                 providerStopwatch.ElapsedTicks);
+                            if (providerResponseStarted)
+                            {
+                                providerInterChunkLatencyTicks = AddClamped(
+                                    providerInterChunkLatencyTicks,
+                                    providerStopwatch.ElapsedTicks);
+                            }
                         }
                         if (!hasNext)
                             break;
@@ -447,6 +498,27 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void RecordProviderStreamChunk(long? interChunkLatencyMs)
+        {
+            lock (_syncRoot)
+            {
+                _providerStreamChunkCount = AddClamped(_providerStreamChunkCount, 1);
+                if (!interChunkLatencyMs.HasValue)
+                    return;
+
+                var normalizedLatencyMs = Math.Max(0, interChunkLatencyMs.Value);
+                _providerStreamInterChunkLatencyCount = AddClamped(
+                    _providerStreamInterChunkLatencyCount,
+                    1);
+                _providerStreamInterChunkLatencyTotalMs = AddClamped(
+                    _providerStreamInterChunkLatencyTotalMs,
+                    normalizedLatencyMs);
+                _providerStreamInterChunkLatencyMaxMs = Math.Max(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    normalizedLatencyMs);
+            }
+        }
+
         private CopilotAgentBudgetSnapshot CreateSnapshot()
         {
             var reportedInputTokens = Math.Max(0, _usage.InputTokens);
@@ -462,6 +534,16 @@ namespace ColorVision.Copilot
             var providerResponseCount = Math.Clamp(_providerResponseCount, 0, providerCalls);
             var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
                 ? Math.Max(0, _providerFirstResponseLatencyTotalMs)
+                : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, _providerStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                _providerStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, _providerStreamInterChunkLatencyTotalMs)
                 : 0;
             return new CopilotAgentBudgetSnapshot
             {
@@ -489,6 +571,13 @@ namespace ColorVision.Copilot
                 ProviderCallDurationTotalMs = Math.Max(
                     providerFirstResponseLatencyTotalMs,
                     _providerCallDurationTotalMs),
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
                 ContextRecoveryCount = Math.Max(0, _contextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = Math.Max(
                     0,
@@ -526,6 +615,19 @@ namespace ColorVision.Copilot
             }
 
             return usage;
+        }
+
+        private static bool HasResponseContent(IEnumerable<AIContent>? contents)
+        {
+            return (contents ?? Enumerable.Empty<AIContent>()).Any(content => content switch
+            {
+                UsageContent => false,
+                TextContent text => !string.IsNullOrEmpty(text.Text),
+                TextReasoningContent reasoning =>
+                    !string.IsNullOrEmpty(reasoning.Text)
+                    || !string.IsNullOrEmpty(reasoning.ProtectedData),
+                _ => true,
+            });
         }
 
         private static int AddClamped(int left, int right)

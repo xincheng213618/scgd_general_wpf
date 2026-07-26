@@ -32,6 +32,10 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             ProviderFirstResponseLatencyTotalMs = 700,
             ProviderFirstResponseLatencyMaxMs = 450,
             ProviderCallDurationTotalMs = 1_600,
+            ProviderStreamChunkCount = 5,
+            ProviderStreamInterChunkLatencyCount = 3,
+            ProviderStreamInterChunkLatencyTotalMs = 240,
+            ProviderStreamInterChunkLatencyMaxMs = 120,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 90_000,
             ContextRecoveryEstimatedInputTokensAfter = 35_000,
@@ -51,6 +55,10 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.True(snapshot.ProviderFirstResponseLatencyTotalMs >= 700);
         Assert.True(snapshot.ProviderFirstResponseLatencyMaxMs >= 450);
         Assert.True(snapshot.ProviderCallDurationTotalMs >= 1_600);
+        Assert.Equal(5, snapshot.ProviderStreamChunkCount);
+        Assert.Equal(3, snapshot.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(240, snapshot.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(120, snapshot.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(2, snapshot.ContextRecoveryCount);
         Assert.Equal(90_000, snapshot.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(35_000, snapshot.ContextRecoveryEstimatedInputTokensAfter);
@@ -80,12 +88,16 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         {
             updates.Add(update);
             if (updates.Count == 1)
+            {
+                Assert.Equal(0, client.Snapshot.ProviderResponseCount);
+                Assert.Equal(0, client.Snapshot.ProviderStreamChunkCount);
                 await Task.Delay(100);
+            }
         }
 
         var snapshot = client.Snapshot;
 
-        Assert.Equal(2, updates.Count);
+        Assert.Equal(3, updates.Count);
         Assert.Equal(1, snapshot.ProviderCalls);
         Assert.Equal(1, snapshot.ProviderResponseCount);
         Assert.InRange(snapshot.ProviderFirstResponseLatencyTotalMs, 10, 30_000);
@@ -95,6 +107,12 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
         Assert.True(
             snapshot.ProviderCallDurationTotalMs
             >= snapshot.ProviderFirstResponseLatencyTotalMs + 10);
+        Assert.Equal(2, snapshot.ProviderStreamChunkCount);
+        Assert.Equal(1, snapshot.ProviderStreamInterChunkLatencyCount);
+        Assert.InRange(snapshot.ProviderStreamInterChunkLatencyTotalMs, 10, 30_000);
+        Assert.Equal(
+            snapshot.ProviderStreamInterChunkLatencyTotalMs,
+            snapshot.ProviderStreamInterChunkLatencyMaxMs);
         Assert.True(
             wallClock.ElapsedMilliseconds
             >= snapshot.ProviderCallDurationTotalMs + 75);
@@ -233,6 +251,10 @@ public sealed class CopilotAgentTokenBudgetMetricsTests
             ChatOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            await Task.Delay(15, cancellationToken);
+            yield return new ChatResponseUpdate(
+                ChatRole.Assistant,
+                [new UsageContent(new UsageDetails { TotalTokenCount = 1 })]);
             await Task.Delay(25, cancellationToken);
             yield return new ChatResponseUpdate(ChatRole.Assistant, "First.");
             await Task.Delay(25, cancellationToken);

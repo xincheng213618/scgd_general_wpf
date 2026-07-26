@@ -749,6 +749,23 @@ namespace ColorVision.Copilot
                     }
                     builder.AppendLine();
                 }
+                if (AgentRunBudget.ProviderStreamChunkCount > 0)
+                {
+                    builder.Append("流式输出：")
+                        .Append(AgentRunBudget.ProviderStreamChunkCount.ToString("N0"))
+                        .Append(" 个内容片段");
+                    if (AgentRunBudget.ProviderStreamInterChunkLatencyCount > 0)
+                    {
+                        var averageInterChunkLatencyMs =
+                            AgentRunBudget.ProviderStreamInterChunkLatencyTotalMs
+                            / AgentRunBudget.ProviderStreamInterChunkLatencyCount;
+                        builder.Append(" · 片段间平均 ")
+                            .Append(FormatTraceDuration(averageInterChunkLatencyMs))
+                            .Append(" · 最慢 ")
+                            .Append(FormatTraceDuration(AgentRunBudget.ProviderStreamInterChunkLatencyMaxMs));
+                    }
+                    builder.AppendLine();
+                }
                 if (AgentRunBudget.PeakEstimatedInputTokens > 0)
                 {
                     builder.Append("峰值输入（估算）：")
@@ -1824,6 +1841,16 @@ namespace ColorVision.Copilot
             var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
                 ? Math.Max(0, budget.ProviderFirstResponseLatencyTotalMs)
                 : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, budget.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                budget.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, budget.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
 
             return new CopilotAgentBudgetSnapshot
             {
@@ -1853,6 +1880,13 @@ namespace ColorVision.Copilot
                         providerFirstResponseLatencyTotalMs,
                         budget.ProviderCallDurationTotalMs)
                     : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    budget.ProviderStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
                 ContextRecoveryCount = Math.Max(0, budget.ContextRecoveryCount),
                 ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
                 ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
@@ -1911,6 +1945,10 @@ namespace ColorVision.Copilot
                 && left.ProviderFirstResponseLatencyTotalMs == right.ProviderFirstResponseLatencyTotalMs
                 && left.ProviderFirstResponseLatencyMaxMs == right.ProviderFirstResponseLatencyMaxMs
                 && left.ProviderCallDurationTotalMs == right.ProviderCallDurationTotalMs
+                && left.ProviderStreamChunkCount == right.ProviderStreamChunkCount
+                && left.ProviderStreamInterChunkLatencyCount == right.ProviderStreamInterChunkLatencyCount
+                && left.ProviderStreamInterChunkLatencyTotalMs == right.ProviderStreamInterChunkLatencyTotalMs
+                && left.ProviderStreamInterChunkLatencyMaxMs == right.ProviderStreamInterChunkLatencyMaxMs
                 && left.ContextRecoveryCount == right.ContextRecoveryCount
                 && left.ContextRecoveryEstimatedInputTokensBefore == right.ContextRecoveryEstimatedInputTokensBefore
                 && left.ContextRecoveryEstimatedInputTokensAfter == right.ContextRecoveryEstimatedInputTokensAfter

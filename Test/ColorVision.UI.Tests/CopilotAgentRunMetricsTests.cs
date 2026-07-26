@@ -86,6 +86,10 @@ public sealed class CopilotAgentRunMetricsTests
             ProviderFirstResponseLatencyTotalMs = 1_250,
             ProviderFirstResponseLatencyMaxMs = 800,
             ProviderCallDurationTotalMs = 4_200,
+            ProviderStreamChunkCount = 12,
+            ProviderStreamInterChunkLatencyCount = 10,
+            ProviderStreamInterChunkLatencyTotalMs = 840,
+            ProviderStreamInterChunkLatencyMaxMs = 240,
             ContextRecoveryCount = 2,
             ContextRecoveryEstimatedInputTokensBefore = 50_000,
             ContextRecoveryEstimatedInputTokensAfter = 22_000,
@@ -120,6 +124,7 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Contains("提供商用量：输入 10,000 · 输出 1,185 · 总计 11,185 · 缓存输入 7,500（75%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("提供商重试：2 次 · 计划等待 1.5s · 限流 1 次", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("模型延迟：首响应平均 625ms · 最慢 800ms · 有效响应 2 / 3 · 调用累计 4.2s", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
+        Assert.Contains("流式输出：12 个内容片段 · 片段间平均 84ms · 最慢 240ms", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("峰值输入（估算）：8,192 / 1,000,000", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("窗口恢复：2 次 · 累计输入（估算）50,000 → 22,000 tokens（缩减 56%）", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
         Assert.Contains("工具调用：父 1 / 16 · 子 1", assistant.AgentRunMetricsToolTip, StringComparison.Ordinal);
@@ -153,6 +158,10 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(1_250, restoredMessage.AgentRunBudget.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(800, restoredMessage.AgentRunBudget.ProviderFirstResponseLatencyMaxMs);
         Assert.Equal(4_200, restoredMessage.AgentRunBudget.ProviderCallDurationTotalMs);
+        Assert.Equal(12, restoredMessage.AgentRunBudget.ProviderStreamChunkCount);
+        Assert.Equal(10, restoredMessage.AgentRunBudget.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(840, restoredMessage.AgentRunBudget.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(240, restoredMessage.AgentRunBudget.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(2, restoredMessage.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(50_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(22_000, restoredMessage.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);
@@ -192,6 +201,10 @@ public sealed class CopilotAgentRunMetricsTests
                 ProviderFirstResponseLatencyTotalMs = 1_500,
                 ProviderFirstResponseLatencyMaxMs = 2_000,
                 ProviderCallDurationTotalMs = 3_000,
+                ProviderStreamChunkCount = 20,
+                ProviderStreamInterChunkLatencyCount = 19,
+                ProviderStreamInterChunkLatencyTotalMs = 5_000,
+                ProviderStreamInterChunkLatencyMaxMs = 6_000,
                 ContextRecoveryCount = -3,
                 ContextRecoveryEstimatedInputTokensBefore = -12,
                 ContextRecoveryEstimatedInputTokensAfter = 99,
@@ -223,6 +236,10 @@ public sealed class CopilotAgentRunMetricsTests
         Assert.Equal(0, assistant.AgentRunBudget.ProviderFirstResponseLatencyTotalMs);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderFirstResponseLatencyMaxMs);
         Assert.Equal(0, assistant.AgentRunBudget.ProviderCallDurationTotalMs);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderStreamChunkCount);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderStreamInterChunkLatencyCount);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderStreamInterChunkLatencyTotalMs);
+        Assert.Equal(0, assistant.AgentRunBudget.ProviderStreamInterChunkLatencyMaxMs);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryCount);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensBefore);
         Assert.Equal(0, assistant.AgentRunBudget.ContextRecoveryEstimatedInputTokensAfter);
