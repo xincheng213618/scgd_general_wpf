@@ -745,8 +745,29 @@ namespace ColorVision.Copilot
                 + (budgetSnapshot.ToolBudgetExhausted ? " · tool limit reached" : string.Empty)
                 + (budgetSnapshot.BudgetExhausted ? " · exhausted" : string.Empty)
                 + "."));
-            var finalizationToken = controlIntent == CopilotAgentControlIntent.None && !timeBudgetExhausted ? cancellationToken : CancellationToken.None;
-            var taskLedger = await CaptureTaskLedgerAsync(todoProvider, modeProvider, session, sessionResumed, finalizationToken);
+            using var finalization = CopilotAgentRunFinalizationScope.Create(
+                controlIntent,
+                timeBudgetExhausted,
+                cancellationToken);
+            var taskLedger = liveCheckpointPublisher.LatestTaskLedger ?? recoveredTaskLedger;
+            if (controlIntent != CopilotAgentControlIntent.Cancel)
+            {
+                try
+                {
+                    taskLedger = await CaptureTaskLedgerAsync(
+                            todoProvider,
+                            modeProvider,
+                            session,
+                            sessionResumed,
+                            finalization.Token)
+                        .WaitAsync(finalization.Token);
+                }
+                catch (OperationCanceledException) when (finalization.IsTimeoutCancellationRequested)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)} while capturing the task ledger; the latest incremental ledger was retained."));
+                }
+            }
             var executionContractEvaluation = executionContract.Evaluate(bridge.StepRecords);
             var stopReason = controlIntent switch
             {
@@ -824,7 +845,9 @@ namespace ColorVision.Copilot
             {
                 if (controlIntent != CopilotAgentControlIntent.Cancel)
                 {
-                    var serializedSession = await agent.SerializeSessionAsync(session, null, finalizationToken);
+                    var serializedSession = await agent.SerializeSessionAsync(session, null, finalization.Token)
+                        .AsTask()
+                        .WaitAsync(finalization.Token);
                     var conversationMemory = CopilotAgentConversationMemory.Merge(
                         requestedCheckpoint?.ConversationMemory,
                         request.History,
@@ -843,6 +866,13 @@ namespace ColorVision.Copilot
                         emit(CopilotAgentEvent.RuntimeDiagnostic("Agent session checkpoint exceeded its session or capability persistence limit and was not saved."));
                 }
             }
+            catch (OperationCanceledException) when (finalization.IsTimeoutCancellationRequested)
+            {
+                sessionCheckpoint = liveCheckpointPublisher.LatestCheckpoint?.CopyWithTaskEventJournal(taskEventJournal);
+                emit(CopilotAgentEvent.RuntimeDiagnostic(sessionCheckpoint == null
+                    ? $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)}; no final checkpoint could be saved."
+                    : $"Agent finalization exceeded {FormatDuration(CopilotAgentRunFinalizationScope.DefaultInterruptedTimeout)}; the latest incremental checkpoint was sealed with the final task state."));
+            }
             catch (OperationCanceledException)
             {
                 throw;
@@ -850,6 +880,9 @@ namespace ColorVision.Copilot
             catch (Exception ex)
             {
                 emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent session checkpoint could not be saved ({CopilotUserFacingErrorFormatter.Sanitize(ex.Message)})."));
+                sessionCheckpoint = liveCheckpointPublisher.LatestCheckpoint?.CopyWithTaskEventJournal(taskEventJournal);
+                if (sessionCheckpoint != null)
+                    emit(CopilotAgentEvent.RuntimeDiagnostic("The latest incremental Agent checkpoint was sealed with the final task state instead."));
             }
             emit(CopilotAgentEvent.Completed());
             return new CopilotAgentRunResult
@@ -1574,6 +1607,8 @@ namespace ColorVision.Copilot
             private readonly Action<CopilotAgentEvent> _emit;
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
+            private CopilotAgentSessionCheckpoint? _latestCheckpoint;
+            private CopilotAgentTaskLedgerSnapshot? _latestTaskLedger;
             private int _publishing;
 
             public LiveCheckpointPublisher(
@@ -1605,6 +1640,10 @@ namespace ColorVision.Copilot
                 _sessionResumed = sessionResumed;
                 _answerText = answerText;
             }
+
+            public CopilotAgentSessionCheckpoint? LatestCheckpoint => Volatile.Read(ref _latestCheckpoint);
+
+            public CopilotAgentTaskLedgerSnapshot? LatestTaskLedger => Volatile.Read(ref _latestTaskLedger);
 
             public async ValueTask<bool> TryPublishAsync(
                 AIAgent agent,
@@ -1649,6 +1688,8 @@ namespace ColorVision.Copilot
                         return false;
                     }
 
+                    Volatile.Write(ref _latestTaskLedger, taskLedger);
+                    Volatile.Write(ref _latestCheckpoint, checkpoint);
                     _emit(CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
                     return true;
                 }
