@@ -48,6 +48,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     _sharedDb = CreateDb();
                     _sharedDb.CodeFirst.InitTables<FlowNodeRecord>();
                     _sharedDb.CodeFirst.InitTables<FlowNodeMessage>();
+                    _sharedDb.CodeFirst.InitTables<FlowRunRecord>();
 
                     _writerThread = new Thread(WriteLoop)
                     {
@@ -300,6 +301,76 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 log.Error("查询节点上次执行耗时失败", ex);
             }
             return result;
+        }
+
+        public static long GetLastCompletedFlowElapsed(int templateId, string? flowName)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                var query = db.Queryable<FlowRunRecord>()
+                    .Where(item => item.Status == FlowStatus.Completed && item.ElapsedMs > 0);
+                if (templateId > 0)
+                    query = query.Where(item => item.TemplateId == templateId);
+                else if (!string.IsNullOrWhiteSpace(flowName))
+                    query = query.Where(item => item.FlowName == flowName);
+                else
+                    return 0;
+
+                FlowRunRecord? record = query
+                    .OrderByDescending(item => item.CompletedTime)
+                    .First();
+                return record?.ElapsedMs ?? 0;
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询流程上次执行耗时失败", ex);
+                return 0;
+            }
+        }
+
+        public static int RecordFlowRun(
+            int templateId,
+            string? flowName,
+            string? serialNumber,
+            FlowStatus status,
+            long elapsedMs)
+        {
+            EnsureInitialized();
+            try
+            {
+                var record = new FlowRunRecord
+                {
+                    TemplateId = templateId,
+                    FlowName = flowName,
+                    SerialNumber = serialNumber,
+                    Status = status,
+                    ElapsedMs = Math.Max(0, elapsedMs),
+                    CompletedTime = DateTime.Now,
+                };
+                var completion = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _writeQueue.Add(db =>
+                {
+                    try
+                    {
+                        int id = db.Insertable(record).ExecuteReturnIdentity();
+                        record.Id = id;
+                        completion.TrySetResult(id);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("插入流程运行记录失败", ex);
+                        completion.TrySetResult(-1);
+                    }
+                });
+                return completion.Task.Result;
+            }
+            catch (Exception ex)
+            {
+                log.Error("插入流程运行记录失败", ex);
+                return -1;
+            }
         }
 
         public static FlowNodeRecord? GetLastByNodeId(string nodeId)

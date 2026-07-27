@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
@@ -49,8 +50,7 @@ namespace ProjectARVRPro
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         private const string FlowStartRejectedMessage = "FlowStartRejected";
-        private const int ScrollableStepBarThreshold = 12;
-        private const double ScrollableStepWidth = 72;
+        private const double StepBarItemWidth = 48;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -87,6 +87,7 @@ namespace ProjectARVRPro
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
+        private int _currentFlowTemplateId;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
 
@@ -161,7 +162,7 @@ namespace ProjectARVRPro
                     ProcessMeta processMeta = ProcessMetas[nextTestType];
                     TemplateModel<FlowParam> template = SelectFlowTemplate(processMeta);
                     CurrentTestType = nextTestType;
-                    return await TryRunTemplate(template.Key, processMeta, cancellationToken);
+                    return await TryRunTemplate(template, processMeta, cancellationToken);
                 }
 
                 log.Info("没有可执行的 ARVR 流程");
@@ -523,11 +524,11 @@ namespace ProjectARVRPro
                 return;
 
             ProcessMeta? processMeta = ProcessManager.FindProcessMetaForTemplate(template.Key);
-            await TryRunTemplate(template.Key, processMeta);
+            await TryRunTemplate(template, processMeta);
         }
 
         private async Task<bool> TryRunTemplate(
-            string flowTemplateKey,
+            TemplateModel<FlowParam> flowTemplate,
             ProcessMeta? runProcessMeta,
             CancellationToken cancellationToken = default)
         {
@@ -544,11 +545,14 @@ namespace ProjectARVRPro
                 cancellationToken.ThrowIfCancellationRequested();
                 TryCount++;
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
-                LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowTemplateKey, out long time) ? time : 0;
+                _currentFlowTemplateId = flowTemplate.Id;
+                LastFlowTime = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(flowTemplate.Id, flowTemplate.Key),
+                    cancellationToken);
 
                 CurrentFlowResult = new ProjectARVRReuslt();
                 CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
-                CurrentFlowResult.Model = flowTemplateKey;
+                CurrentFlowResult.Model = flowTemplate.Key;
                 ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
                 Application.Current.Dispatcher.Invoke(() =>
@@ -565,7 +569,7 @@ namespace ProjectARVRPro
                 });
 
 
-                FlowName = flowTemplateKey;
+                FlowName = flowTemplate.Key;
 
                 string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                 CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
@@ -655,12 +659,7 @@ namespace ProjectARVRPro
         private void RefreshStepBar()
         {
             ProcessManager.GenStepBar(stepBar);
-
-            bool isScrollable = stepBar.Items.Count > ScrollableStepBarThreshold;
-            stepBar.MinWidth = isScrollable ? stepBar.Items.Count * ScrollableStepWidth : 0;
-            stepBarScrollViewer.HorizontalScrollBarVisibility = isScrollable
-                ? ScrollBarVisibility.Auto
-                : ScrollBarVisibility.Disabled;
+            stepBar.Width = stepBar.Items.Count * StepBarItemWidth;
 
             foreach (object item in stepBar.Items)
             {
@@ -703,6 +702,12 @@ namespace ProjectARVRPro
 
             CurrentFlowResult.FlowStatus = FlowStatus.Failed;
             CurrentFlowResult.Msg = message;
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                _currentFlowTemplateId,
+                FlowName,
+                CurrentFlowResult.Code,
+                CurrentFlowResult.FlowStatus,
+                stopwatch.ElapsedMilliseconds);
             await ExecuteProcessFailureAsync(process ?? _currentFlowProcess);
             RecordFlowFailure(message);
 
@@ -852,10 +857,15 @@ namespace ProjectARVRPro
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
             CurrentFlowResult.RunTime  = stopwatch.ElapsedMilliseconds;
+            FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                _currentFlowTemplateId,
+                FlowName,
+                FlowControlData.SerialNumber,
+                FlowControlData.FlowStatus,
+                CurrentFlowResult.RunTime);
             logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
 
             if (FlowControlData.EventName == "Completed")
@@ -1610,6 +1620,7 @@ namespace ProjectARVRPro
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
                     TemplateModel<FlowParam> templateParam = SelectFlowTemplate(meta);
+                    _currentFlowTemplateId = templateParam.Id;
 
                     // 执行流程并等待完成
                     var tcs = new TaskCompletionSource<FlowControlData>();
@@ -1671,7 +1682,8 @@ namespace ProjectARVRPro
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
-                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowName, out long time) ? time : 0;
+                    LastFlowTime = await Task.Run(
+                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(templateParam.Id, FlowName));
 
                     MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
                     using (var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }))
@@ -1725,10 +1737,15 @@ namespace ProjectARVRPro
 
                     stopwatch.Stop();
                     timer.Change(Timeout.Infinite, 500);
-                    FlowEngineConfig.Instance.FlowRunTime[FlowName] = stopwatch.ElapsedMilliseconds;
                     log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
 
                     CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+                    FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                        _currentFlowTemplateId,
+                        FlowName,
+                        flowResult.SerialNumber,
+                        flowResult.FlowStatus,
+                        CurrentFlowResult.RunTime);
                     logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName;
 
                     if (flowResult.EventName == "Completed")

@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Windows;
@@ -21,8 +20,6 @@ public sealed class FlowEngineConfig : ViewModelBase, IConfig
 
     public int LastSelectFlow { get => _lastSelectFlow; set => SetProperty(ref _lastSelectFlow, value); }
     private int _lastSelectFlow;
-
-    public Dictionary<string, long> FlowRunTime { get; set; } = [];
 
     [Browsable(false)]
     public int TemplateFlowParamsIndex { get => _templateFlowParamsIndex; set => SetProperty(ref _templateFlowParamsIndex, value); }

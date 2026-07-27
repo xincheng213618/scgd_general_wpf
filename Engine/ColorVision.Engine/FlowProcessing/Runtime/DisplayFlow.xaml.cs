@@ -7,10 +7,8 @@ using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.SocketProtocol;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using ColorVision.UI.ServiceHost;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -23,7 +21,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -33,27 +30,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.FlowProcessing
 {
-
-    public class FlowSocketMsgHandle : ISocketJsonHandler
-    {
-        public string EventName => "Flow";
-        public SocketResponse Handle(NetworkStream stream, SocketRequest request)
-        {
-            if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is FlowParam flowParam)
-            {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    FlowEngineManager.GetInstance().DisplayFlow.ComboBoxFlow.SelectedValue = flowParam;
-                    FlowEngineManager.GetInstance().DisplayFlow.RunFlow();
-                });
-                return new SocketResponse { Code = 200, Msg = $"Run {request.Params}", EventName = EventName };
-            }
-            else
-            {
-                return new SocketResponse { Code = -1, Msg = $"Cant Find Flow {request.Params}", EventName = EventName };
-            }
-        }
-    }
 
     public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
@@ -105,9 +81,6 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     FlowEngineManager.SelectedFlowParam = flowParam;
                     FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
-                    if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
-                        LastFlowTime = time;
-
                 }
                 if (!_suppressSelectionRefresh)
                 {
@@ -541,8 +514,12 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     log.Error("更新流程批次完成状态失败。", ex);
                 }
-
-                FlowEngineConfig.Instance.FlowRunTime[completedFlowName] = stopwatch.ElapsedMilliseconds;
+                FlowNodeRecordDataBaseHelper.RecordFlowRun(
+                    completedBatch.TId ?? 0,
+                    completedFlowName,
+                    FlowControlData.SerialNumber,
+                    FlowControlData.FlowStatus,
+                    stopwatch.ElapsedMilliseconds);
 
                 string lastNodes = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeName)
                     ? (_runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values))
@@ -1201,7 +1178,8 @@ namespace ColorVision.Engine.FlowProcessing
             try
             {
                 FlowName = flowName;
-                LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowName, out long time) ? time : 0;
+                LastFlowTime = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(selectedFlowParam.Id, flowName));
                 ResetNodeTitleProgress();
                 await LoadNodeExpectedDurationsAsync();
                 if (!CanContinueFlowStart(sn))
