@@ -254,7 +254,13 @@
                                       PanningMode="HorizontalOnly"
                                       CanContentScroll="False"
                                       Focusable="False">
-                            <hc:StepBar x:Name="stepBar" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2"/>
+                            <hc:StepBar x:Name="stepBar" StepIndex="{Binding StepIndex}" Margin="0,3,0,2">
+                                <hc:StepBar.ItemContainerStyle>
+                                    <Style TargetType="{x:Type hc:StepBarItem}" BasedOn="{StaticResource StepBarItemHorizontalTop}">
+                                        <Setter Property="Margin" Value="4,0"/>
+                                    </Style>
+                                </hc:StepBar.ItemContainerStyle>
+                            </hc:StepBar>
                         </ScrollViewer>
                     </Border>
                     <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsDocumentEnabled="True">
