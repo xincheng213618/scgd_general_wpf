@@ -718,24 +718,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 日本語（日语） 的本地化字符串。
-        /// </summary>
-        public static string ja {
-            get {
-                return ResourceManager.GetString("ja", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 한국어（韩语） 的本地化字符串。
-        /// </summary>
-        public static string ko {
-            get {
-                return ResourceManager.GetString("ko", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 用户界面语言 的本地化字符串。
         /// </summary>
         public static string Language {

@@ -96,12 +96,6 @@
   <data name="en" xml:space="preserve">
     <value>English（英語）</value>
   </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語（日語）</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어（韓語）</value>
-  </data>
   <data name="MenuOptions" xml:space="preserve">
     <value>選項(_O）</value>
   </data>
