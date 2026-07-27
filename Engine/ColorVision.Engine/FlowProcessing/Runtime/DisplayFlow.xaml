@@ -58,11 +58,11 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <ComboBox x:Name="ComboBoxFlow" Margin="0,0,5,0" SelectedIndex="{Binding TemplateFlowParamsIndex}" Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                     <ComboBox x:Name="ComboBoxStartNode" DockPanel.Dock="Right" Width="120" Margin="5,0,0,0"
                               Style="{StaticResource ComboBoxExtend.Small}" ToolTip="启动节点"
                               Visibility="Collapsed"
                               DropDownOpened="ComboBoxStartNode_DropDownOpened"/>
+                    <ComboBox x:Name="ComboBoxFlow" Margin="0,0,5,0" SelectedIndex="{Binding TemplateFlowParamsIndex}" Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 </DockPanel>
                 <Grid  >
                     <Grid.ColumnDefinitions>
