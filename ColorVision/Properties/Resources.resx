@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>本地下载</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>百度云盘下载</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>软件版本相同</value>
@@ -255,6 +250,18 @@
   </data>
   <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
     <value>已是最新版本</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableHeading" xml:space="preserve">
+    <value>无法连接更新服务器</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableSummary" xml:space="preserve">
+    <value>未能获取主程序、插件和主题的最新版本信息。</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
+    <value>已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置，也可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
+  </data>
+  <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
+    <value>Windows 未检测到可用的互联网连接。可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。</value>
   </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>立即更新</value>
@@ -300,6 +307,27 @@
   </data>
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>程序备份</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
+    <value>复制离线下载命令</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
+    <value>左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
+    <value>离线下载命令已复制</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
+    <value>请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。</value>
+  </data>
+  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
+    <value>保存离线下载文件</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
+    <value>离线下载启动器已保存</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
+    <value>已保存到：{0}。请直接运行此 .cmd 文件。</value>
   </data>
   <data name="UpdatePreviewUpdateKindApplication" xml:space="preserve">
     <value>主程序</value>
@@ -562,16 +590,10 @@
     <value>需要我安静一点，可以右键把通知关掉。</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>有本地 Live2D 模型的话，可以在设置里接进来。</value>
+    <value>有 PNG 或 WebP 精灵表的话，可以在设置里创建自己的宠物。</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision 已启动，我会在这里提醒你。</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>模型加载失败，已切换为内置形象。</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>模型加载失败：{0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>桌面宠物设置</value>
@@ -612,29 +634,11 @@
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>宠物透明度</value>
   </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>启用 Live2D 渲染</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2D 模型或 HTML 路径</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D 最大帧率</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D 渲染分辨率</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D 轻量动效</value>
-  </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>启用桌面宠物</value>
   </data>
   <data name="ConfigEnableDesktopPetDescription" xml:space="preserve">
     <value>显示或隐藏桌面宠物组件。</value>
-  </data>
-  <data name="ConfigUseIntegratedMainWindowChrome" xml:space="preserve">
-    <value>启用实验性一体化主窗口标题栏</value>
   </data>
   <data name="UnsupportedFileFormat" xml:space="preserve">
     <value>不支持的文件格式</value>
@@ -959,4 +963,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>更新前创建程序快照</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>推荐软件</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>建议安装 Everything 和 WinRAR。未安装的软件已默认勾选；单击“下一步”或“安装所选软件”会依次打开安装程序。取消勾选即可跳过，不影响继续使用 ColorVision。</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>快速搜索本机文件和文件夹。</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>查看、解压和创建常用压缩文件。</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>正在安装...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>安装所选软件</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>重新检查</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>确认选择</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>未找到 {0} 安装包：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>{0} 安装程序启动失败：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} 尚未安装完成。请重试，或取消勾选后继续。</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>已安装</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>安装包缺失</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>将安装</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>已跳过</value></data>
 </root>

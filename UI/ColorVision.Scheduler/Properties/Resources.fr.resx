@@ -281,6 +281,30 @@
   <data name="Sched_Group" xml:space="preserve">
     <value>Group</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>Type de tâche</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>Planification</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>Démarrage différé</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>Aucune tâche planifiée</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>Créez une tâche et définissez sa planification</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>La tâche est en cours d’exécution. Attendez sa fin avant de la modifier.</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>Par sécurité, les anciennes tâches Intervalle quotidien / Toujours ont été mises en pause, car cette version les exécute désormais à l’intervalle configuré au lieu d’une fois par jour. Vérifiez-les puis reprenez-les manuellement :&#xA;{0}</value>
+  </data>
   <data name="Sched_ElapsedMs" xml:space="preserve">
     <value>Elapsed(ms)</value>
   </data>
@@ -333,13 +357,13 @@
     <value>Priority (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>Higher value = higher priority</value>
+    <value>Les valeurs élevées sont prioritaires uniquement lorsque plusieurs déclencheurs arrivent à échéance simultanément et que les threads d’exécution sont limités.</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>Timeout(seconds)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0 means no timeout</value>
+    <value>S’applique uniquement aux tâches prenant en charge l’annulation ; 0 signifie aucune limite de temps.</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = No limit</value>
@@ -396,13 +420,13 @@
     <value>Delay</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>Simple</value>
+    <value>Intervalle / répétition</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>Calendar</value>
+    <value>Tous les jours</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>Interval</value>
+    <value>Intervalle quotidien</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>Once</value>

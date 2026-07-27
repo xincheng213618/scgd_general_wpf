@@ -3,7 +3,6 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
-using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,23 +11,6 @@ using System.Windows.Input;
 
 namespace ProjectARVRPro.Process
 {
-    public class BoolToVisibilityConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? Visibility.Visible : Visibility.Collapsed;
-            }
-            return Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return Binding.DoNothing;
-        }
-    }
-
     /// <summary>
     /// ProcessManagerWindow.xaml 的交互逻辑
     /// </summary>
@@ -70,53 +52,111 @@ namespace ProjectARVRPro.Process
             _configSubscriptions.Clear();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-
-        }
-
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             RefreshConfigPanels();
         }
 
-        private void ListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void MetaNameEditTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (DataContext is ProcessManager manager && manager.UpdateMetaCommand.CanExecute(null))
+            if (e.NewValue is not true)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                manager.UpdateMetaCommand.Execute(null);
+                MetaNameEditTextBox.Focus();
+                MetaNameEditTextBox.SelectAll();
+            }));
+        }
+
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is ProcessManager manager && lvMetas.SelectedItem is ProcessMeta selectedMeta)
+            {
+                manager.SelectedProcessMeta = selectedMeta;
+                manager.SelectedResultParserMeta = null;
+                lvResultParsers.SelectedItem = null;
             }
+            RefreshConfigPanels();
         }
 
         private void GroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Rebind the ListView when group changes
+            if (DataContext is ProcessManager manager)
+            {
+                manager.SelectedProcessMeta = null;
+                lvMetas.SelectedItem = null;
+            }
+            RefreshConfigPanels();
+        }
+
+        private void ResultParserListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is ProcessManager manager && lvResultParsers.SelectedItem is ProcessMeta selectedMeta)
+            {
+                manager.SelectedResultParserMeta = selectedMeta;
+                manager.SelectedProcessMeta = null;
+                lvMetas.SelectedItem = null;
+            }
+            RefreshConfigPanels();
+        }
+
+        private void ResultParserListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is ProcessManager manager && manager.UpdateResultParserCommand.CanExecute(null))
+            {
+                manager.UpdateResultParserCommand.Execute(null);
+            }
+        }
+
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!IsInitialized || !ReferenceEquals(e.OriginalSource, sender))
+                return;
+
+            if (DataContext is ProcessManager manager)
+            {
+                if (MainTabControl.SelectedIndex == 0)
+                    manager.SelectedResultParserMeta = null;
+                else
+                    manager.SelectedProcessMeta = null;
+            }
+
             RefreshConfigPanels();
         }
 
         private void RefreshConfigPanels()
         {
-            // Clear all panels
+            if (!IsInitialized)
+                return;
+
             RecipePanel.Children.Clear();
             ProcessPanel.Children.Clear();
             PictureSwitchPanel.Children.Clear();
+            ResultRecipePanel.Children.Clear();
+            ResultProcessPanel.Children.Clear();
 
-            // Cleanup previous config handlers
             CleanupConfigSubscriptions();
 
             var manager = DataContext as ProcessManager;
-            var selectedMeta = manager?.SelectedProcessMeta;
+            var selectedMeta = manager?.SelectedConfigurationMeta;
 
             if (selectedMeta == null)
             {
-                // Show placeholder text in all panels
+                if (_currentSelectedMeta != null)
+                {
+                    _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
+                    _currentSelectedMeta = null;
+                }
+
                 AddPlaceholderText(RecipePanel);
                 AddPlaceholderText(ProcessPanel);
                 AddPlaceholderText(PictureSwitchPanel);
+                AddPlaceholderText(ResultRecipePanel, "请选择一个解析映射");
+                AddPlaceholderText(ResultProcessPanel, "请选择一个解析映射");
                 return;
             }
 
-            // Unsubscribe from previous meta if any
             if (_currentSelectedMeta != null && _currentSelectedMeta != selectedMeta)
             {
                 _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
@@ -128,36 +168,51 @@ namespace ProjectARVRPro.Process
                 _currentSelectedMeta.PropertyChanged += SelectedMeta_PropertyChanged;
             }
 
-            // Add Recipe config if available
+            bool isResultParser = ReferenceEquals(selectedMeta, manager?.SelectedResultParserMeta);
+            StackPanel processPanel = isResultParser ? ResultProcessPanel : ProcessPanel;
+            StackPanel recipePanel = isResultParser ? ResultRecipePanel : RecipePanel;
+
+            if (isResultParser)
+            {
+                AddPlaceholderText(ProcessPanel);
+                AddPlaceholderText(RecipePanel);
+                AddPlaceholderText(PictureSwitchPanel);
+            }
+            else
+            {
+                AddPlaceholderText(ResultProcessPanel, "请选择一个解析映射");
+                AddPlaceholderText(ResultRecipePanel, "请选择一个解析映射");
+            }
+
             var recipeConfig = selectedMeta.Process?.GetRecipeConfig();
             if (recipeConfig != null)
             {
-                AddConfigToPanel(recipeConfig, RecipePanel, selectedMeta, ConfigType.Recipe);
+                AddConfigToPanel(recipeConfig, recipePanel, selectedMeta, ConfigType.Recipe);
             }
             else
             {
-                AddNoConfigText(RecipePanel, "无Recipe配置");
+                AddNoConfigText(recipePanel, "无Recipe配置");
             }
 
-            // Add Process config if available
             var processConfig = selectedMeta.Process?.GetProcessConfig();
             if (processConfig != null)
             {
-                AddConfigToPanel(processConfig, ProcessPanel, selectedMeta, ConfigType.Process);
+                AddConfigToPanel(processConfig, processPanel, selectedMeta, ConfigType.Process);
             }
             else
             {
-                AddNoConfigText(ProcessPanel, "无Process配置");
+                AddNoConfigText(processPanel, "无Process配置");
             }
 
-            AddPictureSwitchConfigToPanel(selectedMeta.PictureSwitchConfig, PictureSwitchPanel);
+            if (!isResultParser)
+                AddPictureSwitchConfigToPanel(selectedMeta.PictureSwitchConfig, PictureSwitchPanel);
         }
 
-        private void AddPlaceholderText(StackPanel panel)
+        private void AddPlaceholderText(StackPanel panel, string message = "请选择一个处理项")
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "请选择一个处理项",
+                Text = message,
                 Foreground = System.Windows.Media.Brushes.Gray,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 20, 0, 0)

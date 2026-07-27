@@ -5,6 +5,8 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Copilot
@@ -46,6 +48,12 @@ namespace ColorVision.Copilot
 
             window.Show();
             window.Activate();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _viewModel.Dispose();
+            base.OnClosed(e);
         }
 
         public void RegisterDuplicateOccurrence(Exception exception, string source)
@@ -162,7 +170,13 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal sealed class CopilotExceptionViewModel : ViewModelBase
+    internal delegate Task<CopilotRecentLogSnapshot> CopilotRecentLogCaptureAsync(
+        CopilotRecentLogMode mode,
+        int maxLines,
+        int maxChars,
+        CancellationToken cancellationToken);
+
+    internal sealed class CopilotExceptionViewModel : ViewModelBase, IDisposable
     {
         private const int DefaultRecentLineCount = 160;
         private const int MinimumRecentLineCount = 20;
@@ -171,11 +185,20 @@ namespace ColorVision.Copilot
         private readonly string _initialSource;
         private readonly DateTime _firstOccurredAt;
         private readonly List<string> _exceptionSections = new();
+        private readonly CopilotRecentLogCaptureAsync _captureLogAsync;
+        private CopilotNonBlockingCancellationSource? _logRefreshCancellation;
+        private Task _currentLogRefreshTask = Task.CompletedTask;
+        private long _logRefreshVersion;
+        private int _disposeState;
         private int _repeatCount = 1;
         private int _additionalExceptionCount;
 
-        private CopilotExceptionViewModel(Exception exception, string source)
+        private CopilotExceptionViewModel(
+            Exception exception,
+            string source,
+            CopilotRecentLogCaptureAsync captureLogAsync)
         {
+            _captureLogAsync = captureLogAsync ?? throw new ArgumentNullException(nameof(captureLogAsync));
             _initialSource = source ?? string.Empty;
             _firstOccurredAt = DateTime.Now;
             ExceptionFingerprint = BuildFingerprint(exception);
@@ -187,7 +210,16 @@ namespace ColorVision.Copilot
             CurrentLogMode = CopilotRecentLogMode.RecentLines;
             RecentLineCount = DefaultRecentLineCount;
             UpdateOccurredSummary();
-            RefreshLogSnapshot();
+            AiPromptPreview = BuildAiPrompt(
+                OccurredSummary,
+                ExceptionDetails,
+                new CopilotRecentLogSnapshot
+                {
+                    Success = false,
+                    Summary = "Loading recent logs.",
+                    ErrorMessage = "Log capture is still in progress.",
+                });
+            QueueLogRefresh();
             DispatchStatus = CanAskAi
                 ? "You can send the current exception and recent logs to the main AI view."
                 : "AI is not configured, or the main view is not ready yet.";
@@ -285,14 +317,32 @@ namespace ColorVision.Copilot
 
         public static CopilotExceptionViewModel Create(Exception exception, string source)
         {
-            return new CopilotExceptionViewModel(exception, source);
+            return new CopilotExceptionViewModel(
+                exception,
+                source,
+                static (mode, maxLines, maxChars, cancellationToken) =>
+                    CopilotRecentLogSupport.CaptureAsync(
+                        mode: mode,
+                        maxLines: maxLines,
+                        maxChars: maxChars,
+                        cancellationToken: cancellationToken));
         }
+
+        internal static CopilotExceptionViewModel Create(
+            Exception exception,
+            string source,
+            CopilotRecentLogCaptureAsync captureLogAsync)
+        {
+            return new CopilotExceptionViewModel(exception, source, captureLogAsync);
+        }
+
+        internal Task CurrentLogRefreshTask => _currentLogRefreshTask;
 
         public void ApplyLogOptions(CopilotRecentLogMode mode, int requestedRecentLineCount, bool showValidationMessage = false)
         {
             CurrentLogMode = mode;
             RecentLineCount = NormalizeRecentLineCount(requestedRecentLineCount);
-            RefreshLogSnapshot();
+            QueueLogRefresh();
 
             if (showValidationMessage)
                 DispatchStatus = $"Invalid recent line count. Restored to {RecentLineCount} lines.";
@@ -302,7 +352,7 @@ namespace ColorVision.Copilot
         {
             _repeatCount++;
             UpdateOccurredSummary();
-            RefreshLogSnapshot();
+            QueueLogRefresh();
             DispatchStatus = $"Detected {_repeatCount} duplicate occurrences. They were merged into this window.";
         }
 
@@ -312,7 +362,7 @@ namespace ColorVision.Copilot
             _exceptionSections.Add(BuildExceptionDetails(exception, $"{source} [Additional Exception {_additionalExceptionCount}]", DateTime.Now));
             ExceptionDetails = string.Join(Environment.NewLine + Environment.NewLine + "----------------" + Environment.NewLine + Environment.NewLine, _exceptionSections);
             UpdateOccurredSummary();
-            RefreshLogSnapshot();
+            QueueLogRefresh();
             DispatchStatus = $"Captured {_additionalExceptionCount} additional exceptions in a short time. They were merged into this window.";
         }
 
@@ -392,26 +442,109 @@ namespace ColorVision.Copilot
             OccurredSummary = builder.ToString();
         }
 
-        private void RefreshLogSnapshot()
+        private void QueueLogRefresh()
         {
+            if (Volatile.Read(ref _disposeState) == 1)
+                return;
+
             var maxChars = CurrentLogMode == CopilotRecentLogMode.FullDay
                 ? CopilotRecentLogSupport.FullDayMaxLogChars
                 : 12000;
+            var mode = CurrentLogMode;
+            var recentLineCount = RecentLineCount;
+            var version = Interlocked.Increment(ref _logRefreshVersion);
+            var cancellation = new CopilotNonBlockingCancellationSource();
+            var previousCancellation = Interlocked.Exchange(ref _logRefreshCancellation, cancellation);
+            if (previousCancellation != null)
+            {
+                previousCancellation.RequestCancellation();
+                previousCancellation.Dispose();
+            }
 
-            var snapshot = CopilotRecentLogSupport.Capture(
-                mode: CurrentLogMode,
-                maxLines: RecentLineCount,
-                maxChars: maxChars);
+            RecentLogHeader = "Loading log data…";
+            _currentLogRefreshTask = RefreshLogSnapshotAsync(
+                mode,
+                recentLineCount,
+                maxChars,
+                version,
+                cancellation);
+        }
 
-            RecentLogHeader = snapshot.Success
-                ? $"{snapshot.Summary}{Environment.NewLine}{snapshot.FilePath}"
-                : snapshot.Summary;
+        private async Task RefreshLogSnapshotAsync(
+            CopilotRecentLogMode mode,
+            int recentLineCount,
+            int maxChars,
+            long version,
+            CopilotNonBlockingCancellationSource cancellation)
+        {
+            try
+            {
+                var snapshot = await _captureLogAsync(
+                    mode,
+                    recentLineCount,
+                    maxChars,
+                    cancellation.Token);
+                if (cancellation.IsCancellationRequested
+                    || version != Volatile.Read(ref _logRefreshVersion)
+                    || Volatile.Read(ref _disposeState) == 1)
+                {
+                    return;
+                }
 
-            RecentLogContent = snapshot.Success
-                ? snapshot.Content
-                : string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "No recent logs were found." : snapshot.ErrorMessage;
+                RecentLogHeader = snapshot.Success
+                    ? $"{snapshot.Summary}{Environment.NewLine}{snapshot.FilePath}"
+                    : snapshot.Summary;
 
-            AiPromptPreview = BuildAiPrompt(OccurredSummary, ExceptionDetails, snapshot);
+                RecentLogContent = snapshot.Success
+                    ? snapshot.Content
+                    : string.IsNullOrWhiteSpace(snapshot.ErrorMessage) ? "No recent logs were found." : snapshot.ErrorMessage;
+
+                AiPromptPreview = BuildAiPrompt(OccurredSummary, ExceptionDetails, snapshot);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (version != Volatile.Read(ref _logRefreshVersion)
+                    || Volatile.Read(ref _disposeState) == 1)
+                {
+                    return;
+                }
+
+                var message = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
+                var snapshot = new CopilotRecentLogSnapshot
+                {
+                    Success = false,
+                    Summary = "Failed to read recent logs.",
+                    ErrorMessage = message,
+                    RequestedRecentLineCount = recentLineCount,
+                };
+                RecentLogHeader = snapshot.Summary;
+                RecentLogContent = message;
+                AiPromptPreview = BuildAiPrompt(OccurredSummary, ExceptionDetails, snapshot);
+            }
+            finally
+            {
+                Interlocked.CompareExchange(ref _logRefreshCancellation, null, cancellation);
+                cancellation.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposeState, 1) == 1)
+                return;
+
+            Interlocked.Increment(ref _logRefreshVersion);
+            var cancellation = Interlocked.Exchange(ref _logRefreshCancellation, null);
+            if (cancellation != null)
+            {
+                cancellation.RequestCancellation();
+                cancellation.Dispose();
+            }
+
+            GC.SuppressFinalize(this);
         }
 
         private static int NormalizeRecentLineCount(int requestedRecentLineCount)

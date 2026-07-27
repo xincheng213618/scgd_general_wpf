@@ -52,6 +52,14 @@ namespace ColorVision.Engine.Templates.Jsons
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
         private const int MaxCopilotJsonChars = 16000;
+        private const string CopilotExplainTemplatePrompt =
+            "Using the attached template snapshot, first explain the detection logic this template is intended for, then explain the main parameters and their relationships field by field.";
+        private const string CopilotExplainParametersPrompt =
+            "Using the attached template snapshot, explain each current JSON parameter, its typical impact range, and which parameter combinations should be considered together.";
+        private const string CopilotDiagnoseTemplatePrompt =
+            "Using the attached template snapshot, check the current configuration for obvious anomalies, conflicting thresholds, or high-risk parameters. Explain your reasoning and suggest adjustments.";
+        private const string CopilotContinueAnalysisPrompt =
+            "Continue analyzing the current content using the attached template snapshot.";
         private const string SchemaIndexResourceName = "Templates/Jsons/Schemas/schema-index.json";
         private static readonly object CopilotEditorSyncRoot = new();
         private static readonly Dictionary<string, WeakReference<EditTemplateJson>> CopilotEditors = new(StringComparer.OrdinalIgnoreCase);
@@ -470,7 +478,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                Properties.Resources.Copilot_ExplainTemplatePrompt,
+                CopilotExplainTemplatePrompt,
                 sendNow: true);
         }
 
@@ -478,7 +486,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                Properties.Resources.Copilot_ExplainParametersPrompt,
+                CopilotExplainParametersPrompt,
                 sendNow: true);
         }
 
@@ -486,7 +494,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Diagnose,
-                Properties.Resources.Copilot_DiagnoseTemplatePrompt,
+                CopilotDiagnoseTemplatePrompt,
                 sendNow: true);
         }
 
@@ -494,7 +502,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             AskCopilot(
                 CopilotPromptMode.Explain,
-                Properties.Resources.Copilot_ContinueAnalysisPrompt,
+                CopilotContinueAnalysisPrompt,
                 sendNow: false);
         }
 

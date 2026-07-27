@@ -7,6 +7,7 @@ param(
     [string]$TaskPath = "\ColorVision\",
     [string]$TaskName = "ColorVisionWeb",
     [int]$Port = 9998,
+    [string]$RemoteGitBundle = "",
     [switch]$Force,
     [switch]$SkipTests,
     [switch]$DryRun
@@ -16,7 +17,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 function ConvertTo-PowerShellLiteral {
-    param([Parameter(Mandatory)][string]$Value)
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
 
     return "'" + $Value.Replace("'", "''") + "'"
 }
@@ -75,6 +76,7 @@ $branch = __BRANCH__
 $taskPath = __TASK_PATH__
 $taskName = __TASK_NAME__
 $port = __PORT__
+$remoteGitBundle = __REMOTE_GIT_BUNDLE__
 $forceDeploy = __FORCE__
 $skipTests = __SKIP_TESTS__
 $dryRun = __DRY_RUN__
@@ -135,6 +137,21 @@ function Get-NativeText {
         throw "$FilePath failed with exit code $LASTEXITCODE."
     }
     return (($output -join "`n").Trim())
+}
+
+function Get-GitBundleTargetCommit {
+    param([Parameter(Mandatory)][string]$BundlePath)
+
+    if (-not (Test-Path -LiteralPath $BundlePath -PathType Leaf)) {
+        throw "Git deployment bundle does not exist: $BundlePath"
+    }
+    Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'bundle', 'verify', $BundlePath) | Out-Null
+    $bundleHeads = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'bundle', 'list-heads', $BundlePath)
+    $headLine = @($bundleHeads -split "`n" | Where-Object { $_ -match '\sHEAD$' } | Select-Object -First 1)
+    if ($headLine.Count -ne 1) {
+        throw 'Git deployment bundle must expose exactly one HEAD reference.'
+    }
+    return (($headLine[0] -split '\s+')[0])
 }
 
 function Write-DeploymentHistory {
@@ -287,8 +304,12 @@ try {
     }
 
     if ($dryRun) {
-        $remoteLine = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'ls-remote', 'origin', "refs/heads/$branch")
-        $targetCommit = ($remoteLine -split '\s+')[0]
+        if ($remoteGitBundle) {
+            $targetCommit = Get-GitBundleTargetCommit -BundlePath $remoteGitBundle
+        } else {
+            $remoteLine = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'ls-remote', 'origin', "refs/heads/$branch")
+            $targetCommit = ($remoteLine -split '\s+')[0]
+        }
         $listener = Get-WebListener
         $summary = [ordered]@{
             status = 'dry_run'
@@ -296,6 +317,7 @@ try {
             target_commit = $targetCommit
             update_required = ($previousCommit -ne $targetCommit)
             force = [bool]$forceDeploy
+            source = if ($remoteGitBundle) { 'git_bundle' } else { 'origin' }
             listener_pid = if ($listener) { [int]$listener.OwningProcess } else { $null }
             task_state = (Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName).State.ToString()
             tracked_changes = @($trackedChanges | Sort-Object -Unique)
@@ -304,8 +326,13 @@ try {
         exit 0
     }
 
-    Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'fetch', 'origin')
-    $targetCommit = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'rev-parse', "origin/$branch")
+    if ($remoteGitBundle) {
+        $targetCommit = Get-GitBundleTargetCommit -BundlePath $remoteGitBundle
+        Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'fetch', $remoteGitBundle, 'HEAD')
+    } else {
+        Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'fetch', 'origin')
+        $targetCommit = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'rev-parse', "origin/$branch")
+    }
 
     if ($previousCommit -eq $targetCommit -and -not $forceDeploy) {
         try {
@@ -360,7 +387,11 @@ try {
         $pullSucceeded = $false
         try {
             Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'restore', '--', 'Web/Backend/config.json')
-            Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'pull', '--ff-only', 'origin', $branch)
+            if ($remoteGitBundle) {
+                Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'merge', '--ff-only', 'FETCH_HEAD')
+            } else {
+                Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'pull', '--ff-only', 'origin', $branch)
+            }
             $pullSucceeded = $true
         } finally {
             Copy-Item -LiteralPath (Join-Path $backupPath 'config.json') -Destination $configPath -Force
@@ -396,7 +427,7 @@ try {
     }
 
     if (-not $skipTests) {
-        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts') -WorkingDirectory $backendPath
+        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts', 'test_copilot_config_api') -WorkingDirectory $backendPath
     }
 
     $listenerBeforeRestart = Get-WebListener
@@ -429,6 +460,10 @@ try {
     if ($trafficAssets.Count -eq 0) {
         throw 'TrafficPage frontend asset is missing from the live build.'
     }
+    $copilotAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'CopilotConfigPage-*.js' -File)
+    if ($copilotAssets.Count -eq 0) {
+        throw 'CopilotConfigPage frontend asset is missing from the live build.'
+    }
 
     $analyticsCode = "import json,sqlite3,sys; db=sqlite3.connect(sys.argv[1]); names=['access_daily','access_route_daily','access_client_daily','access_visitor_daily']; print(json.dumps({name:db.execute('select count(*) from '+name).fetchone()[0] for name in names})); db.close()"
     $analyticsJson = @(& $pythonExe -c $analyticsCode $databasePath)
@@ -444,9 +479,10 @@ try {
         server = $env:COMPUTERNAME
         previous_commit = $previousCommit
         deployed_commit = $deployedCommit
+        source = if ($remoteGitBundle) { 'git_bundle' } else { 'origin' }
         backup_path = $backupPath
         frontend_build = 'success'
-        backend_targeted_tests = if ($skipTests) { 'skipped' } else { 25 }
+        backend_targeted_tests = if ($skipTests) { 'skipped' } else { 'passed' }
         old_pid = $oldPid
         new_pid = $newPid
         health = $readiness.health.status
@@ -513,6 +549,7 @@ $replacements = [ordered]@{
     '__TASK_PATH__' = ConvertTo-PowerShellLiteral $TaskPath
     '__TASK_NAME__' = ConvertTo-PowerShellLiteral $TaskName
     '__PORT__' = $Port.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__REMOTE_GIT_BUNDLE__' = ConvertTo-PowerShellLiteral $RemoteGitBundle
     '__FORCE__' = if ($Force) { '$true' } else { '$false' }
     '__SKIP_TESTS__' = if ($SkipTests) { '$true' } else { '$false' }
     '__DRY_RUN__' = if ($DryRun) { '$true' } else { '$false' }

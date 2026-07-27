@@ -33,9 +33,9 @@ namespace ProjectARVRPro.Process.Black
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        ctx.Result.FileName = master.ImgFile;
-
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        if (poiPoints.Count == 0) continue;
+
                         int id = 0;
                         foreach (var item in poiPoints)
                         {
@@ -74,6 +74,8 @@ namespace ProjectARVRPro.Process.Black
                             log?.Info("计算对比度前需要白画面亮度");
                         }
                     }
+
+
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);

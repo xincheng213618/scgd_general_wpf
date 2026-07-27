@@ -148,7 +148,7 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(request);
 
             var paths = new List<string>();
-            foreach (var root in request.SearchRootPaths ?? Array.Empty<string>())
+            foreach (var root in request.TrustedProjectRootPaths ?? Array.Empty<string>())
                 AddExistingSkillRoot(paths, TryGetDirectory(root), Path.Combine(".agents", "skills"));
 
             var baseDirectory = string.IsNullOrWhiteSpace(applicationBaseDirectory)

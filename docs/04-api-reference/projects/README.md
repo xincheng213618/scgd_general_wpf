@@ -26,7 +26,7 @@
 | Engine 绑定层 | `FlowTemplate`、`TemplateFlow.Params`、FlowEngine |
 | 业务判定层 | `IProcess.Execute()`、`Recipe/`、`Fix/` |
 | 通信层 | Socket、MES、串口、Modbus |
-| 结果层 | `ObjectiveTestResult`、结果窗口、CSV/XLSX/PDF |
+| 结果层 | `ObjectiveTestResult`、结果窗口、CSV/XLSX |
 
 ## 打包
 

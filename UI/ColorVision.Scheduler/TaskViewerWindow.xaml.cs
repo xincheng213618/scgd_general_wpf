@@ -4,7 +4,6 @@ using log4net;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using Quartz;
-using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
@@ -94,14 +93,24 @@ namespace ColorVision.Scheduler
             await GetScheduledTasks();
         }
 
-        private async void OnJobExecuted(IJobExecutionContext context)
+        private void OnJobExecuted(IJobExecutionContext context)
         {
-            // 在主线程上更新 UI
-            await Dispatcher.InvokeAsync(async () =>
+            _ = RefreshExecutedJobAsync(context);
+        }
+
+        private async Task RefreshExecutedJobAsync(IJobExecutionContext context)
+        {
+            try
             {
-                await UpdateChangedTask(context);
+                Func<Task> refreshAction = () => UpdateChangedTask(context);
+                Task refreshTask = await Dispatcher.InvokeAsync(refreshAction);
+                await refreshTask;
                 QueueCopilotContextPublish();
-            });
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to refresh task state after executing {context.JobDetail.Key}.", ex);
+            }
         }
 
         private void ListViewTask_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -142,35 +151,23 @@ namespace ColorVision.Scheduler
                 }
             }
         }
-        private async Task UpdateChangedTask(IJobExecutionContext context)
+        private Task UpdateChangedTask(IJobExecutionContext context)
         {
-            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
             var jobKey = context.JobDetail.Key;
-            var triggers = await scheduler.GetTriggersOfJob(jobKey);
-
-            foreach (var trigger in triggers)
+            var existingTaskInfo = TaskInfos.FirstOrDefault(
+                task => task.JobName == jobKey.Name && task.GroupName == jobKey.Group);
+            if (existingTaskInfo != null)
             {
-                var updatedTaskInfo = new SchedulerInfo
-                {
-                    JobName = jobKey.Name,
-                    GroupName = jobKey.Group,
-                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A",
-                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A"
-                };
-
-                var existingTaskInfo = TaskInfos.FirstOrDefault(t => t.JobName == updatedTaskInfo.JobName && t.GroupName == updatedTaskInfo.GroupName);
-                if (existingTaskInfo != null)
-                {
-                    // 更新现有任务信息
-                    existingTaskInfo.NextFireTime = updatedTaskInfo.NextFireTime;
-                    existingTaskInfo.PreviousFireTime = updatedTaskInfo.PreviousFireTime;
-                }
-                else
-                {
-                    // 添加新任务信息
-                    TaskInfos.Add(updatedTaskInfo);
-                }
+                // The completed trigger/job may already have been removed for a
+                // one-shot schedule, so use the execution context as the source
+                // of truth instead of requiring GetTriggersOfJob to return one.
+                existingTaskInfo.NextFireTime =
+                    context.NextFireTimeUtc?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                existingTaskInfo.PreviousFireTime =
+                    context.FireTimeUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss");
             }
+
+            return Task.CompletedTask;
         }
 
 
@@ -180,7 +177,7 @@ namespace ColorVision.Scheduler
             createTask.ShowDialog();
         }
 
-        private async void MenuEdit_Click(object sender, RoutedEventArgs e)
+        private void MenuEdit_Click(object sender, RoutedEventArgs e)
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
@@ -189,11 +186,7 @@ namespace ColorVision.Scheduler
                 if (editInfo != null)
                 {
                     var win = new CreateTask { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner, SchedulerInfo = editInfo };
-                    if (win.ShowDialog() == true)
-                    {
-                        // 编辑完成后更新
-                        await QuartzSchedulerManager.UpdateJob(editInfo);
-                    }
+                    win.ShowDialog();
                 }
             }
         }

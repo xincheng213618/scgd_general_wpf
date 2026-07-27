@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Windows;
@@ -9,12 +10,12 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
 
     public class DeviceFlowDevice : DeviceService<ConfigFlowDevice>
     {
-        public MQTTFlowDevice DService { get; set; }
+        public MQTTDeviceService<ConfigFlowDevice> DService { get; set; }
         public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
         public DeviceFlowDevice(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTFlowDevice(Config);
+            DService = new MQTTDeviceService<ConfigFlowDevice>(Config);
             EditCommand = new RelayCommand(a =>
             {
                 var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -23,8 +24,7 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public override UserControl GetDeviceInfo() => new InfoFlowDevice(this);
-
+        public override UserControl GetDeviceInfo() => new UserControl();
 
         public override MQTTServiceBase? GetMQTTService()
         {

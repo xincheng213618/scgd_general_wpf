@@ -56,6 +56,7 @@ namespace ColorVision.UI.Plugins
                 string executablePath = Path.Combine(programDirectory, executableName);
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempDirectory);
+                ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
                 GenerateDeleteBatchFile(batchFilePath, targetPluginDirectories, executablePath, Environment.ProcessId, handoffState);
 
                 ProcessStartInfo startInfo = new()
@@ -146,6 +147,7 @@ namespace ColorVision.UI.Plugins
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(baseDir, tempRoot);
+                ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
                 GenerateBatchFile(
                     batchFilePath: batchFilePath,
                     baseDir: baseDir,

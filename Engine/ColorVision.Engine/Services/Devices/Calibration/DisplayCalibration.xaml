@@ -32,9 +32,9 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
-                <TextBlock x:Name="TextBlockUnInit" HorizontalAlignment="Center" Text="{x:Static properties:Resources.SeviceClosed}" />
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}" />
+                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Left" Text="{x:Static properties:Resources.UnknownStatus}"  />
+                <TextBlock x:Name="TextBlockUnInit" HorizontalAlignment="Left" Text="{x:Static properties:Resources.SeviceClosed}" />
+                <Button x:Name="ButtonUnauthorized" HorizontalAlignment="Left"  Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrCameraLicenseExpiredz}" />
                 <StackPanel x:Name="StackPanelContent">
                     <Grid Margin="0,0,0,3">
                         <Grid.ColumnDefinitions>

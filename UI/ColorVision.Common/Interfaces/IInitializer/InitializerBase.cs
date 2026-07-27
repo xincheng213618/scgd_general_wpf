@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace ColorVision.UI
 {
@@ -7,13 +6,8 @@ namespace ColorVision.UI
     {
         public virtual string Name => GetType().Name;
 
-        public virtual IEnumerable<string> Dependencies => new List<string>();
-
         public virtual int Order => 1;
 
-        public virtual Task InitializeAsync()
-        {
-            throw new System.NotImplementedException();
-        }
+        public abstract Task InitializeAsync();
     }
 }

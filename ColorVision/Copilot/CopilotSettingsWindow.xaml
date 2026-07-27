@@ -225,6 +225,8 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="104" />
@@ -286,13 +288,37 @@
                                           ItemsSource="{Binding AvailableModelPresets}"
                                           Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
-                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="Test" />
-                                <DockPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,10">
+                                <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotProtocol}" />
+                                <ComboBox Grid.Row="4"
+                                          Grid.Column="1"
+                                          Margin="0,0,0,10"
+                                          ItemsSource="{Binding ProviderOptions}"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <TextBlock Grid.Row="5" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
+                                <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,0,0,10">
+                                    <TextBox Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="{DynamicResource GlobalTextBrush}"
+                                               FontSize="11"
+                                               Opacity="0.72"
+                                               Text="{Binding SelectedProfile.EndpointStatusText}"
+                                               TextWrapping="Wrap" />
+                                    <CheckBox Margin="0,8,0,0"
+                                              Content="Allow API key over non-loopback HTTP"
+                                              IsChecked="{Binding SelectedProfile.AllowInsecureHttp, UpdateSourceTrigger=PropertyChanged}"
+                                              ToolTip="Use only for a trusted private model server when HTTPS is unavailable. The API key and prompt content will not be encrypted in transit." />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="6" Style="{StaticResource SettingsFieldLabelStyle}" Text="Test" />
+                                <DockPanel Grid.Row="6" Grid.Column="1" Margin="0,0,0,10">
                                     <Button DockPanel.Dock="Right"
                                             Margin="8,0,0,0"
                                             Padding="10,4"
                                             Command="{Binding TestSelectedProfileCommand}"
-                                            Content="Test Model"
+                                            Content="{Binding SelectedProfileConnectionTestActionText}"
                                             IsEnabled="{Binding CanTestSelectedProfile}" />
                                     <TextBlock Margin="0,4,0,0"
                                                Foreground="{DynamicResource GlobalTextBrush}"
@@ -302,45 +328,44 @@
                                 </DockPanel>
                             </Grid>
 
-                            <Expander Margin="0,4,0,0" Header="Connection settings" IsExpanded="False" Foreground="{DynamicResource GlobalTextBrush}">
+                            <Expander Margin="0,8,0,0"
+                                      Header="Provider reliability">
                                 <StackPanel Margin="0,10,0,0">
-                                    <Grid>
+                                    <TextBlock Style="{StaticResource SettingsHintTextStyle}"
+                                               Text="Applied only to this model connection. Increase these limits for local models or providers that pause during long reasoning."
+                                               TextWrapping="Wrap" />
+                                    <Grid Margin="0,10,0,0">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="104" />
+                                            <ColumnDefinition Width="180" />
+                                            <ColumnDefinition Width="120" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotProtocol}" />
-                                        <ComboBox Grid.Row="0"
-                                                  Grid.Column="1"
-                                                  Margin="0,0,0,10"
-                                                  ItemsSource="{Binding ProviderOptions}"
-                                                  DisplayMemberPath="Label"
-                                                  SelectedValuePath="Value"
-                                                  SelectedValue="{Binding SelectedProfile.ProviderType, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Row="0" Style="{StaticResource SettingsFieldLabelStyle}" Text="First content timeout" />
+                                        <TextBox Grid.Row="0"
+                                                 Grid.Column="1"
+                                                 Margin="0,0,12,10"
+                                                 Text="{Binding SelectedProfile.FirstContentTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="Maximum wait for the provider's first content or tool call." />
+                                        <TextBlock Grid.Row="0"
+                                                   Grid.Column="2"
+                                                   Style="{StaticResource SettingsHintTextStyle}"
+                                                   Text="seconds · 15–3,600 · default 180" />
 
-                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Base URL" />
-                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedProfile.BaseUrl, UpdateSourceTrigger=PropertyChanged}" />
-                                        <TextBlock Grid.Row="2"
-                                                   Grid.Column="1"
-                                                   Margin="0,5,0,0"
-                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                   FontSize="11"
-                                                   Opacity="0.72"
-                                                   Text="{Binding SelectedProfile.EndpointStatusText}"
-                                                   TextWrapping="Wrap" />
-                                        <CheckBox Grid.Row="3"
-                                                  Grid.Column="1"
-                                                  Margin="0,8,0,0"
-                                                  Content="Allow API key over non-loopback HTTP"
-                                                  IsChecked="{Binding SelectedProfile.AllowInsecureHttp, UpdateSourceTrigger=PropertyChanged}"
-                                                  ToolTip="Use only for a trusted private model server when HTTPS is unavailable. The API key and prompt content will not be encrypted in transit." />
+                                        <TextBlock Grid.Row="1" Style="{StaticResource SettingsFieldLabelStyle}" Text="Stream inactivity" />
+                                        <TextBox Grid.Row="1"
+                                                 Grid.Column="1"
+                                                 Margin="0,0,12,0"
+                                                 Text="{Binding SelectedProfile.StreamingInactivityTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="Maximum pause after streamed content has started." />
+                                        <TextBlock Grid.Row="1"
+                                                   Grid.Column="2"
+                                                   Style="{StaticResource SettingsHintTextStyle}"
+                                                   Text="seconds · 15–3,600 · default 120" />
                                     </Grid>
                                 </StackPanel>
                             </Expander>
@@ -516,6 +541,41 @@
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <local:CopilotMcpSettingsControl DataContext="{Binding}"/>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Backend Sync">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Border Margin="12" Padding="18" Style="{StaticResource SettingsSurfaceBorderStyle}">
+                        <StackPanel MaxWidth="760">
+                            <TextBlock Style="{StaticResource SettingsPanelTitleStyle}" Text="Backend model configuration" />
+                            <TextBlock Margin="0,6,0,16"
+                                       Style="{StaticResource SettingsHintTextStyle}"
+                                       Text="Download centrally managed model profiles from the ColorVision Web backend. Local profiles are preserved, and synchronized profiles are saved immediately."
+                                       TextWrapping="Wrap" />
+
+                            <Border Style="{StaticResource SettingsUsageBandBorderStyle}">
+                                <TextBlock Foreground="{DynamicResource GlobalTextBrush}"
+                                           Opacity="0.82"
+                                           Text="ColorVision verifies this device automatically with the installed version key and local device information. No sync API key needs to be entered."
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <DockPanel Margin="0,18,0,0">
+                                <Button DockPanel.Dock="Right"
+                                        MinWidth="132"
+                                        Padding="14,6"
+                                        Command="{Binding SyncBackendConfigCommand}"
+                                        Content="Download and sync"
+                                        IsEnabled="{Binding CanSyncBackendConfig}"
+                                        Style="{StaticResource CopilotPrimaryButtonStyle}" />
+                                <TextBlock Margin="0,0,16,0"
+                                           VerticalAlignment="Center"
+                                           Style="{StaticResource SettingsHintTextStyle}"
+                                           Text="{Binding BackendSyncStatusText}"
+                                           TextWrapping="Wrap" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
                 </ScrollViewer>
             </TabItem>
         </TabControl>

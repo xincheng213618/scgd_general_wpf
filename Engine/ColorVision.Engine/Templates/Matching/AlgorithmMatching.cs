@@ -9,85 +9,53 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Matching
 {
+    public class MatchingDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [System.ComponentModel.DisplayName("模板文件")]
+        [DisplayAlgorithmFile("Tif Files (*.tif)|*.tif|All Files (*.*)|*.*")]
+        public string TemplateFile { get; set; } = string.Empty;
+
+        public MatchingDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "参数模板",
+                new TemplateMatch(),
+                "请先选择模板匹配参数"))
+        {
+        }
+    }
 
     [DisplayAlgorithm(99, nameof(ColorVision.Engine.Properties.Resources.TemplateMatching), "定位算法")]
-    public class AlgorithmMatching : DisplayAlgorithmBase
+    public class AlgorithmMatching : DisplayAlgorithmBase<MatchingDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public RelayCommand OpenTemplateCommand { get; set; }
-
-        public RelayCommand SetTemplateFileCommand { get; set; }
-
-
         public AlgorithmMatching(DeviceAlgorithm deviceAlgorithm)
+            : base(new MatchingDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
-            SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(TemplateFile)));
-
         }
 
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateMatch(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
-        }
-
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-
-        public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; OnPropertyChanged(); } }
-        private string _TemplateFile;
-        public static void SetFile(object target, string propertyName)
-        {
-            using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
+            if (!TryGetTemplate(Config.Template, out MatchParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
             {
-                saveFileDialog.Filter = "Tif Files (*.tif)|*.txt|All Files (*.*)|*.*";
-                saveFileDialog.Title = ColorVision.Engine.Properties.Resources.OpenFile;
-                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                saveFileDialog.RestoreDirectory = true;
-                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    PropertyInfo prop = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                    if (prop != null && prop.CanWrite)
-                    {
-                        prop.SetValue(target, saveFileDialog.FileName, null);
-                    }
-                }
+                return null;
             }
+
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
 
-
-        public override UserControl GetUserControl()
+        public MsgRecord SendCommand(MatchParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType )
         {
-            UserControl ??= new DisplayMatching(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType )
-        {
-            MatchParam Param = TemplateMatch.Params[TemplateSelectedIndex].Value;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateFile", TemplateFile);
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });
+            Params.Add("TemplateFile", Config.TemplateFile);
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
             MsgSend msg = new()
             {

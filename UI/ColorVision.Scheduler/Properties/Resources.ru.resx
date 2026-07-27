@@ -281,6 +281,30 @@
   <data name="Sched_Group" xml:space="preserve">
     <value>Group</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>Тип задачи</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>Расписание выполнения</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>Отложенный запуск</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>Запланированных задач пока нет</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>Создайте задачу и настройте расписание её выполнения</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>Задача выполняется. Дождитесь завершения перед редактированием.</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>Для безопасности старые задачи «Ежедневный интервал / Бесконечно» приостановлены: в этой версии они выполняются с заданным интервалом, а не один раз в день. Проверьте их и возобновите вручную:&#xA;{0}</value>
+  </data>
   <data name="Sched_ElapsedMs" xml:space="preserve">
     <value>Elapsed(ms)</value>
   </data>
@@ -333,13 +357,13 @@
     <value>Priority (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>Higher value = higher priority</value>
+    <value>Большее значение дает приоритет только тогда, когда несколько триггеров срабатывают одновременно и рабочих потоков недостаточно.</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>Timeout(seconds)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0 means no timeout</value>
+    <value>Действует только для задач с поддержкой отмены; 0 означает отсутствие тайм-аута.</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = No limit</value>
@@ -396,13 +420,13 @@
     <value>Delay</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>Simple</value>
+    <value>Интервал / повтор</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>Calendar</value>
+    <value>Ежедневно</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>Interval</value>
+    <value>Ежедневный интервал</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>Once</value>

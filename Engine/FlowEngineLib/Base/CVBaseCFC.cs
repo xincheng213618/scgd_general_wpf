@@ -142,12 +142,16 @@ public class CVBaseCFC
 			|| statusType == StatusTypeEnum.OverTime;
 	}
 
-	public void Failed(string message, string nodeName, DateTime startTime)
+	public void Failed(string message, string nodeName, DateTime startTime, string nodeId = "")
 	{
 		SetStatusType(StatusTypeEnum.Failed);
 		string errorNodeName = nodeName ?? string.Empty;
 		AddData("Msg", message ?? string.Empty);
 		AddData("ErrorNodeName", errorNodeName);
+		if (!string.IsNullOrWhiteSpace(nodeId))
+		{
+			AddData("ErrorNodeId", nodeId);
+		}
 		if (!string.IsNullOrWhiteSpace(errorNodeName))
 		{
 			AddResultStatus(errorNodeName, FlowStatus.ToString(), startTime);
@@ -201,11 +205,15 @@ public class CVBaseCFC
 		AddResultStatus(nodeName, status.Status.ToString(), startTime);
 	}
 
-	public void OverTime(string nodeName, DateTime startTime)
+	public void OverTime(string nodeName, DateTime startTime, string nodeId = "")
 	{
 		SetStatusType(StatusTypeEnum.OverTime);
 		AddResultStatus(nodeName, FlowStatus.ToString(), startTime);
 		AddData("ErrorNodeName", nodeName);
+		if (!string.IsNullOrWhiteSpace(nodeId))
+		{
+			AddData("ErrorNodeId", nodeId);
+		}
 	}
 
 	private void AddResultStatus(string nodeName, string status, DateTime startTime)

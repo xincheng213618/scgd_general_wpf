@@ -8,60 +8,65 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.SFR
 {
 
     [DisplayAlgorithm(51, "SFR1.0", "ARVR")]
-    public class AlgorithmSFR : DisplayAlgorithmBase
+    public class AlgorithmSFR : DisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
+            : base(new DualTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "SFR模板",
+                    new TemplateSFR(),
+                    "请先选择SFR模板"),
+                new DisplayAlgorithmTemplateSelection(
+                    "关注点模板",
+                    new TemplatePoi(),
+                    "请先选择关注点模板")))
         {
             Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateSFR(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out SFRParam param) ||
+                !TryGetTemplate(Config.SecondaryTemplate, out PoiParam poiParam) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(
+                string.Empty,
+                string.Empty,
+                imageFileName,
+                fileExtType,
+                param.Id,
+                Config.Template.SelectedName,
+                poiParam.Id,
+                Config.SecondaryTemplate.SelectedName);
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplaySFR(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName)
+        public MsgRecord SendCommand(
+            string deviceCode,
+            string deviceType,
+            string fileName,
+            FileExtType fileExtType,
+            int pid,
+            string tempName,
+            int poiId,
+            string poiTempName)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = TemplatePoi.Params[TemplatePoiSelectedIndex].Id, Name = TemplatePoi.Params[TemplatePoiSelectedIndex].Key });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
             MsgSend msg = new()
             {

@@ -9,6 +9,7 @@ from Scripts.package_cvxp import (
     MAX_COPILOT_AGENT_ROLES,
     package_plugin,
     resolve_primary_dll_path,
+    synchronize_manifest_version,
     validate_plugin_manifest,
 )
 
@@ -54,6 +55,25 @@ class PackageCvxManifestValidationTests(unittest.TestCase):
 
         self.assertEqual("LegacyPlugin", summary.plugin_id)
         self.assertEqual("LegacyPlugin.dll", summary.dll_path)
+
+    def test_manifest_version_is_updated_to_match_primary_dll(self) -> None:
+        self._write_manifest({"id": "sample.plugin", "version": "1.1.7.53"})
+
+        updated, previous_version = synchronize_manifest_version(self.manifest_path, "1.1.7.54")
+
+        self.assertTrue(updated)
+        self.assertEqual("1.1.7.53", previous_version)
+        self.assertEqual("1.1.7.54", json.loads(self.manifest_path.read_text(encoding="utf-8"))["version"])
+
+    def test_matching_manifest_version_is_not_rewritten(self) -> None:
+        self._write_manifest({"id": "sample.plugin", "version": "1.1.7.54"})
+        original_contents = self.manifest_path.read_bytes()
+
+        updated, previous_version = synchronize_manifest_version(self.manifest_path, "1.1.7.54")
+
+        self.assertFalse(updated)
+        self.assertEqual("1.1.7.54", previous_version)
+        self.assertEqual(original_contents, self.manifest_path.read_bytes())
 
     def test_manifest_identity_can_differ_from_project_and_dll_names(self) -> None:
         self._write_manifest({

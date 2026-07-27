@@ -22,7 +22,6 @@ namespace ColorVision.Engine.Services
         public override int Order => 5;
 
         public override string Name => nameof(ServiceInitializer);
-        public override IEnumerable<string> Dependencies => new List<string> { "MySqlInitializer", "TemplateInitializer" };
 
         public override async Task InitializeAsync()
         {

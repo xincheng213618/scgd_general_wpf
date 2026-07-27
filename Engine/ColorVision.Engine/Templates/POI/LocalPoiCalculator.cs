@@ -36,6 +36,11 @@ namespace ColorVision.Engine.Templates.POI
 
     internal static class LocalPoiCalculator
     {
+        public static ViewResultAlgType ResolveResultType(int channels)
+        {
+            return channels == 1 ? ViewResultAlgType.POI_Y : ViewResultAlgType.POI_XYZ;
+        }
+
         public static LocalPoiResultSet Calculate(LocalFlowFrameLease frame, PoiParam poi, PoiFilterParam? filter, PoiReviseParam? revise)
         {
             if (!frame.HasCie) throw new InvalidOperationException("当前内存帧没有 CIE 数据，无法计算 POI。");
@@ -74,10 +79,11 @@ namespace ColorVision.Engine.Templates.POI
 
         public static void SaveDetails(int masterId, LocalPoiResultSet result)
         {
-            if (masterId <= 0) return;
+            if (masterId <= 0) throw new ArgumentOutOfRangeException(nameof(masterId), "POI 结果主表 ID 无效。");
+            List<PoiPointResultModel> details = new(result.Points.Count);
             foreach (LocalPoiPointResult point in result.Points)
             {
-                PoiPointResultModel model = new()
+                details.Add(new PoiPointResultModel
                 {
                     Pid = masterId,
                     PoiId = point.PoiId,
@@ -88,12 +94,15 @@ namespace ColorVision.Engine.Templates.POI
                     PoiWidth = point.Width,
                     PoiHeight = point.Height,
                     Value = JsonConvert.SerializeObject(point.Value)
-                };
-                if (PoiPointResultDao.Instance.Save(model) <= 0)
-                {
-                    throw new InvalidOperationException($"保存 POI 结果失败：{point.Name}");
-                }
+                });
             }
+            int inserted = PoiPointResultDao.Instance.BulkInsert(details);
+            if (inserted != details.Count) throw new InvalidOperationException($"保存 POI 明细失败：应写入 {details.Count} 条，实际写入 {inserted} 条。");
+        }
+
+        public static void DeleteDetails(int masterId)
+        {
+            if (masterId > 0) _ = PoiPointResultDao.Instance.Delete(item => item.Pid == masterId);
         }
 
         private static LocalPoiPointResult CalculatePoint(IntPtr handle, int channels, PoiPoint point)

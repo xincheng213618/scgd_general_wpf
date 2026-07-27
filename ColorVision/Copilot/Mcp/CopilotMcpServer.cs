@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpServer : IDisposable
+    internal sealed class CopilotMcpServer : IDisposable
     {
         public const int MaximumConcurrentClients = 16;
         private const int MaxRequestHeaderBytes = 64 * 1024;
@@ -62,6 +62,7 @@ namespace ColorVision.Copilot.Mcp
             lock (_syncRoot)
             {
                 var previousPort = _settings.Port;
+                var previousBearerToken = _settings.BearerToken;
                 _settings = settings ?? new CopilotMcpRuntimeSettings();
 
                 if (!_settings.Enabled)
@@ -78,6 +79,8 @@ namespace ColorVision.Copilot.Mcp
 
                 if (IsRunning && _listener != null && previousPort == _settings.Port)
                 {
+                    if (!string.Equals(previousBearerToken, _settings.BearerToken, StringComparison.Ordinal))
+                        _requestHandler.ClearSessions();
                     LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
                     return;
                 }
@@ -136,6 +139,7 @@ namespace ColorVision.Copilot.Mcp
             }
             finally
             {
+                _requestHandler.ClearSessions();
                 _listener = null;
                 _cts?.Dispose();
                 _cts = null;
@@ -207,7 +211,9 @@ namespace ColorVision.Copilot.Mcp
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(30));
                 var stream = client.GetStream();
-                var callerSource = client.Client.RemoteEndPoint?.ToString() ?? string.Empty;
+                var callerSource = client.Client.RemoteEndPoint is IPEndPoint remoteEndpoint
+                    ? $"tcp://{remoteEndpoint.Address}"
+                    : "tcp://local";
                 var request = await ReadRequestAsync(stream, callerSource, linkedCts.Token);
                 var response = request == null
                     ? new CopilotMcpHttpResponse { StatusCode = 400, Body = "{\"error\":\"Invalid HTTP request.\"}" }

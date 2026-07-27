@@ -3,6 +3,7 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -21,34 +22,126 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotExternalToolLease : IAsyncDisposable
     {
+        internal static readonly TimeSpan DefaultDisposalTimeout = TimeSpan.FromSeconds(1);
+        internal static readonly TimeSpan DefaultResourceDisposalTimeout = TimeSpan.FromMilliseconds(500);
+
+        private readonly object _disposeLock = new();
         private readonly IReadOnlyList<IAsyncDisposable> _resources;
+        private readonly TimeSpan _disposalTimeout;
+        private readonly TimeSpan _resourceDisposalTimeout;
+        private Task? _disposeTask;
 
         public CopilotExternalToolLease(
             IReadOnlyList<ICopilotTool>? tools = null,
             IReadOnlyList<string>? diagnostics = null,
             IReadOnlyList<IAsyncDisposable>? resources = null)
+            : this(
+                tools,
+                diagnostics,
+                resources,
+                DefaultDisposalTimeout,
+                DefaultResourceDisposalTimeout)
+        {
+        }
+
+        internal CopilotExternalToolLease(
+            IReadOnlyList<ICopilotTool>? tools,
+            IReadOnlyList<string>? diagnostics,
+            IReadOnlyList<IAsyncDisposable>? resources,
+            TimeSpan disposalTimeout,
+            TimeSpan resourceDisposalTimeout)
         {
             Tools = tools ?? Array.Empty<ICopilotTool>();
             Diagnostics = diagnostics ?? Array.Empty<string>();
-            _resources = resources ?? Array.Empty<IAsyncDisposable>();
+            _resources = resources?.Where(resource => resource != null).ToArray()
+                ?? Array.Empty<IAsyncDisposable>();
+            _disposalTimeout = ValidateTimeout(disposalTimeout, nameof(disposalTimeout));
+            _resourceDisposalTimeout = ValidateTimeout(resourceDisposalTimeout, nameof(resourceDisposalTimeout));
         }
 
         public IReadOnlyList<ICopilotTool> Tools { get; }
 
         public IReadOnlyList<string> Diagnostics { get; }
 
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            foreach (var resource in _resources.Reverse())
+            Task disposeTask;
+            lock (_disposeLock)
             {
+                disposeTask = _disposeTask ??= DisposeResourcesAsync(
+                    _resources,
+                    _disposalTimeout,
+                    _resourceDisposalTimeout);
+            }
+            return new ValueTask(disposeTask);
+        }
+
+        internal static async Task DisposeResourcesAsync(
+            IReadOnlyList<IAsyncDisposable> resources,
+            TimeSpan disposalTimeout,
+            TimeSpan resourceDisposalTimeout)
+        {
+            ArgumentNullException.ThrowIfNull(resources);
+            disposalTimeout = ValidateTimeout(disposalTimeout, nameof(disposalTimeout));
+            resourceDisposalTimeout = ValidateTimeout(resourceDisposalTimeout, nameof(resourceDisposalTimeout));
+            var stopwatch = Stopwatch.StartNew();
+            foreach (var resource in resources.Reverse())
+            {
+                Task disposeTask;
                 try
                 {
-                    await resource.DisposeAsync();
+                    disposeTask = Task.Run(
+                        async () => await resource.DisposeAsync().ConfigureAwait(false),
+                        CancellationToken.None);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    TraceDisposalFailure(resource, ex);
+                    continue;
+                }
+
+                var remaining = disposalTimeout - stopwatch.Elapsed;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    CopilotCancellationBoundary.ObserveLateFault(disposeTask);
+                    continue;
+                }
+
+                var waitTimeout = remaining < resourceDisposalTimeout
+                    ? remaining
+                    : resourceDisposalTimeout;
+                try
+                {
+                    await disposeTask.WaitAsync(waitTimeout).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    CopilotCancellationBoundary.ObserveLateFault(disposeTask);
+                    Trace.TraceWarning(
+                        "Copilot external resource disposal exceeded {0}; detaching late cleanup for {1}.",
+                        waitTimeout,
+                        resource.GetType().Name);
+                }
+                catch (Exception ex)
+                {
+                    TraceDisposalFailure(resource, ex);
                 }
             }
+        }
+
+        private static TimeSpan ValidateTimeout(TimeSpan timeout, string parameterName)
+        {
+            if (timeout <= TimeSpan.Zero || timeout == Timeout.InfiniteTimeSpan)
+                throw new ArgumentOutOfRangeException(parameterName, "Disposal timeout must be finite and positive.");
+            return timeout;
+        }
+
+        private static void TraceDisposalFailure(IAsyncDisposable resource, Exception exception)
+        {
+            Trace.TraceWarning(
+                "Copilot external resource disposal failed for {0}: {1}",
+                resource.GetType().Name,
+                CopilotUserFacingErrorFormatter.Sanitize(exception.Message));
         }
     }
 
@@ -56,6 +149,8 @@ namespace ColorVision.Copilot
     {
         private const int MaximumToolsPerServer = 32;
         private const int MaximumToolsPerRequest = 64;
+        private static readonly TimeSpan DiscoveryCleanupTimeout = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan DiscoveryResourceCleanupTimeout = TimeSpan.FromMilliseconds(500);
         private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
 
         public CopilotMcpToolProvider()
@@ -79,7 +174,11 @@ namespace ColorVision.Copilot
             CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(enabledServers);
             foreach (var server in enabledServers)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    await DisposeDiscoveryResourcesAsync(clients).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
                 if (tools.Count >= MaximumToolsPerRequest)
                     break;
                 McpClient? client = null;
@@ -115,7 +214,20 @@ namespace ColorVision.Copilot
 
                     using var connectionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     connectionTimeout.CancelAfter(TimeSpan.FromSeconds(server.ConnectionTimeoutSeconds));
-                    client = await McpClient.CreateAsync(transport, cancellationToken: connectionTimeout.Token);
+                    var clientCreationTask = McpClient.CreateAsync(
+                        transport,
+                        cancellationToken: connectionTimeout.Token);
+                    try
+                    {
+                        client = await clientCreationTask
+                            .WaitAsync(connectionTimeout.Token)
+                            .ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (connectionTimeout.IsCancellationRequested)
+                    {
+                        _ = DisposeLateClientAsync(clientCreationTask);
+                        throw;
+                    }
                     transport = null;
                     if (client.ServerCapabilities.Tools?.ListChanged == true)
                     {
@@ -235,6 +347,8 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
+                    await DisposeDiscoveryResourcesAsync(clients).ConfigureAwait(false);
+                    clients.Clear();
                     throw;
                 }
                 catch (OperationCanceledException)
@@ -250,23 +364,22 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
-                    if (toolListChangedRegistration != null)
-                    {
-                        try
-                        {
-                            await toolListChangedRegistration.DisposeAsync();
-                        }
-                        catch
-                        {
-                        }
-                    }
+                    var failedServerResources = new List<IAsyncDisposable>(2);
                     if (client != null)
-                        await client.DisposeAsync();
+                        failedServerResources.Add(client);
                     else if (transport != null)
-                        await transport.DisposeAsync();
+                        failedServerResources.Add(transport);
+                    if (toolListChangedRegistration != null)
+                        failedServerResources.Add(toolListChangedRegistration);
+                    await DisposeDiscoveryResourcesAsync(failedServerResources).ConfigureAwait(false);
                 }
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await DisposeDiscoveryResourcesAsync(clients).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             return new CopilotExternalToolLease(tools, diagnostics, clients);
         }
 
@@ -281,6 +394,24 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(value))
                 throw new InvalidOperationException($"token environment variable '{server.BearerTokenEnvironmentVariable}' is not set");
             return value.Trim();
+        }
+
+        private static Task DisposeDiscoveryResourcesAsync(IReadOnlyList<IAsyncDisposable> resources)
+            => CopilotExternalToolLease.DisposeResourcesAsync(
+                resources,
+                DiscoveryCleanupTimeout,
+                DiscoveryResourceCleanupTimeout);
+
+        private static async Task DisposeLateClientAsync(Task<McpClient> clientCreationTask)
+        {
+            try
+            {
+                var lateClient = await clientCreationTask.ConfigureAwait(false);
+                await DisposeDiscoveryResourcesAsync([lateClient]).ConfigureAwait(false);
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -307,10 +438,8 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(listPageAsync);
-            if (maximumToolDefinitions < 1)
-                throw new ArgumentOutOfRangeException(nameof(maximumToolDefinitions));
-            if (maximumPages < 1)
-                throw new ArgumentOutOfRangeException(nameof(maximumPages));
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumToolDefinitions, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumPages, 1);
 
             var tools = new List<Tool>(Math.Min(maximumToolDefinitions, 64));
             var seenCursors = new HashSet<string>(StringComparer.Ordinal);
@@ -324,7 +453,20 @@ namespace ColorVision.Copilot
             while (pageCount < maximumPages && tools.Count < maximumToolDefinitions)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var page = await listPageAsync(new ListToolsRequestParams { Cursor = cursor }, cancellationToken);
+                var pageTask = listPageAsync(
+                        new ListToolsRequestParams { Cursor = cursor },
+                        cancellationToken)
+                    .AsTask();
+                ListToolsResult page;
+                try
+                {
+                    page = await pageTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    CopilotCancellationBoundary.ObserveLateFault(pageTask);
+                    throw;
+                }
                 pageCount++;
                 var pageTools = page?.Tools ?? Array.Empty<Tool>();
                 discoveredToolCount = discoveredToolCount > int.MaxValue - pageTools.Count

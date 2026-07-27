@@ -19,6 +19,7 @@ namespace ColorVision.Copilot
     public enum CopilotAgentTaskHostChangeKind
     {
         Queued,
+        QueueChanged,
         Started,
         CheckpointReady,
         ControlRequested,
@@ -34,6 +35,8 @@ namespace ColorVision.Copilot
         ActiveChatIsExclusive,
         ChatCannotQueue,
         QueueFull,
+        NoActiveRun,
+        FollowUpConversationMismatch,
     }
 
     internal readonly record struct CopilotRequestAdmissionResult(CopilotRequestAdmissionReason Reason)
@@ -54,14 +57,24 @@ namespace ColorVision.Copilot
         public CopilotHostedAgentRun Run { get; }
     }
 
+    internal sealed record CopilotHostedProviderRetrySnapshot(
+        int Count,
+        CopilotProviderRetryInfo? Latest)
+    {
+        public static CopilotHostedProviderRetrySnapshot Empty { get; } = new(0, null);
+    }
+
     public sealed class CopilotHostedAgentRun : IDisposable
     {
-        private readonly CancellationTokenSource _cancellation = new();
+        private readonly CopilotNonBlockingCancellationSource _cancellation = new();
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
+        private int _agentStopReason;
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
+        private CopilotHostedProviderRetrySnapshot _providerRetrySnapshot =
+            CopilotHostedProviderRetrySnapshot.Empty;
 
         internal CopilotHostedAgentRun(string conversationId, CopilotAgentMode mode)
         {
@@ -89,6 +102,9 @@ namespace ColorVision.Copilot
 
         public bool IsCheckpointReady => Volatile.Read(ref _checkpointReady) == 1;
 
+        public CopilotAgentStopReason AgentStopReason =>
+            (CopilotAgentStopReason)Volatile.Read(ref _agentStopReason);
+
         public CopilotHostedRunState State => (CopilotHostedRunState)Volatile.Read(ref _state);
 
         public bool CanRequestPause => IsAgent && IsCheckpointReady && State == CopilotHostedRunState.Running;
@@ -102,6 +118,9 @@ namespace ColorVision.Copilot
         public CancellationToken CancellationToken => _cancellationToken;
 
         public Task Completion => _completion.Task;
+
+        internal CopilotHostedProviderRetrySnapshot ProviderRetrySnapshot =>
+            Volatile.Read(ref _providerRetrySnapshot);
 
         internal bool TryStart()
         {
@@ -121,6 +140,32 @@ namespace ColorVision.Copilot
             return IsAgent
                 && State == CopilotHostedRunState.Running
                 && Interlocked.CompareExchange(ref _checkpointReady, 1, 0) == 0;
+        }
+
+        internal void SetAgentStopReason(CopilotAgentStopReason stopReason)
+        {
+            if (!IsAgent || !Enum.IsDefined(stopReason))
+                return;
+
+            Volatile.Write(ref _agentStopReason, (int)stopReason);
+        }
+
+        internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            while (true)
+            {
+                var current = Volatile.Read(ref _providerRetrySnapshot);
+                var updated = new CopilotHostedProviderRetrySnapshot(
+                    current.Count == int.MaxValue ? int.MaxValue : current.Count + 1,
+                    retry);
+                if (ReferenceEquals(
+                    Interlocked.CompareExchange(ref _providerRetrySnapshot, updated, current),
+                    current))
+                {
+                    return;
+                }
+            }
         }
 
         internal bool TryRequestPause()
@@ -171,17 +216,7 @@ namespace ColorVision.Copilot
 
         private void CancelExecutionToken()
         {
-            try
-            {
-                _cancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (AggregateException ex)
-            {
-                Trace.TraceWarning($"Copilot run cancellation callback failed: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}");
-            }
+            _cancellation.RequestCancellation();
         }
 
         internal void Complete(Exception? error)
@@ -387,6 +422,66 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool TryScheduleFollowUp(
+            string conversationId,
+            CopilotAgentMode mode,
+            Func<CopilotHostedAgentRun, Task> operation,
+            out CopilotHostedAgentRun? run,
+            out CopilotRequestAdmissionResult admission)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId))
+                throw new ArgumentException("A conversation ID is required.", nameof(conversationId));
+            ArgumentNullException.ThrowIfNull(operation);
+
+            var normalizedConversationId = conversationId.Trim();
+            lock (_gate)
+            {
+                if (_isShutdown)
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.HostShutdown);
+                    return false;
+                }
+                if (_activeWorkItem == null)
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.NoActiveRun);
+                    return false;
+                }
+                if (!_activeWorkItem.Run.IsAgent)
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ActiveChatIsExclusive);
+                    return false;
+                }
+                if (!string.Equals(_activeWorkItem.Run.ConversationId, normalizedConversationId, StringComparison.Ordinal))
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.FollowUpConversationMismatch);
+                    return false;
+                }
+                if (mode == CopilotAgentMode.Chat)
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.ChatCannotQueue);
+                    return false;
+                }
+                if (_queuedWorkItems.Count >= MaxQueuedRuns)
+                {
+                    run = null;
+                    admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.QueueFull);
+                    return false;
+                }
+
+                run = new CopilotHostedAgentRun(normalizedConversationId, mode);
+                _queuedWorkItems.AddLast(new HostedRunWorkItem(run, operation));
+                admission = new CopilotRequestAdmissionResult(CopilotRequestAdmissionReason.Allowed);
+            }
+
+            Publish(CopilotAgentTaskHostChangeKind.Queued, run);
+            return true;
+        }
+
         private CopilotRequestAdmissionResult EvaluateRequestAdmissionNoLock(string normalizedConversationId, CopilotAgentMode mode)
         {
             if (_isShutdown)
@@ -513,6 +608,43 @@ namespace ColorVision.Copilot
                 }
                 return 0;
             }
+        }
+
+        public bool MoveQueuedRun(string runId, int offset)
+        {
+            if (string.IsNullOrWhiteSpace(runId) || offset is not (-1 or 1))
+                return false;
+
+            CopilotHostedAgentRun? run = null;
+            lock (_gate)
+            {
+                var node = _queuedWorkItems.First;
+                while (node != null && !string.Equals(node.Value.Run.Id, runId, StringComparison.Ordinal))
+                    node = node.Next;
+                if (node == null)
+                    return false;
+
+                if (offset < 0)
+                {
+                    var previous = node.Previous;
+                    if (previous == null)
+                        return false;
+                    _queuedWorkItems.Remove(node);
+                    _queuedWorkItems.AddBefore(previous, node);
+                }
+                else
+                {
+                    var next = node.Next;
+                    if (next == null)
+                        return false;
+                    _queuedWorkItems.Remove(node);
+                    _queuedWorkItems.AddAfter(next, node);
+                }
+                run = node.Value.Run;
+            }
+
+            Publish(CopilotAgentTaskHostChangeKind.QueueChanged, run);
+            return true;
         }
 
         public CopilotHostedAgentRun? FindRunByConversationId(string? conversationId)

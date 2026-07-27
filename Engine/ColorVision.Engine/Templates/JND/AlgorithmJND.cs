@@ -8,57 +8,48 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.JND
 {
 
     [DisplayAlgorithm(3, "JND", "数据提取算法")]
-    public class AlgorithmJND : DisplayAlgorithmBase
+    public class AlgorithmJND : DisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-
         public AlgorithmJND(DeviceAlgorithm deviceAlgorithm) 
+            : base(new DualTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "JND模板",
+                    new TemplateJND(),
+                    "请先选择JND模板"),
+                new DisplayAlgorithmTemplateSelection(
+                    "关注点模板",
+                    new TemplatePoi(),
+                    "请先选择关注点模板")))
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateJND(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out JNDParam param) ||
+                !TryGetTemplate(Config.SecondaryTemplate, out PoiParam poiParam) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, poiParam, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
 
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayJND(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-
-        public MsgRecord SendCommand(JNDParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
+        public MsgRecord SendCommand(JNDParam param, PoiParam poiParam, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = TemplatePoi.Params[TemplatePoiSelectedIndex].Value.Id, Name = TemplatePoi.Params[TemplatePoiSelectedIndex].Value.Name });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
 
             MsgSend msg = new()
             {

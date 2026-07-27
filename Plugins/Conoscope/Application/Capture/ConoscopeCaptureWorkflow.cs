@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons;
 using System;
 using System.Collections.Generic;

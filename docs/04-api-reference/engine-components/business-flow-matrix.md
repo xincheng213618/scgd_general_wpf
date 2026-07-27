@@ -56,7 +56,7 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | 流程能打开但节点参数丢失 | `TemplateFlow` 保存内容、`NodeConfiguratorRegistry` |
 | `.cvflow` 导入后跑不起来 | 关联模板导入、重名模板、节点设备 Code |
 | 算法成功但没有 overlay | 结果 ID、`IDisplayAlgorithm`、`IResultHandleBase`、`ViewResultAlgType` |
-| 项目 CSV/PDF 字段为空 | Engine 原始结果、项目 `Process` key、`Recipe/Fix`、导出器字段 |
+| 项目 CSV 字段为空 | Engine 原始结果、项目 `Process` key、`Recipe/Fix`、导出器字段 |
 
 ## 发布验收
 
@@ -66,7 +66,7 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | 模板或算法 | 构建 Engine，必要时构建主程序 | 新建/编辑模板、运行一次算法、查看结果窗口 |
 | Flow 节点 | 构建 `FlowEngineLib` 和 Engine | 打开流程、编辑节点、保存、重新打开、执行 |
 | 结果展示 | 构建 Engine 和 ImageEditor | 打开历史结果，确认 overlay、坐标和缩放 |
-| 项目包逻辑 | 构建对应 `Projects/<Project>` 和主程序 | 跑一条项目流程，检查 SQLite/CSV/PDF/MES 或 Socket |
+| 项目包逻辑 | 构建对应 `Projects/<Project>` 和主程序 | 跑一条项目流程，检查 SQLite/CSV/MES 或 Socket |
 | 文档站 | `npm run docs:build` | 打开对应 HTML，检查搜索索引关键术语 |
 
 ## 风险点

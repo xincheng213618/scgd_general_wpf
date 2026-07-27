@@ -21,6 +21,8 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> SuccessfullyReadLocalFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<CopilotLocalFileReadScope> LocalFileReadScopes { get; init; } = Array.Empty<CopilotLocalFileReadScope>();
+
         public CopilotToolResult ToToolResult(string toolName)
         {
             return new CopilotToolResult
@@ -34,6 +36,7 @@ namespace ColorVision.Copilot
                 SuggestedReadableLocalFilePaths = SuggestedReadableLocalFilePaths,
                 AttemptedLocalFilePaths = AttemptedLocalFilePaths,
                 SuccessfullyReadLocalFilePaths = SuccessfullyReadLocalFilePaths,
+                LocalFileReadScopes = LocalFileReadScopes,
             };
         }
     }

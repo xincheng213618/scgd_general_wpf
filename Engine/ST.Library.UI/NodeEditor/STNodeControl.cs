@@ -2,7 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
-using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -246,23 +246,23 @@ public class STNodeControl
 
 	public event EventHandler MouseLeave;
 
-	public event MouseEventHandler MouseDown;
+	public event STNodeMouseEventHandler MouseDown;
 
-	public event MouseEventHandler MouseMove;
+	public event STNodeMouseEventHandler MouseMove;
 
-	public event MouseEventHandler MouseUp;
+	public event STNodeMouseEventHandler MouseUp;
 
-	public event MouseEventHandler MouseClick;
+	public event STNodeMouseEventHandler MouseClick;
 
-	public event MouseEventHandler MouseWheel;
+	public event STNodeMouseEventHandler MouseWheel;
 
-	public event EventHandler MouseHWheel;
+	public event STNodeMouseEventHandler MouseHWheel;
 
 	public event KeyEventHandler KeyDown;
 
 	public event KeyEventHandler KeyUp;
 
-	public event KeyPressEventHandler KeyPress;
+	public event STNodeKeyPressEventHandler KeyPress;
 
 	public event EventHandler Move;
 
@@ -352,7 +352,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseDown(MouseEventArgs e)
+	protected internal virtual void OnMouseDown(STNodeMouseEventArgs e)
 	{
 		if (this.MouseDown != null)
 		{
@@ -360,7 +360,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseMove(MouseEventArgs e)
+	protected internal virtual void OnMouseMove(STNodeMouseEventArgs e)
 	{
 		if (this.MouseMove != null)
 		{
@@ -368,7 +368,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseUp(MouseEventArgs e)
+	protected internal virtual void OnMouseUp(STNodeMouseEventArgs e)
 	{
 		if (this.MouseUp != null)
 		{
@@ -376,7 +376,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseClick(MouseEventArgs e)
+	protected internal virtual void OnMouseClick(STNodeMouseEventArgs e)
 	{
 		if (this.MouseClick != null)
 		{
@@ -384,7 +384,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseWheel(STNodeMouseEventArgs e)
 	{
 		if (this.MouseWheel != null)
 		{
@@ -392,7 +392,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnMouseHWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseHWheel(STNodeMouseEventArgs e)
 	{
 		if (this.MouseHWheel != null)
 		{
@@ -416,7 +416,7 @@ public class STNodeControl
 		}
 	}
 
-	protected internal virtual void OnKeyPress(KeyPressEventArgs e)
+	protected internal virtual void OnKeyPress(STNodeKeyPressEventArgs e)
 	{
 		if (this.KeyPress != null)
 		{

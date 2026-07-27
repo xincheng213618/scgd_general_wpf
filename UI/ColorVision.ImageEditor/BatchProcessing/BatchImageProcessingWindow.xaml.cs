@@ -18,7 +18,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
     public partial class BatchImageProcessingWindow : System.Windows.Window
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(BatchImageProcessingWindow));
-        private readonly IBatchImageLoader[] _loaders;
+        private readonly BatchImageProcessor _processor;
         private readonly IReadOnlyList<BatchImageAlgorithmDefinition> _algorithms;
         private CancellationTokenSource? _cancellationTokenSource;
 
@@ -27,7 +27,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
             InitializeComponent();
             DataContext = this;
 
-            _loaders = LoadImageLoaders();
+            _processor = new BatchImageProcessor(LoadImageLoaders());
             _algorithms = BatchImageAlgorithms.CreateAll();
             AlgorithmComboBox.ItemsSource = _algorithms;
             AlgorithmComboBox.SelectedIndex = 0;
@@ -204,17 +204,21 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             SetProcessingState(true, items.Length);
             _cancellationTokenSource = new CancellationTokenSource();
-            BatchRunSummary summary;
+            BatchImageRunResult summary;
             try
             {
-                summary = await Task.Run(() => ProcessFiles(
-                    items,
-                    algorithm,
-                    outputFormat.Value,
-                    outputDirectory,
-                    suffix,
-                    preserveFolderStructure,
-                    avoidOverwrite,
+                summary = await Task.Run(() => _processor.Process(
+                    new BatchImageProcessingRequest
+                    {
+                        Items = items,
+                        Algorithm = algorithm,
+                        OutputFormat = outputFormat.Value,
+                        OutputDirectory = outputDirectory,
+                        Suffix = suffix,
+                        PreserveFolderStructure = preserveFolderStructure,
+                        AvoidOverwrite = avoidOverwrite,
+                    },
+                    UpdateItem,
                     _cancellationTokenSource.Token));
             }
             finally
@@ -224,6 +228,11 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 SetProcessingState(false, items.Length);
             }
 
+            foreach (var failure in summary.Files.Where(file => !file.Success && !file.Cancelled))
+            {
+                Log.Error($"Batch processing failed for '{failure.SourcePath}': {failure.ErrorMessage}");
+            }
+
             string message = summary.Cancelled
                 ? $"已取消。成功 {summary.Succeeded} 个，失败 {summary.Failed} 个。"
                 : $"处理完成。成功 {summary.Succeeded} 个，失败 {summary.Failed} 个。";
@@ -231,95 +240,25 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 summary.Failed == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
         }
 
-        private BatchRunSummary ProcessFiles(
-            BatchImageItem[] items,
-            BatchImageAlgorithmDefinition algorithm,
-            BatchOutputFormat outputFormat,
-            string? outputDirectory,
-            string suffix,
-            bool preserveFolderStructure,
-            bool avoidOverwrite,
-            CancellationToken cancellationToken)
-        {
-            int succeeded = 0;
-            int failed = 0;
-            HashSet<string> reservedPaths = new(StringComparer.OrdinalIgnoreCase);
-
-            for (int index = 0; index < items.Length; index++)
-            {
-                BatchImageItem item = items[index];
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return new BatchRunSummary(succeeded, failed, true);
-                }
-
-                UpdateItem(item, "处理中...", null, index, items.Length);
-                try
-                {
-                    IBatchImageLoader loader = GetLoader(item.FilePath)
-                        ?? throw new NotSupportedException($"不支持的图像格式：{Path.GetExtension(item.FilePath)}");
-                    string outputPath = BatchImageOutput.CreateOutputPath(
-                        item,
-                        outputDirectory,
-                        suffix,
-                        outputFormat,
-                        preserveFolderStructure,
-                        avoidOverwrite,
-                        reservedPaths);
-
-                    using Mat source = loader.Load(item.FilePath);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    using Mat result = algorithm.Apply(source);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    BatchImageOutput.Save(result, outputPath);
-
-                    succeeded++;
-                    UpdateItem(item, "完成", outputPath, index + 1, items.Length);
-                }
-                catch (OperationCanceledException)
-                {
-                    UpdateItem(item, "已取消", null, index, items.Length);
-                    return new BatchRunSummary(succeeded, failed, true);
-                }
-                catch (Exception ex)
-                {
-                    failed++;
-                    Log.Error($"Batch processing failed for '{item.FilePath}'.", ex);
-                    UpdateItem(item, $"失败：{ex.Message}", null, index + 1, items.Length);
-                }
-            }
-
-            return new BatchRunSummary(succeeded, failed, false);
-        }
-
-        private void UpdateItem(BatchImageItem item, string status, string? outputPath, int completed, int total)
+        private void UpdateItem(BatchImageProgress progress)
         {
             Dispatcher.Invoke(() =>
             {
-                item.Status = status;
-                if (outputPath != null)
+                progress.Item.Status = progress.Status;
+                if (progress.OutputPath != null)
                 {
-                    item.OutputPath = outputPath;
+                    progress.Item.OutputPath = progress.OutputPath;
                 }
-                ProgressBar.Value = completed;
-                ProgressTextBlock.Text = $"{completed} / {total}";
+                ProgressBar.Value = progress.Completed;
+                ProgressTextBlock.Text = $"{progress.Completed} / {progress.Total}";
             });
         }
 
-        private IBatchImageLoader? GetLoader(string filePath)
-        {
-            string extension = Path.GetExtension(filePath);
-            return _loaders.FirstOrDefault(loader => loader.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase));
-        }
-
-        private bool IsSupportedFile(string filePath) => GetLoader(filePath) != null;
+        private bool IsSupportedFile(string filePath) => _processor.IsSupported(filePath);
 
         private string BuildFileDialogFilter()
         {
-            string[] extensions = _loaders
-                .SelectMany(loader => loader.Extensions)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(extension => extension, StringComparer.OrdinalIgnoreCase)
+            string[] extensions = _processor.SupportedExtensions
                 .Select(extension => $"*{extension}")
                 .ToArray();
             string pattern = string.Join(';', extensions);
@@ -367,7 +306,5 @@ namespace ColorVision.ImageEditor.BatchProcessing
 
             base.OnClosing(e);
         }
-
-        private readonly record struct BatchRunSummary(int Succeeded, int Failed, bool Cancelled);
     }
 }

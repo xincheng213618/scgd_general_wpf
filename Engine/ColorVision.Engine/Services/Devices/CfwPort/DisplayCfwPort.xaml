@@ -32,19 +32,19 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3">
+                <DockPanel x:Name="TextBlockUnknow" HorizontalAlignment="Left"  Margin="0,0,0,3">
                     <TextBlock HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
                 </DockPanel>
 
-                <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3">
+                <DockPanel x:Name="ButtonUnauthorized" HorizontalAlignment="Left"  Margin="0,0,0,3">
                     <Button Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
                 </DockPanel>
-                <DockPanel x:Name="ButtonInit" Margin="0,0,0,3">
+                <DockPanel x:Name="ButtonInit" HorizontalAlignment="Left"  Margin="0,0,0,3">
                     <Button Command="{Binding EditCommand}" Content="{x:Static properties:Resources.SetSnFirst}" />
                 </DockPanel>
-                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Background="Red" Click="CameraOffline_Click" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Visibility="Collapsed" />
-                <Button x:Name="ButtonOpen" Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
-                <Button x:Name="ButtonClose" Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
+                <Button x:Name="ButtonOffline" HorizontalAlignment="Left"  Margin="0,0,0,3" Background="Red" Click="CameraOffline_Click" Content="{x:Static properties:Resources.DeviceOffline}" Foreground="White" Visibility="Collapsed" />
+                <Button x:Name="ButtonOpen" HorizontalAlignment="Left"  Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
+                <Button x:Name="ButtonClose" HorizontalAlignment="Left"  Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel Margin="0,2">
                         <Button Click="GetPort_Click" Content="GetPort" DockPanel.Dock="Right" />

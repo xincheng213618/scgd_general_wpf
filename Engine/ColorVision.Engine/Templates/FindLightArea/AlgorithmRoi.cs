@@ -7,40 +7,37 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
 
     [DisplayAlgorithm(70, "发光区定位1", "基础算法")]
-    public class AlgorithmRoi : DisplayAlgorithmBase
+    public class AlgorithmRoi : DisplayAlgorithmBase<SingleTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmRoi(DeviceAlgorithm deviceAlgorithm)
+            : base(new SingleTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "发光区检测模板",
+                    new TemplateRoi(),
+                    "请先选择发光区检测模板")))
         {
             Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateRoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
+            if (!TryGetTemplate(Config.Template, out RoiParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
 
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayRoi(this);
-            return UserControl;
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-        public UserControl UserControl { get; set; }
-
 
         public MsgRecord SendCommand(RoiParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {

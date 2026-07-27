@@ -63,6 +63,11 @@ namespace ColorVision.Copilot
 
     public static class CopilotAgentRecoveryPolicy
     {
+        internal const string FinalizeUserMessage = "仅使用本轮已保存的上下文和证据重新生成最终回答，不再调用任何工具。";
+        internal const string ReplanUserMessage = "运行环境已变化，请基于当前能力重新规划并继续未完成的 Agent 任务。";
+        internal const string RetryReadUserMessage = "重新核对并恢复未完成的 Agent 任务；仅在仍有必要时重试上次失败的只读检查。";
+        internal const string ResumeUserMessage = "继续未完成的 Agent 任务，并先重新核对当前状态。";
+
         public static CopilotAgentRecoveryDecision Evaluate(
             CopilotChatMessage? message,
             CopilotAgentSessionCheckpoint? checkpoint,
@@ -78,7 +83,8 @@ namespace ColorVision.Copilot
             }
 
             var isFinalAnswerRecovery = message.HasRecoverableFinalAnswer;
-            var isTaskRecovery = message.HasIncompleteAgentTasks
+            var isTaskRecovery = (message.HasIncompleteAgentTasks
+                    || message.AgentStopReason == CopilotAgentStopReason.Paused)
                 && message.AgentStopReason is (CopilotAgentStopReason.BudgetExhausted
                     or CopilotAgentStopReason.TaskPassLimit
                     or CopilotAgentStopReason.Paused
@@ -105,7 +111,7 @@ namespace ColorVision.Copilot
                     CopilotAgentRecoveryMode.Finalize,
                     message.AgentStopReason,
                     "重试最终回答",
-                    "仅使用本轮已保存的上下文和证据重新生成最终回答，不再调用任何工具。");
+                    FinalizeUserMessage);
             }
 
             if (compatibility.Kind != CopilotAgentCheckpointCompatibilityKind.Compatible)
@@ -114,7 +120,7 @@ namespace ColorVision.Copilot
                     CopilotAgentRecoveryMode.Replan,
                     message.AgentStopReason,
                     "重新规划",
-                    "运行环境已变化，请基于当前能力重新规划并继续未完成的 Agent 任务。");
+                    ReplanUserMessage);
             }
 
             var retryableRead = message.AgentTraceEntries?
@@ -131,7 +137,7 @@ namespace ColorVision.Copilot
                     CopilotAgentRecoveryMode.RetryRead,
                     message.AgentStopReason,
                     "重试只读检查",
-                    "重新核对并恢复未完成的 Agent 任务；仅在仍有必要时重试上次失败的只读检查。",
+                    RetryReadUserMessage,
                     retryableRead.ToolName,
                     CopilotAgentTaskEventIds.ForCall(retryableRead.CallId));
             }
@@ -140,7 +146,7 @@ namespace ColorVision.Copilot
                 CopilotAgentRecoveryMode.Resume,
                 message.AgentStopReason,
                 "继续任务",
-                "继续未完成的 Agent 任务，并先重新核对当前状态。");
+                ResumeUserMessage);
         }
 
         private static CopilotAgentRecoveryDecision CreateDecision(
@@ -163,6 +169,58 @@ namespace ColorVision.Copilot
                 ActionLabel = actionLabel,
                 UserMessage = userMessage,
             };
+        }
+    }
+
+    internal sealed class CopilotAgentRecoveryTaskContext
+    {
+        public string TaskIntentText { get; init; } = string.Empty;
+
+        public string EffectiveUserText { get; init; } = string.Empty;
+
+        public static CopilotAgentRecoveryTaskContext Resolve(
+            string? currentUserText,
+            CopilotAgentRecoveryRequest? recovery,
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            var current = (currentUserText ?? string.Empty).Trim();
+            if (recovery == null)
+            {
+                return new CopilotAgentRecoveryTaskContext
+                {
+                    TaskIntentText = current,
+                    EffectiveUserText = current,
+                };
+            }
+
+            var taskIntent = (checkpoint?.TaskIntentText ?? string.Empty).Trim();
+            if (taskIntent.Length == 0)
+            {
+                taskIntent = (checkpoint?.ConversationMemory ?? Array.Empty<CopilotRequestMessage>())
+                    .Where(message => string.Equals(message.Role, "user", StringComparison.Ordinal))
+                    .Select(message => (message.Content ?? string.Empty).Trim())
+                    .LastOrDefault(content => content.Length > 0 && !IsGeneratedRecoveryInstruction(content))
+                    ?? string.Empty;
+            }
+            if (taskIntent.Length == 0)
+                taskIntent = current;
+
+            return new CopilotAgentRecoveryTaskContext
+            {
+                TaskIntentText = taskIntent,
+                EffectiveUserText = recovery.Mode == CopilotAgentRecoveryMode.Finalize
+                    || string.Equals(taskIntent, current, StringComparison.Ordinal)
+                    ? current
+                    : $"# Original task to continue{Environment.NewLine}{taskIntent}{Environment.NewLine}{Environment.NewLine}# Recovery instruction{Environment.NewLine}{current}",
+            };
+        }
+
+        private static bool IsGeneratedRecoveryInstruction(string text)
+        {
+            return string.Equals(text, CopilotAgentRecoveryPolicy.FinalizeUserMessage, StringComparison.Ordinal)
+                || string.Equals(text, CopilotAgentRecoveryPolicy.ReplanUserMessage, StringComparison.Ordinal)
+                || string.Equals(text, CopilotAgentRecoveryPolicy.RetryReadUserMessage, StringComparison.Ordinal)
+                || string.Equals(text, CopilotAgentRecoveryPolicy.ResumeUserMessage, StringComparison.Ordinal);
         }
     }
 }

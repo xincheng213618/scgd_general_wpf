@@ -27,11 +27,9 @@ namespace ColorVision.Engine.Templates
 
         public override string Name => nameof(TemplateInitializer);
 
-        public override IEnumerable<string> Dependencies => new List<string>() { nameof(MySqlInitializer) };
-
         public override async Task InitializeAsync()
         {
-            log.Info(ColorVision.Engine.Properties.Resources.LoadingTempate);
+            log.Info("Loading template");
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

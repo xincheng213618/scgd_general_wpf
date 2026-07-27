@@ -6,7 +6,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 8;
+        public const int CurrentSchemaVersion = 17;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -15,6 +15,12 @@ namespace ColorVision.Copilot
         public string ActiveConversationId { get; set; } = string.Empty;
 
         public string ActiveProfileId { get; set; } = string.Empty;
+
+        public ObservableCollection<CopilotQueuedFollowUpRecoveryRecord> QueuedFollowUpRecoveries { get; set; } = new();
+
+        public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
+
+        internal int RecoveredQueuedFollowUpCount { get; set; }
 
         public bool EnsureInitialized(CopilotConfig config)
         {
@@ -81,6 +87,8 @@ namespace ColorVision.Copilot
                     changed = true;
                 }
             }
+
+            changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
 
             if (Conversations.Count == 0)
             {

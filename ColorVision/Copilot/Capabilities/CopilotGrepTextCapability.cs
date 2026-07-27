@@ -145,7 +145,7 @@ namespace ColorVision.Copilot
             string? cursor,
             CancellationToken cancellationToken)
         {
-            var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(searchRootPaths);
+            var searchRoots = CopilotWorkspaceSearchSupport.NormalizeSearchScopes(searchRootPaths);
             var displayRoots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(displayRootPaths);
             var displayRootMap = searchRoots.ToDictionary(
                 root => root,
@@ -263,9 +263,12 @@ namespace ColorVision.Copilot
 
             if (matches.Count == 0)
             {
+                builder.AppendLine(scanComplete
+                    ? "[Result] No text lines matched the literal query in the completed search scope."
+                    : "[Search Warning] No match was found in the inspected text files, but a scan limit or unreadable file left the result partial.");
                 return new CopilotTextSearchResult
                 {
-                    Success = false,
+                    Success = true,
                     SearchRoots = searchRoots,
                     Patterns = patterns,
                     ScannedTextFileCount = scannedFiles,
@@ -274,12 +277,9 @@ namespace ColorVision.Copilot
                     ResultsTruncated = resultsTruncated,
                     Matches = matches,
                     Summary = scanComplete
-                        ? $"Scanned {scannedFiles} text files, but no keyword matches were found."
-                        : $"Scanned {scannedFiles} text files without a match on this page, but the search scope was not fully inspected.",
+                        ? $"Scanned {scannedFiles} text files; no lines matched the literal query."
+                        : $"Scanned {scannedFiles} text files without a match; the result is partial because the scope was not fully inspected.",
                     Content = builder.ToString().TrimEnd(),
-                    ErrorMessage = scanComplete
-                        ? $"Search keywords: {string.Join(", ", patterns)}"
-                        : "The text search was incomplete because a scan limit or unreadable file was encountered. Narrow the path or restart from the current scope before concluding that no matching text exists.",
                 };
             }
 

@@ -14,7 +14,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotInspectGitWorkingTreeTool(CopilotGitWorkingTreeInspectionService service)
+        internal CopilotInspectGitWorkingTreeTool(CopilotGitWorkingTreeInspectionService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
@@ -44,7 +44,8 @@ namespace ColorVision.Copilot
         public bool IsAvailable(CopilotAgentRequest request) => request != null
             && request.Mode != CopilotAgentMode.Chat
             && OperatingSystem.IsWindows()
-            && (request.SearchRootPaths.Any() || request.WritableLocalRootPaths.Any());
+            && (request.SearchRootPaths.Any() || request.WritableLocalRootPaths.Any())
+            && CopilotToolIntentPolicy.NeedsGitWorkingTreeInspection(request);
 
         public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
@@ -61,7 +62,7 @@ namespace ColorVision.Copilot
             });
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)

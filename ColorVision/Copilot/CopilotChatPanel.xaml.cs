@@ -33,6 +33,7 @@ namespace ColorVision.Copilot
         private CopilotChatViewModel? _attachedViewModel;
         private ObservableCollection<CopilotChatMessage>? _attachedMessages;
         private readonly HashSet<CopilotChatMessage> _attachedMessageItems = new();
+        private ScrollViewer? _messagesScrollViewer;
         private bool _isCompactSidebar;
         private bool _isConversationSidebarExpanded = true;
         private bool _isScrollToBottomPending;
@@ -207,6 +208,7 @@ namespace ColorVision.Copilot
 
             CloseProfileSelectorPopup();
             DetachViewModel(DataContext as CopilotChatViewModel);
+            _messagesScrollViewer = null;
         }
 
         private void AttachViewModel(CopilotChatViewModel? viewModel)
@@ -330,6 +332,33 @@ namespace ColorVision.Copilot
             element.ContextMenu.IsOpen = true;
         }
 
+        private void ComposerReferenceMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not CopilotChatViewModel viewModel)
+                return;
+
+            var updated = CopilotComposerReferenceCatalog.InsertMention(
+                viewModel.InputText,
+                PromptTextBox.SelectionStart,
+                PromptTextBox.SelectionLength,
+                out var caretIndex);
+            viewModel.InputText = updated;
+            PromptTextBox.Focus();
+            Keyboard.Focus(PromptTextBox);
+            PromptTextBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+            PromptTextBox.CaretIndex = Math.Clamp(caretIndex, 0, PromptTextBox.Text.Length);
+        }
+
+        private void AccessModeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement element || element.ContextMenu == null)
+                return;
+
+            element.ContextMenu.PlacementTarget = element;
+            element.ContextMenu.Placement = PlacementMode.Top;
+            element.ContextMenu.IsOpen = true;
+        }
+
         private void ProfileSelectorPopup_Opened(object sender, EventArgs e)
         {
             SetProfileSelectorSubmenu(modelVisible: false, reasoningVisible: false);
@@ -420,6 +449,43 @@ namespace ColorVision.Copilot
         private async void PromptTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.None
+                && DataContext is CopilotChatViewModel referenceViewModel
+                && referenceViewModel.IsComposerReferenceMentionActive)
+            {
+                if (e.Key == Key.Escape)
+                {
+                    referenceViewModel.DismissComposerReferenceSuggestions();
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Up or Key.Down
+                    && referenceViewModel.TryNavigateComposerReference(previous: e.Key == Key.Up))
+                {
+                    e.Handled = true;
+                    return;
+                }
+                if (e.Key is Key.Enter or Key.Tab)
+                {
+                    if (referenceViewModel.HasComposerReferenceSuggestions
+                        && referenceViewModel.TryCompleteComposerReference())
+                    {
+                        MovePromptCaretToEnd();
+                        e.Handled = true;
+                        return;
+                    }
+
+                    if (CopilotComposerReferenceCatalog.ShouldConsumeReferenceCompletionKey(
+                            e.Key == Key.Tab,
+                            referenceViewModel.HasComposerReferenceSuggestions,
+                            referenceViewModel.IsComposerReferenceSearchPending))
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+            }
+
+            if (Keyboard.Modifiers == ModifierKeys.None
                 && e.Key is Key.Up or Key.Down
                 && DataContext is CopilotChatViewModel historyViewModel
                 && (historyViewModel.IsInputEmpty || historyViewModel.IsNavigatingPromptHistory)
@@ -450,6 +516,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (DataContext is CopilotChatViewModel queueViewModel
+                && e.Key == Key.Tab
+                && Keyboard.Modifiers == ModifierKeys.None
+                && queueViewModel.TryQueueCurrentRunFollowUp())
+            {
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key != Key.Enter || (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 return;
 
@@ -463,6 +538,11 @@ namespace ColorVision.Copilot
         }
 
         private void LocalCommandSuggestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            FocusPromptInput();
+        }
+
+        private void ComposerReferenceSuggestionButton_Click(object sender, RoutedEventArgs e)
         {
             FocusPromptInput();
         }
@@ -541,7 +621,8 @@ namespace ColorVision.Copilot
         private bool IsNearBottom()
         {
             const double threshold = 36;
-            return MessagesScrollViewer.ScrollableHeight - MessagesScrollViewer.VerticalOffset <= threshold;
+            var scrollViewer = GetMessagesScrollViewer();
+            return scrollViewer == null || scrollViewer.ScrollableHeight - scrollViewer.VerticalOffset <= threshold;
         }
 
         private void ScrollToBottom()
@@ -555,7 +636,9 @@ namespace ColorVision.Copilot
             {
                 try
                 {
-                    MessagesScrollViewer.ScrollToEnd();
+                    if (MessagesListBox.Items.Count > 0)
+                        MessagesListBox.ScrollIntoView(MessagesListBox.Items[MessagesListBox.Items.Count - 1]);
+                    GetMessagesScrollViewer()?.ScrollToEnd();
                 }
                 finally
                 {
@@ -578,8 +661,35 @@ namespace ColorVision.Copilot
 
         private void MessagesScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
+            var scrollViewer = GetMessagesScrollViewer();
+            if (scrollViewer == null || !ReferenceEquals(e.OriginalSource, scrollViewer))
+                return;
+
             if (IsNearBottom())
                 HideScrollToLatestButton();
+        }
+
+        private ScrollViewer? GetMessagesScrollViewer()
+        {
+            _messagesScrollViewer ??= FindVisualChild<ScrollViewer>(MessagesListBox);
+            return _messagesScrollViewer;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            var childCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (var index = 0; index < childCount; index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                if (child is T match)
+                    return match;
+
+                var nestedMatch = FindVisualChild<T>(child);
+                if (nestedMatch != null)
+                    return nestedMatch;
+            }
+
+            return null;
         }
 
         private void ScrollToLatestButton_Click(object sender, RoutedEventArgs e)
@@ -627,6 +737,7 @@ namespace ColorVision.Copilot
             ComposerSelectorGrid.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.MaxWidth = isCompactComposer ? 132 : 180;
             ProfileSelectorButton.Padding = isCompactComposer ? new Thickness(2, 0, 0, 0) : new Thickness(4, 0, 2, 0);
+            AccessModeLabelTextBlock.Visibility = isCompactComposer ? Visibility.Collapsed : Visibility.Visible;
 
             UpdateEmptyStateVisibility();
         }

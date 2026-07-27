@@ -16,32 +16,41 @@ namespace ColorVision.Copilot
     internal sealed record CopilotContextWindowRecoveryInfo(
         int OriginalMessageCount,
         int CompactedMessageCount,
+        int EstimatedInputTokensBefore,
+        int EstimatedInputTokensAfter,
         int TargetInputTokens,
         string FailureKind)
     {
         public string ToDiagnosticText()
         {
-            return $"Provider context recovery · compacted {OriginalMessageCount} message(s) to {CompactedMessageCount} toward {TargetInputTokens:N0} input tokens and resubmitted once before the first response update; tool-call/result groups remained atomic and no tool execution was replayed.";
+            return $"Provider context recovery ({FailureKind}) · compacted {OriginalMessageCount} message(s) to {CompactedMessageCount}"
+                + $" · estimated input {EstimatedInputTokensBefore:N0} → {EstimatedInputTokensAfter:N0} tokens toward {TargetInputTokens:N0}"
+                + " · resubmitted once before the first response update; tool-call/result groups remained atomic and no tool execution was replayed.";
         }
     }
 
     internal sealed class CopilotAgentContextWindowRecoveryExhaustedException : Exception
     {
         public CopilotAgentContextWindowRecoveryExhaustedException(
-            int originalMessageCount,
-            int compactedMessageCount,
-            int targetInputTokens,
+            CopilotContextWindowRecoveryInfo recovery,
             Exception innerException)
-            : base("The provider still rejected the Agent context after one bounded compaction retry. Reduce conversation or attachment context, or configure the model's actual context-window size. No tool execution was replayed.", innerException)
+            : base("The provider still rejected the Agent context after one bounded compaction retry for this model turn. Reduce conversation or attachment context, or configure the model's actual context-window size. No tool execution was replayed.", innerException)
         {
-            OriginalMessageCount = Math.Max(0, originalMessageCount);
-            CompactedMessageCount = Math.Max(0, compactedMessageCount);
-            TargetInputTokens = Math.Max(1, targetInputTokens);
+            ArgumentNullException.ThrowIfNull(recovery);
+            OriginalMessageCount = Math.Max(0, recovery.OriginalMessageCount);
+            CompactedMessageCount = Math.Max(0, recovery.CompactedMessageCount);
+            EstimatedInputTokensBefore = Math.Max(0, recovery.EstimatedInputTokensBefore);
+            EstimatedInputTokensAfter = Math.Max(0, recovery.EstimatedInputTokensAfter);
+            TargetInputTokens = Math.Max(1, recovery.TargetInputTokens);
         }
 
         public int OriginalMessageCount { get; }
 
         public int CompactedMessageCount { get; }
+
+        public int EstimatedInputTokensBefore { get; }
+
+        public int EstimatedInputTokensAfter { get; }
 
         public int TargetInputTokens { get; }
     }
@@ -123,10 +132,6 @@ namespace ColorVision.Copilot
 
         private readonly int _maximumTargetInputTokens;
         private readonly Action<CopilotContextWindowRecoveryInfo>? _onRecovery;
-        private int _recoveryClaimed;
-        private int _originalMessageCount;
-        private int _compactedMessageCount;
-        private int _recoveryTargetInputTokens;
 
         public CopilotContextWindowRecoveryChatClient(
             IChatClient innerClient,
@@ -145,6 +150,7 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken = default)
         {
             var requestMessages = Materialize(messages);
+            CopilotContextWindowRecoveryInfo? recovery = null;
             while (true)
             {
                 try
@@ -153,7 +159,12 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
-                    requestMessages = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                    if (recovery != null)
+                        throw CreateExhaustedException(recovery, exception);
+
+                    var attempt = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                    requestMessages = attempt.Messages;
+                    recovery = attempt.Recovery;
                 }
             }
         }
@@ -164,6 +175,7 @@ namespace ColorVision.Copilot
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var requestMessages = Materialize(messages);
+            CopilotContextWindowRecoveryInfo? recovery = null;
             while (true)
             {
                 IAsyncEnumerator<ChatResponseUpdate>? enumerator;
@@ -173,7 +185,12 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out var failureKind))
                 {
-                    requestMessages = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                    if (recovery != null)
+                        throw CreateExhaustedException(recovery, exception);
+
+                    var attempt = await PrepareRecoveryAsync(requestMessages, exception, failureKind, cancellationToken);
+                    requestMessages = attempt.Messages;
+                    recovery = attempt.Recovery;
                     continue;
                 }
 
@@ -218,45 +235,44 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task<Microsoft.Extensions.AI.ChatMessage[]> PrepareRecoveryAsync(
+        private async Task<(
+            Microsoft.Extensions.AI.ChatMessage[] Messages,
+            CopilotContextWindowRecoveryInfo Recovery)> PrepareRecoveryAsync(
             Microsoft.Extensions.AI.ChatMessage[] messages,
             Exception exception,
             string failureKind,
             CancellationToken cancellationToken)
         {
-            if (Interlocked.CompareExchange(ref _recoveryClaimed, 1, 0) != 0)
-                throw CreateExhaustedException(exception);
-
             cancellationToken.ThrowIfCancellationRequested();
-            _originalMessageCount = messages.Length;
             var estimatedMessageTokens = CopilotTokenBudgetChatClient.EstimateMessageTokens(messages);
-            _recoveryTargetInputTokens = Math.Max(
+            var recoveryTargetInputTokens = Math.Max(
                 1,
                 Math.Min(_maximumTargetInputTokens, Math.Max(1, estimatedMessageTokens / 2)));
             var reducer = new TruncationCompactionStrategy(
                 CompactionTriggers.Always,
                 MinimumPreservedGroups,
-                CompactionTriggers.TokensBelow(_recoveryTargetInputTokens)).AsChatReducer();
+                CompactionTriggers.TokensBelow(recoveryTargetInputTokens)).AsChatReducer();
             var compacted = (await reducer.ReduceAsync(messages, cancellationToken)).ToArray();
-            _compactedMessageCount = compacted.Length;
-            if (compacted.Length >= messages.Length)
-                throw CreateExhaustedException(exception);
-
-            _onRecovery?.Invoke(new CopilotContextWindowRecoveryInfo(
+            var estimatedCompactedTokens = CopilotTokenBudgetChatClient.EstimateMessageTokens(compacted);
+            var recovery = new CopilotContextWindowRecoveryInfo(
                 messages.Length,
                 compacted.Length,
-                _recoveryTargetInputTokens,
-                failureKind));
-            return compacted;
+                estimatedMessageTokens,
+                estimatedCompactedTokens,
+                recoveryTargetInputTokens,
+                failureKind);
+            if (compacted.Length >= messages.Length)
+                throw CreateExhaustedException(recovery, exception);
+
+            _onRecovery?.Invoke(recovery);
+            return (compacted, recovery);
         }
 
-        private CopilotAgentContextWindowRecoveryExhaustedException CreateExhaustedException(Exception innerException)
+        private static CopilotAgentContextWindowRecoveryExhaustedException CreateExhaustedException(
+            CopilotContextWindowRecoveryInfo recovery,
+            Exception innerException)
         {
-            return new CopilotAgentContextWindowRecoveryExhaustedException(
-                _originalMessageCount,
-                _compactedMessageCount,
-                Math.Max(1, _recoveryTargetInputTokens == 0 ? _maximumTargetInputTokens : _recoveryTargetInputTokens),
-                innerException);
+            return new CopilotAgentContextWindowRecoveryExhaustedException(recovery, innerException);
         }
 
         private static Microsoft.Extensions.AI.ChatMessage[] Materialize(

@@ -8,7 +8,7 @@ LUX 亮度测试系统 — 基于 ColorVision 平台的显示设备光学质量�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.4.42 |
+| 版本 | 1.1.4.45 |
 | 插件要求 | ColorVision >= 1.3.15.10 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe / Fix / Summary) |
@@ -69,7 +69,7 @@ ProjectLUX
 ├── ProjectLUXReuslt.cs         # 测试结果实体 (SQLite 持久化)
 ├── ViewResultManager.cs        # 结果查询与管理
 ├── Summary.cs                  # 生产摘要 (产线 / 工人 / 产能 / 良率)
-└── TestResultViewWindow.xaml   # 测试结果查看器 (CSV/PDF 导出)
+└── TestResultViewWindow.xaml   # 测试结果查看器 (CSV 导出)
 ```
 
 ## 核心设计模式
@@ -131,7 +131,7 @@ ProjectLUX
 | `CVCommCore.dll` | 通信核心库 |
 
 ### 主要 NuGet 包
-SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、iText (PDF 导出)、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)
+SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、CsvHelper、MathNet.Numerics、HelixToolkit (3D)、Markdig (Markdown 渲染)
 
 ## 配置文件说明
 

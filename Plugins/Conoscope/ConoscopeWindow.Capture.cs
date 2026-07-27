@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.UI;
 using Conoscope.ApplicationServices.Capture;
 using Conoscope.Core;

@@ -281,6 +281,30 @@
   <data name="Sched_Group" xml:space="preserve">
     <value>Group</value>
   </data>
+  <data name="Sched_TaskType" xml:space="preserve">
+    <value>任務類型</value>
+  </data>
+  <data name="Sched_ScheduleMode" xml:space="preserve">
+    <value>執行排程</value>
+  </data>
+  <data name="Sched_DelayStart" xml:space="preserve">
+    <value>延遲啟動</value>
+  </data>
+  <data name="Sched_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Sched_EmptyTasks" xml:space="preserve">
+    <value>尚無排程任務</value>
+  </data>
+  <data name="Sched_EmptyTasksHint" xml:space="preserve">
+    <value>建立任務並設定執行排程</value>
+  </data>
+  <data name="Sched_UpdateRunning" xml:space="preserve">
+    <value>任務正在執行，請等待完成後再編輯</value>
+  </data>
+  <data name="Sched_LegacyIntervalForeverPaused" xml:space="preserve">
+    <value>為確保安全，舊版本的「每日間隔 + 永久」任務已暫停。本版本會依設定的間隔重複執行，而不是每天只執行一次。請檢查後手動恢復：&#xA;{0}</value>
+  </data>
   <data name="Sched_ElapsedMs" xml:space="preserve">
     <value>Elapsed(ms)</value>
   </data>
@@ -333,13 +357,13 @@
     <value>Priority (1-10)</value>
   </data>
   <data name="Sched_PriorityTooltip" xml:space="preserve">
-    <value>Higher value = higher priority</value>
+    <value>僅在多個觸發器同時到期且執行緒不足時，數值較大的任務優先。</value>
   </data>
   <data name="Sched_Timeout" xml:space="preserve">
     <value>Timeout(seconds)</value>
   </data>
   <data name="Sched_TimeoutTooltip" xml:space="preserve">
-    <value>0 means no timeout</value>
+    <value>僅對支援取消的任務生效；0 表示無逾時限制。</value>
   </data>
   <data name="Sched_NoLimit" xml:space="preserve">
     <value>0 = No limit</value>
@@ -396,13 +420,13 @@
     <value>Delay</value>
   </data>
   <data name="Sched_Simple" xml:space="preserve">
-    <value>Simple</value>
+    <value>間隔／重複</value>
   </data>
   <data name="Sched_Calendar" xml:space="preserve">
-    <value>Calendar</value>
+    <value>每天</value>
   </data>
   <data name="Sched_IntervalType" xml:space="preserve">
-    <value>Interval</value>
+    <value>每日間隔</value>
   </data>
   <data name="Sched_Once" xml:space="preserve">
     <value>Once</value>

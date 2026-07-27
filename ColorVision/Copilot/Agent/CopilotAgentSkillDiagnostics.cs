@@ -11,17 +11,17 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             if (snapshot.RecordedRuns == 0)
-                return "Agent Skills have no recorded runs yet.";
+                return "尚无 Agent Skill 使用记录。";
 
             var loadedCount = snapshot.Entries.Count(entry => entry.LoadedRuns > 0);
-            return $"{snapshot.Entries.Count} tracked across {snapshot.RecordedRuns} run(s); {loadedCount} loaded; {snapshot.HistoricalExplicitOnlySkills.Count} low-use explicit-only.";
+            return $"共跟踪 {snapshot.Entries.Count} 个 Skill、{snapshot.RecordedRuns} 次运行；{loadedCount} 个曾被加载；{snapshot.HistoricalExplicitOnlySkills.Count} 个低使用率 Skill 仅限显式调用。";
         }
 
         public static string FormatEntries(CopilotAgentSkillUsageSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             if (snapshot.Entries.Count == 0)
-                return "Run Copilot with Agent Skills enabled to collect bounded usage evidence.";
+                return "启用 Agent Skill 并运行 Copilot 后，将在此收集有界的本地使用证据。";
 
             return string.Join(Environment.NewLine, snapshot.Entries.Select(FormatEntry));
         }
@@ -35,15 +35,15 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             builder.AppendLine("/skills · Agent Skill 使用快照");
             builder.AppendLine(FormatSummary(snapshot));
-            builder.Append("Metadata budget: ")
+            builder.Append("元数据预算：")
                 .Append(metadataCharacterBudget.ToString("N0"))
-                .Append(" characters (")
+                .Append(" 字符（上下文 ")
                 .Append(CopilotAgentSkills.SkillMetadataContextPercent)
-                .Append("% context, ")
+                .Append("%，硬上限 ")
                 .Append(CopilotAgentSkills.MaxAdvertisedSkillCharacters.ToString("N0"))
-                .AppendLine(" hard cap).")
-                .AppendLine("Low-use skills remain installed and become explicit-only after consecutive misses; invoke $skill-name or /skill-name and load it to restore implicit eligibility.")
-                .Append("Manual overrides: ")
+                .AppendLine("）。")
+                .AppendLine("低使用率 Skill 不会被删除；连续多次选中但未加载后仅限显式调用。使用 $skill-name 或 /skill-name 点名并实际加载后，可恢复隐式匹配资格。")
+                .Append("手动覆盖：")
                 .AppendLine(FormatOverrides(overrides))
                 .AppendLine()
                 .Append(FormatEntries(snapshot));
@@ -53,7 +53,7 @@ namespace ColorVision.Copilot
         public static string FormatOverrides(IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? overrides)
         {
             if (overrides == null || overrides.Count == 0)
-                return "none (Auto for every skill).";
+                return "无（所有 Skill 均为自动）。";
 
             var visibleOverrides = overrides
                 .Where(item => item.Value != CopilotAgentSkillOverrideState.Auto)
@@ -61,7 +61,7 @@ namespace ColorVision.Copilot
                 .Select(item => $"{item.Key}={FormatState(item.Value)}")
                 .ToArray();
             return visibleOverrides.Length == 0
-                ? "none (Auto for every skill)."
+                ? "无（所有 Skill 均为自动）。"
                 : string.Join(", ", visibleOverrides);
         }
 
@@ -69,10 +69,10 @@ namespace ColorVision.Copilot
         {
             return state switch
             {
-                CopilotAgentSkillOverrideState.NameOnly => "name-only",
-                CopilotAgentSkillOverrideState.UserInvocableOnly => "explicit-only",
-                CopilotAgentSkillOverrideState.Off => "off",
-                _ => "auto",
+                CopilotAgentSkillOverrideState.NameOnly => "仅名称",
+                CopilotAgentSkillOverrideState.UserInvocableOnly => "仅显式调用",
+                CopilotAgentSkillOverrideState.Off => "关闭",
+                _ => "自动",
             };
         }
 
@@ -80,20 +80,20 @@ namespace ColorVision.Copilot
         {
             var builder = new StringBuilder();
             builder.Append(entry.Name)
-                .Append(": loaded ")
+                .Append("：已加载 ")
                 .Append(entry.LoadedRuns)
                 .Append('/')
                 .Append(entry.SelectedRuns)
-                .Append(" selected run(s) (")
+                .Append(" 次选中运行（")
                 .Append(entry.LoadRate.ToString("P0"))
-                .Append("); consecutive misses ")
+                .Append("）；连续未加载 ")
                 .Append(entry.ConsecutiveSelectedWithoutLoad)
                 .Append('/')
                 .Append(CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold)
-                .Append("; last selected ")
+                .Append("；最近选中 ")
                 .Append(entry.LastSelectedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
             if (entry.ConsecutiveSelectedWithoutLoad >= CopilotAgentSkillUsageStore.LowUseConsecutiveMissThreshold)
-                builder.Append(" · explicit-only until invoked as $skill-name or /skill-name and loaded");
+                builder.Append(" · 当前仅限显式调用，点名并加载后可恢复");
             return builder.ToString();
         }
     }

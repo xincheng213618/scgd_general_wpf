@@ -14,6 +14,27 @@ namespace ColorVision.Copilot
 
         public bool ProfileConfigured { get; init; }
 
+        public int ProviderFirstContentTimeoutSeconds { get; init; } =
+            CopilotProfileConfig.DefaultFirstContentTimeoutSeconds;
+
+        public int ProviderStreamingInactivityTimeoutSeconds { get; init; } =
+            CopilotProfileConfig.DefaultStreamingInactivityTimeoutSeconds;
+
+        public int ProviderMaximumAttempts { get; init; } =
+            CopilotProviderRetryChatClient.DefaultMaximumAttempts;
+
+        public int ActiveProviderRetryCount { get; init; }
+
+        public int ActiveProviderRetryNextAttempt { get; init; }
+
+        public int ActiveProviderRetryMaximumAttempts { get; init; }
+
+        public long ActiveProviderRetryDelayMilliseconds { get; init; }
+
+        public string ActiveProviderRetryFailureKind { get; init; } = string.Empty;
+
+        public string ActiveProviderRetryRequestId { get; init; } = string.Empty;
+
         public string ReasoningLabel { get; init; } = string.Empty;
 
         public CopilotAgentMode Mode { get; init; }
@@ -59,6 +80,11 @@ namespace ColorVision.Copilot
 
     public static class CopilotStatusDiagnostics
     {
+        internal static string FormatApplicationVersion(Version? version)
+        {
+            return version?.ToString() ?? "unknown";
+        }
+
         public static string Format(CopilotStatusDiagnosticSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
@@ -73,6 +99,14 @@ namespace ColorVision.Copilot
                 builder.Append(" · ").Append(snapshot.ProfileDetails.Trim());
             builder.AppendLine();
             builder.Append("连接：").AppendLine(snapshot.ProfileConfigured ? "已配置" : "未完成配置");
+            builder.Append("供应商保护：首个可显示内容 ")
+                .Append(FormatCount(snapshot.ProviderFirstContentTimeoutSeconds))
+                .Append(" 秒 / 流更新停滞 ")
+                .Append(FormatCount(snapshot.ProviderStreamingInactivityTimeoutSeconds))
+                .Append(" 秒 / 最多 ")
+                .Append(FormatCount(Math.Max(1, snapshot.ProviderMaximumAttempts)))
+                .AppendLine(" 次请求");
+            AppendActiveProviderRetry(builder, snapshot);
             builder.Append("模式：").Append(snapshot.Mode).Append(" · 推理 ").AppendLine(ValueOrFallback(snapshot.ReasoningLabel, "默认"));
             builder.Append("Agent：").Append(ValueOrFallback(snapshot.AgentState, "Idle"))
                 .Append(" · 队列 ").Append(FormatCount(snapshot.QueuedAgentRuns)).Append('/').AppendLine(FormatCount(snapshot.MaximumQueuedAgentRuns));
@@ -93,6 +127,39 @@ namespace ColorVision.Copilot
                 .Append(" · 外部启用 ").Append(FormatCount(snapshot.EnabledExternalMcpServers))
                 .Append(" · 待审批 ").AppendLine(FormatCount(snapshot.PendingApprovals));
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendActiveProviderRetry(
+            StringBuilder builder,
+            CopilotStatusDiagnosticSnapshot snapshot)
+        {
+            if (snapshot.ActiveProviderRetryCount <= 0)
+                return;
+
+            builder.Append("当前运行重试：")
+                .Append(FormatCount(snapshot.ActiveProviderRetryCount))
+                .Append(" 次");
+            if (snapshot.ActiveProviderRetryNextAttempt > 0)
+            {
+                builder.Append(" · 最近 ")
+                    .Append(FormatCount(snapshot.ActiveProviderRetryNextAttempt))
+                    .Append('/')
+                    .Append(FormatCount(Math.Max(
+                        snapshot.ActiveProviderRetryNextAttempt,
+                        snapshot.ActiveProviderRetryMaximumAttempts)));
+            }
+            if (!string.IsNullOrWhiteSpace(snapshot.ActiveProviderRetryFailureKind))
+                builder.Append(" · ").Append(snapshot.ActiveProviderRetryFailureKind.Trim());
+            var requestId = CopilotProviderRequestId.Normalize(
+                snapshot.ActiveProviderRetryRequestId);
+            if (requestId.Length > 0)
+                builder.Append(" · 请求 ").Append(requestId);
+            if (snapshot.ActiveProviderRetryDelayMilliseconds > 0)
+            {
+                builder.Append(" · 计划等待 ")
+                    .Append(FormatDuration(snapshot.ActiveProviderRetryDelayMilliseconds));
+            }
+            builder.AppendLine();
         }
 
         private static string FormatShell(CopilotShellKind shell)
@@ -120,6 +187,14 @@ namespace ColorVision.Copilot
         private static string FormatCount(long value)
         {
             return Math.Max(0, value).ToString("N0", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatDuration(long milliseconds)
+        {
+            var normalized = Math.Max(0, milliseconds);
+            return normalized < 1000
+                ? normalized.ToString(CultureInfo.InvariantCulture) + " 毫秒"
+                : (normalized / 1000d).ToString("0.#", CultureInfo.InvariantCulture) + " 秒";
         }
     }
 }

@@ -219,6 +219,9 @@
                         <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationTemplateOpenCommand}">
                             <TextBlock Text="{x:Static properties:Resources.CaliTemplateSet}" Style="{StaticResource CommandButtonTextStyle}"/>
                         </Button>
+                        <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CloneCalibrationTemplatesCommand}">
+                            <TextBlock Text="{x:Static properties:Resources.CloneCalibrationTemplates}" Style="{StaticResource CommandButtonTextStyle}"/>
+                        </Button>
                         <Button Style="{StaticResource CompactCommandButtonStyle}" Command="{Binding CalibrationEditCommand}">
                             <TextBlock Text="{x:Static properties:Resources.ButtonCalibrationEdit}" Style="{StaticResource CommandButtonTextStyle}"/>
                         </Button>

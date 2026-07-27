@@ -1,20 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
-using System.Windows.Forms;
+using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using DrawingContext = System.Windows.Media.DrawingContext;
+using WpfDpiScale = System.Windows.DpiScale;
+using WpfPixelFormats = System.Windows.Media.PixelFormats;
+using WpfVisualTreeHelper = System.Windows.Media.VisualTreeHelper;
+using WpfDragEventArgs = System.Windows.DragEventArgs;
+using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
+using WpfMouseButtonEventArgs = System.Windows.Input.MouseButtonEventArgs;
+using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
+using WpfMouseWheelEventArgs = System.Windows.Input.MouseWheelEventArgs;
+using WpfPoint = System.Windows.Point;
+using WpfRect = System.Windows.Rect;
+using WpfTextCompositionEventArgs = System.Windows.Input.TextCompositionEventArgs;
 
 namespace ST.Library.UI.NodeEditor;
 
-public class STNodeEditor : Control
+public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 {
 	protected enum CanvasAction
 	{
@@ -41,8 +56,6 @@ public class STNodeEditor : Control
 		public int OffsetY;
 	}
 
-	private const uint WM_MOUSEHWHEEL = 526u;
-
 	protected static readonly Type m_type_node = typeof(STNode);
 
 	private float _CanvasOffsetX;
@@ -61,13 +74,23 @@ public class STNodeEditor : Control
 
 	private bool _ShowBorder = true;
 
+	private bool _ShowNodeShadow = true;
+
+	private int _NodeCornerRadius;
+
 	private bool _ShowGrid = true;
+
+	private bool _HighlightGridOrigin = true;
 
 	private bool _ShowLocation = true;
 
 	private bool _LimitCanvasToContentBounds = true;
 
 	private bool _EnableBlankLeftDragCanvas = true;
+
+	private bool _AutoSwitchCanvasDragBySelection;
+
+	private bool _ShowCanvasDragLockButton = true;
 
 	private STNodeCollection _Nodes;
 
@@ -131,6 +154,8 @@ public class STNodeEditor : Control
 
 	private RectangleF m_rect_select;
 
+	private readonly HashSet<STNode> m_rectangle_selection_baseline = new HashSet<STNode>();
+
 	private Image m_img_border;
 
 	private Image m_img_border_hover;
@@ -162,6 +187,8 @@ public class STNodeEditor : Control
 	private HashSet<STNode> m_hs_node_selected = new HashSet<STNode>();
 
 	private bool m_is_process_mouse_event = true;
+
+	private long m_suppress_context_menu_until;
 
 	private bool m_is_buildpath;
 
@@ -195,6 +222,26 @@ public class STNodeEditor : Control
 
 	private AlertLocation m_al;
 
+	private Color _BackColor = Color.FromArgb(255, 34, 34, 34);
+
+	private Color _ForeColor = Color.White;
+
+	private Font _Font = new Font("Segoe UI", 9f);
+
+	private Size _ClientSize = new Size(200, 200);
+
+	private readonly Bitmap m_measurement_bitmap = new Bitmap(1, 1, PixelFormat.Format32bppPArgb);
+
+	private readonly DispatcherTimer m_animation_timer;
+
+	private Bitmap m_render_bitmap;
+
+	private Graphics m_render_graphics;
+
+	private WriteableBitmap m_render_target;
+
+	private bool m_disposed;
+
 	[Browsable(false)]
 	public float CanvasOffsetX => _CanvasOffsetX;
 
@@ -217,6 +264,63 @@ public class STNodeEditor : Control
 
 	[Browsable(false)]
 	public float CanvasScale => _CanvasScale;
+
+	[Browsable(false)]
+	public Size ClientSize
+	{
+		get
+		{
+			int width = ActualWidth > 0 ? (int)Math.Ceiling(ActualWidth) : _ClientSize.Width;
+			int height = ActualHeight > 0 ? (int)Math.Ceiling(ActualHeight) : _ClientSize.Height;
+			return new Size(Math.Max(0, width), Math.Max(0, height));
+		}
+		set
+		{
+			_ClientSize = value;
+			Invalidate();
+		}
+	}
+
+	[Browsable(false)]
+	public Rectangle ClientRectangle => new Rectangle(Point.Empty, ClientSize);
+
+	[Description("获取或设置画布背景色")]
+	public Color BackColor
+	{
+		get => _BackColor;
+		set
+		{
+			_BackColor = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置画布前景色")]
+	public Color ForeColor
+	{
+		get => _ForeColor;
+		set
+		{
+			_ForeColor = value;
+			Invalidate();
+		}
+	}
+
+	[Browsable(false)]
+	public Font Font
+	{
+		get => _Font;
+		set
+		{
+			if (value == null || ReferenceEquals(_Font, value))
+			{
+				return;
+			}
+			_Font.Dispose();
+			_Font = value;
+			Invalidate();
+		}
+	}
 
 	[Browsable(false)]
 	public float Curvature
@@ -272,6 +376,48 @@ public class STNodeEditor : Control
 		}
 	}
 
+	[Description("获取或设置是否绘制 Node 的阴影")]
+	[DefaultValue(true)]
+	public bool ShowNodeShadow
+	{
+		get
+		{
+			return _ShowNodeShadow;
+		}
+		set
+		{
+			if (_ShowNodeShadow == value)
+			{
+				return;
+			}
+			_ShowNodeShadow = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置画布中 Node 的圆角半径")]
+	[DefaultValue(0)]
+	public int NodeCornerRadius
+	{
+		get
+		{
+			return _NodeCornerRadius;
+		}
+		set
+		{
+			if (value < 0)
+			{
+				value = 0;
+			}
+			if (_NodeCornerRadius == value)
+			{
+				return;
+			}
+			_NodeCornerRadius = value;
+			Invalidate();
+		}
+	}
+
 	[Description("获取或设置画布中是否绘制背景网格线条")]
 	[DefaultValue(true)]
 	public bool ShowGrid
@@ -283,6 +429,25 @@ public class STNodeEditor : Control
 		set
 		{
 			_ShowGrid = value;
+			Invalidate();
+		}
+	}
+
+	[Description("获取或设置是否突出显示画布网格原点")]
+	[DefaultValue(true)]
+	public bool HighlightGridOrigin
+	{
+		get
+		{
+			return _HighlightGridOrigin;
+		}
+		set
+		{
+			if (_HighlightGridOrigin == value)
+			{
+				return;
+			}
+			_HighlightGridOrigin = value;
 			Invalidate();
 		}
 	}
@@ -565,8 +730,52 @@ public class STNodeEditor : Control
 			}
 			_EnableBlankLeftDragCanvas = value;
 			Invalidate();
+			EnableBlankLeftDragCanvasChanged?.Invoke(this, EventArgs.Empty);
 		}
 	}
+
+	[Description("根据节点选中状态自动切换空白区域左键拖动画布：无选中节点时启用，有选中节点时禁用")]
+	[DefaultValue(false)]
+	public bool AutoSwitchCanvasDragBySelection
+	{
+		get
+		{
+			return _AutoSwitchCanvasDragBySelection;
+		}
+		set
+		{
+			if (_AutoSwitchCanvasDragBySelection == value)
+			{
+				return;
+			}
+			_AutoSwitchCanvasDragBySelection = value;
+			UpdateCanvasDragModeFromSelection();
+		}
+	}
+
+	[DefaultValue(true)]
+	public bool ShowCanvasDragLockButton
+	{
+		get
+		{
+			return _ShowCanvasDragLockButton;
+		}
+		set
+		{
+			if (_ShowCanvasDragLockButton == value)
+			{
+				return;
+			}
+			_ShowCanvasDragLockButton = value;
+			if (!value)
+			{
+				m_rect_canvas_drag_lock = Rectangle.Empty;
+			}
+			Invalidate();
+		}
+	}
+
+	public event EventHandler EnableBlankLeftDragCanvasChanged;
 
 	[Description("活动的节点发生变化时候发生")]
 	public event EventHandler ActiveChanged;
@@ -603,28 +812,50 @@ public class STNodeEditor : Control
 
 	public STNodeEditor()
 	{
-		SetStyle(ControlStyles.UserPaint, value: true);
-		SetStyle(ControlStyles.ResizeRedraw, value: true);
-		SetStyle(ControlStyles.AllPaintingInWmPaint, value: true);
-		SetStyle(ControlStyles.OptimizedDoubleBuffer, value: true);
-		SetStyle(ControlStyles.SupportsTransparentBackColor, value: true);
-		_Nodes = new STNodeCollection(this);
-		BackColor = Color.FromArgb(255, 34, 34, 34);
-		MinimumSize = new Size(100, 100);
-		base.Size = new Size(200, 200);
+		Focusable = true;
+		ClipToBounds = true;
+		SnapsToDevicePixels = true;
+		UseLayoutRounding = true;
 		AllowDrop = true;
+		MinWidth = 100;
+		MinHeight = 100;
+		_Nodes = new STNodeCollection(this);
 		m_enableEdit = true;
 		m_real_canvas_x = (_CanvasOffsetX = 10f);
 		m_real_canvas_y = (_CanvasOffsetY = 10f);
 		STNodeTypeRegistry.Initialize();
+		InitializeEditing();
+		InitializeDrawingResources();
+		m_animation_timer = new DispatcherTimer(DispatcherPriority.Render)
+		{
+			Interval = TimeSpan.FromMilliseconds(30)
+		};
+		m_animation_timer.Tick += AnimationTimer_Tick;
+		Loaded += (_, _) => m_animation_timer.Start();
+		Unloaded += (_, _) => m_animation_timer.Stop();
 	}
 
 	protected internal virtual void OnSelectedChanged(EventArgs e)
 	{
+		UpdateCanvasDragModeFromSelection();
 		if (this.SelectedChanged != null)
 		{
 			this.SelectedChanged(this, e);
 		}
+	}
+
+	private void UpdateCanvasDragModeFromSelection()
+	{
+		if (!_AutoSwitchCanvasDragBySelection)
+		{
+			return;
+		}
+		bool hasSelection;
+		lock (m_hs_node_selected)
+		{
+			hasSelection = m_hs_node_selected.Count > 0;
+		}
+		EnableBlankLeftDragCanvas = !hasSelection;
 	}
 
 	protected virtual void OnActiveChanged(EventArgs e)
@@ -645,6 +876,7 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnNodeAdded(STNodeEditorEventArgs e)
 	{
+		TrackNode(e.Node);
 		if (this.NodeAdded != null)
 		{
 			this.NodeAdded(this, e);
@@ -653,6 +885,7 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnNodeRemoved(STNodeEditorEventArgs e)
 	{
+		UntrackNode(e.Node);
 		if (this.NodeRemoved != null)
 		{
 			this.NodeRemoved(this, e);
@@ -677,6 +910,7 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnOptionConnected(STNodeEditorOptionEventArgs e)
 	{
+		CompleteConnectionChange(e.CurrentOption, e.TargetOption, e.Status == ConnectionStatus.Connected ? true : (bool?)null);
 		if (this.OptionConnected != null)
 		{
 			this.OptionConnected(this, e);
@@ -685,6 +919,7 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnOptionDisConnected(STNodeEditorOptionEventArgs e)
 	{
+		CompleteConnectionChange(e.CurrentOption, e.TargetOption, e.Status == ConnectionStatus.DisConnected ? false : (bool?)null);
 		if (this.OptionDisConnected != null)
 		{
 			this.OptionDisConnected(this, e);
@@ -693,6 +928,11 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnOptionConnecting(STNodeEditorOptionEventArgs e)
 	{
+		PrepareConnectionChange(e.CurrentOption, e.TargetOption);
+		if (IsReplayingHistory)
+		{
+			return;
+		}
 		if (this.OptionConnecting != null)
 		{
 			this.OptionConnecting(this, e);
@@ -701,13 +941,18 @@ public class STNodeEditor : Control
 
 	protected internal virtual void OnOptionDisConnecting(STNodeEditorOptionEventArgs e)
 	{
+		PrepareConnectionChange(e.CurrentOption, e.TargetOption);
+		if (IsReplayingHistory)
+		{
+			return;
+		}
 		if (this.OptionDisConnecting != null)
 		{
 			this.OptionDisConnecting(this, e);
 		}
 	}
 
-	protected override void OnCreateControl()
+	private void InitializeDrawingResources()
 	{
 		m_drawing_tools = new DrawingTools
 		{
@@ -718,78 +963,136 @@ public class STNodeEditor : Control
 		m_img_border_active = CreateBorderImage(_BorderActiveColor);
 		m_img_border_hover = CreateBorderImage(_BorderHoverColor);
 		m_img_border_selected = CreateBorderImage(_BorderSelectedColor);
-		base.OnCreateControl();
-		Thread thread = new Thread(MoveCanvasThread);
-		thread.IsBackground = true;
-		thread.Start();
-		Thread thread2 = new Thread(ShowAlertThread);
-		thread2.IsBackground = true;
-		thread2.Start();
-		m_sf = new StringFormat();
-		m_sf.Alignment = StringAlignment.Near;
-		m_sf.FormatFlags = StringFormatFlags.NoWrap;
+		m_sf?.Dispose();
+		m_sf = new StringFormat
+		{
+			Alignment = StringAlignment.Near,
+			FormatFlags = StringFormatFlags.NoWrap
+		};
 		m_sf.SetTabStops(0f, new float[1] { 40f });
 	}
 
-	protected override void WndProc(ref Message m)
+	private void AnimationTimer_Tick(object sender, EventArgs e)
 	{
-		base.WndProc(ref m);
-		try
+		bool redraw = false;
+		float nextX = MoveTowards(_CanvasOffsetX, m_real_canvas_x);
+		float nextY = MoveTowards(_CanvasOffsetY, m_real_canvas_y);
+		if (nextX != _CanvasOffsetX || nextY != _CanvasOffsetY)
 		{
-			Point p = new Point((int)m.LParam >> 16, (ushort)(int)m.LParam);
-			p = PointToClient(p);
-			if ((long)m.Msg == 526)
-			{
-				MouseButtons mouseButtons = MouseButtons.None;
-				int num = (ushort)(int)m.WParam;
-				if ((num & 1) == 1)
-				{
-					mouseButtons |= MouseButtons.Left;
-				}
-				if ((num & 0x10) == 16)
-				{
-					mouseButtons |= MouseButtons.Middle;
-				}
-				if ((num & 2) == 2)
-				{
-					mouseButtons |= MouseButtons.Right;
-				}
-				if ((num & 0x20) == 32)
-				{
-					mouseButtons |= MouseButtons.XButton1;
-				}
-				if ((num & 0x40) == 64)
-				{
-					mouseButtons |= MouseButtons.XButton2;
-				}
-				OnMouseHWheel(new MouseEventArgs(mouseButtons, 0, p.X, p.Y, (int)m.WParam >> 16));
-			}
+			_CanvasOffsetX = nextX;
+			_CanvasOffsetY = nextY;
+			m_pt_canvas_old.X = nextX;
+			m_pt_canvas_old.Y = nextY;
+			redraw = true;
 		}
-		catch
+
+		int remaining = m_time_alert - (int)DateTime.Now.Subtract(m_dt_alert).TotalMilliseconds;
+		int alpha = remaining >= 0 ? 255 : remaining <= -1000 ? 0 : (int)(255f + remaining / 1000f * 255f);
+		if (alpha != m_alpha_alert)
 		{
+			m_alpha_alert = alpha;
+			redraw = true;
+		}
+		if (redraw)
+		{
+			Invalidate();
 		}
 	}
 
-	protected override void OnPaint(PaintEventArgs e)
+	private static float MoveTowards(float current, float target)
 	{
-		base.OnPaint(e);
-		Graphics graphics = e.Graphics;
+		float delta = target - current;
+		float distance = Math.Abs(delta);
+		if (distance < 1f)
+		{
+			return target;
+		}
+		float step = distance <= 4f ? 1f : distance <= 12f ? 2f : distance <= 30f ? 3f : distance / 10f;
+		return current + (delta > 0f ? step : -step);
+	}
+
+	protected override void OnRender(DrawingContext drawingContext)
+	{
+		base.OnRender(drawingContext);
+		if (m_disposed)
+		{
+			return;
+		}
+
+		Size clientSize = ClientSize;
+		if (clientSize.Width <= 0 || clientSize.Height <= 0)
+		{
+			return;
+		}
+
+		double width = ActualWidth > 0 ? ActualWidth : clientSize.Width;
+		double height = ActualHeight > 0 ? ActualHeight : clientSize.Height;
+		WpfDpiScale dpi = WpfVisualTreeHelper.GetDpi(this);
+		int pixelWidth = Math.Max(1, (int)Math.Ceiling(width * dpi.DpiScaleX));
+		int pixelHeight = Math.Max(1, (int)Math.Ceiling(height * dpi.DpiScaleY));
+
+		EnsureRenderTarget(pixelWidth, pixelHeight, dpi.PixelsPerInchX, dpi.PixelsPerInchY);
+		RenderToGraphics(
+			m_render_graphics,
+			clientSize.Width,
+			clientSize.Height,
+			(float)dpi.DpiScaleX,
+			(float)dpi.DpiScaleY);
+		BitmapData bitmapData = m_render_bitmap.LockBits(
+			new Rectangle(0, 0, pixelWidth, pixelHeight),
+			ImageLockMode.ReadOnly,
+			PixelFormat.Format32bppPArgb);
+		try
+		{
+			m_render_target.WritePixels(
+				new System.Windows.Int32Rect(0, 0, pixelWidth, pixelHeight),
+				bitmapData.Scan0,
+				Math.Abs(bitmapData.Stride) * pixelHeight,
+				bitmapData.Stride);
+		}
+		finally
+		{
+			m_render_bitmap.UnlockBits(bitmapData);
+		}
+
+		drawingContext.DrawImage(m_render_target, new WpfRect(0, 0, width, height));
+	}
+
+	private void EnsureRenderTarget(int pixelWidth, int pixelHeight, double dpiX, double dpiY)
+	{
+		if (m_render_bitmap != null &&
+			m_render_bitmap.Width == pixelWidth &&
+			m_render_bitmap.Height == pixelHeight &&
+			Math.Abs(m_render_target.DpiX - dpiX) < 0.01 &&
+			Math.Abs(m_render_target.DpiY - dpiY) < 0.01)
+		{
+			return;
+		}
+		m_render_graphics?.Dispose();
+		m_render_bitmap?.Dispose();
+		m_render_bitmap = new Bitmap(pixelWidth, pixelHeight, PixelFormat.Format32bppPArgb);
+		m_render_graphics = Graphics.FromImage(m_render_bitmap);
+		m_render_target = new WriteableBitmap(pixelWidth, pixelHeight, dpiX, dpiY, WpfPixelFormats.Pbgra32, null);
+	}
+
+	private void RenderToGraphics(Graphics graphics, int width, int height, float dpiScaleX, float dpiScaleY)
+	{
+		ResetRenderTransform(graphics, dpiScaleX, dpiScaleY);
 		graphics.Clear(BackColor);
 		graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+		graphics.SmoothingMode = SmoothingMode.HighQuality;
 		m_drawing_tools.Graphics = graphics;
-		SolidBrush solidBrush = m_drawing_tools.SolidBrush;
 		if (_ShowGrid)
 		{
-			OnDrawGrid(m_drawing_tools, base.Width, base.Height);
+			OnDrawGrid(m_drawing_tools, width, height);
 		}
 		graphics.TranslateTransform(_CanvasOffsetX, _CanvasOffsetY);
 		graphics.ScaleTransform(_CanvasScale, _CanvasScale);
 		OnDrawConnectedLine(m_drawing_tools);
-		OnDrawNode(m_drawing_tools, ControlToCanvas(base.ClientRectangle));
-		if (m_ca == CanvasAction.ConnectOption)
+		OnDrawNode(m_drawing_tools, ControlToCanvas(new Rectangle(0, 0, width, height)));
+		if (m_ca == CanvasAction.ConnectOption && m_option_down != null)
 		{
 			m_drawing_tools.Pen.Color = _HighLineColor;
-			graphics.SmoothingMode = SmoothingMode.HighQuality;
 			if (m_option_down.IsInput)
 			{
 				DrawBezier(graphics, m_drawing_tools.Pen, m_pt_in_canvas, m_pt_dot_down, _Curvature);
@@ -799,7 +1102,7 @@ public class STNodeEditor : Control
 				DrawBezier(graphics, m_drawing_tools.Pen, m_pt_dot_down, m_pt_in_canvas, _Curvature);
 			}
 		}
-		graphics.ResetTransform();
+		ResetRenderTransform(graphics, dpiScaleX, dpiScaleY);
 		switch (m_ca)
 		{
 		case CanvasAction.MoveNode:
@@ -820,30 +1123,48 @@ public class STNodeEditor : Control
 		}
 		if (_ShowLocation)
 		{
-			OnDrawNodeOutLocation(m_drawing_tools, base.Size, m_lst_node_out);
+			OnDrawNodeOutLocation(m_drawing_tools, new Size(width, height), m_lst_node_out);
 		}
 		OnDrawAlert(graphics);
-		OnDrawCanvasDragLockButton(m_drawing_tools);
+		if (_ShowCanvasDragLockButton)
+		{
+			OnDrawCanvasDragLockButton(m_drawing_tools);
+		}
 	}
 
-	protected override void OnMouseDown(MouseEventArgs e)
+	private static void ResetRenderTransform(Graphics graphics, float dpiScaleX, float dpiScaleY)
+	{
+		graphics.ResetTransform();
+		graphics.ScaleTransform(dpiScaleX, dpiScaleY);
+	}
+
+	protected override void OnMouseDown(WpfMouseButtonEventArgs e)
 	{
 		base.OnMouseDown(e);
+		STNodeMouseEventArgs nodeEvent = CreateMouseEventArgs(e);
 		Focus();
-		if (e.Button == MouseButtons.Left && m_rect_canvas_drag_lock.Contains(e.Location))
+		CaptureMouse();
+		if (_ShowCanvasDragLockButton
+			&& nodeEvent.Button == STMouseButtons.Left
+			&& m_rect_canvas_drag_lock.Contains(nodeEvent.Location))
 		{
 			EnableBlankLeftDragCanvas = !EnableBlankLeftDragCanvas;
 			m_ca = CanvasAction.None;
+			e.Handled = true;
 			return;
 		}
 		m_ca = CanvasAction.None;
+		if (!ShouldActivateNodeFromMouse(nodeEvent.Button))
+		{
+			SetActiveNode(null);
+		}
 		m_mi.XMatched = (m_mi.YMatched = false);
-		m_pt_down_in_control = e.Location;
-		m_pt_down_in_canvas.X = ((float)e.X - _CanvasOffsetX) / _CanvasScale;
-		m_pt_down_in_canvas.Y = ((float)e.Y - _CanvasOffsetY) / _CanvasScale;
+		m_pt_down_in_control = nodeEvent.Location;
+		m_pt_down_in_canvas.X = ((float)nodeEvent.X - _CanvasOffsetX) / _CanvasScale;
+		m_pt_down_in_canvas.Y = ((float)nodeEvent.Y - _CanvasOffsetY) / _CanvasScale;
 		m_pt_canvas_old.X = _CanvasOffsetX;
 		m_pt_canvas_old.Y = _CanvasOffsetY;
-		if (m_gp_hover != null && e.Button == MouseButtons.Right)
+		if (m_gp_hover != null && nodeEvent.Button == STMouseButtons.Right)
 		{
 			NodeFindInfo preCheck = FindNodeFromPoint(m_pt_down_in_canvas);
 			if (preCheck.Node != null)
@@ -854,18 +1175,32 @@ public class STNodeEditor : Control
 			{
 				if (m_enableEdit)
 				{
-					DisConnectionHover();
+					bool hadHoveredConnection = m_gp_hover != null && m_dic_gp_info.ContainsKey(m_gp_hover);
+					ConnectionStatus disconnectStatus;
+					using (BeginEditTransaction("断开连接"))
+					{
+						disconnectStatus = DisConnectionHover();
+					}
+					if (hadHoveredConnection && disconnectStatus == ConnectionStatus.DisConnected)
+					{
+						m_suppress_context_menu_until = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
+					}
 					m_is_process_mouse_event = false;
 				}
 				return;
 			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
-		if (e.Button == MouseButtons.Left
+		if (nodeEvent.Button == STMouseButtons.Left
+			&& !_AutoSwitchCanvasDragBySelection
 			&& EnableBlankLeftDragCanvas
 			&& (!string.IsNullOrEmpty(nodeFindInfo.Mark) || nodeFindInfo.NodeOption != null || nodeFindInfo.Node != null))
 		{
 			EnableBlankLeftDragCanvas = false;
+		}
+		if (nodeFindInfo.Node != null && !ShouldActivateNodeFromMouse(nodeEvent.Button))
+		{
+			return;
 		}
 		if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
 		{
@@ -881,8 +1216,7 @@ public class STNodeEditor : Control
 		}
 		else if (nodeFindInfo.Node != null)
 		{
-			nodeFindInfo.Node.OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_down_in_canvas.X - nodeFindInfo.Node.Left, (int)m_pt_down_in_canvas.Y - nodeFindInfo.Node.Top, e.Delta));
-			if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+			if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
 			{
 				if (nodeFindInfo.Node.IsSelected)
 				{
@@ -890,13 +1224,18 @@ public class STNodeEditor : Control
 					{
 						SetActiveNode(null);
 					}
+					nodeFindInfo.Node.SetSelected(bSelected: false, bRedraw: true);
 				}
 				else
 				{
 					nodeFindInfo.Node.SetSelected(bSelected: true, bRedraw: true);
 				}
+				m_node_down = null;
+				m_is_process_mouse_event = false;
+				e.Handled = true;
 				return;
 			}
+			nodeFindInfo.Node.OnMouseDown(nodeEvent.WithLocation((int)m_pt_down_in_canvas.X - nodeFindInfo.Node.Left, (int)m_pt_down_in_canvas.Y - nodeFindInfo.Node.Top));
 			if (!nodeFindInfo.Node.IsSelected)
 			{
 				STNode[] array = m_hs_node_selected.ToArray();
@@ -909,14 +1248,6 @@ public class STNodeEditor : Control
 			SetActiveNode(nodeFindInfo.Node);
 			if (PointInRectangle(nodeFindInfo.Node.Rectangle, m_pt_down_in_canvas.X, m_pt_down_in_canvas.Y))
 			{
-				if (e.Button == MouseButtons.Right)
-				{
-					if (nodeFindInfo.Node.ContextMenuStrip != null)
-					{
-						nodeFindInfo.Node.ContextMenuStrip.Show(PointToScreen(e.Location));
-					}
-					return;
-				}
 				m_dic_pt_selected.Clear();
 				lock (m_hs_node_selected)
 				{
@@ -926,6 +1257,7 @@ public class STNodeEditor : Control
 					}
 				}
 				m_ca = CanvasAction.MoveNode;
+				BeginPointerEdit("移动节点");
 				if (_ShowMagnet && _ActiveNode != null)
 				{
 					BuildMagnetLocation();
@@ -938,39 +1270,77 @@ public class STNodeEditor : Control
 		}
 		else
 		{
+			bool enableBlankLeftDragCanvasAtMouseDown = EnableBlankLeftDragCanvas;
+			ModifierKeys modifiers = Keyboard.Modifiers;
 			SetActiveNode(null);
-			STNode[] array2 = m_hs_node_selected.ToArray();
-			foreach (STNode sTNode2 in array2)
+			bool panCanvas = ShouldPanBlankCanvas(nodeEvent.Button, enableBlankLeftDragCanvasAtMouseDown, modifiers);
+			m_rectangle_selection_baseline.Clear();
+			if (!panCanvas)
 			{
-				sTNode2.SetSelected(bSelected: false, bRedraw: false);
+				bool appendSelection = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+				if (appendSelection)
+				{
+					foreach (STNode selectedNode in m_hs_node_selected)
+					{
+						m_rectangle_selection_baseline.Add(selectedNode);
+					}
+				}
+				else
+				{
+					STNode[] array2 = m_hs_node_selected.ToArray();
+					foreach (STNode sTNode2 in array2)
+					{
+						sTNode2.SetSelected(bSelected: false, bRedraw: false);
+					}
+				}
 			}
-			m_ca = EnableBlankLeftDragCanvas && e.Button == MouseButtons.Left ? CanvasAction.MoveCanvas : CanvasAction.SelectRectangle;
+			m_ca = panCanvas ? CanvasAction.MoveCanvas : CanvasAction.SelectRectangle;
 			ref RectangleF rect_select = ref m_rect_select;
 			float num = (m_rect_select.Height = 0f);
 			rect_select.Width = num;
 			m_node_down = null;
 		}
+		e.Handled = nodeEvent.Button != STMouseButtons.Right;
 	}
 
-	protected override void OnMouseMove(MouseEventArgs e)
+	protected internal static bool ShouldActivateNodeFromMouse(STMouseButtons button)
+	{
+		return button == STMouseButtons.Left;
+	}
+
+	protected internal static bool ShouldPanBlankCanvas(STMouseButtons button, bool enableBlankLeftDragCanvasAtMouseDown, ModifierKeys modifiers)
+	{
+		return button == STMouseButtons.Middle
+			|| button == STMouseButtons.Left
+			&& enableBlankLeftDragCanvasAtMouseDown
+			&& (modifiers & ModifierKeys.Control) != ModifierKeys.Control;
+	}
+
+	protected internal static bool ShouldSelectNodeFromRectangle(bool intersectsSelectionRectangle, bool wasSelectedBeforeDrag)
+	{
+		return intersectsSelectionRectangle || wasSelectedBeforeDrag;
+	}
+
+	protected override void OnMouseMove(WpfMouseEventArgs e)
 	{
 		base.OnMouseMove(e);
-		m_pt_in_control = e.Location;
-		m_pt_in_canvas.X = ((float)e.X - _CanvasOffsetX) / _CanvasScale;
-		m_pt_in_canvas.Y = ((float)e.Y - _CanvasOffsetY) / _CanvasScale;
+		STNodeMouseEventArgs nodeEvent = CreateMouseEventArgs(e);
+		m_pt_in_control = nodeEvent.Location;
+		m_pt_in_canvas.X = ((float)nodeEvent.X - _CanvasOffsetX) / _CanvasScale;
+		m_pt_in_canvas.Y = ((float)nodeEvent.Y - _CanvasOffsetY) / _CanvasScale;
 		if (m_node_down != null)
 		{
-			m_node_down.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - m_node_down.Left, (int)m_pt_in_canvas.Y - m_node_down.Top, e.Delta));
+			m_node_down.OnMouseMove(nodeEvent.WithLocation((int)m_pt_in_canvas.X - m_node_down.Left, (int)m_pt_in_canvas.Y - m_node_down.Top));
 			return;
 		}
-		if (e.Button == MouseButtons.Middle)
+		if (nodeEvent.Button == STMouseButtons.Middle)
 		{
-			_CanvasOffsetX = (m_real_canvas_x = m_pt_canvas_old.X + (float)(e.X - m_pt_down_in_control.X));
-			_CanvasOffsetY = (m_real_canvas_y = m_pt_canvas_old.Y + (float)(e.Y - m_pt_down_in_control.Y));
+			_CanvasOffsetX = (m_real_canvas_x = m_pt_canvas_old.X + (float)(nodeEvent.X - m_pt_down_in_control.X));
+			_CanvasOffsetY = (m_real_canvas_y = m_pt_canvas_old.Y + (float)(nodeEvent.Y - m_pt_down_in_control.Y));
 			Invalidate();
 			return;
 		}
-		if (e.Button == MouseButtons.Left)
+		if (nodeEvent.Button == STMouseButtons.Left)
 		{
 			m_gp_hover = null;
 			switch (m_ca)
@@ -978,12 +1348,12 @@ public class STNodeEditor : Control
 			case CanvasAction.MoveNode:
 				if (m_enableEdit)
 				{
-					MoveNode(e.Location);
+					MoveNode(nodeEvent.Location);
 				}
 				return;
 			case CanvasAction.MoveCanvas:
-				_CanvasOffsetX = (m_real_canvas_x = m_pt_canvas_old.X + (float)(e.X - m_pt_down_in_control.X));
-				_CanvasOffsetY = (m_real_canvas_y = m_pt_canvas_old.Y + (float)(e.Y - m_pt_down_in_control.Y));
+				_CanvasOffsetX = (m_real_canvas_x = m_pt_canvas_old.X + (float)(nodeEvent.X - m_pt_down_in_control.X));
+				_CanvasOffsetY = (m_real_canvas_y = m_pt_canvas_old.Y + (float)(nodeEvent.Y - m_pt_down_in_control.Y));
 				Invalidate();
 				return;
 			case CanvasAction.ConnectOption:
@@ -996,7 +1366,11 @@ public class STNodeEditor : Control
 				m_rect_select.Height = Math.Abs(m_pt_in_canvas.Y - m_pt_down_in_canvas.Y);
 				foreach (STNode node in _Nodes)
 				{
-					node.SetSelected(m_rect_select.IntersectsWith(node.Rectangle), bRedraw: false);
+					node.SetSelected(
+						ShouldSelectNodeFromRectangle(
+							m_rect_select.IntersectsWith(node.Rectangle),
+							m_rectangle_selection_baseline.Contains(node)),
+						bRedraw: false);
 				}
 				Invalidate();
 				return;
@@ -1012,7 +1386,7 @@ public class STNodeEditor : Control
 			}
 			if (_HoverNode != null)
 			{
-				_HoverNode.OnMouseLeave(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top, e.Delta));
+				_HoverNode.OnMouseLeave(nodeEvent.WithLocation((int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top));
 			}
 			_HoverNode = nodeFindInfo.Node;
 			OnHoverChanged(EventArgs.Empty);
@@ -1020,7 +1394,7 @@ public class STNodeEditor : Control
 		}
 		if (_HoverNode != null)
 		{
-			_HoverNode.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top, e.Delta));
+			_HoverNode.OnMouseMove(nodeEvent.WithLocation((int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top));
 			m_gp_hover = null;
 		}
 		else
@@ -1046,21 +1420,21 @@ public class STNodeEditor : Control
 		}
 	}
 
-	protected override void OnMouseUp(MouseEventArgs e)
+	protected override void OnMouseUp(WpfMouseButtonEventArgs e)
 	{
 		base.OnMouseUp(e);
+		STNodeMouseEventArgs nodeEvent = CreateMouseEventArgs(e);
+		m_pt_in_control = nodeEvent.Location;
+		m_pt_in_canvas.X = ((float)nodeEvent.X - _CanvasOffsetX) / _CanvasScale;
+		m_pt_in_canvas.Y = ((float)nodeEvent.Y - _CanvasOffsetY) / _CanvasScale;
 		int dotPadding = (m_ca == CanvasAction.ConnectOption) ? 14 : 6;
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas, dotPadding);
 		switch (m_ca)
 		{
 		case CanvasAction.MoveNode:
-			foreach (STNode item in m_dic_pt_selected.Keys.ToList())
-			{
-				m_dic_pt_selected[item] = item.Location;
-			}
 			break;
 		case CanvasAction.ConnectOption:
-			if (!(e.Location == m_pt_down_in_control) && nodeFindInfo.NodeOption != null)
+			if (!(nodeEvent.Location == m_pt_down_in_control) && nodeFindInfo.NodeOption != null)
 			{
 				if (m_option_down.IsInput)
 				{
@@ -1073,24 +1447,58 @@ public class STNodeEditor : Control
 			}
 			break;
 		}
+		EndPointerEdit();
 		if (m_is_process_mouse_event && _ActiveNode != null)
 		{
-			MouseEventArgs e2 = new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - _ActiveNode.Left, (int)m_pt_in_canvas.Y - _ActiveNode.Top, e.Delta);
+			STNodeMouseEventArgs e2 = nodeEvent.WithLocation((int)m_pt_in_canvas.X - _ActiveNode.Left, (int)m_pt_in_canvas.Y - _ActiveNode.Top);
 			_ActiveNode.OnMouseUp(e2);
 			m_node_down = null;
 		}
+		if (Math.Abs(nodeEvent.X - m_pt_down_in_control.X) <= 2 && Math.Abs(nodeEvent.Y - m_pt_down_in_control.Y) <= 2)
+		{
+			ProcessMouseClick(nodeEvent);
+		}
 		m_is_process_mouse_event = true;
 		m_ca = CanvasAction.None;
+		m_rectangle_selection_baseline.Clear();
+		ReleaseMouseCapture();
 		Invalidate();
 	}
 
-	protected override void OnMouseEnter(EventArgs e)
+	protected override void OnContextMenuOpening(System.Windows.Controls.ContextMenuEventArgs e)
+	{
+		long suppressUntil = m_suppress_context_menu_until;
+		m_suppress_context_menu_until = 0;
+		if (suppressUntil >= Stopwatch.GetTimestamp())
+		{
+			e.Handled = true;
+			return;
+		}
+		base.OnContextMenuOpening(e);
+	}
+
+	protected override void OnLostMouseCapture(WpfMouseEventArgs e)
+	{
+		EndPointerEdit();
+		_ActiveNode?.CancelMouseInteraction();
+		m_node_down?.CancelMouseInteraction();
+		m_rectangle_selection_baseline.Clear();
+		m_node_down = null;
+		m_option_down = null;
+		m_rect_select = RectangleF.Empty;
+		m_ca = CanvasAction.None;
+		m_is_process_mouse_event = true;
+		Invalidate();
+		base.OnLostMouseCapture(e);
+	}
+
+	protected override void OnMouseEnter(WpfMouseEventArgs e)
 	{
 		base.OnMouseEnter(e);
 		m_mouse_in_control = true;
 	}
 
-	protected override void OnMouseLeave(EventArgs e)
+	protected override void OnMouseLeave(WpfMouseEventArgs e)
 	{
 		base.OnMouseLeave(e);
 		m_mouse_in_control = false;
@@ -1102,51 +1510,69 @@ public class STNodeEditor : Control
 		Invalidate();
 	}
 
-	protected override void OnMouseWheel(MouseEventArgs e)
+	protected override void OnMouseWheel(WpfMouseWheelEventArgs e)
 	{
 		base.OnMouseWheel(e);
-		if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
+		STNodeMouseEventArgs nodeEvent = CreateMouseEventArgs(e);
+		m_pt_in_control = nodeEvent.Location;
+		m_pt_in_canvas.X = ((float)nodeEvent.X - _CanvasOffsetX) / _CanvasScale;
+		m_pt_in_canvas.Y = ((float)nodeEvent.Y - _CanvasOffsetY) / _CanvasScale;
+		float scale = _CanvasScale + (nodeEvent.Delta < 0 ? -0.05f : 0.05f);
+		ScaleCanvas(scale, nodeEvent.X, nodeEvent.Y);
+		e.Handled = true;
+	}
+
+	protected virtual void OnMouseHWheel(STNodeMouseEventArgs e)
+	{
+		if (m_mouse_in_control && _HoverNode != null)
 		{
-			float f = _CanvasScale + ((e.Delta < 0) ? (-0.1f) : 0.1f);
-			ScaleCanvas(f, base.Width / 2, base.Height / 2);
-		}
-		else if (m_mouse_in_control)
-		{
-			NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas);
-			if (_HoverNode != null)
-			{
-				_HoverNode.OnMouseWheel(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top, e.Delta));
-			}
+			_HoverNode.OnMouseHWheel(e.WithLocation((int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top));
 		}
 	}
 
-	protected virtual void OnMouseHWheel(MouseEventArgs e)
+	private void ProcessMouseClick(STNodeMouseEventArgs e)
 	{
-		if ((Control.ModifierKeys & Keys.Control) != Keys.Control && m_mouse_in_control && _HoverNode != null)
-		{
-			_HoverNode.OnMouseWheel(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_in_canvas.X - _HoverNode.Left, (int)m_pt_in_canvas.Y - _HoverNode.Top, e.Delta));
-		}
-	}
-
-	protected override void OnMouseClick(MouseEventArgs e)
-	{
-		base.OnMouseClick(e);
 		if (_ActiveNode != null && m_is_process_mouse_event && PointInRectangle(_ActiveNode.Rectangle, m_pt_in_canvas.X, m_pt_in_canvas.Y))
 		{
-			_ActiveNode.OnMouseClick(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_down_in_canvas.X - _ActiveNode.Left, (int)m_pt_down_in_canvas.Y - _ActiveNode.Top, e.Delta));
+			_ActiveNode.OnMouseClick(e.WithLocation((int)m_pt_down_in_canvas.X - _ActiveNode.Left, (int)m_pt_down_in_canvas.Y - _ActiveNode.Top));
 		}
 	}
 
-	protected override void OnKeyDown(KeyEventArgs e)
+	protected override void OnKeyDown(WpfKeyEventArgs e)
 	{
 		base.OnKeyDown(e);
+		if (m_enableEdit && Keyboard.Modifiers == ModifierKeys.None)
+		{
+			int offsetX = 0;
+			int offsetY = 0;
+			switch (e.Key)
+			{
+			case Key.Left:
+				offsetX = -10;
+				break;
+			case Key.Right:
+				offsetX = 10;
+				break;
+			case Key.Up:
+				offsetY = -10;
+				break;
+			case Key.Down:
+				offsetY = 10;
+				break;
+			}
+			if ((offsetX != 0 || offsetY != 0) && MoveSelectedNodes(offsetX, offsetY))
+			{
+				e.Handled = true;
+				return;
+			}
+		}
 		if (_ActiveNode != null)
 		{
 			_ActiveNode.OnKeyDown(e);
 		}
 	}
 
-	protected override void OnKeyUp(KeyEventArgs e)
+	protected override void OnKeyUp(WpfKeyEventArgs e)
 	{
 		base.OnKeyUp(e);
 		if (_ActiveNode != null)
@@ -1156,54 +1582,99 @@ public class STNodeEditor : Control
 		m_node_down = null;
 	}
 
-	protected override void OnKeyPress(KeyPressEventArgs e)
+	protected override void OnTextInput(WpfTextCompositionEventArgs e)
 	{
-		base.OnKeyPress(e);
-		if (_ActiveNode != null)
+		base.OnTextInput(e);
+		if (_ActiveNode != null && !string.IsNullOrEmpty(e.Text))
 		{
-			_ActiveNode.OnKeyPress(e);
+			var args = new STNodeKeyPressEventArgs(e.Text[0]);
+			_ActiveNode.OnKeyPress(args);
+			e.Handled = args.Handled;
 		}
 	}
 
-	protected override void OnDragEnter(DragEventArgs drgevent)
+	protected override void OnDragEnter(WpfDragEventArgs e)
 	{
-		base.OnDragEnter(drgevent);
-		if (!base.DesignMode)
-		{
-			if (drgevent.Data.GetDataPresent("STNodeType"))
-			{
-				drgevent.Effect = DragDropEffects.Copy;
-			}
-			else
-			{
-				drgevent.Effect = DragDropEffects.None;
-			}
-		}
-	}
-
-	protected override void OnDragDrop(DragEventArgs drgevent)
-	{
-		base.OnDragDrop(drgevent);
-		if (base.DesignMode || !drgevent.Data.GetDataPresent("STNodeType"))
+		base.OnDragEnter(e);
+		if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
 		{
 			return;
 		}
-		object data = drgevent.Data.GetData("STNodeType");
-		if (data is Type)
+		e.Effects = e.Data.GetDataPresent("STNodeType")
+			? System.Windows.DragDropEffects.Copy
+			: System.Windows.DragDropEffects.None;
+		e.Handled = true;
+	}
+
+	protected override void OnDrop(WpfDragEventArgs e)
+	{
+		base.OnDrop(e);
+		if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this) || !e.Data.GetDataPresent("STNodeType"))
 		{
-			Type type = (Type)data;
-			if (type.IsSubclassOf(typeof(STNode)))
+			return;
+		}
+		if (e.Data.GetData("STNodeType") is Type type && type.IsSubclassOf(typeof(STNode)))
+		{
+			STNode node = (STNode)Activator.CreateInstance(type);
+			node.Create();
+			WpfPoint position = e.GetPosition(this);
+			Point canvasPoint = ControlToCanvas(new Point((int)Math.Round(position.X), (int)Math.Round(position.Y)));
+			node.Left = canvasPoint.X;
+			node.Top = canvasPoint.Y;
+			Nodes.Add(node);
+			e.Handled = true;
+		}
+	}
+
+	private STNodeMouseEventArgs CreateMouseEventArgs(WpfMouseEventArgs e)
+	{
+		WpfPoint position = e.GetPosition(this);
+		STMouseButtons buttons;
+		int clicks = 0;
+		if (e is WpfMouseButtonEventArgs buttonEvent)
+		{
+			buttons = buttonEvent.ChangedButton switch
 			{
-				STNode sTNode = (STNode)Activator.CreateInstance(type);
-				sTNode.Create();
-				Point p = new Point(drgevent.X, drgevent.Y);
-				p = PointToClient(p);
-				p = ControlToCanvas(p);
-				sTNode.Left = p.X;
-				sTNode.Top = p.Y;
-				Nodes.Add(sTNode);
+				MouseButton.Left => STMouseButtons.Left,
+				MouseButton.Right => STMouseButtons.Right,
+				MouseButton.Middle => STMouseButtons.Middle,
+				MouseButton.XButton1 => STMouseButtons.XButton1,
+				MouseButton.XButton2 => STMouseButtons.XButton2,
+				_ => STMouseButtons.None
+			};
+			clicks = buttonEvent.ClickCount;
+		}
+		else
+		{
+			buttons = STMouseButtons.None;
+			if (e.LeftButton == MouseButtonState.Pressed)
+			{
+				buttons |= STMouseButtons.Left;
+			}
+			if (e.RightButton == MouseButtonState.Pressed)
+			{
+				buttons |= STMouseButtons.Right;
+			}
+			if (e.MiddleButton == MouseButtonState.Pressed)
+			{
+				buttons |= STMouseButtons.Middle;
+			}
+			if (e.XButton1 == MouseButtonState.Pressed)
+			{
+				buttons |= STMouseButtons.XButton1;
+			}
+			if (e.XButton2 == MouseButtonState.Pressed)
+			{
+				buttons |= STMouseButtons.XButton2;
 			}
 		}
+		int delta = e is WpfMouseWheelEventArgs wheelEvent ? wheelEvent.Delta : 0;
+		return new STNodeMouseEventArgs(
+			buttons,
+			clicks,
+			(int)Math.Round(position.X),
+			(int)Math.Round(position.Y),
+			delta);
 	}
 
 	protected virtual void OnDrawGrid(DrawingTools dt, int nWidth, int nHeight)
@@ -1222,9 +1693,12 @@ public class STNodeEditor : Control
 		{
 			graphics.DrawLine((num2++ % 5 == 0) ? pen : pen2, 0f, num4, nWidth, num4);
 		}
-		pen2.Color = Color.FromArgb((_Nodes.Count == 0) ? 255 : 120, _GridColor);
-		graphics.DrawLine(pen2, _CanvasOffsetX, 0f, _CanvasOffsetX, nHeight);
-		graphics.DrawLine(pen2, 0f, _CanvasOffsetY, nWidth, _CanvasOffsetY);
+		if (_HighlightGridOrigin)
+		{
+			pen2.Color = Color.FromArgb((_Nodes.Count == 0) ? 255 : 120, _GridColor);
+			graphics.DrawLine(pen2, _CanvasOffsetX, 0f, _CanvasOffsetX, nHeight);
+			graphics.DrawLine(pen2, 0f, _CanvasOffsetY, nWidth, _CanvasOffsetY);
+		}
 	}
 
 	protected virtual void OnDrawNode(DrawingTools dt, Rectangle rect)
@@ -1246,18 +1720,84 @@ public class STNodeEditor : Control
 			{
 				node.OnDrawMark(dt);
 			}
+			if (_ShowBorder)
+			{
+				OnDrawNodeSelection(dt, node);
+			}
 		}
 	}
 
 	protected virtual void OnDrawNodeBorder(DrawingTools dt, STNode node)
 	{
-		Image image = null;
-		image = ((_ActiveNode == node) ? m_img_border_active : (node.IsSelected ? m_img_border_selected : ((_HoverNode != node) ? m_img_border : m_img_border_hover)));
+		bool isActive = _ActiveNode == node;
+		bool isSelected = node.IsSelected;
+		bool isHovered = _HoverNode == node;
+		if (!_ShowNodeShadow)
+		{
+			if (!isHovered || isActive || isSelected)
+			{
+				return;
+			}
+			DrawNodeOutline(dt.Graphics, node.Rectangle, _BorderHoverColor, 1f, inset: true);
+			return;
+		}
+
+		Image image = isActive ? m_img_border_active : (isSelected ? m_img_border_selected : (isHovered ? m_img_border_hover : m_img_border));
 		RenderBorder(dt.Graphics, node.Rectangle, image);
 		if (!string.IsNullOrEmpty(node.Mark))
 		{
 			RenderBorder(dt.Graphics, node.MarkRectangle, image);
 		}
+	}
+
+	protected virtual void OnDrawNodeSelection(DrawingTools dt, STNode node)
+	{
+		bool isActive = _ActiveNode == node;
+		if (!isActive && !node.IsSelected)
+		{
+			return;
+		}
+
+		float canvasScale = Math.Max(_CanvasScale, 0.2f);
+		Color outlineColor = isActive ? _BorderActiveColor : _BorderSelectedColor;
+		float outlineWidth = (isActive ? 2f : 1.5f) / canvasScale;
+		DrawNodeOutline(dt.Graphics, node.Rectangle, outlineColor, outlineWidth, inset: true);
+	}
+
+	private void DrawNodeOutline(Graphics graphics, Rectangle rectangle, Color color, float width, bool inset)
+	{
+		GraphicsState graphicsState = graphics.Save();
+		graphics.SmoothingMode = SmoothingMode.AntiAlias;
+		float pathInset = inset ? width / 2f : 0f;
+		RectangleF outlineRectangle = new RectangleF(
+			rectangle.Left + pathInset,
+			rectangle.Top + pathInset,
+			Math.Max(0f, rectangle.Width - pathInset * 2f),
+			Math.Max(0f, rectangle.Height - pathInset * 2f));
+		using GraphicsPath outlinePath = CreateRoundedRectanglePath(outlineRectangle, _NodeCornerRadius);
+		using Pen outlinePen = new Pen(color, width);
+		graphics.DrawPath(outlinePen, outlinePath);
+		graphics.Restore(graphicsState);
+	}
+
+	private static GraphicsPath CreateRoundedRectanglePath(RectangleF rectangle, float radius)
+	{
+		GraphicsPath path = new GraphicsPath();
+		float maxRadius = Math.Min(rectangle.Width, rectangle.Height) / 2f;
+		radius = Math.Min(radius, maxRadius);
+		if (radius <= 0f)
+		{
+			path.AddRectangle(rectangle);
+			return path;
+		}
+
+		float diameter = radius * 2f;
+		path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
+		path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
+		path.CloseFigure();
+		return path;
 	}
 
 	protected virtual void OnDrawConnectedLine(DrawingTools dt)
@@ -1288,11 +1828,15 @@ public class STNodeEditor : Control
 				}
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
-					DrawBezier(graphics, m_p_line_hover, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
-					DrawBezier(graphics, m_p_line, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+					float x1 = outputOption.DotLeft + outputOption.DotSize;
+					float y1 = outputOption.DotTop + outputOption.DotSize / 2;
+					float x2 = item.DotLeft - 1;
+					float y2 = item.DotTop + item.DotSize / 2;
+					DrawBezier(graphics, m_p_line_hover, x1, y1, x2, y2, _Curvature);
+					DrawBezier(graphics, m_p_line, x1, y1, x2, y2, _Curvature);
 					if (m_is_buildpath)
 					{
-						GraphicsPath key = CreateBezierPath(outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+						GraphicsPath key = CreateBezierPath(x1, y1, x2, y2, _Curvature);
 						m_dic_gp_info.Add(key, new ConnectionInfo
 						{
 							Output = outputOption,
@@ -1319,13 +1863,13 @@ public class STNodeEditor : Control
 		Graphics graphics = dt.Graphics;
 		SizeF sizeF = graphics.MeasureString(m_find.Mark, Font);
 		Rectangle rectangle = new Rectangle(m_pt_in_control.X + 15, m_pt_in_control.Y + 10, (int)sizeF.Width + 6, 4 + (Font.Height + 4) * m_find.MarkLines.Length);
-		if (rectangle.Right > base.Width)
+		if (rectangle.Right > ClientSize.Width)
 		{
-			rectangle.X = base.Width - rectangle.Width;
+			rectangle.X = ClientSize.Width - rectangle.Width;
 		}
-		if (rectangle.Bottom > base.Height)
+		if (rectangle.Bottom > ClientSize.Height)
 		{
-			rectangle.Y = base.Height - rectangle.Height;
+			rectangle.Y = ClientSize.Height - rectangle.Height;
 		}
 		if (rectangle.X < 0)
 		{
@@ -1362,6 +1906,7 @@ public class STNodeEditor : Control
 			return;
 		}
 		Graphics graphics = dt.Graphics;
+		GraphicsState state = graphics.Save();
 		Pen pen = m_drawing_tools.Pen;
 		SolidBrush solidBrush = dt.SolidBrush;
 		pen.Color = _MagnetColor;
@@ -1375,11 +1920,11 @@ public class STNodeEditor : Control
 		int bottom = _ActiveNode.Bottom;
 		if (mi.XMatched)
 		{
-			graphics.DrawLine(pen, CanvasToControl(mi.X, isX: true), 0f, CanvasToControl(mi.X, isX: true), base.Height);
+			graphics.DrawLine(pen, CanvasToControl(mi.X, isX: true), 0f, CanvasToControl(mi.X, isX: true), ClientSize.Height);
 		}
 		if (mi.YMatched)
 		{
-			graphics.DrawLine(pen, 0f, CanvasToControl(mi.Y, isX: false), base.Width, CanvasToControl(mi.Y, isX: false));
+			graphics.DrawLine(pen, 0f, CanvasToControl(mi.Y, isX: false), ClientSize.Width, CanvasToControl(mi.Y, isX: false));
 		}
 		graphics.TranslateTransform(_CanvasOffsetX, _CanvasOffsetY);
 		graphics.ScaleTransform(_CanvasScale, _CanvasScale);
@@ -1403,7 +1948,7 @@ public class STNodeEditor : Control
 				}
 			}
 		}
-		graphics.ResetTransform();
+		graphics.Restore(state);
 	}
 
 	protected virtual void OnDrawSelectedRectangle(DrawingTools dt, RectangleF rectf)
@@ -1477,7 +2022,7 @@ public class STNodeEditor : Control
 	{
 		const int size = 28;
 		const int margin = 8;
-		m_rect_canvas_drag_lock = new Rectangle(base.Width - size - margin, margin, size, size);
+		m_rect_canvas_drag_lock = new Rectangle(ClientSize.Width - size - margin, margin, size, size);
 
 		Graphics graphics = dt.Graphics;
 		Color backColor = EnableBlankLeftDragCanvas
@@ -1492,7 +2037,7 @@ public class STNodeEditor : Control
 		graphics.FillRectangle(backgroundBrush, m_rect_canvas_drag_lock);
 		graphics.DrawRectangle(borderPen, m_rect_canvas_drag_lock);
 
-		using Font iconFont = new Font("Segoe MDL2 Assets", 13f, FontStyle.Regular, GraphicsUnit.Point);
+		using Font iconFont = new Font("Segoe MDL2 Assets", 13f, System.Drawing.FontStyle.Regular, GraphicsUnit.Point);
 		using SolidBrush iconBrush = new SolidBrush(Color.White);
 		using StringFormat iconFormat = new StringFormat
 		{
@@ -1506,26 +2051,26 @@ public class STNodeEditor : Control
 	{
 		SizeF sizeF = g.MeasureString(m_str_alert, Font);
 		Size size = new Size((int)Math.Round(sizeF.Width + 10f), (int)Math.Round(sizeF.Height + 4f));
-		Rectangle result = new Rectangle(4, base.Height - size.Height - 4, size.Width, size.Height);
+		Rectangle result = new Rectangle(4, ClientSize.Height - size.Height - 4, size.Width, size.Height);
 		switch (al)
 		{
 		case AlertLocation.Left:
-			result.Y = base.Height - size.Height >> 1;
+			result.Y = ClientSize.Height - size.Height >> 1;
 			break;
 		case AlertLocation.Top:
 			result.Y = 4;
-			result.X = base.Width - size.Width >> 1;
+			result.X = ClientSize.Width - size.Width >> 1;
 			break;
 		case AlertLocation.Right:
-			result.X = base.Width - size.Width - 4;
-			result.Y = base.Height - size.Height >> 1;
+			result.X = ClientSize.Width - size.Width - 4;
+			result.Y = ClientSize.Height - size.Height >> 1;
 			break;
 		case AlertLocation.Bottom:
-			result.X = base.Width - size.Width >> 1;
+			result.X = ClientSize.Width - size.Width >> 1;
 			break;
 		case AlertLocation.Center:
-			result.X = base.Width - size.Width >> 1;
-			result.Y = base.Height - size.Height >> 1;
+			result.X = ClientSize.Width - size.Width >> 1;
+			result.Y = ClientSize.Height - size.Height >> 1;
 			break;
 		case AlertLocation.LeftTop:
 		{
@@ -1535,10 +2080,10 @@ public class STNodeEditor : Control
 		}
 		case AlertLocation.RightTop:
 			result.Y = 4;
-			result.X = base.Width - size.Width - 4;
+			result.X = ClientSize.Width - size.Width - 4;
 			break;
 		case AlertLocation.RightBottom:
-			result.X = base.Width - size.Width - 4;
+			result.X = ClientSize.Width - size.Width - 4;
 			break;
 		}
 		return result;
@@ -1571,6 +2116,7 @@ public class STNodeEditor : Control
 		{
 			m_hs_node_selected.Add(node);
 		}
+		UpdateCanvasDragModeFromSelection();
 	}
 
 	internal void InternalRemoveSelectedNode(STNode node)
@@ -1580,106 +2126,7 @@ public class STNodeEditor : Control
 		{
 			m_hs_node_selected.Remove(node);
 		}
-	}
-
-	private void MoveCanvasThread()
-	{
-		while (true)
-		{
-			bool flag = false;
-			if (m_real_canvas_x != _CanvasOffsetX)
-			{
-				float num = m_real_canvas_x - _CanvasOffsetX;
-				float num2 = Math.Abs(num) / 10f;
-				float num3 = Math.Abs(num);
-				if (num3 <= 4f)
-				{
-					num2 = 1f;
-				}
-				else if (num3 <= 12f)
-				{
-					num2 = 2f;
-				}
-				else if (num3 <= 30f)
-				{
-					num2 = 3f;
-				}
-				if (num3 < 1f)
-				{
-					_CanvasOffsetX = m_real_canvas_x;
-				}
-				else
-				{
-					_CanvasOffsetX += ((num > 0f) ? num2 : (0f - num2));
-				}
-				flag = true;
-			}
-			if (m_real_canvas_y != _CanvasOffsetY)
-			{
-				float num4 = m_real_canvas_y - _CanvasOffsetY;
-				float num5 = Math.Abs(num4) / 10f;
-				float num6 = Math.Abs(num4);
-				if (num6 <= 4f)
-				{
-					num5 = 1f;
-				}
-				else if (num6 <= 12f)
-				{
-					num5 = 2f;
-				}
-				else if (num6 <= 30f)
-				{
-					num5 = 3f;
-				}
-				if (num6 < 1f)
-				{
-					_CanvasOffsetY = m_real_canvas_y;
-				}
-				else
-				{
-					_CanvasOffsetY += ((num4 > 0f) ? num5 : (0f - num5));
-				}
-				flag = true;
-			}
-			if (flag)
-			{
-				m_pt_canvas_old.X = _CanvasOffsetX;
-				m_pt_canvas_old.Y = _CanvasOffsetY;
-				Invalidate();
-				Thread.Sleep(30);
-			}
-			else
-			{
-				Thread.Sleep(100);
-			}
-		}
-	}
-
-	private void ShowAlertThread()
-	{
-		while (true)
-		{
-			int num = m_time_alert - (int)DateTime.Now.Subtract(m_dt_alert).TotalMilliseconds;
-			if (num > 0)
-			{
-				Thread.Sleep(num);
-			}
-			else if (num < -1000)
-			{
-				if (m_alpha_alert != 0)
-				{
-					m_alpha_alert = 0;
-					Invalidate();
-				}
-				Thread.Sleep(100);
-			}
-			else
-			{
-				m_alpha_alert = (int)(255f - (float)(-num) / 1000f * 255f);
-				Invalidate(m_rect_alert);
-				Thread.Sleep(50);
-			}
-		}
+		UpdateCanvasDragModeFromSelection();
 	}
 
 	private Image CreateBorderImage(Color clr)
@@ -1731,6 +2178,7 @@ public class STNodeEditor : Control
 		}
 		m_ca = CanvasAction.ConnectOption;
 		m_option_down = op;
+		BeginPointerEdit("连接节点");
 	}
 
 	public void AlignTop()
@@ -1739,6 +2187,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("顶部对齐");
 		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
@@ -1758,6 +2207,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("左对齐");
 		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
@@ -1777,6 +2227,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("垂直居中");
 		STNode sTNode = m_hs_node_selected.First();
 		int num = sTNode.Left + sTNode.Width / 2;
 		lock (m_hs_node_selected)
@@ -1797,6 +2248,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("水平居中");
 		STNode sTNode = m_hs_node_selected.First();
 		int num = sTNode.Top + sTNode.Height / 2;
 		lock (m_hs_node_selected)
@@ -1817,6 +2269,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("水平等距");
 		List<STNode> source = m_hs_node_selected.ToList();
 		int num = source.Sum((STNode x) => x.Width);
 		List<STNode> list = source.OrderBy((STNode p) => p.Left).ToList();
@@ -1843,6 +2296,7 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
+		using STNodeEditTransaction transaction = BeginEditTransaction("垂直等距");
 		List<STNode> source = m_hs_node_selected.ToList();
 		int num = source.Sum((STNode x) => x.Height);
 		List<STNode> list = source.OrderBy((STNode p) => p.Top).ToList();
@@ -1900,7 +2354,7 @@ public class STNodeEditor : Control
 	{
 		if (_Nodes.Count == 0)
 		{
-			_CanvasValidBounds = ControlToCanvas(DisplayRectangle);
+			_CanvasValidBounds = ControlToCanvas(ClientRectangle);
 			return;
 		}
 		int num = int.MaxValue;
@@ -2030,19 +2484,26 @@ public class STNodeEditor : Control
 
 	private void DrawBezier(Graphics g, Pen p, float x1, float y1, float x2, float y2, float f)
 	{
-		float num = Math.Abs(x1 - x2) * f;
-		if (_Curvature != 0f && num < 30f)
-		{
-			num = 30f;
-		}
-		g.DrawBezier(p, x1, y1, x1 + num, y1, x2 - num, y2, x2, y2);
+		using GraphicsPath connectionPath = CreateBezierPath(x1, y1, x2, y2, f);
+		g.DrawPath(p, connectionPath);
 	}
 
-	private GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
+	protected internal static GraphicsPath CreateBezierPath(float x1, float y1, float x2, float y2, float f)
 	{
 		GraphicsPath graphicsPath = new GraphicsPath();
+		if (x2 < x1 && Math.Abs(y2 - y1) < 60f)
+		{
+			float routeY = Math.Max(y1, y2) + 70f;
+			float startGutterX = x1 + 30f;
+			float endGutterX = x2 - 30f;
+			float midpointX = (x1 + x2) / 2f;
+			graphicsPath.AddBezier(x1, y1, startGutterX, y1, startGutterX, routeY, midpointX, routeY);
+			graphicsPath.AddBezier(midpointX, routeY, endGutterX, routeY, endGutterX, y2, x2, y2);
+			return graphicsPath;
+		}
+
 		float num = Math.Abs(x1 - x2) * f;
-		if (_Curvature != 0f && num < 30f)
+		if (f != 0f && num < 30f)
 		{
 			num = 30f;
 		}
@@ -2060,6 +2521,102 @@ public class STNodeEditor : Control
 		g.DrawImage(img, new Rectangle(rect.X, rect.Y - 5, rect.Width, 5), new Rectangle(5, 0, img.Width - 10, 5), GraphicsUnit.Pixel);
 		g.DrawImage(img, new Rectangle(rect.Right, rect.Y, 5, rect.Height), new Rectangle(img.Width - 5, 5, 5, img.Height - 10), GraphicsUnit.Pixel);
 		g.DrawImage(img, new Rectangle(rect.X, rect.Bottom, rect.Width, 5), new Rectangle(5, img.Height - 5, img.Width - 10, 5), GraphicsUnit.Pixel);
+	}
+
+	public void Invalidate()
+	{
+		if (m_disposed || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+		{
+			return;
+		}
+		if (Dispatcher.CheckAccess())
+		{
+			InvalidateVisual();
+			return;
+		}
+		_ = Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(InvalidateVisual));
+	}
+
+	public void Invalidate(Rectangle rectangle)
+	{
+		Invalidate();
+	}
+
+	public Graphics CreateGraphics()
+	{
+		if (m_disposed)
+		{
+			throw new ObjectDisposedException(nameof(STNodeEditor));
+		}
+		return Graphics.FromImage(m_measurement_bitmap);
+	}
+
+	public IAsyncResult BeginInvoke(Delegate method)
+	{
+		return BeginInvoke(method, null);
+	}
+
+	public IAsyncResult BeginInvoke(Delegate method, params object[] args)
+	{
+		if (method == null || m_disposed)
+		{
+			return null;
+		}
+		DispatcherOperation operation = Dispatcher.BeginInvoke(
+			DispatcherPriority.Normal,
+			new Action(() => method.DynamicInvoke(args ?? Array.Empty<object>())));
+		return operation.Task;
+	}
+
+	public object Invoke(Delegate method)
+	{
+		return Invoke(method, null);
+	}
+
+	public object Invoke(Delegate method, params object[] args)
+	{
+		if (method == null || m_disposed)
+		{
+			return null;
+		}
+		if (Dispatcher.CheckAccess())
+		{
+			return method.DynamicInvoke(args ?? Array.Empty<object>());
+		}
+		return Dispatcher.Invoke(() => method.DynamicInvoke(args ?? Array.Empty<object>()));
+	}
+
+	public Point PointToClient(Point point)
+	{
+		try
+		{
+			WpfPoint result = PointFromScreen(new WpfPoint(point.X, point.Y));
+			return new Point((int)Math.Round(result.X), (int)Math.Round(result.Y));
+		}
+		catch (InvalidOperationException)
+		{
+			return point;
+		}
+	}
+
+	public Point PointToScreen(Point point)
+	{
+		try
+		{
+			WpfPoint result = base.PointToScreen(new WpfPoint(point.X, point.Y));
+			return new Point((int)Math.Round(result.X), (int)Math.Round(result.Y));
+		}
+		catch (InvalidOperationException)
+		{
+			return point;
+		}
+	}
+
+	public Rectangle RectangleToScreen(Rectangle rectangle)
+	{
+		Point topLeft = PointToScreen(rectangle.Location);
+		Point bottomRight = PointToScreen(new Point(rectangle.Right, rectangle.Bottom));
+		return Rectangle.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
 	}
 
 	public NodeFindInfo FindNodeFromPoint(PointF pt)
@@ -2202,17 +2759,17 @@ public class STNodeEditor : Control
 			{
 				x = -num3;
 			}
-			if ((float)(base.Width - num) < x)
+			if ((float)(ClientSize.Width - num) < x)
 			{
-				x = base.Width - num;
+				x = ClientSize.Width - num;
 			}
 			if ((float)num4 + y < 0f)
 			{
 				y = -num4;
 			}
-			if ((float)(base.Height - num2) < y)
+			if ((float)(ClientSize.Height - num2) < y)
 			{
-				y = base.Height - num2;
+				y = ClientSize.Height - num2;
 			}
 		}
 		if (bAnimation)
@@ -2263,15 +2820,15 @@ public class STNodeEditor : Control
 
 	public void FitCanvasToNodes(float maximumScale = 1f)
 	{
-		if (_Nodes.Count == 0 || base.ClientSize.Width <= 0 || base.ClientSize.Height <= 0 || _CanvasValidBounds.Width <= 0 || _CanvasValidBounds.Height <= 0)
+		if (_Nodes.Count == 0 || ClientSize.Width <= 0 || ClientSize.Height <= 0 || _CanvasValidBounds.Width <= 0 || _CanvasValidBounds.Height <= 0)
 		{
 			return;
 		}
-		float scaleX = (float)base.ClientSize.Width / _CanvasValidBounds.Width;
-		float scaleY = (float)base.ClientSize.Height / _CanvasValidBounds.Height;
+		float scaleX = (float)ClientSize.Width / _CanvasValidBounds.Width;
+		float scaleY = (float)ClientSize.Height / _CanvasValidBounds.Height;
 		float scale = Math.Min(Math.Min(scaleX, scaleY), maximumScale);
-		float centerX = base.ClientSize.Width / 2f;
-		float centerY = base.ClientSize.Height / 2f;
+		float centerX = ClientSize.Width / 2f;
+		float centerY = ClientSize.Height / 2f;
 		ScaleCanvas(scale, centerX, centerY);
 		float contentCenterX = _CanvasValidBounds.Left + _CanvasValidBounds.Width / 2f;
 		float contentCenterY = _CanvasValidBounds.Top + _CanvasValidBounds.Height / 2f;
@@ -2280,7 +2837,31 @@ public class STNodeEditor : Control
 
 	public ConnectionInfo[] GetConnectionInfo()
 	{
-		return m_dic_gp_info.Values.ToArray();
+		return GetConnections();
+	}
+
+	public ConnectionInfo[] GetConnections()
+	{
+		List<ConnectionInfo> connections = new List<ConnectionInfo>();
+		foreach (STNode node in _Nodes)
+		{
+			foreach (STNodeOption output in node.GetAllOutputOptions())
+			{
+				foreach (STNodeOption input in output.ConnectedOption)
+				{
+					if (input != null && input.IsInput && input.Owner != null && input.Owner.Owner == this)
+					{
+						connections.Add(new ConnectionInfo { Output = output, Input = input });
+					}
+				}
+			}
+		}
+		return connections
+			.OrderBy(connection => _Nodes.IndexOf(connection.Output.Owner))
+			.ThenBy(connection => Array.IndexOf(connection.Output.Owner.GetAllOutputOptions(), connection.Output))
+			.ThenBy(connection => _Nodes.IndexOf(connection.Input.Owner))
+			.ThenBy(connection => Array.IndexOf(connection.Input.Owner.GetAllInputOptions(), connection.Input))
+			.ToArray();
 	}
 
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
@@ -2358,6 +2939,7 @@ public class STNodeEditor : Control
 	public void SaveCanvas(Stream s)
 	{
 		Dictionary<STNodeOption, long> dictionary = new Dictionary<STNodeOption, long>();
+		List<ConnectionInfo> connections = GetConnections().ToList();
 		s.Write(STNodeConstant.NodeFlag, 0, 4);
 		s.WriteByte(1);
 		using GZipStream gZipStream = new GZipStream(s, CompressionMode.Compress);
@@ -2372,14 +2954,14 @@ public class STNodeEditor : Control
 				byte[] saveData = node.GetSaveData();
 				gZipStream.Write(BitConverter.GetBytes(saveData.Length), 0, 4);
 				gZipStream.Write(saveData, 0, saveData.Length);
-				foreach (STNodeOption inputOption in node.InputOptions)
+				foreach (STNodeOption inputOption in node.GetAllInputOptions())
 				{
 					if (!dictionary.ContainsKey(inputOption))
 					{
 						dictionary.Add(inputOption, dictionary.Count);
 					}
 				}
-				foreach (STNodeOption outputOption in node.OutputOptions)
+				foreach (STNodeOption outputOption in node.GetAllOutputOptions())
 				{
 					if (!dictionary.ContainsKey(outputOption))
 					{
@@ -2392,8 +2974,8 @@ public class STNodeEditor : Control
 				throw new Exception("获取节点数据出错-" + node.Title, innerException);
 			}
 		}
-		gZipStream.Write(BitConverter.GetBytes(m_dic_gp_info.Count), 0, 4);
-		foreach (ConnectionInfo value in m_dic_gp_info.Values)
+		gZipStream.Write(BitConverter.GetBytes(connections.Count), 0, 4);
+		foreach (ConnectionInfo value in connections)
 		{
 			gZipStream.Write(BitConverter.GetBytes((dictionary[value.Output] << 32) | dictionary[value.Input]), 0, 8);
 		}
@@ -2464,6 +3046,14 @@ public class STNodeEditor : Control
 	}
 
 	public void LoadCanvas(Stream s)
+	{
+		using (SuspendHistoryRecording())
+		{
+			LoadCanvasCore(s);
+		}
+	}
+
+	private void LoadCanvasCore(Stream s)
 	{
 		int num = 0;
 		byte[] array = new byte[32];
@@ -2561,38 +3151,66 @@ public class STNodeEditor : Control
 		return true;
 	}
 
-	private STNode GetNodeFromData(byte[] byData)
+	internal STNode GetNodeFromData(byte[] byData)
 	{
-		int num = 0;
-		string text = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		string key = Encoding.UTF8.GetString(byData, num + 1, byData[num]);
-		num += byData[num] + 1;
-		int num2 = 0;
-		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
-		while (num < byData.Length)
+		if (byData == null)
 		{
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			string key2 = Encoding.UTF8.GetString(byData, num, num2);
-			num += num2;
-			num2 = BitConverter.ToInt32(byData, num);
-			num += 4;
-			byte[] array = new byte[num2];
-			Array.Copy(byData, num, array, 0, num2);
-			num += num2;
-			dictionary.Add(key2, array);
+			throw new ArgumentNullException(nameof(byData));
+		}
+		int offset = 0;
+		string modelKey = ReadNodeByteLengthString(byData, ref offset, "节点类型");
+		string typeKey = ReadNodeByteLengthString(byData, ref offset, "节点类型标识");
+		Dictionary<string, byte[]> dictionary = new Dictionary<string, byte[]>();
+		while (offset < byData.Length)
+		{
+			int keyLength = ReadNodeInt32(byData, ref offset, "属性名称长度");
+			string propertyName = Encoding.UTF8.GetString(ReadNodeBytes(byData, ref offset, keyLength, "属性名称"));
+			int valueLength = ReadNodeInt32(byData, ref offset, "属性值长度");
+			byte[] propertyValue = ReadNodeBytes(byData, ref offset, valueLength, "属性值");
+			if (dictionary.ContainsKey(propertyName))
+			{
+				throw new InvalidDataException($"节点数据包含重复属性：{propertyName}");
+			}
+			dictionary.Add(propertyName, propertyValue);
 		}
 		Type type = null;
-		STNodeTypeRegistry.TryGetNodeType(key, text, out type);
+		STNodeTypeRegistry.TryGetNodeType(typeKey, modelKey, out type);
 		if (type == null)
 		{
-			throw new TypeLoadException("无法找到类型 {" + text.Split('|')[1] + "} 所在程序集 确保程序集 {" + text.Split('|')[0] + "} 已被编辑器正确加载 可通过调用LoadAssembly()加载程序集");
+			throw new TypeLoadException($"无法找到节点类型 {{{modelKey}}}，请确认对应程序集已由编辑器加载");
 		}
 		STNode sTNode = (STNode)Activator.CreateInstance(type);
 		sTNode.Create();
 		sTNode.OnLoadNode(dictionary);
 		return sTNode;
+	}
+
+	private static string ReadNodeByteLengthString(byte[] data, ref int offset, string valueName)
+	{
+		if (offset >= data.Length)
+		{
+			throw new InvalidDataException($"{valueName}缺失");
+		}
+		int length = data[offset++];
+		return Encoding.UTF8.GetString(ReadNodeBytes(data, ref offset, length, valueName));
+	}
+
+	private static int ReadNodeInt32(byte[] data, ref int offset, string valueName)
+	{
+		byte[] value = ReadNodeBytes(data, ref offset, sizeof(int), valueName);
+		return BitConverter.ToInt32(value, 0);
+	}
+
+	private static byte[] ReadNodeBytes(byte[] data, ref int offset, int length, string valueName)
+	{
+		if (length < 0 || offset < 0 || offset > data.Length - length)
+		{
+			throw new InvalidDataException($"{valueName}长度无效：{length}");
+		}
+		byte[] value = new byte[length];
+		Buffer.BlockCopy(data, offset, value, 0, length);
+		offset += length;
+		return value;
 	}
 
 	public void ShowAlert(string strText, Color foreColor, Color backColor)
@@ -2656,10 +3274,13 @@ public class STNodeEditor : Control
 		}
 		bool flag = !node.IsSelected;
 		node.IsSelected = true;
+		bool changed;
 		lock (m_hs_node_selected)
 		{
-			return m_hs_node_selected.Add(node) || flag;
+			changed = m_hs_node_selected.Add(node) || flag;
 		}
+		UpdateCanvasDragModeFromSelection();
+		return changed;
 	}
 
 	public bool RemoveSelectedNode(STNode node)
@@ -2670,10 +3291,13 @@ public class STNodeEditor : Control
 		}
 		bool isSelected = node.IsSelected;
 		node.IsSelected = false;
+		bool changed;
 		lock (m_hs_node_selected)
 		{
-			return m_hs_node_selected.Remove(node) || isSelected;
+			changed = m_hs_node_selected.Remove(node) || isSelected;
 		}
+		UpdateCanvasDragModeFromSelection();
+		return changed;
 	}
 
 	public Color SetTypeColor(Type t, Color clr)
@@ -2695,5 +3319,38 @@ public class STNodeEditor : Control
 			_TypeColor.Add(t, clr);
 		}
 		return _TypeColor[t];
+	}
+
+	public void Dispose()
+	{
+		if (m_disposed)
+		{
+			return;
+		}
+		m_disposed = true;
+		DisposeEditing();
+		m_animation_timer.Stop();
+		m_animation_timer.Tick -= AnimationTimer_Tick;
+		ReleaseMouseCapture();
+		foreach (GraphicsPath path in m_dic_gp_info.Keys)
+		{
+			path.Dispose();
+		}
+		m_dic_gp_info.Clear();
+		m_gp_hover = null;
+		m_p_line?.Dispose();
+		m_p_line_hover?.Dispose();
+		m_sf?.Dispose();
+		m_img_border?.Dispose();
+		m_img_border_hover?.Dispose();
+		m_img_border_selected?.Dispose();
+		m_img_border_active?.Dispose();
+		m_drawing_tools.Pen?.Dispose();
+		m_drawing_tools.SolidBrush?.Dispose();
+		m_render_graphics?.Dispose();
+		m_render_bitmap?.Dispose();
+		m_measurement_bitmap.Dispose();
+		_Font?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

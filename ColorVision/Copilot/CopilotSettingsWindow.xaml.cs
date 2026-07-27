@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
         Models,
         Agent,
         Mcp,
+        BackendSync,
     }
 
     public partial class CopilotSettingsWindow : Window

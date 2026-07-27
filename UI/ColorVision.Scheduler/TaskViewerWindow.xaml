@@ -25,10 +25,8 @@
                 <Button Content="{x:Static properties:Resources.Sched_ExportReport}" Click="ExportReport_Click" Margin="5" ToolTip="{x:Static properties:Resources.Sched_ExportReportTooltip}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <Button  Content="{x:Static properties:Resources.Start}" Command="{Binding StartCommand}"  Margin="5"/>
                 <Button  Content="{x:Static properties:Resources.PauseAll}" Command="{Binding PauseAllCommand}"  Margin="5"/>
                 <Button  Content="{x:Static properties:Resources.ResumeAll}" Command="{Binding ResumeAllCommand}"  Margin="5"/>
-                <Button  Content="{x:Static properties:Resources.Shutdown}" Command="{Binding ShutdownCommand}"  Margin="5"/>
             </StackPanel>
         </DockPanel>
 
@@ -118,5 +116,20 @@
                 </GridView>
             </ListView.View>
         </ListView>
+        <StackPanel Grid.Row="2" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=ListViewTask, Path=HasItems}" Value="False">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasks}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            <TextBlock Text="{x:Static properties:Resources.Sched_EmptyTasksHint}" Foreground="Gray" Margin="0,8,0,12" HorizontalAlignment="Center"/>
+            <Button Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Padding="14,6" HorizontalAlignment="Center"/>
+        </StackPanel>
     </Grid>
 </Window>

@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>Локальная загрузка</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Загрузка облака Baidu</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>Та же версия программного обеспечения</value>
@@ -556,16 +551,10 @@
     <value>If you need me to be quiet, right-click to turn off notifications.</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>If you have a local Live2D model, you can connect it in settings.</value>
+    <value>В настройках можно создать питомца из спрайт-листа PNG или WebP.</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision has started, I'll be here to remind you.</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>Model loading failed, switched to built-in appearance.</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>Model loading failed: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>Настройки рабочего питомца</value>
@@ -605,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>Прозрачность питомца</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Включить рендеринг Live2D</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Путь к модели Live2D или HTML</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Включить рабочего питомца</value>
@@ -918,4 +892,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>Создать снимок программы перед обновлением</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>Рекомендуемые программы</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Рекомендуется установить Everything и WinRAR. Отсутствующие программы выбраны по умолчанию. Кнопка «Далее» или «Установить выбранное» запускает установщики по очереди. Снимите флажок, чтобы пропустить программу без блокировки ColorVision.</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>Быстрый поиск файлов и папок на этом компьютере.</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>Открытие, распаковка и создание распространённых архивов.</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>Установка...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>Установить выбранное</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>Проверить снова</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>Подтвердить выбор</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>Установщик {0} не найден: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>Не удалось запустить установщик {0}: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} не установлена. Повторите попытку или снимите флажок, чтобы продолжить.</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>Установлено</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>Нет установщика</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>Будет установлено</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>Пропущено</value></data>
 </root>

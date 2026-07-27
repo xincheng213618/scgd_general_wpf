@@ -13,7 +13,8 @@ namespace ColorVision.Copilot
     {
         public const string ConfigAESKey = "ColorVision";
         public const string ConfigAESVector = "CopilotConfig";
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 6;
+        public const string DefaultBackendSyncUrl = "http://xc213618.ddns.me:9998";
 
         public static CopilotConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CopilotConfig>();
 
@@ -24,6 +25,22 @@ namespace ColorVision.Copilot
         public ObservableCollection<string> DisabledPluginSubagentRoles { get; set; } = new();
 
         public CopilotAgentDefaultsConfig AgentDefaults { get; set; } = new();
+
+        [Browsable(false)]
+        public string BackendSyncUrl
+        {
+            get => _backendSyncUrl;
+            set => SetProperty(ref _backendSyncUrl, value?.Trim() ?? string.Empty);
+        }
+        private string _backendSyncUrl = DefaultBackendSyncUrl;
+
+        [Browsable(false)]
+        public bool AllowInsecureBackendSync
+        {
+            get => _allowInsecureBackendSync;
+            set => SetProperty(ref _allowInsecureBackendSync, value);
+        }
+        private bool _allowInsecureBackendSync = true;
 
         [Browsable(false)]
         public int SchemaVersion { get; set; }
@@ -117,6 +134,20 @@ namespace ColorVision.Copilot
             if (Profiles.Count == 0)
             {
                 Profiles.Add(CopilotProfileConfig.CreateDefault());
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(BackendSyncUrl))
+            {
+                BackendSyncUrl = DefaultBackendSyncUrl;
+                changed = true;
+            }
+
+            if (SchemaVersion < 5
+                && string.Equals(BackendSyncUrl.TrimEnd('/'), DefaultBackendSyncUrl, StringComparison.OrdinalIgnoreCase)
+                && !AllowInsecureBackendSync)
+            {
+                AllowInsecureBackendSync = true;
                 changed = true;
             }
 

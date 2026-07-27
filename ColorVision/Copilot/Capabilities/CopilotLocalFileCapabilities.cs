@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,6 +14,47 @@ namespace ColorVision.Copilot
     public static class CopilotReadLocalFileCapability
     {
         private const int DefaultMaxFilesPerRequest = 3;
+        internal const int MaximumTaskFocusedReadCharactersPerFile = 3_000;
+        private const long MaximumTaskFocusScanBytes = 8L * 1024 * 1024;
+        private const int MaximumTaskFocusTerms = 24;
+        private const int TaskFocusClusterRadiusLines = 40;
+        private static readonly Regex TaskEnglishTermRegex = new(
+            @"(?<term>[A-Za-z_][A-Za-z0-9_]{2,80})",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex TaskIdentifierPartRegex = new(
+            @"[A-Z]+(?=[A-Z][a-z]|\b)|[A-Z]?[a-z]+|[A-Z]+|\d+",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex TaskChinesePhraseRegex = new(
+            @"(?<term>[\u4e00-\u9fff]{2,20})",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly HashSet<string> TaskFocusStopWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "agent",
+            "code",
+            "copilot",
+            "current",
+            "exact",
+            "file",
+            "files",
+            "from",
+            "implementation",
+            "inspect",
+            "least",
+            "line",
+            "lines",
+            "local",
+            "only",
+            "please",
+            "read",
+            "related",
+            "return",
+            "source",
+            "that",
+            "this",
+            "use",
+            "with",
+            "workspace",
+        };
 
         public static Task<CopilotCapabilityResult> ReadAsync(
             IEnumerable<string> readableLocalFilePaths,
@@ -32,13 +74,98 @@ namespace ColorVision.Copilot
                 cancellationToken);
         }
 
-        public static async Task<CopilotCapabilityResult> ReadAsync(
+        public static Task<CopilotCapabilityResult> ReadAsync(
             IEnumerable<string> readableLocalFilePaths,
             string? selectedPath,
             bool preferBatchReadAll,
             int? startLine,
             int? startColumn,
             int? endLine,
+            CancellationToken cancellationToken)
+        {
+            return ReadCoreAsync(
+                readableLocalFilePaths,
+                selectedPath,
+                preferBatchReadAll,
+                startLine,
+                startColumn,
+                endLine,
+                CopilotLocalFileToolSupport.MaxReadCharacters,
+                taskFocusedRanges: null,
+                cancellationToken);
+        }
+
+        internal static Task<CopilotCapabilityResult> ReadAsync(
+            IEnumerable<string> readableLocalFilePaths,
+            string? selectedPath,
+            bool preferBatchReadAll,
+            int? startLine,
+            int? startColumn,
+            int? endLine,
+            int maximumReadCharacters,
+            CancellationToken cancellationToken)
+        {
+            return ReadCoreAsync(
+                readableLocalFilePaths,
+                selectedPath,
+                preferBatchReadAll,
+                startLine,
+                startColumn,
+                endLine,
+                maximumReadCharacters,
+                taskFocusedRanges: null,
+                cancellationToken);
+        }
+
+        internal static async Task<CopilotCapabilityResult> ReadTaskFocusedBatchAsync(
+            IEnumerable<string> readableLocalFilePaths,
+            string? taskText,
+            int maximumReadCharacters,
+            CancellationToken cancellationToken)
+        {
+            if (maximumReadCharacters is < CopilotLocalFileToolSupport.MinimumReadCharacters
+                or > CopilotLocalFileToolSupport.MaxReadCharacters)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maximumReadCharacters));
+            }
+
+            var paths = (readableLocalFilePaths ?? Array.Empty<string>())
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(NormalizePath)
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(DefaultMaxFilesPerRequest)
+                .ToArray();
+            var maximumWindowCharacters = Math.Min(
+                maximumReadCharacters,
+                MaximumTaskFocusedReadCharactersPerFile);
+            var ranges = await ResolveTaskFocusedRangesAsync(
+                paths,
+                taskText,
+                maximumWindowCharacters,
+                cancellationToken);
+
+            return await ReadCoreAsync(
+                paths,
+                selectedPath: null,
+                preferBatchReadAll: true,
+                startLine: null,
+                startColumn: null,
+                endLine: null,
+                maximumWindowCharacters,
+                ranges,
+                cancellationToken);
+        }
+
+        private static async Task<CopilotCapabilityResult> ReadCoreAsync(
+            IEnumerable<string> readableLocalFilePaths,
+            string? selectedPath,
+            bool preferBatchReadAll,
+            int? startLine,
+            int? startColumn,
+            int? endLine,
+            int maximumReadCharacters,
+            IReadOnlyDictionary<string, TaskFocusedReadRange>? taskFocusedRanges,
             CancellationToken cancellationToken)
         {
             var allowedPaths = (readableLocalFilePaths ?? Array.Empty<string>())
@@ -89,7 +216,9 @@ namespace ColorVision.Copilot
             var successCount = 0;
             var errors = new List<string>();
             var successfullyReadPaths = new List<string>();
+            var readScopes = new List<CopilotLocalFileReadScope>();
             CopilotLocalFileReadResult? lastSuccess = null;
+            var focusedRangeCount = 0;
 
             foreach (var path in paths)
             {
@@ -97,11 +226,15 @@ namespace ColorVision.Copilot
 
                 var useSelectedRange = !string.IsNullOrWhiteSpace(normalizedSelectedPath)
                     && string.Equals(path, normalizedSelectedPath, StringComparison.OrdinalIgnoreCase);
+                var taskFocusedRange = default(TaskFocusedReadRange);
+                var useTaskFocusedRange = !useSelectedRange
+                    && taskFocusedRanges?.TryGetValue(path, out taskFocusedRange) == true;
                 var result = await CopilotLocalFileToolSupport.ReadTextFileAsync(
                     path,
-                    useSelectedRange ? startLine : null,
+                    useSelectedRange ? startLine : useTaskFocusedRange ? taskFocusedRange.StartLine : null,
                     useSelectedRange ? startColumn : null,
-                    useSelectedRange ? endLine : null,
+                    useSelectedRange ? endLine : useTaskFocusedRange ? taskFocusedRange.EndLine : null,
+                    maximumReadCharacters,
                     cancellationToken);
                 builder.AppendLine($"[File] {result.FullPath}");
 
@@ -109,6 +242,12 @@ namespace ColorVision.Copilot
                 {
                     if (result.StartLine > 0)
                         builder.AppendLine($"[Lines] {result.StartLine}-{result.EndLine}");
+                    if (useTaskFocusedRange)
+                    {
+                        focusedRangeCount++;
+                        builder.AppendLine("[Selection] Task-focused evidence window; unrelated file text is intentionally omitted.");
+                        builder.AppendLine($"[Matched Task Terms] {string.Join(", ", taskFocusedRange.MatchedTerms)}");
+                    }
 
                     builder.AppendLine("[Read Scope]");
                     builder.AppendLine($"start_line: {result.StartLine}");
@@ -125,9 +264,20 @@ namespace ColorVision.Copilot
                     if (result.WasTruncated)
                         builder.AppendLine("Note: The file content was long and was truncated before sending to the model.");
 
-                    builder.AppendLine(result.Content);
+                    AppendLineNumberedContent(builder, result);
                     successCount++;
                     successfullyReadPaths.Add(result.FullPath);
+                    readScopes.Add(new CopilotLocalFileReadScope
+                    {
+                        Path = result.FullPath,
+                        StartLine = result.StartLine,
+                        StartColumn = result.StartColumn,
+                        EndLine = result.EndLine,
+                        EndColumn = result.EndColumn,
+                        WasTruncated = result.WasTruncated,
+                        ContinuationStartLine = result.ContinuationStartLine,
+                        ContinuationStartColumn = result.ContinuationStartColumn,
+                    });
                     lastSuccess = result;
                 }
                 else
@@ -143,27 +293,325 @@ namespace ColorVision.Copilot
             {
                 Success = successCount > 0,
                 Summary = successCount > 0
-                    ? BuildSuccessSummary(successCount, paths.Length, normalizedSelectedPath, lastSuccess)
+                    ? BuildSuccessSummary(
+                        successCount,
+                        paths.Length,
+                        normalizedSelectedPath,
+                        lastSuccess,
+                        readScopes.Count(scope => scope.WasTruncated),
+                        focusedRangeCount)
                     : $"Failed to read any local files from {paths.Length} paths.",
                 Content = builder.ToString().TrimEnd(),
                 ErrorMessage = errors.Count == 0 ? string.Empty : string.Join("; ", errors),
                 AttemptedLocalFilePaths = paths,
                 SuccessfullyReadLocalFilePaths = successfullyReadPaths,
+                LocalFileReadScopes = readScopes,
             };
         }
 
-        private static string BuildSuccessSummary(int successCount, int pathCount, string selectedPath, CopilotLocalFileReadResult? lastSuccess)
+        private static void AppendLineNumberedContent(StringBuilder builder, CopilotLocalFileReadResult result)
+        {
+            builder.AppendLine("[Content with authoritative one-based line numbers]");
+            if (string.IsNullOrEmpty(result.Content) || result.StartLine < 1)
+            {
+                builder.AppendLine("<empty>");
+                return;
+            }
+
+            using var reader = new StringReader(result.Content);
+            var lineNumber = result.StartLine;
+            var columnNumber = Math.Max(1, result.StartColumn);
+            while (reader.ReadLine() is { } line)
+            {
+                if (line.StartsWith("...<content truncated; kept the first ", StringComparison.Ordinal))
+                {
+                    builder.AppendLine(line);
+                    continue;
+                }
+
+                builder.Append('L').Append(lineNumber);
+                if (columnNumber > 1)
+                    builder.Append(":C").Append(columnNumber);
+                builder.Append(": ").AppendLine(line);
+                lineNumber++;
+                columnNumber = 1;
+            }
+        }
+
+        private static string BuildSuccessSummary(
+            int successCount,
+            int pathCount,
+            string selectedPath,
+            CopilotLocalFileReadResult? lastSuccess,
+            int truncatedCount,
+            int focusedRangeCount)
         {
             if (!string.IsNullOrWhiteSpace(selectedPath) && lastSuccess.HasValue)
             {
                 var result = lastSuccess.Value;
+                if (result.WasTruncated)
+                {
+                    return $"Read {Path.GetFileName(result.FullPath)} lines {result.StartLine}-{result.EndLine}; content is partial. "
+                        + $"Continue at line {result.ContinuationStartLine}, column {result.ContinuationStartColumn}.";
+                }
                 if (result.StartLine > 0)
                     return $"Read {Path.GetFileName(result.FullPath)} lines {result.StartLine}-{result.EndLine}.";
 
                 return $"Read {Path.GetFileName(result.FullPath)}.";
             }
 
-            return $"Read {successCount}/{pathCount} local files.";
+            if (focusedRangeCount > 0)
+            {
+                return truncatedCount > 0
+                    ? $"Read {successCount}/{pathCount} local files using {focusedRangeCount} task-focused evidence window(s); {truncatedCount} result(s) are partial."
+                    : $"Read {successCount}/{pathCount} local files using {focusedRangeCount} task-focused evidence window(s).";
+            }
+
+            return truncatedCount > 0
+                ? $"Read {successCount}/{pathCount} local files; {truncatedCount} result(s) are partial and include continuation cursors."
+                : $"Read {successCount}/{pathCount} local files.";
+        }
+
+        private static async Task<IReadOnlyDictionary<string, TaskFocusedReadRange>> ResolveTaskFocusedRangesAsync(
+            IReadOnlyList<string> paths,
+            string? taskText,
+            int maximumWindowCharacters,
+            CancellationToken cancellationToken)
+        {
+            var terms = ResolveTaskFocusTerms(taskText, paths);
+            var ranges = new Dictionary<string, TaskFocusedReadRange>(StringComparer.OrdinalIgnoreCase);
+            if (terms.Length == 0)
+                return ranges;
+
+            foreach (var path in paths)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var range = await SelectTaskFocusedRangeAsync(
+                    path,
+                    terms,
+                    maximumWindowCharacters,
+                    cancellationToken);
+                if (range.HasValue)
+                    ranges[path] = range.Value;
+            }
+
+            return ranges;
+        }
+
+        private static TaskFocusTerm[] ResolveTaskFocusTerms(
+            string? taskText,
+            IReadOnlyList<string> paths)
+        {
+            var source = taskText ?? string.Empty;
+            foreach (var path in paths)
+            {
+                source = source.Replace(path, " ", StringComparison.OrdinalIgnoreCase);
+                source = source.Replace(Path.GetFileName(path), " ", StringComparison.OrdinalIgnoreCase);
+            }
+
+            var weightedTerms = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (ContainsAny(source, "预算", "budget", "token"))
+            {
+                AddTaskFocusTerm(weightedTerms, "budget", 10);
+                AddTaskFocusTerm(weightedTerms, "token", 8);
+                AddTaskFocusTerm(weightedTerms, "reserve", 6);
+                AddTaskFocusTerm(weightedTerms, "consumed", 5);
+            }
+            if (ContainsAny(source, "证据", "evidence", "citation", "grounded"))
+            {
+                AddTaskFocusTerm(weightedTerms, "evidence", 10);
+                AddTaskFocusTerm(weightedTerms, "citation", 7);
+                AddTaskFocusTerm(weightedTerms, "observed", 6);
+                AddTaskFocusTerm(weightedTerms, "scope", 5);
+                AddTaskFocusTerm(weightedTerms, "successful", 4);
+            }
+            if (ContainsAny(source, "收束", "收敛", "finalization", "finalize", "convergence"))
+            {
+                AddTaskFocusTerm(weightedTerms, "finalization", 10);
+                AddTaskFocusTerm(weightedTerms, "finalize", 8);
+                AddTaskFocusTerm(weightedTerms, "convergence", 7);
+                AddTaskFocusTerm(weightedTerms, "completion", 5);
+                AddTaskFocusTerm(weightedTerms, "complete", 3);
+            }
+            if (ContainsAny(source, "子 Agent", "子Agent", "subagent", "delegate"))
+            {
+                AddTaskFocusTerm(weightedTerms, "subagent", 5);
+                AddTaskFocusTerm(weightedTerms, "delegate", 4);
+                AddTaskFocusTerm(weightedTerms, "child", 3);
+            }
+            if (ContainsAny(source, "截断", "truncation", "truncated", "continuation"))
+            {
+                AddTaskFocusTerm(weightedTerms, "truncat", 9);
+                AddTaskFocusTerm(weightedTerms, "continuation", 7);
+                AddTaskFocusTerm(weightedTerms, "cursor", 5);
+            }
+            if (ContainsAny(source, "上下文", "context", "compaction", "compact"))
+            {
+                AddTaskFocusTerm(weightedTerms, "context", 9);
+                AddTaskFocusTerm(weightedTerms, "compact", 6);
+                AddTaskFocusTerm(weightedTerms, "summary", 4);
+            }
+
+            foreach (Match match in TaskEnglishTermRegex.Matches(source))
+            {
+                var identifier = match.Groups["term"].Value;
+                AddTaskFocusTerm(weightedTerms, identifier, 3);
+                foreach (Match part in TaskIdentifierPartRegex.Matches(identifier))
+                    AddTaskFocusTerm(weightedTerms, part.Value, 3);
+            }
+
+            foreach (Match match in TaskChinesePhraseRegex.Matches(source))
+            {
+                var phrase = match.Groups["term"].Value;
+                AddTaskFocusTerm(weightedTerms, phrase, 3);
+                for (var index = 0; index < phrase.Length - 1; index++)
+                    AddTaskFocusTerm(weightedTerms, phrase.Substring(index, 2), 2);
+            }
+
+            return weightedTerms
+                .Select(pair => new TaskFocusTerm(pair.Key, pair.Value))
+                .OrderByDescending(term => term.Weight)
+                .ThenByDescending(term => term.Text.Length)
+                .Take(MaximumTaskFocusTerms)
+                .ToArray();
+        }
+
+        private static async Task<TaskFocusedReadRange?> SelectTaskFocusedRangeAsync(
+            string path,
+            IReadOnlyList<TaskFocusTerm> terms,
+            int maximumWindowCharacters,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var info = new FileInfo(path);
+                if (!info.Exists || info.Length > MaximumTaskFocusScanBytes)
+                    return null;
+
+                var lines = await File.ReadAllLinesAsync(path, cancellationToken);
+                if (lines.Length == 0)
+                    return null;
+
+                var scores = new int[lines.Length];
+                for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    foreach (var term in terms)
+                    {
+                        if (lines[lineIndex].Contains(term.Text, StringComparison.OrdinalIgnoreCase))
+                            scores[lineIndex] += term.Weight;
+                    }
+                }
+
+                var bestCenter = -1;
+                var bestClusterScore = 0;
+                var bestDirectScore = 0;
+                for (var center = 0; center < scores.Length; center++)
+                {
+                    if (scores[center] == 0)
+                        continue;
+
+                    var clusterScore = 0;
+                    var clusterStart = Math.Max(0, center - TaskFocusClusterRadiusLines);
+                    var clusterEnd = Math.Min(scores.Length - 1, center + TaskFocusClusterRadiusLines);
+                    for (var neighbor = clusterStart; neighbor <= clusterEnd; neighbor++)
+                    {
+                        var distance = Math.Abs(center - neighbor);
+                        clusterScore += scores[neighbor] * (TaskFocusClusterRadiusLines + 1 - distance);
+                    }
+
+                    if (clusterScore > bestClusterScore
+                        || (clusterScore == bestClusterScore && scores[center] > bestDirectScore))
+                    {
+                        bestCenter = center;
+                        bestClusterScore = clusterScore;
+                        bestDirectScore = scores[center];
+                    }
+                }
+
+                if (bestCenter < 0)
+                    return null;
+
+                var start = bestCenter;
+                var end = bestCenter;
+                var selectedCharacters = GetLineCharacterCount(lines[bestCenter]);
+                var precedingBudget = maximumWindowCharacters / 2;
+                var precedingCharacters = 0;
+                while (start > 0)
+                {
+                    var nextCharacters = GetLineCharacterCount(lines[start - 1]);
+                    if (precedingCharacters + nextCharacters > precedingBudget
+                        || selectedCharacters + nextCharacters > maximumWindowCharacters)
+                    {
+                        break;
+                    }
+
+                    start--;
+                    precedingCharacters += nextCharacters;
+                    selectedCharacters += nextCharacters;
+                }
+
+                while (end + 1 < lines.Length)
+                {
+                    var nextCharacters = GetLineCharacterCount(lines[end + 1]);
+                    if (selectedCharacters + nextCharacters > maximumWindowCharacters)
+                        break;
+
+                    end++;
+                    selectedCharacters += nextCharacters;
+                }
+
+                while (start > 0)
+                {
+                    var nextCharacters = GetLineCharacterCount(lines[start - 1]);
+                    if (selectedCharacters + nextCharacters > maximumWindowCharacters)
+                        break;
+
+                    start--;
+                    selectedCharacters += nextCharacters;
+                }
+
+                var matchedTerms = terms
+                    .Where(term => Enumerable.Range(start, end - start + 1)
+                        .Any(index => lines[index].Contains(term.Text, StringComparison.OrdinalIgnoreCase)))
+                    .Select(term => term.Text)
+                    .Take(8)
+                    .ToArray();
+                return new TaskFocusedReadRange(start + 1, end + 1, matchedTerms);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static int GetLineCharacterCount(string line)
+        {
+            return (line?.Length ?? 0) + Environment.NewLine.Length;
+        }
+
+        private static bool ContainsAny(string source, params string[] terms)
+        {
+            return terms.Any(term => source.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static void AddTaskFocusTerm(Dictionary<string, int> terms, string? value, int weight)
+        {
+            var term = (value ?? string.Empty).Trim();
+            if ((term.Length < 3 && !IsChineseSearchTerm(term)) || TaskFocusStopWords.Contains(term))
+                return;
+
+            if (!terms.TryGetValue(term, out var existingWeight) || weight > existingWeight)
+                terms[term] = weight;
+        }
+
+        private static bool IsChineseSearchTerm(string value)
+        {
+            return value.Length >= 2 && value.All(character => character is >= '\u4e00' and <= '\u9fff');
         }
 
         private static string NormalizePath(string? path)
@@ -180,6 +628,13 @@ namespace ColorVision.Copilot
                 return path.Trim();
             }
         }
+
+        private readonly record struct TaskFocusTerm(string Text, int Weight);
+
+        private readonly record struct TaskFocusedReadRange(
+            int StartLine,
+            int EndLine,
+            IReadOnlyList<string> MatchedTerms);
     }
 
     public static class CopilotListDirectoryCapability

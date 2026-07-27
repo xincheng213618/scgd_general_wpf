@@ -9,10 +9,15 @@ on:
   pull_request:
     branches: [ "master","develop" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
 
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v6
@@ -35,7 +40,16 @@ jobs:
         msbuild build.sln /p:Configuration=Release /p:Platform=x64
 
     - name: Run .NET tests
-      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal
+      run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
+
+    - name: Upload test diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: dotnet-test-diagnostics-${{ github.run_id }}
+        path: TestResults
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: Publish to NuGet
       if: github.event_name == 'push'
@@ -53,5 +67,7 @@ jobs:
         dotnet nuget push .\UI\ColorVision.SocketProtocol\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.Database\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push .\UI\ColorVision.ImageTools\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push .\UI\ColorVision.Rbac\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\ColorVision.FileIO\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

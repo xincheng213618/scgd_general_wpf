@@ -26,19 +26,14 @@
                 <Image Height="18" Margin="0,0,0,0" Source="{DynamicResource DrawingImageProperty}" />
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
-            <Grid Margin="2,0,0,0" DockPanel.Dock="Right">
-                <Button x:Name="ButtonVisibilitySettings" Padding="2" Background="Transparent" BorderThickness="0" Click="ButtonVisibilitySettings_Click" ToolTip="{x:Static properties:Resources.AlgorithmVisibilitySettings}">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE7B3;" />
-                </Button>
-            </Grid>
 
             <ToggleButton Content="{Binding Config.Name}" FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" Style="{StaticResource ButtonPageControl1}" ToolTip="{Binding DService.DeviceStatus}" />
         </DockPanel>
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen, Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" HorizontalAlignment="Center" Text="{x:Static properties:Resources.UnknownStatus}" />
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" />
+                <TextBlock x:Name="TextBlockUnknow"  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Left"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Command="{Binding EditCommand}" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}"  HorizontalAlignment="Left" />
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
                         <ComboBox x:Name="CB_AlgorithmTypes" Width="130" Margin="0,0,5,0" Style="{StaticResource ComboBox.Small}" />

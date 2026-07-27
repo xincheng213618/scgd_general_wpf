@@ -9,7 +9,7 @@ namespace ProjectARVRPro.Process.MTF.MTFH
     public class MTFHProcessConfig : ProcessConfigBase
     {
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
-        private string _ShowConfig = "F1";
+        private string _ShowConfig = "F3";
 
         [Category("解析配置(旧版)")]
         [DisplayName("Center_0F_H解析Key")]

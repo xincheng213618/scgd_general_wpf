@@ -1,0 +1,35 @@
+{
+  "$type": "System.Collections.ObjectModel.ObservableCollection`1[[ColorVision.Scheduler.SchedulerInfo, ColorVision.Scheduler]], System.ObjectModel",
+  "$values": [
+    {
+      "$type": "ColorVision.Scheduler.SchedulerInfo, ColorVision.Scheduler",
+      "Status": 2,
+      "JobStartMode": 1,
+      "IsDelayed": true,
+      "Delay": "00:00:30",
+      "Mode": 2,
+      "Interval": "00:05:00",
+      "RepeatMode": 0,
+      "RepeatCount": 1,
+      "JobName": "LegacyCameraCapture",
+      "GroupName": "legacy-camera",
+      "CronExpression": "0 0/5 * * * ?",
+      "JobType": "ColorVision.Engine.Services.Devices.Camera.Job.CameraCaptureJob, ColorVision.Engine",
+      "Config": {
+        "$type": "ColorVision.Engine.Services.Devices.Camera.Job.CameraCaptureJobConfig, ColorVision.Engine",
+        "DeviceCameraName": "Camera-A"
+      },
+      "CreateTime": "2025-01-02T03:04:05",
+      "Priority": 7,
+      "TimeoutSeconds": 12,
+      "SuccessCount": 4,
+      "FailureCount": 1,
+      "LastExecutionTimeMs": 321,
+      "AverageExecutionTimeMs": 300,
+      "MaxExecutionTimeMs": 450,
+      "MinExecutionTimeMs": 200,
+      "LastExecutionResult": "Completed",
+      "LastExecutionMessage": "legacy fixture"
+    }
+  ]
+}

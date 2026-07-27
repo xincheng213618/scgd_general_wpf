@@ -1,3 +1,4 @@
+using System;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Base;
@@ -29,5 +30,11 @@ public class CVCommonNodeHub : STNodeHub
 		: base(bSingle, title)
 	{
 		m_nodeId = base.Guid.ToString();
+	}
+
+	protected override void OnGuidRegenerated(Guid oldGuid, Guid newGuid)
+	{
+		base.OnGuidRegenerated(oldGuid, newGuid);
+		NodeID = newGuid.ToString();
 	}
 }

@@ -42,6 +42,21 @@ public sealed class ApplicationSnapshotServiceTests : IDisposable
     }
 
     [Fact]
+    public void UpdateSnapshotIsSkippedBeforeConfigurationInitialization()
+    {
+        Assert.False(ApplicationSnapshotService.ShouldCreateUpdateSnapshot(null));
+    }
+
+    [Fact]
+    public void UpdateSnapshotUsesConfiguredSettingAfterConfigurationInitialization()
+    {
+        HybridConfigServiceAdapter configService = new();
+        configService.Register(new ApplicationSnapshotConfig { CreateSnapshotBeforeUpdate = true });
+
+        Assert.True(ApplicationSnapshotService.ShouldCreateUpdateSnapshot(configService));
+    }
+
+    [Fact]
     public void RebuiltSnapshotPreservesPreviousFileInRecovery()
     {
         string snapshotDirectory = Path.Combine(_tempDirectory, "Snapshots", "Application");

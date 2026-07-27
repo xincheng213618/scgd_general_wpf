@@ -20,7 +20,11 @@
 
 `ApprovalMode.Always` 的工具应实现 `ICopilotFrameworkApprovedTool`。运行时只会对同时满足这两个条件的工具包装 `ApprovalRequiredAIFunction`；批准后才调用 `ExecuteApprovedAsync`。普通 `ExecuteAsync` 必须继续保留直接调用和业务入口所需的确认，不能把“来自模型”本身视为授权。
 
-需要向用户展示具体目标和冲突指纹的工具还可实现 `ICopilotFrameworkApprovalPresentation`。Framework 审批层会使用工具生成的标题和说明，而不是展示原始参数值；工作区补丁因此能显示完整目标路径以及应用前后的 SHA-256，同时审计仍只记录参数字段名。
+需要向用户展示具体目标和冲突指纹的工具还可实现 `ICopilotFrameworkApprovalPresentation`。`CopilotToolApprovalPresentation.ReviewDetails` 用于仅在本机审批窗口展示不可静默截断的完整执行详情；它有独立的 128K 上限，不进入 `ConfirmActionPayloadJson`、普通审计或日志，并在动作离开 `Pending` 后清除。Shell 使用该字段展示解析后的 Shell、工作目录、超时、完整命令、字符数与命令 SHA-256；审查编码会将反斜杠加倍，并转义换行、Tab、Unicode `Format`、异常控制符和不可见分隔符，使普通文本与转义后的危险代码点保持可区分，详情区固定为从左到右。窗口要求显式确认已核对详情，并在动作过期、取消或任务上下文变化时失效。工作区补丁也能显示完整目标路径以及应用前后的 SHA-256，同时审计仍只记录参数字段名。
+
+审批 reservation 不保留调用方传入的可变参数对象：Schema 绑定后先序列化为独立 JSON 快照，每个字段保存为克隆的 `JsonElement`，顶层再用只读字典封装；循环或不可序列化对象直接拒绝。审批动作以该快照生成规范化绑定：固定字段顺序、对象键递归排序、数组保持原顺序，再计算完整 SHA-256。恢复执行前同时复核工具与冻结输入的执行签名、审批动作的参数指纹、Agent call ID、Provider call ID 和当前任务/工作区；只有原请求与恢复调用的 `(ProviderCallId, Signature)` 完全一致时才能消费一次 reservation。这样即使原始嵌套 Dictionary/List 后续被修改、另一个 call ID 重放相同参数，或展示摘要被截断，都不能转移已有批准。
+
+Agent、外部 MCP、审批与审计共享不可变的 `CopilotExecutionScope`。授权边界由来源、授权通道、不可逆 session/caller identity、会话、任务、运行、规范工作区和能力目录版本共同确定；具体调用再绑定工具名、Provider call ID 与完整参数签名。Trace、父运行和工作区快照只用于关联与审计，不会被误当作授权继承。子 Agent 只继承父作用域中的安全字段，并创建独立 RunId；原始 MCP session token 不进入该对象或审计。
 
 `CopilotToolCapabilityDescriptor` 是工具策略的标准快照，集中承载访问级别、风险、审批、幂等性、并发、超时和参数审计模式。Harness 提示、Framework 审批包装、执行闸门、重试、trace 与审计都只消费该 Descriptor，避免各层分别解释工具属性。现有工具的独立属性会由 `ICopilotTool.Capability` 默认桥接，新增工具可以直接提供 Descriptor；注册表会在工具进入运行时前拒绝非法枚举值及“高风险写入但从不审批”等不安全组合。有效并发与超时也在 Descriptor 中统一收敛：写入或非幂等能力强制独占，超时限制在默认 30 秒、最大 10 分钟之间。
 

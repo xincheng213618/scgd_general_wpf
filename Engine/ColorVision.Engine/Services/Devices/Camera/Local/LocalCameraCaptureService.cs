@@ -109,12 +109,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
                 using (LocalFlowFrameLease lease = frame.Acquire())
                 {
-                    uint destinationBpp = 32;
-                    int captureResult = cvCameraCSLib.CM_GetFrame(cameraHandle, captureJson, ref width, ref height, ref sourceBpp, ref destinationBpp, ref channels, lease.RawPointer, lease.CiePointer);
-                    if (captureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机取图失败", captureResult);
-                    if (hasColorCalibration && !HasNativeCieResult(cameraHandle, width, height, channels))
+                    try
                     {
-                        throw new InvalidOperationException("相机取图成功，但校正没有生成有效的 CIE 数据。");
+                        uint destinationBpp = 32;
+                        int captureResult = cvCameraCSLib.CM_GetFrame(cameraHandle, captureJson, ref width, ref height, ref sourceBpp, ref destinationBpp, ref channels, lease.RawPointer, lease.CiePointer);
+                        if (captureResult != cvErrorDefine.CV_ERR_SUCCESS) throw CreateNativeException("本地相机取图失败", captureResult);
+                        if (hasColorCalibration && !HasNativeCieResult(cameraHandle, width, height, channels))
+                        {
+                            throw new InvalidOperationException("相机取图成功，但校正没有生成有效的 CIE 数据。");
+                        }
+                    }
+                    finally
+                    {
+                        if (hasColorCalibration) _ = ConvertXYZ.CM_ReleaseBuffer(cameraHandle);
                     }
                 }
 

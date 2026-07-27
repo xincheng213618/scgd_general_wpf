@@ -197,7 +197,10 @@ namespace ColorVision.Copilot
         {
             assistantMessage.MarkThinkingStarted();
             if (agentEvent.ToolExecution != null)
-                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromProgress(agentEvent.ToolExecution, agentEvent.Text));
+                assistantMessage.UpsertAgentTrace(CopilotAgentTraceEntry.FromProgress(
+                    agentEvent.ToolExecution,
+                    agentEvent.Text,
+                    agentEvent.Progress));
             assistantMessage.IsExecutionInProgress = true;
             assistantMessage.IsExecutionExpanded = true;
         }

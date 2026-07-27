@@ -28,9 +28,9 @@ namespace ProjectARVRPro.Services
                 });
             }
 
-            Application.Current.Dispatcher.Invoke(() =>
+            string resolvedSerialNumber = Application.Current.Dispatcher.Invoke(() =>
             {
-                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                return ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
             });
 
             Application.Current.Dispatcher.BeginInvoke(async () =>
@@ -38,14 +38,14 @@ namespace ProjectARVRPro.Services
                 await ProjectWindowInstance.WindowInstance.RunAllAsync();
             });
 
-            log.Info($"RunAll triggered via Socket, SN={request.SerialNumber}");
+            log.Info($"RunAll triggered via Socket, SN={resolvedSerialNumber}");
             return new SocketResponse
             {
                 MsgID = request.MsgID,
                 EventName = EventName,
                 Code = 0,
                 Msg = "RunAll started",
-                SerialNumber = request.SerialNumber
+                SerialNumber = resolvedSerialNumber
             };
         }
     }

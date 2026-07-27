@@ -15,12 +15,15 @@ public class FlowStartEventArgs : EventArgs
 
 	public string ErrorNodeName { get; set; }
 
-	public FlowStartEventArgs(string serialNumber, StatusTypeEnum status, long totalTime, string message, string errorNodeName = "")
+	public string ErrorNodeId { get; set; }
+
+	public FlowStartEventArgs(string serialNumber, StatusTypeEnum status, long totalTime, string message, string errorNodeName = "", string errorNodeId = "")
 	{
 		SerialNumber = serialNumber;
 		Message = message;
 		Status = status;
 		TotalTime = totalTime;
 		ErrorNodeName = errorNodeName;
+		ErrorNodeId = errorNodeId;
 	}
 }

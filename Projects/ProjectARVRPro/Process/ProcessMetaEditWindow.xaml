@@ -3,52 +3,323 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ProjectARVRPro.Process"
         mc:Ignorable="d"
-        Title="流程项" Height="270" Width="460" ResizeMode="NoResize" Background="{DynamicResource GlobalBackground}"
-        Loaded="Window_Loaded">
+        Title="流程项" Height="660" Width="1180" MinHeight="580" MinWidth="980"
+        Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
     <Window.Resources>
-        <local:TypeNameConverter x:Key="TypeNameConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
+
+        <Style x:Key="PanelTitleStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <Style x:Key="TemplateItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Margin" Value="0 2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="ItemBorder" Padding="11 8" Background="Transparent"
+                                BorderBrush="Transparent" BorderThickness="1" CornerRadius="5">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Margin" Value="0 0 7 7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="FilterBorder" Padding="13 6" Background="Transparent"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="14">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="FilterBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="FilterBorder" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                                <Setter TargetName="FilterBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TypeCardItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0 0 10 10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="CardBorder" Width="205" MinHeight="72" Padding="13 10"
+                                Background="{DynamicResource ButtonBackground}"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" CornerRadius="7">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="CardBorder" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EditChoiceButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="238"/>
+            <Setter Property="MinHeight" Value="112"/>
+            <Setter Property="Margin" Value="7"/>
+            <Setter Property="Padding" Value="18 16"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <DataTemplate x:Key="TemplateSelectorTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="流程模板" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 9"/>
+                <TextBox Grid.Row="1" Text="{Binding TemplateSearchText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="输入模板名称筛选" Margin="0 0 0 8"/>
+                <ListBox Grid.Row="2" ItemsSource="{Binding VisibleTemplates}"
+                         SelectedItem="{Binding SelectedTemplate}" BorderThickness="1"
+                         BorderBrush="{DynamicResource BorderBrush}" Background="Transparent"
+                         Padding="5" ItemContainerStyle="{StaticResource TemplateItemStyle}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Key}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
-    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="12" Padding="14">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="2 0 2 14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="72"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{Binding PageTitle}" FontWeight="SemiBold" FontSize="18"/>
+                <TextBlock Text="{Binding PageSubtitle}" Foreground="{DynamicResource SecondaryTextBrush}"
+                           Margin="0 5 0 0"/>
+            </StackPanel>
+            <Border Grid.Column="1" VerticalAlignment="Top" Padding="12 5" CornerRadius="13"
+                    Background="{DynamicResource ButtonBackground}"
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                <TextBlock Text="{Binding StepText}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </Border>
+        </Grid>
 
-            <TextBlock Text="名称" Grid.Row="0" VerticalAlignment="Center" Margin="0 0 10 10"/>
-            <TextBox x:Name="NameTextBox" Grid.Row="0" Grid.Column="1" Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}" Margin="0 0 0 10"/>
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                CornerRadius="8" Background="{DynamicResource GlobalBackground}">
+            <Grid>
+                <!-- 新增：步骤一，名称与流程模板 -->
+                <Grid Margin="22"
+                      Visibility="{Binding IsCreateBasicsPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="{Binding MetaColumnWidth}"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-            <TextBlock Text="流程模板" Grid.Row="1" VerticalAlignment="Center" Margin="0 0 10 10"/>
-            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Templates}" DisplayMemberPath="Key" SelectedItem="{Binding SelectedTemplate}" Margin="0 0 0 10"/>
+                    <StackPanel Grid.Column="0"
+                                Visibility="{Binding ShowMetaFields, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="名称" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 9"/>
+                        <TextBox x:Name="NameTextBox" Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="名称用于流程组列表显示，后续可以单独修改。"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap" LineHeight="20" Margin="0 16 16 0"/>
+                    </StackPanel>
 
-            <TextBlock Text="处理类" Grid.Row="2" VerticalAlignment="Center" Margin="0 0 10 10"/>
-            <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" Margin="0 0 0 10">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}"/>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+                    <ContentControl Grid.Column="1" Margin="22 0 0 0"
+                                    Content="{Binding}" ContentTemplate="{StaticResource TemplateSelectorTemplate}"/>
+                </Grid>
 
-            <CheckBox Grid.Row="3" Grid.Column="1" Content="启用" IsChecked="{Binding IsEnabled}" Margin="0 0 0 10"/>
+                <!-- 编辑：先选择修改哪一项 -->
+                <Grid Margin="28"
+                      Visibility="{Binding IsEditChoicePage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="选择本次要修改的内容" FontSize="16" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0 0 0 18"/>
+                        <WrapPanel HorizontalAlignment="Center">
+                            <Button Style="{StaticResource EditChoiceButtonStyle}" Click="EditTemplate_Click">
+                                <StackPanel>
+                                    <TextBlock Text="流程模板" FontWeight="SemiBold" FontSize="15"/>
+                                    <TextBlock Text="切换这个流程项实际执行的流程"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               TextWrapping="Wrap" Margin="0 8 0 0"/>
+                                    <TextBlock Text="{Binding SelectedTemplate.Key, StringFormat=当前：{0}, TargetNullValue=未选择}"
+                                               TextTrimming="CharacterEllipsis" Margin="0 12 0 0"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource EditChoiceButtonStyle}" Click="EditProcess_Click">
+                                <StackPanel>
+                                    <TextBlock Text="处理类型" FontWeight="SemiBold" FontSize="15"/>
+                                    <TextBlock Text="切换结果解析、判定和展示方式"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               TextWrapping="Wrap" Margin="0 8 0 0"/>
+                                    <TextBlock Text="{Binding SelectedOption.DisplayName, StringFormat=当前：{0}, TargetNullValue=当前：空处理}"
+                                               TextTrimming="CharacterEllipsis" Margin="0 12 0 0"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </Grid>
 
-            <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="保存" Padding="18 5" Click="Save_Click"/>
-                <Button Content="取消" Padding="18 5" Margin="8 0 0 0" IsCancel="True"/>
+                <!-- 编辑流程模板 -->
+                <Grid Margin="22"
+                      Visibility="{Binding IsEditTemplatePage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource TemplateSelectorTemplate}"/>
+                </Grid>
+
+                <!-- 新增步骤二 / 编辑处理类型 -->
+                <Grid Margin="22"
+                      Visibility="{Binding IsProcessPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="570"/>
+                        <ColumnDefinition Width="1"/>
+                        <ColumnDefinition Width="350"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Margin="0 0 18 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                                 ItemContainerStyle="{StaticResource FilterItemStyle}" BorderThickness="0"
+                                 Background="Transparent" Margin="0 0 0 5">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel IsItemsHost="True"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
+
+                        <ListBox Grid.Row="1" ItemsSource="{Binding Subcategories}"
+                                 SelectedItem="{Binding SelectedSubcategory}"
+                                 ItemContainerStyle="{StaticResource FilterItemStyle}" BorderThickness="0"
+                                 Background="Transparent" Margin="0 0 0 7"
+                                 Visibility="{Binding ShowSubcategories, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel IsItemsHost="True"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
+
+                        <ListBox Grid.Row="2" ItemsSource="{Binding VisibleProcesses}" SelectedItem="{Binding SelectedOption}"
+                                 BorderThickness="0" Background="Transparent"
+                                 ItemContainerStyle="{StaticResource TypeCardItemStyle}"
+                                 SelectionChanged="ProcessType_SelectionChanged"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel IsItemsHost="True"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel ToolTip="{Binding Description}">
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14"/>
+                                        <TextBlock Text="{Binding Capabilities}"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   FontSize="11" Margin="0 7 0 0" TextWrapping="Wrap" MaxHeight="32"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Border Grid.Row="3" Background="{DynamicResource SecondaryRegionBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                CornerRadius="6" Padding="14 10" Margin="0 8 0 0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedOption.Description, TargetNullValue=请选择一个处理类型。}"
+                                           TextWrapping="Wrap" LineHeight="20"/>
+                                <TextBlock Text="{Binding SelectedOption.Capabilities, StringFormat=支持：{0}}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           TextWrapping="Wrap" Margin="0 4 0 0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border Grid.Column="1" Background="{DynamicResource BorderBrush}"/>
+
+                    <Grid Grid.Column="2" Margin="18 0 0 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Margin="0 0 0 10">
+                            <TextBlock Text="处理配置" Style="{StaticResource PanelTitleStyle}"/>
+                            <TextBlock Text="{Binding SelectedOption.DisplayName, TargetNullValue=选择处理类型后显示}"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 4 0 0"/>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="DraftProcessConfigPanel"/>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0 13 0 0">
+            <Button Content="上一步" Padding="18 6" Click="Back_Click" HorizontalAlignment="Left"
+                    Visibility="{Binding CanGoBack, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{Binding PrimaryButtonText}" Padding="22 6" Click="Primary_Click"
+                        IsDefault="True"
+                        Visibility="{Binding ShowPrimaryButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <Button Content="取消" Padding="22 6" Margin="8 0 0 0" IsCancel="True"/>
             </StackPanel>
         </Grid>
-    </Border>
+    </Grid>
 </Window>

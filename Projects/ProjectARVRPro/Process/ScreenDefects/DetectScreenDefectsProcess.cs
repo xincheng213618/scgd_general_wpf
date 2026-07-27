@@ -29,6 +29,9 @@ namespace ProjectARVRPro.Process.ScreenDefects
 
                 ctx.ObjectiveTestResult.DynamicScreenDefectResults ??= new Dictionary<string, ScreenDefectsData>();
                 ctx.ObjectiveTestResult.DynamicScreenDefectResults[GetOutputName()] = result;
+
+                ctx.Result.Result = result.DefectCount == 0;
+
                 return Task.FromResult(true);
             }
             catch (Exception ex)

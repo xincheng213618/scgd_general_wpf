@@ -3,10 +3,11 @@ using Azure;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Batch;
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -159,6 +160,7 @@ namespace ProjectLUX
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
         private Timer timer;
+        private bool _isDisposed;
         Stopwatch stopwatch = new Stopwatch();
 
 
@@ -195,11 +197,7 @@ namespace ProjectLUX
 
             this.Closed += (s, e) =>
             {
-                ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
-                timer.Change(Timeout.Infinite, 500); // 停止定时器
-                timer?.Dispose();
-
-                logOutput?.Dispose();
+                Dispose();
             };
             ViewResultManager.ListView = listView1;
             listView1.ItemsSource = ViewResluts;
@@ -855,7 +853,21 @@ namespace ProjectLUX
         }
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
+            if (flowControl != null)
+            {
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                flowControl.Stop();
+            }
+            flowEngine?.Dispose();
+            STNodeEditorMain?.Dispose();
+            timer?.Change(Timeout.Infinite, 500);
             timer?.Dispose();
+            logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
 

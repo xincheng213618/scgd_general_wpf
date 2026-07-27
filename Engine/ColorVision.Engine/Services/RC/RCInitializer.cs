@@ -103,7 +103,6 @@ namespace ColorVision.Engine.Services.RC
 
 
         public override string Name => nameof(RCInitializer);
-        public override IEnumerable<string> Dependencies => new List<string>() { nameof(MqttInitializer) };
         public override int Order => 4;
 
 

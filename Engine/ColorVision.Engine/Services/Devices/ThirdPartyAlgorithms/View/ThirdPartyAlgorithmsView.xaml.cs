@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
+                var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
 
                 if (Config.InsertAtBeginning)
                     ViewResults.Insert(0, ViewResultAlg);
@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
-            var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResults[listView1.SelectedIndex]));
+            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResults[listView1.SelectedIndex]));
             if (ResultHandle != null)
             {
                 //ResultHandle.Handle(this, ViewResults[listView1.SelectedIndex]);

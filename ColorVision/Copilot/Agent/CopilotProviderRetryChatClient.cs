@@ -20,20 +20,27 @@ namespace ColorVision.Copilot
         int MaximumAttempts,
         TimeSpan Delay,
         string FailureKind,
-        int? StatusCode)
+        int? StatusCode,
+        string RequestId = "")
     {
         public string ToDiagnosticText()
         {
             var delay = Delay.TotalSeconds >= 1
                 ? $"{Delay.TotalSeconds:0.#}s"
                 : $"{Math.Max(0, Delay.TotalMilliseconds):0}ms";
-            return $"Provider request retry {NextAttempt}/{MaximumAttempts} · {FailureKind} before the first response update · waiting {delay}; no content or tool call was replayed.";
+            var normalizedRequestId =
+                CopilotProviderRequestId.Normalize(RequestId);
+            var request = normalizedRequestId.Length == 0
+                ? string.Empty
+                : $" · request {normalizedRequestId}";
+            return $"Provider request retry {NextAttempt}/{MaximumAttempts} · {FailureKind}{request} before the first content or tool call · waiting {delay}; no content or tool call was replayed.";
         }
     }
 
     internal sealed class CopilotProviderRetryChatClient : DelegatingChatClient
     {
         internal const int DefaultMaximumAttempts = 3;
+        private const int MaximumBufferedPreambleUpdates = 64;
         private const string RetryAfterDataKey = "ColorVision.Copilot.ProviderRetryAfter";
         private static readonly TimeSpan MaximumServerRetryDelay = TimeSpan.FromMinutes(2);
 
@@ -92,10 +99,13 @@ namespace ColorVision.Copilot
 
             for (var attempt = 1; ; attempt++)
             {
-                IAsyncEnumerator<ChatResponseUpdate>? enumerator;
+                CopilotStreamingAttempt? streamingAttempt;
                 try
                 {
-                    enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
+                    streamingAttempt = await OpenStreamingAttemptAsync(
+                        materializedMessages,
+                        options,
+                        cancellationToken);
                 }
                 catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
@@ -104,45 +114,95 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
-                if (enumerator == null)
+                if (streamingAttempt == null)
                     yield break;
 
-                await using (enumerator)
+                await using (streamingAttempt)
                 {
-                    yield return enumerator.Current;
-                    while (await enumerator.MoveNextAsync())
-                        yield return enumerator.Current;
+                    foreach (var update in streamingAttempt.BufferedUpdates)
+                        yield return update;
+
+                    var enumerator = streamingAttempt.Enumerator;
+                    if (enumerator != null)
+                    {
+                        while (await enumerator.MoveNextAsync())
+                            yield return enumerator.Current;
+                    }
                 }
                 yield break;
             }
         }
 
-        private async Task<IAsyncEnumerator<ChatResponseUpdate>?> OpenStreamingAttemptAsync(
+        private async Task<CopilotStreamingAttempt?> OpenStreamingAttemptAsync(
             IReadOnlyList<Microsoft.Extensions.AI.ChatMessage> messages,
             ChatOptions? options,
             CancellationToken cancellationToken)
         {
-            var enumerator = base.GetStreamingResponseAsync(messages, options, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator =
+                base.GetStreamingResponseAsync(messages, options, cancellationToken)
+                    .GetAsyncEnumerator(cancellationToken);
+            var bufferedUpdates = new List<ChatResponseUpdate>();
             try
             {
-                if (await enumerator.MoveNextAsync())
-                    return enumerator;
+                while (await enumerator.MoveNextAsync())
+                {
+                    var update = enumerator.Current;
+                    var hasResponseContent =
+                        CopilotProviderResponseContent.HasAny(update.Contents);
+                    if (!hasResponseContent
+                        && bufferedUpdates.Count >= MaximumBufferedPreambleUpdates)
+                    {
+                        throw new InvalidOperationException(
+                            $"The provider returned more than {MaximumBufferedPreambleUpdates} metadata-only stream updates before any content or tool call.");
+                    }
+
+                    bufferedUpdates.Add(update);
+                    if (hasResponseContent)
+                    {
+                        var openedAttempt = new CopilotStreamingAttempt(
+                            enumerator,
+                            bufferedUpdates.ToArray());
+                        enumerator = null;
+                        return openedAttempt;
+                    }
+                }
 
                 await enumerator.DisposeAsync();
-                return null;
+                enumerator = null;
+                return bufferedUpdates.Count == 0
+                    ? null
+                    : new CopilotStreamingAttempt(
+                        enumerator: null,
+                        bufferedUpdates.ToArray());
             }
             catch
             {
-                try
+                if (enumerator != null)
                 {
-                    await enumerator.DisposeAsync();
-                }
-                catch
-                {
-                    // Preserve the provider failure that determines retry eligibility.
+                    try
+                    {
+                        await enumerator.DisposeAsync();
+                    }
+                    catch
+                    {
+                        // Preserve the provider failure that determines retry eligibility.
+                    }
                 }
                 throw;
             }
+        }
+
+        private sealed class CopilotStreamingAttempt(
+            IAsyncEnumerator<ChatResponseUpdate>? enumerator,
+            IReadOnlyList<ChatResponseUpdate> bufferedUpdates) : IAsyncDisposable
+        {
+            public IAsyncEnumerator<ChatResponseUpdate>? Enumerator { get; } = enumerator;
+
+            public IReadOnlyList<ChatResponseUpdate> BufferedUpdates { get; } =
+                bufferedUpdates;
+
+            public ValueTask DisposeAsync() =>
+                Enumerator?.DisposeAsync() ?? ValueTask.CompletedTask;
         }
 
         private bool TryCreateRetry(
@@ -185,7 +245,8 @@ namespace ColorVision.Copilot
                 _maximumAttempts,
                 ResolveRetryDelay(exception, _delayFactory(failedAttempt)),
                 failureKind,
-                statusCode);
+                statusCode,
+                CopilotProviderRequestId.Find(exception));
         }
 
         internal static void PreserveRetryAfter(HttpResponseMessage response, Exception exception)
@@ -299,6 +360,14 @@ namespace ColorVision.Copilot
 
             foreach (var candidate in candidates)
             {
+                if (candidate is CopilotProviderInactivityException inactivityException)
+                {
+                    failureKind = inactivityException.Phase == CopilotProviderInactivityPhase.FirstResponse
+                        ? "first-content timeout"
+                        : "stream-inactivity timeout";
+                    return true;
+                }
+
                 if (candidate is ClientResultException or HttpRequestException)
                 {
                     failureKind = "connection failure";

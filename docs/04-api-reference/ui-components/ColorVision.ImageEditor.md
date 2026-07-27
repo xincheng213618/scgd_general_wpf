@@ -6,7 +6,7 @@
 
 `ColorVision.ImageEditor` 不是纯图片控件，而是图像宿主、可缩放画布、绘图图元、打开器、工具栏、overlay 和设置系统的组合模块。
 
-它负责“看见和交互”，不负责客户项目的 OK/NG 判定、MES 字段、CSV/PDF 导出业务映射。结果业务链路继续看 [Engine 结果展示链路](../engine-components/result-handoff-chain.md)。
+它负责“看见和交互”，不负责客户项目的 OK/NG 判定、MES 字段、CSV 导出业务映射。结果业务链路继续看 [Engine 结果展示链路](../engine-components/result-handoff-chain.md)。
 
 ## 主链路
 

@@ -244,6 +244,48 @@ namespace ProjectARVRPro
             return count > 0 ? query.Take(count).ToList() : query.ToList();
         }
 
+        public IReadOnlyList<CycleTimeGroup> QueryCycleTimeGroups()
+        {
+            using SqlSugarClient db = CreateSqliteClient();
+            List<CycleTimeResultSample> samples = db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.SN != string.Empty)
+                .Select(item => new CycleTimeResultSample
+                {
+                    Id = item.Id,
+                    SN = item.SN,
+                    TestType = item.TestType,
+                    RunTime = item.RunTime,
+                    CreateTime = item.CreateTime
+                })
+                .ToList();
+
+            return CycleTimeCalculator.Calculate(samples);
+        }
+
+        public IReadOnlyList<ProjectARVRReuslt> QueryCycleTimeDetails(CycleTimeGroup group)
+        {
+            if (group == null || string.IsNullOrWhiteSpace(group.SN))
+            {
+                return [];
+            }
+
+            using SqlSugarClient db = CreateSqliteClient();
+            return db.Queryable<ProjectARVRReuslt>()
+                .Where(item => item.SN == group.SN && item.Id >= group.FirstId && item.Id <= group.LatestId)
+                .OrderBy(item => item.Id, OrderByType.Asc)
+                .ToList();
+        }
+
+        private static SqlSugarClient CreateSqliteClient()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={SqliteDbPath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+        }
+
         public void GenericQuery()
         {
             GenericQuery<ProjectARVRReuslt> genericQuery = new GenericQuery<ProjectARVRReuslt>(_db,ViewResluts);

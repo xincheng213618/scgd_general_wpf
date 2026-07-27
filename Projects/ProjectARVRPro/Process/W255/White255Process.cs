@@ -11,6 +11,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
@@ -41,9 +42,13 @@ namespace ProjectARVRPro.Process.W255
 
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        ctx.Result.FileName = master.ImgFile;
-
+                        if (File.Exists(master.ImgFile))
+                        {
+                            ctx.Result.FileName = master.ImgFile;
+                        }
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        if (poiPoints.Count == 0) continue;
+
                         int id = 0;
                         testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)

@@ -1,50 +1,18 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using log4net;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Themes.Controls;
+using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows.Controls;
+using System.Windows;
 
 namespace ColorVision.Engine
 {
     public class DisplayAlgorithmParam
     {
-        public Type Type { get; set; }
-        public string?  ImageFilePath { get; set; }
-    }
-
-    public class DisplayAlgorithmManager
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(DisplayAlgorithmManager));
-        private static DisplayAlgorithmManager _instance;
-        private static readonly object _locker = new();
-        public static DisplayAlgorithmManager GetInstance() { lock (_locker) { _instance ??= new DisplayAlgorithmManager(); return _instance; } }
-        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; }
-
-        public DisplayAlgorithmManager()
-        {
-            ResultHandles = new ObservableCollection<IResultHandleBase>();
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IResultHandleBase ViewResultAlgRender)
-                    {
-                        ResultHandles.Add(ViewResultAlgRender);
-                    }
-                }
-            }
-        }
-        public event EventHandler<DisplayAlgorithmParam> SelectParamChanged;
-
-        public void SetType(DisplayAlgorithmParam param)
-        {
-            if (param == null) return;
-            SelectParamChanged?.Invoke(this, param);
-        }
-
+        public Type Type { get; set; } = null!;
+        public string? ImageFilePath { get; set; }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -62,24 +30,91 @@ namespace ColorVision.Engine
             Group = group;
         }
     }
-    
+
     public interface IDisplayAlgorithm
     {
-        public string ImageFilePath { get; set; }
-
-        public UserControl GetUserControl();
+        string ImageFilePath { get; set; }
+        DisplayAlgorithmConfigBase Configuration { get; }
+        MsgRecord? Execute();
     }
 
     public abstract class DisplayAlgorithmBase : ViewModelBase, IDisplayAlgorithm
     {
-        public string ImageFilePath { get => _ImageFilePath; set { _ImageFilePath = value; OnPropertyChanged(); } }
-        private string _ImageFilePath;
+        public abstract DisplayAlgorithmConfigBase Configuration { get; }
+        public abstract MsgRecord? Execute();
 
-
-
-        public virtual UserControl GetUserControl()
+        public string ImageFilePath
         {
-            throw new NotImplementedException();
+            get => Configuration.ImageFilePath;
+            set => Configuration.ImageFilePath = value;
         }
-    };
+
+        public bool TryGetImageInput(out string imageFileName, out FileExtType fileExtType)
+        {
+            imageFileName = ImageFilePath;
+            fileExtType = FileExtType.Tif;
+
+            if (string.IsNullOrWhiteSpace(imageFileName))
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ImageFileCannotBeEmpty, "ColorVision");
+                return false;
+            }
+
+            fileExtType = ServicesHelper.ResolveFileExtType(imageFileName);
+            return true;
+        }
+
+        protected static bool TryGetTemplate<T>(
+            DisplayAlgorithmTemplateSelection selection,
+            out T value)
+        {
+            if (selection.IsSelectionValid() && selection.TryGetValue(out value))
+            {
+                return true;
+            }
+
+            value = default!;
+            MessageBox1.Show(
+                Application.Current.GetActiveWindow(),
+                selection.ValidationMessage,
+                "ColorVision");
+            return false;
+        }
+
+        protected static bool TryGetOptionalTemplate<T>(
+            DisplayAlgorithmTemplateSelection selection,
+            out T? value)
+        {
+            if (selection.SelectedIndex < 0)
+            {
+                value = default;
+                return true;
+            }
+
+            if (selection.TryGetValue(out T selectedValue))
+            {
+                value = selectedValue;
+                return true;
+            }
+
+            value = default;
+            MessageBox1.Show(
+                Application.Current.GetActiveWindow(),
+                selection.ValidationMessage,
+                "ColorVision");
+            return false;
+        }
+    }
+
+    public abstract class DisplayAlgorithmBase<TConfiguration> : DisplayAlgorithmBase
+        where TConfiguration : DisplayAlgorithmConfigBase
+    {
+        public TConfiguration Config { get; }
+        public sealed override DisplayAlgorithmConfigBase Configuration => Config;
+
+        protected DisplayAlgorithmBase(TConfiguration configuration)
+        {
+            Config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+    }
 }

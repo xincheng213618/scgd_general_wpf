@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -6,20 +8,32 @@ using System.Windows.Input;
 
 namespace ColorVision.UI
 {
+    public interface IWizardChoice
+    {
+        string Header { get; }
+        string Description { get; }
+        string StatusText { get; }
+        bool IsSelected { get; set; }
+        bool IsEnabled { get; }
+    }
+
     public interface IWizardStep
     {
         int Order { get; }
         string Header { get; }
         ICommand? Command { get; }
         string Description { get; }
+        IReadOnlyList<IWizardChoice> Choices => Array.Empty<IWizardChoice>();
         bool ConfigurationStatus { get; set; }
         bool IsRequired => false;
+        bool RunsBeforeInitializers => IsRequired;
         bool IsBusy => false;
         bool HasError => false;
         string ErrorMessage => string.Empty;
         string ActionText => string.Empty;
         bool CanContinue => !IsBusy && (!IsRequired || ConfigurationStatus);
         Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        Task<bool> ApplyAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
     }
 
@@ -54,6 +68,7 @@ namespace ColorVision.UI
 
         public virtual ICommand? Command => new RelayCommand(A => Execute());
         public abstract string Description { get; }
+        public virtual IReadOnlyList<IWizardChoice> Choices => Array.Empty<IWizardChoice>();
 
         public virtual bool ConfigurationStatus
         {
@@ -68,6 +83,7 @@ namespace ColorVision.UI
         private bool _ConfigurationStatus = true;
 
         public virtual bool IsRequired => false;
+        public virtual bool RunsBeforeInitializers => IsRequired;
         public virtual bool IsBusy => false;
         public virtual bool HasError => false;
         public virtual string ErrorMessage => string.Empty;
@@ -75,6 +91,7 @@ namespace ColorVision.UI
         public virtual bool CanContinue => !IsBusy && (!IsRequired || ConfigurationStatus);
 
         public virtual Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public virtual Task<bool> ApplyAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
         public virtual void Execute()
         {

@@ -8,51 +8,50 @@ namespace ColorVision.Copilot
 {
     internal interface ICopilotTurnRuntime
     {
-        Task<CopilotTurnResult> RunAsync(
+        IAsyncEnumerable<CopilotTurnEvent> RunAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
             CancellationToken cancellationToken);
 
         bool TryEnqueueSteeringMessage(string message);
     }
 
-    internal interface ICopilotTurnEventSink
+    internal abstract record CopilotTurnEvent;
+
+    internal sealed record CopilotTurnRequestPreparedEvent(
+        CopilotPreparedTurnRequest Request) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnChatDeltaEvent(
+        CopilotStreamDelta Delta) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnProviderRetryEvent(
+        CopilotProviderRetryInfo Retry) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnAgentEvent(
+        CopilotAgentEvent Event) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnCompletedEvent(
+        CopilotTurnResult Result) : CopilotTurnEvent;
+
+    internal sealed class CopilotTurnEventSink
     {
-        void OnRequestPrepared(CopilotPreparedTurnRequest request);
+        private readonly Action<CopilotTurnEvent> _publish;
 
-        void OnChatDelta(CopilotStreamDelta delta);
-
-        void OnProviderRetry(CopilotProviderRetryInfo retry);
-
-        void OnAgentEvent(CopilotAgentEvent agentEvent);
-    }
-
-    internal sealed class CopilotTurnEventSink : ICopilotTurnEventSink
-    {
-        private readonly Action<CopilotPreparedTurnRequest> _onRequestPrepared;
-        private readonly Action<CopilotStreamDelta> _onChatDelta;
-        private readonly Action<CopilotProviderRetryInfo> _onProviderRetry;
-        private readonly Action<CopilotAgentEvent> _onAgentEvent;
-
-        public CopilotTurnEventSink(
-            Action<CopilotPreparedTurnRequest> onRequestPrepared,
-            Action<CopilotStreamDelta> onChatDelta,
-            Action<CopilotProviderRetryInfo> onProviderRetry,
-            Action<CopilotAgentEvent> onAgentEvent)
+        public CopilotTurnEventSink(Action<CopilotTurnEvent> publish)
         {
-            _onRequestPrepared = onRequestPrepared ?? throw new ArgumentNullException(nameof(onRequestPrepared));
-            _onChatDelta = onChatDelta ?? throw new ArgumentNullException(nameof(onChatDelta));
-            _onProviderRetry = onProviderRetry ?? throw new ArgumentNullException(nameof(onProviderRetry));
-            _onAgentEvent = onAgentEvent ?? throw new ArgumentNullException(nameof(onAgentEvent));
+            _publish = publish ?? throw new ArgumentNullException(nameof(publish));
         }
 
-        public void OnRequestPrepared(CopilotPreparedTurnRequest request) => _onRequestPrepared(request);
+        public void OnRequestPrepared(CopilotPreparedTurnRequest request) =>
+            _publish(new CopilotTurnRequestPreparedEvent(request));
 
-        public void OnChatDelta(CopilotStreamDelta delta) => _onChatDelta(delta);
+        public void OnChatDelta(CopilotStreamDelta delta) =>
+            _publish(new CopilotTurnChatDeltaEvent(delta));
 
-        public void OnProviderRetry(CopilotProviderRetryInfo retry) => _onProviderRetry(retry);
+        public void OnProviderRetry(CopilotProviderRetryInfo retry) =>
+            _publish(new CopilotTurnProviderRetryEvent(retry));
 
-        public void OnAgentEvent(CopilotAgentEvent agentEvent) => _onAgentEvent(agentEvent);
+        public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
+            _publish(new CopilotTurnAgentEvent(agentEvent));
     }
 
     internal readonly record struct CopilotPreparedTurnRequest(
@@ -74,7 +73,10 @@ namespace ColorVision.Copilot
             CopilotAgentRecoveryRequest? recovery,
             CopilotAgentRunControl? runControl,
             CopilotAgentDefaultsConfig agentDefaults,
-            IEnumerable<CopilotMcpClientServerConfig>? externalMcpServers)
+            IEnumerable<CopilotMcpClientServerConfig>? externalMcpServers,
+            string? conversationId,
+            string? taskId,
+            CopilotAgentAccessContext? accessContext = null)
         {
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             Mode = mode;
@@ -88,6 +90,9 @@ namespace ColorVision.Copilot
             Recovery = recovery;
             RunControl = runControl;
             AgentDefaults = (agentDefaults ?? throw new ArgumentNullException(nameof(agentDefaults))).Clone();
+            ConversationId = (conversationId ?? string.Empty).Trim();
+            TaskId = (taskId ?? string.Empty).Trim();
+            AccessContext = accessContext ?? new CopilotAgentAccessContext();
             ExternalMcpServers = (externalMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
                 .Where(server => server != null)
                 .Select(server => server.Clone())
@@ -117,6 +122,12 @@ namespace ColorVision.Copilot
         public CopilotAgentRunControl? RunControl { get; }
 
         public CopilotAgentDefaultsConfig AgentDefaults { get; }
+
+        public string ConversationId { get; }
+
+        public string TaskId { get; }
+
+        public CopilotAgentAccessContext AccessContext { get; }
 
         public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; }
     }

@@ -1,0 +1,350 @@
+<Page x:Class="ColorVision.Engine.FlowProcessing.Diagnostics.FlowExecutionOverviewPage"
+      x:ClassModifier="internal"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+      mc:Ignorable="d"
+      d:DesignHeight="720"
+      d:DesignWidth="1280"
+      Background="{DynamicResource GlobalBackground}"
+      Loaded="Page_Loaded">
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <SolidColorBrush x:Key="OverviewCompletedBrush" Color="#4D8DFF"/>
+        <SolidColorBrush x:Key="OverviewTimeoutBrush" Color="#D84A4A"/>
+        <SolidColorBrush x:Key="OverviewWarningBrush" Color="#D99000"/>
+
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="OverviewCardStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
+        </Style>
+
+        <Style x:Key="OverviewMetricLabelStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="OverviewMetricValueStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+
+        <Style x:Key="OverviewSectionTitleStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="OverviewPrimaryButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="MinHeight" Value="30"/>
+        </Style>
+
+        <Style x:Key="OverviewDurationItemStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="ItemChrome"
+                                Padding="11"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemChrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="ItemChrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemChrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="ItemChrome" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="ItemChrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OverviewDurationProgressStyle" TargetType="{x:Type ProgressBar}">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="Height" Value="10"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTimedOut, Mode=OneWay}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource OverviewTimeoutBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsWarning, Mode=OneWay}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource OverviewWarningBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="2,0,2,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Text="流程概览" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock x:Name="SessionText"
+                           Margin="0,4,0,0"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="12"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button Content="清理当前流程"
+                        ToolTip="清空当前流程所含节点的全部本地分析历史"
+                        Padding="12,5"
+                        Margin="0,0,8,0"
+                        Click="ClearCurrentFlowButton_Click"/>
+                <Button x:Name="OpenMessagesButton"
+                        Content="查看本批消息"
+                        Click="OpenMessagesButton_Click"
+                        Style="{StaticResource OverviewPrimaryButtonStyle}"/>
+            </StackPanel>
+        </Grid>
+
+        <UniformGrid Grid.Row="1" Columns="4" Margin="0,0,0,12">
+            <Border Style="{StaticResource OverviewCardStyle}" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="流程总耗时" Style="{StaticResource OverviewMetricLabelStyle}"/>
+                    <TextBlock x:Name="SummaryTotalTimeText" Text="—" Style="{StaticResource OverviewMetricValueStyle}"/>
+                    <TextBlock x:Name="SummaryTotalTimeHintText"
+                               Margin="0,4,0,0"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource OverviewMetricLabelStyle}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource OverviewCardStyle}" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="执行节点" Style="{StaticResource OverviewMetricLabelStyle}"/>
+                    <TextBlock x:Name="SummaryNodeCountText" Text="—" Style="{StaticResource OverviewMetricValueStyle}"/>
+                    <TextBlock x:Name="SummaryNodeStateText"
+                               Margin="0,4,0,0"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource OverviewMetricLabelStyle}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource OverviewCardStyle}" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="最慢节点" Style="{StaticResource OverviewMetricLabelStyle}"/>
+                    <TextBlock x:Name="SummarySlowestNodeText"
+                               Text="—"
+                               Style="{StaticResource OverviewMetricValueStyle}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="SummarySlowestTimeText"
+                               Margin="0,4,0,0"
+                               Style="{StaticResource OverviewMetricLabelStyle}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource OverviewCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="MQTT 消息" Style="{StaticResource OverviewMetricLabelStyle}"/>
+                    <TextBlock x:Name="SummaryMessageCountText" Text="—" Style="{StaticResource OverviewMetricValueStyle}"/>
+                    <TextBlock x:Name="SummaryMessageStateText"
+                               Margin="0,4,0,0"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource OverviewMetricLabelStyle}"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource OverviewCardStyle}" Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="2,0,2,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="节点耗时分布" Style="{StaticResource OverviewSectionTitleStyle}"/>
+                            <TextBlock Text="按耗时从高到低排列，条形长度相对本批最慢节点"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="12"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1"
+                                   Text="双击或按 Enter 查看节点"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontSize="11"
+                                   VerticalAlignment="Bottom"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <ListBox x:Name="DurationListBox"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 ItemContainerStyle="{StaticResource OverviewDurationItemStyle}"
+                                 MouseDoubleClick="DurationListBox_MouseDoubleClick"
+                                 PreviewKeyDown="DurationListBox_PreviewKeyDown"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                 ScrollViewer.CanContentScroll="True">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid AutomationProperties.Name="{Binding NodeName, Mode=OneWay}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="190"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="88"/>
+                                            <ColumnDefinition Width="66"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding NodeName, Mode=OneWay}"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding DetailText, Mode=OneWay}"
+                                                       Margin="0,3,0,0"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <ProgressBar Grid.Column="1"
+                                                     Margin="8,0,18,0"
+                                                     Maximum="100"
+                                                     Value="{Binding RelativeToSlowestPercent, Mode=OneWay}"
+                                                     Style="{StaticResource OverviewDurationProgressStyle}"/>
+
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding DurationText, Mode=OneWay}"
+                                                   HorizontalAlignment="Right"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"/>
+
+                                        <StackPanel Grid.Column="3" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding ShareText, Mode=OneWay}" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="占比"
+                                                       HorizontalAlignment="Right"
+                                                       FontSize="10"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="4"
+                                                    Orientation="Horizontal"
+                                                    Margin="12,0,0,0">
+                                            <Button Content="查看"
+                                                    Tag="{Binding Record, Mode=OneWay}"
+                                                    Click="OpenNodeButton_Click"
+                                                    Padding="9,3"
+                                                    Margin="0,0,5,0"/>
+                                            <Button Content="定位"
+                                                    Tag="{Binding Record, Mode=OneWay}"
+                                                    Click="LocateNodeButton_Click"
+                                                    Padding="9,3"
+                                                    IsEnabled="{Binding CanLocate, RelativeSource={RelativeSource AncestorType={x:Type Page}}, Mode=OneWay}"
+                                                    Visibility="{Binding CanLocate, RelativeSource={RelativeSource AncestorType={x:Type Page}}, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock x:Name="DurationEmptyText"
+                                   Text="本批次没有节点执行记录"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Visibility="Collapsed"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource OverviewCardStyle}" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="2,0,2,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="执行时序" Style="{StaticResource OverviewSectionTitleStyle}"/>
+                            <TextBlock Text="观察并行、等待和节点间空档"
+                                       Margin="0,4,0,0"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                            <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewCompletedBrush}" Margin="0,0,4,0"/>
+                            <TextBlock Text="完成" FontSize="10" Margin="0,0,8,0"/>
+                            <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewTimeoutBrush}" Margin="0,0,4,0"/>
+                            <TextBlock Text="超时" FontSize="10" Margin="0,0,8,0"/>
+                            <Border Width="9" Height="9" CornerRadius="2" Background="{StaticResource OverviewWarningBrush}" Margin="0,0,4,0"/>
+                            <TextBlock Text="慢节点" FontSize="10"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <ScottPlot:WpfPlot x:Name="TimelinePlot"/>
+                        <TextBlock x:Name="TimelineEmptyText"
+                                   Text="本批次没有可显示的执行时序"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Visibility="Collapsed"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

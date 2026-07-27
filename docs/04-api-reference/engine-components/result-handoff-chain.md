@@ -20,7 +20,7 @@
 | 主结果 | `ViewResultAlg` | 批次、文件路径、模板名、结果类型、结果描述 |
 | 明细结果 | `IViewResult` | POI、MTF、SFR、FOV、Ghost 等算法明细 |
 | 展示 handler | `IResultHandleBase` | 读取明细、填充表格、绘制 ImageEditor overlay |
-| 项目结果 | `ObjectiveTestResult`、项目结果模型 | 客户字段、判定、CSV/PDF/MES/Socket |
+| 项目结果 | `ObjectiveTestResult`、项目结果模型 | 客户字段、判定、CSV/MES/Socket |
 
 客户判定和交付字段应该在 `Projects/*`，不要写进通用 `ViewHandleXxx`。
 

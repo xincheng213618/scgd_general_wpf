@@ -2,6 +2,7 @@ using ColorVision.Solution;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Editor.AvalonEditor;
 using ColorVision.Solution.Workspace;
+using ColorVision.Common.Utilities;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -86,6 +87,24 @@ namespace ColorVision.Copilot
                 {
                     textEditor.NavigateTo(target.LineNumber.Value, target.ColumnNumber ?? 1);
                 }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
+        public static bool TryOpenContainingFolder(CopilotLocalFileLinkTarget target, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            try
+            {
+                if (!TryGetWorkspaceRoot(out var workspaceRoot) || !IsCurrentWorkspaceFile(target.FilePath, workspaceRoot))
+                    throw new InvalidOperationException("文件已不存在或不在当前工作区内。");
+
+                PlatformHelper.OpenFolderAndSelectFile(target.FilePath);
                 return true;
             }
             catch (Exception ex)

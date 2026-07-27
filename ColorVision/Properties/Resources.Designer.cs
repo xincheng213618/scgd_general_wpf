@@ -304,60 +304,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启用 Live2D 渲染 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DEnable {
-            get {
-                return ResourceManager.GetString("ConfigLive2DEnable", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 最大帧率 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DMaxFps {
-            get {
-                return ResourceManager.GetString("ConfigLive2DMaxFps", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 轻量动效 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DMotionEffects {
-            get {
-                return ResourceManager.GetString("ConfigLive2DMotionEffects", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 模型或 HTML 路径 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DPath {
-            get {
-                return ResourceManager.GetString("ConfigLive2DPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Live2D 渲染分辨率 的本地化字符串。
-        /// </summary>
-        public static string ConfigLive2DRenderScale {
-            get {
-                return ResourceManager.GetString("ConfigLive2DRenderScale", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 启用实验性一体化主窗口标题栏 的本地化字符串。
-        /// </summary>
-        public static string ConfigUseIntegratedMainWindowChrome {
-            get {
-                return ResourceManager.GetString("ConfigUseIntegratedMainWindowChrome", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否更新 的本地化字符串。
         /// </summary>
         public static string ConfirmUpdate {
@@ -779,7 +725,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("CreateSnapshotBeforeUpdate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 开启后，主程序、插件或组合更新前都会创建一次完整程序快照，可能延长更新时间。 的本地化字符串。
         /// </summary>
@@ -788,7 +734,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("CreateSnapshotBeforeUpdateDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 当前版本已经是最新版本 的本地化字符串。
         /// </summary>
@@ -871,7 +817,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 有本地 Live2D 模型的话，可以在设置里接进来。 的本地化字符串。
+        ///   查找类似 有 PNG 或 WebP 精灵表的话，可以在设置里创建自己的宠物。 的本地化字符串。
         /// </summary>
         public static string DesktopPetIdleTip4 {
             get {
@@ -885,24 +831,6 @@ namespace ColorVision.Properties {
         public static string DesktopPetInitializerName {
             get {
                 return ResourceManager.GetString("DesktopPetInitializerName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模型加载失败，已切换为内置形象。 的本地化字符串。
-        /// </summary>
-        public static string DesktopPetLive2DError {
-            get {
-                return ResourceManager.GetString("DesktopPetLive2DError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 模型加载失败：{0} 的本地化字符串。
-        /// </summary>
-        public static string DesktopPetLive2DErrorDetail {
-            get {
-                return ResourceManager.GetString("DesktopPetLive2DErrorDetail", resourceCulture);
             }
         }
         
@@ -995,7 +923,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("DisableSystemProxyForUpdates", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 开启后，更新检查和插件市场请求将直接连接公网服务；关闭时使用 Windows 系统代理。修改后从下一次请求生效。 的本地化字符串。
         /// </summary>
@@ -1004,7 +932,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("DisableSystemProxyForUpdatesDescription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 本地下载 的本地化字符串。
         /// </summary>
@@ -1168,6 +1096,141 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 快速搜索本机文件和文件夹。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareEverythingDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareEverythingDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已安装 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareInstalled {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareInstalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装包缺失 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwarePackageMissing {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwarePackageMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 将安装 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareSelected {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已跳过 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareSkipped {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareSkipped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看、解压和创建常用压缩文件。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWinRarDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWinRarDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认选择 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardConfirmAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardConfirmAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 建议安装 Everything 和 WinRAR。未安装的软件已默认勾选；单击“下一步”或“安装所选软件”会依次打开安装程序。取消勾选即可跳过，不影响继续使用 ColorVision。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardDescription {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 推荐软件 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardHeader {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装所选软件 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 安装程序启动失败：{1} 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallErrorFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallErrorFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0} 尚未安装完成。请重试，或取消勾选后继续。 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardInstallIncompleteFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardInstallIncompleteFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未找到 {0} 安装包：{1} 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardPackageMissingFormat {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardPackageMissingFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重新检查 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardRecheckAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardRecheckAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在安装... 的本地化字符串。
+        /// </summary>
+        public static string RecommendedSoftwareWizardWorkingAction {
+            get {
+                return ResourceManager.GetString("RecommendedSoftwareWizardWorkingAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -1247,7 +1310,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardChecking", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 ColorVision 后台服务 的本地化字符串。
         /// </summary>
@@ -1256,7 +1319,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardHeader", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 安装后台服务 的本地化字符串。
         /// </summary>
@@ -1265,7 +1328,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardInstallAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 服务管理器依赖 ColorVision Service Host 执行需要管理员权限的安装和维护操作。点击“安装后台服务”后，Windows 会请求一次管理员授权。
         ///
@@ -1276,7 +1339,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardNotInstalledFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 后台服务安装包不存在：{0} 的本地化字符串。
         /// </summary>
@@ -1285,7 +1348,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardPackageMissingFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 后台服务已安装并正常运行（版本 {0}）。
         ///
@@ -1296,7 +1359,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardReadyFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 重新检查 的本地化字符串。
         /// </summary>
@@ -1305,7 +1368,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardRecheckAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 修复并启动 的本地化字符串。
         /// </summary>
@@ -1314,7 +1377,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardRepairAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 重试 的本地化字符串。
         /// </summary>
@@ -1323,7 +1386,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardRetryAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 无法确认后台服务状态，请重试。 的本地化字符串。
         /// </summary>
@@ -1332,7 +1395,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardStatusUnknown", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 后台服务已安装（版本 {0}），但当前没有运行。请修复并启动后再继续。 的本地化字符串。
         /// </summary>
@@ -1341,7 +1404,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardStoppedFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未找到可用的后台服务安装包，因此无法继续初始化。
         ///
@@ -1352,7 +1415,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardUnavailableFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 更新后台服务 的本地化字符串。
         /// </summary>
@@ -1361,7 +1424,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardUpdateAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 后台服务需要更新或修复。当前版本：{0}；安装包版本：{1}。完成后才能进入服务管理器。 的本地化字符串。
         /// </summary>
@@ -1370,7 +1433,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardUpdateFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 正在准备 ColorVision Service Host。安装或修复时可能会请求管理员权限，请完成系统提示。 的本地化字符串。
         /// </summary>
@@ -1379,7 +1442,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardWorking", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 正在处理… 的本地化字符串。
         /// </summary>
@@ -1388,7 +1451,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("ServiceHostWizardWorkingAction", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 未找到 Shell Extension:\n{0} 的本地化字符串。
         /// </summary>
@@ -1476,15 +1539,6 @@ namespace ColorVision.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 百度云盘下载 的本地化字符串。
-        /// </summary>
-        public static string UpdateBaidu {
-            get {
-                return ResourceManager.GetString("UpdateBaidu", resourceCulture);
             }
         }
         
@@ -1642,6 +1696,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制离线下载命令 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCopyOfflineDownloadCommand {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCopyOfflineDownloadCommand", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 左键复制 PowerShell 命令；右键选择保存路径，默认导出可直接运行的 .cmd 文件。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewCopyOfflineDownloadCommandDescription {
+            get {
+                return ResourceManager.GetString("UpdatePreviewCopyOfflineDownloadCommandDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 发现 {0} 个可用更新，可按需选择后立即安装。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewDialogSummaryDefault {
@@ -1741,6 +1813,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Windows 未检测到可用的互联网连接。可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewNoInternetConnectionMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewNoInternetConnectionMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 没有可更新的插件。 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewNoPluginUpdates {
@@ -1767,6 +1848,42 @@ namespace ColorVision.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 离线下载命令已复制 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewOfflineDownloadCommandCopied {
+            get {
+                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandCopied", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 请在可联网的堡垒机上运行该 PowerShell 命令，下载后将安装包复制回本机并运行。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewOfflineDownloadCommandCopiedDescription {
+            get {
+                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandCopiedDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 离线下载启动器已保存 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewOfflineDownloadCommandSaved {
+            get {
+                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandSaved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已保存到：{0}。请直接运行此 .cmd 文件。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat {
+            get {
+                return ResourceManager.GetString("UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 更新包下载失败，请稍后重试。 的本地化字符串。
         /// </summary>
@@ -1813,6 +1930,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存离线下载文件 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewSaveOfflineDownloadCommand {
+            get {
+                return ResourceManager.GetString("UpdatePreviewSaveOfflineDownloadCommand", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 正在扫描可用更新项 的本地化字符串。
         /// </summary>
         public static string UpdatePreviewScanningTitle {
@@ -1829,7 +1955,7 @@ namespace ColorVision.Properties {
                 return ResourceManager.GetString("UpdatePreviewSelectionCreatesSnapshot", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   查找类似 本轮不合并插件更新 的本地化字符串。
         /// </summary>
@@ -1875,6 +2001,33 @@ namespace ColorVision.Properties {
             }
         }
         
+        /// <summary>
+        ///   查找类似 无法连接更新服务器 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewServerUnavailableHeading {
+            get {
+                return ResourceManager.GetString("UpdatePreviewServerUnavailableHeading", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 已尝试连接更新服务器，但未能取得版本信息。请检查网络或代理设置，也可以复制上方的离线下载命令，在可联网的堡垒机上下载完整安装包。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewServerUnavailableMessage {
+            get {
+                return ResourceManager.GetString("UpdatePreviewServerUnavailableMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 未能获取主程序、插件和主题的最新版本信息。 的本地化字符串。
+        /// </summary>
+        public static string UpdatePreviewServerUnavailableSummary {
+            get {
+                return ResourceManager.GetString("UpdatePreviewServerUnavailableSummary", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 当前主程序和插件都已经是最新版本。 的本地化字符串。
         /// </summary>

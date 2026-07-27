@@ -2,11 +2,12 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Batch;
+using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
@@ -450,10 +451,9 @@ namespace ProjectKB
 
         private bool IsFlowEngineAvailable()
         {
-            return flowEngine != null
-                && STNodeEditorMain != null
-                && !STNodeEditorMain.IsDisposed
-                && !STNodeEditorMain.Disposing;
+            return !_isDisposed
+                && flowEngine != null
+                && STNodeEditorMain != null;
         }
 
         private bool RebuildFlowEngine()
@@ -468,6 +468,14 @@ namespace ProjectKB
             if (flowControl != null)
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             flowControl = null;
+            try
+            {
+                flowEngine?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("释放旧流程控制器失败", ex);
+            }
             try
             {
                 STNodeEditorMain?.Dispose();
@@ -1517,6 +1525,7 @@ namespace ProjectKB
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 flowControl.Stop();
             }
+            flowEngine?.Dispose();
             STNodeEditorMain?.Dispose();
             timer?.Dispose();
             logOutput?.Dispose();

@@ -48,11 +48,15 @@ Harness 的 `TodoProvider` 和 `AgentModeProvider` 现在作为标准运行时�
 
 ## 项目指令链
 
-非 Chat 模式按当前解决方案根到活动文档目录的顺序发现项目指令。每个目录先检查 `AGENTS.override.md`，只有它不存在、为空或无法安全读取时才回退到同目录的 `AGENTS.md`；同一目录最多注入一份，越靠近活动文档的内容越晚出现。额外搜索根只提供其自身根指令，不会扫描与活动文档无关的任意子目录。重解析点文件或目录不会进入指令链。
+非 Chat 模式按受信项目根到活动文档目录的顺序发现项目指令。受信项目根优先取当前解决方案目录；未打开解决方案时才回退到活动文档目录。每个目录先选择一个共享入口，依次尝试 `AGENTS.override.md`、`AGENTS.md`、`CLAUDE.md` 和 `.claude/CLAUDE.md`；后两者是面向 Claude Code 项目的兼容回退，不会在同目录已有 AGENTS 指令时重复注入。项目根的 `.claude/rules/**/*.md` 是共享入口之外的模块化规则；根共享文档之后按规则相对路径稳定排序，再加载同目录非空的 `CLAUDE.local.md` 个人叠加层。local 即使已经选择 AGENTS 入口也会生效，适合不应提交的本机测试数据或工作流偏好，仓库应把它加入 `.gitignore`。随后才加载活动文档链中的嵌套共享与 local 文档，因此越靠近活动文档的内容越晚出现。文档数量或字符预算不足时，选择阶段先保留活动文档链中最具体的文档；同一作用域按 local、共享或匹配路径的规则、无条件规则决定保留顺序，序列化时仍保持从外层到内层、共享到规则再到 local 的可解释顺序。
 
-单份原始文件最多有界读取 32,768 个字符，注入正文最多 12,000 个字符，全部正文合计最多 24,000 个字符和 4 份文档。宿主在序列化为作用域 JSONL 后再次施加 32,768 字符硬上限，因此路径、换行和反斜杠转义不能绕过正文预算。超限的最后一份文档会在保持完整 JSON 行的前提下缩短并标记 `IsTruncated`，不会截出损坏 JSON。
+显式本地文件和文件附件仍可增加只读搜索根，让 Agent 在用户要求时读取对应文件；它们不会自动成为受信项目根，因此相邻的 `AGENTS.md`、`CLAUDE.md`、`.claude/rules` 和 `.agents/skills` 不会进入模型上下文。这个分离与 Codex 只从受信项目层加载项目配置的边界，以及 Claude Code“附加目录授予文件访问、默认不加载 CLAUDE.md/rules”的行为一致。`/permissions` 会分别显示搜索根和受信项目根，便于确认来源。
 
-为减少只面向维护者的上下文噪声，文件中代码围栏之外的 `<!-- HTML comments -->` 会在脱敏和截断前剥离；围栏内的示例原样保留。项目指令始终作为 workspace-scoped user-role 数据注入，只影响其目录范围内的行为，不能授权写入、审批、外部副作用或越界访问。这结合了 [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 的根到当前目录和 override 语义，以及 [Claude Code memory](https://code.claude.com/docs/en/memory) 的就近作用域与维护者注释清理原则。
+rules 不含 `paths` frontmatter 时无条件适用于该受信项目根；存在 `paths` 时，只有活动文档、用户文本中的显式本地文件或文件附件在请求开始前已知、位于受信项目根内，且其根内相对路径匹配至少一个 glob 时才加载。支持 `*`、`?`、`**` 和 `{ts,tsx}` 一类花括号展开；单个规则最多 16 个模式，每个模式最多 256 个字符。绝对路径、父目录段、否定模式、控制字符、空段、重复或畸形 `paths` 会让该规则失败关闭，而不是意外变成全局规则。匹配使用 Windows 不区分大小写语义，frontmatter 只供宿主筛选，进入模型前会移除。ColorVision 当前在构造固定请求上下文时完成匹配，不会因为本轮工具稍后发现了一个此前未知文件而热注入新规则；后续新请求会按当时目标重新发现。
+
+单份原始文件最多有界读取 32,768 个字符，注入正文最多 12,000 个字符，全部正文合计最多 24,000 个字符和 4 份文档。rules 遍历最多检查 64 个目录、每目录前 256 个条目和 64 份 Markdown，frontmatter 最多读取 8,192 个字符；规则子目录、文件或 `.claude` 链上的重解析点都跳过。宿主在序列化为作用域 JSONL 后再次施加 32,768 字符硬上限，因此目录规模、路径、换行和反斜杠转义不能绕过预算。超限的最后一份文档会在保持完整 JSON 行的前提下缩短并标记 `IsTruncated`，不会截出损坏 JSON。
+
+为减少只面向维护者的上下文噪声，文件中代码围栏之外的 `<!-- HTML comments -->` 会在脱敏和截断前剥离；围栏内的示例原样保留。共享入口、rules 和 local 叠加层都不会展开 Claude Code 的 `@path` 导入，因此不会因为仓库指令静默扩大文件读取范围。`CLAUDE.local.md` 与 rules 使用相同的正文预算、脱敏和权限边界；“个人”或“路径匹配”都不提升可信等级。项目指令始终作为 workspace-scoped user-role 数据注入，只影响其目录范围内的行为，不能授权写入、审批、外部副作用或越界访问。这结合了 [Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 的根到当前目录、override 与回退语义、[Codex 项目层信任](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml) 的配置边界，以及 [Claude Code memory](https://code.claude.com/docs/en/memory) 和 [Claude Code additional directories](https://code.claude.com/docs/en/permissions#additional-directories-grant-file-access-not-configuration) 中项目指令与额外文件访问分离的语义。
 
 ## Agent Skills
 
@@ -60,7 +64,7 @@ Harness 的 `AgentSkillsProvider` 作为标准能力启用，采用渐进式加�
 
 技能只从受信任的应用或工作区目录发现：
 
-- 当前解决方案搜索根下的 `.agents/skills/<skill-name>/SKILL.md`，适合项目级扩展和覆盖。
+- 受信项目根下的 `.agents/skills/<skill-name>/SKILL.md`，适合项目级扩展和覆盖；显式文件和附件形成的额外搜索根不会贡献 Skill。
 - 应用输出目录下的 `Copilot/Skills/<skill-name>/SKILL.md`，用于随 ColorVision 发布的内置技能。
 - 不默认扫描用户主目录或任意外部路径；符号链接和重解析点目录不会加入技能源。
 

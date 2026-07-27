@@ -1,6 +1,8 @@
 #pragma warning disable CA1507,CA1866
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using FlowEngineLib.MQTT;
 using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
@@ -13,6 +15,8 @@ public class CVCommonNode : STNode
 	public const int StandardNodeMinHeight = 80;
 	protected const int StandardNodeContentPadding = 5;
 	protected const int StandardNodeContentWidth = StandardNodeWidth - StandardNodeContentPadding * 2;
+	protected const int CompactSummaryTop = 30;
+	protected const int CompactSummaryHeight = 18;
 
 	protected string m_nodeName;
 
@@ -80,6 +84,7 @@ public class CVCommonNode : STNode
         }
     }
 
+	[STNodeProperty("z-index", "z-index", true, false, false)]
 	public int ZIndex
 	{
 		get
@@ -137,6 +142,71 @@ public class CVCommonNode : STNode
 	{
 		ShowControls = false;
 		SetAutoSize(true);
+	}
+
+	protected override void OnDrawBody(DrawingTools dt)
+	{
+		base.OnDrawBody(dt);
+		if (!ShouldDrawCompactSummary())
+		{
+			return;
+		}
+
+		DrawCompactSummary(dt, GetCompactSummaryLabel(), GetCompactSummaryValue());
+	}
+
+	protected virtual string GetCompactSummaryLabel()
+	{
+		return string.Empty;
+	}
+
+	protected virtual string GetCompactSummaryValue()
+	{
+		return string.Empty;
+	}
+
+	protected bool ShouldDrawCompactSummary()
+	{
+		return !ShowControls && InputOptionsCount < 2 && !string.IsNullOrEmpty(GetCompactSummaryValue());
+	}
+
+	private void DrawCompactSummary(DrawingTools dt, string label, string value)
+	{
+		Rectangle rectangle = new Rectangle(
+			Left + StandardNodeContentPadding,
+			Top + TitleHeight + CompactSummaryTop,
+			Math.Max(0, Width - StandardNodeContentPadding * 2),
+			CompactSummaryHeight);
+		Graphics graphics = dt.Graphics;
+		GraphicsState state = graphics.Save();
+		StringAlignment alignment = m_sf.Alignment;
+		StringAlignment lineAlignment = m_sf.LineAlignment;
+		StringFormatFlags formatFlags = m_sf.FormatFlags;
+		StringTrimming trimming = m_sf.Trimming;
+		try
+		{
+			graphics.SetClip(rectangle, CombineMode.Intersect);
+			graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+			dt.SolidBrush.Color = ForeColor;
+			m_sf.LineAlignment = StringAlignment.Center;
+			m_sf.FormatFlags |= StringFormatFlags.NoWrap;
+			m_sf.Trimming = StringTrimming.None;
+			if (!string.IsNullOrEmpty(label))
+			{
+				m_sf.Alignment = StringAlignment.Near;
+				graphics.DrawString(label, Font, dt.SolidBrush, rectangle, m_sf);
+			}
+			m_sf.Alignment = string.IsNullOrEmpty(label) ? StringAlignment.Near : StringAlignment.Far;
+			graphics.DrawString(value, Font, dt.SolidBrush, rectangle, m_sf);
+		}
+		finally
+		{
+			m_sf.Alignment = alignment;
+			m_sf.LineAlignment = lineAlignment;
+			m_sf.FormatFlags = formatFlags;
+			m_sf.Trimming = trimming;
+			graphics.Restore(state);
+		}
 	}
 
 	protected override Size GetDefaultNodeSize(Graphics g)

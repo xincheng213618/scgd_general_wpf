@@ -5,6 +5,12 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <VersionPrefix>1.5.6.1</VersionPrefix>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+    <IncludeSymbols>True</IncludeSymbols>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>ColorVision user, role, permission, session, and audit management for WPF applications.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,5 +23,12 @@
     <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\ColorVision.Themes\ColorVision.Themes.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 </Project>

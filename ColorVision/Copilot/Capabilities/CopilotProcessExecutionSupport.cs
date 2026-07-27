@@ -79,7 +79,8 @@ namespace ColorVision.Copilot
             int maxCharacters,
             int headCharacters,
             string truncationMarker,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string>? onChunk = null)
         {
             ArgumentNullException.ThrowIfNull(reader);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCharacters);
@@ -97,6 +98,7 @@ namespace ColorVision.Copilot
                     var count = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
                     if (count == 0)
                         break;
+                    TryPublishChunk(onChunk, buffer, count);
                     var offset = 0;
                     if (head.Length < headCharacters)
                     {
@@ -126,6 +128,55 @@ namespace ColorVision.Copilot
             return truncated
                 ? head.Append(truncationMarker).Append(tail).ToString()
                 : head.Append(tail).ToString();
+        }
+
+        public static void ReportLatestOutput(
+            CopilotToolProgressContext? progress,
+            string processLabel,
+            string chunk,
+            bool isError)
+        {
+            if (progress == null)
+                return;
+
+            var latestLine = ExtractLatestOutputLine(chunk);
+            if (string.IsNullOrWhiteSpace(latestLine))
+                return;
+
+            progress.Report($"{processLabel} {(isError ? "错误输出" : "输出")}: {latestLine}");
+        }
+
+        private static string ExtractLatestOutputLine(string? chunk)
+        {
+            if (string.IsNullOrWhiteSpace(chunk))
+                return string.Empty;
+
+            var end = chunk.Length;
+            while (end > 0 && char.IsWhiteSpace(chunk[end - 1]))
+                end--;
+            if (end == 0)
+                return string.Empty;
+
+            var start = end - 1;
+            while (start >= 0 && chunk[start] is not ('\r' or '\n'))
+                start--;
+            var line = chunk[(start + 1)..end].Trim();
+            const int maximumLineLength = 512;
+            return line.Length <= maximumLineLength ? line : line[..maximumLineLength];
+        }
+
+        private static void TryPublishChunk(Action<string>? onChunk, char[] buffer, int count)
+        {
+            if (onChunk == null)
+                return;
+
+            try
+            {
+                onChunk(new string(buffer, 0, count));
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+            }
         }
 
         private static async Task TryWaitForExitAsync(Process process, TimeSpan timeout)

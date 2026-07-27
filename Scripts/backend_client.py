@@ -263,7 +263,7 @@ def upload_file(
                         headers={"Content-Type": "application/octet-stream"},
                     )
 
-            if response.status_code == 201:
+            if response.status_code in {200, 201, 204}:
                 print("File uploaded successfully")
                 return True
             if response.status_code == 401:
@@ -354,35 +354,63 @@ def upload_content(
     *,
     session: Any | None = None,
 ) -> bool:
-    """Upload raw content (e.g. a version string) to a remote path."""
+    """Upload raw content (e.g. a version string) through the backend HTTP PUT endpoint."""
     requests = get_requests_module()
     if requests is None:
         print("Remote upload requires the requests package.")
         return False
 
+    content_type = "application/octet-stream"
     if isinstance(content, str):
         content = content.encode("utf-8")
+        content_type = "text/plain; charset=utf-8"
 
     upload_url = build_upload_url(settings.base_url, settings.folder_name, remote_filename)
     http_client = session or create_http_session(requests_module=requests)
     auth = resolve_auth_tuple(settings)
+    last_error = ""
 
-    try:
-        response = http_client.put(
-            upload_url,
-            data=content,
-            auth=auth,
-            timeout=(settings.connect_timeout, settings.read_timeout),
-            headers={"Content-Type": "application/octet-stream"},
+    if settings.enabled and auth is None:
+        print(
+            "Remote upload is enabled but credentials are missing. "
+            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, or disable remote upload."
         )
-        if response.status_code == 201:
-            print(f"Uploaded {remote_filename} successfully")
-            return True
-        print(f"Upload {remote_filename} failed: HTTP {response.status_code}: {response.text.strip()}")
         return False
-    except requests.RequestException as exc:
-        print(f"Upload {remote_filename} failed: {exc}")
-        return False
+
+    for attempt in range(1, settings.max_retries + 1):
+        try:
+            response = http_client.put(
+                upload_url,
+                data=content,
+                auth=auth,
+                timeout=(settings.connect_timeout, settings.read_timeout),
+                headers={"Content-Type": content_type},
+            )
+            if response.status_code in {200, 201, 204}:
+                print(f"Uploaded {remote_filename} successfully")
+                return True
+            if response.status_code == 401:
+                print(
+                    f"Upload {remote_filename} failed: HTTP 401 Unauthorized. "
+                    "Check the backend upload credentials."
+                )
+                return False
+
+            last_error = f"HTTP {response.status_code}: {response.text.strip()}"
+            print(f"Upload {remote_filename} attempt {attempt} failed: {last_error}")
+            if response.status_code < 500 and response.status_code not in {408, 429}:
+                return False
+        except requests.RequestException as exc:
+            last_error = str(exc)
+            print(f"Upload {remote_filename} attempt {attempt} failed: {last_error}")
+
+        if attempt < settings.max_retries:
+            wait_seconds = min(2 ** (attempt - 1), 5)
+            print(f"Retrying upload in {wait_seconds} second(s)...")
+            time.sleep(wait_seconds)
+
+    print(f"Upload {remote_filename} failed after {settings.max_retries} attempt(s): {last_error}")
+    return False
 
 
 def fetch_latest_version(

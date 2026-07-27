@@ -1,0 +1,14 @@
+<Window x:Class="ColorVision.FloatingBall.DesktopPetSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.FloatingBall"
+        Title="桌面宠物"
+        Width="820"
+        Height="720"
+        MinWidth="700"
+        MinHeight="540"
+        Background="{DynamicResource GlobalBackground}"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+    <local:DesktopPetSettingsControl />
+</Window>

@@ -27,13 +27,24 @@ namespace ColorVision.Copilot
                 new CopilotToolExecutor());
         }
 
-        public Task<CopilotTurnResult> RunAsync(
+        public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            ArgumentNullException.ThrowIfNull(eventSink);
+            return CopilotTurnEventStream.RunAsync(
+                (eventSink, turnCancellationToken) => RunCoreAsync(
+                    request,
+                    eventSink,
+                    turnCancellationToken),
+                cancellationToken);
+        }
+
+        private Task<CopilotTurnResult> RunCoreAsync(
+            CopilotTurnRequest request,
+            CopilotTurnEventSink eventSink,
+            CancellationToken cancellationToken)
+        {
             return request.Mode == CopilotAgentMode.Chat
                 ? RunChatAsync(request, eventSink, cancellationToken)
                 : RunAgentAsync(request, eventSink, cancellationToken);
@@ -43,7 +54,7 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
+            CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
             var prompt = request.UserText.Trim();
@@ -107,10 +118,17 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunAgentAsync(
             CopilotTurnRequest request,
-            ICopilotTurnEventSink eventSink,
+            CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            var requestPlan = CopilotAgentRequestFactory.Prepare(request.UserText, request.Mode, request.HostContext);
+            var recoveryTaskContext = CopilotAgentRecoveryTaskContext.Resolve(
+                request.UserText,
+                request.Recovery,
+                request.SessionCheckpoint);
+            var requestPlan = CopilotAgentRequestFactory.Prepare(
+                recoveryTaskContext.EffectiveUserText,
+                request.Mode,
+                request.HostContext);
             var imageUnderstandingTask = _imageUnderstandingService.AnalyzeAsync(
                 request.Profile,
                 request.UserText,
@@ -127,6 +145,9 @@ namespace ColorVision.Copilot
             contextItems = AppendImageUnderstandingContext(contextItems, imageUnderstanding);
             var agentRequest = CopilotAgentRequestFactory.Create(requestPlan, new CopilotAgentRequestBuildInput
             {
+                ConversationId = request.ConversationId,
+                TaskId = request.TaskId,
+                WorkspacePath = request.HostContext.SolutionDirectoryPath,
                 Profile = request.Profile,
                 History = CopilotConversationRequestBuilder.BuildVisibleHistory(
                     request.HostContext.ConversationHistory,
@@ -136,7 +157,9 @@ namespace ColorVision.Copilot
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
                 AgentDefaults = request.AgentDefaults,
+                AccessContext = request.AccessContext,
                 ExternalMcpServers = request.ExternalMcpServers,
+                TaskIntentText = recoveryTaskContext.TaskIntentText,
             });
             var result = await _agentRuntime.RunAsync(agentRequest, eventSink.OnAgentEvent, cancellationToken).ConfigureAwait(false);
             return CopilotTurnResult.FromAgent(request.Mode, imageUnderstanding.Usage.Add(result.Usage), result);

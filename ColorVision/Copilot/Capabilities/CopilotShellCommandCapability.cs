@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -13,7 +14,7 @@ using ColorVision.Copilot.Mcp;
 
 namespace ColorVision.Copilot
 {
-    public sealed record CopilotShellProcessCommand(
+    internal sealed record CopilotShellProcessCommand(
         CopilotShellKind Shell,
         string ExecutablePath,
         IReadOnlyList<string> Arguments,
@@ -21,9 +22,13 @@ namespace ColorVision.Copilot
         TimeSpan Timeout)
     {
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
+
+        public Action<string>? StandardOutputReceived { get; init; }
+
+        public Action<string>? StandardErrorReceived { get; init; }
     }
 
-    public sealed record CopilotShellProcessResult(
+    internal sealed record CopilotShellProcessResult(
         int ExitCode,
         bool TimedOut,
         string StandardOutput,
@@ -33,12 +38,12 @@ namespace ColorVision.Copilot
         public bool ProcessTreeContained { get; init; }
     }
 
-    public interface ICopilotShellProcessRunner
+    internal interface ICopilotShellProcessRunner
     {
         Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken);
     }
 
-    public sealed class CopilotShellCommandService
+    internal sealed class CopilotShellCommandService
     {
         public const int MaximumCommandCharacters = 16_384;
         internal const string NonzeroExitFailureCode = "shell_nonzero_exit";
@@ -60,9 +65,28 @@ namespace ColorVision.Copilot
             _executablePathProvider = executablePathProvider ?? FindTrustedShellExecutable;
         }
 
-        public async Task<CopilotToolResult> ExecuteAsync(
+        public Task<CopilotToolResult> ExecuteAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput input,
+            CancellationToken cancellationToken)
+        {
+            return ExecuteCoreAsync(request, input, progress: null, cancellationToken);
+        }
+
+        public Task<CopilotToolResult> ExecuteWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(progress);
+            return ExecuteCoreAsync(request, input, progress, cancellationToken);
+        }
+
+        private async Task<CopilotToolResult> ExecuteCoreAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput input,
+            CopilotToolProgressContext? progress,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -81,12 +105,20 @@ namespace ColorVision.Copilot
             CopilotShellProcessResult processResult;
             try
             {
+                var shellLabel = GetShellLabel(execution.Shell);
+                progress?.Report($"正在启动 {shellLabel} 命令");
                 processResult = await _runner.RunAsync(new CopilotShellProcessCommand(
                     execution.Shell,
                     Path.GetFullPath(executablePath),
                     BuildArguments(execution.Shell, execution.CommandText),
                     execution.WorkingDirectory,
-                    TimeSpan.FromSeconds(execution.TimeoutSeconds)), cancellationToken);
+                    TimeSpan.FromSeconds(execution.TimeoutSeconds))
+                {
+                    StandardOutputReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, shellLabel, chunk, isError: false),
+                    StandardErrorReceived = chunk => CopilotProcessExecutionSupport.ReportLatestOutput(
+                        progress, shellLabel, chunk, isError: true),
+                }, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -146,7 +178,32 @@ namespace ColorVision.Copilot
             var shellLabel = GetShellLabel(execution.Shell);
             return new CopilotToolApprovalPresentation(
                 $"Run {shellLabel} command",
-                $"Shell: {shellLabel}\nWorking directory: {execution.WorkingDirectory}\nTimeout: {execution.TimeoutSeconds} seconds\nCommand:\n{execution.CommandText}");
+                $"Review the complete {shellLabel} command and resolved working directory before approving.",
+                ImpactSummary: $"将在工作目录 {execution.WorkingDirectory} 中执行一条 {shellLabel} 命令；其影响取决于命令内容。",
+                Reversibility: CopilotApprovalReversibility.NotReversible,
+                ReversibilitySummary: "Copilot 不会自动撤销命令产生的文件、进程、网络或系统状态变化。")
+            {
+                ReviewDetails = BuildApprovalReviewDetails(execution),
+            };
+        }
+
+        private static string BuildApprovalReviewDetails(CopilotShellExecution execution)
+        {
+            var commandDigest = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(execution.CommandText))).ToLowerInvariant();
+            var builder = new StringBuilder();
+            builder.AppendLine($"Shell: {GetShellLabel(execution.Shell)}");
+            builder.Append("Working directory: ");
+            CopilotApprovalReviewTextEncoder.Append(builder, execution.WorkingDirectory);
+            builder.AppendLine();
+            builder.AppendLine($"Timeout: {execution.TimeoutSeconds} seconds");
+            builder.AppendLine($"Command characters: {execution.CommandText.Length}");
+            builder.AppendLine($"Command SHA-256: {commandDigest}");
+            builder.AppendLine(@"Review encoding: backslashes are doubled; line endings, tabs, Unicode format, and invisible control characters are escaped.");
+            builder.AppendLine();
+            builder.AppendLine("Complete command (review-escaped):");
+            CopilotApprovalReviewTextEncoder.Append(builder, execution.CommandText);
+            return builder.ToString();
         }
 
         internal static CopilotShellKind ResolveShell(CopilotShellKind requested, CopilotShellKind preferred)
@@ -400,7 +457,7 @@ namespace ColorVision.Copilot
             int TimeoutSeconds);
     }
 
-    public sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
+    internal sealed class CopilotShellProcessRunner : ICopilotShellProcessRunner
     {
         private const int MaxStreamCharacters = 65_536;
         public async Task<CopilotShellProcessResult> RunAsync(CopilotShellProcessCommand command, CancellationToken cancellationToken)
@@ -444,9 +501,19 @@ namespace ColorVision.Copilot
 
             using var outputReadSource = new CancellationTokenSource();
             var stdoutTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardOutput, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
+                process.StandardOutput,
+                MaxStreamCharacters,
+                16_384,
+                "\n...<shell output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardOutputReceived);
             var stderrTask = CopilotProcessExecutionSupport.ReadBoundedAsync(
-                process.StandardError, MaxStreamCharacters, 16_384, "\n...<shell output truncated>...\n", outputReadSource.Token);
+                process.StandardError,
+                MaxStreamCharacters,
+                16_384,
+                "\n...<shell output truncated>...\n",
+                outputReadSource.Token,
+                command.StandardErrorReceived);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;

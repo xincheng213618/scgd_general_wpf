@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotWorkspaceValidationTool : ICopilotFrameworkApprovedTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotWorkspaceValidationTool :
+        ICopilotFrameworkApprovedTool,
+        ICopilotFrameworkApprovedProgressReportingTool,
+        ICopilotFrameworkApprovalPresentation
     {
         private static readonly CopilotToolInputSchema Schema = CopilotToolInputSchema.FromJsonSchema(
             JsonSerializer.SerializeToElement(new Dictionary<string, object?>
@@ -30,7 +33,7 @@ namespace ColorVision.Copilot
         {
         }
 
-        public CopilotWorkspaceValidationTool(CopilotWorkspaceValidationService service)
+        internal CopilotWorkspaceValidationTool(CopilotWorkspaceValidationService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
@@ -70,12 +73,21 @@ namespace ColorVision.Copilot
             });
         }
 
-        public Task<CopilotToolResult> ExecuteApprovedAsync(
+        Task<CopilotToolResult> ICopilotFrameworkApprovedTool.ExecuteApprovedAsync(
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
             return _service.ExecuteAsync(request, toolInput, cancellationToken);
+        }
+
+        Task<CopilotToolResult> ICopilotFrameworkApprovedProgressReportingTool.ExecuteApprovedWithProgressAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            return _service.ExecuteWithProgressAsync(request, toolInput, progress, cancellationToken);
         }
 
         public CopilotToolApprovalPresentation CreateApprovalPresentation(CopilotAgentToolInput toolInput)

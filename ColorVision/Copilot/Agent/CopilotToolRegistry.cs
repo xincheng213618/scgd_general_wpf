@@ -74,14 +74,23 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
+            if (tool.Capability.Access == CopilotToolAccess.ReadOnly)
+                return true;
+
             return request.Mode is not (CopilotAgentMode.Review or CopilotAgentMode.Diagnose)
-                || tool.Capability.Access == CopilotToolAccess.ReadOnly;
+                && !CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request);
         }
 
         internal static bool IsAvailableForAgent(ICopilotTool tool, CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(tool);
             ArgumentNullException.ThrowIfNull(request);
+            if (request.RequiresDelegatedWorkspaceEvidence
+                && CopilotToolIntentPolicy.IsDirectWorkspaceEvidenceTool(tool))
+            {
+                return false;
+            }
+
             return tool is ICopilotAgentDrivenTool agentDrivenTool
                 ? agentDrivenTool.IsAvailable(request)
                 : tool.CanHandle(request);
@@ -116,9 +125,13 @@ namespace ColorVision.Copilot
             return new ICopilotTool[]
             {
                 new CopilotCreateFlowTool(applicationCapabilities),
+                new CopilotConvertBatchImagesTool(),
+                new CopilotOpenBatchImageProcessingTool(),
                 new CopilotExecuteMenuTool(applicationCapabilities),
                 new CopilotSetThemeTool(),
                 new CopilotSetLanguageTool(applicationCapabilities),
+                new CopilotInspectSavedTemplateTool(applicationCapabilities),
+                new CopilotInspectTemplateTypeTool(applicationCapabilities),
                 new CopilotTemplatePatchTool(applicationCapabilities),
                 new CopilotApplyTemplatePatchTool(applicationCapabilities),
                 new CopilotSearchDocsTool(),

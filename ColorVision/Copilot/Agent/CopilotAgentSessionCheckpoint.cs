@@ -56,18 +56,57 @@ namespace ColorVision.Copilot
     public sealed class CopilotAgentSessionCheckpoint
     {
         public const int MaxSerializedSessionCharacters = 4_000_000;
+        internal const string CompressedSerializedSessionPrefix = "cv-gzip-v1:";
+        private const int MinimumSerializedSessionCompressionCharacters = 1_024;
         public const int MaxCheckpointCapabilities = 2_048;
         public const int MaxAvailableToolNames = 2_048;
         public const int MaxAvailableToolNameLength = 256;
         public const int MaxConversationMemoryMessages = 16;
         public const int MaxConversationMemoryContentLength = 8_000;
         public const int MaxConversationMemoryCharacters = 64_000;
+        public const int MaxTaskIntentTextLength = 8_000;
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
 
+        private string _serializedSessionJson = string.Empty;
+        private string _serializedSessionPayload = string.Empty;
+
         public string ProfileKey { get; init; } = string.Empty;
 
-        public string SerializedSessionJson { get; init; } = string.Empty;
+        [Newtonsoft.Json.JsonIgnore]
+        public string SerializedSessionJson
+        {
+            get => _serializedSessionJson;
+            init
+            {
+                _serializedSessionJson = value ?? string.Empty;
+                _serializedSessionPayload = CopilotPersistedTextCodec.Encode(
+                    _serializedSessionJson,
+                    CompressedSerializedSessionPrefix,
+                    MinimumSerializedSessionCompressionCharacters,
+                    MaxSerializedSessionCharacters);
+            }
+        }
+
+        [Newtonsoft.Json.JsonProperty(nameof(SerializedSessionJson))]
+        private string SerializedSessionPayload
+        {
+            get => _serializedSessionPayload;
+            init
+            {
+                var payload = value ?? string.Empty;
+                _serializedSessionJson = CopilotPersistedTextCodec.Decode(
+                    payload,
+                    CompressedSerializedSessionPrefix,
+                    MaxSerializedSessionCharacters);
+                _serializedSessionPayload = CopilotPersistedTextCodec.RetainOrEncode(
+                    payload,
+                    _serializedSessionJson,
+                    CompressedSerializedSessionPrefix,
+                    MinimumSerializedSessionCompressionCharacters,
+                    MaxSerializedSessionCharacters);
+            }
+        }
 
         public long CapabilityCatalogRevision { get; init; }
 
@@ -85,9 +124,22 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
 
+        public string TaskIntentText { get; init; } = string.Empty;
+
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
         public DateTimeOffset UpdatedAtUtc { get; init; }
+
+        public CopilotAgentSessionCheckpoint()
+        {
+        }
+
+        internal CopilotAgentSessionCheckpoint(CopilotAgentSessionCheckpoint source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            _serializedSessionJson = source._serializedSessionJson;
+            _serializedSessionPayload = source._serializedSessionPayload;
+        }
 
         public bool IsUsableFor(CopilotProfileConfig profile)
         {
@@ -201,8 +253,11 @@ namespace ColorVision.Copilot
                     || !string.Equals(message.Content, message.Content.Trim(), StringComparison.Ordinal)
                     || message.Content.Length > MaxConversationMemoryContentLength
                     || message.Content.Contains('\0'))
-                || TaskEventJournal == null
-                || TaskEventJournal?.Events?.Count > CopilotAgentTaskEventJournal.MaxEvents)
+                || TaskIntentText == null
+                || TaskIntentText.Length > MaxTaskIntentTextLength
+                || TaskIntentText.Contains('\0')
+                || (TaskIntentText.Length > 0 && !string.Equals(TaskIntentText, TaskIntentText.Trim(), StringComparison.Ordinal))
+                || TaskEventJournal?.IsStructurallyValid() != true)
             {
                 return false;
             }
@@ -226,7 +281,8 @@ namespace ColorVision.Copilot
             CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
             IReadOnlyCollection<string>? availableToolNames = null,
             IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
-            CopilotAgentEnvironmentContext? environmentContext = null)
+            CopilotAgentEnvironmentContext? environmentContext = null,
+            string? taskIntentText = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -256,6 +312,7 @@ namespace ColorVision.Copilot
                 return null;
             }
             var persistedConversationMemory = (conversationMemory ?? Array.Empty<CopilotRequestMessage>()).ToArray();
+            var persistedTaskIntentText = NormalizeTaskIntentText(taskIntentText);
             if (environmentContext?.IsStructurallyValid() == false)
                 return null;
 
@@ -278,6 +335,7 @@ namespace ColorVision.Copilot
                 EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
+                TaskIntentText = persistedTaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
@@ -287,10 +345,9 @@ namespace ColorVision.Copilot
         internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
         {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
-            var checkpoint = new CopilotAgentSessionCheckpoint
+            var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
-                SerializedSessionJson = SerializedSessionJson,
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
                 Capabilities = Capabilities,
                 ToolSurfaceVersion = ToolSurfaceVersion,
@@ -299,6 +356,7 @@ namespace ColorVision.Copilot
                 EnvironmentFingerprint = EnvironmentFingerprint,
                 EvidenceArtifacts = EvidenceArtifacts,
                 ConversationMemory = ConversationMemory,
+                TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
@@ -334,10 +392,24 @@ namespace ColorVision.Copilot
                 profile.Model?.Trim() ?? string.Empty,
                 profile.EffectiveSystemPrompt,
             });
+            var transportVersion = CopilotOpenAiRequestPolicy
+                .GetAgentSessionTransportVersion(profile);
+            if (transportVersion.Length > 0)
+                value += "|" + transportVersion;
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
             return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
         }
 
         private static bool IsSha256(string value) => value?.Length == 64 && value.All(Uri.IsHexDigit);
+
+        private static string NormalizeTaskIntentText(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.Length <= MaxTaskIntentTextLength)
+                return normalized;
+
+            const string suffix = "\n...<task intent truncated>";
+            return normalized[..(MaxTaskIntentTextLength - suffix.Length)] + suffix;
+        }
     }
 }

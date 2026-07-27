@@ -35,9 +35,9 @@ namespace ProjectARVRPro.Services
 
             }
 
-            Application.Current.Dispatcher.Invoke(() =>
+            string resolvedSerialNumber = Application.Current.Dispatcher.Invoke(() =>
             {
-                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                return ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
             });
             // Find first enabled ProcessMeta index
             int firstEnabledIndex = -1;
@@ -60,7 +60,7 @@ namespace ProjectARVRPro.Services
             }
             
 
-            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
+            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", SerialNumber = resolvedSerialNumber, Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
         }
     }
 

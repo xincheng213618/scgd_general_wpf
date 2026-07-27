@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1863,CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Batch;
+using ColorVision.Engine.FlowProcessing.Diagnostics;
+using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -45,22 +46,22 @@ namespace ColorVision.Engine
 
         private void PopulateContextMenu()
         {
-            var nodeAnalysisMenuItem = new MenuItem { Header = Properties.Resources.Flow_NodeTimeAnalysis };
+            var nodeAnalysisMenuItem = new MenuItem { Header = "流程执行分析" };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
-                var window = new FlowNodeAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new FlowExecutionAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             };
             ContextMenu.Items.Add(nodeAnalysisMenuItem);
 
-            var batchManager = ColorVision.Engine.Batch.BatchManager.GetInstance();
-            if (batchManager.Processes.Count > 0)
+            var postProcessManager = PostProcessManager.GetInstance();
+            if (postProcessManager.Processes.Count > 0)
             {
                 var processMenuItem = new MenuItem { Header = Properties.Resources.Flow_MeasureBatch_ProcessResult };
                 
-                foreach (var process in batchManager.Processes)
+                foreach (var process in postProcessManager.Processes)
                 {
-                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    var metadata = PostProcessMetadata.FromProcess(process);
                     var menuItem = new MenuItem 
                     { 
                         Header = metadata.DisplayName,
@@ -77,20 +78,20 @@ namespace ColorVision.Engine
 
         private void ProcessMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is ColorVision.Engine.Batch.IBatchProcess process)
+            if (sender is MenuItem menuItem && menuItem.Tag is IPostProcessor process)
             {
                 ExecuteProcess(process);
             }
         }
 
-        private void ExecuteProcess(ColorVision.Engine.Batch.IBatchProcess process)
+        private void ExecuteProcess(IPostProcessor process)
         {
             try
             {
-                var context = new ColorVision.Engine.Batch.IBatchContext
+                var context = new PostProcessContext
                 {
                     Batch = MeasureBatchModel,
-                    Config = ColorVision.Engine.Batch.BatchConfig.Instance,
+                    Config = PostProcessConfig.Instance,
                     FlowName = TemplateFlow.Params[MeasureBatchModel.TId ??0].Key
                 };
 
@@ -98,12 +99,12 @@ namespace ColorVision.Engine
                 
                 if (success)
                 {
-                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    var metadata = PostProcessMetadata.FromProcess(process);
                     MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessSuccess, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    var metadata = ColorVision.Engine.Batch.BatchProcessMetadata.FromProcess(process);
+                    var metadata = PostProcessMetadata.FromProcess(process);
                     MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessFailed, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
@@ -175,7 +176,7 @@ namespace ColorVision.Engine
 
         public Frame Frame { get; set; }
         
-        private IBatchProcess _selectedProcess;
+        private IPostProcessor _selectedProcess;
         private INotifyPropertyChanged _currentProcessConfig;
         private PropertyChangedEventHandler _configChangedHandler;
         private CopilotDynamicContextSession? _copilotContextSession;
@@ -196,9 +197,9 @@ namespace ColorVision.Engine
             this.DataContext = MeasureBatchManager;
             
             // Initialize process ComboBox
-            var batchManager = BatchManager.GetInstance();
-            ProcessComboBox.ItemsSource = batchManager.Processes;
-            if (batchManager.Processes.Count > 0)
+            var postProcessManager = PostProcessManager.GetInstance();
+            ProcessComboBox.ItemsSource = postProcessManager.Processes;
+            if (postProcessManager.Processes.Count > 0)
             {
                 ProcessComboBox.SelectedIndex = 0;
             }
@@ -317,11 +318,11 @@ namespace ColorVision.Engine
                 _configChangedHandler = null;
             }
             
-            if (ProcessComboBox.SelectedItem is IBatchProcess process)
+            if (ProcessComboBox.SelectedItem is IPostProcessor process)
             {
                 _selectedProcess = process;
                 
-                var metadata = BatchProcessMetadata.FromProcess(process);
+                var metadata = PostProcessMetadata.FromProcess(process);
                 
                 // Add process info section
                 var infoBorder = new Border
@@ -427,15 +428,15 @@ namespace ColorVision.Engine
             {
                 try
                 {
-                    var context = new IBatchContext
+                    var context = new PostProcessContext
                     {
                         Batch = viewBatch.MeasureBatchModel,
-                        Config = BatchConfig.Instance
+                        Config = PostProcessConfig.Instance
                     };
 
                     bool success = _selectedProcess.Process(context);
                     
-                    var metadata = BatchProcessMetadata.FromProcess(_selectedProcess);
+                    var metadata = PostProcessMetadata.FromProcess(_selectedProcess);
                     if (success)
                     {
                         MessageBox.Show(string.Format(Properties.Resources.Flow_MeasureBatch_ProcessSuccess, metadata.DisplayName), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);

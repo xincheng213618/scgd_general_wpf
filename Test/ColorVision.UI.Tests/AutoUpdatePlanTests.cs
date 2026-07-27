@@ -36,6 +36,76 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void LatestVersionChecksReuseOnlyTheSameInFlightRequest()
+        {
+            LatestVersionCheckRequestCache requests = new();
+            TaskCompletionSource<LatestVersionCheckResult> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            LatestVersionCheckResult result = new(new Version(1, 4, 10, 130), UpdateServerCheckStatus.Success);
+            int requestCount = 0;
+            Func<Task<LatestVersionCheckResult>> requestFactory = () =>
+            {
+                requestCount++;
+                return requestCount == 1 ? completion.Task : Task.FromResult(result);
+            };
+
+            Task<LatestVersionCheckResult> first = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool firstReused);
+            Task<LatestVersionCheckResult> second = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool secondReused);
+
+            Assert.False(firstReused);
+            Assert.True(secondReused);
+            Assert.Same(first, second);
+            Assert.Equal(1, requestCount);
+
+            completion.SetResult(result);
+            Task<LatestVersionCheckResult> third = requests.GetOrCreate(
+                "https://updates.example.test/api/app/latest-version",
+                requestFactory,
+                out bool thirdReused);
+
+            Assert.False(thirdReused);
+            Assert.NotSame(first, third);
+            Assert.Equal(2, requestCount);
+        }
+
+        [Fact]
+        public void OfflineInstallerCommandDownloadsTheLatestFullInstallerToTheDesktop()
+        {
+            string command = AutoUpdater.BuildOfflineInstallerDownloadPowerShellCommand(
+                "https://updates.example.test/",
+                "user:password");
+
+            Assert.Contains("https://updates.example.test/api/app/latest-version", command);
+            Assert.Contains("$downloadUrl = 'https://updates.example.test/api/app/releases/{0}/download' -f $latest", command);
+            Assert.Contains("Invoke-WebRequest -Uri $downloadUrl", command);
+            Assert.DoesNotContain("-Uri 'https://updates.example.test/api/app/releases/$latest/download'", command);
+            Assert.Contains("[Environment]::GetFolderPath('Desktop')", command);
+            Assert.Contains("ColorVision-{0}.exe", command);
+            Assert.Contains("Basic dXNlcjpwYXNzd29yZA==", command);
+            Assert.DoesNotContain(".cvx", command, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void OfflineInstallerCommandFileBypassesScriptPolicyAndPreservesTheCommand()
+        {
+            const string command = "$value = 'ColorVision'; Write-Host $value";
+
+            string commandFile = AutoUpdater.BuildOfflineInstallerDownloadCommandFileContent(command);
+            string encodedCommand = commandFile
+                .Split("-EncodedCommand ", StringSplitOptions.None)[1]
+                .Split('\r', '\n')[0]
+                .Trim();
+
+            Assert.Contains("-ExecutionPolicy Bypass", commandFile);
+            Assert.Equal(command, System.Text.Encoding.Unicode.GetString(Convert.FromBase64String(encodedCommand)));
+        }
+
+        [Fact]
         public void PreviewStateTransitionPreservesUpdateOptionsMadeWhileChecking()
         {
             UpdatePreviewDialogContext checkingContext = new()

@@ -7,7 +7,6 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
@@ -31,60 +30,57 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         }
     }
 
+    public class LedCheck2DisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [System.ComponentModel.DisplayName("颜色")]
+        public CVOLEDCOLOR Color { get; set; }
+
+        [System.ComponentModel.DisplayName("FDA类型")]
+        public FlowEngineLib.Algorithm.CVOLED_FDAType FDAType { get; set; }
+
+        [System.ComponentModel.DisplayName("点1")]
+        public PointVM Point1 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点2")]
+        public PointVM Point2 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点3")]
+        public PointVM Point3 { get; set; } = new();
+
+        [System.ComponentModel.DisplayName("点4")]
+        public PointVM Point4 { get; set; } = new();
+
+        public LedCheck2DisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "LedCheck模板",
+                new TemplateLedCheck2(),
+                "请先选择灯珠检测模板"))
+        {
+        }
+    }
+
     [DisplayAlgorithm(21, "亚像素级灯珠检测", "定位算法")]
-    public class AlgorithmLedCheck2 : DisplayAlgorithmBase
+    public class AlgorithmLedCheck2 : JsonDisplayAlgorithmBase<LedCheck2DisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmLedCheck2(DeviceAlgorithm deviceAlgorithm)
+            : base(new LedCheck2DisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-        }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplateLedCheck2(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get => _CVOLED_FDAType; set { _CVOLED_FDAType = value; OnPropertyChanged(); } }
-        private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
-
-        public PointVM Point1 { get => _Point1; set { _Point1 = value; OnPropertyChanged(); } }
-        private PointVM _Point1 = new PointVM();
-        public PointVM Point2 { get => _Point2; set { _Point2 = value; OnPropertyChanged(); } }
-        private PointVM _Point2 = new PointVM();
-        public PointVM Point3 { get => _Point3; set { _Point3 = value; OnPropertyChanged(); } }
-        private PointVM _Point3 = new PointVM();
-        public PointVM Point4 { get => _Point4; set { _Point4 = value; OnPropertyChanged(); } }
-        private PointVM _Point4 = new PointVM();
-
-
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayLedCheck2(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-
-        public MsgRecord SendCommand(ParamBase param, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
+        public override MsgRecord SendCommand(TemplateJsonParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("Color", cOLOR);
-            Params.Add("FDAType", CVOLEDFDAType);
+            Params.Add("Color", Config.Color);
+            Params.Add("FDAType", Config.FDAType);
 
 
-            PointFloat[] FixedLEDPoint = new PointFloat[] { Point1.ToPointFloat(), Point2.ToPointFloat(), Point3.ToPointFloat(), Point4.ToPointFloat() };
+            PointFloat[] FixedLEDPoint = new PointFloat[] { Config.Point1.ToPointFloat(), Config.Point2.ToPointFloat(), Config.Point3.ToPointFloat(), Config.Point4.ToPointFloat() };
             Params.Add("FixedLEDPoint", FixedLEDPoint);
 
             MsgSend msg = new()

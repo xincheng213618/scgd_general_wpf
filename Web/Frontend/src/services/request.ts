@@ -48,6 +48,28 @@ export async function postJson<T = unknown>(url: string, body?: unknown): Promis
   return parseResponse<T>(response)
 }
 
+export async function putJson<T = unknown>(url: string, body?: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  return parseResponse<T>(response)
+}
+
+export async function deleteJson<T = unknown>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  })
+  return parseResponse<T>(response)
+}
+
 export async function postForm<T = unknown>(url: string, formData: FormData): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',

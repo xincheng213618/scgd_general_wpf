@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.Copilot
 {
@@ -30,6 +32,29 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentRunBudget
     {
+        private const int NarrowEvidenceRequestTokenBudget = 512 * 1024;
+        private const int NarrowEvidenceBaseToolCalls = 12;
+        private const int NarrowEvidenceToolCallsPerResult = 4;
+        private const int NarrowEvidenceMaxAgentPasses = 8;
+        private static readonly TimeSpan NarrowEvidenceTotalDuration = TimeSpan.FromMinutes(15);
+        private static readonly Regex ChineseNarrowResultRegex = new(
+            @"(?:列出|给出|找出|指出|报告|返回|展示)\s*(?:至少|最多|至多)?\s*(?<count>[1-3一二三])\s*(?:条|个|项|处|点)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex EnglishNarrowResultRegex = new(
+            @"\b(?:list|give|find|identify|report|show)\s+(?:only\s+|at\s+least\s+|up\s+to\s+)?(?<count>[1-3]|one|two|three)\s+(?:[a-z-]+\s+){0,3}(?:issues?|findings?|problems?|risks?|examples?|items?)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex ChineseBroadCountRegex = new(
+            @"(?<count>\d{1,4})\s*(?:个|条|项|处)\s*(?:相关)?\s*(?:代码)?\s*(?:文件|位置|目录|模块|组件|页面|节点|调用|结果)?",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex EnglishBroadCountRegex = new(
+            @"\b(?<count>\d{1,4})\s+(?:files?|locations?|directories|modules?|components?|pages?|nodes?|calls?|results?)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly string[] ExhaustiveScopeMarkers =
+        {
+            "全面", "全量", "所有", "全部", "整个", "逐一", "逐行", "每个", "完整审计", "完整文件", "全文",
+            "comprehensive", "exhaustive", "all files", "all locations", "entire", "every file", "full file", "full contents",
+        };
+
         public const int MinimumRequestTokenBudget = 4096;
         public const int MaximumRequestTokenBudget = 1_048_576;
         public const int MinimumToolCalls = 1;
@@ -49,12 +74,14 @@ namespace ColorVision.Copilot
 
         public TimeSpan TotalDuration { get; init; }
 
+        public int NarrowEvidenceResultLimit { get; init; }
+
         public static CopilotAgentRunBudget Resolve(CopilotAgentRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
             var defaults = request.RunBudgetDefaults;
             var requestOverride = request.RunBudgetOverride;
-            return new CopilotAgentRunBudget
+            var resolved = new CopilotAgentRunBudget
             {
                 ContextWindowTokens = Clamp(
                     requestOverride?.ContextWindowTokens ?? defaults?.ContextWindowTokens ?? CopilotAgentDefaultsConfig.DefaultContextWindowTokens,
@@ -77,6 +104,47 @@ namespace ColorVision.Copilot
                     MinimumTotalDuration,
                     MaximumTotalDuration),
             };
+            if (requestOverride != null || !TryGetNarrowEvidenceResultLimit(request, out var resultLimit))
+                return resolved;
+
+            return new CopilotAgentRunBudget
+            {
+                ContextWindowTokens = resolved.ContextWindowTokens,
+                RequestTokenBudget = Math.Min(resolved.RequestTokenBudget, NarrowEvidenceRequestTokenBudget),
+                MaxToolCalls = Math.Min(
+                    resolved.MaxToolCalls,
+                    NarrowEvidenceBaseToolCalls + NarrowEvidenceToolCallsPerResult * resultLimit),
+                MaxAgentPasses = Math.Min(resolved.MaxAgentPasses, NarrowEvidenceMaxAgentPasses),
+                TotalDuration = resolved.TotalDuration < NarrowEvidenceTotalDuration
+                    ? resolved.TotalDuration
+                    : NarrowEvidenceTotalDuration,
+                NarrowEvidenceResultLimit = resultLimit,
+            };
+        }
+
+        internal static bool TryGetNarrowEvidenceResultLimit(CopilotAgentRequest? request, out int resultLimit)
+        {
+            resultLimit = 0;
+            if (request == null
+                || request.Mode == CopilotAgentMode.Chat
+                || !CopilotToolIntentPolicy.ExplicitlyDisallowsWriteAccess(request)
+                || !CopilotToolIntentPolicy.NeedsLocalEvidence(request)
+                || ContainsExhaustiveScope(request.UserText)
+                || ContainsBroadCount(request.UserText))
+            {
+                return false;
+            }
+
+            var match = ChineseNarrowResultRegex.Match(request.UserText ?? string.Empty);
+            if (!match.Success)
+                match = EnglishNarrowResultRegex.Match(request.UserText ?? string.Empty);
+            if (!match.Success || !TryParseSmallCount(match.Groups["count"].Value, out resultLimit))
+            {
+                resultLimit = 0;
+                return false;
+            }
+
+            return true;
         }
 
         public CopilotAgentBudgetSnapshot CreateSnapshot(
@@ -84,9 +152,52 @@ namespace ColorVision.Copilot
             TimeSpan elapsed,
             int toolCalls,
             bool timeBudgetExhausted,
-            bool toolBudgetExhausted = false)
+            bool toolBudgetExhausted = false,
+            bool usedDelegatedDirectAnswer = false,
+            CopilotAgentToolSurfaceMetrics toolSurface = default)
         {
             tokenSnapshot ??= new CopilotAgentBudgetSnapshot();
+            var reportedInputTokens = Math.Max(0, tokenSnapshot.ReportedInputTokens);
+            var reportedOutputTokens = Math.Max(0, tokenSnapshot.ReportedOutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, tokenSnapshot.ReportedTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
+            var contextRecoveryEstimatedInputTokensBefore = Math.Max(
+                0,
+                tokenSnapshot.ContextRecoveryEstimatedInputTokensBefore);
+            var providerCalls = Math.Max(0, tokenSnapshot.ProviderCalls);
+            var providerRetryCount = Math.Clamp(
+                tokenSnapshot.ProviderRetryCount,
+                0,
+                providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
+            var providerResponseCount = Math.Clamp(
+                tokenSnapshot.ProviderResponseCount,
+                0,
+                providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderFirstResponseLatencyTotalMs)
+                : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                tokenSnapshot.ProviderStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, tokenSnapshot.ProviderStreamInterChunkLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = tokenSnapshot.CompactionEnabled,
@@ -94,12 +205,68 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = tokenSnapshot.InputBudgetTokens,
                 RequestTokenBudget = RequestTokenBudget,
                 ConsumedTokens = tokenSnapshot.ConsumedTokens,
-                ProviderCalls = tokenSnapshot.ProviderCalls,
+                ProviderCalls = providerCalls,
+                PeakEstimatedInputTokens = Math.Max(0, tokenSnapshot.PeakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    tokenSnapshot.ProviderRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, tokenSnapshot.ProviderRetryDelayMs)
+                    : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = providerCalls > 0
+                    ? Math.Max(
+                        providerFirstResponseLatencyTotalMs,
+                        tokenSnapshot.ProviderCallDurationTotalMs)
+                    : 0,
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    tokenSnapshot.ProviderStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
+                ContextRecoveryCount = Math.Max(0, tokenSnapshot.ContextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = contextRecoveryEstimatedInputTokensBefore,
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    tokenSnapshot.ContextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    contextRecoveryEstimatedInputTokensBefore),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && tokenSnapshot.ReportedCachedInputTokens.HasValue
+                    ? Math.Clamp(
+                        tokenSnapshot.ReportedCachedInputTokens.Value,
+                        0,
+                        reportedInputTokens)
+                    : null,
                 UsedEstimatedUsage = tokenSnapshot.UsedEstimatedUsage,
+                UsedDelegatedDirectAnswer = usedDelegatedDirectAnswer,
                 BudgetExhausted = tokenSnapshot.BudgetExhausted || timeBudgetExhausted || toolBudgetExhausted,
+                RequestTokenBudgetExhausted = tokenSnapshot.BudgetExhausted || tokenSnapshot.RequestTokenBudgetExhausted,
                 MaxToolCalls = MaxToolCalls,
                 ToolCalls = Math.Clamp(toolCalls, 0, MaxToolCalls),
                 ToolBudgetExhausted = toolBudgetExhausted,
+                RegisteredToolCount = Math.Max(0, toolSurface.RegisteredToolCount),
+                AvailableToolCount = Math.Clamp(
+                    toolSurface.AvailableToolCount,
+                    0,
+                    Math.Max(0, toolSurface.RegisteredToolCount)),
+                AvailableToolDefinitionCharacters = Math.Max(0, toolSurface.AvailableToolDefinitionCharacters),
+                HarnessInstructionCharacters = Math.Max(0, toolSurface.HarnessInstructionCharacters),
+                NarrowEvidenceResultLimit = NarrowEvidenceResultLimit,
                 MaxAgentPasses = MaxAgentPasses,
                 TotalDurationMs = Math.Max(1, (long)TotalDuration.TotalMilliseconds),
                 ElapsedMs = Math.Max(0, (long)elapsed.TotalMilliseconds),
@@ -108,6 +275,32 @@ namespace ColorVision.Copilot
         }
 
         private static int Clamp(int value, int minimum, int maximum) => Math.Clamp(value, minimum, maximum);
+
+        internal static bool ContainsExhaustiveScope(string? text)
+        {
+            var source = text ?? string.Empty;
+            return ExhaustiveScopeMarkers.Any(marker => source.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ContainsBroadCount(string? text)
+        {
+            var source = text ?? string.Empty;
+            return ChineseBroadCountRegex.Matches(source)
+                .Concat(EnglishBroadCountRegex.Matches(source))
+                .Any(match => int.TryParse(match.Groups["count"].Value, out var count) && count > 3);
+        }
+
+        private static bool TryParseSmallCount(string value, out int count)
+        {
+            count = value.ToLowerInvariant() switch
+            {
+                "1" or "一" or "one" => 1,
+                "2" or "二" or "two" => 2,
+                "3" or "三" or "three" => 3,
+                _ => 0,
+            };
+            return count > 0;
+        }
 
         private static TimeSpan Clamp(TimeSpan value, TimeSpan minimum, TimeSpan maximum)
         {

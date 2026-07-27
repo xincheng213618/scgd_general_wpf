@@ -1,0 +1,55 @@
+<UserControl x:Class="ColorVision.Engine.FlowProcessing.Editor.FlowEditorCanvas"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ColorVision.Engine.FlowProcessing.Editor"
+             xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="1000">
+    <Grid>
+        <st:STNodeEditor x:Name="STNodeEditorMain"
+                         LimitCanvasToContentBounds="False"
+                         ShowLocation="False"
+                         ShowCanvasDragLockButton="False"
+                         AutoSwitchCanvasDragBySelection="True"
+                         HighlightGridOrigin="False"
+                         ShowNodeShadow="False"
+                         NodeCornerRadius="10"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Stretch"/>
+
+        <Grid Margin="0,10,0,0"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top"
+              Panel.ZIndex="20">
+            <Border Background="{DynamicResource GlobalBackground}"
+                    BorderBrush="{DynamicResource GlobalBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Opacity="0.82"/>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <ContentPresenter Content="{Binding ToolbarContent, RelativeSource={RelativeSource AncestorType={x:Type local:FlowEditorCanvas}}}"
+                                  VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <Canvas x:Name="PropertyEditorOverlay"
+                ClipToBounds="True"
+                Panel.ZIndex="30">
+            <Grid x:Name="PropertyEditorPanel"
+                  MaxWidth="420"
+                  MaxHeight="520"
+                  Visibility="Collapsed"
+                  Opacity="0.9">
+                <Border Background="{DynamicResource GlobalBackground}"
+                        BorderBrush="{DynamicResource GlobalBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="7"
+                        Opacity="0.78"/>
+                <local:FlowNodePropertyPanel x:Name="InlineNodePropertyPanel"
+                                             Background="Transparent"/>
+            </Grid>
+        </Canvas>
+    </Grid>
+</UserControl>

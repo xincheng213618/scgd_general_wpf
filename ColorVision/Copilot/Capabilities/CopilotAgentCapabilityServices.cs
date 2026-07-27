@@ -114,7 +114,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public static class CopilotApplicationCapability
+    internal static class CopilotApplicationCapability
     {
         public static bool HasMenuIntent(string? text) => CopilotMenuToolSupport.HasMenuIntent(text);
 
@@ -127,7 +127,9 @@ namespace ColorVision.Copilot
             if (Application.Current == null)
                 return false;
 
-            return Application.Current.Dispatcher.Invoke(() => CopilotMenuToolSupport.Resolve(text).Candidates.Count > 0);
+            return CopilotUiDispatcher.InvokeBounded(
+                () => CopilotMenuToolSupport.Resolve(text).Candidates.Count > 0,
+                fallback: false);
         }
 
         public static async Task<CopilotCapabilityResult> ExecuteMenuAsync(string? sourceText, CancellationToken cancellationToken)
@@ -148,7 +150,9 @@ namespace ColorVision.Copilot
                 };
             }
 
-            var matchResult = await Application.Current.Dispatcher.InvokeAsync(() => CopilotMenuToolSupport.Resolve(sourceText));
+            var matchResult = await CopilotUiDispatcher.InvokeAsync(
+                () => CopilotMenuToolSupport.Resolve(sourceText),
+                cancellationToken);
             if (matchResult.BestCandidate == null || !matchResult.HasStrongMatch)
             {
                 return new CopilotCapabilityResult
@@ -205,8 +209,11 @@ namespace ColorVision.Copilot
                 };
             }
 
-            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            CopilotUiDispatcher.Schedule(() =>
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 try
                 {
                     if (selectedCandidate.MenuItem.Command?.CanExecute(null) == true)
@@ -215,7 +222,8 @@ namespace ColorVision.Copilot
                 catch
                 {
                 }
-            }));
+            }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             return new CopilotCapabilityResult
             {
@@ -252,8 +260,9 @@ namespace ColorVision.Copilot
             var targetThemeLabel = CopilotApplicationControlSupport.GetThemeDisplayName(targetTheme);
             var currentTheme = Theme.UseSystem;
 
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await CopilotUiDispatcher.InvokeAsync(() =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 currentTheme = ThemeConfig.Instance.Theme;
                 if (currentTheme == targetTheme)
                     return;
@@ -261,7 +270,7 @@ namespace ColorVision.Copilot
                 ThemeConfig.Instance.Theme = targetTheme;
                 Application.Current.ApplyTheme(targetTheme);
                 ConfigService.Instance.SaveConfigs();
-            });
+            }, cancellationToken);
 
             if (currentTheme == targetTheme)
             {
@@ -313,14 +322,15 @@ namespace ColorVision.Copilot
             var currentCulture = string.Empty;
             var changed = false;
 
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await CopilotUiDispatcher.InvokeAsync(() =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 currentCulture = Thread.CurrentThread.CurrentUICulture.Name;
                 if (string.Equals(currentCulture, targetCulture, StringComparison.OrdinalIgnoreCase))
                     return;
 
                 changed = LanguageManager.Current.LanguageChange(targetCulture);
-            });
+            }, cancellationToken);
 
             if (string.Equals(currentCulture, targetCulture, StringComparison.OrdinalIgnoreCase))
             {

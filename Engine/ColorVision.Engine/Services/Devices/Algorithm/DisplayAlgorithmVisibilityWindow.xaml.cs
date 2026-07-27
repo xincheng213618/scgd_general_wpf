@@ -4,7 +4,6 @@ using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -76,23 +75,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             this.ApplyCaption();
 
             var config = DisplayAlgorithmVisibilityConfig.Instance;
-            AlgorithmItems = new ObservableCollection<AlgorithmVisibilityItem>();
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    var attr = type.GetCustomAttribute<DisplayAlgorithmAttribute>();
-                    if (attr != null)
-                    {
-                        AlgorithmItems.Add(new AlgorithmVisibilityItem(attr.Name, attr.DisplayName, attr.Group, attr.Order, config));
-                    }
-                }
-            }
-
-            var sorted = new ObservableCollection<AlgorithmVisibilityItem>(
-                AlgorithmItems.OrderBy(a => a.Group).ThenBy(a => a.Order).ThenBy(a => a.DisplayName));
-            AlgorithmItems = sorted;
+            AlgorithmItems = new ObservableCollection<AlgorithmVisibilityItem>(
+                DisplayAlgorithmManager.GetInstance().AlgorithmMetas
+                    .Select(meta => new AlgorithmVisibilityItem(
+                        meta.Name,
+                        meta.DisplayName,
+                        meta.Group,
+                        meta.Order,
+                        config))
+                    .OrderBy(item => item.Group)
+                    .ThenBy(item => item.Order)
+                    .ThenBy(item => item.DisplayName));
 
             AlgorithmListView.ItemsSource = AlgorithmItems;
 

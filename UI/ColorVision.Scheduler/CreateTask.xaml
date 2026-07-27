@@ -26,9 +26,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_Task}" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_TaskType}" Width="100" />
                     <ComboBox x:Name="TaskComboBox"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2" >
@@ -36,15 +37,15 @@
                     <TextBox  Text="{Binding JobName}" Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="GroupName" MinWidth="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_Group}" MinWidth="100" />
                     <TextBox  Text="{Binding GroupName}"  Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="{x:Static properties:Resources.Sched_Task}" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_ScheduleMode}" Width="100" />
                     <ComboBox x:Name="ComboBoxMode" Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Mode}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="Delay" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Sched_DelayStart}" Width="100" />
                     <CheckBox IsChecked="{Binding IsDelayed}" Width="50"/>
                     <TextBox Text="{Binding Delay}"  Style="{StaticResource TextBox.Small}" Visibility="{Binding IsDelayed ,Converter={StaticResource bool2VisibilityConverter}}"/>
                 </DockPanel>
@@ -78,11 +79,6 @@
                         <TextBlock Text="{x:Static properties:Resources.CronExpression}" Width="100" />
                         <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
                     </DockPanel>
-                    <DockPanel Margin="2" >
-                        <TextBlock Text="{x:Static properties:Resources.Sched_RepeatCount}" Width="100" />
-                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
-                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
-                    </DockPanel>
                 </StackPanel>
                 <StackPanel x:Name="StackPanelConfig">
                     
@@ -106,10 +102,18 @@
                 </DockPanel>
 
             </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <Border Grid.Row="1" Height="30">
-            <Button Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="{x:Static properties:Resources.Sched_Cancel}" IsCancel="True" Margin="0,0,5,0"/>
+                <Button Grid.Column="1" Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"/>
+            </Grid>
         </Border>
     </Grid>
 </Window>

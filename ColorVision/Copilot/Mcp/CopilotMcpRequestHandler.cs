@@ -8,8 +8,12 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpRequestHandler
+    internal sealed class CopilotMcpRequestHandler
     {
+        internal const string SessionHeaderName = "Mcp-Session-Id";
+        internal const string ProtocolVersionHeaderName = "MCP-Protocol-Version";
+        internal const string SupportedProtocolVersion = "2025-03-26";
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -18,11 +22,16 @@ namespace ColorVision.Copilot.Mcp
 
         private readonly Func<CopilotMcpRuntimeSettings> _settingsProvider;
         private readonly CopilotMcpToolDispatcher _toolDispatcher;
+        private readonly CopilotMcpClientSessionStore _sessionStore;
 
-        public CopilotMcpRequestHandler(Func<CopilotMcpRuntimeSettings> settingsProvider, CopilotMcpToolDispatcher? toolDispatcher = null)
+        public CopilotMcpRequestHandler(
+            Func<CopilotMcpRuntimeSettings> settingsProvider,
+            CopilotMcpToolDispatcher? toolDispatcher = null,
+            CopilotMcpClientSessionStore? sessionStore = null)
         {
             _settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
             _toolDispatcher = toolDispatcher ?? new CopilotMcpToolDispatcher();
+            _sessionStore = sessionStore ?? new CopilotMcpClientSessionStore();
         }
 
         public async Task<CopilotMcpHttpResponse> HandleAsync(CopilotMcpHttpRequest request, CancellationToken cancellationToken)
@@ -45,6 +54,65 @@ namespace ColorVision.Copilot.Mcp
                 });
             }
 
+            if (string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(request.Body))
+                    return JsonErrorResponse(400, null, -32700, "The JSON-RPC request body is empty.");
+
+                try
+                {
+                    using var document = JsonDocument.Parse(request.Body);
+                    if (IsInitializeRequest(document.RootElement))
+                    {
+                        if (request.Headers.TryGetValue(SessionHeaderName, out var existingSessionId)
+                            && !string.IsNullOrWhiteSpace(existingSessionId))
+                        {
+                            return JsonErrorResponse(
+                                400,
+                                ReadId(document.RootElement),
+                                -32012,
+                                $"initialize must not include an existing {SessionHeaderName} header.");
+                        }
+                        if (!TryValidateInitializeRequest(document.RootElement, out var initializeError))
+                        {
+                            return JsonErrorResponse(
+                                400,
+                                ReadId(document.RootElement),
+                                -32600,
+                                initializeError);
+                        }
+                        return CreateInitializeResponse(document.RootElement, request.CallerSource);
+                    }
+
+                    if (!TryResolveSession(request, out var session, out var sessionFailure))
+                        return sessionFailure!;
+                    if (!TryValidateProtocolVersion(request, out var protocolFailure))
+                        return protocolFailure!;
+
+                    if (document.RootElement.ValueKind == JsonValueKind.Array)
+                        return await HandleBatchAsync(document.RootElement, session!.ExecutionScope, cancellationToken);
+
+                    var response = await HandleJsonRpcAsync(document.RootElement, session!.ExecutionScope, cancellationToken);
+                    if (response == null)
+                        return new CopilotMcpHttpResponse { StatusCode = 202, Body = string.Empty };
+
+                    return new CopilotMcpHttpResponse
+                    {
+                        StatusCode = 200,
+                        Body = JsonSerializer.Serialize(response, JsonOptions),
+                    };
+                }
+                catch (JsonException ex)
+                {
+                    return JsonErrorResponse(400, null, -32700, $"The JSON-RPC request body is invalid: {ex.Message}");
+                }
+            }
+
+            if (!TryResolveSession(request, out _, out var nonPostSessionFailure))
+                return nonPostSessionFailure!;
+            if (!TryValidateProtocolVersion(request, out var nonPostProtocolFailure))
+                return nonPostProtocolFailure!;
+
             if (string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
             {
                 return new CopilotMcpHttpResponse
@@ -59,35 +127,13 @@ namespace ColorVision.Copilot.Mcp
                 };
             }
 
-            if (!string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
-                return JsonErrorResponse(405, null, -32005, "ColorVision MCP accepts GET and POST requests only.");
-
-            if (string.IsNullOrWhiteSpace(request.Body))
-                return JsonErrorResponse(400, null, -32700, "The JSON-RPC request body is empty.");
-
-            try
-            {
-                using var document = JsonDocument.Parse(request.Body);
-                if (document.RootElement.ValueKind == JsonValueKind.Array)
-                    return await HandleBatchAsync(document.RootElement, request.CallerSource, cancellationToken);
-
-                var response = await HandleJsonRpcAsync(document.RootElement, request.CallerSource, cancellationToken);
-                if (response == null)
-                    return new CopilotMcpHttpResponse { StatusCode = 202, Body = string.Empty };
-
-                return new CopilotMcpHttpResponse
-                {
-                    StatusCode = 200,
-                    Body = JsonSerializer.Serialize(response, JsonOptions),
-                };
-            }
-            catch (JsonException ex)
-            {
-                return JsonErrorResponse(400, null, -32700, $"The JSON-RPC request body is invalid: {ex.Message}");
-            }
+            return JsonErrorResponse(405, null, -32005, "ColorVision MCP accepts GET and POST requests only.");
         }
 
-        private async Task<CopilotMcpHttpResponse> HandleBatchAsync(JsonElement root, string callerSource, CancellationToken cancellationToken)
+        private async Task<CopilotMcpHttpResponse> HandleBatchAsync(
+            JsonElement root,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             if (root.GetArrayLength() == 0)
                 return JsonErrorResponse(400, null, -32600, "A JSON-RPC batch request must not be empty.");
@@ -95,7 +141,7 @@ namespace ColorVision.Copilot.Mcp
             var responses = new List<object>();
             foreach (var item in root.EnumerateArray())
             {
-                var response = await HandleJsonRpcAsync(item, callerSource, cancellationToken);
+                var response = await HandleJsonRpcAsync(item, executionScope, cancellationToken);
                 if (response != null)
                     responses.Add(response);
             }
@@ -110,7 +156,10 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private async Task<object?> HandleJsonRpcAsync(JsonElement request, string callerSource, CancellationToken cancellationToken)
+        private async Task<object?> HandleJsonRpcAsync(
+            JsonElement request,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             if (request.ValueKind != JsonValueKind.Object)
                 return JsonRpcError(null, -32600, "A JSON-RPC request must be an object.");
@@ -129,17 +178,21 @@ namespace ColorVision.Copilot.Mcp
 
             return method switch
             {
-                "initialize" => JsonRpcResult(id, BuildInitializeResult()),
+                "initialize" => JsonRpcError(id, -32600, "initialize must be sent as a single request without an existing MCP session."),
                 "ping" => JsonRpcResult(id, new { }),
                 "tools/list" => JsonRpcResult(id, new { tools = _toolDispatcher.ListTools() }),
-                "tools/call" => await HandleToolCallAsync(id, request, callerSource, cancellationToken),
+                "tools/call" => await HandleToolCallAsync(id, request, executionScope, cancellationToken),
                 "resources/list" => JsonRpcResult(id, new { resources = _toolDispatcher.ListResources() }),
-                "resources/read" => await HandleResourceReadAsync(id, request, cancellationToken),
+                "resources/read" => await HandleResourceReadAsync(id, request, executionScope, cancellationToken),
                 _ => JsonRpcError(id, -32601, $"Unknown MCP method: {method}"),
             };
         }
 
-        private async Task<object> HandleToolCallAsync(object? id, JsonElement request, string callerSource, CancellationToken cancellationToken)
+        private async Task<object> HandleToolCallAsync(
+            object? id,
+            JsonElement request,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             if (!request.TryGetProperty("params", out var paramsElement) || paramsElement.ValueKind != JsonValueKind.Object)
                 return JsonRpcError(id, -32602, "The tools/call method requires an object params value.");
@@ -151,7 +204,11 @@ namespace ColorVision.Copilot.Mcp
                 return JsonRpcError(id, -32602, "The tools/call method requires a non-empty tool name.");
 
             var arguments = ReadArguments(paramsElement);
-            var result = await _toolDispatcher.CallAsync(toolName, arguments, cancellationToken, callerSource);
+            var result = await _toolDispatcher.CallExternalAsync(
+                toolName,
+                arguments,
+                executionScope,
+                cancellationToken);
             return JsonRpcResult(id, new
             {
                 content = new[]
@@ -162,7 +219,11 @@ namespace ColorVision.Copilot.Mcp
             });
         }
 
-        private async Task<object> HandleResourceReadAsync(object? id, JsonElement request, CancellationToken cancellationToken)
+        private async Task<object> HandleResourceReadAsync(
+            object? id,
+            JsonElement request,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             if (!request.TryGetProperty("params", out var paramsElement) || paramsElement.ValueKind != JsonValueKind.Object)
                 return JsonRpcError(id, -32602, "The resources/read method requires an object params value.");
@@ -173,7 +234,7 @@ namespace ColorVision.Copilot.Mcp
             if (string.IsNullOrWhiteSpace(uri))
                 return JsonRpcError(id, -32602, "The resources/read method requires a non-empty uri value.");
 
-            var result = await _toolDispatcher.ReadResourceAsync(uri, cancellationToken);
+            var result = await _toolDispatcher.ReadResourceAsync(uri, executionScope, cancellationToken);
             if (!result.Success)
                 return JsonRpcError(id, -32002, result.Text);
 
@@ -204,7 +265,7 @@ namespace ColorVision.Copilot.Mcp
         {
             return new
             {
-                protocolVersion = "2025-03-26",
+                protocolVersion = SupportedProtocolVersion,
                 capabilities = new
                 {
                     tools = new { },
@@ -216,6 +277,136 @@ namespace ColorVision.Copilot.Mcp
                     version = "1.0.0",
                 },
             };
+        }
+
+        internal void ClearSessions() => _sessionStore.Clear();
+
+        private CopilotMcpHttpResponse CreateInitializeResponse(JsonElement request, string networkSource)
+        {
+            var id = ReadId(request);
+            if (!_sessionStore.TryCreate(networkSource, out var session))
+            {
+                return JsonErrorResponse(
+                    503,
+                    id,
+                    -32013,
+                    "The ColorVision MCP session capacity is currently full. Retry after an existing session expires or the server restarts.");
+            }
+            return new CopilotMcpHttpResponse
+            {
+                StatusCode = 200,
+                Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [SessionHeaderName] = session!.SessionId,
+                },
+                Body = JsonSerializer.Serialize(JsonRpcResult(id, BuildInitializeResult()), JsonOptions),
+            };
+        }
+
+        private bool TryResolveSession(
+            CopilotMcpHttpRequest request,
+            out CopilotMcpClientSession? session,
+            out CopilotMcpHttpResponse? failure)
+        {
+            session = null;
+            failure = null;
+            if (!request.Headers.TryGetValue(SessionHeaderName, out var sessionId)
+                || string.IsNullOrWhiteSpace(sessionId))
+            {
+                failure = JsonErrorResponse(
+                    400,
+                    null,
+                    -32010,
+                    $"{SessionHeaderName} is required after initialize.");
+                return false;
+            }
+
+            if (_sessionStore.TryResolve(sessionId, request.CallerSource, out session))
+                return true;
+
+            failure = JsonErrorResponse(
+                404,
+                null,
+                -32011,
+                "The MCP session was not found, expired, or does not belong to this network caller.");
+            return false;
+        }
+
+        private static bool IsInitializeRequest(JsonElement request)
+        {
+            return request.ValueKind == JsonValueKind.Object
+                && request.TryGetProperty("method", out var method)
+                && method.ValueKind == JsonValueKind.String
+                && string.Equals(method.GetString(), "initialize", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryValidateInitializeRequest(JsonElement request, out string error)
+        {
+            error = string.Empty;
+            if (request.ValueKind != JsonValueKind.Object
+                || !request.TryGetProperty("jsonrpc", out var jsonRpc)
+                || jsonRpc.ValueKind != JsonValueKind.String
+                || !string.Equals(jsonRpc.GetString(), "2.0", StringComparison.Ordinal))
+            {
+                error = "initialize must be a JSON-RPC 2.0 request.";
+                return false;
+            }
+            if (!request.TryGetProperty("id", out var id)
+                || id.ValueKind is not (JsonValueKind.String or JsonValueKind.Number))
+            {
+                error = "initialize must include a string or number request id.";
+                return false;
+            }
+            if (!request.TryGetProperty("params", out var parameters)
+                || parameters.ValueKind != JsonValueKind.Object
+                || !parameters.TryGetProperty("protocolVersion", out var protocolVersion)
+                || protocolVersion.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(protocolVersion.GetString())
+                || !parameters.TryGetProperty("capabilities", out var capabilities)
+                || capabilities.ValueKind != JsonValueKind.Object
+                || !parameters.TryGetProperty("clientInfo", out var clientInfo)
+                || clientInfo.ValueKind != JsonValueKind.Object
+                || !HasNonEmptyString(clientInfo, "name")
+                || !HasNonEmptyString(clientInfo, "version"))
+            {
+                error = "initialize params must include protocolVersion, capabilities, and clientInfo name/version.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryValidateProtocolVersion(
+            CopilotMcpHttpRequest request,
+            out CopilotMcpHttpResponse? failure)
+        {
+            failure = null;
+            if (!request.Headers.TryGetValue(ProtocolVersionHeaderName, out var protocolVersion)
+                || string.IsNullOrWhiteSpace(protocolVersion))
+            {
+                return true;
+            }
+            if (string.Equals(
+                protocolVersion.Trim(),
+                SupportedProtocolVersion,
+                StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            failure = JsonErrorResponse(
+                400,
+                null,
+                -32014,
+                $"Unsupported MCP protocol version. ColorVision supports {SupportedProtocolVersion}.");
+            return false;
+        }
+
+        private static bool HasNonEmptyString(JsonElement value, string propertyName)
+        {
+            return value.TryGetProperty(propertyName, out var property)
+                && property.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(property.GetString());
         }
 
         private static bool IsAuthorized(IReadOnlyDictionary<string, string> headers, string token, out string failureReason)

@@ -52,6 +52,7 @@ namespace ColorVision.Copilot
             ConcurrencyMode = ConcurrencyMode,
             ExecutionTimeout = ExecutionTimeout,
             EvidenceMode = EvidenceMode,
+            AllowsTemporaryFullAccess = AllowsTemporaryFullAccess,
         };
 
         CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
@@ -69,6 +70,8 @@ namespace ColorVision.Copilot
         CopilotToolEvidenceMode EvidenceMode => Access == CopilotToolAccess.ReadOnly
             ? CopilotToolEvidenceMode.Summary
             : CopilotToolEvidenceMode.None;
+
+        bool AllowsTemporaryFullAccess => false;
 
         string GetConcurrencyKey(CopilotAgentRequest request, CopilotAgentToolInput toolInput)
         {
@@ -105,7 +108,7 @@ namespace ColorVision.Copilot
     /// Implemented by tools whose side effect can run after Microsoft Agent Framework has
     /// already collected an explicit approval for the exact function call.
     /// </summary>
-    public interface ICopilotFrameworkApprovedTool : ICopilotTool
+    internal interface ICopilotFrameworkApprovedTool : ICopilotTool
     {
         Task<CopilotToolResult> ExecuteApprovedAsync(
             CopilotAgentRequest request,
@@ -113,7 +116,23 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
     }
 
-    public sealed record CopilotToolApprovalPresentation(string Title, string Description);
+    public enum CopilotApprovalReversibility
+    {
+        Unknown,
+        AutomaticUntilExpiry,
+        ManualOnly,
+        NotReversible,
+    }
+
+    public sealed record CopilotToolApprovalPresentation(
+        string Title,
+        string Description,
+        string ImpactSummary = "",
+        CopilotApprovalReversibility Reversibility = CopilotApprovalReversibility.Unknown,
+        string ReversibilitySummary = "")
+    {
+        public string ReviewDetails { get; init; } = string.Empty;
+    }
 
     public interface ICopilotFrameworkApprovalPresentation
     {

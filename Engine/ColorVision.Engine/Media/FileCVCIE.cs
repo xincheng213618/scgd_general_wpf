@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Impl.CVFile
 
             System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.FileName = Path.GetFileNameWithoutExtension(FileInfo.FullName) + $".{imageFormat}";
-            dialog.Filter = "Bitmap Image|*.bmp|PNG Image|*.png|JPEG Image|*.jpg;*.jpeg|TIFF Image|*.tiff|All Files|*.*";
+            dialog.Filter = "Bitmap Image|*.bmp|PNG Image|*.png|JPEG Image|*.jpg;*.jpeg|TIFF Image|*.tif;*.tiff|All Files|*.*";
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -73,14 +73,15 @@ namespace ColorVision.Engine.Impl.CVFile
                         }
                         break;
                     case ".png":
-                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
+                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.PngCompression, VExportCIE.DefaultPngCompressionLevel));
                         break;
                     case ".jpg":
                     case ".jpeg":
-                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
+                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, VExportCIE.DefaultJpegQuality));
                         break;
+                    case ".tif":
                     case ".tiff":
-                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                        src.SaveImage(dialog.FileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, VExportCIE.DefaultTiffCompression));
                         break;
                     default:
                         MessageBox.Show("Unsupported file format selected.", "Error");

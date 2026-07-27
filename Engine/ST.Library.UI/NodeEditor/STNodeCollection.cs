@@ -96,13 +96,15 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		{
 			throw new ArgumentNullException("添加对象不能为空");
 		}
-		EnsureSpace(1);
+		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("添加节点");
 		int num = IndexOf(node);
 		if (-1 == num)
 		{
+			EnsureSpace(1);
 			num = _Count;
 			node.Owner = m_owner;
 			m_nodes[_Count++] = node;
+			m_owner.RecordNodeAdded(node, num);
 			m_owner.BuildBounds();
 			m_owner.OnNodeAdded(new STNodeEditorEventArgs(node));
 			m_owner.Invalidate();
@@ -116,47 +118,28 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		{
 			throw new ArgumentNullException("添加对象不能为空");
 		}
-		EnsureSpace(nodes.Length);
+		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("添加节点");
 		foreach (STNode sTNode in nodes)
 		{
 			if (sTNode == null)
 			{
 				throw new ArgumentNullException("添加对象不能为空");
 			}
-			if (-1 == IndexOf(sTNode))
-			{
-				sTNode.Owner = m_owner;
-				m_nodes[_Count++] = sTNode;
-			}
-			m_owner.OnNodeAdded(new STNodeEditorEventArgs(sTNode));
+			Add(sTNode);
 		}
-		m_owner.Invalidate();
-		m_owner.BuildBounds();
 	}
 
 	public void Clear()
 	{
-		for (int i = 0; i < _Count; i++)
+		if (_Count == 0)
 		{
-			m_nodes[i].Owner = null;
-			foreach (STNodeOption inputOption in m_nodes[i].InputOptions)
-			{
-				inputOption.DisConnectionAll();
-			}
-			foreach (STNodeOption outputOption in m_nodes[i].OutputOptions)
-			{
-				outputOption.DisConnectionAll();
-			}
-			m_owner.OnNodeRemoved(new STNodeEditorEventArgs(m_nodes[i]));
-			m_owner.InternalRemoveSelectedNode(m_nodes[i]);
+			return;
 		}
-		_Count = 0;
-		m_nodes = new STNode[4];
-		m_owner.SetActiveNode(null);
-		m_owner.BuildBounds();
-		m_owner.ScaleCanvas(1f, 0f, 0f);
-		m_owner.MoveCanvas(10f, 10f, bAnimation: true, CanvasMoveArgs.All);
-		m_owner.Invalidate();
+		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("清空画布");
+		while (_Count > 0)
+		{
+			RemoveAt(_Count - 1);
+		}
 	}
 
 	public bool Contains(STNode node)
@@ -171,13 +154,19 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 
 	public void Insert(int nIndex, STNode node)
 	{
-		if (nIndex < 0 || nIndex >= _Count)
+		if (nIndex < 0 || nIndex > _Count)
 		{
 			throw new IndexOutOfRangeException("索引越界");
 		}
 		if (node == null)
 		{
 			throw new ArgumentNullException("插入对象不能为空");
+		}
+		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("添加节点");
+		int existingIndex = IndexOf(node);
+		if (existingIndex >= 0)
+		{
+			return;
 		}
 		EnsureSpace(1);
 		for (int num = _Count; num > nIndex; num--)
@@ -187,6 +176,8 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		node.Owner = m_owner;
 		m_nodes[nIndex] = node;
 		_Count++;
+		m_owner.RecordNodeAdded(node, nIndex);
+		m_owner.OnNodeAdded(new STNodeEditorEventArgs(node));
 		m_owner.Invalidate();
 		m_owner.BuildBounds();
 	}
@@ -206,19 +197,38 @@ public class STNodeCollection : IList, ICollection, IEnumerable
 		{
 			throw new IndexOutOfRangeException("索引越界");
 		}
-		m_nodes[nIndex].Owner = null;
-		m_owner.InternalRemoveSelectedNode(m_nodes[nIndex]);
-		if (m_owner.ActiveNode == m_nodes[nIndex])
+		using STNodeEditTransaction transaction = m_owner.BeginEditTransaction("删除节点");
+		STNode node = m_nodes[nIndex];
+		var nodeState = m_owner.CaptureNodeStateForRemoval(node);
+		var connectionOperations = m_owner.CaptureNodeConnectionsForRemoval(node);
+		bool lockOption = node.LockOption;
+		node.LockOption = false;
+		try
+		{
+			using (m_owner.SuspendHistoryRecording())
+			{
+				node.Owner = null;
+			}
+		}
+		finally
+		{
+			node.LockOption = lockOption;
+		}
+		m_owner.InternalRemoveSelectedNode(node);
+		if (m_owner.ActiveNode == node)
 		{
 			m_owner.SetActiveNode(null);
 		}
-		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(m_nodes[nIndex]));
+		m_owner.RecordNodeConnectionsRemoved(connectionOperations);
+		m_owner.RecordNodeRemoved(node, nIndex, nodeState);
+		m_owner.OnNodeRemoved(new STNodeEditorEventArgs(node));
 		_Count--;
 		int i = nIndex;
 		for (int count = _Count; i < count; i++)
 		{
 			m_nodes[i] = m_nodes[i + 1];
 		}
+		m_nodes[_Count] = null;
 		if (_Count == 0)
 		{
 			m_owner.ScaleCanvas(1f, 0f, 0f);

@@ -23,6 +23,14 @@ namespace ColorVision.Copilot
 
         public string CallId { get; set; } = string.Empty;
 
+        public bool ShouldSerializeKind() => Kind != CopilotResponseTimelineEventKind.Markdown;
+
+        public bool ShouldSerializeContentStart() => ContentStart != 0;
+
+        public bool ShouldSerializeContentLength() => ContentLength != 0;
+
+        public bool ShouldSerializeCallId() => !string.IsNullOrEmpty(CallId);
+
         public static CopilotResponseTimelineEvent Markdown(int contentStart, int contentLength)
         {
             return new CopilotResponseTimelineEvent

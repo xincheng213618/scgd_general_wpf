@@ -100,9 +100,9 @@
 
         <!-- 分页 -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
-            <Button Content="{x:Static properties:Resources.Sched_PrevPage}" Click="PreviousPage_Click" Padding="10,3" Margin="5,0"/>
+            <Button x:Name="ButtonPreviousPage" Content="{x:Static properties:Resources.Sched_PrevPage}" Click="PreviousPage_Click" Padding="10,3" Margin="5,0" IsEnabled="False"/>
             <TextBlock x:Name="TextBlockPage" Text="{x:Static properties:Resources.Sched_Page1}" VerticalAlignment="Center" Margin="10,0"/>
-            <Button Content="{x:Static properties:Resources.Sched_NextPage}" Click="NextPage_Click" Padding="10,3" Margin="5,0"/>
+            <Button x:Name="ButtonNextPage" Content="{x:Static properties:Resources.Sched_NextPage}" Click="NextPage_Click" Padding="10,3" Margin="5,0" IsEnabled="False"/>
         </StackPanel>
     </Grid>
 </Window>

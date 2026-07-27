@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ColorVision.Copilot.Mcp
 {
-    public sealed class CopilotMcpTemplatePatchPreview
+    internal sealed class CopilotMcpTemplatePatchPreview
     {
         public string PreviewId { get; init; } = string.Empty;
 
@@ -29,7 +29,7 @@ namespace ColorVision.Copilot.Mcp
         public DateTimeOffset ExpiresAt { get; init; }
     }
 
-    public sealed class CopilotMcpTemplatePatchPreviewStore
+    internal sealed class CopilotMcpTemplatePatchPreviewStore
     {
         private static readonly Lazy<CopilotMcpTemplatePatchPreviewStore> LazyInstance = new(() => new CopilotMcpTemplatePatchPreviewStore());
         private static readonly TimeSpan DefaultLifetime = TimeSpan.FromMinutes(10);
@@ -129,7 +129,7 @@ namespace ColorVision.Copilot.Mcp
 
         private static string CreatePreviewId()
         {
-            Span<byte> bytes = stackalloc byte[6];
+            Span<byte> bytes = stackalloc byte[16];
             RandomNumberGenerator.Fill(bytes);
             return Convert.ToHexString(bytes).ToLowerInvariant();
         }

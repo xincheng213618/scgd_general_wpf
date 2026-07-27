@@ -9,15 +9,16 @@ namespace ProjectARVRPro.Process
 
     internal class ProcessGroupsRoot
     {
-        public int Version { get; set; } = 2;
+        public int Version { get; set; } = 3;
         public int ActiveGroupIndex { get; set; }
         public List<ProcessGroupPersist> Groups { get; set; } = new();
+        public List<ProcessMetaPersist> ResultParsers { get; set; } = new();
         public RecipeConfig RecipeConfig { get; set; } = new();
     }
 
     internal class ProcessManagerConfigPersist
     {
-        public int Version { get; set; } = 2;
+        public int Version { get; set; } = 3;
         public DateTime ExportedAt { get; set; } = DateTime.Now;
         public ProcessGroupsRoot ProcessGroups { get; set; } = new();
     }

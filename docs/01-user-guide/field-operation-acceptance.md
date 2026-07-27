@@ -21,7 +21,7 @@
 | 流程执行 | 运行一条最小流程或项目流程 | 能完成，或能定位第一个失败节点 | [流程执行与调试](./workflow/execution.md) |
 | 图像与 overlay | 打开一张结果图并查看 ROI/POI/overlay | 图像、图层和坐标对齐 | [图像编辑器概览](./image-editor/overview.md)、Engine 结果展示链路 |
 | 数据落库 | 按 SN、时间或批次查一条结果 | SQLite/MySQL 有对应记录，字段基本完整 | [数据库操作](./data-management/database.md) |
-| 文件导出 | 导出 CSV/Excel/PDF/图片或项目结果 | 文件存在、字段顺序和客户格式正确 | [数据导出与导入](./data-management/export-import.md)、项目页 |
+| 文件导出 | 导出 CSV/Excel/图片或项目结果 | 文件存在、字段顺序和客户格式正确 | [数据导出与导入](./data-management/export-import.md)、项目页 |
 | Socket/MES/Modbus | 发送现场最小命令或联机样例 | 外部系统能触发并收到正确状态码/数据 | [SocketProtocol](../04-api-reference/ui-components/ColorVision.SocketProtocol.md)、[项目包总览](../04-api-reference/projects/README.md) |
 | 插件能力 | 打开现场插件并执行最小功能 | 插件菜单、窗口、设备连接、结果或导出正常 | [现有插件能力说明](../04-api-reference/plugins/README.md) |
 | 项目包流程 | 打开客户项目，输入 SN，运行最小流程 | 客户结果、文件、Socket/MES 返回符合项目页 | [项目说明](../00-projects/README.md) |
@@ -50,7 +50,7 @@
 | 交付物 | 验收方式 | 重点 |
 | --- | --- | --- |
 | SQLite/MySQL | 按 SN、时间、批次查询 | 批次、模板、结果字段是否匹配 |
-| CSV/Excel/PDF | 打开文件核对字段和单位 | 字段顺序、PASS/FAIL、客户旧格式兼容 |
+| CSV/Excel | 打开文件核对字段和单位 | 字段顺序、PASS/FAIL、客户旧格式兼容 |
 | 图片/overlay | 打开结果图并查看标注 | 点位、框线、图层和原图坐标 |
 | Socket/MES 返回 | 保存请求和响应样例 | 状态码、错误信息、`Data` 字段 |
 | Summary/文本 | 核对产量、良率、失败项 | 目录、文件名、模型分组、统计口径 |

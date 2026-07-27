@@ -82,10 +82,12 @@ namespace ColorVision.Copilot
                     ["template_identifier"] = JsonSerializer.SerializeToElement("active-template"),
                     ["proposed_changes"] = proposedChanges.Clone(),
                 };
-                var result = await _capabilityInvoker.InvokeAsync(
+                var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                    _capabilityInvoker,
                     "preview_template_patch",
                     arguments,
-                    CopilotApplicationCapabilityCaller.InAppAgent,
+                    request,
+                    frameworkApprovalGranted: false,
                     cancellationToken);
                 return ToToolResult(result, "Template patch preview created.", "Template patch preview failed.");
             }

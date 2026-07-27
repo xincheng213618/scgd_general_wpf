@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
@@ -25,6 +26,82 @@ public class LogicalANDNode : STNodeInHub
 	{
 		base.OnCreate();
 		m_op_result = base.OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
+		ApplyStandardSize();
+	}
+
+	protected override void OnOwnerChanged()
+	{
+		base.OnOwnerChanged();
+		ApplyStandardSize();
+	}
+
+	protected override Point OnSetOptionDotLocation(STNodeOption op, Point pt, int nIndex)
+	{
+		if (!op.IsInput)
+		{
+			return base.OnSetOptionDotLocation(op, pt, nIndex);
+		}
+
+		return new Point(Left - op.DotSize / 2, Top + TitleHeight + (ItemHeight - op.DotSize) / 2);
+	}
+
+	protected override void OnDrawBody(DrawingTools dt)
+	{
+		STNodeOption visibleInput = GetVisibleInputOption();
+		if (visibleInput != null)
+		{
+			base.OnDrawOptionDot(dt, visibleInput);
+			m_sf.Alignment = StringAlignment.Near;
+			dt.SolidBrush.Color = visibleInput.TextColor;
+			dt.Graphics.DrawString("IN", Font, dt.SolidBrush, visibleInput.TextRectangle, m_sf);
+		}
+
+		foreach (STNodeOption outputOption in OutputOptions)
+		{
+			if (outputOption == STNodeOption.Empty)
+			{
+				continue;
+			}
+			base.OnDrawOptionDot(dt, outputOption);
+			base.OnDrawOptionText(dt, outputOption);
+		}
+	}
+
+	private STNodeOption GetVisibleInputOption()
+	{
+		STNodeOption fallback = null;
+		foreach (STNodeOption inputOption in InputOptions)
+		{
+			fallback = inputOption;
+			if (inputOption.ConnectionCount > 0)
+			{
+				return inputOption;
+			}
+		}
+		return fallback;
+	}
+
+	protected override void DoInputConnected(STNodeOption sender, STNodeOptionEventArgs e)
+	{
+		base.DoInputConnected(sender, e);
+		ApplyStandardSize();
+	}
+
+	protected override void DoInputDisConnected(STNodeOption sender, STNodeOptionEventArgs e)
+	{
+		base.DoInputDisConnected(sender, e);
+		ApplyStandardSize();
+	}
+
+	public override void OnLoadNode(System.Collections.Generic.Dictionary<string, byte[]> dic)
+	{
+		base.OnLoadNode(dic);
+		ApplyStandardSize();
+	}
+
+	private void ApplyStandardSize()
+	{
+		SetFixedSize(CVCommonNode.StandardNodeWidth, CVCommonNode.StandardNodeMinHeight);
 	}
 
 	protected override void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)

@@ -8,14 +8,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 {
 
     [DisplayAlgorithm(53, "POI分析", "ARVR")]
-    public class AlgorithmPoiAnalysis : DisplayAlgorithmBase
+    public class AlgorithmPoiAnalysis : JsonDisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
@@ -23,50 +22,31 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 
 
         public AlgorithmPoiAnalysis(DeviceAlgorithm deviceAlgorithm)
+            : base(new DualTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "POI分析模板",
+                    new TemplatePoiAnalysis(),
+                    "请先选择POI分析模板"),
+                new DisplayAlgorithmTemplateSelection(
+                    "关注点模板",
+                    new TemplatePoi(),
+                    "请先选择关注点模板")))
         {
             Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
         public static ObservableCollection<TemplateModel<TJPoiAnalysisParam>> Params => TemplatePoiAnalysis.Params;
-        public RelayCommand OpenTemplateCommand { get; set; }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplatePoiAnalysis(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
 
         public static ObservableCollection<TemplateModel<PoiParam>> PoiParams => TemplatePoi.Params;
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
 
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayPoiAnalysis(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-
-        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
+        public override MsgRecord SendCommand(TemplateJsonParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
-            if (TemplatePoiSelectedIndex > -1)
+            if (Config.SecondaryTemplate.TryGetValue(out PoiParam poiParam))
             {
-                var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
-                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poi_pm.Id, Name = poi_pm.Name });
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             }
 
             Params.Add("Version", "1.0");

@@ -9,11 +9,13 @@ namespace ColorVision.Copilot
     {
         private const int MaximumSaveAttempts = 2;
         private static readonly TimeSpan DefaultDebounceDelay = TimeSpan.FromMilliseconds(300);
+        private static readonly TimeSpan DefaultMaximumDebounceDelay = TimeSpan.FromSeconds(2);
         private static readonly TimeSpan SaveRetryDelay = TimeSpan.FromMilliseconds(50);
         private readonly Func<CancellationToken, Task> _saveAsync;
         private readonly Action<Exception> _onError;
         private readonly Action _onSaved;
         private readonly TimeSpan _debounceDelay;
+        private readonly TimeSpan _maximumDebounceDelay;
         private readonly object _syncRoot = new();
         private readonly SemaphoreSlim _requestSignal = new(0);
         private readonly CancellationTokenSource _shutdown = new();
@@ -29,12 +31,16 @@ namespace ColorVision.Copilot
             Func<CancellationToken, Task> saveAsync,
             TimeSpan? debounceDelay = null,
             Action<Exception>? onError = null,
-            Action? onSaved = null)
+            Action? onSaved = null,
+            TimeSpan? maximumDebounceDelay = null)
         {
             _saveAsync = saveAsync ?? throw new ArgumentNullException(nameof(saveAsync));
             _debounceDelay = debounceDelay ?? DefaultDebounceDelay;
             if (_debounceDelay < TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException(nameof(debounceDelay));
+            _maximumDebounceDelay = maximumDebounceDelay ?? DefaultMaximumDebounceDelay;
+            if (_maximumDebounceDelay <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(maximumDebounceDelay));
 
             _onError = onError ?? (exception => Trace.TraceError($"Copilot state persistence failed: {exception}"));
             _onSaved = onSaved ?? (() => { });
@@ -112,9 +118,19 @@ namespace ColorVision.Copilot
                     if (batch.Version <= GetProcessedVersion())
                         continue;
 
-                    while (!batch.Immediate
-                        && await _requestSignal.WaitAsync(_debounceDelay, _shutdown.Token).ConfigureAwait(false))
+                    var debounceStartedAt = Stopwatch.GetTimestamp();
+                    while (!batch.Immediate)
                     {
+                        var maximumDelayRemaining = _maximumDebounceDelay - Stopwatch.GetElapsedTime(debounceStartedAt);
+                        if (maximumDelayRemaining <= TimeSpan.Zero)
+                            break;
+
+                        var waitDelay = _debounceDelay < maximumDelayRemaining
+                            ? _debounceDelay
+                            : maximumDelayRemaining;
+                        if (!await _requestSignal.WaitAsync(waitDelay, _shutdown.Token).ConfigureAwait(false))
+                            break;
+
                         DrainRequestSignals();
                         batch = TakePendingBatch();
                     }

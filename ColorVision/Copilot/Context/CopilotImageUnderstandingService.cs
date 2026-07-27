@@ -64,9 +64,10 @@ namespace ColorVision.Copilot
             string label,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             // File existence checks and opens can block before asynchronous reads begin on UNC paths.
-            return Task.Run(() => LoadImageBytesCoreAsync(filePath, label, cancellationToken), cancellationToken);
+            return CopilotCancellationBoundary.RunTaskAsync(
+                token => LoadImageBytesCoreAsync(filePath, label, token),
+                cancellationToken);
         }
 
         private static async Task<byte[]> LoadImageBytesCoreAsync(
@@ -76,8 +77,10 @@ namespace ColorVision.Copilot
         {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
                     throw new InvalidOperationException($"图片“{label}”不存在或已被移动。");
+                cancellationToken.ThrowIfCancellationRequested();
 
                 using var stream = new FileStream(
                     filePath,
@@ -86,12 +89,15 @@ namespace ColorVision.Copilot
                     FileShare.ReadWrite,
                     bufferSize: 81920,
                     FileOptions.Asynchronous | FileOptions.SequentialScan);
-                if (stream.Length <= 0)
+                cancellationToken.ThrowIfCancellationRequested();
+                var streamLength = stream.Length;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (streamLength <= 0)
                     throw new InvalidOperationException($"图片“{label}”为空文件。");
-                if (stream.Length > MaximumImageBytes)
+                if (streamLength > MaximumImageBytes)
                     throw new InvalidOperationException($"图片“{label}”超过 {MaximumImageBytes / 1024 / 1024} MB 限制。");
 
-                using var content = new MemoryStream(capacity: (int)stream.Length);
+                using var content = new MemoryStream(capacity: (int)streamLength);
                 var buffer = new byte[81920];
                 while (true)
                 {
@@ -252,13 +258,13 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string BuildAnalysisPrompt(string? userRequest, IReadOnlyList<CopilotAttachmentItem> images)
+        private static string BuildAnalysisPrompt(string? userRequest, CopilotAttachmentItem[] images)
         {
             var builder = new StringBuilder();
             builder.AppendLine("Inspect every attached image for the main assistant.");
             builder.AppendLine("Focus on details relevant to the user's request, while still recording important visible text and uncertainty.");
             builder.AppendLine("Images in attachment order:");
-            for (var index = 0; index < images.Count; index++)
+            for (var index = 0; index < images.Length; index++)
                 builder.Append(index + 1).Append(". ").AppendLine(images[index].DisplayLabel);
 
             var request = (userRequest ?? string.Empty).Trim();

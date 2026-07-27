@@ -42,6 +42,7 @@ public class CalibrationNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("曝光模板", "曝光模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowAutoExposureTemplateEditor))]
 	public string ExpTempName
 	{
 		get
@@ -88,6 +89,7 @@ public class CalibrationNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI模板", "POI算法模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiTemplateEditor))]
 	public string POITempName
 	{
 		get
@@ -103,6 +105,7 @@ public class CalibrationNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI过滤", "POI过滤模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiFilterTemplateEditor))]
 	public string POIFilterTempName
 	{
 		get
@@ -118,6 +121,7 @@ public class CalibrationNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("POI修正", "POI修正模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiReviseTemplateEditor))]
 	public string POIReviseTempName
 	{
 		get
@@ -133,6 +137,7 @@ public class CalibrationNode : CVBaseServerNode
 	}
 
 	[STNodeProperty("文件输出模板", "文件输出模板", true)]
+	[System.ComponentModel.PropertyEditorTypeAttribute(typeof(FlowEngineLib.PropertyEditor.FlowPoiOutputTemplateEditor))]
 	public string OutputTemplateName
 	{
 		get

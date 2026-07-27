@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>ローカルダウンロード</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Baidu Cloud ダウンロード</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>同じソフトウェアバージョン</value>
@@ -556,16 +551,10 @@
     <value>静かにしてほしい場合は、右クリックで通知をオフにしてください。</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>ローカルLive2Dモデルがある場合は、設定で接続できます。</value>
+    <value>設定から PNG または WebP のスプライトシートを使ってペットを作成できます。</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVisionが起動しました。ここで通知します。</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>モデル読み込み失敗、内蔵形象に切り替えました。</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>モデル読み込み失敗: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>デスクトップペット設定</value>
@@ -605,21 +594,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>ペット透明度</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Live2Dレンダリングを有効にする</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2DモデルまたはHTMLパス</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>デスクトップペットを有効にする</value>
@@ -918,4 +892,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>更新前にプログラムのスナップショットを作成</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>推奨ソフトウェア</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Everything と WinRAR のインストールを推奨します。未インストールの項目は既定で選択されています。「次へ」または「選択したソフトウェアをインストール」で順番にインストーラーを開きます。選択を外せば ColorVision の利用を妨げずにスキップできます。</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>このコンピューター内のファイルとフォルダーを高速検索します。</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>一般的な圧縮ファイルを開く、展開する、作成するために使用します。</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>インストール中...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>選択したソフトウェアをインストール</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>再確認</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>選択を確認</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>{0} のインストーラーが見つかりません：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>{0} のインストーラーを開始できませんでした：{1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} はインストールされませんでした。再試行するか、選択を外して続行してください。</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>インストール済み</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>インストーラーなし</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>インストール予定</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>スキップ</value></data>
 </root>

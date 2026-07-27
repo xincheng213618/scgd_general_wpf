@@ -24,6 +24,7 @@ const scopeOptions = [
   'plugin:publish',
   'release:publish',
   'file:transfer',
+  'copilot:config:read',
 ].map((value) => ({ label: value, value }))
 
 export function ApiKeysPage() {

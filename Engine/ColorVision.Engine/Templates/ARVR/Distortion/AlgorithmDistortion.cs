@@ -6,42 +6,37 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
 
     [DisplayAlgorithmAttribute(55, nameof(ColorVision.Engine.Properties.Resources.DistortionEvaluation),"ARVR")]
-    public class AlgorithmDistortion : DisplayAlgorithmBase
+    public class AlgorithmDistortion : DisplayAlgorithmBase<SingleTemplateDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmDistortion(DeviceAlgorithm deviceAlgorithm)
+            : base(new SingleTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "Distortion模板",
+                    new TemplateDistortionParam(),
+                    "请先选择Distortion模板")))
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateDistortionParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out DistortionParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(param, string.Empty, string.Empty, imageFileName, fileExtType);
         }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayDistortion(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
 
         public MsgRecord SendCommand(DistortionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType)
         {

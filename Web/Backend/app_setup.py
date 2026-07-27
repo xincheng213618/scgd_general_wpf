@@ -285,6 +285,10 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.pages import register_pages
     from routes.cvws_api import register_cvws_api
     from routes.admin_api import AdminApiContext, register_admin_api_routes
+    from routes.copilot_config_api import (
+        CopilotConfigApiContext,
+        register_copilot_config_api_routes,
+    )
     from routes.docs_site import register_docs_site
     from routes.frontend_spa import FrontendSpaContext, register_frontend_spa
     from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
@@ -430,6 +434,10 @@ def register_all_blueprints(app, ctx, services, helpers):
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
         get_access_recorder_status=helpers["access_recorder"].status,
+    ))
+    register_copilot_config_api_routes(app, CopilotConfigApiContext(
+        cache=cache,
+        config_getter=_dynamic_config,
     ))
 
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes

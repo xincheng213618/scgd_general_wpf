@@ -28,7 +28,7 @@
 | 执行和调试流程 | [流程执行与调试](./workflow/execution.md) | 选择流程，运行，观察节点状态和结果 | 能看到完成状态或第一个失败节点 | 起始节点、设备状态、模板绑定、日志 |
 | 打开图像和查看 overlay | [图像编辑器概览](./image-editor/overview.md) | 打开结果图，查看缩放、图层、ROI/POI/伪彩 | 图像、图层和标注显示正常 | 文件路径、图片是否写完、overlay 坐标、图像资源 |
 | 查询数据库和历史结果 | [数据管理概览](./data-management/README.md)、[数据库操作](./data-management/database.md) | 打开数据库连接或结果查询窗口，按 SN/时间筛选 | 能查到批次、流程、结果或项目数据 | MySQL/SQLite 连接、查询条件、批次号、模板名 |
-| 导出或导入数据 | [数据导出与导入](./data-management/export-import.md) | 选择导出目录、格式和范围，确认文件生成 | CSV/Excel/PDF/图片等文件存在且字段正确 | 导出路径权限、字段映射、项目包 exporter |
+| 导出或导入数据 | [数据导出与导入](./data-management/export-import.md) | 选择导出目录、格式和范围，确认文件生成 | CSV/Excel/图片等文件存在且字段正确 | 导出路径权限、字段映射、项目包 exporter |
 | 运行客户项目包 | [项目说明](../00-projects/README.md)、[项目包总览](../04-api-reference/projects/README.md) | 打开项目窗口，输入 SN，选择流程组或模板，运行 | 项目完成并生成客户结果 | 项目配置、流程组、Recipe/Fix、Socket/MES |
 | 使用插件能力 | [现有插件能力说明](../04-api-reference/plugins/README.md) | 打开插件窗口，连接设备或执行插件功能 | 插件菜单、窗口、结果和导出正常 | manifest、插件 DLL、依赖设备、管理员权限 |
 | 外部系统联机测试 | [项目包总览](../04-api-reference/projects/README.md)、[SocketProtocol](../04-api-reference/ui-components/ColorVision.SocketProtocol.md) | 确认协议、端口、事件/命令、SN、返回字段 | 外部系统能触发并收到结果 | 端口占用、协议模式、Socket/MES/Modbus 配置 |
@@ -51,7 +51,7 @@
 
 | 交付类型 | 使用者关心什么 | 先查哪里 |
 | --- | --- | --- |
-| CSV / Excel / PDF | 文件是否生成、字段顺序、单位、PASS/FAIL | 数据导出页、项目包 exporter、输出路径 |
+| CSV / Excel | 文件是否生成、字段顺序、单位、PASS/FAIL | 数据导出页、项目包 exporter、输出路径 |
 | SQLite / MySQL | 能否按 SN、时间、批次查询 | 数据库操作、连接配置、批次号 |
 | Socket / MES / Modbus | 外部系统是否收到正确状态码和数据 | 项目包总览、SocketProtocol、现场协议 |
 | 图像 / overlay | 图像是否能打开，点位/框线是否对齐 | 图像编辑器、文件服务器、结果展示链路 |

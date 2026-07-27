@@ -11,6 +11,8 @@ public class FlowNodeManager
 
 	private Dictionary<string, List<DeviceNode>> AnonymousNodeDevices;
 
+	private readonly object deviceLock = new object();
+
 	public static FlowNodeManager Instance
 	{
 		get
@@ -31,32 +33,67 @@ public class FlowNodeManager
 
 	public void AddDevice(DeviceNode device)
 	{
-		string key = device.GetKey();
-		if (string.IsNullOrEmpty(key))
+		lock (deviceLock)
 		{
-			key = device.DeviceType;
-			if (!string.IsNullOrEmpty(key))
+			string key = device.GetKey();
+			if (string.IsNullOrEmpty(key))
 			{
-				if (!AnonymousNodeDevices.ContainsKey(key))
+				key = device.DeviceType;
+				if (!string.IsNullOrEmpty(key))
 				{
-					AnonymousNodeDevices.Add(key, new List<DeviceNode>());
+					if (!AnonymousNodeDevices.ContainsKey(key))
+					{
+						AnonymousNodeDevices.Add(key, new List<DeviceNode>());
+					}
+					AnonymousNodeDevices[key].Add(device);
 				}
-				AnonymousNodeDevices[key].Add(device);
 			}
-		}
-		else
-		{
-			if (!NodeDevices.ContainsKey(key))
+			else
 			{
-				NodeDevices.Add(key, new List<DeviceNode>());
+				if (!NodeDevices.ContainsKey(key))
+				{
+					NodeDevices.Add(key, new List<DeviceNode>());
+				}
+				NodeDevices[key].Add(device);
 			}
-			NodeDevices[key].Add(device);
 		}
+	}
+
+	public bool RemoveDevice(DeviceNode device)
+	{
+		if (device == null)
+		{
+			return false;
+		}
+		lock (deviceLock)
+		{
+			bool removed = RemoveDevice(NodeDevices, device);
+			return RemoveDevice(AnonymousNodeDevices, device) || removed;
+		}
+	}
+
+	private static bool RemoveDevice(Dictionary<string, List<DeviceNode>> devices, DeviceNode device)
+	{
+		bool removed = false;
+		foreach (string key in devices.Keys.ToArray())
+		{
+			List<DeviceNode> registeredDevices = devices[key];
+			while (registeredDevices.Remove(device))
+			{
+				removed = true;
+			}
+			if (registeredDevices.Count == 0)
+			{
+				devices.Remove(key);
+			}
+		}
+		return removed;
 	}
 
 	public void UpdateDevice(Dictionary<string, Dictionary<string, DeviceNode>> devices)
 	{
-		foreach (KeyValuePair<string, List<DeviceNode>> anonymousNodeDevice in AnonymousNodeDevices)
+		GetDeviceSnapshots(out Dictionary<string, List<DeviceNode>> nodeDevices, out Dictionary<string, List<DeviceNode>> anonymousNodeDevices);
+		foreach (KeyValuePair<string, List<DeviceNode>> anonymousNodeDevice in anonymousNodeDevices)
 		{
 			if (!devices.ContainsKey(anonymousNodeDevice.Key) || devices[anonymousNodeDevice.Key].Count != 1)
 			{
@@ -72,11 +109,11 @@ public class FlowNodeManager
 		{
 			foreach (KeyValuePair<string, DeviceNode> item2 in device.Value)
 			{
-				if (!NodeDevices.ContainsKey(item2.Key))
+				if (!nodeDevices.ContainsKey(item2.Key))
 				{
 					continue;
 				}
-				foreach (DeviceNode item3 in NodeDevices[item2.Key])
+				foreach (DeviceNode item3 in nodeDevices[item2.Key])
 				{
 					item3.Update(item2.Value);
 				}
@@ -111,7 +148,8 @@ public class FlowNodeManager
 
 	public void UpdateDevice(Dictionary<string, Dictionary<string, MQTTDeviceInfo>> devices)
 	{
-		foreach (KeyValuePair<string, List<DeviceNode>> anonymousNodeDevice in AnonymousNodeDevices)
+		GetDeviceSnapshots(out Dictionary<string, List<DeviceNode>> nodeDevices, out Dictionary<string, List<DeviceNode>> anonymousNodeDevices);
+		foreach (KeyValuePair<string, List<DeviceNode>> anonymousNodeDevice in anonymousNodeDevices)
 		{
 			if (!devices.ContainsKey(anonymousNodeDevice.Key) || devices[anonymousNodeDevice.Key].Count != 1)
 			{
@@ -127,11 +165,11 @@ public class FlowNodeManager
 		{
 			foreach (KeyValuePair<string, MQTTDeviceInfo> item2 in device.Value)
 			{
-				if (!NodeDevices.ContainsKey(item2.Key))
+				if (!nodeDevices.ContainsKey(item2.Key))
 				{
 					continue;
 				}
-				foreach (DeviceNode item3 in NodeDevices[item2.Key])
+				foreach (DeviceNode item3 in nodeDevices[item2.Key])
 				{
 					item3.Update(item2.Value);
 				}
@@ -141,7 +179,19 @@ public class FlowNodeManager
 
 	public void ClearDevice()
 	{
-		AnonymousNodeDevices.Clear();
-		NodeDevices.Clear();
+		lock (deviceLock)
+		{
+			AnonymousNodeDevices.Clear();
+			NodeDevices.Clear();
+		}
+	}
+
+	private void GetDeviceSnapshots(out Dictionary<string, List<DeviceNode>> nodeDevices, out Dictionary<string, List<DeviceNode>> anonymousNodeDevices)
+	{
+		lock (deviceLock)
+		{
+			nodeDevices = NodeDevices.ToDictionary(item => item.Key, item => item.Value.ToList());
+			anonymousNodeDevices = AnonymousNodeDevices.ToDictionary(item => item.Key, item => item.Value.ToList());
+		}
 	}
 }

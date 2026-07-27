@@ -22,6 +22,7 @@ Per-endpoint scope requirements:
   - POST /api-keys/*/revoke   → admin:*
   - POST /api-keys/*/rotate   → admin:*
   - GET  /api-keys/*/usage    → admin:*
+  - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
 Session/Basic Auth always has full access.
@@ -69,6 +70,10 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "perf_summary": ["stats:read"],
     "docs_status": ["cache:read"],
     "publish_integrity": ["stats:read"],
+    "list_profiles": ["admin:*"],
+    "create_profile": ["admin:*"],
+    "update_profile": ["admin:*"],
+    "delete_profile": ["admin:*"],
 }
 
 
@@ -745,6 +750,7 @@ ALLOWED_SCOPES = {
     "file:transfer",
     "ops:relay",
     "ops:operator",
+    "copilot:config:read",
 }
 
 

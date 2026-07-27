@@ -18,22 +18,22 @@ namespace ColorVision.Engine.MQTT
         public override int Order => 2;
         public override async Task InitializeAsync()
         {
-            log.Info("正在检测MQTT服务器连接情况");
+            log.Info("Checking the MQTT server connection.");
 
             bool isConnect = await MQTTControl.GetInstance().Connect();
-            log.Info($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
+            log.Info($"MQTT server connection {(MQTTControl.GetInstance().IsConnect ? "succeeded" : "failed")}.");
             if (isConnect) return;
 
             if (MQTTControl.Config.Host == "127.0.0.1" || MQTTControl.Config.Host == "localhost")
             {
-                log.Info("检测到配置本机服务，正在尝试查找本机服务mosquitto");
+                log.Info("The MQTT endpoint is local; checking for the mosquitto Windows service.");
                 try
                 {
                     ServiceController serviceController = new ServiceController(MosquittoServiceName);
                     try
                     {
                         var status = serviceController.Status;
-                        log.Info($"检测服务mosquitto，状态 {status}，正在尝试启动服务");
+                        log.Info($"Detected the mosquitto service with status {status}; attempting to start it if needed.");
 
                         if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                         {
@@ -44,13 +44,13 @@ namespace ColorVision.Engine.MQTT
 
                             if (!response.Success)
                             {
-                                log.Info($"ColorVisionServiceHost 启动 mosquitto 服务失败：{response.Message}");
+                                log.Info($"ColorVisionServiceHost failed to start the mosquitto service: {response.Message}");
                                 return;
                             }
                         }
                         else if (status == ServiceControllerStatus.Running)
                         {
-                            log.Info("mosquitto 服务已在运行。");
+                            log.Info("The mosquitto service is already running.");
                         }
 
                         isConnect = await MQTTControl.GetInstance().Connect();
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.MQTT
                     }
                     catch (InvalidOperationException)
                     {
-                        log.Info("未检测到 mosquitto 服务，请确认已正确安装。");
+                        log.Info("The mosquitto service was not found. Confirm that it is installed correctly.");
                     }
                 }
                 catch (Exception ex)

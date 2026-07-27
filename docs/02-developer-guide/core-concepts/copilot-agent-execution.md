@@ -11,8 +11,8 @@ CopilotToolRegistry
   -> TodoProvider 持久化多步骤任务，AgentModeProvider 管理 plan/execute
   -> ContextWindowCompactionStrategy 在每次模型调用前压缩上下文
   -> TokenBudgetChatClient 累计本请求模型用量并限制循环
-  -> Always 审批工具由 ApprovalRequiredAIFunction 暂停
-  -> Pending Actions 收集批准/拒绝/过期决定
+  -> Always 审批工具由 ApprovalRequiredAIFunction 形成精确调用边界
+  -> 按需确认时 Pending Actions 收集批准/拒绝/过期决定；临时授权仅允许路径和哈希绑定的工作区补丁/回滚自动批准
   -> 使用同一 AgentSession 回传 ToolApprovalResponseContent
   -> CopilotToolExecutor 运行前置 Hook
   -> 进入资源感知执行闸门（最多 4 个独立只读调用）
@@ -30,7 +30,9 @@ CopilotToolRegistry
   -> 完成后序列化 AgentSession 到当前会话检查点
 ```
 
-`CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。
+`CopilotAgentRuntimeRouter` 将配置完整的 OpenAI-compatible 和 Anthropic-compatible Profile 送入 Agent Framework。运行时不会在失败后自动切换执行器，也不会重放已经产生文本或工具调用的请求，避免写操作被重复执行。模型设置不暴露运行时开关。输入框的访问状态通过同一个可变 `CopilotAgentAccessContext` 进入 `CopilotTurnRequest`、`CopilotAgentRequest` 和正在运行的 Framework Session，但不会写入会话状态。`ConfirmProtectedActions` 继续创建 Pending Action；内部兼容枚举名 `FullAccess` 表示最长 15 分钟的临时授权，必须精确绑定 conversation、task 和当前 workspace，并且只有 `AllowsTemporaryFullAccess` 的工具才可进入自动批准。目前该集合严格限制为 `ApplyWorkspacePatchEnvelope` 与 `RollbackWorkspacePatchEnvelope`；模板、Flow、批量转换、Shell、菜单和数据库仍逐项确认。Review 模式、工具 Schema、意图策略、工作区范围、执行契约、并发闸门、超时和审计不受影响。启用临时授权不会批准已经等待的 Framework Action；任务结束、失败、取消、超时、工作区变化或应用重启都会撤销授权，新会话和 conversation branch 也不会继承。
+
+`DesktopPetCopilotBridge` 订阅同一 `CopilotAgentTaskHost` 与 `CopilotMcpConfirmationStore`，但不再用最后一次事件覆盖单个会话 ID。`DesktopPetCopilotActivityTracker` 为每个会话保留有界活动，按 `NeedsInput -> Blocked -> Ready -> Running` 排序；完成、失败和暂停状态会留到用户打开对应会话，取消的排队任务会移除而不会抢走当前活动会话。宠物单击打开最高优先级活动，右键活动菜单最多展开八项；打开终态活动后再显示下一项。该状态投影只影响桌宠呈现和会话导航，不改变任务调度、审批或恢复语义，与 [Codex Pets](https://learn.chatgpt.com/docs/pets?surface=app) 的多聊天活动优先级保持一致。
 
 直接 URL 请求还有确定性策略：`Auto` 模式会同时暴露 `FetchUrl` 与作为回退的 `WebSearch`，先读取原 URL，失败或证据不足时再搜索公开网页。Framework 原生 `LoopEvaluator` 上的执行契约会检查真实 step record；如果模型先写出答案却没有调用匹配工具，运行时撤回这段未支持草稿，并在同一 Session 中反馈缺失证据、要求下一轮调用工具。只有成功的 URL/搜索 observation 才满足契约；直接读取失败且仍有未尝试的搜索工具时继续回退，所有匹配路径都失败或模型仍拒绝调用时以 `Blocked` 和稳定 blocker code 结束，不再把模型文字当成已访问网页的证明。
 
@@ -40,7 +42,7 @@ CopilotToolRegistry
 
 主 Agent 通过宿主管理的 `CopilotSubagentRoleCatalog` 选择专用只读角色。`DelegateExplore` 把范围较广或预计产生大量中间证据的多文件调查交给全新的只读 Harness Session；`DelegateScout` 处理需要查找、读取并综合多个公开来源的文档或依赖研究，简单单页读取仍直接使用 `FetchUrl` / `WebSearch`。模型可在同一个响应中发出最多两个互不依赖的角色调用；Framework 函数层并发执行，角色共享的协调器再用两个可取消的槽限制子运行，第三个调用等待槽位。不同任务使用不同只读资源键，重复任务继续服从现有同资源互斥与 no-progress 保护。
 
-子 Agent 不继承父会话历史、附件、checkpoint、todo、mode、Skills、可写根、外部 MCP 或审批状态，也不会获得 Harness 自动注入的 `todo_*`、`mode_*` 或 `load_skill` 控制函数。`Explore` 只接收自包含调查任务、最多四个搜索根、活动文档和仍处于这些根内的项目指令；存在活动文档时优先保留其所在根，工具面固定为 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory`。`Scout` 只接收自包含外部研究任务，不接收任何本地根、活动文档或项目指令，工具面固定为 `WebSearch` 和 `FetchUrl`；网页内容始终按不可信证据处理。两者都不能调用 Shell、数据库、写工具、MCP、审批或再次委派。`Explore` 每次最多 8 次工具调用，`Scout` 最多 6 次；两者都是 2 个 Agent pass、90 秒、16,384 个请求 Token 和 12,000 字符返回内容，更小的父运行预算会同步收紧工具次数、pass、时长和 Token。
+子 Agent 不继承父会话历史、附件、checkpoint、todo、mode、Skills、可写根、外部 MCP、访问模式或审批状态，也不会获得 Harness 自动注入的 `todo_*`、`mode_*` 或 `load_skill` 控制函数。`Explore` 只接收自包含调查任务、最多四个搜索根、活动文档和仍处于这些根内的项目指令；存在活动文档时优先保留其所在根，工具面固定为 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory`。`Scout` 只接收自包含外部研究任务，不接收任何本地根、活动文档或项目指令，工具面固定为 `WebSearch` 和 `FetchUrl`；网页内容始终按不可信证据处理。两者都不能调用 Shell、数据库、写工具、MCP、审批或再次委派。`Explore` 每次最多 8 次工具调用，`Scout` 最多 6 次；两者都是 2 个 Agent pass、90 秒、16,384 个请求 Token 和 12,000 字符返回内容，更小的父运行预算会同步收紧工具次数、pass、时长和 Token。
 
 同一父请求的全部 `Explore` / `Scout` 运行共享一个委派 Token 池：总量通常为父请求预算的一半，最低 4,096、最高 32,768 Token；单个子运行按并发公平分配并至少需要 4,096 Token。成功后按真实用量结算，异常或取消时保守消耗已预留额度，预算不足时不再启动新的供应商调用。每个子运行生成带角色前缀的独立 `explore-*` / `scout-*` ID，父工具 trace 的 `CallId` 与角色、该 ID、停止原因、排队时间、工具次数和 Token 预算一起持久化；子运行内部的逐工具噪声仍不复制到主聊天。供应商调用数、Token 与估算用量继续归集进父运行预算，父 Agent 收到结果后仍需综合证据并完成最终回答。这一角色分工保持了 [OpenCode Agents](https://opencode.ai/docs/agents/) 中“主 Agent 选择带独立提示词和权限的 Explore / Scout”的核心语义；整体仍由 [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/) 提供 Agent、Session、工具与中间件执行基础，并保留 ColorVision 自己的预算、隔离和审批模型。
 
@@ -88,6 +90,6 @@ Marketplace 安装会在下载和文件哈希校验通过后，只读打开 `.cv
 
 该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口为其他上下文组成留出稳定余量，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code `/compact`](https://code.claude.com/docs/en/commands) 对长对话主动压缩的原则一致。Harness 指令仍由当前 Profile 和运行时单独提供。
 
-输入框使用一个有界的本地 Slash 命令目录。输入 `/` 会显示全部候选，继续输入会按命令名前缀过滤；Tab 补全第一项，Enter 补全后直接执行，也可以点击任意候选。固定目录包含八个复用既有能力的命令：`/status` 查看模型、Agent、工作区与连接状态，`/context` 查看上下文、预算与注入统计，`/skills` 查看 Skill 使用率、连续未加载和可逆 explicit-only 状态，`/mcp` 查看本地服务、审批与最近调用状态，`/diff` 在本地展示 Git 工作树快照，`/compact` 主动压缩早期对话，`/review` 发起只读工作区审查，`/new` 复用现有新会话逻辑。Skill 还可以按 `$name` 或 `/name` 出现在同一补全目录中；固定候选和动态 Skill 候选合计最多 16 项。
+输入框使用一个有界的本地 Slash 命令目录。输入 `/` 会显示全部候选，继续输入会按命令名前缀过滤；Tab 补全第一项，Enter 补全后直接执行，也可以点击任意候选。固定目录包含九个复用既有能力的命令：`/status` 查看模型、Agent、工作区与连接状态，`/context` 查看上下文、预算与注入统计，`/permissions` 查看当前文件范围、能力目录和审批策略，`/skills` 查看 Skill 使用率、连续未加载和可逆 explicit-only 状态，`/mcp` 查看本地服务、审批与最近调用状态，`/diff` 在本地展示 Git 工作树快照，`/compact` 主动压缩早期对话，`/review` 发起只读工作区审查，`/new` 复用现有新会话逻辑。Skill 还可以按 `$name` 或 `/name` 出现在同一补全目录中；固定候选和动态 Skill 候选合计最多 16 项。`CopilotComposerReferenceCatalog` 为输入框提供独立的 `@` 目录；既可直接键入，也可从 `+` 菜单在当前光标或选区位置插入，已有未闭合 mention 不会重复追加。它从 `TemplateControl.ITemplateNames` 的模板类型与已保存模板名、`CopilotMenuToolSupport` 和当前 solution root 的有界文件索引生成最多 12 个候选；空查询在模板、菜单和文件之间均衡取样，输入查询后按标题、路径和代码相关性排序。模板和菜单候选先在 UI 线程立即显示；文件扫描在后台最多索引 5,000 个受支持文件，跳过 `.git`、IDE 状态、依赖和构建输出目录，同一次未闭合 `@` 查询复用结果，每次新的 `@` 查询重新取样，因此刚创建的文件不会被长期缓存隐藏。仅等待文件结果或最终没有命中时，`@` 弹层分别显示“正在索引”和“未找到”状态；索引完成前 Enter 不会误发未完成查询，Tab 也不会误触发排队。选择文件会走既有附件边界；选择模板或菜单会生成带稳定 source ID 的 `CopilotContextItem`，保存模板引用只携带身份元数据，菜单上下文明确不构成执行请求。完成后的文本使用 `@[标题]` 闭合标记，防止继续被当作未完成查询。
 
-本地状态与诊断命令在 Profile 校验和任务调度之前执行，不写入会话消息或模型历史，因此未配置模型时仍可使用；`/review` 与 Skill 命令会按正常 Agent 请求进入任务调度。`/diff` 不调用模型、不会修改文件；`/compact` 只在没有可结构化恢复的 Agent 任务时运行，避免为压缩历史而静默丢弃 checkpoint。诊断结果只显示在可关闭的临时面板中；`/context` 不输出提示正文、文件路径或凭据，`/skills` 只读取有界的本地使用统计，`/mcp` 复用已有脱敏状态，`/new` 与界面上的新会话按钮保持同一语义。命令匹配和结果格式集中在 `CopilotLocalCommandCatalog` 与现有诊断组件中。这个小目录采用 [Codex slash commands](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 和 [Claude Code interactive mode](https://code.claude.com/docs/en/interactive-mode) 的“输入 `/` 展示、继续输入过滤”原则，但不照搬与 ColorVision 无关的命令。
+本地状态与诊断命令在 Profile 校验和任务调度之前执行，不写入会话消息或模型历史，因此未配置模型时仍可使用；`/review` 与 Skill 命令会按正常 Agent 请求进入任务调度。`/diff` 不调用模型、不会修改文件；`/compact` 只在没有可结构化恢复的 Agent 任务时运行，避免为压缩历史而静默丢弃 checkpoint。诊断结果只显示在可关闭的临时面板中；`/context` 不输出提示正文、完整文件路径或凭据，只显示受信项目根名称和指令文件的短标签；`/skills` 只读取有界的本地使用统计，`/mcp` 复用已有脱敏状态，`/new` 与界面上的新会话按钮保持同一语义。`/permissions` 复用当前请求规划器、Capability Catalog 和外部 MCP 配置策略，分别显示搜索根、受信项目根、可写根、当前可写文件以及 `Never` / `Conditional` / `Always` 审批分组；它不主动发现远端工具，不输出 MCP 地址或 token 环境变量，也不会把项目指令、Skill 或历史消息解释成授权。Review 与 Diagnose 模式继续由工具注册表强制收敛为只读面，Chat 模式不启动 Agent 工具循环；其他模式仍在真正请求时按意图、运行时可用性和路径范围过滤。该边界沿用 [Codex sandbox 与 approval 的独立约束](https://learn.chatgpt.com/docs/agent-approvals-security.md) 和 [Claude Code permissions](https://code.claude.com/docs/en/permissions) 的可观察原则，而不引入第二套授权配置。命令匹配和结果格式集中在 `CopilotLocalCommandCatalog` 与现有诊断组件中。这个小目录采用 [Codex slash commands](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 和 [Claude Code interactive mode](https://code.claude.com/docs/en/interactive-mode) 的“输入 `/` 展示、继续输入过滤”原则，但不照搬与 ColorVision 无关的命令。

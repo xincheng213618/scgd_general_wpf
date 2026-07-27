@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -212,11 +211,15 @@ public class STNodePropertyDescriptor
 
 	protected internal virtual void OnSetValueError(Exception ex)
 	{
-		Control.SetErrorMessage(ex.Message);
+		Control?.SetErrorMessage(ex.Message);
 	}
 
 	protected internal virtual void OnDrawValueRectangle(DrawingTools dt)
 	{
+		if (Control == null)
+		{
+			return;
+		}
 		Graphics graphics = dt.Graphics;
 		SolidBrush solidBrush = dt.SolidBrush;
 		STNodePropertyGrid control = Control;
@@ -242,15 +245,15 @@ public class STNodePropertyDescriptor
 	{
 	}
 
-	protected internal virtual void OnMouseDown(MouseEventArgs e)
+	protected internal virtual void OnMouseDown(STNodeMouseEventArgs e)
 	{
 	}
 
-	protected internal virtual void OnMouseMove(MouseEventArgs e)
+	protected internal virtual void OnMouseMove(STNodeMouseEventArgs e)
 	{
 	}
 
-	protected internal virtual void OnMouseUp(MouseEventArgs e)
+	protected internal virtual void OnMouseUp(STNodeMouseEventArgs e)
 	{
 	}
 
@@ -258,20 +261,9 @@ public class STNodePropertyDescriptor
 	{
 	}
 
-	protected internal virtual void OnMouseClick(MouseEventArgs e)
+	protected internal virtual void OnMouseClick(STNodeMouseEventArgs e)
 	{
-		if (IsShowFrm())
-		{
-			Type propertyType = PropertyInfo.PropertyType;
-			if (propertyType == m_t_bool || propertyType.IsEnum)
-			{
-				new FrmSTNodePropertySelect(this).Show(Control);
-			}
-			else
-			{
-				new FrmSTNodePropertyInput(this).Show(Control);
-			}
-		}
+		// Flow-node properties are edited by ColorVision's metadata-driven WPF panel.
 	}
 
 	private bool IsShowFrm()
@@ -285,6 +277,10 @@ public class STNodePropertyDescriptor
 
 	public void Invalidate()
 	{
+		if (Control == null)
+		{
+			return;
+		}
 		Rectangle rectangle = Rectangle;
 		rectangle.X -= Control.ScrollOffset;
 		Control.Invalidate(rectangle);

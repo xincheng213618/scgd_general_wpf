@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed partial class CopilotWorkspacePatchStore
+    internal sealed partial class CopilotWorkspacePatchStore
     {
         private const int MaxEntries = 32;
         private const int MaxFileBytes = 1_000_000;

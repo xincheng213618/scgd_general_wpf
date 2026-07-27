@@ -134,11 +134,17 @@ namespace ColorVision.Update
 
         public ApplicationSnapshotInfo? CreateUpdateSnapshotIfEnabled(string versionTarget = "", CancellationToken cancellationToken = default)
         {
-            if (!ApplicationSnapshotConfig.Instance.CreateSnapshotBeforeUpdate)
+            if (!ShouldCreateUpdateSnapshot(ConfigService.Instance))
                 return null;
 
             log.Info("Creating a full application snapshot before update.");
             return CreateUpdateSnapshot(versionTarget, cancellationToken);
+        }
+
+        internal static bool ShouldCreateUpdateSnapshot(IConfigService? configService)
+        {
+            return configService != null
+                && configService.GetRequiredService<ApplicationSnapshotConfig>().CreateSnapshotBeforeUpdate;
         }
 
         public ApplicationSnapshotInfo GetSnapshotInfo(string snapshotPath)

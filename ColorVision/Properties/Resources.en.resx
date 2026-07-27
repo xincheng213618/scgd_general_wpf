@@ -217,11 +217,6 @@
   <data name="DownloadLocal" xml:space="preserve">
     <value>Local download</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Baidu Cloud Download</value>
-  </data>
-
-
 
   <data name="SoftwareVersionIdentical" xml:space="preserve">
     <value>Same software version</value>
@@ -255,6 +250,18 @@
   </data>
   <data name="UpdatePreviewAlreadyLatestHeading" xml:space="preserve">
     <value>Already up to date</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableHeading" xml:space="preserve">
+    <value>Cannot connect to the update server</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableSummary" xml:space="preserve">
+    <value>Version information for the application, plugins, and themes could not be retrieved.</value>
+  </data>
+  <data name="UpdatePreviewServerUnavailableMessage" xml:space="preserve">
+    <value>The update server did not return version information. Check the network or proxy settings, or copy the offline command above and download the full installer on a connected jump host.</value>
+  </data>
+  <data name="UpdatePreviewNoInternetConnectionMessage" xml:space="preserve">
+    <value>Windows did not detect an internet connection. Copy the offline command above to download the full installer on a connected jump host.</value>
   </data>
   <data name="UpdatePreviewUpdateNowButtonText" xml:space="preserve">
     <value>Update now</value>
@@ -327,6 +334,27 @@
   </data>
   <data name="UpdatePreviewApplicationSnapshotsLink" xml:space="preserve">
     <value>Program backups</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommand" xml:space="preserve">
+    <value>Copy offline command</value>
+  </data>
+  <data name="UpdatePreviewCopyOfflineDownloadCommandDescription" xml:space="preserve">
+    <value>Left-click to copy the PowerShell command; right-click to choose a path and export a directly runnable .cmd file.</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopied" xml:space="preserve">
+    <value>Offline command copied</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandCopiedDescription" xml:space="preserve">
+    <value>Run the PowerShell command on a connected jump host, then copy the downloaded installer back and run it.</value>
+  </data>
+  <data name="UpdatePreviewSaveOfflineDownloadCommand" xml:space="preserve">
+    <value>Save offline download file</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSaved" xml:space="preserve">
+    <value>Offline download launcher saved</value>
+  </data>
+  <data name="UpdatePreviewOfflineDownloadCommandSavedDescriptionFormat" xml:space="preserve">
+    <value>Saved to: {0}. Run this .cmd file directly.</value>
   </data>
   <data name="UpdatePreviewSelectionIncludesRequired" xml:space="preserve">
     <value>Includes required updates</value>
@@ -556,16 +584,10 @@
     <value>If you need me to be quiet, right-click to turn off notifications.</value>
   </data>
   <data name="DesktopPetIdleTip4" xml:space="preserve">
-    <value>If you have a local Live2D model, you can connect it in settings.</value>
+    <value>You can create a pet from a PNG or WebP sprite sheet in settings.</value>
   </data>
   <data name="DesktopPetStartupGreeting" xml:space="preserve">
     <value>ColorVision has started, I'll be here to remind you.</value>
-  </data>
-  <data name="DesktopPetLive2DError" xml:space="preserve">
-    <value>Model loading failed, switched to built-in appearance.</value>
-  </data>
-  <data name="DesktopPetLive2DErrorDetail" xml:space="preserve">
-    <value>Model loading failed: {0}</value>
   </data>
   <data name="DesktopPetSettingsTitle" xml:space="preserve">
     <value>Desktop Pet Settings</value>
@@ -605,21 +627,6 @@
   </data>
   <data name="ConfigDesktopPetOpacity" xml:space="preserve">
     <value>Pet Opacity</value>
-  </data>
-  <data name="ConfigLive2DEnable" xml:space="preserve">
-    <value>Enable Live2D Rendering</value>
-  </data>
-  <data name="ConfigLive2DPath" xml:space="preserve">
-    <value>Live2D Model or HTML Path</value>
-  </data>
-  <data name="ConfigLive2DMaxFps" xml:space="preserve">
-    <value>Live2D Max FPS</value>
-  </data>
-  <data name="ConfigLive2DRenderScale" xml:space="preserve">
-    <value>Live2D Render Scale</value>
-  </data>
-  <data name="ConfigLive2DMotionEffects" xml:space="preserve">
-    <value>Live2D Lightweight Motion Effects</value>
   </data>
   <data name="ConfigEnableDesktopPet" xml:space="preserve">
     <value>Enable Desktop Pet</value>
@@ -950,4 +957,19 @@
   <data name="UpdatePreviewSelectionCreatesSnapshot" xml:space="preserve">
     <value>Create a program snapshot before updating</value>
   </data>
+  <data name="RecommendedSoftwareWizardHeader" xml:space="preserve"><value>Recommended software</value></data>
+  <data name="RecommendedSoftwareWizardDescription" xml:space="preserve"><value>Everything and WinRAR are recommended. Missing applications are selected by default. Choosing Next or Install selected software opens their installers in sequence. Clear either selection to skip it without blocking ColorVision.</value></data>
+  <data name="RecommendedSoftwareEverythingDescription" xml:space="preserve"><value>Quickly search files and folders on this computer.</value></data>
+  <data name="RecommendedSoftwareWinRarDescription" xml:space="preserve"><value>Open, extract, and create common archive files.</value></data>
+  <data name="RecommendedSoftwareWizardWorkingAction" xml:space="preserve"><value>Installing...</value></data>
+  <data name="RecommendedSoftwareWizardInstallAction" xml:space="preserve"><value>Install selected software</value></data>
+  <data name="RecommendedSoftwareWizardRecheckAction" xml:space="preserve"><value>Check again</value></data>
+  <data name="RecommendedSoftwareWizardConfirmAction" xml:space="preserve"><value>Confirm selection</value></data>
+  <data name="RecommendedSoftwareWizardPackageMissingFormat" xml:space="preserve"><value>The {0} installer was not found: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallErrorFormat" xml:space="preserve"><value>Could not start the {0} installer: {1}</value></data>
+  <data name="RecommendedSoftwareWizardInstallIncompleteFormat" xml:space="preserve"><value>{0} was not installed. Try again, or clear its selection to continue.</value></data>
+  <data name="RecommendedSoftwareInstalled" xml:space="preserve"><value>Installed</value></data>
+  <data name="RecommendedSoftwarePackageMissing" xml:space="preserve"><value>Installer missing</value></data>
+  <data name="RecommendedSoftwareSelected" xml:space="preserve"><value>Will install</value></data>
+  <data name="RecommendedSoftwareSkipped" xml:space="preserve"><value>Skipped</value></data>
 </root>

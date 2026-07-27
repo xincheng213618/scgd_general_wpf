@@ -34,7 +34,7 @@ namespace ColorVision.Copilot
         bool EntriesTruncated,
         IReadOnlyList<CopilotGitWorkingTreeEntry> Entries);
 
-    public sealed class CopilotGitWorkingTreeInspectionService
+    internal sealed class CopilotGitWorkingTreeInspectionService
     {
         public const int MaxEntries = 100;
         private const int MaxPathLength = 2_048;

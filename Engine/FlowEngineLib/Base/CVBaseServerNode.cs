@@ -152,6 +152,11 @@ public class CVBaseServerNode : CVCommonNode
         return $"{base.Title}";
 	}
 
+	protected override string GetCompactSummaryValue()
+	{
+		return TempDisName;
+	}
+
 	protected override void OnCreate()
 	{
 		base.OnCreate();
@@ -248,12 +253,12 @@ public class CVBaseServerNode : CVCommonNode
 		int maxDelay = GetMaxDelay();
 
         // 使用异步等待，避免线程池阻塞
-        logger.InfoFormat("[{0}] WaitForMessageAsync", ToShortString());
+        logger.DebugFormat("[{0}] WaitForMessageAsync", ToShortString());
         bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
             if (result)
-                logger.InfoFormat("[{0}]Task.Completed successfully", ToShortString());
+                logger.DebugFormat("[{0}]Task.Completed successfully", ToShortString());
             else
                 logger.InfoFormat("[{0}]Task.Timed out after {1}ms", ToShortString(), maxDelay);
 		}
@@ -268,11 +273,12 @@ public class CVBaseServerNode : CVCommonNode
 			{
 				logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
 			}
-			cVTransAction.NodeOverTime(GetFullNodeName());
+			cVTransAction.NodeOverTime(GetFullNodeName(), NodeID);
 			Reset(cVTransAction);
 			m_op_end.TransferData(cVTransAction.trans_action);
 			base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
 			{
+				SerialNumber = cVTransAction.trans_action.SerialNumber,
 				RecvTopic = GetRecvTopic(),
 				RecvMsgId = cmd2.MsgID,
 				RecvStatusCode = -2,
@@ -399,7 +405,7 @@ public class CVBaseServerNode : CVCommonNode
 			}
 			else
 			{
-				cVTransAction.NodeFailed("Build MQTT Request failed", GetFullNodeName());
+				cVTransAction.NodeFailed("Build MQTT Request failed", GetFullNodeName(), NodeID);
 			}
 		}
 	}
@@ -409,6 +415,7 @@ public class CVBaseServerNode : CVCommonNode
 		svrRecvResp = null;
 		base.nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs
 		{
+			SerialNumber = trans.trans_action.SerialNumber,
 			SendTopic = act.Topic,
 			SendMsgId = act.MsgID,
 			SendEventName = act.EventName,
@@ -469,7 +476,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else
 		{
-			logger.WarnFormat("[{0}] not find request => {1}", ToShortString(), JsonConvert.SerializeObject(statusEvent));
+			logger.WarnFormat("[{0}] => {1}", ToShortString(), JsonConvert.SerializeObject(statusEvent));
 		}
 		return false;
 	}
@@ -659,7 +666,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void DoTransCompleted(CVTransAction trans, CVStartCFC action)
 	{
-		logger.InfoFormat("[{0}]DoTransCompleted => {1}", ToShortString(), action.SerialNumber);
+		logger.DebugFormat("[{0}]DoTransCompleted => {1}", ToShortString(), action.SerialNumber);
 		release(action.SerialNumber);
 		m_op_end.TransferData(action);
 	}
@@ -720,7 +727,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
-			trans.NodeFailed(cmd.resp.Message, GetFullNodeName());
+			trans.NodeFailed(cmd.resp.Message, GetFullNodeName(), NodeID);
 			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 
@@ -733,6 +740,7 @@ public class CVBaseServerNode : CVCommonNode
 		m_op_end.TransferData(trans.trans_action);
 		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
 		{
+			SerialNumber = trans.trans_action.SerialNumber,
 			RecvTopic = GetRecvTopic(),
 			RecvMsgId = cmd.cmd?.MsgID,
 			RecvEventName = cmd.resp?.EventName,

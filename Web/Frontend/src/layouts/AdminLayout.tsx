@@ -10,6 +10,7 @@ import {
   LogoutOutlined,
   MoonOutlined,
   ReloadOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   SunOutlined,
@@ -28,6 +29,7 @@ const routeTitles: Record<string, string> = {
   '/admin/cache': '缓存与索引',
   '/admin/jobs': '任务调度',
   '/admin/api-keys': 'API Key',
+  '/admin/copilot': 'Copilot 配置',
   '/admin/audit': '审计日志',
   '/admin/traffic': '访问统计',
   '/admin/settings': '系统设置',
@@ -77,6 +79,11 @@ const route = {
           path: '/admin/api-keys',
           name: 'API Key',
           icon: <ApiOutlined />,
+        },
+        {
+          path: '/admin/copilot',
+          name: 'Copilot 配置',
+          icon: <RobotOutlined />,
         },
         {
           path: '/admin/audit',

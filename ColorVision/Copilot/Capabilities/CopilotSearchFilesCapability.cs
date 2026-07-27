@@ -233,9 +233,12 @@ namespace ColorVision.Copilot
 
             if (pageMatches.Length == 0)
             {
+                builder.AppendLine(scanComplete
+                    ? "[Result] No candidate files matched the literal query in the completed search scope."
+                    : "[Search Warning] No match was found before the file scan limit was reached. Narrow the path before treating this as a definitive absence.");
                 return new CopilotFileSearchResult
                 {
-                    Success = false,
+                    Success = true,
                     SearchRoots = searchRoots,
                     Terms = terms,
                     ScannedFileCount = scannedFiles,
@@ -244,12 +247,9 @@ namespace ColorVision.Copilot
                     ResultsComplete = resultsComplete,
                     Matches = pageMatches,
                     Summary = scanComplete
-                        ? $"Scanned {scannedFiles} files, but no candidate files were found."
-                        : $"Scanned the first {scannedFiles} files without a match, but the search scope was not exhausted.",
+                        ? $"Scanned {scannedFiles} files; no candidate files matched the literal query."
+                        : $"Scanned the first {scannedFiles} files without a match; the result is partial because the scan limit was reached.",
                     Content = builder.ToString().TrimEnd(),
-                    ErrorMessage = scanComplete
-                        ? $"Search terms: {string.Join(", ", terms)}"
-                        : "The file scan limit was reached. Narrow the path before concluding that no matching file exists.",
                 };
             }
 

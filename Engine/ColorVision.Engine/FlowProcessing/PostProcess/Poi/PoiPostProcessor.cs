@@ -1,0 +1,68 @@
+#pragma warning disable CS0168
+using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+
+namespace ColorVision.Engine.FlowProcessing.PostProcess.Poi
+{
+    [PostProcess("POI处理", "处理POI批次数据并导出CIE数据")]
+    public class PoiPostProcessor : IPostProcessor
+    {
+        public bool Process(PostProcessContext ctx)
+        {
+            if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
+
+            var config = ctx.Config;
+            try
+            {
+                //var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                //if (values.Count > 0)
+                //    ctx.FileName = values[0].FileUrl;
+
+                var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                foreach (var master in masters)
+                {
+                    if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
+                    {
+                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+
+                        ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+
+                        foreach (var item in poiPoints)
+                        {
+                            PoiResultCIExyuvDatas.Add(new PoiResultCIExyuvData(item));
+                        }
+
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(config.SavePath, $"Poi_{master.Id}_{timeStr}.csv");
+
+                        PoiResultCIExyuvDatas.SaveCsv(filePath);
+                    }
+                    if (master.ImgFileType == ViewResultAlgType.POI_Y)
+                    {
+                        var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+
+                        ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
+
+                        foreach (var item in poiPoints)
+                        {
+                            PoiResultCIEYDatas.Add(new PoiResultCIEYData(item));
+                        }
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(config.SavePath, $"PoiY_{master.Id}_{timeStr}.csv");
+                        PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas,filePath);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+    }
+}

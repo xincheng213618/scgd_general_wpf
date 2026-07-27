@@ -31,6 +31,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRequest AgentRequest { get; init; } = null!;
 
+        internal CopilotExecutionScope ExecutionScope { get; init; } = CopilotExecutionScope.Empty;
+
         public CopilotAgentToolInput ToolInput { get; init; } = CopilotAgentToolInput.Empty;
 
         public CopilotToolCall ToolCall { get; init; } = new();
@@ -137,6 +139,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan MaximumHookPhaseTimeout = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan DefaultProgressInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan MaximumProgressInterval = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan MinimumStructuredProgressInterval = TimeSpan.FromMilliseconds(250);
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _hooks;
         private readonly Func<DateTimeOffset> _utcNow;
@@ -231,6 +234,20 @@ namespace ColorVision.Copilot
 
             IDisposable executionLease;
             var queueStopwatch = Stopwatch.StartNew();
+            using var queueProgressCancellation = new CancellationTokenSource();
+            var queueProgressTask = PublishToolQueueProgressAsync(
+                invocation,
+                startedAt,
+                timeout,
+                queueStopwatch,
+                stopwatch,
+                onEvent,
+                queueProgressCancellation.Token);
+            async Task StopQueueProgressAsync()
+            {
+                await queueProgressCancellation.CancelAsync();
+                await queueProgressTask;
+            }
             try
             {
                 executionLease = await _executionGate.AcquireAsync(invocation.ConcurrencyMode, invocation.ConcurrencyKey, cancellationToken);
@@ -238,6 +255,7 @@ namespace ColorVision.Copilot
             catch (OperationCanceledException)
             {
                 queueStopwatch.Stop();
+                await StopQueueProgressAsync();
                 var cancelled = CreateOutcome(
                     invocation,
                     CopilotToolExecutionState.Cancelled,
@@ -249,16 +267,23 @@ namespace ColorVision.Copilot
                 await PublishOutcomeAsync(cancelled, onEvent);
                 throw;
             }
+            catch
+            {
+                queueStopwatch.Stop();
+                await StopQueueProgressAsync();
+                throw;
+            }
 
             queueStopwatch.Stop();
+            await StopQueueProgressAsync();
             var queueDurationMs = queueStopwatch.ElapsedMilliseconds;
             using (var executionLeaseGuard = new DeferredExecutionLease(executionLease))
             {
                 onEvent(CopilotAgentEvent.ToolStarted(CreateExecutionInfo(invocation, CopilotToolExecutionState.Running, startedAt, null, 0, timeout, queueDurationMs: queueDurationMs)));
 
-                using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCancellation.CancelAfter(timeout);
+                using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
+                var executionProgress = new CopilotToolProgressContext();
                 using var progressCancellation = new CancellationTokenSource();
                 var progressTask = PublishToolProgressAsync(
                     invocation,
@@ -266,6 +291,7 @@ namespace ColorVision.Copilot
                     timeout,
                     queueDurationMs,
                     stopwatch,
+                    executionProgress,
                     onEvent,
                     progressCancellation.Token);
                 var progressStopped = 0;
@@ -281,15 +307,19 @@ namespace ColorVision.Copilot
 
                 async Task<CopilotToolExecutionOutcome> PublishExecutionOutcomeAsync(CopilotToolExecutionOutcome outcome)
                 {
+                    executionProgress.Complete();
                     await StopProgressAsync();
                     return await PublishOutcomeAsync(outcome, onEvent);
                 }
 
                 try
                 {
-                    executionTask = invocation.FrameworkApprovalGranted && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool
-                        ? approvedTool.ExecuteApprovedAsync(invocation.AgentRequest, invocation.ToolInput, linkedCancellation.Token)
-                        : invocation.Tool.ExecuteAsync(invocation.AgentRequest, invocation.ToolInput, linkedCancellation.Token);
+                    // Keep third-party synchronous prefixes and cancellation callbacks outside
+                    // the runtime loop. The independent source is cancelled only after the
+                    // caller/timeout boundary has already released this invocation.
+                    executionTask = Task.Run(
+                        () => ExecuteToolAsync(invocation, executionProgress, executionCancellation.Token),
+                        executionCancellation.Token);
                     var result = await executionTask.WaitAsync(timeout, cancellationToken) ?? Failure(invocation.Tool.Name, $"{invocation.Tool.Name} returned no result.", "The tool returned a null result.", CopilotToolFailureKind.Internal);
                     var state = result.Approval != null
                         ? CopilotToolExecutionState.AwaitingApproval
@@ -298,22 +328,9 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
-                    linkedCancellation.Cancel();
+                    executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
-                    ObserveLateFault(executionTask);
-                    var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
-                    var outcome = CreateOutcome(
-                        invocation,
-                        CopilotToolExecutionState.TimedOut,
-                        startedAt,
-                        timeout,
-                        stopwatch,
-                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} timed out.", message, CopilotToolFailureKind.Transient),
-                        queueDurationMs);
-                    return await PublishExecutionOutcomeAsync(outcome);
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && linkedCancellation.IsCancellationRequested)
-                {
+                    CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var message = $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.";
                     var outcome = CreateOutcome(
                         invocation,
@@ -327,8 +344,9 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException)
                 {
+                    executionCancellation.RequestCancellation();
                     executionLeaseGuard.HoldUntilCompleted(executionTask);
-                    ObserveLateFault(executionTask);
+                    CopilotCancellationBoundary.ObserveLateFault(executionTask);
                     var outcome = CreateOutcome(
                         invocation,
                         CopilotToolExecutionState.Cancelled,
@@ -354,8 +372,46 @@ namespace ColorVision.Copilot
                 }
                 finally
                 {
+                    executionProgress.Complete();
                     await StopProgressAsync();
                 }
+            }
+        }
+
+        private async Task PublishToolQueueProgressAsync(
+            CopilotToolInvocation invocation,
+            DateTimeOffset startedAt,
+            TimeSpan timeout,
+            Stopwatch queueStopwatch,
+            Stopwatch totalStopwatch,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var timer = new PeriodicTimer(_progressInterval);
+                while (await timer.WaitForNextTickAsync(cancellationToken))
+                {
+                    var queueDurationMs = Math.Max(0, queueStopwatch.ElapsedMilliseconds);
+                    var execution = CreateExecutionInfo(
+                        invocation,
+                        CopilotToolExecutionState.Pending,
+                        startedAt,
+                        completedAt: null,
+                        Math.Max(0, totalStopwatch.ElapsedMilliseconds),
+                        timeout,
+                        queueDurationMs: queueDurationMs);
+                    onEvent(CopilotAgentEvent.ToolProgress(
+                        execution,
+                        $"{invocation.Tool.Name} is waiting for an execution slot · {FormatElapsed(queueDurationMs)} queued."));
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Copilot tool queue progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
             }
         }
 
@@ -365,14 +421,53 @@ namespace ColorVision.Copilot
             TimeSpan timeout,
             long queueDurationMs,
             Stopwatch stopwatch,
+            CopilotToolProgressContext progressContext,
             Action<CopilotAgentEvent> onEvent,
             CancellationToken cancellationToken)
         {
             try
             {
-                using var timer = new PeriodicTimer(_progressInterval);
-                while (await timer.WaitForNextTickAsync(cancellationToken))
+                var hasPublishedStructuredProgress = false;
+                var lastStructuredProgressAt = TimeSpan.Zero;
+                var lastPublishedProgressVersion = 0L;
+                while (true)
                 {
+                    var waitResult = await progressContext.WaitForUpdateAsync(
+                        _progressInterval,
+                        cancellationToken);
+                    if (waitResult == CopilotToolProgressWaitResult.Completed)
+                        return;
+
+                    CopilotToolProgressUpdate? reportedProgress;
+                    if (waitResult == CopilotToolProgressWaitResult.Updated)
+                    {
+                        if (hasPublishedStructuredProgress)
+                        {
+                            var remainingDelay = MinimumStructuredProgressInterval
+                                - (stopwatch.Elapsed - lastStructuredProgressAt);
+                            if (remainingDelay > TimeSpan.Zero)
+                                await Task.Delay(remainingDelay, cancellationToken);
+                        }
+
+                        progressContext.DrainUpdateNotifications();
+                        var progressSnapshot = progressContext.GetLatestSnapshot();
+                        reportedProgress = progressSnapshot.Update;
+                        if (reportedProgress == null
+                            || progressSnapshot.Version <= lastPublishedProgressVersion)
+                            continue;
+                        lastStructuredProgressAt = stopwatch.Elapsed;
+                        hasPublishedStructuredProgress = true;
+                        lastPublishedProgressVersion = progressSnapshot.Version;
+                    }
+                    else
+                    {
+                        var progressSnapshot = progressContext.GetLatestSnapshot();
+                        reportedProgress = progressSnapshot.Update;
+                        lastPublishedProgressVersion = Math.Max(
+                            lastPublishedProgressVersion,
+                            progressSnapshot.Version);
+                    }
+
                     if (!stopwatch.IsRunning)
                         return;
 
@@ -385,9 +480,13 @@ namespace ColorVision.Copilot
                         elapsedMs,
                         timeout,
                         queueDurationMs: queueDurationMs);
+                    var progressText = FormatReportedProgress(reportedProgress);
                     onEvent(CopilotAgentEvent.ToolProgress(
                         execution,
-                        $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."));
+                        string.IsNullOrWhiteSpace(progressText)
+                            ? $"{invocation.Tool.Name} is still running · {FormatElapsed(elapsedMs)} elapsed."
+                            : $"{invocation.Tool.Name} · {progressText} · {FormatElapsed(elapsedMs)} elapsed.",
+                        reportedProgress));
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -397,6 +496,62 @@ namespace ColorVision.Copilot
             {
                 Log.Warn($"Copilot tool progress reporting stopped unexpectedly. Tool={invocation.Tool.Name} CallId={invocation.CallId}", ex);
             }
+        }
+
+        private static Task<CopilotToolResult> ExecuteToolAsync(
+            CopilotToolInvocation invocation,
+            CopilotToolProgressContext progress,
+            CancellationToken cancellationToken)
+        {
+            if (invocation.FrameworkApprovalGranted
+                && invocation.Tool is ICopilotFrameworkApprovedProgressReportingTool approvedProgressTool)
+            {
+                return approvedProgressTool.ExecuteApprovedWithProgressAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    progress,
+                    cancellationToken);
+            }
+
+            if (invocation.FrameworkApprovalGranted
+                && invocation.Tool is ICopilotFrameworkApprovedTool approvedTool)
+            {
+                return approvedTool.ExecuteApprovedAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    cancellationToken);
+            }
+
+            if (invocation.Tool is ICopilotProgressReportingTool progressTool)
+            {
+                return progressTool.ExecuteWithProgressAsync(
+                    invocation.AgentRequest,
+                    invocation.ToolInput,
+                    progress,
+                    cancellationToken);
+            }
+
+            return invocation.Tool.ExecuteAsync(
+                invocation.AgentRequest,
+                invocation.ToolInput,
+                cancellationToken);
+        }
+
+        private static string FormatReportedProgress(CopilotToolProgressUpdate? progress)
+        {
+            if (progress == null)
+                return string.Empty;
+
+            var count = progress.Completed.HasValue && progress.Total.HasValue
+                ? $"{progress.Completed.Value}/{progress.Total.Value}"
+                : progress.Completed?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(count) && !string.IsNullOrWhiteSpace(progress.Unit))
+                count += " " + progress.Unit;
+            if (string.IsNullOrWhiteSpace(progress.Message))
+                return count;
+            return string.IsNullOrWhiteSpace(count)
+                ? progress.Message
+                : $"{count} · {progress.Message}";
         }
 
         private async Task<CopilotToolExecutionHookDecision> RunBeforeHooksAsync(CopilotToolExecutionHookContext context, CancellationToken cancellationToken)
@@ -420,13 +575,13 @@ namespace ColorVision.Copilot
                 catch (TimeoutException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     return CreateBeforeHookTimeoutDecision();
                 }
                 catch (OperationCanceledException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     throw;
                 }
                 catch (Exception ex)
@@ -465,7 +620,7 @@ namespace ColorVision.Copilot
                 catch (TimeoutException)
                 {
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
-                    ObserveLateFault(hookTask);
+                    CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     Log.Warn($"Copilot post-tool hook phase timed out. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
                     break;
                 }
@@ -500,6 +655,25 @@ namespace ColorVision.Copilot
         {
             stopwatch.Stop();
             var completedAt = _utcNow();
+            if (result.Approval != null
+                && !CopilotMcpConfirmationStore.Instance.LinkAgentCall(
+                    result.Approval.ActionId,
+                    invocation.CallId,
+                    invocation.AgentRequest,
+                    invocation.ExecutionScope))
+            {
+                result = new CopilotToolResult
+                {
+                    ToolName = invocation.Tool.Name,
+                    Success = false,
+                    Summary = "The protected action could not be linked to this Copilot task.",
+                    ErrorMessage = "ColorVision rejected an approval action whose source or task scope did not match the active tool call.",
+                    FailureKind = CopilotToolFailureKind.Authorization,
+                    FailureCode = "approval_scope_link_failed",
+                };
+                state = CopilotToolExecutionState.Denied;
+            }
+
             var outcome = new CopilotToolExecutionOutcome
             {
                 Invocation = invocation,
@@ -517,9 +691,6 @@ namespace ColorVision.Copilot
                     queueDurationMs),
             };
 
-            if (result.Approval != null)
-                CopilotMcpConfirmationStore.Instance.LinkAgentCall(result.Approval.ActionId, invocation.CallId);
-
             return outcome;
         }
 
@@ -527,6 +698,16 @@ namespace ColorVision.Copilot
         {
             var toolInput = invocation.ToolInput ?? CopilotAgentToolInput.Empty;
             var toolCall = invocation.ToolCall ?? new CopilotToolCall();
+            var executionSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
+                invocation.Tool.Name,
+                toolInput);
+            var executionScope = invocation.ExecutionScope.IsEmpty
+                ? CopilotExecutionScope.ForAgentRequest(invocation.AgentRequest)
+                : invocation.ExecutionScope;
+            executionScope = executionScope.BindToolCall(
+                invocation.Tool.Name,
+                callId,
+                executionSignature);
             if (string.IsNullOrWhiteSpace(toolCall.ToolName))
             {
                 toolCall = new CopilotToolCall
@@ -547,6 +728,7 @@ namespace ColorVision.Copilot
                 RuntimeName = string.IsNullOrWhiteSpace(invocation.RuntimeName) ? "agent" : invocation.RuntimeName.Trim(),
                 Tool = invocation.Tool,
                 AgentRequest = invocation.AgentRequest,
+                ExecutionScope = executionScope,
                 ToolInput = toolInput,
                 ToolCall = toolCall,
                 FrameworkApprovalGranted = invocation.FrameworkApprovalGranted,
@@ -640,24 +822,6 @@ namespace ColorVision.Copilot
             return elapsedMs < 1000
                 ? $"{Math.Max(0, elapsedMs)} ms"
                 : $"{elapsedMs / 1000d:0.#} s";
-        }
-
-        private static void ObserveLateFault(Task? task)
-        {
-            if (task == null || task.IsCanceled || task.IsCompletedSuccessfully)
-                return;
-
-            if (task.IsFaulted)
-            {
-                _ = task.Exception;
-                return;
-            }
-
-            _ = task.ContinueWith(
-                static completedTask => _ = completedTask.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
         }
 
         private static void CancelAndDisposeWithoutWaiting(ref CancellationTokenSource? cancellation)

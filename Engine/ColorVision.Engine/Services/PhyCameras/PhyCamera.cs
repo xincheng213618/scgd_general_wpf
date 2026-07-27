@@ -56,6 +56,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand CalibrationEditCommand { get; set; }
         [CommandDisplay("CaliTemplateSet",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
+        [CommandDisplay("CloneCalibrationTemplates", Order = 102)]
+        public RelayCommand CloneCalibrationTemplatesCommand { get; set; }
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("DownLicOnline")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
@@ -136,6 +138,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             Name = Code ?? string.Empty;
 
             CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
+            CloneCalibrationTemplatesCommand = new RelayCommand(a =>
+            {
+                CalibrationTemplateCloneWindow window = new(this)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                window.ShowDialog();
+            });
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));

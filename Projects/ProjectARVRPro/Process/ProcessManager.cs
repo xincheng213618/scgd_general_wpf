@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.Win32;
+using ProjectARVRPro.Process.Blank;
 
 namespace ProjectARVRPro.Process
 {
@@ -34,6 +35,7 @@ namespace ProjectARVRPro.Process
         public static ProcessManager GetInstance() { lock (_locker) { _instance ??= new ProcessManager(); return _instance; } }
 
         public ObservableCollection<IProcess> Processes { get; } = new ObservableCollection<IProcess>();
+        public ObservableCollection<ProcessMeta> ResultParserMetas { get; } = new();
 
         /// <summary>
         /// 所有流程组
@@ -91,14 +93,55 @@ namespace ProjectARVRPro.Process
 
         public RelayCommand EditCommand { get; set; }
 
-        public ProcessMeta? SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        public ProcessMeta? SelectedProcessMeta
+        {
+            get => _SelectedProcessMeta;
+            set
+            {
+                if (_SelectedProcessMeta == value)
+                    return;
+
+                _SelectedProcessMeta = value;
+                IsEditingMetaName = false;
+                SelectedMetaNameDraft = value?.Name ?? string.Empty;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedConfigurationMeta));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
         private ProcessMeta? _SelectedProcessMeta;
+
+        public ProcessMeta? SelectedResultParserMeta
+        {
+            get => _SelectedResultParserMeta;
+            set
+            {
+                if (_SelectedResultParserMeta == value)
+                    return;
+
+                _SelectedResultParserMeta = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedConfigurationMeta));
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private ProcessMeta? _SelectedResultParserMeta;
+
+        [JsonIgnore]
+        public ProcessMeta? SelectedConfigurationMeta => SelectedResultParserMeta ?? SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
-        public RelayCommand UpdateMetaCommand { get; set; }
+        public RelayCommand EditMetaNameCommand { get; set; }
+        public RelayCommand SaveMetaNameCommand { get; set; }
+        public RelayCommand CancelMetaNameCommand { get; set; }
+        public RelayCommand EditMetaTemplateCommand { get; set; }
+        public RelayCommand EditMetaProcessCommand { get; set; }
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
+        public RelayCommand AddResultParserCommand { get; set; }
+        public RelayCommand RemoveResultParserCommand { get; set; }
+        public RelayCommand UpdateResultParserCommand { get; set; }
 
         // Group management commands
         public RelayCommand AddGroupCommand { get; set; }
@@ -114,15 +157,62 @@ namespace ProjectARVRPro.Process
         public string NewGroupName { get => _NewGroupName; set { _NewGroupName = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private string _NewGroupName;
 
+        public bool IsEditingMetaName
+        {
+            get => _IsEditingMetaName;
+            private set
+            {
+                if (_IsEditingMetaName == value)
+                    return;
+
+                _IsEditingMetaName = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private bool _IsEditingMetaName;
+
+        public string SelectedMetaNameDraft
+        {
+            get => _SelectedMetaNameDraft;
+            set
+            {
+                if (_SelectedMetaNameDraft == value)
+                    return;
+
+                _SelectedMetaNameDraft = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+        private string _SelectedMetaNameDraft = string.Empty;
+
         public ProcessManager()
         {
             LoadProcesses();
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => ActiveGroup != null);
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
-            UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => SelectedProcessMeta != null);
+            EditMetaNameCommand = new RelayCommand(
+                a => BeginEditMetaName(a as ProcessMeta),
+                a => a is ProcessMeta);
+            SaveMetaNameCommand = new RelayCommand(
+                a => SaveMetaName(),
+                a => IsEditingMetaName && SelectedProcessMeta != null && !string.IsNullOrWhiteSpace(SelectedMetaNameDraft));
+            CancelMetaNameCommand = new RelayCommand(
+                a => CancelMetaNameEdit(),
+                a => IsEditingMetaName);
+            EditMetaTemplateCommand = new RelayCommand(
+                a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Template),
+                a => a is ProcessMeta);
+            EditMetaProcessCommand = new RelayCommand(
+                a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Process),
+                a => a is ProcessMeta);
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
+            AddResultParserCommand = new RelayCommand(a => AddResultParser());
+            RemoveResultParserCommand = new RelayCommand(a => RemoveResultParser(), a => SelectedResultParserMeta != null);
+            UpdateResultParserCommand = new RelayCommand(a => UpdateResultParser(), a => SelectedResultParserMeta != null);
 
             AddGroupCommand = new RelayCommand(a => AddGroup(), a => !string.IsNullOrWhiteSpace(NewGroupName));
             RemoveGroupCommand = new RelayCommand(a => RemoveGroup(), a => ProcessGroups.Count > 1);
@@ -239,7 +329,7 @@ namespace ProjectARVRPro.Process
 
                 var exportRoot = new ProcessManagerConfigPersist
                 {
-                    Version = 2,
+                    Version = 3,
                     ExportedAt = DateTime.Now,
                     ProcessGroups = CreateProcessGroupsRoot()
                 };
@@ -274,7 +364,8 @@ namespace ProjectARVRPro.Process
             }
 
             int groupCount = importedGroups.Groups?.Count ?? 0;
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"导入后将替换当前流程组配置，共 {groupCount} 个组。是否继续？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            int parserCount = importedGroups.ResultParsers?.Count ?? 0;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"导入后将替换当前流程组和解析映射，共 {groupCount} 个组、{parserCount} 条解析映射。是否继续？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
             try
@@ -284,7 +375,7 @@ namespace ProjectARVRPro.Process
 
                 ApplyImportedGroups(importedGroups);
 
-                string message = $"流程配置已导入，共 {ProcessGroups.Count} 个组。";
+                string message = $"流程配置已导入，共 {ProcessGroups.Count} 个组、{ResultParserMetas.Count} 条解析映射。";
                 if (!string.IsNullOrWhiteSpace(warningMessage))
                     message += $"\n{warningMessage}";
                 MessageBox.Show(Application.Current.GetActiveWindow(), message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -322,6 +413,24 @@ namespace ProjectARVRPro.Process
             }
         }
 
+        private void HookResultParserEvents()
+        {
+            ResultParserMetas.CollectionChanged += ResultParserMetas_CollectionChanged;
+            foreach (var meta in ResultParserMetas)
+            {
+                meta.PropertyChanged += Meta_PropertyChanged;
+            }
+        }
+
+        private void UnhookResultParserEvents()
+        {
+            ResultParserMetas.CollectionChanged -= ResultParserMetas_CollectionChanged;
+            foreach (var meta in ResultParserMetas)
+            {
+                meta.PropertyChanged -= Meta_PropertyChanged;
+            }
+        }
+
         #endregion
 
         private void LoadProcesses()
@@ -346,6 +455,16 @@ namespace ProjectARVRPro.Process
         }
 
         private void ProcessMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            ProcessMetaCollectionChanged(e);
+        }
+
+        private void ResultParserMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            ProcessMetaCollectionChanged(e);
+        }
+
+        private void ProcessMetaCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
             {
@@ -380,7 +499,10 @@ namespace ProjectARVRPro.Process
         {
             if (ActiveGroup == null) return;
 
-            var dialog = new ProcessMetaEditWindow(templateModels, Processes, "新增流程项")
+            var dialog = new ProcessMetaEditWindow(
+                templateModels,
+                Processes,
+                "新增流程项")
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -388,7 +510,7 @@ namespace ProjectARVRPro.Process
 
             if (dialog.ShowDialog() != true) return;
 
-            if (dialog.SelectedTemplate == null || dialog.SelectedProcess == null) return;
+            if (dialog.SelectedTemplate == null) return;
 
             if (HasDuplicateMetaName(dialog.MetaName))
             {
@@ -396,11 +518,13 @@ namespace ProjectARVRPro.Process
                 return;
             }
 
+            IProcess configuredProcess = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
             var newMeta = new ProcessMeta
             {
                 Name = dialog.MetaName,
                 FlowTemplate = dialog.SelectedTemplate.Key,
-                Process = dialog.SelectedProcess.CreateInstance(),
+                Process = configuredProcess,
+                ConfigJson = configJson,
                 IsEnabled = dialog.IsMetaEnabled
             };
 
@@ -422,18 +546,65 @@ namespace ProjectARVRPro.Process
             return ProcessMetas.Any(m => !ReferenceEquals(m, ignoredMeta) && m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        private void UpdateMeta()
+        private void BeginEditMetaName(ProcessMeta? meta)
         {
-            if (SelectedProcessMeta == null) return;
+            if (meta == null)
+                return;
+
+            SelectedProcessMeta = meta;
+            SelectedMetaNameDraft = meta.Name;
+            IsEditingMetaName = true;
+        }
+
+        private void SaveMetaName()
+        {
+            if (SelectedProcessMeta == null)
+                return;
+
+            string name = SelectedMetaNameDraft.Trim();
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            if (HasDuplicateMetaName(name, SelectedProcessMeta))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
+                return;
+            }
+
+            SelectedProcessMeta.Name = name;
+            SelectedMetaNameDraft = name;
+            IsEditingMetaName = false;
+        }
+
+        private void CancelMetaNameEdit()
+        {
+            SelectedMetaNameDraft = SelectedProcessMeta?.Name ?? string.Empty;
+            IsEditingMetaName = false;
+        }
+
+        private void UpdateMeta(ProcessMeta? meta, ProcessMetaEditTarget editTarget)
+        {
+            if (meta == null)
+                return;
+
+            SelectedProcessMeta = meta;
+            CancelMetaNameEdit();
 
             var dialog = new ProcessMetaEditWindow(
                 templateModels,
                 Processes,
-                $"编辑流程项 - {SelectedProcessMeta.Name}",
-                SelectedProcessMeta.Name,
-                SelectedProcessMeta.FlowTemplate,
-                SelectedProcessMeta.Process,
-                SelectedProcessMeta.IsEnabled)
+                editTarget switch
+                {
+                    ProcessMetaEditTarget.Template => $"修改流程模板 - {meta.Name}",
+                    ProcessMetaEditTarget.Process => $"修改处理类型 - {meta.Name}",
+                    _ => $"编辑流程项 - {meta.Name}"
+                },
+                meta.Name,
+                meta.FlowTemplate,
+                meta.Process,
+                meta.IsEnabled,
+                isEdit: true,
+                editTarget: editTarget)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -441,31 +612,149 @@ namespace ProjectARVRPro.Process
 
             if (dialog.ShowDialog() != true) return;
 
-            if (dialog.SelectedTemplate == null || dialog.SelectedProcess == null) return;
+            if (dialog.SelectedTemplate == null) return;
 
-            if (HasDuplicateMetaName(dialog.MetaName, SelectedProcessMeta))
+            if (HasDuplicateMetaName(dialog.MetaName, meta))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
                 return;
             }
 
-            var oldProcessType = SelectedProcessMeta.Process?.GetType().FullName;
-            var newProcessInstance = dialog.SelectedProcess.CreateInstance();
-            var newProcessType = newProcessInstance.GetType().FullName;
-            var retainedConfigJson = string.Equals(oldProcessType, newProcessType, StringComparison.Ordinal)
-                ? SelectedProcessMeta.ConfigJson
-                : string.Empty;
+            IProcess newProcessInstance = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
+            meta.Name = dialog.MetaName;
+            meta.FlowTemplate = dialog.SelectedTemplate.Key;
+            meta.IsEnabled = dialog.IsMetaEnabled;
+            meta.ConfigJson = configJson;
+            meta.Process = newProcessInstance;
+        }
 
-            if (!string.IsNullOrEmpty(retainedConfigJson))
+        private void AddResultParser()
+        {
+            var dialog = new ProcessMetaEditWindow(
+                templateModels,
+                Processes,
+                "新增解析映射",
+                showMetaFields: false)
             {
-                newProcessInstance.SetProcessConfig(retainedConfigJson);
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() != true || dialog.SelectedTemplate == null)
+                return;
+
+            if (dialog.SelectedProcess == null)
+                return;
+
+            if (HasDuplicateResultParser(dialog.SelectedTemplate.Key))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "该流程模板已经配置了解析映射", "ColorVision");
+                return;
             }
 
-            SelectedProcessMeta.Name = dialog.MetaName;
-            SelectedProcessMeta.FlowTemplate = dialog.SelectedTemplate.Key;
-            SelectedProcessMeta.IsEnabled = dialog.IsMetaEnabled;
-            SelectedProcessMeta.ConfigJson = retainedConfigJson;
-            SelectedProcessMeta.Process = newProcessInstance;
+            IProcess configuredProcess = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
+            var meta = new ProcessMeta
+            {
+                Name = dialog.SelectedTemplate.Key,
+                FlowTemplate = dialog.SelectedTemplate.Key,
+                Process = configuredProcess,
+                ConfigJson = configJson
+            };
+            ResultParserMetas.Add(meta);
+            SelectedResultParserMeta = meta;
+        }
+
+        private void RemoveResultParser()
+        {
+            if (SelectedResultParserMeta == null)
+                return;
+
+            ResultParserMetas.Remove(SelectedResultParserMeta);
+            SelectedResultParserMeta = null;
+        }
+
+        private void UpdateResultParser()
+        {
+            if (SelectedResultParserMeta == null)
+                return;
+
+            var selectedMeta = SelectedResultParserMeta;
+            var dialog = new ProcessMetaEditWindow(
+                templateModels,
+                Processes,
+                $"编辑解析映射 - {selectedMeta.FlowTemplate}",
+                flowTemplate: selectedMeta.FlowTemplate,
+                process: selectedMeta.Process,
+                showMetaFields: false,
+                isEdit: true)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() != true || dialog.SelectedTemplate == null)
+                return;
+
+            if (dialog.SelectedProcess == null)
+            {
+                ResultParserMetas.Remove(selectedMeta);
+                SelectedResultParserMeta = null;
+                return;
+            }
+
+            if (HasDuplicateResultParser(dialog.SelectedTemplate.Key, selectedMeta))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "该流程模板已经配置了解析映射", "ColorVision");
+                return;
+            }
+
+            IProcess newProcessInstance = CreateConfiguredProcess(dialog.SelectedProcess, out string configJson);
+
+            selectedMeta.Name = dialog.SelectedTemplate.Key;
+            selectedMeta.FlowTemplate = dialog.SelectedTemplate.Key;
+            selectedMeta.ConfigJson = configJson;
+            selectedMeta.Process = newProcessInstance;
+        }
+
+        private bool HasDuplicateResultParser(string flowTemplate, ProcessMeta? ignoredMeta = null)
+        {
+            return ResultParserMetas.Any(meta =>
+                !ReferenceEquals(meta, ignoredMeta)
+                && string.Equals(meta.FlowTemplate, flowTemplate, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public ProcessMeta? FindProcessMetaForTemplate(string flowTemplate)
+        {
+            return ResultProcessResolver.FindMapping(flowTemplate, ProcessMetas, ResultParserMetas);
+        }
+
+        public IEnumerable<ProcessMeta> GetResultProcessMappings()
+        {
+            return ProcessMetas.Concat(ResultParserMetas);
+        }
+
+        public IProcess CreateBlankProcess()
+        {
+            IProcess? template = Processes.FirstOrDefault(process => process is BlankProcess);
+            return template?.CreateInstance() ?? new BlankProcess();
+        }
+
+        private IProcess CreateProcessInstanceOrBlank(IProcess? process)
+        {
+            return process?.CreateInstance() ?? CreateBlankProcess();
+        }
+
+        private IProcess CreateConfiguredProcess(IProcess? source, out string configJson)
+        {
+            IProcess process = CreateProcessInstanceOrBlank(source);
+            object? config = source?.GetProcessConfig();
+            configJson = config == null ? string.Empty : JsonConvert.SerializeObject(config);
+            if (!string.IsNullOrEmpty(configJson))
+            {
+                process.SetProcessConfig(configJson);
+            }
+
+            return process;
         }
 
         private bool CanMoveUp()
@@ -502,6 +791,7 @@ namespace ProjectARVRPro.Process
 
         private void LoadPersistedGroups()
         {
+            bool saveAfterLoad = false;
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
@@ -509,11 +799,12 @@ namespace ProjectARVRPro.Process
                 // Try new format first
                 if (File.Exists(GroupPersistFilePath))
                 {
-                    LoadFromGroupsFile();
+                    saveAfterLoad = LoadFromGroupsFile();
                 }
                 else if (File.Exists(PersistFilePath))
                 {
                     MigrateFromOldFormat();
+                    saveAfterLoad = true;
                 }
             }
             catch (Exception ex)
@@ -533,9 +824,13 @@ namespace ProjectARVRPro.Process
             OnPropertyChanged(nameof(ActiveGroup));
             OnPropertyChanged(nameof(ProcessMetas));
             HookProcessMetasEvents();
+            HookResultParserEvents();
+
+            if (saveAfterLoad)
+                SavePersistedGroups();
         }
 
-        private void LoadFromGroupsFile()
+        private bool LoadFromGroupsFile()
         {
             string json = File.ReadAllText(GroupPersistFilePath);
             var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json, ExportJsonSerializerSettings);
@@ -543,7 +838,7 @@ namespace ProjectARVRPro.Process
             {
                 ProcessGroups.Add(new ProcessGroup { Name = "Default" });
                 _ActiveGroupIndex = 0;
-                return;
+                return false;
             }
 
             RecipeConfig = root.RecipeConfig ?? new RecipeConfig();
@@ -559,7 +854,17 @@ namespace ProjectARVRPro.Process
                 ProcessGroups.Add(group);
             }
 
+            foreach (var item in root.ResultParsers ?? new List<ProcessMetaPersist>())
+            {
+                ResultParserMetas.Add(DeserializeProcessMeta(item));
+            }
+
+            bool migrated = root.Version < 3;
+            if (migrated)
+                SeedResultParsersFromGroups();
+
             _ActiveGroupIndex = Math.Max(0, Math.Min(root.ActiveGroupIndex, ProcessGroups.Count - 1));
+            return migrated;
         }
 
         private void MigrateFromOldFormat()
@@ -576,9 +881,35 @@ namespace ProjectARVRPro.Process
             }
             ProcessGroups.Add(defaultGroup);
             _ActiveGroupIndex = 0;
+            SeedResultParsersFromGroups();
+        }
 
-            // Save in new format
-            SavePersistedGroups();
+        private void SeedResultParsersFromGroups()
+        {
+            var mappedTemplates = new HashSet<string>(
+                ResultParserMetas.Select(meta => meta.FlowTemplate),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (ProcessMeta source in ProcessGroups.SelectMany(group => group.ProcessMetas))
+            {
+                if (string.IsNullOrWhiteSpace(source.FlowTemplate)
+                    || ProcessTypeCatalog.IsBlankProcess(source.Process)
+                    || !mappedTemplates.Add(source.FlowTemplate))
+                    continue;
+
+                IProcess? process = source.Process?.CreateInstance();
+                string configJson = GetProcessConfigJson(source);
+                if (process != null && !string.IsNullOrWhiteSpace(configJson))
+                    process.SetProcessConfig(configJson);
+
+                ResultParserMetas.Add(new ProcessMeta
+                {
+                    Name = source.FlowTemplate,
+                    FlowTemplate = source.FlowTemplate,
+                    Process = process,
+                    ConfigJson = configJson
+                });
+            }
         }
 
         private ProcessMeta DeserializeProcessMeta(ProcessMetaPersist item)
@@ -666,22 +997,28 @@ namespace ProjectARVRPro.Process
         {
             return new ProcessGroupsRoot
             {
-                Version = 2,
+                Version = 3,
                 ActiveGroupIndex = _ActiveGroupIndex,
                 RecipeConfig = RecipeConfig,
                 Groups = ProcessGroups.Select(g => new ProcessGroupPersist
                 {
                     Name = g.Name,
-                    Metas = g.ProcessMetas.Select(m => new ProcessMetaPersist
-                    {
-                        Name = m.Name,
-                        FlowTemplate = m.FlowTemplate,
-                        ProcessTypeFullName = m.Process?.GetType().FullName ?? string.Empty,
-                        IsEnabled = m.IsEnabled,
-                        ConfigJson = GetProcessConfigJson(m),
-                        PictureSwitchConfig = m.PictureSwitchConfig.Clone()
-                    }).ToList()
-                }).ToList()
+                    Metas = g.ProcessMetas.Select(CreateProcessMetaPersist).ToList()
+                }).ToList(),
+                ResultParsers = ResultParserMetas.Select(CreateProcessMetaPersist).ToList()
+            };
+        }
+
+        private static ProcessMetaPersist CreateProcessMetaPersist(ProcessMeta meta)
+        {
+            return new ProcessMetaPersist
+            {
+                Name = meta.Name,
+                FlowTemplate = meta.FlowTemplate,
+                ProcessTypeFullName = meta.Process?.GetType().FullName ?? string.Empty,
+                IsEnabled = meta.IsEnabled,
+                ConfigJson = GetProcessConfigJson(meta),
+                PictureSwitchConfig = meta.PictureSwitchConfig.Clone()
             };
         }
 
@@ -770,6 +1107,7 @@ namespace ProjectARVRPro.Process
         private void ApplyImportedGroups(ProcessGroupsRoot importedGroups)
         {
             var importedProcessGroups = new List<ProcessGroup>();
+            var importedResultParsers = new List<ProcessMeta>();
             var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var groupPersist in importedGroups.Groups)
             {
@@ -792,18 +1130,60 @@ namespace ProjectARVRPro.Process
                 importedProcessGroups.Add(group);
             }
 
+            foreach (var metaPersist in importedGroups.ResultParsers ?? new List<ProcessMetaPersist>())
+            {
+                if (metaPersist != null)
+                    importedResultParsers.Add(DeserializeProcessMeta(metaPersist));
+            }
+
+            if (importedGroups.Version < 3)
+            {
+                var mappedTemplates = new HashSet<string>(
+                    importedResultParsers.Select(meta => meta.FlowTemplate),
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (ProcessMeta source in importedProcessGroups.SelectMany(group => group.ProcessMetas))
+                {
+                    if (string.IsNullOrWhiteSpace(source.FlowTemplate)
+                        || ProcessTypeCatalog.IsBlankProcess(source.Process)
+                        || !mappedTemplates.Add(source.FlowTemplate))
+                        continue;
+
+                    string configJson = GetProcessConfigJson(source);
+                    IProcess? process = source.Process?.CreateInstance();
+                    if (process != null && !string.IsNullOrWhiteSpace(configJson))
+                        process.SetProcessConfig(configJson);
+
+                    importedResultParsers.Add(new ProcessMeta
+                    {
+                        Name = source.FlowTemplate,
+                        FlowTemplate = source.FlowTemplate,
+                        Process = process,
+                        ConfigJson = configJson
+                    });
+                }
+            }
+
             if (importedProcessGroups.Count == 0)
             {
                 importedProcessGroups.Add(new ProcessGroup { Name = "Default" });
             }
 
             UnhookProcessMetasEvents();
+            UnhookResultParserEvents();
             SelectedProcessMeta = null;
+            SelectedResultParserMeta = null;
             ProcessGroups.Clear();
+            ResultParserMetas.Clear();
 
             foreach (var group in importedProcessGroups)
             {
                 ProcessGroups.Add(group);
+            }
+
+            foreach (ProcessMeta meta in importedResultParsers)
+            {
+                ResultParserMetas.Add(meta);
             }
 
             if (ProcessGroups.Count == 0)
@@ -816,6 +1196,7 @@ namespace ProjectARVRPro.Process
             OnPropertyChanged(nameof(ActiveGroup));
             OnPropertyChanged(nameof(ProcessMetas));
             HookProcessMetasEvents();
+            HookResultParserEvents();
             ActiveGroupChanged?.Invoke(this, EventArgs.Empty);
             SavePersistedGroups();
             CommandManager.InvalidateRequerySuggested();

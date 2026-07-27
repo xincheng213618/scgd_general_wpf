@@ -386,7 +386,7 @@ namespace ColorVision.Copilot
         private sealed record SqlToken(string Text, int Depth, int Index);
     }
 
-    public sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
+    internal sealed class CopilotMySqlDatabaseSqlExecutor : ICopilotDatabaseSqlExecutor
     {
         private static readonly string[] SensitiveColumnMarkers =
         {
@@ -484,7 +484,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    public sealed class CopilotDatabaseSqlService
+    internal sealed class CopilotDatabaseSqlService
     {
         private const int MaximumContentLength = 32_000;
         private static readonly string[] SensitiveColumnMarkers =
@@ -597,7 +597,10 @@ namespace ColorVision.Copilot
                         : string.Empty;
             return new CopilotToolApprovalPresentation(
                 $"Approve database {analysis.RootKeyword}",
-                $"Execute one {analysis.RootKeyword} statement on the configured ColorVision MySQL database. Fingerprint: {analysis.Fingerprint}.{warning}\n\nSQL preview: {excerpt}");
+                $"Execute one {analysis.RootKeyword} statement on the configured ColorVision MySQL database. Fingerprint: {analysis.Fingerprint}.{warning}\n\nSQL preview: {excerpt}",
+                ImpactSummary: $"将在配置的 ColorVision MySQL 数据库执行一条 {analysis.RootKeyword} 语句。{warning}".Trim(),
+                Reversibility: CopilotApprovalReversibility.ManualOnly,
+                ReversibilitySummary: "Copilot 不会自动回滚数据库变更；部分 DDL 可能隐式提交，只能通过后续数据库操作恢复。");
         }
 
         private static string BuildQueryContent(CopilotDatabaseSqlAnalysis analysis, CopilotDatabaseQueryResult result)

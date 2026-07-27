@@ -8,12 +8,15 @@ namespace ColorVision.Copilot
     {
         Status,
         Context,
+        Permissions,
         Skills,
         Mcp,
         Diff,
         Compact,
         Review,
         NewConversation,
+        ForkConversation,
+        SideQuestion,
         Skill,
     }
 
@@ -36,12 +39,16 @@ namespace ColorVision.Copilot
         [
             new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true),
             new("/context", "查看本地上下文、预算与注入统计", CopilotLocalCommandKind.Context, AvailableWhileAgentRuns: true),
+            new("/permissions", "查看当前文件范围、能力与审批策略", CopilotLocalCommandKind.Permissions, AvailableWhileAgentRuns: true),
             new("/skills", "查看 Skill 使用率、连续未加载与降级状态", CopilotLocalCommandKind.Skills, AvailableWhileAgentRuns: true),
             new("/mcp", "查看本地 MCP 服务、审批与最近调用状态", CopilotLocalCommandKind.Mcp, AvailableWhileAgentRuns: true),
             new("/diff", "查看已暂存、未暂存补丁和未跟踪文件", CopilotLocalCommandKind.Diff, AcceptsArguments: true),
             new("/compact", "压缩早期对话，可在命令后补充聚焦要求", CopilotLocalCommandKind.Compact, AcceptsArguments: true),
             new("/review", "只读审查当前工作区变更，可补充关注点", CopilotLocalCommandKind.Review, AcceptsArguments: true),
             new("/new", "开始一个新的 Copilot 会话", CopilotLocalCommandKind.NewConversation),
+            new("/fork", "复制当前会话到新会话分支，可补充名称", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true),
+            new("/branch", "同 /fork；只分叉会话，不创建 Git 分支", CopilotLocalCommandKind.ForkConversation, AcceptsArguments: true),
+            new("/btw", "从当前会话上下文回答一次旁路问题，不影响主任务", CopilotLocalCommandKind.SideQuestion, AcceptsArguments: true, AvailableWhileAgentRuns: true),
         ];
 
         public static IReadOnlyList<CopilotLocalCommand> All => Commands;

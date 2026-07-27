@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+
 namespace ColorVision.Copilot
 {
     internal static class CopilotResponsePresentationGuidance
@@ -8,10 +11,20 @@ namespace ColorVision.Copilot
         {
             var profile = source.Clone();
             var basePrompt = profile.EffectiveSystemPrompt.Trim();
+            var requestInstructions = WorkspaceFileLinkInstruction + "\n\n" + BuildResponseLanguageInstruction(CultureInfo.CurrentUICulture);
             profile.UseSystemPromptOverride(string.IsNullOrWhiteSpace(basePrompt)
-                ? WorkspaceFileLinkInstruction
-                : basePrompt + "\n\n" + WorkspaceFileLinkInstruction);
+                ? requestInstructions
+                : basePrompt + "\n\n" + requestInstructions);
             return profile;
+        }
+
+        internal static string BuildResponseLanguageInstruction(CultureInfo culture)
+        {
+            ArgumentNullException.ThrowIfNull(culture);
+            var language = string.IsNullOrWhiteSpace(culture.Name)
+                ? "English (en)"
+                : $"{culture.EnglishName} ({culture.Name})";
+            return $"Respond in {language} unless the user explicitly requests another language.";
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace ST.Library.UI.NodeEditor;
 
@@ -22,6 +22,10 @@ public abstract class STNode : INotifyPropertyChanged
 	private bool _IsActive;
 
 	private Color _TitleColor;
+
+	private Color _TitleProgressColor;
+
+	private float _TitleProgress = -1f;
 
 	private Color _MarkColor;
 
@@ -64,8 +68,6 @@ public abstract class STNode : INotifyPropertyChanged
 	private bool _LockOption;
 
 	private bool _LockLocation;
-
-	private ContextMenuStrip _ContextMenuStrip;
 
 	private object _Tag;
 
@@ -169,6 +171,39 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 	}
 
+	[Browsable(false)]
+	public Color TitleProgressColor
+	{
+		get
+		{
+			return _TitleProgressColor;
+		}
+		set
+		{
+			_TitleProgressColor = value;
+			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
+		}
+	}
+
+	[Browsable(false)]
+	public float TitleProgress
+	{
+		get
+		{
+			return _TitleProgress;
+		}
+		set
+		{
+			float progress = float.IsNaN(value) || value < 0f ? -1f : (value > 1f ? 1f : value);
+			if (Math.Abs(_TitleProgress - progress) < 0.0001f)
+			{
+				return;
+			}
+			_TitleProgress = progress;
+			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
+		}
+	}
+
 	public Color MarkColor
 	{
 		get
@@ -266,6 +301,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (!_LockLocation && value != _Left)
 			{
+				Point oldLocation = new Point(_Left, _Top);
 				_Left = value;
 				SetOptionsLocation();
 				BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
@@ -274,6 +310,7 @@ public abstract class STNode : INotifyPropertyChanged
 				{
 					_Owner.BuildLinePath();
 					_Owner.BuildBounds();
+					_Owner.OnNodeLocationChanged(this, oldLocation, new Point(_Left, _Top));
 				}
 			}
 		}
@@ -289,6 +326,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (!_LockLocation && value != _Top)
 			{
+				Point oldLocation = new Point(_Left, _Top);
 				_Top = value;
 				SetOptionsLocation();
 				BuildSize(bBuildNode: false, bBuildMark: true, bRedraw: false);
@@ -297,6 +335,7 @@ public abstract class STNode : INotifyPropertyChanged
 				{
 					_Owner.BuildLinePath();
 					_Owner.BuildBounds();
+					_Owner.OnNodeLocationChanged(this, oldLocation, new Point(_Left, _Top));
 				}
 			}
 		}
@@ -584,18 +623,6 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 	}
 
-	public ContextMenuStrip ContextMenuStrip
-	{
-		get
-		{
-			return _ContextMenuStrip;
-		}
-		set
-		{
-			_ContextMenuStrip = value;
-		}
-	}
-
 	public object Tag
 	{
 		get
@@ -609,6 +636,17 @@ public abstract class STNode : INotifyPropertyChanged
 	}
 
 	public Guid Guid => _Guid;
+
+	internal void RegenerateGuid()
+	{
+		Guid oldGuid = _Guid;
+		_Guid = Guid.NewGuid();
+		OnGuidRegenerated(oldGuid, _Guid);
+	}
+
+	protected virtual void OnGuidRegenerated(Guid oldGuid, Guid newGuid)
+	{
+	}
 
 	public bool LetGetOptions
 	{
@@ -634,6 +672,7 @@ public abstract class STNode : INotifyPropertyChanged
 		_Controls = new STNodeControlCollection(this);
 		_BackColor = Color.FromArgb(200, 64, 64, 64);
 		_TitleColor = Color.FromArgb(200, Color.DodgerBlue);
+		_TitleProgressColor = Color.FromArgb(230, Color.DeepSkyBlue);
 		_MarkColor = Color.FromArgb(200, Color.Brown);
 		_Font = new Font("courier new", 8.25f);
 		m_sf = new StringFormat();
@@ -689,7 +728,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			dictionary.Add("Mark", Encoding.UTF8.GetBytes(_Mark));
 		}
-		dictionary.Add("LockOption", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
+		dictionary.Add("LockOption", new byte[1] { _LockOption ? ((byte)1) : ((byte)0) });
 		dictionary.Add("LockLocation", new byte[1] { _LockLocation ? ((byte)1) : ((byte)0) });
 		Type type = GetType();
 		PropertyInfo[] properties = type.GetProperties();
@@ -726,7 +765,7 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 		List<byte> list = new List<byte>();
 		Type type = GetType();
-		byte[] bytes = Encoding.UTF8.GetBytes(type.Module.Name + "|" + type.FullName);
+		byte[] bytes = Encoding.UTF8.GetBytes(STNodeTypeRegistry.GetModelByType(type));
 		list.Add((byte)bytes.Length);
 		list.AddRange(bytes);
 		bytes = Encoding.UTF8.GetBytes(type.GUID.ToString());
@@ -757,11 +796,25 @@ public abstract class STNode : INotifyPropertyChanged
 
 	protected internal virtual void OnDrawNode(DrawingTools dt)
 	{
-		dt.Graphics.SmoothingMode = SmoothingMode.None;
+		Graphics graphics = dt.Graphics;
+		int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
 		if (_BackColor.A != 0)
 		{
 			dt.SolidBrush.Color = _BackColor;
-			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+			if (cornerRadius > 0)
+			{
+				graphics.SmoothingMode = SmoothingMode.AntiAlias;
+				using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+				GraphicsState graphicsState = graphics.Save();
+				graphics.SetClip(nodePath, CombineMode.Intersect);
+				graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+				graphics.Restore(graphicsState);
+			}
+			else
+			{
+				graphics.SmoothingMode = SmoothingMode.None;
+				graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
+			}
 		}
 		OnDrawTitle(dt);
 		OnDrawBody(dt);
@@ -781,7 +834,43 @@ public abstract class STNode : INotifyPropertyChanged
 		if (_TitleColor.A != 0)
 		{
 			solidBrush.Color = _TitleColor;
-			graphics.FillRectangle(solidBrush, TitleRectangle);
+			int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
+			if (cornerRadius > 0)
+			{
+				graphics.SmoothingMode = SmoothingMode.AntiAlias;
+				using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+				GraphicsState graphicsState = graphics.Save();
+				graphics.SetClip(nodePath, CombineMode.Intersect);
+				graphics.FillRectangle(solidBrush, TitleRectangle);
+				graphics.Restore(graphicsState);
+			}
+			else
+			{
+				graphics.FillRectangle(solidBrush, TitleRectangle);
+			}
+		}
+		if (_TitleProgress > 0f && _TitleProgressColor.A != 0)
+		{
+			Rectangle progressRectangle = TitleRectangle;
+			progressRectangle.Width = (int)Math.Round(progressRectangle.Width * _TitleProgress);
+			if (progressRectangle.Width > 0)
+			{
+				solidBrush.Color = _TitleProgressColor;
+				int cornerRadius = _Owner?.NodeCornerRadius ?? 0;
+				if (cornerRadius > 0)
+				{
+					graphics.SmoothingMode = SmoothingMode.AntiAlias;
+					using GraphicsPath nodePath = CreateRoundedRectanglePath(Rectangle, cornerRadius);
+					GraphicsState graphicsState = graphics.Save();
+					graphics.SetClip(nodePath, CombineMode.Intersect);
+					graphics.FillRectangle(solidBrush, progressRectangle);
+					graphics.Restore(graphicsState);
+				}
+				else
+				{
+					graphics.FillRectangle(solidBrush, progressRectangle);
+				}
+			}
 		}
 		if (_LockOption)
 		{
@@ -805,8 +894,35 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			solidBrush.Color = _ForeColor;
 			graphics.SmoothingMode = SmoothingMode.HighQuality;
-			graphics.DrawString(text, _Font, solidBrush, TitleRectangle, m_sf);
+			graphics.DrawString(text, _Font, solidBrush, GetTitleTextRectangle(), m_sf);
 		}
+	}
+
+	protected virtual Rectangle GetTitleTextRectangle()
+	{
+		Rectangle rectangle = TitleRectangle;
+		rectangle.Offset(0, 2);
+		return rectangle;
+	}
+
+	private static GraphicsPath CreateRoundedRectanglePath(Rectangle rectangle, int radius)
+	{
+		GraphicsPath path = new GraphicsPath();
+		int maxRadius = Math.Min(rectangle.Width, rectangle.Height) / 2;
+		radius = Math.Min(radius, maxRadius);
+		if (radius <= 0)
+		{
+			path.AddRectangle(rectangle);
+			return path;
+		}
+
+		int diameter = radius * 2;
+		path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270f, 90f);
+		path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0f, 90f);
+		path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90f, 90f);
+		path.CloseFigure();
+		return path;
 	}
 
 	protected virtual void OnDrawBody(DrawingTools dt)
@@ -1137,7 +1253,7 @@ public abstract class STNode : INotifyPropertyChanged
 	{
 	}
 
-	protected internal virtual void OnMouseDown(MouseEventArgs e)
+	protected internal virtual void OnMouseDown(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1161,7 +1277,7 @@ public abstract class STNode : INotifyPropertyChanged
 				}
 				if (sTNodeControl.Visable)
 				{
-					sTNodeControl.OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top, e.Delta));
+					sTNodeControl.OnMouseDown(e.WithLocation(e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top));
 					m_ctrl_down = sTNodeControl;
 					if (m_ctrl_active != sTNodeControl)
 					{
@@ -1183,7 +1299,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_active = null;
 	}
 
-	protected internal virtual void OnMouseMove(MouseEventArgs e)
+	protected internal virtual void OnMouseMove(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1201,7 +1317,7 @@ public abstract class STNode : INotifyPropertyChanged
 		{
 			if (m_ctrl_down.Enabled && m_ctrl_down.Visable)
 			{
-				m_ctrl_down.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top, e.Delta));
+				m_ctrl_down.OnMouseMove(e.WithLocation(e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top));
 			}
 			return;
 		}
@@ -1219,7 +1335,7 @@ public abstract class STNode : INotifyPropertyChanged
 					}
 					m_ctrl_hover = sTNodeControl;
 				}
-				m_ctrl_hover.OnMouseMove(new MouseEventArgs(e.Button, e.Clicks, e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top, e.Delta));
+				m_ctrl_hover.OnMouseMove(e.WithLocation(e.X - sTNodeControl.Left, location.Y - sTNodeControl.Top));
 				return;
 			}
 		}
@@ -1230,7 +1346,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_hover = null;
 	}
 
-	protected internal virtual void OnMouseUp(MouseEventArgs e)
+	protected internal virtual void OnMouseUp(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1241,8 +1357,13 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_down != null && m_ctrl_down.Enabled && m_ctrl_down.Visable)
 		{
-			m_ctrl_down.OnMouseUp(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top, e.Delta));
+			m_ctrl_down.OnMouseUp(e.WithLocation(e.X - m_ctrl_down.Left, location.Y - m_ctrl_down.Top));
 		}
+		m_ctrl_down = null;
+	}
+
+	protected internal virtual void CancelMouseInteraction()
+	{
 		m_ctrl_down = null;
 	}
 
@@ -1255,7 +1376,7 @@ public abstract class STNode : INotifyPropertyChanged
 		m_ctrl_hover = null;
 	}
 
-	protected internal virtual void OnMouseClick(MouseEventArgs e)
+	protected internal virtual void OnMouseClick(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1265,11 +1386,11 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_active.Visable)
 		{
-			m_ctrl_active.OnMouseClick(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_active.Left, location.Y - m_ctrl_active.Top, e.Delta));
+			m_ctrl_active.OnMouseClick(e.WithLocation(e.X - m_ctrl_active.Left, location.Y - m_ctrl_active.Top));
 		}
 	}
 
-	protected internal virtual void OnMouseWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseWheel(STNodeMouseEventArgs e)
 	{
 		if (!_ShowControls)
 		{
@@ -1279,11 +1400,11 @@ public abstract class STNode : INotifyPropertyChanged
 		location.Y -= _TitleHeight;
 		if (m_ctrl_hover != null && m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_hover.Visable)
 		{
-			m_ctrl_hover.OnMouseWheel(new MouseEventArgs(e.Button, e.Clicks, e.X - m_ctrl_hover.Left, location.Y - m_ctrl_hover.Top, e.Delta));
+			m_ctrl_hover.OnMouseWheel(e.WithLocation(e.X - m_ctrl_hover.Left, location.Y - m_ctrl_hover.Top));
 		}
 	}
 
-	protected internal virtual void OnMouseHWheel(MouseEventArgs e)
+	protected internal virtual void OnMouseHWheel(STNodeMouseEventArgs e)
 	{
 		if (m_ctrl_hover != null && m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_hover.Visable)
 		{
@@ -1307,7 +1428,7 @@ public abstract class STNode : INotifyPropertyChanged
 		}
 	}
 
-	protected internal virtual void OnKeyPress(KeyPressEventArgs e)
+	protected internal virtual void OnKeyPress(STNodeKeyPressEventArgs e)
 	{
 		if (m_ctrl_active != null && m_ctrl_active.Enabled && m_ctrl_active.Visable)
 		{

@@ -139,12 +139,12 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 
 	public int IndexOf(STNodeOption option)
 	{
-		return Array.IndexOf(m_options, option);
+		return Array.IndexOf(m_options, option, 0, _Count);
 	}
 
 	public void Insert(int index, STNodeOption option)
 	{
-		if (index < 0 || index >= _Count)
+		if (index < 0 || index > _Count)
 		{
 			throw new IndexOutOfRangeException("索引越界");
 		}
@@ -152,12 +152,17 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 		{
 			throw new ArgumentNullException("插入对象不能为空");
 		}
+		if (option != STNodeOption.Empty && IndexOf(option) >= 0)
+		{
+			return;
+		}
 		EnsureSpace(1);
 		for (int num = _Count; num > index; num--)
 		{
 			m_options[num] = m_options[num - 1];
 		}
 		option.Owner = m_owner;
+		option.IsInput = m_isInput;
 		m_options[index] = option;
 		_Count++;
 		Invalidate();
@@ -185,6 +190,7 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 		{
 			m_options[i] = m_options[i + 1];
 		}
+		m_options[_Count] = null;
 		Invalidate();
 	}
 

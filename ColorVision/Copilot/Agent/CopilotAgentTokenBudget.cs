@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -66,6 +67,23 @@ namespace ColorVision.Copilot
         private readonly object _syncRoot = new();
         private CopilotTokenUsage _usage;
         private int _providerCalls;
+        private int _peakEstimatedInputTokens;
+        private int _providerRetryCount;
+        private int _providerRateLimitRetryCount;
+        private long _providerRetryDelayMs;
+        private int _providerFirstContentTimeoutCount;
+        private int _providerStreamInactivityTimeoutCount;
+        private int _providerResponseCount;
+        private long _providerFirstResponseLatencyTotalMs;
+        private long _providerFirstResponseLatencyMaxMs;
+        private long _providerCallDurationTotalMs;
+        private int _providerStreamChunkCount;
+        private int _providerStreamInterChunkLatencyCount;
+        private long _providerStreamInterChunkLatencyTotalMs;
+        private long _providerStreamInterChunkLatencyMaxMs;
+        private int _contextRecoveryCount;
+        private long _contextRecoveryEstimatedInputTokensBefore;
+        private long _contextRecoveryEstimatedInputTokensAfter;
         private long _consumedTokens;
         private bool _usedEstimatedUsage;
         private bool _budgetExhausted;
@@ -95,12 +113,175 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(delegatedRun);
             lock (_syncRoot)
             {
+                var delegatedProviderCalls = Math.Max(0, delegatedRun.ProviderCalls);
+                var delegatedProviderRetryCount = Math.Clamp(
+                    delegatedRun.ProviderRetryCount,
+                    0,
+                    delegatedProviderCalls);
                 _usage = _usage.Add(delegatedRun.Usage);
-                _providerCalls += Math.Max(0, delegatedRun.ProviderCalls);
+                _providerCalls = AddClamped(_providerCalls, delegatedProviderCalls);
+                _peakEstimatedInputTokens = Math.Max(
+                    _peakEstimatedInputTokens,
+                    Math.Max(0, delegatedRun.PeakEstimatedInputTokens));
+                _providerRetryCount = AddClamped(
+                    _providerRetryCount,
+                    delegatedProviderRetryCount);
+                _providerRateLimitRetryCount = Math.Min(
+                    _providerRetryCount,
+                    AddClamped(
+                        _providerRateLimitRetryCount,
+                        Math.Clamp(
+                            delegatedRun.ProviderRateLimitRetryCount,
+                            0,
+                            delegatedProviderRetryCount)));
+                if (delegatedProviderRetryCount > 0)
+                {
+                    _providerRetryDelayMs = AddClamped(
+                        _providerRetryDelayMs,
+                        delegatedRun.ProviderRetryDelayMs);
+                }
+                var delegatedFirstContentTimeoutCount = Math.Clamp(
+                    delegatedRun.ProviderFirstContentTimeoutCount,
+                    0,
+                    delegatedProviderCalls);
+                var delegatedStreamInactivityTimeoutCount = Math.Clamp(
+                    delegatedRun.ProviderStreamInactivityTimeoutCount,
+                    0,
+                    delegatedProviderCalls - delegatedFirstContentTimeoutCount);
+                _providerFirstContentTimeoutCount = Math.Min(
+                    _providerCalls,
+                    AddClamped(
+                        _providerFirstContentTimeoutCount,
+                        delegatedFirstContentTimeoutCount));
+                _providerStreamInactivityTimeoutCount = Math.Min(
+                    Math.Max(0, _providerCalls - _providerFirstContentTimeoutCount),
+                    AddClamped(
+                        _providerStreamInactivityTimeoutCount,
+                        delegatedStreamInactivityTimeoutCount));
+                var delegatedProviderResponseCount = Math.Clamp(
+                    delegatedRun.ProviderResponseCount,
+                    0,
+                    delegatedProviderCalls);
+                var delegatedFirstResponseLatencyTotalMs = delegatedProviderResponseCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderFirstResponseLatencyTotalMs)
+                    : 0;
+                _providerResponseCount = Math.Min(
+                    _providerCalls,
+                    AddClamped(_providerResponseCount, delegatedProviderResponseCount));
+                _providerFirstResponseLatencyTotalMs = AddClamped(
+                    _providerFirstResponseLatencyTotalMs,
+                    delegatedFirstResponseLatencyTotalMs);
+                _providerFirstResponseLatencyMaxMs = Math.Max(
+                    _providerFirstResponseLatencyMaxMs,
+                    Math.Clamp(
+                        delegatedRun.ProviderFirstResponseLatencyMaxMs,
+                        0,
+                        delegatedFirstResponseLatencyTotalMs));
+                _providerCallDurationTotalMs = AddClamped(
+                    _providerCallDurationTotalMs,
+                    Math.Max(
+                        delegatedFirstResponseLatencyTotalMs,
+                        delegatedRun.ProviderCallDurationTotalMs));
+                var delegatedStreamChunkCount = delegatedProviderResponseCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderStreamChunkCount)
+                    : 0;
+                var delegatedStreamInterChunkLatencyCount = Math.Clamp(
+                    delegatedRun.ProviderStreamInterChunkLatencyCount,
+                    0,
+                    Math.Max(0, delegatedStreamChunkCount - 1));
+                var delegatedStreamInterChunkLatencyTotalMs = delegatedStreamInterChunkLatencyCount > 0
+                    ? Math.Max(0, delegatedRun.ProviderStreamInterChunkLatencyTotalMs)
+                    : 0;
+                _providerStreamChunkCount = AddClamped(
+                    _providerStreamChunkCount,
+                    delegatedStreamChunkCount);
+                _providerStreamInterChunkLatencyCount = AddClamped(
+                    _providerStreamInterChunkLatencyCount,
+                    delegatedStreamInterChunkLatencyCount);
+                _providerStreamInterChunkLatencyTotalMs = AddClamped(
+                    _providerStreamInterChunkLatencyTotalMs,
+                    delegatedStreamInterChunkLatencyTotalMs);
+                _providerStreamInterChunkLatencyMaxMs = Math.Max(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    Math.Clamp(
+                        delegatedRun.ProviderStreamInterChunkLatencyMaxMs,
+                        0,
+                        delegatedStreamInterChunkLatencyTotalMs));
+                _contextRecoveryCount = AddClamped(
+                    _contextRecoveryCount,
+                    delegatedRun.ContextRecoveryCount);
+                _contextRecoveryEstimatedInputTokensBefore = AddClamped(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    delegatedRun.ContextRecoveryEstimatedInputTokensBefore);
+                _contextRecoveryEstimatedInputTokensAfter = Math.Min(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    AddClamped(
+                        _contextRecoveryEstimatedInputTokensAfter,
+                        delegatedRun.ContextRecoveryEstimatedInputTokensAfter));
                 _consumedTokens += Math.Max(Math.Max(0, delegatedRun.ConsumedTokens), delegatedRun.Usage.EffectiveTotalTokens);
                 _usedEstimatedUsage |= delegatedRun.UsedEstimatedUsage;
                 if (_consumedTokens >= _budget.RequestTokenBudget)
                     _budgetExhausted = true;
+            }
+        }
+
+        internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
+        {
+            ArgumentNullException.ThrowIfNull(retry);
+            lock (_syncRoot)
+            {
+                _providerRetryCount = AddClamped(_providerRetryCount, 1);
+                if (retry.StatusCode == 429)
+                    _providerRateLimitRetryCount = AddClamped(_providerRateLimitRetryCount, 1);
+                _providerRetryDelayMs = AddClamped(
+                    _providerRetryDelayMs,
+                    ToMilliseconds(retry.Delay));
+            }
+        }
+
+        private void RecordProviderInactivity(Exception exception)
+        {
+            if (!CopilotProviderInactivityException.TryFind(
+                exception,
+                out var inactivity))
+            {
+                return;
+            }
+
+            lock (_syncRoot)
+            {
+                if (inactivity.Phase == CopilotProviderInactivityPhase.FirstResponse)
+                {
+                    _providerFirstContentTimeoutCount = AddClamped(
+                        _providerFirstContentTimeoutCount,
+                        1);
+                }
+                else
+                {
+                    _providerStreamInactivityTimeoutCount = AddClamped(
+                        _providerStreamInactivityTimeoutCount,
+                        1);
+                }
+            }
+        }
+
+        internal void RecordContextRecovery(CopilotContextWindowRecoveryInfo recovery)
+        {
+            ArgumentNullException.ThrowIfNull(recovery);
+            lock (_syncRoot)
+            {
+                var estimatedInputTokensBefore = Math.Max(0, recovery.EstimatedInputTokensBefore);
+                var estimatedInputTokensAfter = Math.Clamp(
+                    recovery.EstimatedInputTokensAfter,
+                    0,
+                    estimatedInputTokensBefore);
+                _contextRecoveryCount = AddClamped(_contextRecoveryCount, 1);
+                _contextRecoveryEstimatedInputTokensBefore = AddClamped(
+                    _contextRecoveryEstimatedInputTokensBefore,
+                    estimatedInputTokensBefore);
+                _contextRecoveryEstimatedInputTokensAfter = AddClamped(
+                    _contextRecoveryEstimatedInputTokensAfter,
+                    estimatedInputTokensAfter);
             }
         }
 
@@ -117,19 +298,26 @@ namespace ColorVision.Copilot
                 throw new CopilotAgentTokenBudgetExceededException();
 
             ChatResponse response;
+            var providerStopwatch = Stopwatch.StartNew();
             try
             {
                 response = await base.GetResponseAsync(materializedMessages, options, cancellationToken);
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
-            catch
+            catch (Exception exception)
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                RecordProviderInactivity(exception);
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
+            var providerDurationMs = ToMilliseconds(providerStopwatch.Elapsed);
+            RecordProviderFirstResponse(providerDurationMs);
+            RecordProviderCallDuration(providerDurationMs);
             var usage = ExtractUsage(response.Messages.SelectMany(message => message.Contents));
             CommitUsage(usage, EstimateTokens(materializedMessages, options, EstimateMessageWeight(response.Messages)));
             return response;
@@ -149,24 +337,33 @@ namespace ColorVision.Copilot
 
             var usage = CopilotTokenUsage.Empty;
             long responseWeight = 0;
+            long providerCallDurationTicks = 0;
+            long providerInterChunkLatencyTicks = 0;
+            var providerResponseStarted = false;
             var completed = false;
             IAsyncEnumerator<ChatResponseUpdate>? enumerator;
+            var providerStopwatch = Stopwatch.StartNew();
             try
             {
                 enumerator = await OpenStreamingAttemptAsync(materializedMessages, options, cancellationToken);
             }
             catch (Exception exception) when (CopilotContextWindowFailureClassifier.TryClassify(exception, out _))
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
                 throw;
             }
-            catch
+            catch (Exception exception)
             {
+                RecordProviderCallDuration(ToMilliseconds(providerStopwatch.Elapsed));
+                RecordProviderInactivity(exception);
                 CommitUsage(CopilotTokenUsage.Empty, estimatedInputTokens, requireEstimatedFloor: true);
                 throw;
             }
+            providerCallDurationTicks = Math.Max(0, providerStopwatch.ElapsedTicks);
 
             if (enumerator == null)
             {
+                RecordProviderCallDuration(ToMilliseconds(providerCallDurationTicks));
                 CommitUsage(
                     usage,
                     EstimateTokens(materializedMessages, options, responseWeight));
@@ -182,14 +379,53 @@ namespace ColorVision.Copilot
                         var update = enumerator.Current;
                         responseWeight += EstimateContentWeight(update.Contents);
                         usage = usage.MergeProgress(ExtractUsage(update.Contents));
+                        if (CopilotProviderResponseContent.HasAny(update.Contents))
+                        {
+                            if (!providerResponseStarted)
+                            {
+                                providerResponseStarted = true;
+                                RecordProviderFirstResponse(ToMilliseconds(providerCallDurationTicks));
+                                RecordProviderStreamChunk(interChunkLatencyMs: null);
+                            }
+                            else
+                            {
+                                RecordProviderStreamChunk(
+                                    ToMilliseconds(providerInterChunkLatencyTicks));
+                            }
+                            providerInterChunkLatencyTicks = 0;
+                        }
                         yield return update;
-                        if (!await enumerator.MoveNextAsync())
+                        providerStopwatch.Restart();
+                        bool hasNext;
+                        try
+                        {
+                            hasNext = await enumerator.MoveNextAsync();
+                        }
+                        catch (Exception exception)
+                        {
+                            RecordProviderInactivity(exception);
+                            throw;
+                        }
+                        finally
+                        {
+                            providerCallDurationTicks = AddClamped(
+                                providerCallDurationTicks,
+                                providerStopwatch.ElapsedTicks);
+                            if (providerResponseStarted)
+                            {
+                                providerInterChunkLatencyTicks = AddClamped(
+                                    providerInterChunkLatencyTicks,
+                                    providerStopwatch.ElapsedTicks);
+                            }
+                        }
+                        if (!hasNext)
                             break;
                     }
                     completed = true;
                 }
                 finally
                 {
+                    RecordProviderCallDuration(ToMilliseconds(providerCallDurationTicks));
                     CommitUsage(
                         usage,
                         EstimateTokens(materializedMessages, options, responseWeight),
@@ -228,11 +464,13 @@ namespace ColorVision.Copilot
 
         private void EnsureWithinContextWindow(int estimatedInputTokens)
         {
-            if (estimatedInputTokens <= _budget.InputBudgetTokens)
-                return;
-
             lock (_syncRoot)
+            {
+                _peakEstimatedInputTokens = Math.Max(_peakEstimatedInputTokens, Math.Max(0, estimatedInputTokens));
+                if (estimatedInputTokens <= _budget.InputBudgetTokens)
+                    return;
                 _usedEstimatedUsage = true;
+            }
             throw new CopilotAgentContextWindowExceededException(estimatedInputTokens, _budget.InputBudgetTokens);
         }
 
@@ -288,8 +526,86 @@ namespace ColorVision.Copilot
             }
         }
 
+        private void RecordProviderFirstResponse(long latencyMs)
+        {
+            var normalizedLatencyMs = Math.Max(0, latencyMs);
+            lock (_syncRoot)
+            {
+                _providerResponseCount = AddClamped(_providerResponseCount, 1);
+                _providerFirstResponseLatencyTotalMs = AddClamped(
+                    _providerFirstResponseLatencyTotalMs,
+                    normalizedLatencyMs);
+                _providerFirstResponseLatencyMaxMs = Math.Max(
+                    _providerFirstResponseLatencyMaxMs,
+                    normalizedLatencyMs);
+            }
+        }
+
+        private void RecordProviderCallDuration(long durationMs)
+        {
+            lock (_syncRoot)
+            {
+                _providerCallDurationTotalMs = AddClamped(
+                    _providerCallDurationTotalMs,
+                    durationMs);
+            }
+        }
+
+        private void RecordProviderStreamChunk(long? interChunkLatencyMs)
+        {
+            lock (_syncRoot)
+            {
+                _providerStreamChunkCount = AddClamped(_providerStreamChunkCount, 1);
+                if (!interChunkLatencyMs.HasValue)
+                    return;
+
+                var normalizedLatencyMs = Math.Max(0, interChunkLatencyMs.Value);
+                _providerStreamInterChunkLatencyCount = AddClamped(
+                    _providerStreamInterChunkLatencyCount,
+                    1);
+                _providerStreamInterChunkLatencyTotalMs = AddClamped(
+                    _providerStreamInterChunkLatencyTotalMs,
+                    normalizedLatencyMs);
+                _providerStreamInterChunkLatencyMaxMs = Math.Max(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    normalizedLatencyMs);
+            }
+        }
+
         private CopilotAgentBudgetSnapshot CreateSnapshot()
         {
+            var reportedInputTokens = Math.Max(0, _usage.InputTokens);
+            var reportedOutputTokens = Math.Max(0, _usage.OutputTokens);
+            var reportedTotalTokens = (int)Math.Clamp(
+                Math.Max(
+                    (long)Math.Max(0, _usage.EffectiveTotalTokens),
+                    (long)reportedInputTokens + reportedOutputTokens),
+                0,
+                int.MaxValue);
+            var providerCalls = Math.Max(0, _providerCalls);
+            var providerRetryCount = Math.Clamp(_providerRetryCount, 0, providerCalls);
+            var providerFirstContentTimeoutCount = Math.Clamp(
+                _providerFirstContentTimeoutCount,
+                0,
+                providerCalls);
+            var providerStreamInactivityTimeoutCount = Math.Clamp(
+                _providerStreamInactivityTimeoutCount,
+                0,
+                providerCalls - providerFirstContentTimeoutCount);
+            var providerResponseCount = Math.Clamp(_providerResponseCount, 0, providerCalls);
+            var providerFirstResponseLatencyTotalMs = providerResponseCount > 0
+                ? Math.Max(0, _providerFirstResponseLatencyTotalMs)
+                : 0;
+            var providerStreamChunkCount = providerResponseCount > 0
+                ? Math.Max(0, _providerStreamChunkCount)
+                : 0;
+            var providerStreamInterChunkLatencyCount = Math.Clamp(
+                _providerStreamInterChunkLatencyCount,
+                0,
+                Math.Max(0, providerStreamChunkCount - 1));
+            var providerStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyCount > 0
+                ? Math.Max(0, _providerStreamInterChunkLatencyTotalMs)
+                : 0;
             return new CopilotAgentBudgetSnapshot
             {
                 CompactionEnabled = true,
@@ -297,7 +613,50 @@ namespace ColorVision.Copilot
                 InputBudgetTokens = _budget.InputBudgetTokens,
                 RequestTokenBudget = _budget.RequestTokenBudget,
                 ConsumedTokens = Math.Max(0, _consumedTokens),
-                ProviderCalls = Math.Max(0, _providerCalls),
+                ProviderCalls = providerCalls,
+                PeakEstimatedInputTokens = Math.Max(0, _peakEstimatedInputTokens),
+                ProviderRetryCount = providerRetryCount,
+                ProviderRateLimitRetryCount = Math.Clamp(
+                    _providerRateLimitRetryCount,
+                    0,
+                    providerRetryCount),
+                ProviderRetryDelayMs = providerRetryCount > 0
+                    ? Math.Max(0, _providerRetryDelayMs)
+                    : 0,
+                ProviderFirstContentTimeoutCount = providerFirstContentTimeoutCount,
+                ProviderStreamInactivityTimeoutCount =
+                    providerStreamInactivityTimeoutCount,
+                ProviderResponseCount = providerResponseCount,
+                ProviderFirstResponseLatencyTotalMs = providerFirstResponseLatencyTotalMs,
+                ProviderFirstResponseLatencyMaxMs = Math.Clamp(
+                    _providerFirstResponseLatencyMaxMs,
+                    0,
+                    providerFirstResponseLatencyTotalMs),
+                ProviderCallDurationTotalMs = Math.Max(
+                    providerFirstResponseLatencyTotalMs,
+                    _providerCallDurationTotalMs),
+                ProviderStreamChunkCount = providerStreamChunkCount,
+                ProviderStreamInterChunkLatencyCount = providerStreamInterChunkLatencyCount,
+                ProviderStreamInterChunkLatencyTotalMs = providerStreamInterChunkLatencyTotalMs,
+                ProviderStreamInterChunkLatencyMaxMs = Math.Clamp(
+                    _providerStreamInterChunkLatencyMaxMs,
+                    0,
+                    providerStreamInterChunkLatencyTotalMs),
+                ContextRecoveryCount = Math.Max(0, _contextRecoveryCount),
+                ContextRecoveryEstimatedInputTokensBefore = Math.Max(
+                    0,
+                    _contextRecoveryEstimatedInputTokensBefore),
+                ContextRecoveryEstimatedInputTokensAfter = Math.Clamp(
+                    _contextRecoveryEstimatedInputTokensAfter,
+                    0,
+                    Math.Max(0, _contextRecoveryEstimatedInputTokensBefore)),
+                ReportedInputTokens = reportedInputTokens,
+                ReportedOutputTokens = reportedOutputTokens,
+                ReportedTotalTokens = reportedTotalTokens,
+                ReportedCachedInputTokens = reportedInputTokens > 0
+                    && _usage.CachedInputTokens.HasValue
+                    ? _usage.EffectiveCachedInputTokens
+                    : null,
                 UsedEstimatedUsage = _usedEstimatedUsage,
                 BudgetExhausted = _budgetExhausted,
             };
@@ -313,10 +672,41 @@ namespace ColorVision.Copilot
                 usage = usage.MergeProgress(new CopilotTokenUsage(
                     ToInt(details.InputTokenCount),
                     ToInt(details.OutputTokenCount),
-                    ToInt(details.TotalTokenCount)));
+                    ToInt(details.TotalTokenCount),
+                    details.CachedInputTokenCount.HasValue
+                        ? ToInt(details.CachedInputTokenCount)
+                        : null));
             }
 
             return usage;
+        }
+
+        private static int AddClamped(int left, int right)
+        {
+            return (int)Math.Clamp((long)Math.Max(0, left) + Math.Max(0, right), 0, int.MaxValue);
+        }
+
+        private static long AddClamped(long left, long right)
+        {
+            var normalizedLeft = Math.Max(0, left);
+            var normalizedRight = Math.Max(0, right);
+            return normalizedLeft > long.MaxValue - normalizedRight
+                ? long.MaxValue
+                : normalizedLeft + normalizedRight;
+        }
+
+        private static long ToMilliseconds(TimeSpan delay)
+        {
+            return delay <= TimeSpan.Zero
+                ? 0
+                : (long)Math.Ceiling(delay.TotalMilliseconds);
+        }
+
+        private static long ToMilliseconds(long stopwatchTicks)
+        {
+            return stopwatchTicks <= 0
+                ? 0
+                : (long)Math.Ceiling(stopwatchTicks * 1000d / Stopwatch.Frequency);
         }
 
         private static int EstimateTokens(

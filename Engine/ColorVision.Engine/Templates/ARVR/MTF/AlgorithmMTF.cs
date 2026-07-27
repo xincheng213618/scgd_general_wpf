@@ -8,52 +8,50 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.MTF
 {
 
     [DisplayAlgorithm(50, "MTF1.0", "ARVR")]
-    public class AlgorithmMTF : DisplayAlgorithmBase
+    public class AlgorithmMTF : DisplayAlgorithmBase<DualTemplateDisplayAlgorithmConfig>
     {
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
 
         public AlgorithmMTF(DeviceAlgorithm deviceAlgorithm)
+            : base(new DualTemplateDisplayAlgorithmConfig(
+                new DisplayAlgorithmTemplateSelection(
+                    "MTF模板",
+                    new TemplateMTF(),
+                    "请先选择MTF模板"),
+                new DisplayAlgorithmTemplateSelection(
+                    "关注点模板",
+                    new TemplatePoi(),
+                    "请先选择关注点模板")))
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateMTF(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out MTFParam param) ||
+                !TryGetTemplate(Config.SecondaryTemplate, out PoiParam poiParam) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(
+                string.Empty,
+                string.Empty,
+                imageFileName,
+                fileExtType,
+                param.Id,
+                Config.Template.SelectedName,
+                poiParam.Id,
+                Config.SecondaryTemplate.SelectedName);
         }
-
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayMTF(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, int poiId, string poiTempName)
         {

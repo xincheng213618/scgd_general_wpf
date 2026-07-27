@@ -70,17 +70,58 @@ namespace ColorVision.Update
             string? stateRootOverride)
         {
             (string markerPath, string reopenRequestPath) = GetStatePaths(programDirectory, stateRootOverride);
+            if (!TryReadActiveMarker(markerPath, reopenRequestPath, out string[] markerLines))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(launchToken) &&
+                string.Equals(launchToken, markerLines[0], StringComparison.Ordinal))
+            {
+                Environment.SetEnvironmentVariable(LaunchTokenEnvironmentVariable, null);
+                Clear(markerPath, reopenRequestPath);
+                return false;
+            }
+
+            try
+            {
+                File.WriteAllText(reopenRequestPath, DateTime.UtcNow.ToString("O"), new UTF8Encoding(false));
+                return true;
+            }
+            catch
+            {
+                Clear(markerPath, reopenRequestPath);
+                return false;
+            }
+        }
+
+        public static bool IsUpdateActive(string programDirectory)
+        {
+            return IsUpdateActive(programDirectory, stateRootOverride: null);
+        }
+
+        internal static bool IsUpdateActive(string programDirectory, string? stateRootOverride)
+        {
+            (string markerPath, string reopenRequestPath) = GetStatePaths(programDirectory, stateRootOverride);
+            return TryReadActiveMarker(markerPath, reopenRequestPath, out _);
+        }
+
+        private static bool TryReadActiveMarker(
+            string markerPath,
+            string reopenRequestPath,
+            out string[] markerLines)
+        {
+            markerLines = Array.Empty<string>();
             if (!File.Exists(markerPath))
                 return false;
 
             try
             {
-                string[] markerLines = File.ReadAllLines(markerPath);
+                markerLines = File.ReadAllLines(markerPath);
                 if (markerLines.Length < 2 ||
                     string.IsNullOrWhiteSpace(markerLines[0]) ||
                     string.IsNullOrWhiteSpace(markerLines[1]))
                 {
                     Clear(markerPath, reopenRequestPath);
+                    markerLines = Array.Empty<string>();
                     return false;
                 }
 
@@ -97,26 +138,17 @@ namespace ColorVision.Update
                     Directory.Exists(updateRoot) &&
                     File.Exists(Path.Combine(updateRoot, "update.bat")) &&
                     (updaterIsStarting || updaterIsRunning);
-                if (!markerIsActive)
-                {
-                    Clear(markerPath, reopenRequestPath);
-                    return false;
-                }
+                if (markerIsActive)
+                    return true;
 
-                if (!string.IsNullOrWhiteSpace(launchToken) &&
-                    string.Equals(launchToken, markerLines[0], StringComparison.Ordinal))
-                {
-                    Environment.SetEnvironmentVariable(LaunchTokenEnvironmentVariable, null);
-                    Clear(markerPath, reopenRequestPath);
-                    return false;
-                }
-
-                File.WriteAllText(reopenRequestPath, DateTime.UtcNow.ToString("O"), new UTF8Encoding(false));
-                return true;
+                Clear(markerPath, reopenRequestPath);
+                markerLines = Array.Empty<string>();
+                return false;
             }
             catch
             {
                 Clear(markerPath, reopenRequestPath);
+                markerLines = Array.Empty<string>();
                 return false;
             }
         }

@@ -74,6 +74,16 @@ namespace ColorVision.Copilot
             CopilotUiDispatcher.Invoke(() => WorkspaceManager.LayoutManager?.ShowPanel(PanelId));
         }
 
+        public bool ShowConversation(string? conversationId)
+        {
+            return CopilotUiDispatcher.Invoke(() =>
+            {
+                var viewModel = GetOrCreateViewModel();
+                WorkspaceManager.LayoutManager?.ShowPanel(PanelId);
+                return viewModel.TrySelectConversation(conversationId);
+            }, fallback: false);
+        }
+
         public bool Ask(CopilotPromptRequest request)
         {
             return CopilotUiDispatcher.Invoke(() => AskOnUiThread(request), fallback: false);

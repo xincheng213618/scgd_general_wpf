@@ -1,17 +1,31 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.FileIO;
 using ColorVision.Solution.Mru;
+using log4net;
 using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
 
 namespace ColorVision.Engine.Media
 {
     public class VExportCIE : ViewModelBase
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(VExportCIE));
+
+        public const int DefaultTiffCompression = 5;
+        public const int DefaultPngCompressionLevel = 1;
+        public const int DefaultJpegQuality = 95;
+
+        public IReadOnlyDictionary<string, int> TiffCompressionOptions { get; } = new Dictionary<string, int>
+        {
+            ["LZW"] = DefaultTiffCompression,
+            ["Deflate"] = 8,
+            ["PackBits"] = 32773,
+            ["None"] = 1,
+        };
 
         public static void SaveTo(VExportCIE export, Mat src, string fileName)
         {
@@ -22,32 +36,48 @@ namespace ColorVision.Engine.Media
                 throw new InvalidOperationException("Cannot export an empty image.");
             }
 
-            fileName = fileName + export.ExportImageFormat.ToString().ToLower(CultureInfo.CurrentCulture);
+            fileName = Path.ChangeExtension(fileName.TrimEnd('.'), GetFileExtension(export.ExportImageFormat));
             export.CoverFilePath = fileName;
             using Mat image = src.Clone();
-            if (export.ExportImageFormat == ImageFormat.Tiff)
+            if (IsFormat(export.ExportImageFormat, ImageFormat.Tiff))
             {
-                if (export.Compression == 0)
-                {
-                    export.Compression = 1;
-                }
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, export.Compression));
+                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, export.TiffCompression));
             }
-            else if (export.ExportImageFormat == ImageFormat.Bmp)
+            else if (IsFormat(export.ExportImageFormat, ImageFormat.Bmp))
             {
                 using Mat bmpImage = CreateBmpCompatibleMat(image);
                 bmpImage.SaveImage(fileName);
             }
-            else if (export.ExportImageFormat == ImageFormat.Png)
+            else if (IsFormat(export.ExportImageFormat, ImageFormat.Png))
             {
-                int compression = export.Compression == 0 ? 3 : Math.Clamp(export.Compression, 0, 9);
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, compression));
+                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, export.PngCompressionLevel));
             }
-            else if (export.ExportImageFormat == ImageFormat.Jpeg)
+            else if (IsFormat(export.ExportImageFormat, ImageFormat.Jpeg))
             {
-                int quality = export.Compression == 0 ? 95 : Math.Clamp(export.Compression, 0, 100);
-                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, quality));
+                image.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, export.JpegQuality));
             }
+            else
+            {
+                throw new NotSupportedException($"Unsupported export image format: {export.ExportImageFormat}.");
+            }
+        }
+
+        private static bool IsFormat(ImageFormat value, ImageFormat expected)
+        {
+            return value.Guid == expected.Guid;
+        }
+
+        private static string GetFileExtension(ImageFormat imageFormat)
+        {
+            if (IsFormat(imageFormat, ImageFormat.Tiff))
+                return ".tiff";
+            if (IsFormat(imageFormat, ImageFormat.Bmp))
+                return ".bmp";
+            if (IsFormat(imageFormat, ImageFormat.Png))
+                return ".png";
+            if (IsFormat(imageFormat, ImageFormat.Jpeg))
+                return ".jpg";
+            throw new NotSupportedException($"Unsupported export image format: {imageFormat}.");
         }
 
         public static Mat CreateBmpCompatibleMat(Mat src)
@@ -151,41 +181,82 @@ namespace ColorVision.Engine.Media
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[VExportCIE.SaveToTif] {ex}");
+                Log.Error("导出 CIE 图像失败。", ex);
                 return -1;
             }
         }
 
+        internal static void SaveToTifOrThrow(VExportCIE export)
+        {
+            SaveToTifCore(export);
+        }
+
+        internal static string ResolveSaveDirectory(string? savePath, string filePath)
+        {
+            string? candidate = savePath?.Trim();
+            if (string.IsNullOrWhiteSpace(candidate))
+                candidate = Path.GetDirectoryName(Path.GetFullPath(filePath));
+            if (string.IsNullOrWhiteSpace(candidate))
+                candidate = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            if (string.IsNullOrWhiteSpace(candidate))
+                throw new InvalidOperationException("No export directory is available.");
+
+            string fullPath = Path.GetFullPath(candidate);
+            Directory.CreateDirectory(fullPath);
+            return fullPath;
+        }
+
         private static int SaveToTifCore(VExportCIE export)
         {
-            string FileName = export.FilePath;
-            string SavePath = export.SavePath;
-            string Name = export.Name;
+            ArgumentNullException.ThrowIfNull(export);
+            string fileName = export.FilePath;
+            string savePath = ResolveSaveDirectory(export.SavePath, fileName);
+            string name = export.Name?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name))
+                throw new InvalidOperationException("The export file name cannot be empty.");
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                throw new InvalidOperationException($"The export file name contains invalid characters: {name}");
 
-            int index = CVFileUtil.ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
-            if (index < 0) return -1;
-            cvcie.FileExtType = FileName.Contains(".cvraw") ? CVType.Raw : FileName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+            int index = CVFileUtil.ReadCIEFileHeader(fileName, out CVCIEFile cvcie);
+            if (index < 0)
+                throw new InvalidDataException($"Unable to read the CIE file header: {fileName}");
+
+            string extension = Path.GetExtension(fileName);
+            cvcie.FileExtType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
+                ? CVType.Raw
+                : extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)
+                    ? CVType.Src
+                    : CVType.CIE;
 
             Mat src;
+            int exportedCount = 0;
+            void SaveImage(Mat image, string suffix)
+            {
+                SaveTo(export, image, Path.Combine(savePath, name + suffix));
+                exportedCount++;
+            }
+
             switch (cvcie.FileExtType)
             {
                 case CVType.Raw:
                     if (export.IsExportSrc)
                     {
-                        CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
+                        if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                            throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                         using (src = CreateMatFromCVCIEFile(cvcie))
                         {
-                            SaveTo(export, src, SavePath + "\\" + Name + "Src.");
+                            SaveImage(src, "Src");
                         }
                     }
                     break;
                 case CVType.Src:
                     if (export.IsExportSrc)
                     {
-                        CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
+                        if (!CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
+                            throw new InvalidDataException($"Unable to read the CIE image data: {fileName}");
                         using (src = CreateMatFromCVCIEFile(cvcie))
                         {
-                            SaveTo(export, src, SavePath + "\\" + Name + "Src.");
+                            SaveImage(src, "Src");
                         }
                     }
                     break;
@@ -195,21 +266,21 @@ namespace ColorVision.Engine.Media
                     {
                         if (cvcie.SrcFileName != null)
                         {
-                            cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
+                            cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(fileName) ?? string.Empty, cvcie.SrcFileName);
                             if (File.Exists(cvcie.SrcFileName) && CVFileUtil.IsCIEFile(cvcie.SrcFileName))
                             {
                                 if (CVFileUtil.Read(cvcie.SrcFileName, out CVCIEFile cvraw))
                                 {
                                     using (src = CreateMatFromCVCIEFile(cvraw))
                                     {
-                                        SaveTo(export, src, SavePath + "\\" + Name + "_Src.");
+                                        SaveImage(src, "_Src");
                                     }
                                 }
                             }
                         }
 
                     }
-                    if (CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index))
+                    if (CVFileUtil.ReadCIEFileData(fileName, ref cvcie, index))
                     {
                         if (cvcie.Channels == 1)
                         {
@@ -217,7 +288,7 @@ namespace ColorVision.Engine.Media
                             {
                                 using (src = CreateSingleChannelMat(cvcie, cvcie.Data))
                                 {
-                                    SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
+                                    SaveImage(src, "_Y");
                                 }
                             }
                         }
@@ -228,7 +299,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 0);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveTo(export, src, SavePath + "\\" + Name + "_X.");
+                                    SaveImage(src, "_X");
                                 }
                             }
                             if (export.IsExportChannelY)
@@ -236,7 +307,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 1);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
+                                    SaveImage(src, "_Y");
                                 }
 
                             }
@@ -245,7 +316,7 @@ namespace ColorVision.Engine.Media
                                 byte[] data = CopyChannelData(cvcie, 2);
                                 using (src = CreateSingleChannelMat(cvcie, data))
                                 {
-                                    SaveTo(export, src, SavePath + "\\" + Name + "_Z.");
+                                    SaveImage(src, "_Z");
                                 }
                             }
                         }
@@ -258,13 +329,28 @@ namespace ColorVision.Engine.Media
                 default:
                     break;
             }
+            if (exportedCount == 0)
+                throw new InvalidOperationException("No image channel was selected for export.");
             return 0;
         }
 
         public VExportCIE(string filePath)
+            : this(filePath, MruPathService.CreateLocal("recent-image-export-locations.json"))
         {
+        }
+
+        internal VExportCIE(string filePath, MruPathService recentExportLocations)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+            ArgumentNullException.ThrowIfNull(recentExportLocations);
+            RecentExportLocations = recentExportLocations;
             FilePath = filePath;
-            FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+            string extension = Path.GetExtension(filePath);
+            FileExtType = extension.Equals(".cvraw", StringComparison.OrdinalIgnoreCase)
+                ? CVType.Raw
+                : extension.Equals(".cvsrc", StringComparison.OrdinalIgnoreCase)
+                    ? CVType.Src
+                    : CVType.CIE;
             if (FileExtType == CVType.CIE)
             {
                 IsExportChannelX = true;
@@ -292,8 +378,17 @@ namespace ColorVision.Engine.Media
 
             RefreshRecentExportLocations();
             if (RecentImageSaveList.Count == 0)
-                RememberExportLocation(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
-            SavePath = RecentImageSaveList[0];
+            {
+                string defaultPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                if (!Directory.Exists(defaultPath))
+                    defaultPath = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? defaultPath;
+                SavePath = defaultPath;
+                RememberExportLocation(defaultPath);
+            }
+            else
+            {
+                SavePath = RecentImageSaveList[0];
+            }
 
             Name = Path.GetFileNameWithoutExtension(FilePath);
         }
@@ -309,12 +404,32 @@ namespace ColorVision.Engine.Media
         public float Gain { get => _CVCIEFile.Gain; }
         public float[] Exp { get => _CVCIEFile.Exp; }
 
-        public ImageFormat ExportImageFormat { get; set; } = ImageFormat.Tiff;
+        public ImageFormat ExportImageFormat
+        {
+            get => _ExportImageFormat;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                if (_ExportImageFormat.Guid == value.Guid)
+                    return;
+                _ExportImageFormat = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsTiff));
+                OnPropertyChanged(nameof(IsPng));
+                OnPropertyChanged(nameof(IsJpeg));
+                OnPropertyChanged(nameof(Compression));
+            }
+        }
+        private ImageFormat _ExportImageFormat = ImageFormat.Tiff;
+
+        public bool IsTiff => IsFormat(ExportImageFormat, ImageFormat.Tiff);
+        public bool IsPng => IsFormat(ExportImageFormat, ImageFormat.Png);
+        public bool IsJpeg => IsFormat(ExportImageFormat, ImageFormat.Jpeg);
 
         public CVCIEFile CVCIEFile { get => _CVCIEFile; }
         private CVCIEFile _CVCIEFile;
 
-        public MruPathService RecentExportLocations { get; } = MruPathService.CreateLocal("recent-image-export-locations.json");
+        public MruPathService RecentExportLocations { get; }
 
         public ObservableCollection<string> RecentImageSaveList { get; } = new();
 
@@ -323,6 +438,7 @@ namespace ColorVision.Engine.Media
             if (!RecentExportLocations.Touch(path))
                 return;
             RefreshRecentExportLocations();
+            SavePath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path.Trim()));
         }
 
         private void RefreshRecentExportLocations()
@@ -355,8 +471,55 @@ namespace ColorVision.Engine.Media
         public CVType FileExtType { get => _FileExtType; set { _FileExtType = value; OnPropertyChanged(); } }
         private CVType _FileExtType;
 
-        public int Compression { get => _Compression; set { _Compression = value; OnPropertyChanged(); } }
-        private int _Compression ;
+        public int Compression
+        {
+            get => IsPng ? PngCompressionLevel : IsJpeg ? JpegQuality : TiffCompression;
+            set
+            {
+                if (IsPng)
+                    PngCompressionLevel = value;
+                else if (IsJpeg)
+                    JpegQuality = value;
+                else
+                    TiffCompression = value;
+            }
+        }
+
+        public int TiffCompression
+        {
+            get => _TiffCompression;
+            set
+            {
+                _TiffCompression = value == 0 ? DefaultTiffCompression : value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Compression));
+            }
+        }
+        private int _TiffCompression = DefaultTiffCompression;
+
+        public int PngCompressionLevel
+        {
+            get => _PngCompressionLevel;
+            set
+            {
+                _PngCompressionLevel = Math.Clamp(value, 0, 9);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Compression));
+            }
+        }
+        private int _PngCompressionLevel = DefaultPngCompressionLevel;
+
+        public int JpegQuality
+        {
+            get => _JpegQuality;
+            set
+            {
+                _JpegQuality = Math.Clamp(value, 0, 100);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Compression));
+            }
+        }
+        private int _JpegQuality = DefaultJpegQuality;
 
         public bool IsExportChannelX { get => _IsExportChannelX; set { _IsExportChannelX = value; OnPropertyChanged(); } }
         private bool _IsExportChannelX;

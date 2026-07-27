@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<VersionPrefix>1.4.2.3</VersionPrefix>
+		<VersionPrefix>1.4.2.5</VersionPrefix>
 		<OutputType>WinExe</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
@@ -16,8 +16,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="itext" Version="9.6.0" />
-		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.6.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
 		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
@@ -38,13 +36,9 @@
 		<None Remove="Assets\Image\ColorVision1.ico" />
 		<None Remove="Assets\Image\connect.png" />
 		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<None Remove="Assets\Image\pictureBox1.Image.png" />
-		<None Remove="Assets\Image\归档查询.png" />
-		<None Remove="Assets\Image\综合查询.png" />
 		<None Remove="Assets\png\PowerToy.png" />
 		<None Remove="Templates\Jsons\**\*.schema.json" />
 		<None Remove="Templates\Jsons\Schemas\schema-index.json" />
-		<None Remove="ToolPlugins\UsbTreeView.exe" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -93,9 +87,6 @@
 		<Resource Include="Assets\Image\ColorVision1.ico" />
 		<Resource Include="Assets\Image\connect.png" />
 		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-		<Resource Include="Assets\Image\pictureBox1.Image.png" />
-		<Resource Include="Assets\Image\归档查询.png" />
-		<Resource Include="Assets\Image\综合查询.png" />
 		<Resource Include="Assets\png\PowerToy.png" />
 	</ItemGroup>
 
@@ -159,18 +150,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="Assets\InstallTool\Everything-1.4.1.1032.x64-Setup.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\InstallTool\winrar-x64-720sc.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\sscom5.13.1.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\UsbTreeView.exe">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<EmbeddedResource Include="Templates\Jsons\**\*.schema.json">
 		  <LogicalName>Templates/Jsons/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>

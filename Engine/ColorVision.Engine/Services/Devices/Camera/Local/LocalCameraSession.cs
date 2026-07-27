@@ -5,7 +5,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
     /// Owns the native local-camera manager for one logical camera device.
-    /// The UI controls open/close; flow nodes may only use an already-open handle.
+    /// The UI controls the normal open/close lifecycle; local flow nodes may also
+    /// open the configured camera on demand and then reuse the same session.
     /// </summary>
     internal sealed class LocalCameraSession : IDisposable
     {

@@ -33,6 +33,19 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ActiveUpdateCanBeDetectedWithoutRecordingAReopenRequest()
+        {
+            (string programDirectory, string updateRoot, string stateRoot) = CreateActiveUpdate();
+            ExitUpdateHandoffState state = ExitUpdateHandoff.Prepare(programDirectory, updateRoot, stateRoot);
+
+            bool isActive = ExitUpdateHandoff.IsUpdateActive(programDirectory, stateRoot);
+
+            Assert.True(isActive);
+            Assert.True(File.Exists(state.MarkerPath));
+            Assert.False(File.Exists(state.ReopenRequestPath));
+        }
+
+        [Fact]
         public void UpdaterAuthorizedLaunchClearsHandoffAndContinues()
         {
             (string programDirectory, string updateRoot, string stateRoot) = CreateActiveUpdate();

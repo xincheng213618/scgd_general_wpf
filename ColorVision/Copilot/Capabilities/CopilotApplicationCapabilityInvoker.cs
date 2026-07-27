@@ -9,7 +9,6 @@ namespace ColorVision.Copilot
     public enum CopilotApplicationCapabilityCaller
     {
         InAppAgent,
-        InAppAgentFrameworkApproved,
     }
 
     public sealed class CopilotApplicationCapabilityCallResult
@@ -34,6 +33,67 @@ namespace ColorVision.Copilot
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotApplicationCapabilityCaller caller,
             CancellationToken cancellationToken);
+    }
+
+    internal interface ICopilotApprovedApplicationCapabilityInvoker
+    {
+        Task<CopilotApplicationCapabilityCallResult> InvokeApprovedAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken);
+    }
+
+    internal interface ICopilotScopedApplicationCapabilityInvoker
+    {
+        Task<CopilotApplicationCapabilityCallResult> InvokeScopedAsync(
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotAgentRequest request,
+            CancellationToken cancellationToken);
+    }
+
+    internal static class CopilotApplicationCapabilityInvocation
+    {
+        public static Task<CopilotApplicationCapabilityCallResult> InvokeAsync(
+            ICopilotApplicationCapabilityInvoker invoker,
+            string capabilityName,
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotAgentRequest request,
+            bool frameworkApprovalGranted,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(invoker);
+            ArgumentNullException.ThrowIfNull(request);
+            if (!frameworkApprovalGranted)
+            {
+                if (invoker is ICopilotScopedApplicationCapabilityInvoker scopedInvoker)
+                {
+                    return scopedInvoker.InvokeScopedAsync(
+                        capabilityName,
+                        arguments,
+                        request,
+                        cancellationToken);
+                }
+
+                return invoker.InvokeAsync(
+                    capabilityName,
+                    arguments,
+                    CopilotApplicationCapabilityCaller.InAppAgent,
+                    cancellationToken);
+            }
+
+            if (invoker is ICopilotApprovedApplicationCapabilityInvoker approvedInvoker)
+                return approvedInvoker.InvokeApprovedAsync(capabilityName, arguments, request, cancellationToken);
+
+            return Task.FromResult(new CopilotApplicationCapabilityCallResult
+            {
+                Success = false,
+                ErrorCode = "approved_capability_channel_unavailable",
+                FailureKind = CopilotToolFailureKind.Authorization,
+                Content = "The configured application capability invoker does not expose ColorVision's internal approved-execution channel.",
+            });
+        }
     }
 
 }

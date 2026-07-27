@@ -20,6 +20,12 @@ namespace ColorVision.Copilot
         public static readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan MaximumExecutionTimeout = TimeSpan.FromMinutes(10);
 
+        public CopilotToolCapabilityDescriptor()
+        {
+            ExecutionTimeout = DefaultExecutionTimeout;
+            AuditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary;
+        }
+
         public CopilotToolAccess Access { get; init; }
 
         public CopilotToolRiskLevel RiskLevel { get; init; }
@@ -30,11 +36,13 @@ namespace ColorVision.Copilot
 
         public CopilotToolConcurrencyMode ConcurrencyMode { get; init; }
 
-        public TimeSpan ExecutionTimeout { get; init; } = DefaultExecutionTimeout;
+        public TimeSpan ExecutionTimeout { get; init; }
 
-        public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; } = CopilotToolAuditArgumentMode.RedactedSummary;
+        public CopilotToolAuditArgumentMode AuditArgumentMode { get; init; }
 
         public CopilotToolEvidenceMode EvidenceMode { get; init; }
+
+        public bool AllowsTemporaryFullAccess { get; init; }
 
         public CopilotToolConcurrencyMode EffectiveConcurrencyMode => Access == CopilotToolAccess.Write
             || Idempotency != CopilotToolIdempotency.Idempotent
@@ -68,7 +76,8 @@ namespace ColorVision.Copilot
         public static CopilotToolCapabilityDescriptor ProtectedWrite(
             CopilotToolIdempotency idempotency,
             TimeSpan? executionTimeout = null,
-            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary)
+            CopilotToolAuditArgumentMode auditArgumentMode = CopilotToolAuditArgumentMode.RedactedSummary,
+            bool allowsTemporaryFullAccess = false)
         {
             return new CopilotToolCapabilityDescriptor
             {
@@ -80,6 +89,7 @@ namespace ColorVision.Copilot
                 ExecutionTimeout = executionTimeout ?? DefaultExecutionTimeout,
                 AuditArgumentMode = auditArgumentMode,
                 EvidenceMode = CopilotToolEvidenceMode.None,
+                AllowsTemporaryFullAccess = allowsTemporaryFullAccess,
             };
         }
 

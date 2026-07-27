@@ -6,7 +6,6 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
@@ -16,45 +15,51 @@ namespace ColorVision.Engine.Templates.Ghost
         GREEN = 1,
         RED = 2,
     };
+
+    public class GhostDisplayAlgorithmConfig : SingleTemplateDisplayAlgorithmConfig
+    {
+        [System.ComponentModel.DisplayName("颜色")]
+        public CVOLEDCOLOR Color { get; set; }
+
+        public GhostDisplayAlgorithmConfig()
+            : base(new DisplayAlgorithmTemplateSelection(
+                "Ghost模板",
+                new TemplateGhost(),
+                "请先选择Ghost模板"))
+        {
+        }
+    }
+
     [DisplayAlgorithm(54, "Ghost1.0", "ARVR")]
-    public class AlgorithmGhost : DisplayAlgorithmBase
+    public class AlgorithmGhost : DisplayAlgorithmBase<GhostDisplayAlgorithmConfig>
     {
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-
         public AlgorithmGhost(DeviceAlgorithm deviceAlgorithm)
+            : base(new GhostDisplayAlgorithmConfig())
         {
 			Device = deviceAlgorithm;
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTemplate()
+        public override MsgRecord? Execute()
         {
-            new TemplateEditorWindow(new TemplateGhost(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (!TryGetTemplate(Config.Template, out GhostParam param) ||
+                !TryGetImageInput(out string imageFileName, out FileExtType fileExtType))
+            {
+                return null;
+            }
+
+            return SendCommand(string.Empty, string.Empty, imageFileName, fileExtType, param);
         }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-
-        public override UserControl GetUserControl()
-        {
-            UserControl ??= new DisplayGhost(this);
-            return UserControl;
-        }
-        public UserControl UserControl { get; set; }
-
-        public CVOLEDCOLOR CVOLEDCOLOR { get => _CVOLEDCOLOR; set { _CVOLEDCOLOR = value; OnPropertyChanged(); } }
-        private CVOLEDCOLOR _CVOLEDCOLOR;
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam)
         {
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
 
             Params.Add("TemplateParam", new CVTemplateParam() { ID = ghostParam.Id, Name = ghostParam.Name });
-            Params.Add("Color", CVOLEDCOLOR);
+            Params.Add("Color", Config.Color);
 
             MsgSend msg = new()
             {

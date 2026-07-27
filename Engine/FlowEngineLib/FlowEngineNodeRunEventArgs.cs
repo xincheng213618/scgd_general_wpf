@@ -4,6 +4,8 @@ namespace FlowEngineLib;
 
 public class FlowEngineNodeRunEventArgs : EventArgs
 {
+    public string SerialNumber { get; set; }
+
     /// <summary>
     /// 发送的MQTT消息Topic
     /// </summary>

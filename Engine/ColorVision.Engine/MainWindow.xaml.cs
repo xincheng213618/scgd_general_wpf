@@ -42,7 +42,7 @@ namespace ColorVision.Engine
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
             DockViewManager.GetInstance().ShowAllViews();
 
-            Debug.WriteLine(Properties.Resources.LaunchSuccess);
+            Debug.WriteLine("Started successfully");
             this.LoadHotKeyFromAssembly();
 
             DockingManager1.ActiveContentChanged += (s, eArgs) =>

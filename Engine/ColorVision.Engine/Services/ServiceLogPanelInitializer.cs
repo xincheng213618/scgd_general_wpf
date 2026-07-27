@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Solution.Workspace;
@@ -28,7 +29,7 @@ namespace ColorVision.Engine.Services
         /// <summary>
         /// Service log definitions: (panelId, panelTitle, logFilePrefix or null for main log).
         /// When logFilePrefix is null, the main daily log is used.
-        /// When logFilePrefix is specified, LogFileHelper.GetMostRecentLogFile is used.
+        /// When logFilePrefix is specified, ServiceLogFileLocator.GetMostRecentLogFile is used.
         /// </summary>
         private static readonly (string PanelId, string Title, string? LogFilePrefix)[] X64ServiceLogs = new[]
         {
@@ -122,7 +123,7 @@ namespace ColorVision.Engine.Services
                 try
                 {
                     string? logPath = logFilePrefix == null
-                        ? LogFileHelper.GetLatestMainLogPath(serviceBaseDir)
+                        ? ServiceLogFileLocator.GetLatestMainLogPath(serviceBaseDir)
                         : latestModuleLogs.GetValueOrDefault(logFilePrefix);
                     if (string.IsNullOrEmpty(logPath))
                     {
@@ -238,14 +239,14 @@ namespace ColorVision.Engine.Services
             if (logFilePrefix == null)
             {
                 // Main daily log: {baseDir}/log/{yyyyMMdd}.log
-                return LogFileHelper.GetLatestMainLogPath(serviceBaseDir);
+                return ServiceLogFileLocator.GetLatestMainLogPath(serviceBaseDir);
             }
             else
             {
                 if (!Directory.Exists(logDir))
                     return null;
 
-                return LogFileHelper.GetMostRecentLogFile(logDir, logFilePrefix);
+                return ServiceLogFileLocator.GetMostRecentLogFile(logDir, logFilePrefix);
             }
         }
     }

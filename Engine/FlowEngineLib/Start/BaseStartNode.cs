@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using log4net;
@@ -22,15 +24,43 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected Dictionary<string, CVStartCFC> startActions;
 
+	private readonly object startActionsLock = new object();
+
+	private int stopAllDepth;
+
 	protected Dictionary<string, List<CVBaseServerNode>> topicServer;
 
 	protected Dictionary<string, List<CVServiceProxy>> topicServerProxy;
 
+	private readonly object topicSubscriptionsLock = new object();
+
+	private int topicSubscriptionVersion;
+
 	protected int LoopNum = 2;
 
-	public bool Ready { get; set; }
+	private bool ready;
 
-	public bool Running { get; set; }
+	public bool Ready
+	{
+		get => Volatile.Read(ref ready);
+		set => Volatile.Write(ref ready, value);
+	}
+
+	public virtual bool RequiresConnectionReady => false;
+
+	public virtual bool IsExecutionReady => !RequiresConnectionReady || Ready;
+
+	public bool CanAcceptStart => m_op_start != null && m_op_start.ConnectionCount > 0;
+
+	protected int TopicSubscriptionVersion => Volatile.Read(ref topicSubscriptionVersion);
+
+	public bool Running
+	{
+		get => running;
+		set => running = value;
+	}
+
+	private volatile bool running;
 
 	[STNodeProperty("FlowALL.Timeout", "FlowALL.Timeout")]
 	public int FlowTimeout
@@ -209,31 +239,37 @@ public abstract class BaseStartNode : CVCommonNode
 	{
 	}
 
-	private void Startup(CVStartCFC action)
+	private bool TryStartup(CVStartCFC action)
 	{
+		lock (startActionsLock)
+		{
+			if (stopAllDepth > 0 || startActions.Count != 0)
+			{
+				return false;
+			}
+			startActions.Add(action.SerialNumber, action);
+			Running = true;
+		}
 		SetOptionText(m_op_start, action.SerialNumber);
-		startActions.Add(action.SerialNumber, action);
 		m_op_start.TransferData(action);
+		return true;
 	}
 
 	protected virtual void DoStartTransferData(CVStartCFC action)
 	{
-		if (m_op_start.ConnectionCount <= 0)
+		if (m_op_start.ConnectionCount <= 0 && (action == null || !action.IsStop))
 		{
 			return;
 		}
 		if (action != null)
 		{
 			string serialNumber = action.SerialNumber;
-			if (string.IsNullOrEmpty(serialNumber) || !startActions.ContainsKey(serialNumber))
+			CVStartCFC cVStartCFC = string.IsNullOrEmpty(serialNumber) ? null : GetCFC(serialNumber);
+			if (cVStartCFC == null)
 			{
 				if (action.IsRunning)
 				{
-					if (startActions.Count == 0)
-					{
-						Startup(action);
-					}
-					else
+					if (!TryStartup(action))
 					{
 						action.SetStatusType(StatusTypeEnum.Failed);
 					}
@@ -245,7 +281,6 @@ public abstract class BaseStartNode : CVCommonNode
 				DoStatusTransferData(action);
 				return;
 			}
-			CVStartCFC cVStartCFC = startActions[serialNumber];
 			if (action.IsStop)
 			{
 				cVStartCFC.SetActionType(action.GetActionType());
@@ -270,9 +305,14 @@ public abstract class BaseStartNode : CVCommonNode
 	private void RemoveStartAction(CVStartCFC action)
 	{
 		string serialNumber = action.SerialNumber;
-		if (startActions.ContainsKey(serialNumber))
+		bool removed;
+		lock (startActionsLock)
 		{
-			startActions.Remove(serialNumber);
+			removed = startActions.Remove(serialNumber);
+			Running = startActions.Count > 0;
+		}
+		if (removed)
+		{
 			TimeSpan totalTime = action.GetTotalTime();
 			SetOptionText(m_op_start, $"{totalTime.TotalSeconds:F4}s" + "/--");
 			for (int i = 0; i < 2; i++)
@@ -299,14 +339,16 @@ public abstract class BaseStartNode : CVCommonNode
 		RemoveStartAction(startAction);
 		string msg = startAction.BuildStatusMsg(m_nodeName, m_deviceCode, -1);
 		DoPublishStatus(msg);
-		Running = false;
 	}
 
 	public CVStartCFC GetCFC(string serialNumber)
 	{
-		if (startActions.ContainsKey(serialNumber))
+		lock (startActionsLock)
 		{
-			return startActions[serialNumber];
+			if (startActions.TryGetValue(serialNumber, out CVStartCFC action))
+			{
+				return action;
+			}
 		}
 		return null;
 	}
@@ -321,43 +363,106 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public virtual void DoSubscribe(string topic, CVBaseServerNode serverNode)
 	{
-		if (topicServer.ContainsKey(topic))
+		if (string.IsNullOrWhiteSpace(topic) || serverNode == null)
 		{
-			List<CVBaseServerNode> list = topicServer[topic];
-			foreach (CVBaseServerNode item in list)
-			{
-				if (item == serverNode)
-				{
-					return;
-				}
-			}
-			list.Add(serverNode);
+			return;
 		}
-		else
+		lock (topicSubscriptionsLock)
 		{
+			if (topicServer.ContainsKey(topic))
+			{
+				List<CVBaseServerNode> list = topicServer[topic];
+				foreach (CVBaseServerNode item in list)
+				{
+					if (item == serverNode)
+					{
+						return;
+					}
+				}
+				list.Add(serverNode);
+				return;
+			}
 			List<CVBaseServerNode> list2 = new List<CVBaseServerNode>();
 			list2.Add(serverNode);
 			topicServer.Add(topic, list2);
+			Interlocked.Increment(ref topicSubscriptionVersion);
 		}
 	}
 
-	public void DoSubscribe(string topic, CVServiceProxy serverNodeProxy)
+	public virtual void DoSubscribe(string topic, CVServiceProxy serverNodeProxy)
 	{
-		if (topicServerProxy.ContainsKey(topic))
+		if (string.IsNullOrWhiteSpace(topic) || serverNodeProxy == null)
 		{
-			topicServerProxy[topic].Add(serverNodeProxy);
 			return;
 		}
-		List<CVServiceProxy> list = new List<CVServiceProxy>();
-		list.Add(serverNodeProxy);
-		topicServerProxy.Add(topic, list);
+		lock (topicSubscriptionsLock)
+		{
+			if (topicServerProxy.ContainsKey(topic))
+			{
+				List<CVServiceProxy> list = topicServerProxy[topic];
+				if (!list.Contains(serverNodeProxy))
+				{
+					list.Add(serverNodeProxy);
+				}
+				return;
+			}
+			List<CVServiceProxy> list2 = new List<CVServiceProxy>();
+			list2.Add(serverNodeProxy);
+			topicServerProxy.Add(topic, list2);
+			Interlocked.Increment(ref topicSubscriptionVersion);
+		}
+	}
+
+	protected (int Version, string[] Topics) GetTopicSubscriptionsSnapshot()
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return (
+				topicSubscriptionVersion,
+				topicServer.Keys.Concat(topicServerProxy.Keys).Distinct(StringComparer.Ordinal).ToArray());
+		}
+	}
+
+	protected List<CVBaseServerNode> GetServerSubscribersSnapshot(string topic)
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return topicServer.TryGetValue(topic, out List<CVBaseServerNode> subscribers)
+				? new List<CVBaseServerNode>(subscribers)
+				: null;
+		}
+	}
+
+	protected List<CVServiceProxy> GetServiceProxySubscribersSnapshot(string topic)
+	{
+		lock (topicSubscriptionsLock)
+		{
+			return topicServerProxy.TryGetValue(topic, out List<CVServiceProxy> subscribers)
+				? new List<CVServiceProxy>(subscribers)
+				: null;
+		}
+	}
+
+	public virtual Task<bool> EnsureReadyAsync(CancellationToken cancellationToken = default)
+	{
+		return Task.FromResult(IsExecutionReady);
 	}
 
 	public void Start(string serialNumber)
 	{
-		Running = true;
+		TryStart(serialNumber);
+	}
+
+	public bool TryStart(string serialNumber)
+	{
+		if (!CanAcceptStart)
+		{
+			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
+			return false;
+		}
 		CVStartCFC start = new CVStartCFC(serialNumber);
 		DoDispatch(start);
+		return true;
 	}
 
 	protected void DoDispatch(CVStartCFC start)
@@ -365,7 +470,7 @@ public abstract class BaseStartNode : CVCommonNode
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", m_nodeName, start.SerialNumber);
+			logger.InfoFormat("Flow Started[{0}/{1}]", m_nodeName, start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}
@@ -378,16 +483,48 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void StopAll()
 	{
-		foreach (KeyValuePair<string, CVStartCFC> startAction in startActions)
+		CVStartCFC[] actions;
+		ExceptionDispatchInfo firstFailure = null;
+		lock (startActionsLock)
 		{
-			CVStartCFC action = new CVStartCFC(ActionTypeEnum.Stop, startAction.Key);
-			DoStartTransferData(action);
+			stopAllDepth++;
+			actions = startActions.Values.ToArray();
 		}
+		try
+		{
+			foreach (CVStartCFC action in actions)
+			{
+				try
+				{
+					action.SetActionType(ActionTypeEnum.Stop);
+					action.DoFinishing();
+				}
+				catch (Exception ex)
+				{
+					firstFailure ??= ExceptionDispatchInfo.Capture(ex);
+				}
+			}
+		}
+		finally
+		{
+			lock (startActionsLock)
+			{
+				stopAllDepth--;
+				Running = startActions.Count > 0;
+			}
+		}
+		firstFailure?.Throw();
 	}
 
 	public virtual void Dispose()
 	{
-		topicServer.Clear();
+		lock (topicSubscriptionsLock)
+		{
+			topicServer.Clear();
+			topicServerProxy.Clear();
+			Interlocked.Increment(ref topicSubscriptionVersion);
+		}
+		Ready = false;
 	}
 
 	public void FireFinished(CVStartCFC startAction)
@@ -400,10 +537,12 @@ public abstract class BaseStartNode : CVCommonNode
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
 		string message = string.Empty;
 		string errorNodeName = string.Empty;
+		string errorNodeId = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed || flowStatus == StatusTypeEnum.OverTime)
 		{
 			Dictionary<string, object> data = startAction.Data;
 			errorNodeName = GetDataString(data, "ErrorNodeName");
+			errorNodeId = GetDataString(data, "ErrorNodeId");
 			message = GetDataString(data, "Msg");
 			if (string.IsNullOrWhiteSpace(message) && !string.IsNullOrWhiteSpace(errorNodeName) && data != null && data.TryGetValue(errorNodeName, out object nodeStatusObj))
 			{
@@ -414,7 +553,7 @@ public abstract class BaseStartNode : CVCommonNode
 				message = flowStatus.ToString();
 			}
 		}
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName));
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message, errorNodeName, errorNodeId));
 	}
 
 	private static string GetDataString(Dictionary<string, object> data, string key)

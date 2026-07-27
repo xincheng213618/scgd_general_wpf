@@ -9,17 +9,38 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotReadLocalFileTool : ICopilotAgentDrivenTool
     {
+        private readonly int _maximumReadCharacters;
+
+        public CopilotReadLocalFileTool()
+            : this(CopilotLocalFileToolSupport.MaxReadCharacters)
+        {
+        }
+
+        internal CopilotReadLocalFileTool(int maximumReadCharacters)
+        {
+            if (maximumReadCharacters is < CopilotLocalFileToolSupport.MinimumReadCharacters
+                or > CopilotLocalFileToolSupport.MaxReadCharacters)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maximumReadCharacters));
+            }
+
+            _maximumReadCharacters = maximumReadCharacters;
+        }
+
         public string Name => "ReadLocalFile";
 
-        public string Description => "Read local text files allowed for the current round, with optional path and line-range focus, and report a safe line-and-column continuation cursor when content is truncated.";
+        public string Description => "Read bounded local text allowed for the current round, prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.";
 
         public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
+
+        internal int MaximumReadCharacters => _maximumReadCharacters;
 
         public bool IsAvailable(CopilotAgentRequest request)
         {
             return request != null
                 && request.Mode != CopilotAgentMode.Chat
-                && (request.ReadableLocalFilePaths.Count > 0 || request.SearchRootPaths.Count > 0);
+                && (request.ReadableLocalFilePaths.Count > 0 || request.SearchRootPaths.Count > 0)
+                && CopilotToolIntentPolicy.NeedsLocalEvidence(request);
         }
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
@@ -54,14 +75,30 @@ namespace ColorVision.Copilot
                 allowedFiles.Add(resolvedPath);
             }
 
-            var result = await CopilotReadLocalFileCapability.ReadAsync(
-                allowedFiles.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-                selectedPath,
-                request.PreferBatchReadLocalFiles,
-                toolInput?.StartLine,
-                toolInput?.StartColumn,
-                toolInput?.EndLine,
-                cancellationToken);
+            var distinctAllowedFiles = allowedFiles
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var useTaskFocusedBatch = request.PreferBatchReadLocalFiles
+                && string.IsNullOrWhiteSpace(selectedPath)
+                && toolInput?.StartLine == null
+                && toolInput?.StartColumn == null
+                && toolInput?.EndLine == null
+                && distinctAllowedFiles.Length > 1;
+            var result = useTaskFocusedBatch
+                ? await CopilotReadLocalFileCapability.ReadTaskFocusedBatchAsync(
+                    distinctAllowedFiles,
+                    request.UserText,
+                    _maximumReadCharacters,
+                    cancellationToken)
+                : await CopilotReadLocalFileCapability.ReadAsync(
+                    distinctAllowedFiles,
+                    selectedPath,
+                    request.PreferBatchReadLocalFiles,
+                    toolInput?.StartLine,
+                    toolInput?.StartColumn,
+                    toolInput?.EndLine,
+                    _maximumReadCharacters,
+                    cancellationToken);
             return result.ToToolResult(Name);
         }
 
