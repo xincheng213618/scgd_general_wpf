@@ -174,8 +174,6 @@ namespace ProjectLUX
 
             this.DataContext = ProjectLUXConfig.Instance;
 
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");

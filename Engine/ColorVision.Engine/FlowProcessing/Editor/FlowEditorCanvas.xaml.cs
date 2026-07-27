@@ -52,7 +52,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
         public STNodeEditor NodeEditor => STNodeEditorMain;
         public Grid NodePropertyPanelContainer => PropertyEditorPanel;
-        public FlowNodePropertyPanel NodePropertyPanel => InlineNodePropertyPanel;
+        public StackPanel NodePropertyPanel => NodePropertyPanelContent;
 
         public FlowEditorCanvas()
         {
@@ -152,7 +152,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
                 return;
             }
 
-            StackPanel signPanel = InlineNodePropertyPanel.SignStackPanel;
+            StackPanel signPanel = NodePropertyPanel;
             signPanel.Children.Clear();
 
             STNode? activeNode = STNodeEditorMain.ActiveNode;

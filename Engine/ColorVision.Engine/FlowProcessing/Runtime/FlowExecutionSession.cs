@@ -16,6 +16,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -29,9 +30,10 @@ namespace ColorVision.Engine.FlowProcessing
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowExecutionSession));
         private readonly ViewFlow View;
         private readonly FlowEngineManager FlowEngineManager;
-        private FlowControl FlowControl => FlowEngineManager.FlowControl;
+        private FlowControl FlowControl => View.FlowControl;
         private readonly Timer _timer;
         private readonly Stopwatch _stopwatch = new();
+        private MeasureBatchModel? _batch;
         private int _pendingUiUpdate;
         private CancellationTokenSource? _refreshCts;
         private bool _suppressSelectionRefresh;
@@ -42,6 +44,17 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly object _flowLifecycleSync = new();
         private string? _startNodeName;
         private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
+
+        private MeasureBatchModel? CurrentBatch
+        {
+            get => View.IsStandalone ? _batch : FlowEngineManager.Batch;
+            set
+            {
+                _batch = value;
+                if (!View.IsStandalone)
+                    FlowEngineManager.Batch = value;
+            }
+        }
 
         public FlowExecutionSession(FlowEngineManager flowEngineManager, ViewFlow view)
         {
@@ -260,6 +273,9 @@ namespace ColorVision.Engine.FlowProcessing
 
         private TemplateModel<FlowParam>? GetSelectedFlowTemplate()
         {
+            if (View.IsStandalone)
+                return View.GetStandaloneExecutionTemplate();
+
             FlowParam? flowParam = FlowEngineManager.SelectedFlowParam;
             if (flowParam != null)
                 return TemplateFlow.Params.FirstOrDefault(a => a.Value?.Id == flowParam.Id);
@@ -344,7 +360,8 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 _stopwatch.Stop();
                 _timer.Change(Timeout.Infinite, 500); // 停止定时器
-                MeasureBatchModel completedBatch = FlowEngineManager.Batch;
+                MeasureBatchModel completedBatch = CurrentBatch
+                    ?? throw new InvalidOperationException("流程完成时找不到当前批次。");
                 string completedFlowName = _flowName;
                 long completedGeneration = Volatile.Read(ref _executionGeneration);
                 string? completedErrorNodeKey = string.IsNullOrWhiteSpace(FlowControlData.ErrorNodeId)
@@ -394,7 +411,8 @@ namespace ColorVision.Engine.FlowProcessing
                         msg,
                         completedGeneration);
                 }
-                FlowEngineManager.BatchProgress = 100;
+                if (!View.IsStandalone)
+                    FlowEngineManager.BatchProgress = 100;
                 log.Info(msg);
 
                 await WaitForTerminalNodeEndAsync(completedErrorNodeKey, completedGeneration);
@@ -450,10 +468,34 @@ namespace ColorVision.Engine.FlowProcessing
                 }
             }
         }
-        
+
+        private void AttachExecutionNodeEvents()
+        {
+            foreach (CVBaseServerNode node in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                node.nodeRunEvent -= NodeRunEvent;
+                node.nodeEndEvent -= NodeEndEvent;
+                node.nodeRunEvent += NodeRunEvent;
+                node.nodeEndEvent += NodeEndEvent;
+            }
+        }
+
+        internal void DetachNodeEvents()
+        {
+            foreach (CVBaseServerNode node in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                node.nodeRunEvent -= NodeRunEvent;
+                node.nodeEndEvent -= NodeEndEvent;
+            }
+        }
+
         private async Task<bool> PreProcessing(string flowName, string serialNumber)
         {
-            return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, FlowEngineManager.CVBaseServerNodes);
+            return await PreProcessManager.GetInstance().ExecuteAsync(
+                flowName,
+                serialNumber,
+                new ObservableCollection<CVBaseServerNode>(
+                    View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>()));
         }
         
         private void PostProcessing(MeasureBatchModel batch, string flowName)
@@ -533,7 +575,7 @@ namespace ColorVision.Engine.FlowProcessing
                 {
                     Interlocked.Exchange(ref _pendingUiUpdate, 0);
                     UpdateRunningNodeTitleProgress();
-                    if (_lastFlowTime != 0)
+                    if (!View.IsStandalone && _lastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)_lastFlowTime * 100;
                         FlowEngineManager.BatchProgress = perfect >= 100 ?  99:perfect;
@@ -863,7 +905,7 @@ namespace ColorVision.Engine.FlowProcessing
                     && expectedDuration > 0 ? 0f : -1f;
                 UpdateRuntimeProgress(sender);
 
-                int batchId = FlowEngineManager.Batch?.Id ?? 0;
+                int batchId = CurrentBatch?.Id ?? 0;
                 var record = new FlowNodeRecord
                 {
                     BatchId = batchId,
@@ -1030,23 +1072,30 @@ namespace ColorVision.Engine.FlowProcessing
                 LastNode = null;
                 InvalidateExecutionPresentation();
                 View.ShowExecutionSummary("Run " + flowName);
-                FlowEngineManager.BatchProgress = 0;
+                if (!View.IsStandalone)
+                    FlowEngineManager.BatchProgress = 0;
 
                 _pendingNodeExecutions.Clear();
                 _runningNodeNames.Clear();
                 _runningNodeCounts.Clear();
                 lock (_nodeWriteSync)
                     _nodeWriteTasks.Clear();
+                AttachExecutionNodeEvents();
                 FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 FlowControl.FlowCompleted += FlowControl_FlowCompleted;
 
                 _stopwatch.Restart();
                 _timer.Change(0, 100); // 启动定时器
 
-                FlowEngineManager.Batch = new MeasureBatchModel() { TId = selectedFlowParam.Id, Name = sn, Code = sn };
+                CurrentBatch = new MeasureBatchModel()
+                {
+                    TId = selectedFlowParam.Id > 0 ? selectedFlowParam.Id : null,
+                    Name = sn,
+                    Code = sn
+                };
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                FlowEngineManager.Batch.Id = Db.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
-                preparedBatch = FlowEngineManager.Batch;
+                CurrentBatch.Id = Db.Insertable(CurrentBatch).ExecuteReturnIdentity();
+                preparedBatch = CurrentBatch;
 
                 bool preresult = await PreProcessing(flowName, sn);
                 if (!CanContinueFlowStart(sn))
@@ -1158,7 +1207,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        public void StopFlow()
+        public void StopFlow(bool updateSummary = true)
         {
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             bool wasRunning = FlowControl?.IsFlowRun == true;
@@ -1185,14 +1234,15 @@ namespace ColorVision.Engine.FlowProcessing
             _timer.Change(Timeout.Infinite, 500); // 停止定时器
             ResetNodeTitleProgress();
 
-            if (wasRunning && FlowEngineManager.Batch?.Id > 0)
+            if (wasRunning && CurrentBatch?.Id > 0)
             {
-                FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
-                FlowEngineManager.Batch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
+                CurrentBatch.FlowStatus = FlowStatus.Canceled;
+                CurrentBatch.TotalTime = (int)_stopwatch.ElapsedMilliseconds;
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                Db.Updateable(FlowEngineManager.Batch).ExecuteCommand();
+                Db.Updateable(CurrentBatch).ExecuteCommand();
             }
-            View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.ExecutionCancelled);
+            if (updateSummary)
+                View.ShowExecutionSummary(ColorVision.Engine.Properties.Resources.ExecutionCancelled);
 
         }
 
@@ -1201,6 +1251,7 @@ namespace ColorVision.Engine.FlowProcessing
             _refreshCts?.Cancel();
             _refreshCts?.Dispose();
             MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
+            DetachNodeEvents();
             ResetNodeTitleProgress();
             _timer.Dispose();
             GC.SuppressFinalize(this);

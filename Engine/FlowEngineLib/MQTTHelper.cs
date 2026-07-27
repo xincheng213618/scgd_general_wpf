@@ -14,13 +14,7 @@ public class MQTTHelper
     public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
     private const string EmptyServerMessage = "MQTT服务器地址为空。";
 
-    private static string Server;
-    private static int Port = 1883;
-    private static string UserName;
-    private static string Password;
-    private static readonly object ConfigurationLock = new object();
     private static readonly SemaphoreSlim ClientCreationGate = new SemaphoreSlim(1, 1);
-    private static long _defaultConfigurationVersion;
 
     // 回调委托
     private Action<ResultData_MQTT> _Callback;
@@ -36,87 +30,9 @@ public class MQTTHelper
     private int _callbackGeneration;
     private int _lifecycleGeneration;
     private bool _handlersAttached;
-    private long _configurationVersion = -1;
-
-    public static long DefaultConfigurationVersion => Interlocked.Read(ref _defaultConfigurationVersion);
-
-    public long ConfigurationVersion => Interlocked.Read(ref _configurationVersion);
-
-    public bool UsesCurrentDefaultConfiguration =>
-        ConfigurationVersion >= 0 &&
-        ConfigurationVersion == DefaultConfigurationVersion;
-
-    #region 配置与初始化
-
-    public static void SetDefaultCfg(string server, int port, string userName, string password, bool isServer, Action<ResultData_MQTT> callback)
-    {
-        lock (ConfigurationLock)
-        {
-            string normalized = NormalizeServer(server);
-            bool configurationChanged =
-                !string.Equals(Server, normalized, StringComparison.Ordinal) ||
-                Port != port ||
-                !string.Equals(UserName, userName, StringComparison.Ordinal) ||
-                !string.Equals(Password, password, StringComparison.Ordinal);
-            if (configurationChanged)
-            {
-                Server = normalized;
-                Port = port;
-                UserName = userName;
-                Password = password;
-                Interlocked.Increment(ref _defaultConfigurationVersion);
-                MQTTClientPool.SetActiveEndpoint(Server, Port, UserName, Password);
-            }
-        }
-    }
-
-    public static void GetDefaultCfg(ref string server, ref int port, ref string userName, ref string password)
-    {
-        lock (ConfigurationLock)
-        {
-            server = Server;
-            port = Port;
-            userName = UserName;
-            password = Password;
-        }
-    }
-
-    public static int GetPortCfg()
-    {
-        lock (ConfigurationLock)
-        {
-            return Port;
-        }
-    }
-
-    public static string GetServerCfg()
-    {
-        lock (ConfigurationLock)
-        {
-            return Server;
-        }
-    }
-
     private static string NormalizeServer(string server)
     {
         return string.IsNullOrWhiteSpace(server) ? null : server.Trim();
-    }
-
-    private static long ResolveDefaultConfigurationVersion(
-        string server,
-        int port,
-        string userName,
-        string password)
-    {
-        lock (ConfigurationLock)
-        {
-            return string.Equals(Server, server, StringComparison.Ordinal) &&
-                   Port == port &&
-                   string.Equals(UserName, userName, StringComparison.Ordinal) &&
-                   string.Equals(Password, password, StringComparison.Ordinal)
-                ? _defaultConfigurationVersion
-                : -1;
-        }
     }
 
     private static ResultData_MQTT CreateClientConnectedResult(int resultCode, string resultMessage)
@@ -154,8 +70,6 @@ public class MQTTHelper
             NotifyCallback(resultData);
         }
     }
-
-    #endregion
 
     #region Client 端逻辑
 
@@ -197,13 +111,6 @@ public class MQTTHelper
             Interlocked.Increment(ref _callbackGeneration);
 
             var server = NormalizeServer(mqttServerUrl);
-            Interlocked.Exchange(
-                ref _configurationVersion,
-                ResolveDefaultConfigurationVersion(
-                    server,
-                    port,
-                    userName,
-                    userPassword));
             if (server == null)
             {
                 logger.Warn("CreateMQTTClientAndStart skipped because MQTT server host is empty.");
@@ -231,6 +138,7 @@ public class MQTTHelper
                 return existingResult;
             }
 
+            MQTTClientPool.SetActiveEndpoint(server, port, userName, userPassword);
             await ClientCreationGate.WaitAsync(cancellationToken);
             try
             {
@@ -387,7 +295,6 @@ public class MQTTHelper
             _Callback = callback;
             Volatile.Write(ref _active, 1);
             int generation = Interlocked.Increment(ref _callbackGeneration);
-            Interlocked.Exchange(ref _configurationVersion, -1);
             ResultData_MQTT resultData = await ConnectNewClientAsync(
                 mqttClientOptionsBuilder,
                 cancellationToken);

@@ -6,7 +6,7 @@ namespace FlowEngineLib.MQTT;
 [System.Obsolete("Deprecated MQTT flow node retained for loading existing flows.")]
 public class MQTTPublishHub : STNodeInHub
 {
-	private string _Server;
+	private string _Server = "127.0.0.1";
 
 	private int _Port = 1883;
 
@@ -45,23 +45,12 @@ public class MQTTPublishHub : STNodeInHub
 	{
 	}
 
-	protected override void OnCreate()
-	{
-		base.OnCreate();
-		string userName = "";
-		string password = "";
-		MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-	}
-
 	protected override void DoInputConnected(STNodeOption sender, STNodeOptionEventArgs e)
 	{
 		if (_MQTTHelper == null)
 		{
 			_MQTTHelper = new MQTTHelper();
-			string userName = "";
-			string password = "";
-			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
+			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, string.Empty, string.Empty, onMsgSub);
 		}
 	}
 

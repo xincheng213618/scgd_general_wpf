@@ -44,10 +44,7 @@ internal class MQTTCustomSubscribeNode : MQTTBaseNode
 		if (_MQTTHelper == null)
 		{
 			_MQTTHelper = new MQTTHelper();
-			string userName = "";
-			string password = "";
-			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
+			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, string.Empty, string.Empty, onMsgSub);
 		}
 		else if (_MQTTHelper.IsClientConnect())
 		{

@@ -7,7 +7,6 @@ using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -17,10 +16,8 @@ using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -66,7 +63,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         public STNodeEditor STNodeEditorMain => EditorCanvas.NodeEditor;
         public FlowControl FlowControl => _isStandalone ? _standaloneFlowControl! : FlowEngineManager.FlowControl;
-        public CVCommonNode? LastNode => _executionSession?.LastNode;
+        public CVCommonNode? LastNode => _executionSession.LastNode;
         public bool IsStandalone => _isStandalone;
         public Visibility RuntimeVisibility => _isStandalone ? Visibility.Collapsed : Visibility.Visible;
         public Visibility StandaloneVisibility => _isStandalone ? Visibility.Visible : Visibility.Collapsed;
@@ -74,23 +71,18 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly bool _isStandalone;
         private readonly FlowControl? _standaloneFlowControl;
         private readonly FlowNodeManager? _standaloneNodeManager;
-        private readonly Stopwatch _standaloneStopwatch = new();
         private readonly FlowNodeContextMenuService _nodeContextMenuService;
         private readonly FlowExecutionNavigator _executionNavigator;
         private readonly FlowGraphLayoutService _layoutService;
-        private readonly FlowExecutionSession? _executionSession;
+        private readonly FlowExecutionSession _executionSession;
         private FlowParam? _standaloneFlowParam;
         private string? _standaloneFilePath;
         private string _standaloneDocumentName = string.Empty;
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
-        private string? _standaloneExpectedSerialNumber;
         private string? _standaloneStartNodeName;
         private ComboBox? _standaloneStartNodeComboBox;
-        private bool _standaloneStartPending;
         private bool _runtimeSelectionInitialized;
-        private CancellationTokenSource? _standaloneStartCts;
-        private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
 
         public ViewFlow(FlowEngineManager flowEngineManager) : this(flowEngineManager, false)
         {
@@ -104,10 +96,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 _standaloneNodeManager = new FlowNodeManager();
                 FlowEngineControl = new FlowEngineControl(false, _standaloneNodeManager);
-                _standaloneFlowControl = new FlowControl(
-                    MQTTControl.GetInstance(),
-                    FlowEngineControl,
-                    LocalFlowResultPersistence.Disable);
+                _standaloneFlowControl = new FlowControl(MQTTControl.GetInstance(), FlowEngineControl);
             }
             else
             {
@@ -121,8 +110,7 @@ namespace ColorVision.Engine.FlowProcessing
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
             _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
-            if (!isStandalone)
-                _executionSession = new FlowExecutionSession(flowEngineManager, this);
+            _executionSession = new FlowExecutionSession(flowEngineManager, this);
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
@@ -362,22 +350,19 @@ namespace ColorVision.Engine.FlowProcessing
 
         internal Task RefreshRuntimeAsync()
         {
-            return _executionSession?.RefreshAsync() ?? Task.CompletedTask;
+            return _executionSession.RefreshAsync();
         }
 
         internal Task SelectFlowTemplateAsync(
             TemplateModel<FlowParam> flowTemplate,
             bool allowEmptyFlow = false)
         {
-            return _executionSession?.SelectFlowTemplateAsync(flowTemplate, allowEmptyFlow)
-                ?? Task.CompletedTask;
+            return _executionSession.SelectFlowTemplateAsync(flowTemplate, allowEmptyFlow);
         }
 
         internal async Task<FlowControlData?> RunFlowAndWaitAsync(
             TemplateModel<FlowParam>? flowTemplate = null)
         {
-            if (_executionSession == null)
-                return null;
             if (flowTemplate != null)
                 await _executionSession.SelectFlowTemplateAsync(flowTemplate);
             return await _executionSession.RunFlowAndWaitAsync();
@@ -501,6 +486,19 @@ namespace ColorVision.Engine.FlowProcessing
                 return false;
 
             return STNodeEditorMain.IsModified;
+        }
+
+        internal TemplateModel<FlowParam>? GetStandaloneExecutionTemplate()
+        {
+            if (!_isStandalone || STNodeEditorMain.Nodes.Count == 0)
+                return null;
+            if (_standaloneFlowParam != null)
+                return new TemplateModel<FlowParam>(_standaloneFlowParam.Name, _standaloneFlowParam);
+
+            string name = string.IsNullOrWhiteSpace(_standaloneDocumentName)
+                ? Properties.Resources.New
+                : _standaloneDocumentName;
+            return new TemplateModel<FlowParam>(name, new FlowParam { Name = name });
         }
 
         private void OpenDocument()
@@ -672,7 +670,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
 
             _runtimeSelectionInitialized = true;
-            _executionSession?.InitializeSelection();
+            _executionSession.InitializeSelection();
         }
 
         internal void SelectRuntimeFlowTemplate(TemplateModel<FlowParam>? flowTemplate)
@@ -682,7 +680,7 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
 
             _runtimeSelectionInitialized = true;
-            _executionSession?.OnFlowSelectionChanged(flowTemplate);
+            _executionSession.OnFlowSelectionChanged(flowTemplate);
         }
 
         private void MqttRCService_ServiceTokensUpdated(object? sender, EventArgs e)
@@ -747,8 +745,6 @@ namespace ColorVision.Engine.FlowProcessing
             if (_isStandalone)
             {
                 StopStandaloneFlow();
-                if (_standaloneFlowControl != null)
-                    _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
                 MqttRCService.GetInstance().ServiceTokensUpdated -= MqttRCService_ServiceTokensUpdated;
                 _standaloneNodeManager?.ClearDevice();
                 FlowEngineControl.Dispose();
@@ -757,9 +753,9 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (FlowEngineManager.FlowControl?.IsFlowRun == true)
                     FlowEngineManager.FlowControl.Stop();
-                _executionSession?.Dispose();
                 FlowEngineControl.DetachNodeEditor(STNodeEditorMain);
             }
+            _executionSession.Dispose();
             _nodeContextMenuService.Dispose();
             EditorCanvas.Dispose();
             GC.SuppressFinalize(this);
@@ -768,108 +764,13 @@ namespace ColorVision.Engine.FlowProcessing
         private void RunFlow()
         {
             if (_isStandalone)
-                RunStandaloneFlow();
-            else
-                _ = _executionSession?.RunFlowAsync();
+                _executionSession.SelectStartNode(RefreshStandaloneStartNodeSelection());
+            _ = _executionSession.RunFlowAsync();
         }
 
         private void StopFlow()
         {
-            if (_isStandalone)
-                StopStandaloneFlow(true);
-            else
-                _executionSession?.StopFlow();
-        }
-
-        private async void RunStandaloneFlow()
-        {
-            if (_standaloneStartPending || FlowControl.IsFlowRun)
-                return;
-
-            _standaloneStartPending = true;
-            using CancellationTokenSource startCts = new CancellationTokenSource();
-            _standaloneStartCts = startCts;
-            try
-            {
-                bool requiresServices = STNodeEditorMain.Nodes.OfType<CVBaseServerNode>().Any();
-                if (requiresServices && !MqttRCService.GetInstance().IsConnect)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.RegistryCenterNotConnected);
-                    return;
-                }
-
-                if (requiresServices && MqttRCService.GetInstance().ServiceTokens.Count == 0)
-                {
-                    MqttRCService.GetInstance().QueryServices();
-                    ShowExecutionSummary(Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                    MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
-                    return;
-                }
-
-                if (requiresServices)
-                {
-                    _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
-                }
-
-                string? startNodeName = RefreshStandaloneStartNodeSelection();
-                if (string.IsNullOrWhiteSpace(startNodeName))
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
-                    return;
-                }
-
-                FlowEditorOperations.ClearSelection(STNodeEditorMain);
-
-                foreach (STNode node in STNodeEditorMain.Nodes)
-                {
-                    foreach (STNodeOption option in node.GetAllInputOptions())
-                        option.Data = null;
-                    foreach (STNodeOption option in node.GetAllOutputOptions())
-                        option.Data = null;
-
-                    if (node is CVBaseServerNode serverNode)
-                        serverNode.TitleColor = System.Drawing.Color.Blue;
-                }
-
-                ShowExecutionSummary(string.Empty);
-
-                string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                _standaloneExpectedSerialNumber = serialNumber;
-                _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-                _standaloneFlowControl.FlowCompleted += StandaloneFlowControl_FlowCompleted;
-                _standaloneStopwatch.Restart();
-                ShowExecutionSummary($"Run {_standaloneDocumentName}");
-
-                if (!await _standaloneFlowControl.TryStartAsync(startNodeName, serialNumber, startCts.Token))
-                {
-                    _standaloneExpectedSerialNumber = null;
-                    _standaloneStopwatch.Stop();
-                    _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-                    ShowExecutionSummary(FlowMqttNotReadyMessage);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                ShowExecutionSummary(Properties.Resources.ExecutionCancelled);
-            }
-            catch (Exception ex)
-            {
-                _standaloneExpectedSerialNumber = null;
-                _standaloneStopwatch.Stop();
-                _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-                _standaloneFlowControl.Stop();
-                log.Error("Run standalone flow failed.", ex);
-                ShowExecutionSummary(ex.Message);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
-            }
-            finally
-            {
-                if (ReferenceEquals(_standaloneStartCts, startCts))
-                {
-                    _standaloneStartCts = null;
-                }
-                _standaloneStartPending = false;
-            }
+            _executionSession.StopFlow();
         }
 
         private void StartNodeComboBox_Initialized(object sender, EventArgs e)
@@ -903,14 +804,17 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
 
             if (_isStandalone)
+            {
                 _standaloneStartNodeName = comboBox.SelectedItem as string;
+                _executionSession.SelectStartNode(_standaloneStartNodeName);
+            }
             else
-                _executionSession?.SelectStartNode(comboBox.SelectedItem as string);
+                _executionSession.SelectStartNode(comboBox.SelectedItem as string);
         }
 
         internal void RefreshRuntimeStartNodeSelection()
         {
-            if (_executionSession == null || _standaloneStartNodeComboBox == null)
+            if (_standaloneStartNodeComboBox == null)
                 return;
 
             string[] startNodeNames = _executionSession.RefreshStartNodeSelection(
@@ -935,35 +839,8 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void StopStandaloneFlow(bool updateLog = false)
         {
-            if (_standaloneFlowControl == null)
-                return;
-
-            _standaloneStartCts?.Cancel();
-            _standaloneFlowControl.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-            _standaloneExpectedSerialNumber = null;
-            if (!_standaloneFlowControl.IsFlowRun)
-                return;
-
-            _standaloneFlowControl.Stop();
-            _standaloneStopwatch.Stop();
-            if (updateLog)
-                ShowExecutionSummary(Properties.Resources.ExecutionCancelled);
-        }
-
-        private void StandaloneFlowControl_FlowCompleted(object? sender, FlowControlData data)
-        {
-            if (!string.Equals(data.SerialNumber, _standaloneExpectedSerialNumber, StringComparison.Ordinal))
-                return;
-
-            _standaloneStopwatch.Stop();
-            _standaloneFlowControl!.FlowCompleted -= StandaloneFlowControl_FlowCompleted;
-            _standaloneExpectedSerialNumber = null;
-            string errorNode = string.IsNullOrWhiteSpace(data.ErrorNodeName)
-                ? string.Empty
-                : $"{Environment.NewLine}{Properties.Resources.Flow_NodeLabel}{data.ErrorNodeName}";
-            string message =
-                $"{_standaloneDocumentName} {data.EventName}{errorNode}{Environment.NewLine}{data.Params}{Environment.NewLine}{_standaloneStopwatch.ElapsedMilliseconds}ms";
-            ShowExecutionSummary(message);
+            _executionSession.StopFlow(updateLog);
+            _executionSession.DetachNodeEvents();
         }
 
         public void ShowExecutionSummary(string message, string? executionNodeName = null, CVCommonNode? preferredNode = null)

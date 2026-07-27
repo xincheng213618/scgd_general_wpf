@@ -237,7 +237,7 @@ namespace ColorVision.UI.Tests
             {
                 using var canvas = new FlowEditorCanvas();
                 STNodeEditor editor = canvas.NodeEditor;
-                var signPanel = canvas.NodePropertyPanel.SignStackPanel;
+                var signPanel = canvas.NodePropertyPanel;
                 signPanel.Children.Add(new System.Windows.Controls.Border());
 
                 Exception? workerException = null;

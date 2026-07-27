@@ -209,43 +209,6 @@ public class MQTTClientPoolTests
         Assert.True(proxy.LastSubscribeCancellationToken.CanBeCanceled);
     }
 
-    [Fact]
-    public async Task ConfigurationVersionOnlyChangesForARealDefaultChange()
-    {
-        string server = $"mqtt-helper-config-{Guid.NewGuid():N}";
-        const int port = 1883;
-        const string userName = "test-user";
-        const string password = "test-password";
-        long initialVersion = MQTTHelper.DefaultConfigurationVersion;
-
-        MQTTHelper.SetDefaultCfg(server, port, userName, password, false, null!);
-        long configuredVersion = MQTTHelper.DefaultConfigurationVersion;
-        Assert.Equal(initialVersion + 1, configuredVersion);
-
-        MQTTHelper.SetDefaultCfg(server, port, userName, password, false, null!);
-        Assert.Equal(configuredVersion, MQTTHelper.DefaultConfigurationVersion);
-
-        var (client, _) = CreateTrackingClient(isConnected: true);
-        Assert.True(MQTTClientPool.Register(client, server, port, userName, password));
-        MQTTClientPool.Release(client);
-        var helper = new MQTTHelper();
-        ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
-            server,
-            port,
-            userName,
-            password,
-            _ => { });
-
-        Assert.Equal(1, result.ResultCode);
-        Assert.Equal(configuredVersion, helper.ConfigurationVersion);
-        Assert.True(helper.UsesCurrentDefaultConfiguration);
-
-        MQTTHelper.SetDefaultCfg(server, port, userName, password + "-new", false, null!);
-        Assert.Equal(configuredVersion + 1, MQTTHelper.DefaultConfigurationVersion);
-        Assert.False(helper.UsesCurrentDefaultConfiguration);
-        await helper.DisconnectAsync_Client();
-    }
-
     public static TheoryData<Type> MqttStartNodeTypes => new()
     {
         typeof(MQTTStartNode),
@@ -261,7 +224,7 @@ public class MQTTClientPoolTests
         const string userName = "test-user";
         var (client, _) = CreateTrackingClient(isConnected: true);
 
-        MQTTHelper.SetDefaultCfg(server, port, userName, string.Empty, false, null!);
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
         Assert.True(MQTTClientPool.Register(client, server, port, userName));
         MQTTClientPool.Release(client);
 

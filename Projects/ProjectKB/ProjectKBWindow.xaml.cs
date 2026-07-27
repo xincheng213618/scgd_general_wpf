@@ -362,8 +362,6 @@ namespace ProjectKB
 
         public void InitFlow()
         {
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");

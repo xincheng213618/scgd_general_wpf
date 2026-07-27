@@ -18,7 +18,7 @@ public class MQTTStartV5Node : BaseStartNode
 
 	private static readonly TimeSpan PublishReadyTimeout = TimeSpan.FromSeconds(3);
 
-	private string _Server;
+	private string _Server = "127.0.0.1";
 
 	private int _Port = 1883;
 
@@ -64,7 +64,6 @@ public class MQTTStartV5Node : BaseStartNode
 					&& Ready
 					&& mqttHelper != null
 					&& mqttHelper.IsClientConnect()
-					&& mqttHelper.UsesCurrentDefaultConfiguration
 					&& restoredTopicSubscriptionVersion == TopicSubscriptionVersion
 					&& restoredStartTopicVersion == startTopicVersion;
 			}
@@ -267,15 +266,6 @@ public class MQTTStartV5Node : BaseStartNode
 		{
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 			current = _MQTTHelper;
-			if (current != null && !current.UsesCurrentDefaultConfiguration)
-			{
-				if (ReferenceEquals(Interlocked.CompareExchange(ref _MQTTHelper, null, current), current))
-				{
-					await current.DisconnectAsync_Client().ConfigureAwait(false);
-					ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
-				}
-				current = null;
-			}
 			if (current != null && !current.IsClientConnect())
 			{
 				await current.TryReconnectAsync_Client(linkedToken).ConfigureAwait(false);
@@ -292,10 +282,13 @@ public class MQTTStartV5Node : BaseStartNode
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				current = new MQTTHelper();
 				Interlocked.Exchange(ref _MQTTHelper, current);
-				string userName = string.Empty;
-				string password = string.Empty;
-				MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
-				ResultData_MQTT result = await current.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub, linkedToken).ConfigureAwait(false);
+				ResultData_MQTT result = await current.CreateMQTTClientAndStart(
+					_Server,
+					_Port,
+					string.Empty,
+					string.Empty,
+					onMsgSub,
+					linkedToken).ConfigureAwait(false);
 				ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 				if (result.ResultCode <= 0 || !current.IsClientConnect())
 				{
@@ -374,8 +367,7 @@ public class MQTTStartV5Node : BaseStartNode
 		{
 			ThrowIfMqttSessionChanged(generation, topicVersion, cancellationToken);
 			if (!ReferenceEquals(_MQTTHelper, mqttHelper)
-				|| !mqttHelper.IsClientConnect()
-				|| !mqttHelper.UsesCurrentDefaultConfiguration)
+				|| !mqttHelper.IsClientConnect())
 			{
 				Ready = false;
 				return false;
@@ -407,8 +399,7 @@ public class MQTTStartV5Node : BaseStartNode
 					restoredTopicSubscriptionVersion = version;
 					restoredStartTopicVersion = topicVersion;
 					Ready = ReferenceEquals(_MQTTHelper, mqttHelper)
-						&& mqttHelper.IsClientConnect()
-						&& mqttHelper.UsesCurrentDefaultConfiguration;
+						&& mqttHelper.IsClientConnect();
 					if (Ready)
 					{
 						logger.DebugFormat("MQTT subscriptions restored => start={0}, responses={1}", GetStartTopic(), topics.Length);
@@ -666,8 +657,7 @@ public class MQTTStartV5Node : BaseStartNode
 	{
 		return mqttHelper != null
 			&& ReferenceEquals(mqttHelper, _MQTTHelper)
-			&& mqttHelper.IsClientConnect()
-			&& mqttHelper.UsesCurrentDefaultConfiguration;
+			&& mqttHelper.IsClientConnect();
 	}
 
 	public override void Dispose()

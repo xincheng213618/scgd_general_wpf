@@ -109,8 +109,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 });
             try
             {
-                if (masterId > 0)
-                    LocalPoiRemappingCalculator.SaveDetails(masterId, points);
+                LocalPoiRemappingCalculator.SaveDetails(masterId, points);
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
@@ -261,8 +260,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 });
             try
             {
-                if (masterId > 0)
-                    LocalPoiRemappingCalculator.SaveDetails(masterId, points);
+                LocalPoiRemappingCalculator.SaveDetails(masterId, points);
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
                 return new LocalNodeExecutionResult

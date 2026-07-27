@@ -125,20 +125,24 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 return;
             }
 
+            string batchName = action.SerialNumber;
+            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(batchName);
+            if (batch == null || batch.Id <= 0)
+            {
+                FailLocalNode(trans, string.Format(Properties.Resources.Flow_BatchNotFound, batchName));
+                return;
+            }
+
             LocalFlowFrame? frame = null;
             try
             {
                 frame = LocalFrameFileService.Load(fileUrl);
-                int masterId = -1;
-                if (LocalFlowResultPersistence.TryGetBatch(action, out MeasureBatchModel? batch))
+                MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
+                int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
+                if (masterId <= 0)
                 {
-                    MeasureResultImgModel model = BuildMeasureResultImgModel(batch.Id, fileUrl);
-                    masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
-                    if (masterId <= 0)
-                    {
-                        FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
-                        return;
-                    }
+                    FailLocalNode(trans, string.Format(Properties.Resources.LocalImage_WriteResultFailed, fileUrl));
+                    return;
                 }
 
                 frame.MasterId = masterId;

@@ -72,7 +72,10 @@
                             Margin="0,0,5,0"
                             Padding="6,2"
                             Click="Button_RestartServices_Click"/>
-                    <Grid Grid.Column="1">
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Height="35">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"
                                 Command="{Binding View.RunFlowCommand}"
                                 Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}"
@@ -83,7 +86,7 @@
                                 Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}"
                                 FontWeight="Bold"
                                 FontSize="16"/>
-                    </Grid>
+                    </StackPanel>
                 </Grid>
             </StackPanel>
         </Border>
