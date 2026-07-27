@@ -548,3 +548,101 @@ Client                    Server (ARVRPRO)                 Flow Engine
 - `AoiSwitchPG` 和 `AOITestSwitchImageComplete` 通过中转服务器（默认端口 9200）中继。
 - 客户端每收到一次 `AoiSwitchPG` 就需回复一次 `AOITestSwitchImageComplete`。
 - 所有 AOI 切图完成后，Flow 继续执行后续算法，最终由 Server 推送 `ProjectARVRResult`。
+
+
+
+---
+
+**6. PG GECS 透传补充协议**
+
+本节是 ARVRPRO TCP 通讯协议的补充说明，用于外部客户端通过 ARVRPRO 操作由 ARVRPRO 所在设备管理的 PG。外部客户端不直接连接 PG，也不需要提供 PG 的 IP、端口或 Network Number。
+
+**6.1 客户端请求：透传 PG GECS 指令 (PGPassThroughGECS)**
+
+**请求 EventName**：`PGPassThroughGECS`
+
+**请求参数 (Params)**：GECS V2.4 协议中的 `Message Text`，不包含 STX、Network Number、Message Length 和 ETX。ARVRPRO 根据本地 PG 配置完成 GECS 数据帧封装、发送和回包接收。
+
+请求示例：
+
+```json
+{
+  "Version": "1.0",
+  "MsgID": "pg-001",
+  "EventName": "PGPassThroughGECS",
+  "SerialNumber": "SN12345678",
+  "Params": "PG,01,PATTERN,INDEX,3"
+}
+```
+
+ARVRPRO 实际发送给 PG 的 GECS 数据帧结构如下：
+
+```text
+STX(0x02) + Network Number + Message Length(4字节HEX-ASCII) + Message Text + ETX(0x03)
+```
+
+其中 Network Number 由 ARVRPRO 本地配置决定，默认值为 `0xFF`。`[ch]` 是 PG 编号，范围为 `01`～`54`。
+
+**6.2 服务端响应**
+
+ARVRPRO 等待 PG 返回一个完整的 GECS 数据帧后，将其中的 `Message Text` 原样放入 `Data.PGResponse`。
+
+响应示例：
+
+```json
+{
+  "Version": "1.0",
+  "MsgID": "pg-001",
+  "EventName": "PGPassThroughGECS",
+  "SerialNumber": "SN12345678",
+  "Code": 0,
+  "Msg": "PG GECS command completed",
+  "Data": {
+    "PGCommand": "PG,01,PATTERN,INDEX,3",
+    "PGResponse": "PG,01,PATTERN,INDEX,3,END,OK"
+  }
+}
+```
+
+`Code = 0` 表示 ARVRPRO 已成功将指令发送至 PG 并收到格式正确的 GECS 回包。PG 的实际执行结果以 `Data.PGResponse` 为准，例如 `END,OK`、`END,NG`、`STATE,OK`、`STATE,NG` 或 `ERROR,...`。
+
+连接失败、等待回包超时、参数错误或指令不在允许范围内时，`Code < 0`，具体错误原因通过 `Msg` 返回。
+
+**6.3 当前支持的 GECS 指令**
+
+| 功能 | Params 格式 | PG 回包格式 |
+|------|-------------|-------------|
+| 查询 PG 连接状态 | `PG,[ch],STATE` | `PG,[ch],STATE,[OK/NG]` |
+| PG 开电 | `PG,[ch],POWER,ON` 或 `PG,[ch],POWER,ON,[sn]` | `PG,[ch],POWER,ON,...,END,[OK/NG]` |
+| PG 关电 | `PG,[ch],POWER,OFF` | `PG,[ch],POWER,OFF,END,[OK/NG]` |
+| 查询 PG 开关电状态 | `PG,[ch],POWER,STATE` | `PG,[ch],POWER,STATE,[ON/OFF]` |
+| 查询 PG 电压电流数据 | `PG,[ch],POWER,MEASURE` | `PG,[ch],POWER,MEASURE,[电压数据],[电流数据]` |
+| 切换到下一画面 | `PG,[ch],PATTERN,NEXT` | `PG,[ch],PATTERN,NEXT,END,[OK/NG]` |
+| 切换到上一画面 | `PG,[ch],PATTERN,BACK` | `PG,[ch],PATTERN,BACK,END,[OK/NG]` |
+| 按序号切换画面 | `PG,[ch],PATTERN,INDEX,[n]` | `PG,[ch],PATTERN,INDEX,[n],END,[OK/NG]` |
+| 按 RGB 值切换画面 | `PG,[ch],PATTERN,RGB,[r,g,b]` | `PG,[ch],PATTERN,RGB,[r,g,b],END,[OK/NG]` |
+| 按名称加载画面 | `PG,[ch],PATTERN,LOAD,[name]` | `PG,[ch],PATTERN,LOAD,[name],END,[OK/NG]` |
+
+说明：
+
+- `[ch]`、`[sn]`、`[n]`、`[r,g,b]` 和 `[name]` 表示变量，实际指令中不包含方括号。
+- `POWER,ON` 所需的 SN 应直接写在 `Params` 中；ARVRPRO 不会自动将外层 `SerialNumber` 拼接到 GECS 指令。
+- 当前只开放本节列出的指令。`SENDFILE`、`GAMMA`、`PREGAMMA`、`DEMURA`、`AOI`、`KEY`、`FUNCTION`、`DICID`、`EFUSE` 和 `OSC` 等其他 GECS 指令不会被转发。
+- 同一 PG 连接上的指令按接收顺序串行执行。客户端应等待当前 `PGPassThroughGECS` 响应后再发送下一条 PG 指令。
+
+**6.4 错误响应示例**
+
+```json
+{
+  "Version": "1.0",
+  "MsgID": "pg-002",
+  "EventName": "PGPassThroughGECS",
+  "SerialNumber": "SN12345678",
+  "Code": -2,
+  "Msg": "Unsupported PG GECS command",
+  "Data": {
+    "PGCommand": "PG,01,DEMURA,WRITE,START",
+    "PGResponse": null
+  }
+}
+```
