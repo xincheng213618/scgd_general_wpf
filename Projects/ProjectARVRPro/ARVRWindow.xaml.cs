@@ -48,8 +48,6 @@ namespace ProjectARVRPro
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
-        private static readonly TimeSpan FlowStartReadyTimeout = TimeSpan.FromSeconds(5);
-        private const string FlowStartNodeNotReadyMessage = "FlowStartNodeNotReady";
         private const string FlowStartRejectedMessage = "FlowStartRejected";
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
@@ -87,7 +85,8 @@ namespace ProjectARVRPro
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
-        private readonly FlowRunGuard _flowRunGuard = new();
+        private bool _isFlowStartPending;
+        private bool _isFlowLifecycleActive;
 
         public string InitTest(string? serialNumber)
         {
@@ -138,7 +137,7 @@ namespace ProjectARVRPro
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_flowRunGuard.IsBusy || flowControl.IsFlowRun || _isRunAllRunning)
+                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
                     log.Info("PG切换错误，正在执行流程或处理流程结果");
                     return false;
@@ -530,12 +529,14 @@ namespace ProjectARVRPro
             ProcessMeta? runProcessMeta,
             CancellationToken cancellationToken = default)
         {
-            if (flowControl.IsFlowRun || !_flowRunGuard.TryBeginStart())
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
                 log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return false;
             }
 
+            _isFlowStartPending = true;
+            bool flowStarted = false;
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -569,13 +570,6 @@ namespace ProjectARVRPro
 
                 await Refresh();
                 cancellationToken.ThrowIfCancellationRequested();
-
-                string? startNodeName = await WaitForStartNodeReadyAsync(cancellationToken);
-                if (startNodeName == null)
-                {
-                    await HandleFlowStartFailureAsync(FlowStartNodeNotReadyMessage, runProcessMeta?.Process, persistResult: false);
-                    return false;
-                }
 
                 if (!await _pictureSwitchService.ExecuteAsync(runProcessMeta))
                 {
@@ -615,45 +609,23 @@ namespace ProjectARVRPro
                 int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
                 CurrentFlowResult.BatchId = id;
 
-                bool started;
-                try
-                {
-                    started = flowControl.TryStart(startNodeName, CurrentFlowResult.Code);
-                }
-                catch
-                {
-                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 500);
-                    throw;
-                }
-
-                if (!started)
+                _isFlowLifecycleActive = true;
+                if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
                 {
                     await HandleFlowStartFailureAsync(FlowStartRejectedMessage, runProcessMeta?.Process, persistResult: true);
                     return false;
                 }
 
-                _flowRunGuard.MarkStarted();
-                try
-                {
-                    SetStepProgress(CurrentFlowResult.TestType, completed: false);
-                    timer.Change(0, 500); // 启动定时器
-                }
-                catch
-                {
-                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-                    flowControl.Stop();
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 500);
-                    _flowRunGuard.Complete();
-                    throw;
-                }
+                flowStarted = true;
+                SetStepProgress(CurrentFlowResult.TestType, completed: false);
+                timer.Change(0, 500); // 启动定时器
                 return true;
             }
             finally
             {
-                _flowRunGuard.EndStartAttempt();
+                _isFlowStartPending = false;
+                if (!flowStarted && !flowControl.IsFlowRun)
+                    _isFlowLifecycleActive = false;
             }
         }
 
@@ -661,25 +633,6 @@ namespace ProjectARVRPro
         {
             var serverNodes = new ObservableCollection<CVBaseServerNode>(STNodeEditorMain.Nodes.OfType<CVBaseServerNode>());
             return await PreProcessManager.GetInstance().ExecuteAsync(flowName, serialNumber, serverNodes);
-        }
-
-        private async Task<string?> WaitForStartNodeReadyAsync(CancellationToken cancellationToken)
-        {
-            string? startNodeName = flowEngine.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNodeName))
-            {
-                log.Error("找不到完整流程，运行失败");
-                return null;
-            }
-
-            if (await flowEngine.EnsureStartNodeReadyAsync(startNodeName, FlowStartReadyTimeout, cancellationToken))
-                return startNodeName;
-
-            log.WarnFormat(
-                "流程启动节点未就绪 => node={0}, timeout={1}ms",
-                startNodeName,
-                FlowStartReadyTimeout.TotalMilliseconds);
-            return null;
         }
 
         private void ResetStepProgress()
@@ -722,7 +675,7 @@ namespace ProjectARVRPro
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500);
-            _flowRunGuard.Complete();
+            _isFlowLifecycleActive = false;
 
             CurrentFlowResult.FlowStatus = FlowStatus.Failed;
             CurrentFlowResult.Msg = message;
@@ -889,17 +842,17 @@ namespace ProjectARVRPro
                     await Processing(FlowControlData.SerialNumber);
                     if (!IsTestTypeCompleted())
                     {
-                        _flowRunGuard.Complete();
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
                     else
                     {
-                        _flowRunGuard.Complete();
+                        _isFlowLifecycleActive = false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _flowRunGuard.Complete();
+                    _isFlowLifecycleActive = false;
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
                 TryCount = 0;
@@ -918,7 +871,7 @@ namespace ProjectARVRPro
 
                 if (TryCount < ProjectARVRProConfig.Instance.TryCountMax)
                 {
-                    _flowRunGuard.Complete();
+                    _isFlowLifecycleActive = false;
                     await Task.Delay(200);
                     log.Info("重新尝试运行流程");
                     _ = RunTemplate();
@@ -930,7 +883,7 @@ namespace ProjectARVRPro
                     RecordFlowFailure(CurrentFlowResult.Msg, -2);
                     ViewResultManager.Save(CurrentFlowResult);
                     SaveObjectiveTestResultRecord(CurrentFlowResult);
-                    _flowRunGuard.Complete();
+                    _isFlowLifecycleActive = false;
                     var response = new SocketResponse
                     {
                         Version = "1.0",
@@ -966,18 +919,18 @@ namespace ProjectARVRPro
                     //如果允许失败，则切换PG，并且提前设置流程,执行结束时直接发送结束
                     if (!IsTestTypeCompleted())
                     {
-                        _flowRunGuard.Complete();
+                        _isFlowLifecycleActive = false;
                         SwitchPG();
                     }
                     else
                     {
-                        _flowRunGuard.Complete();
+                        _isFlowLifecycleActive = false;
                         TestCompleted();
                     }
                 }
                 else
                 {
-                    _flowRunGuard.Complete();
+                    _isFlowLifecycleActive = false;
                     if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                     {
                         var response = new SocketResponse
@@ -1610,7 +1563,7 @@ namespace ProjectARVRPro
                 log.Info("一键执行已在运行中，忽略重复调用");
                 return;
             }
-            if (flowControl.IsFlowRun || _flowRunGuard.IsBusy)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
             {
                 log.Info("当前存在流程执行或正在处理流程结果，无法一键执行");
                 return;
@@ -1655,24 +1608,6 @@ namespace ProjectARVRPro
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
                     await Refresh();
-
-                    string? startNodeName = await WaitForStartNodeReadyAsync(CancellationToken.None);
-                    if (startNodeName == null)
-                    {
-                        CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                        CurrentFlowResult.Msg = FlowStartNodeNotReadyMessage;
-                        await ExecuteProcessFailureAsync(meta.Process);
-                        RecordFlowFailure(CurrentFlowResult.Msg);
-                        logTextBox.Text = FlowName + Environment.NewLine + FlowStartNodeNotReadyMessage;
-
-                        if (!ProjectARVRProConfig.Instance.AllowTestFailures)
-                        {
-                            log.Error($"流程 {meta.Name} 启动节点未就绪且不允许失败，终止一键执行");
-                            break;
-                        }
-
-                        continue;
-                    }
 
                     if (!await _pictureSwitchService.ExecuteAsync(meta))
                     {
@@ -1725,20 +1660,7 @@ namespace ProjectARVRPro
                     stopwatch.Reset();
                     stopwatch.Start();
                     FlowControlData flowResult;
-                    bool started;
-                    try
-                    {
-                        started = flowControl.TryStart(startNodeName, CurrentFlowResult.Code);
-                    }
-                    catch
-                    {
-                        flowControl.FlowCompleted -= completedHandler;
-                        stopwatch.Stop();
-                        timer.Change(Timeout.Infinite, 500);
-                        throw;
-                    }
-
-                    if (!started)
+                    if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
                     {
                         flowControl.FlowCompleted -= completedHandler;
                         log.Error($"流程 {meta.Name} 启动被拒绝");
@@ -1877,7 +1799,8 @@ namespace ProjectARVRPro
 
             ImageView.Dispose();
             flowControl.Stop();
-            _flowRunGuard.Complete();
+            _isFlowStartPending = false;
+            _isFlowLifecycleActive = false;
             flowEngine.Dispose();
             STNodeEditorMain.Dispose();
             timer?.Change(Timeout.Infinite, 500); // 停止定时器

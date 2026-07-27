@@ -1,4 +1,5 @@
 using FlowEngineLib;
+using FlowEngineLib.Start;
 using MQTTnet;
 using System.Reflection;
 
@@ -243,6 +244,52 @@ public class MQTTClientPoolTests
         Assert.Equal(configuredVersion + 1, MQTTHelper.DefaultConfigurationVersion);
         Assert.False(helper.UsesCurrentDefaultConfiguration);
         await helper.DisconnectAsync_Client();
+    }
+
+    public static TheoryData<Type> MqttStartNodeTypes => new()
+    {
+        typeof(MQTTStartNode),
+        typeof(MQTTStartV5Node)
+    };
+
+    [Theory]
+    [MemberData(nameof(MqttStartNodeTypes))]
+    public async Task CurrentClientRemainsPublishableWhileAnotherTopicRestores(Type startNodeType)
+    {
+        string server = $"mqtt-start-publish-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, _) = CreateTrackingClient(isConnected: true);
+
+        MQTTHelper.SetDefaultCfg(server, port, userName, string.Empty, false, null!);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
+            server,
+            port,
+            userName,
+            string.Empty,
+            _ => { });
+        Assert.Equal(1, result.ResultCode);
+
+        var startNode = (BaseStartNode)Activator.CreateInstance(startNodeType)!;
+        startNode.Create();
+        FieldInfo helperField = startNodeType.GetField("_MQTTHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo hasCurrentClientMethod = startNodeType.GetMethod(
+            "HasCurrentMqttClient",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        helperField.SetValue(startNode, helper);
+        startNode.Ready = false;
+
+        Assert.False(startNode.IsExecutionReady);
+        Assert.True((bool)hasCurrentClientMethod.Invoke(startNode, [helper])!);
+
+        helperField.SetValue(startNode, null);
+        startNode.Dispose();
+        await helper.DisconnectAsync_Client();
+        MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
     }
 
     [Fact]

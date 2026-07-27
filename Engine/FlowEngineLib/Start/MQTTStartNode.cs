@@ -459,7 +459,7 @@ public class MQTTStartNode : BaseStartNode
 		string text = (string)resultData_MQTT.ResultObject1;
 		if (resultData_MQTT.EventType == EventTypeEnum.MsgRecv)
 		{
-			if (!IsExecutionReady)
+			if (!HasCurrentMqttClient(_MQTTHelper))
 			{
 				return;
 			}
@@ -622,9 +622,9 @@ public class MQTTStartNode : BaseStartNode
 			}
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
 			MQTTHelper mqttHelper = _MQTTHelper;
-			if (mqttHelper == null || !IsExecutionReady)
+			if (!HasCurrentMqttClient(mqttHelper))
 			{
-				logger.ErrorFormat("MQTT publish skipped because the active client changed => topic={0}", topic);
+				logger.ErrorFormat("MQTT publish skipped because the active client is unavailable or changed => topic={0}", topic);
 				return;
 			}
 			bool published = await mqttHelper.TryPublishAsync_Client(topic, message, retained: false, linkedToken).ConfigureAwait(false);
@@ -660,6 +660,14 @@ public class MQTTStartNode : BaseStartNode
 				publishLock.Release();
 			}
 		}
+	}
+
+	internal bool HasCurrentMqttClient(MQTTHelper mqttHelper)
+	{
+		return mqttHelper != null
+			&& ReferenceEquals(mqttHelper, _MQTTHelper)
+			&& mqttHelper.IsClientConnect()
+			&& mqttHelper.UsesCurrentDefaultConfiguration;
 	}
 
 	public override void Dispose()

@@ -606,12 +606,6 @@ namespace ProjectKB
 
             CurrentFlowResult.FlowStatus = FlowStatus.Ready;
             await Refresh();
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
-            {
-                log.Info("找不到完整流程，运行失败");
-                TryCount = 0;
-                return;
-            }
 
             if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
             {
@@ -635,7 +629,17 @@ namespace ProjectKB
             stopwatch.Start();
             BatchResultMasterDao.Instance.Save(new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
 
-            flowControl.Start(CurrentFlowResult.Code);
+            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+            {
+                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                {
+                    EventName = "Failed",
+                    Status = StatusTypeEnum.Failed,
+                    SerialNumber = CurrentFlowResult.Code,
+                    Params = "FlowStartRejected"
+                });
+                return;
+            }
             timer.Change(0, 500); // 启动定时器
         }
 

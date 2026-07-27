@@ -71,6 +71,12 @@
                     <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
+                <ComboBox Width="150" Height="28" Margin="6,2"
+                          Visibility="{Binding StandaloneVisibility}"
+                          ToolTip="启动节点"
+                          Loaded="StandaloneStartNodeComboBox_Loaded"
+                          DropDownOpened="StandaloneStartNodeComboBox_DropDownOpened"
+                          SelectionChanged="StandaloneStartNodeComboBox_SelectionChanged"/>
                 </StackPanel>
             </flow:FlowEditorCanvas.ToolbarContent>
         </flow:FlowEditorCanvas>

@@ -69,6 +69,35 @@ public class FlowEngineControlLifecycleTests
     }
 
     [Fact]
+    public void FlowControlAsyncReadinessUsesTheSelectedStartNode()
+    {
+        RunInSta(() =>
+        {
+            using var editor = new STNodeEditor();
+            var nodeManager = new FlowNodeManager();
+            using var engineControl = new InspectableFlowEngineControl(editor, false, nodeManager);
+            var first = CreateStartNode("First");
+            var selected = CreateStartNode("Selected");
+            first.RequiresReady = true;
+            first.EnsureReadyHandler = _ => Task.FromResult(true);
+            selected.RequiresReady = true;
+            selected.EnsureReadyHandler = _ => Task.FromResult(false);
+            editor.Nodes.Add(first);
+            editor.Nodes.Add(selected);
+            var flowControl = new FlowControl(MQTTControl.GetInstance(), engineControl);
+
+            bool started = flowControl.TryStartAsync("Selected", "SN-Selected").GetAwaiter().GetResult();
+
+            Assert.False(started);
+            Assert.Equal(0, first.EnsureReadyCallCount);
+            Assert.Equal(1, selected.EnsureReadyCallCount);
+            Assert.False(first.Running);
+            Assert.False(selected.Running);
+            Assert.False(flowControl.IsFlowRun);
+        });
+    }
+
+    [Fact]
     public void StartReadinessWaitHasABoundedTimeout()
     {
         RunInSta(() =>
@@ -397,7 +426,7 @@ public class FlowEngineControlLifecycleTests
 
             Assert.False(control.TryStartByName("Start", "SN-1"));
             var flowControl = new FlowControl(MQTTControl.GetInstance(), control);
-            Assert.False(flowControl.TryStart("Start", "SN-2"));
+            Assert.False(flowControl.TryStartAsync("SN-2").GetAwaiter().GetResult());
 
             Assert.Equal(0, start.ActiveCount);
             Assert.False(start.Running);

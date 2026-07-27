@@ -347,6 +347,7 @@ namespace ColorVision.Engine.FlowProcessing
                 ResetNodeTitleProgress();
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                RefreshStartNodeSelection();
 
                 FlowEngineManager.SelectedFlowParam = flowParam;
 
@@ -384,6 +385,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             ResetNodeTitleProgress();
             View.FlowEngineControl.LoadFromBase64(string.Empty);
+            RefreshStartNodeSelection();
             FlowEngineManager.CVBaseServerNodes.Clear();
             FlowEngineManager.SelectedFlowParam = flowParam;
             if (flowParam == null)
@@ -426,6 +428,27 @@ namespace ColorVision.Engine.FlowProcessing
                 return TemplateFlow.Params[selectedIndex];
 
             return null;
+        }
+
+        private void ComboBoxStartNode_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshStartNodeSelection();
+        }
+
+        private string? RefreshStartNodeSelection()
+        {
+            string? selectedName = ComboBoxStartNode.SelectedItem as string;
+            string[] startNodeNames = View.FlowEngineControl.GetStartNodeNames();
+            ComboBoxStartNode.ItemsSource = startNodeNames;
+            if (!string.IsNullOrWhiteSpace(selectedName) && startNodeNames.Contains(selectedName))
+            {
+                ComboBoxStartNode.SelectedItem = selectedName;
+            }
+            else
+            {
+                ComboBoxStartNode.SelectedIndex = startNodeNames.Length > 0 ? 0 : -1;
+            }
+            return ComboBoxStartNode.SelectedItem as string;
         }
 
         public event RoutedEventHandler Selected;
@@ -1137,8 +1160,8 @@ namespace ColorVision.Engine.FlowProcessing
                 return false;
             }
 
-            string startNode = View.FlowEngineControl.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNode))
+            string? startNodeName = RefreshStartNodeSelection();
+            if (string.IsNullOrWhiteSpace(startNodeName))
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return false;
@@ -1177,21 +1200,6 @@ namespace ColorVision.Engine.FlowProcessing
             string unstartedBatchResult = "Flow start failed";
             try
             {
-                if (!await View.FlowEngineControl.EnsureStartNodeReadyAsync(startNode, TimeSpan.FromSeconds(5), flowStartCts.Token))
-                {
-                    unstartedBatchResult = FlowMqttNotReadyMessage;
-                    View.ShowExecutionSummary(FlowMqttNotReadyMessage);
-                    log.WarnFormat(
-                        "流程启动被拒绝，StartNode MQTT 未就绪 => node={0}, endpoint={1}:{2}",
-                        startNode,
-                        MQTTHelper.GetServerCfg(),
-                        MQTTHelper.GetPortCfg());
-                    MessageBox.Show(Application.Current.GetActiveWindow(), FlowMqttNotReadyMessage, "ColorVision");
-                    return false;
-                }
-                if (!CanContinueFlowStart(sn))
-                    return false;
-
                 FlowName = flowName;
                 LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowName, out long time) ? time : 0;
                 ResetNodeTitleProgress();
@@ -1241,19 +1249,21 @@ namespace ColorVision.Engine.FlowProcessing
                     return false;
                 }
 
+                if (!await FlowControl.TryStartAsync(startNodeName, sn, flowStartCts.Token))
+                {
+                    unstartedBatchResult = FlowMqttNotReadyMessage;
+                    View.ShowExecutionSummary(FlowMqttNotReadyMessage);
+                    return false;
+                }
+
                 lock (_flowLifecycleSync)
                 {
                     if (!string.Equals(sn, _activeFlowSerialNumber, StringComparison.Ordinal)
                         || _cancelFlowStartRequested)
                     {
+                        FlowControl.Stop();
                         unstartedBatchStatus = FlowStatus.Canceled;
                         unstartedBatchResult = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
-                        return false;
-                    }
-                    if (!FlowControl.TryStart(startNode, sn))
-                    {
-                        unstartedBatchResult = FlowMqttNotReadyMessage;
-                        View.ShowExecutionSummary(FlowMqttNotReadyMessage);
                         return false;
                     }
                     started = true;

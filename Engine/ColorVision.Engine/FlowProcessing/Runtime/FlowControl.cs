@@ -6,6 +6,7 @@ using FlowEngineLib.Base;
 using log4net;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.FlowProcessing
@@ -71,6 +72,7 @@ namespace ColorVision.Engine.FlowProcessing
     public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
+        private static readonly TimeSpan StartReadyTimeout = TimeSpan.FromSeconds(5);
         private FlowEngineControl flowEngine;
         private readonly object lifecycleLock = new object();
         public event EventHandler<FlowControlData> FlowCompleted;
@@ -118,13 +120,21 @@ namespace ColorVision.Engine.FlowProcessing
                 flowEngine.StopNode(serialNumber);
         }
 
-        public void Start(string sn)
+        public async Task<bool> TryStartAsync(string sn, CancellationToken cancellationToken = default)
         {
-            if (!TryStart(flowEngine.GetStartNodeName(), sn))
-                log.WarnFormat("Flow start request was rejected => serialNumber={0}", sn);
+            string startNodeName = flowEngine.GetStartNodeName();
+            return await TryStartAsync(startNodeName, sn, cancellationToken);
         }
 
-        public bool TryStart(string startNodeName, string sn)
+        public async Task<bool> TryStartAsync(string startNodeName, string sn, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(startNodeName))
+                return false;
+            return await flowEngine.EnsureStartNodeReadyAsync(startNodeName, StartReadyTimeout, cancellationToken)
+                && TryStart(startNodeName, sn);
+        }
+
+        private bool TryStart(string startNodeName, string sn)
         {
             lock (lifecycleLock)
             {

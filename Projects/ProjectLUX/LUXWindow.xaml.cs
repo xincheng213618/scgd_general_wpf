@@ -370,8 +370,6 @@ namespace ProjectLUX
 
             await Refresh();
 
-            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info("找不到完整流程，运行失败"); return; }
-
             if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
             {
                 CurrentFlowResult.FlowStatus = FlowStatus.Failed;
@@ -392,7 +390,17 @@ namespace ProjectLUX
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
-            flowControl.Start(CurrentFlowResult.Code);
+            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+            {
+                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                {
+                    EventName = "Failed",
+                    Status = StatusTypeEnum.Failed,
+                    SerialNumber = CurrentFlowResult.Code,
+                    Params = "FlowStartRejected"
+                });
+                return;
+            }
             timer.Change(0, 500); // 启动定时器
         }
 

@@ -82,6 +82,8 @@ namespace ColorVision.Engine.FlowProcessing
         private bool _saveStandaloneFlowParam;
         private CVCommonNode? _executionDetailsNode;
         private string? _standaloneExpectedSerialNumber;
+        private string? _standaloneStartNodeName;
+        private ComboBox? _standaloneStartNodeComboBox;
         private bool _standaloneStartPending;
         private CancellationTokenSource? _standaloneStartCts;
         private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
@@ -359,6 +361,7 @@ namespace ColorVision.Engine.FlowProcessing
                 StopStandaloneFlow();
                 ShowExecutionSummary(string.Empty);
                 FlowEngineControl.FlowClear();
+                RefreshStandaloneStartNodeSelection();
                 _standaloneNodeManager!.ClearDevice();
                 STNodeEditorMain.ClearHistory();
             }
@@ -404,6 +407,7 @@ namespace ColorVision.Engine.FlowProcessing
                         FlowEngineControl.LoadFromBase64(
                             _standaloneFlowParam.DataBase64,
                             MqttRCService.GetInstance().ServiceTokens);
+                        RefreshStandaloneStartNodeSelection();
                         STNodeEditorMain.ClearHistory();
                         UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
                         return true;
@@ -416,6 +420,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
 
             FlowEngineControl.LoadFromFile(filePath, MqttRCService.GetInstance().ServiceTokens);
+            RefreshStandaloneStartNodeSelection();
             STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Path.GetFileName(filePath));
             return true;
@@ -446,6 +451,7 @@ namespace ColorVision.Engine.FlowProcessing
                 FlowEngineControl.LoadFromBase64(
                     flowParam.DataBase64,
                     MqttRCService.GetInstance().ServiceTokens);
+                RefreshStandaloneStartNodeSelection();
                 STNodeEditorMain.ClearHistory();
             }
             catch (Exception ex)
@@ -488,6 +494,7 @@ namespace ColorVision.Engine.FlowProcessing
             StopStandaloneFlow();
             ShowExecutionSummary(string.Empty);
             FlowEngineControl.FlowClear();
+            RefreshStandaloneStartNodeSelection();
             _standaloneNodeManager!.ClearDevice();
             STNodeEditorMain.ClearHistory();
             UpdateStandaloneWindowTitle(Properties.Resources.New);
@@ -775,25 +782,12 @@ namespace ColorVision.Engine.FlowProcessing
                     _standaloneNodeManager!.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
                 }
 
-                string startNode = FlowEngineControl.GetStartNodeName();
-                if (string.IsNullOrWhiteSpace(startNode))
+                string? startNodeName = RefreshStandaloneStartNodeSelection();
+                if (string.IsNullOrWhiteSpace(startNodeName))
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                     return;
                 }
-
-                if (!await FlowEngineControl.EnsureStartNodeReadyAsync(startNode, TimeSpan.FromSeconds(5), startCts.Token))
-                {
-                    ShowExecutionSummary(FlowMqttNotReadyMessage);
-                    log.WarnFormat(
-                        "Standalone flow start rejected because MQTT is not ready => node={0}, endpoint={1}:{2}",
-                        startNode,
-                        MQTTHelper.GetServerCfg(),
-                        MQTTHelper.GetPortCfg());
-                    MessageBox.Show(Application.Current.GetActiveWindow(), FlowMqttNotReadyMessage, "ColorVision");
-                    return;
-                }
-                startCts.Token.ThrowIfCancellationRequested();
 
                 FlowEditorOperations.ClearSelection(STNodeEditorMain);
 
@@ -817,7 +811,7 @@ namespace ColorVision.Engine.FlowProcessing
                 _standaloneStopwatch.Restart();
                 ShowExecutionSummary($"Run {_standaloneDocumentName}");
 
-                if (!_standaloneFlowControl.TryStart(startNode, serialNumber))
+                if (!await _standaloneFlowControl.TryStartAsync(startNodeName, serialNumber, startCts.Token))
                 {
                     _standaloneExpectedSerialNumber = null;
                     _standaloneStopwatch.Stop();
@@ -847,6 +841,37 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 _standaloneStartPending = false;
             }
+        }
+
+        private void StandaloneStartNodeComboBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            _standaloneStartNodeComboBox = (ComboBox)sender;
+            RefreshStandaloneStartNodeSelection();
+        }
+
+        private void StandaloneStartNodeComboBox_DropDownOpened(object sender, EventArgs e)
+        {
+            RefreshStandaloneStartNodeSelection();
+        }
+
+        private void StandaloneStartNodeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox { SelectedItem: string selectedName })
+                _standaloneStartNodeName = selectedName;
+        }
+
+        private string? RefreshStandaloneStartNodeSelection()
+        {
+            string[] startNodeNames = FlowEngineControl.GetStartNodeNames();
+            if (string.IsNullOrWhiteSpace(_standaloneStartNodeName)
+                || !startNodeNames.Contains(_standaloneStartNodeName))
+                _standaloneStartNodeName = startNodeNames.FirstOrDefault();
+            if (_standaloneStartNodeComboBox != null)
+            {
+                _standaloneStartNodeComboBox.ItemsSource = startNodeNames;
+                _standaloneStartNodeComboBox.SelectedItem = _standaloneStartNodeName;
+            }
+            return _standaloneStartNodeName;
         }
 
         private void StopStandaloneFlow(bool updateLog = false)
