@@ -138,7 +138,6 @@ public sealed class FlowEngineManager : ViewModelBase
         ContextMenu = new ContextMenu();
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
         ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Flow_AskAiAnalyzeCurrentFlow, Command = AskCopilotFlowCommand });
-        ContextMenu.Items.Add(new MenuItem { Header = Properties.Resources.Property, Command = Config.EditCommand });
         ContextMenu.Items.Add(new MenuItem { Header = "OpenService", Command = OpenServiceCommand });
     }
 

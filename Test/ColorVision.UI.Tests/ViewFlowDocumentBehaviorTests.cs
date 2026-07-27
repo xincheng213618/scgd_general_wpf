@@ -6,29 +6,6 @@ namespace ColorVision.UI.Tests;
 
 public class ViewFlowDocumentBehaviorTests
 {
-    [Theory]
-    [InlineData(false, false, false, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(false, true, false, false)]
-    [InlineData(false, true, true, false)]
-    [InlineData(true, false, false, false)]
-    [InlineData(true, false, true, false)]
-    [InlineData(true, true, false, false)]
-    [InlineData(true, true, true, true)]
-    public void SavePromptRequiresStandaloneDirtyDocumentAndEnabledSetting(
-        bool isStandalone,
-        bool hasChanges,
-        bool editSavePromptEnabled,
-        bool expected)
-    {
-        Assert.Equal(
-            expected,
-            ViewFlow.ShouldConfirmStandaloneDocumentReplacement(
-                isStandalone,
-                hasChanges,
-                editSavePromptEnabled));
-    }
-
     [Fact]
     public void ExistingViewFlowDocumentMethodsKeepVoidReturnTypes()
     {

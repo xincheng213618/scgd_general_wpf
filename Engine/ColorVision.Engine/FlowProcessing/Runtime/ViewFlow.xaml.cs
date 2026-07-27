@@ -571,11 +571,6 @@ namespace ColorVision.Engine.FlowProcessing
         {
             if (!_isStandalone || !HasStandaloneChanges())
                 return true;
-            if (!ShouldConfirmStandaloneDocumentReplacement(
-                    isStandalone: true,
-                    hasChanges: true,
-                    editSavePromptEnabled: FlowEngineConfig.Instance.IsAutoEditSave))
-                return true;
 
             MessageBoxResult result = MessageBox.Show(
                 Window.GetWindow(this) ?? Application.Current.GetActiveWindow(),
@@ -589,14 +584,6 @@ namespace ColorVision.Engine.FlowProcessing
                 MessageBoxResult.No => true,
                 _ => false
             };
-        }
-
-        internal static bool ShouldConfirmStandaloneDocumentReplacement(
-            bool isStandalone,
-            bool hasChanges,
-            bool editSavePromptEnabled)
-        {
-            return isStandalone && hasChanges && editSavePromptEnabled;
         }
 
         private void UpdateStandaloneWindowTitle(string? documentName)
