@@ -10,8 +10,8 @@ Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础
 | 节点执行完但流程没结束 | `nodeEndEvent` 只是节点级事件，真正完成要看 `CVEndNode` -> `FireFinished()` |
 | Flow 打开但无节点 | `Load(...)` / `LoadFromBase64(...)` 数据、节点 DLL 是否加载 |
 | 服务节点不可用 | `FlowEngineControl.services`、RC service token、Engine 层节点刷新 |
-| 调度执行卡住 | `DisplayFlow.RunFlowAndWaitAsync()`、UI Dispatcher、`FlowCompleted` |
-| 完成后项目没处理 | `FlowControl.FinishedAsync`、`DisplayFlow.FlowControl_FlowCompleted`、项目包 `Processing` |
+| 调度执行卡住 | `FlowEngineManager.RunFlowAsync()`、UI Dispatcher、`FlowCompleted` |
+| 完成后项目没处理 | `FlowControl.FinishedAsync`、`FlowExecutionSession.FlowControl_FlowCompleted`、项目包 `Processing` |
 
 ## 核心对象
 
@@ -23,7 +23,9 @@ Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础
 | `CVEndNode` | 结束节点，调用 `startAction.FireFinished()` 标记整条流程完成 |
 | `TemplateFlow` | 让流程图以模板形式存储、导入、导出和编辑 |
 | `FlowEngineToolWindow` | 独立流程编辑窗口，承载节点画布和编辑命令 |
-| `DisplayFlow` / `FlowControl` | 主程序运行面，负责运行、批次、日志、完成回调和后处理 |
+| `ViewFlow` / `FlowExecutionSession` | 内置流程选择、加载、运行、批次、日志、完成回调和后处理 |
+| `DisplayFlow` | 主程序宿主壳，负责视图注册、选中状态和服务重启 |
+| `FlowControl` | 承接流程启动、停止和完成事件 |
 
 ## 执行完成链
 
@@ -46,7 +48,9 @@ Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础
 | `TemplateFlow` | 模板列表、双击打开编辑器、`.stn` / `.cvflow` 导入导出、关联模板处理 |
 | `FlowEngineToolWindow` | 加载 `FlowEngineLib.dll`，提供撤销/重做/复制/粘贴/缩放/自动对齐 |
 | `STNodeEditorHelper` | 连接属性面板、节点树、节点配置器、合法性检查 |
-| `DisplayFlow` | 刷新流程模板、启动前预处理、运行日志、批次信息、完成后处理 |
+| `ViewFlow` | 完整流程工作区，组合编辑画布和执行状态 |
+| `FlowExecutionSession` | 刷新流程模板、启动前预处理、运行日志、批次信息、完成后处理 |
+| `DisplayFlow` | 主程序视图注册和服务宿主，不包含流程执行逻辑 |
 
 ## 扩展落点
 
@@ -55,7 +59,7 @@ Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础
 | 新流程节点 | `FlowEngineLib` 节点实现及其开始/结束/服务链行为 |
 | 新模板型流程 | `TemplateFlow` 相邻的模板管理、导入导出和编辑窗口接入 |
 | 节点属性 UI | `STNodeEditorHelper` 或 `NodeConfigurator/` |
-| 运行后项目处理 | `DisplayFlow` 完成链和项目包 `Processing` |
+| 运行后项目处理 | `FlowExecutionSession` 完成链和项目包 `Processing` |
 
 ## 边界
 
@@ -73,4 +77,6 @@ Flow 能力跨两层：`Engine/FlowEngineLib/` 提供节点执行控制和基础
 | 服务节点 | `Base/CVBaseServerNode.cs` |
 | 模板宿主 | `Engine/ColorVision.Engine/Templates/Flow/TemplateFlow.cs` |
 | 编辑窗口 | `FlowEngineToolWindow.xaml.cs`、`STNodeEditorHelper.cs` |
-| 运行窗口 | `DisplayFlow.xaml.cs`、`FlowControl.cs` |
+| 流程工作区 | `ViewFlow.xaml.cs`、`FlowExecutionSession.cs` |
+| 主程序壳 | `DisplayFlow.xaml.cs` |
+| 执行控制 | `FlowControl.cs` |

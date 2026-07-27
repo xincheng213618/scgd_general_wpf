@@ -39,7 +39,6 @@ namespace ColorVision.Engine.FlowProcessing.Integration
         private ObservableCollection<TemplateModel<FlowParam>> FlowParams => _manager.FlowParams;
         private MeasureBatchModel? Batch => _manager.Batch;
         private double BatchProgress => _manager.BatchProgress;
-        private DisplayFlow DisplayFlow => _manager.DisplayFlow;
         internal FlowEngineManager Manager => _manager;
 
         public FlowCopilotService(FlowEngineManager manager)
@@ -86,7 +85,7 @@ namespace ColorVision.Engine.FlowProcessing.Integration
                 BatchStatus = batch?.FlowStatus.ToString() ?? string.Empty,
                 BatchResult = batch?.Result ?? string.Empty,
                 BatchProgress = $"{BatchProgress:0.##}%",
-                LastNodeSummary = DisplayFlow?.LastNode?.ToShortString() ?? string.Empty,
+                LastNodeSummary = View?.LastNode?.ToShortString() ?? string.Empty,
                 RecentRunMessage = recentRunMessage,
                 RecentFailureSummary = string.Join(Environment.NewLine, failureEvidence),
                 FocusedNodeSummary = string.Join(", ", focusedNodes.Select(node => FirstNonEmpty(node.Title, node.NodeName, node.NodeType, node.NodeId))),

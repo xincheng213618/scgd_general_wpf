@@ -34,7 +34,7 @@ namespace Conoscope.ApplicationServices.Capture
     {
         public static async Task<ConoscopeFlowCaptureResult> RunFlowAsync(TemplateModel<FlowParam> flowTemplate)
         {
-            FlowControlData? result = await FlowEngineManager.GetInstance().DisplayFlow.RunFlowAndWaitAsync(flowTemplate);
+            FlowControlData? result = await FlowEngineManager.GetInstance().RunFlowAsync(flowTemplate);
             if (result == null)
             {
                 return new ConoscopeFlowCaptureResult(null, null);

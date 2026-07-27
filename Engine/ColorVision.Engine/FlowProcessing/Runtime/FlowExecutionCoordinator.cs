@@ -21,11 +21,11 @@ public sealed class FlowExecutionCoordinator
 
         if (application.Dispatcher.CheckAccess())
         {
-            return await FlowEngineManager.GetInstance().DisplayFlow.RunFlowAndWaitAsync();
+            return await FlowEngineManager.GetInstance().RunFlowAsync();
         }
 
         Task<FlowControlData?> execution = await application.Dispatcher.InvokeAsync(
-            () => FlowEngineManager.GetInstance().DisplayFlow.RunFlowAndWaitAsync());
+            () => FlowEngineManager.GetInstance().RunFlowAsync());
         return await execution;
     }
 }

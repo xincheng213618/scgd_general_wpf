@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -114,10 +115,7 @@ namespace ColorVision.Engine.FlowProcessing
             _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
             if (!isStandalone)
-            {
                 _executionSession = new FlowExecutionSession(flowEngineManager, this);
-                Loaded += ViewFlow_Loaded;
-            }
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
@@ -355,7 +353,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         internal Task RefreshRuntimeAsync()
         {
-            return _executionSession?.Refresh() ?? Task.CompletedTask;
+            return _executionSession?.RefreshAsync() ?? Task.CompletedTask;
         }
 
         internal Task SelectFlowTemplateAsync(
@@ -658,9 +656,10 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private void ViewFlow_Loaded(object sender, RoutedEventArgs e)
+        private void FlowTemplateComboBox_Loaded(object sender, RoutedEventArgs e)
         {
-            Loaded -= ViewFlow_Loaded;
+            if (sender is ComboBox comboBox)
+                comboBox.Loaded -= FlowTemplateComboBox_Loaded;
             _executionSession?.InitializeSelection();
         }
 
@@ -668,7 +667,8 @@ namespace ColorVision.Engine.FlowProcessing
             object sender,
             SelectionChangedEventArgs e)
         {
-            _executionSession?.OnFlowSelectionChanged();
+            _executionSession?.OnFlowSelectionChanged(
+                (sender as ComboBox)?.SelectedItem as TemplateModel<FlowParam>);
         }
 
         private void MqttRCService_ServiceTokensUpdated(object? sender, EventArgs e)
@@ -759,7 +759,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
             else
             {
-                _ = _executionSession?.RunFlow();
+                _ = _executionSession?.RunFlowAsync();
             }
 
         }
@@ -868,16 +868,20 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        private void StartNodeComboBox_Initialized(object sender, EventArgs e)
+        {
+            _standaloneStartNodeComboBox = (ComboBox)sender;
+        }
+
         private void StartNodeComboBox_Loaded(object sender, RoutedEventArgs e)
         {
             if (_isStandalone)
             {
-                _standaloneStartNodeComboBox = (ComboBox)sender;
                 RefreshStandaloneStartNodeSelection();
             }
             else
             {
-                _executionSession?.RefreshStartNodeSelection();
+                RefreshRuntimeStartNodeSelection();
             }
         }
 
@@ -886,13 +890,29 @@ namespace ColorVision.Engine.FlowProcessing
             if (_isStandalone)
                 RefreshStandaloneStartNodeSelection();
             else
-                _executionSession?.RefreshStartNodeSelection();
+                RefreshRuntimeStartNodeSelection();
         }
 
         private void StartNodeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isStandalone && sender is ComboBox { SelectedItem: string selectedName })
-                _standaloneStartNodeName = selectedName;
+            if (sender is not ComboBox comboBox)
+                return;
+
+            if (_isStandalone)
+                _standaloneStartNodeName = comboBox.SelectedItem as string;
+            else
+                _executionSession?.SelectStartNode(comboBox.SelectedItem as string);
+        }
+
+        internal void RefreshRuntimeStartNodeSelection()
+        {
+            if (_executionSession == null || _standaloneStartNodeComboBox == null)
+                return;
+
+            string[] startNodeNames = _executionSession.RefreshStartNodeSelection(
+                _standaloneStartNodeComboBox.SelectedItem as string);
+            _standaloneStartNodeComboBox.ItemsSource = startNodeNames;
+            _standaloneStartNodeComboBox.SelectedItem = _executionSession.SelectedStartNodeName;
         }
 
         private string? RefreshStandaloneStartNodeSelection()

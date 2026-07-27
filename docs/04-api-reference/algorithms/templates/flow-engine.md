@@ -23,7 +23,7 @@
 | 节点配置 | `NodeConfigurator/*.cs` | 把设备列表、本地图像、普通模板、JSON 模板挂进节点属性面板 |
 | 单流程包 | `.cvflow`、`FlowPackageHelper` | ZIP 包，包含 `flow.stn` 和 `manifest.json`，可携带关联模板 |
 | 旧图文件 | `.stn` | 仅保存节点图原始数据 |
-| 调度运行 | `FlowJob`、`DisplayFlow.RunFlowAndWaitAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
+| 调度运行 | `FlowJob`、`FlowEngineManager.RunFlowAsync()` | Quartz 线程切回 UI 线程运行流程并等待结果 |
 
 ## 存储边界
 
@@ -50,12 +50,12 @@
 
 | 入口 | 当前链路 | 维护重点 |
 | --- | --- | --- |
-| UI 手动运行 | `DisplayFlow.RunFlow()` -> `FlowControl.Start(sn)` | 创建 `MeasureBatchModel`，绑定 `FlowCompleted` |
-| 等待式运行 | `DisplayFlow.RunFlowAndWaitAsync()` | 给调度、自动化或外部调用等待流程结束 |
-| Quartz 调度 | `FlowJob.Execute(...)` -> UI 线程调用 `RunFlowAndWaitAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI |
-| 停止流程 | `DisplayFlow.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
+| UI 手动运行 | `ViewFlow` -> `FlowExecutionSession.RunFlowAsync()` -> `FlowControl.TryStartAsync(...)` | 创建 `MeasureBatchModel`，绑定 `FlowCompleted` |
+| 等待式运行 | `FlowEngineManager.RunFlowAsync()` | 给调度、自动化或外部调用等待流程结束 |
+| Quartz 调度 | `FlowJob.Execute(...)` -> `FlowExecutionCoordinator` -> `FlowEngineManager.RunFlowAsync()` | 通过 `Application.Current.Dispatcher` 切回 UI |
+| 停止流程 | `ViewFlow` -> `FlowExecutionSession.StopFlow()` -> `FlowControl.Stop()` | 批次状态更新为 `Canceled` |
 
-`FlowControl_FlowCompleted(...)` 会写回 `FlowStatus`、`TotalTime`、`Result`，触发 `FlowExecutionCompleted`，再进入项目包后续 `Processing(FlowEngineManager.Batch)`。
+`FlowExecutionSession.FlowControl_FlowCompleted(...)` 会写回 `FlowStatus`、`TotalTime`、`Result`，触发 `FlowExecutionCompleted`，再进入项目包后续 `Processing(FlowEngineManager.Batch)`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
 
 ## 验收
 
@@ -84,3 +84,6 @@
 | 编辑器宿主 | `STNodeEditorHelper.cs` |
 | 节点属性配置 | `NodeConfigurator/` |
 | `.cvflow` 导入导出 | `FlowPackageHelper` 相关实现 |
+| 流程工作区 | `ViewFlow.xaml.cs` |
+| 执行会话 | `FlowExecutionSession.cs` |
+| 主程序壳 | `DisplayFlow.xaml.cs` |

@@ -71,18 +71,18 @@
                     <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
-                <ComboBox x:Name="FlowTemplateComboBox"
-                          Width="180" Height="28" Margin="6,2"
+                <ComboBox Width="180" Height="28" Margin="6,2"
                           Visibility="{Binding RuntimeVisibility}"
                           ItemsSource="{Binding FlowEngineManager.FlowParams}"
                           SelectedIndex="{Binding FlowEngineManager.TemplateFlowParamsIndex}"
                           SelectedValuePath="Value"
                           DisplayMemberPath="Key"
+                          Loaded="FlowTemplateComboBox_Loaded"
                           SelectionChanged="FlowTemplateComboBox_SelectionChanged"
                           ToolTip="{x:Static properties:Resources.Workflow}"/>
-                <ComboBox x:Name="RuntimeStartNodeComboBox"
-                          Width="150" Height="28" Margin="2"
+                <ComboBox Width="150" Height="28" Margin="2"
                           ToolTip="启动节点"
+                          Initialized="StartNodeComboBox_Initialized"
                           Loaded="StartNodeComboBox_Loaded"
                           DropDownOpened="StartNodeComboBox_DropDownOpened"
                           SelectionChanged="StartNodeComboBox_SelectionChanged"/>

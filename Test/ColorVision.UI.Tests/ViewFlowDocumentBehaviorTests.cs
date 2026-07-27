@@ -7,6 +7,18 @@ namespace ColorVision.UI.Tests;
 public class ViewFlowDocumentBehaviorTests
 {
     [Fact]
+    public void DisplayFlowDoesNotExposeExecutionCommands()
+    {
+        Assert.Null(typeof(DisplayFlow).GetMethod("RunFlow"));
+        Assert.Null(typeof(DisplayFlow).GetMethod("RunFlowAsync"));
+        Assert.Null(typeof(DisplayFlow).GetMethod("RunFlowAndWaitAsync"));
+        Assert.Null(typeof(DisplayFlow).GetMethod("StopFlow"));
+        Assert.Null(typeof(DisplayFlow).GetMethod("Refresh"));
+        Assert.Null(typeof(DisplayFlow).GetMethod("RefreshAsync"));
+        Assert.NotNull(typeof(FlowEngineManager).GetMethod(nameof(FlowEngineManager.RunFlowAsync)));
+    }
+
+    [Fact]
     public void ExistingViewFlowDocumentMethodsKeepVoidReturnTypes()
     {
         Assert.Equal(
