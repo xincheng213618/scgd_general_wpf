@@ -74,6 +74,7 @@ namespace ColorVision.Engine.FlowProcessing
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
         private static readonly TimeSpan StartReadyTimeout = TimeSpan.FromSeconds(5);
         private FlowEngineControl flowEngine;
+        private readonly Action<CVStartCFC>? configureStartAction;
         private readonly object lifecycleLock = new object();
         public event EventHandler<FlowControlData> FlowCompleted;
 
@@ -86,6 +87,14 @@ namespace ColorVision.Engine.FlowProcessing
         public FlowControl(MQTTControl mQTTControl, FlowEngineControl flowEngine) : this(mQTTControl)
         {
             this.flowEngine = flowEngine;
+        }
+
+        internal FlowControl(
+            MQTTControl mQTTControl,
+            FlowEngineControl flowEngine,
+            Action<CVStartCFC> configureStartAction) : this(mQTTControl, flowEngine)
+        {
+            this.configureStartAction = configureStartAction;
         }
 
         private int _isFlowRun;
@@ -151,7 +160,7 @@ namespace ColorVision.Engine.FlowProcessing
                 flowEngine.Finished += FinishedAsync;
                 try
                 {
-                    if (!flowEngine.TryStartNode(startNodeName, sn, tol))
+                    if (!flowEngine.TryStartNode(startNodeName, sn, tol, configureStartAction))
                     {
                         flowEngine.Finished -= FinishedAsync;
                         SerialNumber = null;

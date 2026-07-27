@@ -207,8 +207,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private protected int SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
         {
             LocalFlowFrame frame = execution.Frame;
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            if (!LocalFlowResultPersistence.TryGetBatch(action, out MeasureBatchModel? batch))
+                return -1;
+
             string? cieFilePath = NullIfEmpty(frame.CvCieFilePath);
             if (SaveFiles && cieFilePath == null)
             {
@@ -474,7 +475,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                         POIReviseTemplate = revise?.Name,
                         MemoryOnly = string.IsNullOrWhiteSpace(execution.Frame.CvCieFilePath)
                     });
-                LocalPoiCalculator.SaveDetails(poiMasterId, result);
+                if (poiMasterId > 0)
+                    LocalPoiCalculator.SaveDetails(poiMasterId, result);
 
                 action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(execution.Frame.FrameId), result);
                 action.Data["LocalPoiCount"] = result.Points.Count;

@@ -455,12 +455,18 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public bool TryStart(string serialNumber)
 	{
+		return TryStart(serialNumber, null);
+	}
+
+	public bool TryStart(string serialNumber, Action<CVStartCFC> configureStartAction)
+	{
 		if (!CanAcceptStart)
 		{
 			logger.WarnFormat("Flow start rejected because the start node has no connected output => {0}", m_nodeName);
 			return false;
 		}
 		CVStartCFC start = new CVStartCFC(serialNumber);
+		configureStartAction?.Invoke(start);
 		DoDispatch(start);
 		return true;
 	}

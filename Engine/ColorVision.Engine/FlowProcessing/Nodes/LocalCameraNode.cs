@@ -163,8 +163,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private int SaveMasterResult(CVStartCFC action, LocalFlowFrame frame, int totalTime, CameraRunParam? cameraParameters, CalibrationParam? calibration)
         {
-            MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
-                ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
+            if (!LocalFlowResultPersistence.TryGetBatch(action, out MeasureBatchModel? batch))
+                return -1;
+
             string fileUrl = !string.IsNullOrWhiteSpace(frame.CvCieFilePath) ? frame.CvCieFilePath : frame.CvRawFilePath;
             MeasureResultImgModel model = new()
             {

@@ -1,5 +1,7 @@
 #pragma warning disable CS8601
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
@@ -57,6 +59,12 @@ public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposa
         this.ApplyChangedSelectedColor(DisPlayBorder);
         EnsureTimedButtonOperations();
         ServiceConfig.Instance.PropertyChanged += ServiceConfig_PropertyChanged;
+    }
+
+    private void ComboBoxFlow_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        View.SelectRuntimeFlowTemplate(
+            (sender as ComboBox)?.SelectedItem as TemplateModel<FlowParam>);
     }
 
     private TimedButtonOperationRegistry EnsureTimedButtonOperations()

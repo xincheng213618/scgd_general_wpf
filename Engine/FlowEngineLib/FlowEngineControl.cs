@@ -713,8 +713,13 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 
 	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services)
 	{
+		return TryStartNode(name, serialNumber, services, null);
+	}
+
+	public bool TryStartNode(string name, string serialNumber, List<MQTTServiceInfo> services, Action<CVStartCFC> configureStartAction)
+	{
 		FlowServiceManager.Instance.AddMQTTService(services);
-		return TryStartNode(name, serialNumber);
+		return TryStartNode(name, serialNumber, configureStartAction);
 	}
 
 	protected void StartNode(string name, string serialNumber)
@@ -723,6 +728,11 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 	}
 
 	protected bool TryStartNode(string name, string serialNumber)
+	{
+		return TryStartNode(name, serialNumber, (Action<CVStartCFC>)null);
+	}
+
+	protected bool TryStartNode(string name, string serialNumber, Action<CVStartCFC> configureStartAction)
 	{
 		BaseStartNode startNode = null;
 		lock (stateLock)
@@ -749,7 +759,7 @@ public class FlowEngineControl : FlowEngineAPI, IDisposable
 		try
 		{
 			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
-			started = startNode.TryStart(serialNumber);
+			started = startNode.TryStart(serialNumber, configureStartAction);
 		}
 		finally
 		{

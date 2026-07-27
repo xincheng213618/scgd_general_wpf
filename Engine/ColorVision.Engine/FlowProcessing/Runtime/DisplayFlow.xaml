@@ -24,29 +24,68 @@
         </DockPanel>
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <DockPanel Margin="5">
-                <Button x:Name="RestartServicesButton"
-                        DockPanel.Dock="Left"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}"
-                        Margin="0,0,5,0"
-                        Padding="6,2"
-                        Click="Button_RestartServices_Click"/>
-                <Button DockPanel.Dock="Right"
-                        Command="{Binding EditTemplateFlowCommand}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Padding="2"
-                        Height="24"
-                        Width="24">
-                    <TextBlock Text="&#xE713;"
-                               HorizontalAlignment="Center"
-                               FontFamily="Segoe MDL2 Assets"
-                               FontSize="16"
-                               Foreground="{DynamicResource GlobalTextBrush}"/>
-                </Button>
-            </DockPanel>
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,0,0,5" LastChildFill="True">
+                    <Button DockPanel.Dock="Left"
+                            Command="{Binding View.RefreshCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="3,0"
+                            ToolTip="{x:Static properties:Resources.Refresh}">
+                        <TextBlock Text="&#xE72C;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="15"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </Button>
+                    <Button DockPanel.Dock="Right"
+                            Command="{Binding EditTemplateFlowCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="2"
+                            Height="24"
+                            Width="24">
+                        <TextBlock Text="&#xE713;"
+                                   HorizontalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </Button>
+                    <ComboBox x:Name="ComboBoxFlow"
+                              Margin="5,0"
+                              Style="{StaticResource ComboBoxExtend.Small}"
+                              ItemsSource="{Binding FlowParams}"
+                              SelectedIndex="{Binding TemplateFlowParamsIndex}"
+                              DisplayMemberPath="Key"
+                              SelectionChanged="ComboBoxFlow_SelectionChanged"
+                              ToolTip="{x:Static properties:Resources.Workflow}"/>
+                </DockPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="RestartServicesButton"
+                            HorizontalAlignment="Left"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}"
+                            Margin="0,0,5,0"
+                            Padding="6,2"
+                            Click="Button_RestartServices_Click"/>
+                    <Grid Grid.Column="1">
+                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"
+                                Command="{Binding View.RunFlowCommand}"
+                                Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}"
+                                FontWeight="Bold"
+                                FontSize="16"/>
+                        <Button Content="{x:Static properties:Resources.StopProcess}"
+                                Command="{Binding View.StopFlowCommand}"
+                                Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}"
+                                FontWeight="Bold"
+                                FontSize="16"/>
+                    </Grid>
+                </Grid>
+            </StackPanel>
         </Border>
     </StackPanel>
 </UserControl>

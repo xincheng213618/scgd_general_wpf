@@ -7,6 +7,7 @@ using ColorVision.Engine.FlowProcessing.PostProcess;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -46,6 +47,8 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand NewDocumentCommand { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
+        public RelayCommand RunFlowCommand { get; set; }
+        public RelayCommand StopFlowCommand { get; set; }
 
         public RelayCommand ClearCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
@@ -85,6 +88,7 @@ namespace ColorVision.Engine.FlowProcessing
         private string? _standaloneStartNodeName;
         private ComboBox? _standaloneStartNodeComboBox;
         private bool _standaloneStartPending;
+        private bool _runtimeSelectionInitialized;
         private CancellationTokenSource? _standaloneStartCts;
         private const string FlowMqttNotReadyMessage = "流程 MQTT 连接尚未就绪，本次未启动。请检查 MQTT 配置或稍后重试。";
 
@@ -100,7 +104,10 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 _standaloneNodeManager = new FlowNodeManager();
                 FlowEngineControl = new FlowEngineControl(false, _standaloneNodeManager);
-                _standaloneFlowControl = new FlowControl(MQTTControl.GetInstance(), FlowEngineControl);
+                _standaloneFlowControl = new FlowControl(
+                    MQTTControl.GetInstance(),
+                    FlowEngineControl,
+                    LocalFlowResultPersistence.Disable);
             }
             else
             {
@@ -121,6 +128,8 @@ namespace ColorVision.Engine.FlowProcessing
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
             NewDocumentCommand = new RelayCommand(a => NewDocument(), a => _isStandalone);
             RefreshCommand = new RelayCommand(a => Refresh());
+            RunFlowCommand = new RelayCommand(a => RunFlow());
+            StopFlowCommand = new RelayCommand(a => StopFlow());
             ClearCommand = new RelayCommand(a => Clear());
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
@@ -641,6 +650,7 @@ namespace ColorVision.Engine.FlowProcessing
 
                 this.Loaded += (s, e) =>
                 {
+                    InitializeRuntimeSelection();
                     DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
                     FlowEngineManager.Copilot.PublishContext();
                 };
@@ -656,19 +666,23 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private void FlowTemplateComboBox_Loaded(object sender, RoutedEventArgs e)
+        private void InitializeRuntimeSelection()
         {
-            if (sender is ComboBox comboBox)
-                comboBox.Loaded -= FlowTemplateComboBox_Loaded;
+            if (_runtimeSelectionInitialized)
+                return;
+
+            _runtimeSelectionInitialized = true;
             _executionSession?.InitializeSelection();
         }
 
-        private void FlowTemplateComboBox_SelectionChanged(
-            object sender,
-            SelectionChangedEventArgs e)
+        internal void SelectRuntimeFlowTemplate(TemplateModel<FlowParam>? flowTemplate)
         {
-            _executionSession?.OnFlowSelectionChanged(
-                (sender as ComboBox)?.SelectedItem as TemplateModel<FlowParam>);
+            if (flowTemplate == null
+                || FlowEngineManager.SelectedFlowParam?.Id == flowTemplate.Value.Id)
+                return;
+
+            _runtimeSelectionInitialized = true;
+            _executionSession?.OnFlowSelectionChanged(flowTemplate);
         }
 
         private void MqttRCService_ServiceTokensUpdated(object? sender, EventArgs e)
@@ -751,30 +765,20 @@ namespace ColorVision.Engine.FlowProcessing
             GC.SuppressFinalize(this);
         }
 
-        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        private void RunFlow()
         {
             if (_isStandalone)
-            {
                 RunStandaloneFlow();
-            }
             else
-            {
                 _ = _executionSession?.RunFlowAsync();
-            }
-
         }
 
-        private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
+        private void StopFlow()
         {
             if (_isStandalone)
-            {
                 StopStandaloneFlow(true);
-            }
             else
-            {
                 _executionSession?.StopFlow();
-            }
-
         }
 
         private async void RunStandaloneFlow()

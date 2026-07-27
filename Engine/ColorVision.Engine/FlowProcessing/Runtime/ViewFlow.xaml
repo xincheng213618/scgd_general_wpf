@@ -71,16 +71,8 @@
                     <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
-                <ComboBox Width="180" Height="28" Margin="6,2"
-                          Visibility="{Binding RuntimeVisibility}"
-                          ItemsSource="{Binding FlowEngineManager.FlowParams}"
-                          SelectedIndex="{Binding FlowEngineManager.TemplateFlowParamsIndex}"
-                          SelectedValuePath="Value"
-                          DisplayMemberPath="Key"
-                          Loaded="FlowTemplateComboBox_Loaded"
-                          SelectionChanged="FlowTemplateComboBox_SelectionChanged"
-                          ToolTip="{x:Static properties:Resources.Workflow}"/>
                 <ComboBox Width="150" Height="28" Margin="2"
+                          Visibility="{Binding StandaloneVisibility}"
                           ToolTip="启动节点"
                           Initialized="StartNodeComboBox_Initialized"
                           Loaded="StartNodeComboBox_Loaded"
@@ -115,7 +107,7 @@
                                     Padding="3"
                                     ToolTip="{x:Static properties:Resources.ExecutionProcess}" Margin="6,0,0,0"
                                     Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter1}}"
-                                    Click="Button_FlowRun_Click">
+                                    Command="{Binding RunFlowCommand}">
                                 <TextBlock Text="&#xE768;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="30"
@@ -125,7 +117,7 @@
                                     Padding="3"
                                     ToolTip="{x:Static properties:Resources.StopProcess}" Margin="6,0,0,0"
                                     Visibility="{Binding FlowControl.IsFlowRun, Converter={StaticResource bool2VisibilityConverter}}"
-                                    Click="Button_FlowStop_Click">
+                                    Command="{Binding StopFlowCommand}">
                                 <TextBlock Text="&#xE71A;"
                                            FontFamily="Segoe MDL2 Assets"
                                            FontSize="30"
