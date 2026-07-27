@@ -203,7 +203,7 @@ namespace ColorVision.Engine.FlowProcessing
                 ResetNodeTitleProgress();
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-                View.RefreshRuntimeStartNodeSelection();
+                RefreshStartNodeSelection();
 
                 FlowEngineManager.SelectedFlowParam = flowParam;
 
@@ -241,7 +241,7 @@ namespace ColorVision.Engine.FlowProcessing
 
             ResetNodeTitleProgress();
             View.FlowEngineControl.LoadFromBase64(string.Empty);
-            View.RefreshRuntimeStartNodeSelection();
+            RefreshStartNodeSelection();
             FlowEngineManager.CVBaseServerNodes.Clear();
             FlowEngineManager.SelectedFlowParam = flowParam;
             if (flowParam == null)

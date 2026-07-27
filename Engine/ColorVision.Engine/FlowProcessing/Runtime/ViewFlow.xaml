@@ -17,16 +17,8 @@
                                PropertyPanelMargin="0,54,10,108">
             <flow:FlowEditorCanvas.ToolbarContent>
                 <StackPanel Orientation="Horizontal">
-                <Button Command="{Binding OpenDocumentCommand}" Width="34" Height="32"
-                        Margin="2,0" Padding="3"
-                        Visibility="{Binding StandaloneVisibility}"
-                        ToolTip="{x:Static properties:Resources.Loading}">
-                    <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets"
-                               Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
-                </Button>
                 <Button Command="{Binding NewFlowCommand}" Width="34" Height="32"
                         Margin="2,0" Padding="3"
-                        Visibility="{Binding RuntimeVisibility}"
                         ToolTip="{x:Static properties:Resources.New}">
                     <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
@@ -59,25 +51,16 @@
                 </Button>
                 <Button Command="{Binding ExportFlowCommand}" Width="34" Height="32"
                         Margin="2,0" Padding="3"
-                        Visibility="{Binding RuntimeVisibility}"
                         ToolTip="{x:Static properties:Resources.Flow_ExportFlow}">
                     <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
                 <Button Command="{Binding ImportFlowCommand}" Width="34" Height="32"
                         Margin="2,0" Padding="3"
-                        Visibility="{Binding RuntimeVisibility}"
                         ToolTip="{x:Static properties:Resources.Flow_ImportFlow}">
                     <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets"
                                Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                 </Button>
-                <ComboBox Width="150" Height="28" Margin="2"
-                          Visibility="{Binding StandaloneVisibility}"
-                          ToolTip="启动节点"
-                          Initialized="StartNodeComboBox_Initialized"
-                          Loaded="StartNodeComboBox_Loaded"
-                          DropDownOpened="StartNodeComboBox_DropDownOpened"
-                          SelectionChanged="StartNodeComboBox_SelectionChanged"/>
                 </StackPanel>
             </flow:FlowEditorCanvas.ToolbarContent>
         </flow:FlowEditorCanvas>
