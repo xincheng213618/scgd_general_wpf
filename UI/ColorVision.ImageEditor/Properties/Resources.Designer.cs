@@ -70,7 +70,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 调整亮度和对比度 的本地化字符串。
+        ///   查找类似 从原图调整曝光、亮度偏移、对比度和 Gamma 的本地化字符串。
         /// </summary>
         public static string Algorithm_AdjustBrightnessContrast {
             get {
@@ -133,7 +133,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 亮度 的本地化字符串。
+        ///   查找类似 亮度偏移 (%) 的本地化字符串。
         /// </summary>
         public static string Algorithm_Brightness {
             get {
@@ -142,7 +142,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 亮度对比度调整 的本地化字符串。
+        ///   查找类似 基础调整 的本地化字符串。
         /// </summary>
         public static string Algorithm_BrightnessContrastTitle {
             get {
@@ -174,6 +174,15 @@ namespace ColorVision.ImageEditor.Properties {
         public static string Algorithm_EdgeDetectionTitle {
             get {
                 return ResourceManager.GetString("Algorithm_EdgeDetectionTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 曝光 (EV) 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Exposure {
+            get {
+                return ResourceManager.GetString("Algorithm_Exposure", resourceCulture);
             }
         }
         
@@ -248,13 +257,31 @@ namespace ColorVision.ImageEditor.Properties {
                 return ResourceManager.GetString("Algorithm_MedianBlurTitle", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 预览 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Preview {
+            get {
+                return ResourceManager.GetString("Algorithm_Preview", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 红色 的本地化字符串。
         /// </summary>
         public static string Algorithm_Red {
             get {
                 return ResourceManager.GetString("Algorithm_Red", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 复位 的本地化字符串。
+        /// </summary>
+        public static string Algorithm_Reset {
+            get {
+                return ResourceManager.GetString("Algorithm_Reset", resourceCulture);
             }
         }
         

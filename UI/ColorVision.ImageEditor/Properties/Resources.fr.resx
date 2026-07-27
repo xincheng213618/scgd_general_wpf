@@ -152,7 +152,7 @@
     <value>Correction gamma</value>
   </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>Réglage de la luminosité et du contraste</value>
+    <value>Réglages de base...</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
     <value>Traitement au seuil</value>
@@ -807,16 +807,25 @@
     <value>Cancel</value>
   </data>
   <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
-    <value>Brightness Contrast Adjustment</value>
+    <value>Réglages de base</value>
   </data>
   <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
-    <value>Adjust Brightness and Contrast</value>
+    <value>Régler l'exposition, le décalage de luminosité, le contraste et le Gamma depuis l'image d'origine</value>
   </data>
   <data name="Algorithm_Brightness" xml:space="preserve">
-    <value>Brightness</value>
+    <value>Décalage de luminosité (%)</value>
   </data>
   <data name="Algorithm_Contrast" xml:space="preserve">
-    <value>Contrast</value>
+    <value>Contraste (%)</value>
+  </data>
+  <data name="Algorithm_Exposure" xml:space="preserve">
+    <value>Exposition (EV)</value>
+  </data>
+  <data name="Algorithm_Reset" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="Algorithm_Preview" xml:space="preserve">
+    <value>Aperçu</value>
   </data>
   <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
     <value>Edge Detection (Canny)</value>

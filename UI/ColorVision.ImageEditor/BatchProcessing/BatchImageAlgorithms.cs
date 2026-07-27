@@ -39,8 +39,7 @@ namespace ColorVision.ImageEditor.BatchProcessing
         {
             PseudoColorBatchOptions pseudoColor = new();
             WhiteBalanceBatchOptions whiteBalance = new();
-            GammaBatchOptions gamma = new();
-            BrightnessContrastBatchOptions brightnessContrast = new();
+            BasicAdjustmentBatchOptions basicAdjustment = new();
             ThresholdBatchOptions threshold = new();
             GaussianBlurBatchOptions gaussianBlur = new();
             MedianBlurBatchOptions medianBlur = new();
@@ -55,9 +54,13 @@ namespace ColorVision.ImageEditor.BatchProcessing
                 new("伪彩色", "_pseudo", pseudoColor, source => ApplyPseudoColor(source, pseudoColor)),
                 new("自动色阶", "_autolevels", new NoBatchAlgorithmOptions(), ApplyAutoLevels),
                 new("白平衡", "_whitebalance", whiteBalance, source => ApplyWhiteBalance(source, whiteBalance)),
-                new("伽马校正", "_gamma", gamma, source => ApplyGamma(source, gamma)),
-                InPlace("亮度/对比度", "_brightness", brightnessContrast,
-                    mat => OpenCvImageAlgorithms.AdjustBrightnessContrast(mat, brightnessContrast.Contrast, brightnessContrast.Brightness)),
+                InPlace("基础调整", "_adjusted", basicAdjustment,
+                    mat => OpenCvImageAlgorithms.AdjustBasic(
+                        mat,
+                        basicAdjustment.Exposure,
+                        basicAdjustment.Brightness,
+                        basicAdjustment.Contrast,
+                        basicAdjustment.Gamma)),
                 InPlace("阈值处理", "_threshold", threshold,
                     mat => OpenCvImageAlgorithms.Threshold(mat, threshold.Threshold, GetMaximum(mat.Depth()), ThresholdTypes.Binary)),
                 InPlace("锐化", "_sharpen", new NoBatchAlgorithmOptions(), OpenCvImageAlgorithms.Sharpen),
@@ -132,18 +135,6 @@ namespace ColorVision.ImageEditor.BatchProcessing
                     channel.Dispose();
                 }
             }
-        }
-
-        private static Mat ApplyGamma(Mat source, GammaBatchOptions options)
-        {
-            double gamma = Math.Max(0.01, options.Gamma);
-            double maximum = GetMaximum(source.Depth());
-            using Mat normalized = new();
-            source.ConvertTo(normalized, MatType.MakeType(MatType.CV_32F, source.Channels()), 1d / maximum);
-            Cv2.Pow(normalized, 1d / gamma, normalized);
-            Mat result = new();
-            normalized.ConvertTo(result, source.Type(), maximum);
-            return result;
         }
 
         private static Mat ApplyCanny(Mat source, CannyBatchOptions options)
@@ -269,19 +260,19 @@ namespace ColorVision.ImageEditor.BatchProcessing
         public double BlueScale { get; set; } = 1;
     }
 
-    internal sealed class GammaBatchOptions
+    internal sealed class BasicAdjustmentBatchOptions
     {
-        [DisplayName("Gamma")]
-        public double Gamma { get; set; } = 1;
-    }
+        [DisplayName("曝光 (EV, -5~5)")]
+        public double Exposure { get; set; }
 
-    internal sealed class BrightnessContrastBatchOptions
-    {
-        [DisplayName("亮度 (-100~150)")]
+        [DisplayName("亮度偏移 % (-100~100)")]
         public double Brightness { get; set; }
 
-        [DisplayName("对比度 (-50~100)")]
+        [DisplayName("对比度 % (-100~100)")]
         public double Contrast { get; set; }
+
+        [DisplayName("Gamma (0.1~5)")]
+        public double Gamma { get; set; } = 1;
     }
 
     internal sealed class ThresholdBatchOptions

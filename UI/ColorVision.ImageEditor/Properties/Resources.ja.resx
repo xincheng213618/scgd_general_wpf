@@ -140,7 +140,7 @@
     <value>ガンマ補正</value>
   </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>明るさとコントラストの調整</value>
+    <value>基本調整...</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
     <value>閾値処理</value>
@@ -807,16 +807,25 @@
     <value>Cancel</value>
   </data>
   <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
-    <value>Brightness Contrast Adjustment</value>
+    <value>基本調整</value>
   </data>
   <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
-    <value>Adjust Brightness and Contrast</value>
+    <value>元画像から露出、明るさオフセット、コントラスト、Gamma を調整します</value>
   </data>
   <data name="Algorithm_Brightness" xml:space="preserve">
-    <value>Brightness</value>
+    <value>明るさオフセット (%)</value>
   </data>
   <data name="Algorithm_Contrast" xml:space="preserve">
-    <value>Contrast</value>
+    <value>コントラスト (%)</value>
+  </data>
+  <data name="Algorithm_Exposure" xml:space="preserve">
+    <value>露出 (EV)</value>
+  </data>
+  <data name="Algorithm_Reset" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="Algorithm_Preview" xml:space="preserve">
+    <value>プレビュー</value>
   </data>
   <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
     <value>Edge Detection (Canny)</value>

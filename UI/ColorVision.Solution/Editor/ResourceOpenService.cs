@@ -110,6 +110,39 @@ namespace ColorVision.Solution.Editor
 
         public bool TryOpen(string path) => Open(path).Succeeded;
 
+        /// <summary>
+        /// Opens a file directly with its configured workspace editor.
+        /// This deliberately bypasses standalone file actions such as the
+        /// lightweight CVRAW/CVCIE preview used by shell and command-line opens.
+        /// </summary>
+        public ResourceOpenResult OpenInEditor(string? path)
+        {
+            ResourceOpenKind kind = Classify(path);
+            if (kind == ResourceOpenKind.Missing || string.IsNullOrWhiteSpace(path))
+                return new ResourceOpenResult(kind, false, "要打开的资源不存在。");
+            if (kind != ResourceOpenKind.File)
+                return new ResourceOpenResult(kind, false, "只有普通文件可以在工作区编辑器中打开。");
+
+            try
+            {
+                return OpenFileInEditor(path);
+            }
+            catch (Exception ex)
+            {
+                return new ResourceOpenResult(kind, false, $"无法打开文件：{ex.Message}");
+            }
+        }
+
+        public bool TryOpenInEditorWithFeedback(string path, Window? owner = null)
+        {
+            ResourceOpenResult result = OpenInEditor(path);
+            if (result.Succeeded)
+                return true;
+
+            ShowOpenFailure(result, owner);
+            return false;
+        }
+
         internal async Task<FileOpenRouteResult> RouteFileProcessorOpenAsync(
             string path,
             CancellationToken cancellationToken)
@@ -159,12 +192,7 @@ namespace ColorVision.Solution.Editor
                         actionResult.ErrorMessage,
                         Canceled: actionResult.Canceled);
                 }
-                bool succeeded = _editorManager.TryOpenFile(path, out string errorMessage);
-                if (succeeded)
-                    return new ResourceOpenResult(kind, true);
-                if (string.IsNullOrWhiteSpace(errorMessage))
-                    errorMessage = $"无法打开{GetResourceKindName(kind)}。";
-                return new ResourceOpenResult(kind, false, errorMessage);
+                return OpenFileInEditor(path);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -194,24 +222,7 @@ namespace ColorVision.Solution.Editor
             if (result.Succeeded)
                 return true;
 
-            Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
-            if (actualOwner == null)
-            {
-                MessageBox.Show(
-                    result.ErrorMessage,
-                    "无法打开资源",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-            else
-            {
-                MessageBox.Show(
-                    actualOwner,
-                    result.ErrorMessage,
-                    "无法打开资源",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
+            ShowOpenFailure(result, owner);
             return false;
         }
 
@@ -226,24 +237,7 @@ namespace ColorVision.Solution.Editor
             if (result.Canceled)
                 return false;
 
-            Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
-            if (actualOwner == null)
-            {
-                MessageBox.Show(
-                    result.ErrorMessage,
-                    "无法打开资源",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-            else
-            {
-                MessageBox.Show(
-                    actualOwner,
-                    result.ErrorMessage,
-                    "无法打开资源",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
+            ShowOpenFailure(result, owner);
             return false;
         }
 
@@ -277,6 +271,33 @@ namespace ColorVision.Solution.Editor
                 }
 
                 ResourceOpenResult result = Open(path);
+                if (result.Succeeded)
+                    successfulPaths.Add(path);
+                else
+                    failures.Add(new ResourceOpenFailure(path, result.Kind, result.ErrorMessage));
+            }
+
+            return new ResourceOpenBatchResult(resources.Count, successfulPaths, failures);
+        }
+
+        public ResourceOpenBatchResult OpenManyFromWorkspace(IEnumerable<string> paths)
+        {
+            ArgumentNullException.ThrowIfNull(paths);
+            List<string> resources = NormalizeBatchPaths(paths);
+            var successfulPaths = new List<string>();
+            var failures = new List<ResourceOpenFailure>();
+
+            foreach (string path in resources)
+            {
+                if (TryCreateBatchRestrictionFailure(path, resources.Count, out ResourceOpenFailure? failure))
+                {
+                    failures.Add(failure);
+                    continue;
+                }
+
+                ResourceOpenResult result = ShouldOpenInWorkspaceEditor(path)
+                    ? OpenInEditor(path)
+                    : Open(path);
                 if (result.Succeeded)
                     successfulPaths.Add(path);
                 else
@@ -356,6 +377,44 @@ namespace ColorVision.Solution.Editor
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Distinct(ResourcePathIdentityComparer.Instance)
                 .ToList();
+        }
+
+        internal static bool ShouldOpenInWorkspaceEditor(string? path)
+        {
+            string extension = Path.GetExtension(path);
+            return string.Equals(extension, ".cvraw", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".cvcie", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private ResourceOpenResult OpenFileInEditor(string path)
+        {
+            bool succeeded = _editorManager.TryOpenFile(path, out string errorMessage);
+            if (succeeded)
+                return new ResourceOpenResult(ResourceOpenKind.File, true);
+            if (string.IsNullOrWhiteSpace(errorMessage))
+                errorMessage = "无法打开文件。";
+            return new ResourceOpenResult(ResourceOpenKind.File, false, errorMessage);
+        }
+
+        private static void ShowOpenFailure(ResourceOpenResult result, Window? owner)
+        {
+            Window? actualOwner = owner ?? Application.Current?.GetActiveWindow();
+            if (actualOwner == null)
+            {
+                MessageBox.Show(
+                    result.ErrorMessage,
+                    "无法打开资源",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            MessageBox.Show(
+                actualOwner,
+                result.ErrorMessage,
+                "无法打开资源",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
 
         private static bool TryCreateBatchRestrictionFailure(

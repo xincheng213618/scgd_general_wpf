@@ -75,7 +75,9 @@ namespace ColorVision.Solution
                 nodes,
                 out string[] resourcePaths))
             {
-                ResourceOpenBatchResult result = ResourceOpenService.Instance.OpenMany(resourcePaths);
+                ResourceOpenBatchResult result = nodes.All(node => node is FileNode)
+                    ? ResourceOpenService.Instance.OpenManyFromWorkspace(resourcePaths)
+                    : ResourceOpenService.Instance.OpenMany(resourcePaths);
                 if (result.Failures.Count > 0)
                     ShowResourceOpenFailures(result);
             }

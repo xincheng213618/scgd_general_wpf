@@ -121,6 +121,114 @@ public class BatchImageProcessingTests
     }
 
     [Fact]
+    public void BasicAdjustmentDefaultsPreservePixels()
+    {
+        using Mat source = Mat.FromArray(new byte[,] { { 0, 64, 128, 255 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm();
+
+        using Mat result = algorithm.Apply(source);
+
+        for (int column = 0; column < source.Cols; column++)
+        {
+            Assert.Equal(source.At<byte>(0, column), result.At<byte>(0, column));
+        }
+    }
+
+    [Fact]
+    public void ExposureAdjustmentUsesGainWithoutLiftingBlack()
+    {
+        using Mat source = Mat.FromArray(new byte[,] { { 0, 64, 128 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(exposure: 1);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal((byte)0, result.At<byte>(0, 0));
+        Assert.Equal((byte)128, result.At<byte>(0, 1));
+        Assert.Equal(byte.MaxValue, result.At<byte>(0, 2));
+    }
+
+    [Fact]
+    public void BrightnessOffsetExplicitlyRaisesTheBlackLevel()
+    {
+        using Mat source = Mat.FromArray(new byte[,] { { 0, 64, 128 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(brightness: 25);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal((byte)64, result.At<byte>(0, 0));
+        Assert.Equal((byte)128, result.At<byte>(0, 1));
+        Assert.Equal((byte)192, result.At<byte>(0, 2));
+    }
+
+    [Fact]
+    public void ContrastAdjustmentUsesTheMidpointAsItsPivot()
+    {
+        using Mat source = Mat.FromArray(new byte[,] { { 0, 128, 255 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(contrast: -50);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal((byte)64, result.At<byte>(0, 0));
+        Assert.Equal((byte)128, result.At<byte>(0, 1));
+        Assert.Equal((byte)191, result.At<byte>(0, 2));
+    }
+
+    [Fact]
+    public void BasicAdjustmentPreservesAlpha()
+    {
+        using Mat source = new(1, 1, MatType.CV_8UC4);
+        source.Set(0, 0, new Vec4b(10, 20, 30, 40));
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(exposure: 1);
+
+        using Mat result = algorithm.Apply(source);
+        Vec4b pixel = result.At<Vec4b>(0, 0);
+
+        Assert.Equal((byte)20, pixel.Item0);
+        Assert.Equal((byte)40, pixel.Item1);
+        Assert.Equal((byte)60, pixel.Item2);
+        Assert.Equal((byte)40, pixel.Item3);
+    }
+
+    [Fact]
+    public void FloatExposureAdjustmentUsesTheNormalizedRange()
+    {
+        using Mat source = Mat.FromArray(new float[,] { { 0, 0.25f, 0.75f } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(exposure: 1);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal(0, result.At<float>(0, 0), precision: 6);
+        Assert.Equal(0.5f, result.At<float>(0, 1), precision: 6);
+        Assert.Equal(1, result.At<float>(0, 2), precision: 6);
+    }
+
+    [Fact]
+    public void SixteenBitExposureAdjustmentUsesTheFullRange()
+    {
+        using Mat source = Mat.FromArray(new ushort[,] { { 0, 16384, 32768 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(exposure: 1);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal((ushort)0, result.At<ushort>(0, 0));
+        Assert.Equal((ushort)32768, result.At<ushort>(0, 1));
+        Assert.Equal(ushort.MaxValue, result.At<ushort>(0, 2));
+    }
+
+    [Fact]
+    public void GammaAdjustmentChangesMidtonesAndKeepsEndpoints()
+    {
+        using Mat source = Mat.FromArray(new float[,] { { 0, 0.25f, 1 } });
+        BatchImageAlgorithmDefinition algorithm = CreateBasicAdjustmentAlgorithm(gamma: 2);
+
+        using Mat result = algorithm.Apply(source);
+
+        Assert.Equal(0, result.At<float>(0, 0), precision: 6);
+        Assert.Equal(0.5f, result.At<float>(0, 1), precision: 6);
+        Assert.Equal(1, result.At<float>(0, 2), precision: 6);
+    }
+
+    [Fact]
     public void SavingEightBitPngPreservesPixelValues()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"colorvision-batch-{Guid.NewGuid():N}");
@@ -356,5 +464,21 @@ public class BatchImageProcessingTests
                 Directory.Delete(outsideDirectory, recursive: true);
             }
         }
+    }
+
+    private static BatchImageAlgorithmDefinition CreateBasicAdjustmentAlgorithm(
+        double exposure = 0,
+        double brightness = 0,
+        double contrast = 0,
+        double gamma = 1)
+    {
+        BatchImageAlgorithmDefinition algorithm = BatchImageAlgorithms.CreateAll()
+            .Single(item => item.Name == "基础调整");
+        Type optionsType = algorithm.Options.GetType();
+        optionsType.GetProperty("Exposure")!.SetValue(algorithm.Options, exposure);
+        optionsType.GetProperty("Brightness")!.SetValue(algorithm.Options, brightness);
+        optionsType.GetProperty("Contrast")!.SetValue(algorithm.Options, contrast);
+        optionsType.GetProperty("Gamma")!.SetValue(algorithm.Options, gamma);
+        return algorithm;
     }
 }

@@ -152,7 +152,7 @@
     <value>Гамма-коррекция</value>
   </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>Регулировка яркости и контрастности</value>
+    <value>Базовая коррекция...</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
     <value>Пороговая обработка</value>
@@ -807,16 +807,25 @@
     <value>Cancel</value>
   </data>
   <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
-    <value>Brightness Contrast Adjustment</value>
+    <value>Базовая коррекция</value>
   </data>
   <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
-    <value>Adjust Brightness and Contrast</value>
+    <value>Настройка экспозиции, смещения яркости, контраста и Gamma исходного изображения</value>
   </data>
   <data name="Algorithm_Brightness" xml:space="preserve">
-    <value>Brightness</value>
+    <value>Смещение яркости (%)</value>
   </data>
   <data name="Algorithm_Contrast" xml:space="preserve">
-    <value>Contrast</value>
+    <value>Контраст (%)</value>
+  </data>
+  <data name="Algorithm_Exposure" xml:space="preserve">
+    <value>Экспозиция (EV)</value>
+  </data>
+  <data name="Algorithm_Reset" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="Algorithm_Preview" xml:space="preserve">
+    <value>Предпросмотр</value>
   </data>
   <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
     <value>Edge Detection (Canny)</value>

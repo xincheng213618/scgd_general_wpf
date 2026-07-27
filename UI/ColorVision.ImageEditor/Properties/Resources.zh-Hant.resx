@@ -152,7 +152,7 @@
     <value>伽瑪校正</value>
   </data>
   <data name="LuminanceContrastAdjustment" xml:space="preserve">
-    <value>亮度對比調整</value>
+    <value>基礎調整...</value>
   </data>
   <data name="ThresholdProcessing" xml:space="preserve">
     <value>閾值處理</value>
@@ -807,16 +807,25 @@
     <value>取消</value>
   </data>
   <data name="Algorithm_BrightnessContrastTitle" xml:space="preserve">
-    <value>亮度對比度調整</value>
+    <value>基礎調整</value>
   </data>
   <data name="Algorithm_AdjustBrightnessContrast" xml:space="preserve">
-    <value>調整亮度和對比度</value>
+    <value>從原圖調整曝光、亮度偏移、對比度和 Gamma</value>
   </data>
   <data name="Algorithm_Brightness" xml:space="preserve">
-    <value>亮度</value>
+    <value>亮度偏移 (%)</value>
   </data>
   <data name="Algorithm_Contrast" xml:space="preserve">
-    <value>對比度</value>
+    <value>對比度 (%)</value>
+  </data>
+  <data name="Algorithm_Exposure" xml:space="preserve">
+    <value>曝光 (EV)</value>
+  </data>
+  <data name="Algorithm_Reset" xml:space="preserve">
+    <value>重設</value>
+  </data>
+  <data name="Algorithm_Preview" xml:space="preserve">
+    <value>預覽</value>
   </data>
   <data name="Algorithm_EdgeDetectionTitle" xml:space="preserve">
     <value>邊緣檢測 (Canny)</value>

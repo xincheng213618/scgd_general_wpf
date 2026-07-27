@@ -100,6 +100,14 @@ namespace ColorVision.Solution.Explorer
 
         public override void Open()
         {
+            if (ResourceOpenService.ShouldOpenInWorkspaceEditor(FullPath))
+            {
+                ResourceOpenService.Instance.TryOpenInEditorWithFeedback(
+                    FullPath,
+                    Application.Current?.GetActiveWindow());
+                return;
+            }
+
             _ = ResourceOpenService.Instance.TryOpenWithFeedbackAsync(
                 FullPath,
                 Application.Current?.GetActiveWindow());
