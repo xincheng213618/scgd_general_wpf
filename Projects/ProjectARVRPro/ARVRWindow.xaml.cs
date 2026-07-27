@@ -49,6 +49,8 @@ namespace ProjectARVRPro
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         private const string FlowStartRejectedMessage = "FlowStartRejected";
+        private const int ScrollableStepBarThreshold = 12;
+        private const double ScrollableStepWidth = 72;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -191,7 +193,7 @@ namespace ProjectARVRPro
         private EventHandler? _activeGroupChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ProcessManager.GenStepBar(stepBar);
+            RefreshStepBar();
             _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
             ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
             this.DataContext = ProjectARVRProConfig.Instance;
@@ -319,7 +321,7 @@ namespace ProjectARVRPro
         {
             if (!_isDisposed)
             {
-                ProcessManager.GenStepBar(stepBar);
+                RefreshStepBar();
                 ResetStepProgress();
             }
         }
@@ -646,6 +648,25 @@ namespace ProjectARVRPro
                 if (item is HandyControl.Controls.StepBarItem stepBarItem)
                     stepBarItem.SetValue(HandyControl.Controls.StepBarItem.StatusProperty, StepStatus.Waiting);
             }
+
+            stepBarScrollViewer?.ScrollToLeftEnd();
+        }
+
+        private void RefreshStepBar()
+        {
+            ProcessManager.GenStepBar(stepBar);
+
+            bool isScrollable = stepBar.Items.Count > ScrollableStepBarThreshold;
+            stepBar.MinWidth = isScrollable ? stepBar.Items.Count * ScrollableStepWidth : 0;
+            stepBarScrollViewer.HorizontalScrollBarVisibility = isScrollable
+                ? ScrollBarVisibility.Auto
+                : ScrollBarVisibility.Disabled;
+
+            foreach (object item in stepBar.Items)
+            {
+                if (item is HandyControl.Controls.StepBarItem stepBarItem)
+                    stepBarItem.ToolTip = stepBarItem.Content;
+            }
         }
 
         private void SetStepProgress(int stepIndex, bool completed)
@@ -668,6 +689,9 @@ namespace ProjectARVRPro
                         : StepStatus.Waiting;
                 stepBarItem.SetValue(HandyControl.Controls.StepBarItem.StatusProperty, status);
             }
+
+            if (stepBar.Items[normalizedStepIndex] is HandyControl.Controls.StepBarItem currentStep)
+                currentStep.BringIntoView();
         }
 
         private async Task HandleFlowStartFailureAsync(string message, IProcess? process, bool persistResult)
@@ -1533,7 +1557,7 @@ namespace ProjectARVRPro
 
         private void GroupSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            ProcessManager.GenStepBar(stepBar);
+            RefreshStepBar();
         }
 
         private void ObjectiveTestResultRecord_Click(object sender, RoutedEventArgs e)

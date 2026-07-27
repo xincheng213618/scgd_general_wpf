@@ -248,8 +248,14 @@
                         </RowDefinition>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Visibility="{Binding ProgressControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="5,0,5,5">
-                        <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
-                        </hc:StepBar>
+                        <ScrollViewer x:Name="stepBarScrollViewer"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      PanningMode="HorizontalOnly"
+                                      CanContentScroll="False"
+                                      Focusable="False">
+                            <hc:StepBar x:Name="stepBar" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2"/>
+                        </ScrollViewer>
                     </Border>
                     <RichTextBox x:Name="outputText" Grid.Row="1" Visibility="{Binding ResultControlVisibility, Converter={StaticResource bool2VisibilityConverter}}" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0" IsReadOnly="True" IsDocumentEnabled="True">
                         <FlowDocument>
