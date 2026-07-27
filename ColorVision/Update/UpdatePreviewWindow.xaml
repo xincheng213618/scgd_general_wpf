@@ -56,7 +56,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
-                            Margin="24,6,0,0"
+                            Margin="24,-12,0,0"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Visibility="{Binding HostVersionVisibility}">
@@ -84,13 +84,6 @@
                               IsEnabled="{Binding CanCancel}"
                               ToolTip="{x:Static properties:Resources.CreateSnapshotBeforeUpdateDescription}"
                               Visibility="{Binding ItemsListVisibility}" />
-                    <CheckBox Margin="0,8,0,0"
-                              HorizontalAlignment="Right"
-                              Click="DisableSystemProxyForUpdates_Click"
-                              Content="{x:Static properties:Resources.DisableSystemProxyForUpdates}"
-                              IsChecked="{Binding DisableSystemProxyForUpdates, Mode=TwoWay}"
-                              IsEnabled="{Binding CanCancel}"
-                              ToolTip="{x:Static properties:Resources.DisableSystemProxyForUpdatesDescription}" />
                 </StackPanel>
             </Grid>
 
