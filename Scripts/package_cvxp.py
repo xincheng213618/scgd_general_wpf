@@ -562,8 +562,6 @@ def main() -> None:
     manifest_summary = validate_plugin_manifest(plugin_root / "manifest.json")
     if manifest_summary.manifest_present:
         print(f"Manifest validation passed: {plugin_root / 'manifest.json'}")
-        print(f"Copilot role count: {manifest_summary.role_count}/{MAX_COPILOT_AGENT_ROLES}")
-        print(f"Copilot advertised metadata: {manifest_summary.metadata_characters:,}/{MAX_COPILOT_AGENT_METADATA_CHARACTERS:,} characters")
     else:
         print(f"Manifest not present; legacy packaging compatibility remains active: {plugin_root / 'manifest.json'}")
 
