@@ -415,7 +415,7 @@ namespace ColorVision.UI.Desktop.Marketplace
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            if (!_packageDownloadService.TryApproveBatchInstall(packagePaths, requests))
+            if (!_packageDownloadService.TryValidateBatchInstall(packagePaths, requests))
                 return;
 
             await Application.Current!.Dispatcher.InvokeAsync(() => PluginUpdater.UpdatePlugin(packagePaths.ToArray()));

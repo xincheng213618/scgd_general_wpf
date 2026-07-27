@@ -203,50 +203,15 @@
                               Margin="0,0,0,10"
                               Header="{Binding SubagentRolesSummaryText}"
                               Foreground="{DynamicResource GlobalTextBrush}">
-                        <StackPanel Margin="0,8,0,0">
-                            <TextBlock Margin="0,0,0,8"
-                                       Style="{StaticResource McpHintTextStyle}"
-                                       Text="Plugin roles are opt-out individually. Disabled roles are removed from the model tool list after Apply, reducing prompt metadata and preventing execution."/>
-                            <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding PluginSubagentRoles}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Margin="0,0,0,6"
-                                                    Padding="10,8"
-                                                    Background="{DynamicResource GlobalBorderBrush}"
-                                                    BorderBrush="{DynamicResource ButtonBorderBrush}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="4">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <CheckBox Margin="0,2,10,0"
-                                                              VerticalAlignment="Top"
-                                                              IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}"/>
-                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding SourceText}"/>
-                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding PermissionSummary}"/>
-                                                        <TextBlock Margin="0,2,0,0" Style="{StaticResource McpHintTextStyle}" Text="{Binding BudgetSummary}"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                            <TextBox Height="104"
-                                     Margin="0,8,0,0"
-                                     FontFamily="Consolas"
-                                     FontSize="11"
-                                     HorizontalScrollBarVisibility="Auto"
-                                     IsReadOnly="True"
-                                     Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
-                                     TextWrapping="NoWrap"
-                                     VerticalScrollBarVisibility="Auto"/>
-                        </StackPanel>
+                        <TextBox Height="104"
+                                 Margin="0,8,0,0"
+                                 FontFamily="Consolas"
+                                 FontSize="11"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 IsReadOnly="True"
+                                 Text="{Binding SubagentRolesDiagnosticsText, Mode=OneWay}"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"/>
                     </Expander>
                     <TextBox Grid.Row="3"
                              Height="116"

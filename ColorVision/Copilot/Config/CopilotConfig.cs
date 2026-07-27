@@ -22,8 +22,6 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotMcpClientServerConfig> ExternalMcpServers { get; set; } = new();
 
-        public ObservableCollection<string> DisabledPluginSubagentRoles { get; set; } = new();
-
         public CopilotAgentDefaultsConfig AgentDefaults { get; set; } = new();
 
         [Browsable(false)]
@@ -92,7 +90,6 @@ namespace ColorVision.Copilot
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             ExternalMcpServers ??= new ObservableCollection<CopilotMcpClientServerConfig>();
-            DisabledPluginSubagentRoles ??= new ObservableCollection<string>();
             for (var index = Profiles.Count - 1; index >= 0; index--)
             {
                 if (Profiles[index] != null)
@@ -107,15 +104,6 @@ namespace ColorVision.Copilot
                 changed = true;
             }
             changed |= AgentDefaults.EnsureValid();
-
-            var normalizedDisabledRoles = CopilotPluginSubagentRolePreference.NormalizeKeys(DisabledPluginSubagentRoles);
-            if (!DisabledPluginSubagentRoles.SequenceEqual(normalizedDisabledRoles, StringComparer.OrdinalIgnoreCase))
-            {
-                DisabledPluginSubagentRoles.Clear();
-                foreach (var roleKey in normalizedDisabledRoles)
-                    DisabledPluginSubagentRoles.Add(roleKey);
-                changed = true;
-            }
 
             if (McpPort <= 0 || McpPort > 65535)
             {

@@ -134,7 +134,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public async Task InstallPackageAsync_InstallsOrdinaryPackageWithoutAdditionalReview()
+        public async Task InstallPackageAsync_InstallsPackageThatPassesManifestPreflight()
         {
             string packagePath = CreatePackage("PluginA", "1.0.0", """
                 {
@@ -153,82 +153,7 @@ namespace ColorVision.UI.Tests
 
             Assert.True(installed);
             Assert.Single(installer.InstallCalls);
-            Assert.Empty(ui.Confirmations);
             Assert.Empty(ui.Errors);
-        }
-
-        [Fact]
-        public async Task InstallPackageAsync_ReviewsDeclaredCopilotPermissionsAndBudgets()
-        {
-            string packagePath = CreateCopilotPackage();
-            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
-            var downloader = new FakeMarketplacePackageDownloader();
-            var installer = new FakeMarketplacePackageInstaller();
-            var ui = new FakeMarketplacePackageUi(_downloadDirectory) { ConfirmInstallResult = true };
-            var service = CreateService(client, downloader, installer, ui);
-
-            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
-
-            Assert.True(installed);
-            Assert.Single(installer.InstallCalls);
-            string confirmation = Assert.Single(ui.Confirmations);
-            Assert.Contains("DelegatePluginReviewer", confirmation, StringComparison.Ordinal);
-            Assert.Contains("GrepText", confirmation, StringComparison.Ordinal);
-            Assert.Contains("ReadLocalFile", confirmation, StringComparison.Ordinal);
-            Assert.Contains("5", confirmation, StringComparison.Ordinal);
-            Assert.Contains("8,000", confirmation, StringComparison.Ordinal);
-        }
-
-        [Fact]
-        public async Task InstallPackageAsync_DoesNotInstallWhenCopilotPermissionReviewIsDeclined()
-        {
-            string packagePath = CreateCopilotPackage();
-            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
-            var downloader = new FakeMarketplacePackageDownloader();
-            var installer = new FakeMarketplacePackageInstaller();
-            var ui = new FakeMarketplacePackageUi(_downloadDirectory) { ConfirmInstallResult = false };
-            var service = CreateService(client, downloader, installer, ui);
-
-            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
-
-            Assert.False(installed);
-            Assert.Empty(installer.InstallCalls);
-            Assert.Single(ui.Confirmations);
-            Assert.Empty(ui.Errors);
-        }
-
-        [Fact]
-        public async Task InstallPackageAsync_BlocksInvalidCopilotManifestBeforeLoadingPluginCode()
-        {
-            string packagePath = CreatePackage("sample.plugin", "2.4.1", """
-                {
-                  "id": "sample.plugin",
-                  "name": "Sample Plugin",
-                  "version": "2.4.1",
-                  "copilot_agents": [
-                    {
-                      "id": "plugin-reviewer",
-                      "name": "Plugin Reviewer",
-                      "description": "Review plugin source.",
-                      "instructions": "Read only the requested evidence.",
-                      "scope": "WorkspaceReadOnly",
-                      "capabilities": ["ExecuteProcess"]
-                    }
-                  ]
-                }
-                """);
-            var client = new FakeMarketplacePackageClient { ExistingFileResolver = (_, _, _, _) => packagePath };
-            var downloader = new FakeMarketplacePackageDownloader();
-            var installer = new FakeMarketplacePackageInstaller();
-            var ui = new FakeMarketplacePackageUi(_downloadDirectory);
-            var service = CreateService(client, downloader, installer, ui);
-
-            bool installed = await service.InstallPackageAsync(CreateRequest("sample.plugin", "2.4.1"));
-
-            Assert.False(installed);
-            Assert.Empty(installer.InstallCalls);
-            Assert.Empty(ui.Confirmations);
-            Assert.Contains("ExecuteProcess", Assert.Single(ui.Errors), StringComparison.Ordinal);
         }
 
         [Fact]
@@ -254,17 +179,16 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void TryApproveBatchInstall_StopsPackagesThatRequireIndividualCopilotReview()
+        public void TryValidateBatchInstall_BlocksManifestWhoseIdentityDoesNotMatchRequest()
         {
-            string packagePath = CreateCopilotPackage();
+            string packagePath = CreatePackage("PluginA", "1.0.0", """{"id":"DifferentPlugin","version":"1.0.0"}""");
             var ui = new FakeMarketplacePackageUi(_downloadDirectory);
             var service = CreateService(new FakeMarketplacePackageClient(), new FakeMarketplacePackageDownloader(), new FakeMarketplacePackageInstaller(), ui);
 
-            bool approved = service.TryApproveBatchInstall([packagePath]);
+            bool valid = service.TryValidateBatchInstall([packagePath], [CreateRequest("PluginA", "1.0.0")]);
 
-            Assert.False(approved);
-            Assert.Single(ui.Warnings);
-            Assert.Empty(ui.Confirmations);
+            Assert.False(valid);
+            Assert.Contains("DifferentPlugin", Assert.Single(ui.Errors), StringComparison.Ordinal);
         }
 
         [Fact]
@@ -441,33 +365,6 @@ namespace ColorVision.UI.Tests
             };
         }
 
-        private string CreateCopilotPackage()
-        {
-            return CreatePackage("sample.plugin", "2.4.1", """
-                {
-                  "id": "sample.plugin",
-                  "name": "Sample Plugin",
-                  "version": "2.4.1",
-                  "copilot_agents": [
-                    {
-                      "id": "plugin-reviewer",
-                      "name": "Plugin Reviewer",
-                      "description": "Delegate a bounded plugin code review.",
-                      "instructions": "Review only the requested plugin source evidence.",
-                      "scope": "WorkspaceReadOnly",
-                      "capabilities": ["GrepText", "ReadLocalFile"],
-                      "child_mode": "Code",
-                      "parent_modes": ["Code", "Diagnose"],
-                      "maximum_tool_calls": 5,
-                      "maximum_agent_passes": 2,
-                      "maximum_duration_seconds": 60,
-                      "maximum_answer_characters": 8000
-                    }
-                  ]
-                }
-                """);
-        }
-
         private string CreatePackage(string pluginId, string version, string manifestJson)
         {
             Directory.CreateDirectory(_downloadDirectory);
@@ -571,9 +468,7 @@ namespace ColorVision.UI.Tests
             public int ShowDownloadWindowCalls { get; private set; }
             public List<string> Warnings { get; } = new();
             public List<string> Errors { get; } = new();
-            public List<string> Confirmations { get; } = new();
             public List<string?> OpenedFolders { get; } = new();
-            public bool ConfirmInstallResult { get; set; } = true;
 
             public void ShowDownloadWindow()
             {
@@ -588,12 +483,6 @@ namespace ColorVision.UI.Tests
             public void ShowError(string message, string title)
             {
                 Errors.Add(message);
-            }
-
-            public bool ConfirmInstall(string message, string title)
-            {
-                Confirmations.Add(message);
-                return ConfirmInstallResult;
             }
 
             public void OpenFolder(string? folderPath)

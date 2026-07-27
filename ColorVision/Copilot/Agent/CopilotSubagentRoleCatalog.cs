@@ -27,7 +27,7 @@ namespace ColorVision.Copilot
         PublicWeb,
     }
 
-    public sealed class CopilotSubagentRoleRegistration
+    internal sealed class CopilotSubagentRoleRegistration
     {
         public string SourceId { get; init; } = string.Empty;
 
@@ -162,7 +162,7 @@ namespace ColorVision.Copilot
             Revision = Math.Max(1, revision);
         }
 
-        public static CopilotSubagentRoleCatalog Default => CopilotSubagentRoleRegistry.Shared.GetSnapshot();
+        public static CopilotSubagentRoleCatalog Default { get; } = new(CreateBuiltInRoles(), revision: 1);
 
         public long Revision { get; }
 
@@ -198,7 +198,7 @@ namespace ColorVision.Copilot
                     ReadCapabilities = CopilotSubagentReadCapabilities.Workspace,
                     ChildMode = CopilotAgentMode.Code,
                     MaximumToolCalls = 8,
-                }, isBuiltIn: true),
+                }),
                 CopilotSubagentRoleFactory.Create(new CopilotSubagentRoleRegistration
                 {
                     SourceId = "builtin",
@@ -212,7 +212,7 @@ namespace ColorVision.Copilot
                     ContextScope = CopilotSubagentContextScope.PublicWeb,
                     ReadCapabilities = CopilotSubagentReadCapabilities.PublicWeb,
                     ChildMode = CopilotAgentMode.Web,
-                }, isBuiltIn: true),
+                }),
             ];
         }
     }
@@ -227,10 +227,10 @@ namespace ColorVision.Copilot
         private static readonly Regex ToolNameRegex = new("^Delegate[A-Z][A-Za-z0-9]{1,55}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private const CopilotSubagentReadCapabilities KnownCapabilities = CopilotSubagentReadCapabilities.Workspace | CopilotSubagentReadCapabilities.PublicWeb;
 
-        public static CopilotSubagentRoleDescriptor Create(CopilotSubagentRoleRegistration registration, bool isBuiltIn)
+        public static CopilotSubagentRoleDescriptor Create(CopilotSubagentRoleRegistration registration)
         {
             ArgumentNullException.ThrowIfNull(registration);
-            Validate(registration, isBuiltIn);
+            Validate(registration);
             var fingerprint = CreateFingerprint(registration);
             var parentModes = registration.ParentModes.Distinct().ToHashSet();
             var contextScope = registration.ContextScope;
@@ -242,13 +242,11 @@ namespace ColorVision.Copilot
                 () => CreateTools(readCapabilities, contextScope));
         }
 
-        private static void Validate(CopilotSubagentRoleRegistration registration, bool isBuiltIn)
+        private static void Validate(CopilotSubagentRoleRegistration registration)
         {
             var sourceId = registration.SourceId?.Trim().ToLowerInvariant() ?? string.Empty;
             if (!SourceIdRegex.IsMatch(sourceId))
                 throw new ArgumentException("Subagent source id must contain 2-64 lowercase ASCII letters, digits, '.', '_' or '-'.", nameof(registration));
-            if (!isBuiltIn && string.Equals(sourceId, "builtin", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("The built-in subagent source id is reserved.", nameof(registration));
             if (string.IsNullOrWhiteSpace(registration.SourceName) || registration.SourceName.Trim().Length > 120)
                 throw new ArgumentException("Subagent source name must contain 1-120 characters.", nameof(registration));
             if (!SourceVersionRegex.IsMatch(registration.SourceVersion?.Trim() ?? string.Empty))

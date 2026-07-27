@@ -26,8 +26,6 @@ public interface IPlugin
 ## 2. manifest.json
 
 插件目录通常需要提供 `manifest.json`。当前清单对象至少包含 `id`、`manifest_version`、`name`、`version`、`requires`、`description`、`dllpath`、`author`、`url`、`entry_point` 和 `icon`。其中最核心的是插件标识、描述和 DLL 路径；`entry_point` 在需要显式指定入口类型时使用。
-插件还可通过可选的 `copilot_agents` 数组声明专用只读 Agent 角色。角色只在插件启用且 DLL 成功加载后注册；禁用或移除插件会同步注销。插件只能选择 `WorkspaceReadOnly`（`SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory`）或 `PublicWeb`（`WebSearch`、`FetchUrl`）之一，不能混合两个信任域，也不能声明 Shell、数据库、写入或递归委派能力。示例与全部字段见 [Copilot Agent Runtime](../core-concepts/copilot-agent-runtime.md)。
-
 ## 3. 装载流程
 
 主程序启动后，`PluginLoader` 会：

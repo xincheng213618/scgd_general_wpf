@@ -46,38 +46,6 @@ CopilotToolRegistry
 
 同一父请求的全部 `Explore` / `Scout` 运行共享一个委派 Token 池：总量通常为父请求预算的一半，最低 4,096、最高 32,768 Token；单个子运行按并发公平分配并至少需要 4,096 Token。成功后按真实用量结算，异常或取消时保守消耗已预留额度，预算不足时不再启动新的供应商调用。每个子运行生成带角色前缀的独立 `explore-*` / `scout-*` ID，父工具 trace 的 `CallId` 与角色、该 ID、停止原因、排队时间、工具次数和 Token 预算一起持久化；子运行内部的逐工具噪声仍不复制到主聊天。供应商调用数、Token 与估算用量继续归集进父运行预算，父 Agent 收到结果后仍需综合证据并完成最终回答。这一角色分工保持了 [OpenCode Agents](https://opencode.ai/docs/agents/) 中“主 Agent 选择带独立提示词和权限的 Explore / Scout”的核心语义；整体仍由 [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/) 提供 Agent、Session、工具与中间件执行基础，并保留 ColorVision 自己的预算、隔离和审批模型。
 
-受信任插件优先在 `manifest.json` 的 `copilot_agents` 中声明专用角色。现有 `PluginLoader` 成功加载启用的插件 DLL 后，`CopilotPluginSubagentRoleLoader` 会按 manifest 同步注册；插件禁用、移除或版本更新时旧注册会被注销或替换。宿主内部集成仍可直接调用 `CopilotSubagentRoleRegistry.Shared.RegisterTrustedPluginRole`，并持有返回的 `IDisposable`。两条入口最终经过同一验证器，插件不能提交任意 `ICopilotTool` 工厂。宿主只允许两类互斥工具面：`WorkspaceReadOnly` 可从 `SearchFiles`、`GrepText`、`ReadLocalFile`、`ListDirectory` 中选择，`PublicWeb` 可从 `WebSearch`、`FetchUrl` 中选择。工作区和网页能力不能混用，所有插件角色仍禁用 Harness todo/mode/Skills、写入、Shell、数据库、MCP、审批与递归委派。推荐示例：
-
-```json
-{
-  "id": "spectrum.plugin",
-  "name": "Spectrum Plugin",
-  "version": "1.2.0",
-  "copilot_agents": [
-    {
-      "id": "spectrum-reviewer",
-      "tool": "DelegateSpectrumReviewer",
-      "name": "Spectrum Reviewer",
-      "description": "Review spectrum implementations using bounded workspace evidence.",
-      "instructions": "Inspect only the requested spectrum code and return exact file evidence.",
-      "scope": "WorkspaceReadOnly",
-      "capabilities": ["GrepText", "ReadLocalFile"],
-      "child_mode": "Code",
-      "parent_modes": ["Code", "Diagnose"],
-      "maximum_tool_calls": 5
-    }
-  ]
-}
-```
-
-`tool` 可省略，宿主会从角色 ID 生成 `Delegate...` 名称；预算字段为 `0` 或省略时采用宿主默认值，显式越界则拒绝。只有插件程序集确实加载成功后 manifest 角色才生效。注册时会快照可变集合并验证全局角色/工具名唯一性、来源版本一致性、提示长度和预算上限。角色来源版本、提示、权限集合、模式和预算共同生成 64 位十六进制 SHA-256 指纹；委派工具通过 `ICopilotCapabilityCatalogVersionIdentity` 把它并入 Capability Catalog 签名。现有 `CopilotToolRegistry` 每轮读取最新角色 revision，因此注册和注销无需重建聊天面板；Capability Catalog 以 `Plugin / subagent:<sourceId>` 独立来源发布，角色变更会触发 checkpoint capability drift 和重新规划。
-
-设置页会把每个已成功验证的插件角色列成独立开关，同时显示只读信任域、具体工具白名单、最大工具调用、Agent pass、时长、返回字符和常驻提示元数据字符数。关闭后必须 Apply/Save；Loader 随即注销对应能力，角色不再进入 Capability Catalog 或模型工具列表，也无法执行。禁用项以稳定的 `<plugin-id>/<role-id>` 保存在 `CopilotConfig`，无效、重复和超过 256 项的配置会在加载时规范化；暂时卸载的插件仍保留偏好，重新安装后不会意外恢复高成本角色。诊断文本继续展示内置角色、插件角色的 enabled/disabled 状态、预算和 manifest 错误。
-
-`Scripts\package_plugin.bat`、`Scripts\package_project.bat` 和 `package_cvxp.py` 在构建、打包、上传之前统一校验 `manifest.json`；`--validate-only` 可只执行校验。`copilot_agents` 的字段类型、ID/工具名格式、只读信任域、模式、预算和重复项会按运行时同一契约检查。单个插件最多声明 16 个角色，角色工具名、显示名和说明的常驻元数据合计最多 8,000 字符；打包器提前失败，运行时 Loader 再执行同样的数量与元数据硬上限，避免绕过打包器的插件放大每轮工具目录。该做法对应 Codex 的插件独立启停与分层能力控制，也采用 Claude Code 在插件校验中同时报告组件清单和上下文成本的原则；这里只展示可确定的字符与执行预算，不伪造供应商 Token 或价格估算。
-
-Marketplace 安装会在下载和文件哈希校验通过后，只读打开 `.cvxp` 中唯一的顶层 `manifest.json`，不解压文件、不加载 DLL，也不执行插件代码。预检与运行时 Loader 共用 `CopilotSubagentRoleManifestValidator`，因此安装确认展示的信任域、只读能力、工具调用、Agent pass、时长、返回字符和提示元数据，就是安装后实际采用的规范化结果；清单路径不安全、超过 1 MiB、插件 ID 不匹配、角色重复或字段越界都会阻止安装。普通插件保持原安装流程，不增加确认；声明角色的单包安装必须再次明确确认。批量更新若包含这类包会整体停止，并要求逐个更新审核，避免后台静默引入新的常驻角色或提示成本。
-
 稳定的内置 Agent 能力不依赖上一轮关键词，因此“现在呢”“再检查一遍”等短追问仍能看到相同 Schema，并由模型结合会话历史重新发起结构化调用。动态或意图作用域工具仍可续租最近一轮真正成功执行过、只读、幂等且无需审批的能力；写工具和通用 Shell 不通过续租获得额外授权。checkpoint 恢复后也会用当前能力目录重新规划，不把旧调用参数当成授权。
 
 执行契约比工具暴露策略更严格地区分“可能需要最新信息”和“用户明确要求搜索”：直接 URL、`Web` 模式以及“联网搜索 / search the web”等明确动作词才强制成功的网页证据。普通概念问题不会因为当前工具面中恰好存在 `WebSearch` 就增加模型轮次或产生失败搜索；没有匹配工具可用时也不会制造无意义循环，而是保留模型正常回答或说明能力边界的空间。
