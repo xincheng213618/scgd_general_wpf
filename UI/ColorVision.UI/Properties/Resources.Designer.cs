@@ -628,15 +628,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 Français（法语） 的本地化字符串。
-        /// </summary>
-        public static string fr {
-            get {
-                return ResourceManager.GetString("fr", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 常规 的本地化字符串。
         /// </summary>
         public static string GeneralSettings {
@@ -1506,15 +1497,6 @@ namespace ColorVision.UI.Properties {
         public static string RestoreConfigFileFailed {
             get {
                 return ResourceManager.GetString("RestoreConfigFileFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 Русский（俄语） 的本地化字符串。
-        /// </summary>
-        public static string ru {
-            get {
-                return ResourceManager.GetString("ru", resourceCulture);
             }
         }
         

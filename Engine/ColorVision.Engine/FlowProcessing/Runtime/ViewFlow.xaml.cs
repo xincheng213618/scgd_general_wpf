@@ -44,8 +44,6 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand OpenDocumentCommand { get; set; }
         public RelayCommand NewDocumentCommand { get; set; }
 
-        public event EventHandler RefreshFlow;
-
         public RelayCommand RefreshCommand { get; set; }
 
         public RelayCommand ClearCommand { get; set; }
@@ -62,9 +60,9 @@ namespace ColorVision.Engine.FlowProcessing
         public RelayCommand ImportModuleCommand { get; set; }
 
 
-        public DisplayFlow DisplayFlow { get; set; }
         public STNodeEditor STNodeEditorMain => EditorCanvas.NodeEditor;
         public FlowControl FlowControl => _isStandalone ? _standaloneFlowControl! : FlowEngineManager.FlowControl;
+        public CVCommonNode? LastNode => _executionSession?.LastNode;
         public bool IsStandalone => _isStandalone;
         public Visibility RuntimeVisibility => _isStandalone ? Visibility.Collapsed : Visibility.Visible;
         public Visibility StandaloneVisibility => _isStandalone ? Visibility.Visible : Visibility.Collapsed;
@@ -76,6 +74,7 @@ namespace ColorVision.Engine.FlowProcessing
         private readonly FlowNodeContextMenuService _nodeContextMenuService;
         private readonly FlowExecutionNavigator _executionNavigator;
         private readonly FlowGraphLayoutService _layoutService;
+        private readonly FlowExecutionSession? _executionSession;
         private FlowParam? _standaloneFlowParam;
         private string? _standaloneFilePath;
         private string _standaloneDocumentName = string.Empty;
@@ -114,6 +113,11 @@ namespace ColorVision.Engine.FlowProcessing
             _executionNavigator = new FlowExecutionNavigator(STNodeEditorMain);
             _nodeContextMenuService = new FlowNodeContextMenuService(STNodeEditorMain, _executionNavigator);
             _layoutService = new FlowGraphLayoutService(STNodeEditorMain);
+            if (!isStandalone)
+            {
+                _executionSession = new FlowExecutionSession(flowEngineManager, this);
+                Loaded += ViewFlow_Loaded;
+            }
 
             AutoSizeCommand = new RelayCommand(a => _layoutService.FitToViewport());
             OpenDocumentCommand = new RelayCommand(a => OpenDocument(), a => _isStandalone);
@@ -181,10 +185,7 @@ namespace ColorVision.Engine.FlowProcessing
                     return;
 
                 TemplateModel<FlowParam> createdFlow = templateFlow.TemplateParams[^1];
-                if (DisplayFlow != null)
-                    await DisplayFlow.SelectCreatedFlowTemplateAsync(createdFlow);
-                else
-                    Refresh();
+                await SelectFlowTemplateAsync(createdFlow, allowEmptyFlow: true);
             }
             catch (Exception ex)
             {
@@ -349,7 +350,30 @@ namespace ColorVision.Engine.FlowProcessing
                 return;
             }
 
-            RefreshFlow?.Invoke(this, new EventArgs());
+            _ = RefreshRuntimeAsync();
+        }
+
+        internal Task RefreshRuntimeAsync()
+        {
+            return _executionSession?.Refresh() ?? Task.CompletedTask;
+        }
+
+        internal Task SelectFlowTemplateAsync(
+            TemplateModel<FlowParam> flowTemplate,
+            bool allowEmptyFlow = false)
+        {
+            return _executionSession?.SelectFlowTemplateAsync(flowTemplate, allowEmptyFlow)
+                ?? Task.CompletedTask;
+        }
+
+        internal async Task<FlowControlData?> RunFlowAndWaitAsync(
+            TemplateModel<FlowParam>? flowTemplate = null)
+        {
+            if (_executionSession == null)
+                return null;
+            if (flowTemplate != null)
+                await _executionSession.SelectFlowTemplateAsync(flowTemplate);
+            return await _executionSession.RunFlowAndWaitAsync();
         }
 
         public void Clear()
@@ -634,6 +658,19 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
+        private void ViewFlow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= ViewFlow_Loaded;
+            _executionSession?.InitializeSelection();
+        }
+
+        private void FlowTemplateComboBox_SelectionChanged(
+            object sender,
+            SelectionChangedEventArgs e)
+        {
+            _executionSession?.OnFlowSelectionChanged();
+        }
+
         private void MqttRCService_ServiceTokensUpdated(object? sender, EventArgs e)
         {
             void UpdateTokens() => _standaloneNodeManager?.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
@@ -706,6 +743,7 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 if (FlowEngineManager.FlowControl?.IsFlowRun == true)
                     FlowEngineManager.FlowControl.Stop();
+                _executionSession?.Dispose();
                 FlowEngineControl.DetachNodeEditor(STNodeEditorMain);
             }
             _nodeContextMenuService.Dispose();
@@ -721,7 +759,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
             else
             {
-                FlowEngineManager.DisplayFlow.RunFlow();
+                _ = _executionSession?.RunFlow();
             }
 
         }
@@ -734,7 +772,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
             else
             {
-                FlowEngineManager.DisplayFlow.StopFlow();
+                _executionSession?.StopFlow();
             }
 
         }
@@ -830,20 +868,30 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private void StandaloneStartNodeComboBox_Loaded(object sender, RoutedEventArgs e)
+        private void StartNodeComboBox_Loaded(object sender, RoutedEventArgs e)
         {
-            _standaloneStartNodeComboBox = (ComboBox)sender;
-            RefreshStandaloneStartNodeSelection();
+            if (_isStandalone)
+            {
+                _standaloneStartNodeComboBox = (ComboBox)sender;
+                RefreshStandaloneStartNodeSelection();
+            }
+            else
+            {
+                _executionSession?.RefreshStartNodeSelection();
+            }
         }
 
-        private void StandaloneStartNodeComboBox_DropDownOpened(object sender, EventArgs e)
+        private void StartNodeComboBox_DropDownOpened(object sender, EventArgs e)
         {
-            RefreshStandaloneStartNodeSelection();
+            if (_isStandalone)
+                RefreshStandaloneStartNodeSelection();
+            else
+                _executionSession?.RefreshStartNodeSelection();
         }
 
-        private void StandaloneStartNodeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void StartNodeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox { SelectedItem: string selectedName })
+            if (_isStandalone && sender is ComboBox { SelectedItem: string selectedName })
                 _standaloneStartNodeName = selectedName;
         }
 

@@ -190,8 +190,6 @@
     <value>版本</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>更新</value>
-  </data>  <data name="ru" xml:space="preserve">
-    <value>Русский（俄語）</value>
   </data>  <data name="Reset" xml:space="preserve">
     <value>重置</value>
   </data>  <data name="ProjectNotFound" xml:space="preserve">

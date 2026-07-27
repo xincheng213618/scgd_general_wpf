@@ -17,6 +17,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -114,11 +115,21 @@ public sealed class FlowEngineManager : ViewModelBase
             ? version
             : new Version();
 
+    public Task<FlowControlData?> RunFlowAsync(TemplateModel<FlowParam>? flowTemplate = null)
+    {
+        return View.RunFlowAndWaitAsync(flowTemplate);
+    }
+
+    public Task RefreshFlowAsync()
+    {
+        return View.RefreshRuntimeAsync();
+    }
+
     private FlowEngineManager()
     {
         FlowEngineControl = new FlowEngineControl(false);
+        FlowControl = new FlowControl(MQTTControl.GetInstance(), FlowEngineControl);
         View = new ViewFlow(this);
-        FlowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
         DisplayFlow = new DisplayFlow(this);
         Copilot = new FlowCopilotService(this);
 
@@ -179,6 +190,6 @@ public sealed class FlowEngineManager : ViewModelBase
             Owner = Application.Current.GetActiveWindow(),
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         }.ShowDialog();
-        _ = View.DisplayFlow.Refresh();
+        _ = RefreshFlowAsync();
     }
 }

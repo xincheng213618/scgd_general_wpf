@@ -24,60 +24,29 @@
         </DockPanel>
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel Margin="5">
-                <DockPanel Margin="0,0,0,5">
-                    <Button DockPanel.Dock="Left" Click="Button_Click_Refresh" Background="Transparent"  BorderThickness="0" Padding="3,0" >
-                        <Button.Triggers>
-                            <EventTrigger RoutedEvent="Button.Click">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform5" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Button.Triggers>
-                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="15" ToolTip="{x:Static properties:Resources.Refresh}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform5" CenterX="7.5" CenterY="7.5"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
-                    <Button DockPanel.Dock="Right"  Command="{Binding EditTemplateFlowCommand}" Background="Transparent" BorderThickness="0" Padding="2" Height="20" Width="20">
-                        <Button.Triggers>
-                            <EventTrigger RoutedEvent="Button.Click">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2112" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Button.Triggers>
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                            <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform2112" CenterX="8" CenterY="8"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Button>
-                    <ComboBox x:Name="ComboBoxStartNode" DockPanel.Dock="Right" Width="120" Margin="5,0,0,0"
-                              Style="{StaticResource ComboBoxExtend.Small}" ToolTip="启动节点"
-                              Visibility="Collapsed"
-                              DropDownOpened="ComboBoxStartNode_DropDownOpened"/>
-                    <ComboBox x:Name="ComboBoxFlow" Margin="0,0,5,0" SelectedIndex="{Binding TemplateFlowParamsIndex}" Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value" DisplayMemberPath="Key" />
-                </DockPanel>
-                <Grid  >
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="RestartServicesButton" Background="Transparent" BorderThickness="0" Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}" Margin="0,0,5,0" VerticalAlignment="Bottom" Padding="6,2" Click="Button_RestartServices_Click"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="35">
-                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"   Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
-                        <Button Content="{x:Static properties:Resources.StopProcess}"  Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}"  FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
-                    </StackPanel>
-                </Grid>
-            </StackPanel>
+            <DockPanel Margin="5">
+                <Button x:Name="RestartServicesButton"
+                        DockPanel.Dock="Left"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Content="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion, StringFormat={x:Static properties:Resources.Flow_RestartServiceVersionFormat}}"
+                        Margin="0,0,5,0"
+                        Padding="6,2"
+                        Click="Button_RestartServices_Click"/>
+                <Button DockPanel.Dock="Right"
+                        Command="{Binding EditTemplateFlowCommand}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="2"
+                        Height="24"
+                        Width="24">
+                    <TextBlock Text="&#xE713;"
+                               HorizontalAlignment="Center"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="16"
+                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

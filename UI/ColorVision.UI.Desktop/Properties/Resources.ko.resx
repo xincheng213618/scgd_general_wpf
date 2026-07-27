@@ -190,8 +190,6 @@
     <value>버전</value>
   </data>  <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
-  </data>  <data name="ru" xml:space="preserve">
-    <value>Русский (러시아어)</value>
   </data>  <data name="Reset" xml:space="preserve">
     <value>다시 놓기</value>
   </data>  <data name="ProjectNotFound" xml:space="preserve">

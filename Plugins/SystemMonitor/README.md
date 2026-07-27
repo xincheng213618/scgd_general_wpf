@@ -34,10 +34,8 @@ SystemMonitor/
     ├── Resources.resx               # 默认资源文件
     ├── Resources.Designer.cs        # 自动生成的资源类
     ├── Resources.en.resx           # 英文资源
-    ├── Resources.fr.resx           # 法文资源
     ├── Resources.ja.resx           # 日文资源
     ├── Resources.ko.resx           # 韩文资源
-    ├── Resources.ru.resx           # 俄文资源
     └── Resources.zh-Hant.resx      # 繁体中文资源
 ```
 
