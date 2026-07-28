@@ -3019,8 +3019,6 @@
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>儲存會寫入目前群組的標定檔案；若標定檔案發生變更，將重新啟動光譜服務。</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>標定檔案群組</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>波長標定</value></data>
-  <data name="TemplateEditor_AlreadyFirst" xml:space="preserve"><value>已是第一個，無法上移</value></data>
-  <data name="TemplateEditor_AlreadyLast" xml:space="preserve"><value>已是最後一個，無法下移</value></data>
   <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>是否刪除 {0} 範本？刪除後無法復原！</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>將使用目前範本的 JSON 作為新建或重設範本時的預設參數。是否繼續？</value></data>
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>目前範本不支援設定預設參數</value></data>

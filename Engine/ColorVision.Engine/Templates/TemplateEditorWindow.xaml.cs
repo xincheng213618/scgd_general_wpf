@@ -63,9 +63,6 @@ namespace ColorVision.Engine.Templates
             if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                GridViewColumnVisibility? moveActionsColumnVisibility = GridViewColumnVisibilitys.FirstOrDefault(item => item.GridViewColumn == MoveActionsColumn);
-                if (moveActionsColumnVisibility != null)
-                    GridViewColumnVisibilitys.Remove(moveActionsColumnVisibility);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
@@ -634,47 +631,6 @@ namespace ColorVision.Engine.Templates
                     ListView1.SelectedIndex += 1;
 
 
-            }
-        }
-
-        private void SwapTemplateAndUpdateUI(int newIndex, string errorMessage)
-        {
-            int currentIndex = GetSelectedTemplateSourceIndex();
-            TemplateBase? selectedTemplate = ListView1.SelectedItem as TemplateBase;
-            if (currentIndex >= 0 && selectedTemplate != null && ITemplate.SwapTemplateOrder(currentIndex, newIndex))
-            {
-                RefreshTemplateList(selectedTemplate);
-                HandyControl.Controls.Growl.SuccessGlobal(Properties.Resources.TemplateEditor_OrderSwapped);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
-            }
-        }
-
-        private void Button_MoveUp_Click(object sender, RoutedEventArgs e)
-        {
-            int selectedIndex = GetSelectedTemplateSourceIndex();
-            if (selectedIndex > 0)
-            {
-                SwapTemplateAndUpdateUI(selectedIndex - 1, Properties.Resources.TemplateEditor_SwapFailed);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyFirst, "ColorVision");
-            }
-        }
-
-        private void Button_MoveDown_Click(object sender, RoutedEventArgs e)
-        {
-            int selectedIndex = GetSelectedTemplateSourceIndex();
-            if (selectedIndex >= 0 && selectedIndex < ITemplate.Count - 1)
-            {
-                SwapTemplateAndUpdateUI(selectedIndex + 1, Properties.Resources.TemplateEditor_SwapFailed);
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.TemplateEditor_AlreadyLast, "ColorVision");
             }
         }
 

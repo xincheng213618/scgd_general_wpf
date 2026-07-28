@@ -12694,24 +12694,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 已是第一个，无法上移 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_AlreadyFirst {
-            get {
-                return ResourceManager.GetString("TemplateEditor_AlreadyFirst", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 已是最后一个，无法下移 的本地化字符串。
-        /// </summary>
-        public static string TemplateEditor_AlreadyLast {
-            get {
-                return ResourceManager.GetString("TemplateEditor_AlreadyLast", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 是否删除 {0} 模板？删除后无法恢复！ 的本地化字符串。
         /// </summary>
         public static string TemplateEditor_ConfirmDelete {

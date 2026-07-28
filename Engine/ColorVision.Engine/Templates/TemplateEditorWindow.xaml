@@ -116,20 +116,6 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn x:Name="MoveActionsColumn" Width="58">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type local:TemplateBase}">
-                                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}, Converter={StaticResource bool2VisibilityConverter}}">
-                                        <Button Click="Button_MoveUp_Click" Width="24" Height="20" Padding="2" Margin="0,0,4,0" Background="Transparent" BorderThickness="0" ToolTip="{x:Static properties:Resources.MoveUp}">
-                                            <TextBlock Text="&#xE70E;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
-                                        </Button>
-                                        <Button Click="Button_MoveDown_Click" Width="24" Height="20" Padding="2" Background="Transparent" BorderThickness="0" ToolTip="{x:Static properties:Resources.MoveDown}">
-                                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="12"/>
-                                        </Button>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>

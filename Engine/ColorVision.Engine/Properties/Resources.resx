@@ -922,8 +922,6 @@
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>保存会写入当前分组的标定文件；如标定文件发生变化，将重启光谱服务。</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>标定文件分组</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>波长标定</value></data>
-  <data name="TemplateEditor_AlreadyFirst" xml:space="preserve"><value>已是第一个，无法上移</value></data>
-  <data name="TemplateEditor_AlreadyLast" xml:space="preserve"><value>已是最后一个，无法下移</value></data>
   <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>是否删除 {0} 模板？删除后无法恢复！</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>将把当前模板的 JSON 设置为默认参数，新建或重置模板时会使用该 JSON。是否继续？</value></data>
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>当前模板不支持设置默认参数</value></data>

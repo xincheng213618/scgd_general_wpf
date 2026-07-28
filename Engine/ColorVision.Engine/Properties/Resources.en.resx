@@ -4336,8 +4336,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SpectrumCalibrationGroups_SaveHint" xml:space="preserve"><value>Saving writes the calibration files for the current group. The spectrum service restarts if a calibration file changes.</value></data>
   <data name="SpectrumCalibrationGroups_Title" xml:space="preserve"><value>Calibration file groups</value></data>
   <data name="SpectrumCalibrationGroups_WavelengthCalibration" xml:space="preserve"><value>Wavelength calibration</value></data>
-  <data name="TemplateEditor_AlreadyFirst" xml:space="preserve"><value>This is already the first item and cannot be moved up</value></data>
-  <data name="TemplateEditor_AlreadyLast" xml:space="preserve"><value>This is already the last item and cannot be moved down</value></data>
   <data name="TemplateEditor_ConfirmDelete" xml:space="preserve"><value>Delete the {0} template? This cannot be undone.</value></data>
   <data name="TemplateEditor_ConfirmSetJsonAsDefault" xml:space="preserve"><value>Use the current template JSON as the default parameters for new and reset templates. Continue?</value></data>
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>This template does not support setting default parameters</value></data>
