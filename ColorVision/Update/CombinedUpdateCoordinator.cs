@@ -40,6 +40,7 @@ namespace ColorVision.Update
         private static readonly object _updateCheckLock = new();
         private static readonly object _prefetchLock = new();
         private static readonly TimeSpan SharedUpdateCheckDuration = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan InteractiveRetryDelay = TimeSpan.FromMilliseconds(250);
         private static readonly TimeSpan PrefetchDelay = TimeSpan.FromSeconds(30);
         private static SharedUpdateCheck? _sharedUpdateCheck;
         private static AutoUpdatePlan? _pendingStartupApplicationPlan;
@@ -72,6 +73,17 @@ namespace ColorVision.Update
                             includePluginUpdates: true,
                             includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
                             cancellationToken: previewCancellation.Token);
+                        if (ShouldRetryInteractiveCheck(plansResult.ServerCheckStatus))
+                        {
+                            log.Info("Retrying the interactive update check after a transient update-service failure.");
+                            await Task.Delay(InteractiveRetryDelay, previewCancellation.Token);
+                            plansResult = await GetUpdatePlansAsync(
+                                includeApplicationUpdates: true,
+                                includePluginUpdates: true,
+                                includeCurrentHostPluginUpdatesWhenFullApplicationUpdate: false,
+                                cancellationToken: previewCancellation.Token);
+                        }
+
                         applicationPlan = plansResult.ApplicationPlan;
                         pluginPlan = plansResult.PluginPlan;
                         await _locker.WaitAsync(previewCancellation.Token);
@@ -599,6 +611,11 @@ namespace ColorVision.Update
             return existingIncludesApplicationUpdates == requestedIncludesApplicationUpdates
                 && existingIncludesPluginUpdates == requestedIncludesPluginUpdates
                 && (!requestedIncludesCurrentHostPlugins || existingIncludesCurrentHostPlugins);
+        }
+
+        internal static bool ShouldRetryInteractiveCheck(UpdateServerCheckStatus status)
+        {
+            return status == UpdateServerCheckStatus.ServerUnavailable;
         }
 
         private static UpdatePlansResult CopyUpdatePlansForConsumer(

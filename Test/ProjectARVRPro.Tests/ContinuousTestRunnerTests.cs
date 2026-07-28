@@ -1,0 +1,57 @@
+using ProjectARVRPro.Services;
+using Xunit;
+
+namespace ProjectARVRPro.Tests;
+
+public class ContinuousTestRunnerTests
+{
+    [Fact]
+    public async Task RepeatsRoundsAndReportsPassFailUntilCanceled()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var progress = new List<ContinuousTestProgress>();
+        int round = 0;
+
+        Task runTask = ContinuousTestRunner.RunAsync(
+            _ => Task.FromResult(++round != 2),
+            current =>
+            {
+                progress.Add(current);
+                if (current.CompletedRounds == 3)
+                    cancellation.Cancel();
+            },
+            TimeSpan.Zero,
+            cancellation.Token);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+
+        ContinuousTestProgress last = Assert.Single(progress, item => item.CompletedRounds == 3);
+        Assert.Equal(2, last.PassedRounds);
+        Assert.Equal(1, last.FailedRounds);
+    }
+
+    [Fact]
+    public async Task DoesNotCountRoundCanceledWhileItIsRunning()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progress = new List<ContinuousTestProgress>();
+
+        Task runTask = ContinuousTestRunner.RunAsync(
+            async cancellationToken =>
+            {
+                started.SetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return true;
+            },
+            progress.Add,
+            TimeSpan.Zero,
+            cancellation.Token);
+
+        await started.Task;
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+        Assert.Empty(progress);
+    }
+}

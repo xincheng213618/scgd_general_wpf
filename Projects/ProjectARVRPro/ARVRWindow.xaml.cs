@@ -142,7 +142,7 @@ namespace ProjectARVRPro
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
+                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || _isContinuousTestRunning)
                 {
                     log.Info("PG切换错误，正在执行流程或处理流程结果");
                     return false;
@@ -570,7 +570,7 @@ namespace ProjectARVRPro
             ProcessMeta? runProcessMeta,
             CancellationToken cancellationToken = default)
         {
-            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || _isContinuousTestRunning)
             {
                 log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return false;
@@ -1697,17 +1697,122 @@ namespace ProjectARVRPro
         }
 
         private bool _isRunAllRunning;
+        private bool _isContinuousTestRunning;
+        private CancellationTokenSource? _continuousTestCancellation;
+        private static readonly TimeSpan ContinuousTestInterval = TimeSpan.FromMilliseconds(250);
 
         private async void RunAllClick(object sender, RoutedEventArgs e)
         {
             await RunAllAsync();
         }
 
+        private async void ContinuousTestClick(object sender, RoutedEventArgs e)
+        {
+            if (_isContinuousTestRunning)
+            {
+                StopContinuousTest();
+                return;
+            }
+
+            if (_isRunAllRunning || _isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive)
+            {
+                log.Info("当前存在流程执行或正在处理流程结果，无法启动连续测试");
+                return;
+            }
+
+            if (!ProcessMetas.Any(meta => meta.IsEnabled))
+            {
+                log.Info("当前组没有启用的流程，无法启动连续测试");
+                return;
+            }
+
+            using var cancellation = new CancellationTokenSource();
+            _continuousTestCancellation = cancellation;
+            _isContinuousTestRunning = true;
+            RunAllButton.IsEnabled = false;
+            GroupSelector.IsEnabled = false;
+            ContinuousTestButton.Content = "■ 停止测试 (0)";
+            ContinuousTestButton.ToolTip = "点击停止连续测试";
+            log.Info($"连续测试开始，当前组: {ProcessManager.ActiveGroup?.Name ?? "<未命名>"}");
+
+            ContinuousTestProgress lastProgress = default;
+            try
+            {
+                await ContinuousTestRunner.RunAsync(
+                    async cancellationToken =>
+                    {
+                        await RunAllAsync(cancellationToken);
+                        return ObjectiveTestResult.TotalResult;
+                    },
+                    progress =>
+                    {
+                        lastProgress = progress;
+                        ContinuousTestButton.Content = $"■ 停止测试 ({progress.CompletedRounds})";
+                        ContinuousTestButton.ToolTip =
+                            $"已完成 {progress.CompletedRounds} 轮，通过 {progress.PassedRounds} 轮，失败 {progress.FailedRounds} 轮，耗时 {progress.Elapsed:hh\\:mm\\:ss}";
+                        log.Info(
+                            $"连续测试第 {progress.CompletedRounds} 轮完成，" +
+                            $"通过={progress.PassedRounds}，失败={progress.FailedRounds}，耗时={progress.Elapsed:hh\\:mm\\:ss}");
+                    },
+                    ContinuousTestInterval,
+                    cancellation.Token);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                log.Info(
+                    $"连续测试已停止，完成 {lastProgress.CompletedRounds} 轮，" +
+                    $"通过 {lastProgress.PassedRounds} 轮，失败 {lastProgress.FailedRounds} 轮，" +
+                    $"耗时 {lastProgress.Elapsed:hh\\:mm\\:ss}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("连续测试异常终止", ex);
+            }
+            finally
+            {
+                if (ReferenceEquals(_continuousTestCancellation, cancellation))
+                    _continuousTestCancellation = null;
+                _isContinuousTestRunning = false;
+
+                if (!_isDisposed)
+                {
+                    RunAllButton.IsEnabled = true;
+                    GroupSelector.IsEnabled = true;
+                    ContinuousTestButton.IsEnabled = true;
+                    ContinuousTestButton.Content = "测试";
+                    ContinuousTestButton.ToolTip =
+                        $"上次完成 {lastProgress.CompletedRounds} 轮，通过 {lastProgress.PassedRounds} 轮，失败 {lastProgress.FailedRounds} 轮";
+                }
+            }
+        }
+
+        private void StopContinuousTest()
+        {
+            CancellationTokenSource? cancellation = _continuousTestCancellation;
+            if (cancellation == null || cancellation.IsCancellationRequested)
+                return;
+
+            ContinuousTestButton.Content = "正在停止...";
+            ContinuousTestButton.IsEnabled = false;
+            cancellation.Cancel();
+            flowControl.Stop();
+        }
+
         /// <summary>
         /// 一键执行当前组的所有启用的 ProcessMeta
         /// </summary>
-        public async Task RunAllAsync()
+        public async Task RunAllAsync(CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            bool isContinuousTestRound =
+                _isContinuousTestRunning &&
+                _continuousTestCancellation != null &&
+                cancellationToken == _continuousTestCancellation.Token;
+            if (_isContinuousTestRunning && !isContinuousTestRound)
+            {
+                log.Info("连续测试正在运行，忽略其他一键执行请求");
+                return;
+            }
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");
@@ -1722,6 +1827,7 @@ namespace ProjectARVRPro
             _isRunAllRunning = true;
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 InitTest(ProjectARVRProConfig.Instance.SN);
 
                 var enabledMetas = ProcessMetas.Where(m => m.IsEnabled).ToList();
@@ -1729,6 +1835,7 @@ namespace ProjectARVRPro
 
                 for (int i = 0; i < enabledMetas.Count; i++)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     ProcessMeta meta = enabledMetas[i];
                     _currentFlowProcess = meta.Process;
                     CurrentTestType = ProcessMetas.IndexOf(meta);
@@ -1739,7 +1846,7 @@ namespace ProjectARVRPro
                     _currentFlowTemplateId = templateParam.Id;
 
                     // 执行流程并等待完成
-                    var tcs = new TaskCompletionSource<FlowControlData>();
+                    var tcs = new TaskCompletionSource<FlowControlData>(TaskCreationOptions.RunContinuationsAsynchronously);
                     void completedHandler(object? s, FlowControlData data)
                     {
                         flowControl.FlowCompleted -= completedHandler;
@@ -1759,6 +1866,7 @@ namespace ProjectARVRPro
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
                     await Refresh();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (!await _pictureSwitchService.ExecuteAsync(meta))
                     {
@@ -1776,6 +1884,7 @@ namespace ProjectARVRPro
 
                         continue;
                     }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
                     {
@@ -1795,11 +1904,13 @@ namespace ProjectARVRPro
 
                         continue;
                     }
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
                     LastFlowTime = await Task.Run(
-                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(templateParam.Id, FlowName));
+                        () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(templateParam.Id, FlowName),
+                        cancellationToken);
 
                     CreateCurrentFlowBatch();
 
@@ -1807,47 +1918,50 @@ namespace ProjectARVRPro
                     stopwatch.Reset();
                     stopwatch.Start();
                     FlowControlData flowResult;
-                    if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+                    try
                     {
-                        flowControl.FlowCompleted -= completedHandler;
-                        log.Error($"流程 {meta.Name} 启动被拒绝");
-                        flowResult = new FlowControlData
+                        if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
                         {
-                            EventName = "Failed",
-                            Status = StatusTypeEnum.Failed,
-                            SerialNumber = CurrentFlowResult.Code,
-                            ErrorNodeName = meta.Name,
-                            Message = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
-                            Params = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
-                        };
-                    }
-                    else
-                    {
-                        SetStepProgress(CurrentTestType, completed: false);
-                        timer.Change(0, 500);
-
-                        // 等待流程完成（带超时保护，默认10分钟）
-                        var timeoutTask = Task.Delay(TimeSpan.FromMinutes(10));
-                        var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-                        if (completedTask == timeoutTask)
-                        {
-                            flowControl.FlowCompleted -= completedHandler;
-                            flowControl.Stop();
-                            log.Error($"流程 {meta.Name} 执行超时(10min)");
+                            log.Error($"流程 {meta.Name} 启动被拒绝");
                             flowResult = new FlowControlData
                             {
-                                EventName = "OverTime",
-                                Status = StatusTypeEnum.OverTime,
+                                EventName = "Failed",
+                                Status = StatusTypeEnum.Failed,
                                 SerialNumber = CurrentFlowResult.Code,
                                 ErrorNodeName = meta.Name,
-                                Message = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
-                                Params = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
+                                Message = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
+                                Params = $"{meta.Name}({meta.FlowTemplate}) {FlowStartRejectedMessage}",
                             };
                         }
                         else
                         {
-                            flowResult = await tcs.Task;
+                            SetStepProgress(CurrentTestType, completed: false);
+                            timer.Change(0, 500);
+
+                            // 等待流程完成（带超时与连续测试停止保护，默认10分钟）
+                            try
+                            {
+                                flowResult = await tcs.Task.WaitAsync(TimeSpan.FromMinutes(10), cancellationToken);
+                            }
+                            catch (TimeoutException)
+                            {
+                                flowControl.Stop();
+                                log.Error($"流程 {meta.Name} 执行超时(10min)");
+                                flowResult = new FlowControlData
+                                {
+                                    EventName = "OverTime",
+                                    Status = StatusTypeEnum.OverTime,
+                                    SerialNumber = CurrentFlowResult.Code,
+                                    ErrorNodeName = meta.Name,
+                                    Message = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
+                                    Params = $"{meta.Name}({meta.FlowTemplate}) OverTime 10min",
+                                };
+                            }
                         }
+                    }
+                    finally
+                    {
+                        flowControl.FlowCompleted -= completedHandler;
                     }
 
                     stopwatch.Stop();
@@ -1889,14 +2003,45 @@ namespace ProjectARVRPro
                     TestCompleted();
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                await FinalizeCanceledRunAllFlowAsync();
+                log.Info("一键执行已由连续测试停止请求取消");
+                throw;
+            }
             catch (Exception ex)
             {
+                RecordFlowFailure($"一键执行异常: {ex.Message}");
                 log.Error("一键执行异常", ex);
             }
             finally
             {
                 _isRunAllRunning = false;
             }
+        }
+
+        private async Task FinalizeCanceledRunAllFlowAsync()
+        {
+            flowControl.Stop();
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 500);
+
+            if (_currentFlowBatch?.Id <= 0 || CurrentFlowResult == null)
+                return;
+
+            const string message = "连续测试已停止";
+            CurrentFlowResult.Msg = message;
+            await FinalizeCurrentFlowRunAsync(new FlowControlData
+            {
+                EventName = "Canceled",
+                Status = StatusTypeEnum.Canceled,
+                SerialNumber = CurrentFlowResult.Code,
+                Message = message,
+                Params = message,
+                TotalTime = stopwatch.ElapsedMilliseconds,
+            });
+            ViewResultManager.Save(CurrentFlowResult);
+            SaveObjectiveTestResultRecord(CurrentFlowResult);
         }
 
         private static string BuildDailyCustomXlsxBaseFileName(DateTime exportTime, string? projectName)
@@ -1927,6 +2072,7 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
+            _continuousTestCancellation?.Cancel();
             ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
             var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;
             _copilotContextSession?.Dispose();

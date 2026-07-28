@@ -522,6 +522,14 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void InteractiveUpdateCheckRetriesOnlyTransientServerFailures()
+        {
+            Assert.False(CombinedUpdateCoordinator.ShouldRetryInteractiveCheck(UpdateServerCheckStatus.Success));
+            Assert.False(CombinedUpdateCoordinator.ShouldRetryInteractiveCheck(UpdateServerCheckStatus.NoInternetConnection));
+            Assert.True(CombinedUpdateCoordinator.ShouldRetryInteractiveCheck(UpdateServerCheckStatus.ServerUnavailable));
+        }
+
+        [Fact]
         public void PluginOnlySelectionDescribesRestartWithoutBackup()
         {
             UpdatePreviewDialogContext context = new() { IsChecking = false };

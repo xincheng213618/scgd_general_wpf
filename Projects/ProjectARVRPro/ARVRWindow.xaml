@@ -310,8 +310,16 @@
                 </StackPanel>
             </StatusBarItem>
 
-            <StatusBarItem >
-                <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
+            <StatusBarItem>
+                <Button x:Name="RunAllButton" Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
+            </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right">
+                <Button x:Name="ContinuousTestButton"
+                        Content="测试"
+                        Click="ContinuousTestClick"
+                        Padding="12,5"
+                        FontWeight="Bold"
+                        ToolTip="连续执行当前组的一键流程"/>
             </StatusBarItem>
         </StatusBar>
 
