@@ -94,9 +94,6 @@
   <data name="TemplateName" xml:space="preserve">
     <value>Template Name</value>
   </data>
-  <data name="TemplateManagementWindow" xml:space="preserve">
-    <value>Template Management Window</value>
-  </data>
   <data name="Template" xml:space="preserve">
     <value>Template</value>
   </data>  <data name="Success" xml:space="preserve">
@@ -746,9 +743,6 @@
   </data>
   <data name="CreateCopy" xml:space="preserve">
     <value>Create a copy</value>
-  </data>
-  <data name="CreateSample" xml:space="preserve">
-    <value>Create as a sample</value>
   </data>
   <data name="WorkflowEngineTemplateManagement" xml:space="preserve">
     <value>Workflow Engine Template Management</value>
@@ -2039,29 +2033,8 @@
   <data name="EmittingAreaLocation" xml:space="preserve">
     <value>Positioning of the light-emitting area</value>
   </data>
-  <data name="TemplateList" xml:space="preserve">
-    <value>Template List</value>
-  </data>
-  <data name="OpenFullEditor" xml:space="preserve">
-    <value>Open the full editor</value>
-  </data>
-  <data name="SelectTemplateToViewDetails" xml:space="preserve">
-    <value>Select a template to view details</value>
-  </data>
-  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
-    <value>Please select a template to view and edit.</value>
-  </data>
   <data name="TemplateEdit" xml:space="preserve">
     <value>Template editing</value>
-  </data>
-  <data name="CurrentSelection" xml:space="preserve">
-    <value>Current selection</value>
-  </data>
-  <data name="TemplatesCount" xml:space="preserve">
-    <value>Template</value>
-  </data>
-  <data name="TemplateEditorLoadFailed" xml:space="preserve">
-    <value>Unable to load template editor</value>
   </data>
   <data name="DefaultValueType" xml:space="preserve">
     <value>Default value type</value>
@@ -3890,11 +3863,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CreateSource" xml:space="preserve">
     <value>Create Source</value>
   </data>
-  <data name="SampleGroup" xml:space="preserve">
-    <value>Sample Group</value>
-  </data>  <data name="AutoCreateGroupHint" xml:space="preserve">
-    <value>Entering a non-existent group name will auto-create on save</value>
-  </data>
   <data name="AutoDetectKeyRegions" xml:space="preserve">
     <value>Auto Detect Key Regions</value>
   </data>
@@ -4038,12 +4006,6 @@ Please close camera or other programs using this serial port, or check device co
   </data>
   <data name="RetainMonths" xml:space="preserve">
     <value>Retain Months</value>
-  </data>
-  <data name="SampleGroupPlaceholder" xml:space="preserve">
-    <value>Select existing group or enter new one</value>
-  </data>
-  <data name="SampleName" xml:space="preserve">
-    <value>Sample Name</value>
   </data>
   <data name="SaveAs" xml:space="preserve">
     <value>Save As</value>
@@ -4381,8 +4343,6 @@ Please close camera or other programs using this serial port, or check device co
   <data name="TemplateEditor_DefaultParametersNotSupported" xml:space="preserve"><value>This template does not support setting default parameters</value></data>
   <data name="TemplateEditor_NoSearchResults" xml:space="preserve"><value>No templates found for “{0}”</value></data>
   <data name="TemplateEditor_OrderSwapped" xml:space="preserve"><value>Template order updated</value></data>
-  <data name="TemplateEditor_SamplesSaved" xml:space="preserve"><value>Saved {0} template sample(s)</value></data>
-  <data name="TemplateEditor_SaveSamplesFailed" xml:space="preserve"><value>Failed to save template samples: {0}</value></data>
   <data name="TemplateEditor_SaveSuccess" xml:space="preserve"><value>{0} saved successfully</value></data>
   <data name="TemplateEditor_SelectFirst" xml:space="preserve"><value>Select an item first</value></data>
   <data name="TemplateEditor_SelectFlowToExport" xml:space="preserve"><value>Select the flow to export</value></data>

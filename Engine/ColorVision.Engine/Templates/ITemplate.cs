@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Templates
             {
                 string fileName = Tool.SanitizeFileName(string.IsNullOrWhiteSpace(templateName) ? Code : templateName);
                 if (string.IsNullOrWhiteSpace(fileName))
-                    fileName = "TemplateSample";
+                    fileName = "Template";
 
                 string filePath = Path.Combine(tempDirectory, fileName + ".cfg");
                 File.WriteAllText(filePath, jsonContent);

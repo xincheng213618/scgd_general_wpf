@@ -21,7 +21,6 @@
 | `ITemplateJson<T>` | 面向 `ModMasterModel.JsonVal` 的 JSON 模板分支 |
 | `TemplateControl` | 模板注册中心，维护 `ITemplateNames`，扫描 `IITemplateLoad` |
 | `IITemplateLoad` | 模板加载扩展点，具体模板在 `Load()` 中装载数据 |
-| `TemplateManagerWindow` | 按运行时注册结果和命名空间分组展示模板 |
 | `TemplateEditorWindow` | 通用编辑宿主，接入保存、删除、导入导出、自定义面板 |
 | `TemplateFlow` | 特殊模板，既是流程模板数据，也是流程图编辑/导入导出入口 |
 
@@ -31,7 +30,7 @@
 2. `TemplateInitializer` 等待 MySQL 初始化后触发 `TemplateControl.GetInstance()`。
 3. `TemplateControl` 扫描已加载程序集中的 `IITemplateLoad`。
 4. 各模板类型在 `Load()` 中读取数据库或资源，并装入内存集合。
-5. 模板管理窗口、编辑窗口、流程节点配置器消费这些注册实例。
+5. 模板编辑窗口、各模板菜单入口和流程节点配置器消费这些注册实例。
 
 当前没有独立模板清单文件，也没有统一 DI 容器声明模板。
 
@@ -39,7 +38,6 @@
 
 | 区域 | 当前设计 |
 | --- | --- |
-| 管理窗口 | 从 `TemplateControl.ITemplateNames` 读取，按命名空间分组，提供搜索和筛选 |
 | 编辑窗口 | 多数模板进入 `TemplateEditorWindow`，右侧显示 PropertyGrid 或自定义控件 |
 | 节点配置 | `NodePanelBuilder` 可从流程节点属性面板直接打开模板编辑 |
 | 持久化 | 具体模板常直接用 SqlSugar 读写 `ModMasterModel`、`ModDetailModel`、`SysResourceModel` |
@@ -70,7 +68,6 @@ Flow 既是模板，又是流程图载体，不能和普通参数模板完全等
 | --- | --- |
 | 模板基类 | `ITemplate.cs` |
 | 注册中心 | `TemplateContorl.cs`、`TemplateInitializer` |
-| 管理窗口 | `TemplateManagerWindow.xaml.cs` |
 | 编辑窗口 | `TemplateEditorWindow.xaml.cs` |
 | Flow 模板 | `Flow/TemplateFlow.cs` |
 | 节点模板入口 | `Flow/NodeConfigurator/NodePanelBuilder.cs` |

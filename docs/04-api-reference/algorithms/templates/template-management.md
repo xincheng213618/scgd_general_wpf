@@ -4,18 +4,15 @@
 
 ## 先记住
 
-模板管理不是单独后端服务，而是由 `ITemplate`、`TemplateControl`、管理窗口、编辑窗口和创建窗口组成的 WPF 宿主链。它负责扫描注册模板、按命名空间组织入口、提供编辑/创建/导入/导出/复制/重命名窗口，并接入 SQLite 样例库和全局搜索。
+模板管理不是单独后端服务，而是由 `ITemplate`、`TemplateControl`、各模板菜单入口、编辑窗口和创建窗口组成的 WPF 宿主链。它负责扫描注册模板、提供编辑/创建/导入/导出/复制/重命名入口，并接入全局搜索。
 
 ## 当前最关键的文件
 
 - `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
 - `Engine/ColorVision.Engine/Templates/ITemplate.cs`
-- `Engine/ColorVision.Engine/Templates/TemplateManagerWindow.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`
-- `Engine/ColorVision.Engine/Templates/TemplateSampleLibrary.cs`
-- `Engine/ColorVision.Engine/Templates/TemplateSampleSaveWindow.xaml.cs`
 
 如果只读这几处，已经足够建立当前模板系统的主心智模型。
 
@@ -24,20 +21,19 @@
 | 环节 | 当前行为 |
 | --- | --- |
 | 初始化与注册 | `TemplateInitializer` 触发 `TemplateControl.GetInstance()`；`TemplateControl` 扫描 `IITemplateLoad` 并执行 `Load()`；`ITemplate` 构造时也会把实例注册到 `ITemplateNames` |
-| 管理窗口 | `TemplateManagerWindow` 读取注册表，按命名空间分组，支持搜索、筛选、卡片展示和直接打开编辑器 |
 | 编辑窗口 | `TemplateEditorWindow` 先 `template.Load()`；普通模板显示 `PropertyGrid`，自定义模板调用 `GetUserControl()` |
-| 创建窗口 | `TemplateCreate` 可从系统默认模板、当前副本和 SQLite 样例库创建新模板，再由 `ApplyTemplateSource(...)` 注入内容 |
-| 搜索与样例 | `TemplateSearchProvider` 接入全局搜索；`TemplateSampleLibrary` 把样例保存到 `.../Templates/TemplateSamples.db` |
+| 创建窗口 | `TemplateCreate` 可从系统默认模板、当前副本和文件导入创建新模板，再由 `ApplyTemplateSource(...)` 注入内容 |
+| 搜索 | `TemplateSearchProvider` 接入全局搜索 |
 
 ## 当前几个最容易写错的点
 
 ### 它不是纯服务层系统
 
-当前很多关键逻辑都直接写在 `TemplateManagerWindow`、`TemplateEditorWindow`、`TemplateCreate` 这些 WPF 窗口里。继续把它描述成“宿主只绑定 ViewModel，逻辑都在服务层”，和真实代码不符。
+当前很多关键逻辑都直接写在 `TemplateEditorWindow`、`TemplateCreate` 这些 WPF 窗口里。继续把它描述成“宿主只绑定 ViewModel，逻辑都在服务层”，和真实代码不符。
 
 ### 不同模板的持久化方式并不统一
 
-有些模板主要依赖 MySQL，有些模板支持文件导入导出，有些模板还会额外走 SQLite 样例库。文档不能再假设所有模板都是同一种存储模型。
+有些模板主要依赖 MySQL，有些模板支持文件导入导出。文档不能再假设所有模板都是同一种存储模型。
 
 ### `IsUserControl` 和 `IsSideHide` 会显著改变行为
 
@@ -51,8 +47,6 @@
 
 1. `Engine/ColorVision.Engine/Templates/ITemplate.cs`
 2. `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
-3. `Engine/ColorVision.Engine/Templates/TemplateManagerWindow.xaml.cs`
-4. `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
-5. `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
-6. `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`
-7. `Engine/ColorVision.Engine/Templates/TemplateSampleLibrary.cs`
+3. `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
+4. `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
+5. `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`

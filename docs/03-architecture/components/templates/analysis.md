@@ -7,10 +7,10 @@
 `Engine/ColorVision.Engine/Templates/` 不是单一算法目录，而是一组同时承担这几类职责的代码：
 
 - 模板抽象和注册
-- 模板管理与编辑窗口
+- 模板编辑与创建窗口
 - 不同业务域的模板实现
 - 流程模板相关能力
-- 模板搜索、创建、样例保存等辅助工具
+- 模板搜索、创建等辅助工具
 
 因此它既有纯模型代码，也有明显的 WPF 窗口和编辑器代码，阅读时不要把它误判成“只有算法参数定义”。
 
@@ -19,8 +19,8 @@
 | 类别 | 文件 |
 | --- | --- |
 | 核心入口 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateContorl.cs` |
-| 管理与编辑 UI | `TemplateManagerWindow.xaml(.cs)`、`TemplateEditorWindow.xaml(.cs)`、`TemplateCreate.xaml(.cs)`、`TemplateSettingEdit.xaml(.cs)` |
-| 搜索与样例 | `TemplateSearchProvider.cs`、`TemplateSampleLibrary.cs`、`TemplateSampleSaveWindow.xaml(.cs)` |
+| 编辑与创建 UI | `TemplateEditorWindow.xaml(.cs)`、`TemplateCreate.xaml(.cs)`、`TemplateSettingEdit.xaml(.cs)` |
+| 搜索入口 | `TemplateSearchProvider.cs` |
 
 如果只是想弄清“模板怎么被发现、怎么被打开、怎么被编辑”，先看这些文件通常比直接扎进某个算法子目录更有效。
 
@@ -45,7 +45,7 @@
 2. `TemplateContorl` 在数据库连接可用后扫描当前已加载程序集。
 3. 它查找实现了 `IITemplateLoad` 的非抽象类型。
 4. 这些类型通过 `Load()` 把模板注册进 `ITemplateNames`。
-5. 模板管理窗口、编辑窗口、流程窗口和业务功能再去消费这些已注册模板。
+5. 模板编辑窗口、各模板菜单入口、流程窗口和业务功能再去消费这些已注册模板。
 
 这条链路说明两个实际约束：
 
@@ -56,13 +56,13 @@
 
 | 误区 | 正确判断 |
 | --- | --- |
-| 把它当成纯算法层 | 这里同时包含窗口、编辑器、搜索、样例保存、模板创建和流程相关 UI |
+| 把它当成纯算法层 | 这里同时包含窗口、编辑器、搜索、模板创建和流程相关 UI |
 | 以为所有目录同一时期按同一规则设计 | 当前目录有明显演进痕迹，不要强套统一分层模型 |
 | 模板缺失时先查编辑器 | 更早可能是程序集没装载、数据库没连上、`IITemplateLoad` 没跑到或模板名重复 |
 
 ## 阅读顺序
 
-先看 `TemplateContorl.cs` 理解发现和注册，再看 `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`，然后看 `TemplateManagerWindow` 和 `TemplateEditorWindow`，最后进入 `ARVR/`、`POI/` 或 `Flow/` 等具体业务目录。
+先看 `TemplateContorl.cs` 理解发现和注册，再看 `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`，然后看 `TemplateEditorWindow` 和 `Templates/Menus/`，最后进入 `ARVR/`、`POI/` 或 `Flow/` 等具体业务目录。
 
 ## 这页不再做什么
 

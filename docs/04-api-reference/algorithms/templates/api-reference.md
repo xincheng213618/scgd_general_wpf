@@ -27,7 +27,7 @@
 | `ParamModBase` | 组合模板主记录和参数明细，是多数数据库模板参数基类 |
 | `TemplateModel<T>` | 列表项包装，带 `Key`、`Value`、选择/编辑状态和右键命令 |
 | `TemplateEditorWindow` | 通用模板编辑宿主，统一新建、复制、保存、删除、重命名、搜索、排序 |
-| `TemplateCreate` | 模板创建来源选择，支持默认、当前副本、SQLite 样例库 |
+| `TemplateCreate` | 模板创建来源选择，支持默认、当前副本和文件导入 |
 
 ## 普通模板与 JSON 模板
 
@@ -44,7 +44,7 @@
 | --- | --- |
 | `TemplateEditorWindow` | 根据 `IsUserControl` 在 `PropertyGrid` 和自定义 `UserControl` 之间切换 |
 | `TemplateModel<T>` | 列表中显示的不是裸参数对象，而是带 UI 状态的包装对象 |
-| `TemplateCreate` | 不只是输入名称，还处理默认值、当前副本和样例库来源 |
+| `TemplateCreate` | 不只是输入名称，还处理默认值、当前副本和文件导入来源 |
 
 模板系统当前没有完全把数据模型和 UI 状态剥离。解释 API 时要保留这个现实边界。
 
