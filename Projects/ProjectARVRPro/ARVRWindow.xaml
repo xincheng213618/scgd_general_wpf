@@ -282,44 +282,48 @@
 
         
         <StatusBar Grid.Row="1" Visibility="{Binding StatusControlVisibility, Converter={StaticResource bool2VisibilityConverter}}">
-            <StatusBarItem>
-                <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="结果记录" Click="ObjectiveTestResultRecord_Click"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="切图" Command="{Binding ThunderbirdSerialManager.EditCommand}" Padding="10,2"/>
-            </StatusBarItem>
-            <StatusBarItem >
-                <Button Content="中转" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2"/>
-            </StatusBarItem>
-            <StatusBarItem>
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid/>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem HorizontalAlignment="Left" HorizontalContentAlignment="Left" Padding="0">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                    <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}" 
-                              DisplayMemberPath="Name"
-                              SelectedIndex="{Binding ProcessManager.ActiveGroupIndex}"
-                              Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
+                    <Button Content="设置" Command="{Binding OpenConfigCommand}" Margin="2,0"/>
+                    <Button Content="结果记录" Click="ObjectiveTestResultRecord_Click" Margin="2,0"/>
+                    <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}" Margin="2,0"/>
+                    <Button Content="切图" Command="{Binding ThunderbirdSerialManager.EditCommand}" Padding="10,2" Margin="2,0"/>
+                    <Button Content="中转" Command="{Binding SocketRelayManager.EditCommand}" Padding="10,2" Margin="2,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="2,0">
+                        <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}"
+                                  DisplayMemberPath="Name"
+                                  SelectedIndex="{Binding ProcessManager.ActiveGroupIndex}"
+                                  Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
+                    </StackPanel>
+                    <Button x:Name="RunAllButton"
+                            Content="▶ 一键执行"
+                            Click="RunAllClick"
+                            Background="#FF4CAF50"
+                            Foreground="White"
+                            FontWeight="Bold"
+                            Padding="10,5"
+                            Margin="2,0"/>
                 </StackPanel>
             </StatusBarItem>
-
-            <StatusBarItem>
-                <Button x:Name="RunAllButton" Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
-            </StatusBarItem>
-            <StatusBarItem DockPanel.Dock="Right">
-                <Button x:Name="ContinuousTestButton"
-                        Content="测试"
-                        Click="ContinuousTestClick"
-                        Padding="12,5"
-                        FontWeight="Bold"
-                        ToolTip="连续执行当前组的一键流程"/>
+            <StatusBarItem HorizontalAlignment="Right" Panel.ZIndex="1">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="InitTest"
+                            Command="{Binding InitTestCommand}"
+                            Margin="2,0"/>
+                    <Button x:Name="ContinuousTestButton"
+                            Content="测试"
+                            Click="ContinuousTestClick"
+                            Padding="12,5"
+                            Margin="2,0"
+                            FontWeight="Bold"
+                            ToolTip="连续执行当前组的一键流程"/>
+                </StackPanel>
             </StatusBarItem>
         </StatusBar>
 

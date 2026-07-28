@@ -1710,7 +1710,16 @@ namespace ProjectARVRPro
         {
             if (_isContinuousTestRunning)
             {
-                StopContinuousTest();
+                if (MessageBox.Show(
+                    this,
+                    "停止后会取消当前正在执行的流程，并将未完成批次记录为已取消。\n\n确定停止连续测试吗？",
+                    "停止连续测试",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question,
+                    MessageBoxResult.No) == MessageBoxResult.Yes)
+                {
+                    StopContinuousTest();
+                }
                 return;
             }
 
@@ -1726,6 +1735,18 @@ namespace ProjectARVRPro
                 return;
             }
 
+            string groupName = ProcessManager.ActiveGroup?.Name ?? "<未命名>";
+            if (MessageBox.Show(
+                this,
+                $"即将连续执行当前组“{groupName}”的全部启用流程。\n每轮会自动生成新的 SN，并持续运行，直到手动停止。\n\n确定开始连续测试吗？",
+                "连续测试确认",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
             using var cancellation = new CancellationTokenSource();
             _continuousTestCancellation = cancellation;
             _isContinuousTestRunning = true;
@@ -1733,7 +1754,7 @@ namespace ProjectARVRPro
             GroupSelector.IsEnabled = false;
             ContinuousTestButton.Content = "■ 停止测试 (0)";
             ContinuousTestButton.ToolTip = "点击停止连续测试";
-            log.Info($"连续测试开始，当前组: {ProcessManager.ActiveGroup?.Name ?? "<未命名>"}");
+            log.Info($"连续测试开始，当前组: {groupName}");
 
             ContinuousTestProgress lastProgress = default;
             try
@@ -1828,7 +1849,7 @@ namespace ProjectARVRPro
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                InitTest(ProjectARVRProConfig.Instance.SN);
+                InitTest(isContinuousTestRound ? null : ProjectARVRProConfig.Instance.SN);
 
                 var enabledMetas = ProcessMetas.Where(m => m.IsEnabled).ToList();
                 log.Info($"一键执行开始，共 {enabledMetas.Count} 个启用的流程");
