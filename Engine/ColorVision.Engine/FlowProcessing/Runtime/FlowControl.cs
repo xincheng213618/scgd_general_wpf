@@ -5,6 +5,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -130,8 +131,30 @@ namespace ColorVision.Engine.FlowProcessing
         {
             if (string.IsNullOrWhiteSpace(startNodeName))
                 return false;
-            return await flowEngine.EnsureStartNodeReadyAsync(startNodeName, StartReadyTimeout, cancellationToken)
-                && TryStart(startNodeName, sn);
+
+            bool readyBefore = flowEngine.IsStartNodeReady(startNodeName);
+            bool readinessSucceeded = false;
+            bool started = false;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try
+            {
+                readinessSucceeded = await flowEngine.EnsureStartNodeReadyAsync(startNodeName, StartReadyTimeout, cancellationToken);
+                if (readinessSucceeded)
+                    started = TryStart(startNodeName, sn);
+                return started;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                log.InfoFormat(
+                    "流程启动准备[{0}] => StartNode={1}, ReadyBefore={2}, ReadinessSucceeded={3}, Started={4}, Elapsed={5}ms",
+                    sn,
+                    startNodeName,
+                    readyBefore,
+                    readinessSucceeded,
+                    started,
+                    stopwatch.ElapsedMilliseconds);
+            }
         }
 
         private bool TryStart(string startNodeName, string sn)
