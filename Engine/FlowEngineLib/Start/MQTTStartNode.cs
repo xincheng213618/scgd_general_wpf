@@ -18,6 +18,8 @@ public class MQTTStartNode : BaseStartNode
 
 	private static readonly TimeSpan PublishReadyTimeout = TimeSpan.FromSeconds(3);
 
+	private static readonly TimeSpan SlowReadinessThreshold = TimeSpan.FromMilliseconds(100);
+
 	private string _Server = "127.0.0.1";
 
 	private int _Port = 1883;
@@ -36,6 +38,8 @@ public class MQTTStartNode : BaseStartNode
 
 	private readonly object mqttSessionLock = new object();
 
+	private readonly object subscriptionRestoreQueueLock = new object();
+
 	private CancellationTokenSource mqttSessionCts = CreateCanceledTokenSource();
 
 	private long mqttSessionGeneration;
@@ -47,6 +51,10 @@ public class MQTTStartNode : BaseStartNode
 	private long restoredStartTopicVersion = -1;
 
 	private bool connectionWanted;
+
+	private bool subscriptionRestoreRequested;
+
+	private bool subscriptionRestoreWorkerRunning;
 
 	private volatile bool isDisposed;
 
@@ -254,9 +262,14 @@ public class MQTTStartNode : BaseStartNode
 			return true;
 		}
 
+		var readinessStopwatch = System.Diagnostics.Stopwatch.StartNew();
+		long lifecycleWaitMilliseconds = 0;
+		long connectionMilliseconds = 0;
+		long restoreMilliseconds = 0;
 		try
 		{
 			await mqttLifecycleLock.WaitAsync(linkedToken).ConfigureAwait(false);
+			lifecycleWaitMilliseconds = readinessStopwatch.ElapsedMilliseconds;
 		}
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 		{
@@ -265,6 +278,12 @@ public class MQTTStartNode : BaseStartNode
 		try
 		{
 			ThrowIfMqttSessionChanged(generation, topicVersion, linkedToken);
+			if (IsExecutionReady)
+			{
+				return true;
+			}
+
+			var connectionStopwatch = System.Diagnostics.Stopwatch.StartNew();
 			current = _MQTTHelper;
 			if (current != null && !current.IsClientConnect())
 			{
@@ -307,8 +326,14 @@ public class MQTTStartNode : BaseStartNode
 					return false;
 				}
 			}
+			connectionStopwatch.Stop();
+			connectionMilliseconds = connectionStopwatch.ElapsedMilliseconds;
 
-			return await RestoreSubscriptionsAsync(current, generation, topicVersion, linkedToken).ConfigureAwait(false);
+			var restoreStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			bool restored = await RestoreSubscriptionsAsync(current, generation, topicVersion, linkedToken).ConfigureAwait(false);
+			restoreStopwatch.Stop();
+			restoreMilliseconds = restoreStopwatch.ElapsedMilliseconds;
+			return restored;
 		}
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
 		{
@@ -319,6 +344,18 @@ public class MQTTStartNode : BaseStartNode
 		finally
 		{
 			mqttLifecycleLock.Release();
+			readinessStopwatch.Stop();
+			if (readinessStopwatch.Elapsed >= SlowReadinessThreshold)
+			{
+				logger.InfoFormat(
+					"MQTT start-node readiness slow => node={0}, lifecycleWait={1}ms, connection={2}ms, restore={3}ms, total={4}ms, ready={5}",
+					m_nodeName,
+					lifecycleWaitMilliseconds,
+					connectionMilliseconds,
+					restoreMilliseconds,
+					readinessStopwatch.ElapsedMilliseconds,
+					IsExecutionReady);
+			}
 		}
 	}
 
@@ -562,30 +599,56 @@ public class MQTTStartNode : BaseStartNode
 		MQTTHelper mqttHelper = _MQTTHelper;
 		if (mqttHelper != null
 			&& mqttHelper.IsClientConnect()
-			&& TryCaptureMqttSession(out long generation, out long topicVersion, out CancellationToken sessionToken))
+			&& TryCaptureMqttSession(out _, out _, out _))
 		{
-			_ = RestoreSubscriptionsForSessionAsync(mqttHelper, generation, topicVersion, sessionToken);
+			lock (subscriptionRestoreQueueLock)
+			{
+				subscriptionRestoreRequested = true;
+				if (subscriptionRestoreWorkerRunning)
+				{
+					return;
+				}
+				subscriptionRestoreWorkerRunning = true;
+			}
+			_ = RunSubscriptionRestoreQueueAsync();
 		}
 	}
 
-	private async Task RestoreSubscriptionsForSessionAsync(
-		MQTTHelper mqttHelper,
-		long generation,
-		long topicVersion,
-		CancellationToken sessionToken)
+	private async Task RunSubscriptionRestoreQueueAsync()
 	{
-		try
+		while (true)
 		{
-			await RestoreSubscriptionsAsync(mqttHelper, generation, topicVersion, sessionToken).ConfigureAwait(false);
-		}
-		catch (OperationCanceledException)
-		{
-			Ready = false;
-		}
-		catch (Exception ex)
-		{
-			Ready = false;
-			logger.Warn("Failed to restore MQTT subscriptions.", ex);
+			lock (subscriptionRestoreQueueLock)
+			{
+				if (!subscriptionRestoreRequested)
+				{
+					subscriptionRestoreWorkerRunning = false;
+					return;
+				}
+				subscriptionRestoreRequested = false;
+			}
+
+			MQTTHelper mqttHelper = _MQTTHelper;
+			if (mqttHelper == null
+				|| !mqttHelper.IsClientConnect()
+				|| !TryCaptureMqttSession(out long generation, out long topicVersion, out CancellationToken sessionToken))
+			{
+				continue;
+			}
+
+			try
+			{
+				await RestoreSubscriptionsAsync(mqttHelper, generation, topicVersion, sessionToken).ConfigureAwait(false);
+			}
+			catch (OperationCanceledException)
+			{
+				Ready = false;
+			}
+			catch (Exception ex)
+			{
+				Ready = false;
+				logger.Warn("Failed to restore MQTT subscriptions.", ex);
+			}
 		}
 	}
 

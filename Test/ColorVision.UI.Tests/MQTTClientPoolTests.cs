@@ -255,6 +255,69 @@ public class MQTTClientPoolTests
         MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
     }
 
+    [Theory]
+    [MemberData(nameof(MqttStartNodeTypes))]
+    public async Task ReadinessRechecksStateAfterWaitingForLifecycleLock(Type startNodeType)
+    {
+        string server = $"mqtt-start-ready-{Guid.NewGuid():N}";
+        const int port = 1883;
+        const string userName = "test-user";
+        var (client, proxy) = CreateTrackingClient(isConnected: true);
+
+        MQTTClientPool.SetActiveEndpoint(server, port, userName);
+        Assert.True(MQTTClientPool.Register(client, server, port, userName));
+        MQTTClientPool.Release(client);
+
+        var helper = new MQTTHelper();
+        ResultData_MQTT result = await helper.CreateMQTTClientAndStart(
+            server,
+            port,
+            userName,
+            string.Empty,
+            _ => { });
+        Assert.Equal(1, result.ResultCode);
+
+        var startNode = (BaseStartNode)Activator.CreateInstance(startNodeType)!;
+        startNode.Create();
+        FieldInfo helperField = startNodeType.GetField("_MQTTHelper", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo lifecycleLockField = startNodeType.GetField("mqttLifecycleLock", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo restoredTopicsField = startNodeType.GetField("restoredTopicSubscriptionVersion", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        FieldInfo restoredStartTopicField = startNodeType.GetField("restoredStartTopicVersion", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo beginSessionMethod = startNodeType.GetMethod("BeginMqttSession", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var lifecycleLock = (SemaphoreSlim)lifecycleLockField.GetValue(startNode)!;
+
+        helperField.SetValue(startNode, helper);
+        beginSessionMethod.Invoke(startNode, null);
+        await lifecycleLock.WaitAsync();
+        bool lifecycleLockHeldByTest = true;
+        try
+        {
+            Task<bool> readinessTask = startNode.EnsureReadyAsync();
+            await Task.Delay(20);
+            Assert.False(readinessTask.IsCompleted);
+
+            restoredTopicsField.SetValue(startNode, 0);
+            restoredStartTopicField.SetValue(startNode, 0L);
+            startNode.Ready = true;
+            lifecycleLock.Release();
+            lifecycleLockHeldByTest = false;
+
+            Assert.True(await readinessTask.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.Equal(0, proxy.SubscribeCalls);
+        }
+        finally
+        {
+            if (lifecycleLockHeldByTest)
+            {
+                lifecycleLock.Release();
+            }
+            helperField.SetValue(startNode, null);
+            startNode.Dispose();
+            await helper.DisconnectAsync_Client();
+            MQTTClientPool.SetActiveEndpoint(server + "-retired", port, userName);
+        }
+    }
+
     [Fact]
     public async Task PublishCancellationUnblocksDisconnectWithoutAStaleCallback()
     {
